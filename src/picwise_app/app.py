@@ -90,14 +90,14 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
         if parsed.path == "/health":
             self._send_json(HTTPStatus.OK, self.app.health_payload())
             return
-        if parsed.path == "/demo":
+        if parsed.path in {"/", "/demo"}:
             query = parse_qs(parsed.query).get("q", ["power bank 20000mah for iphone"])[0]
             html = self.app.demo_html(query)
             self._send_html(HTTPStatus.OK, html)
             return
         self._send_json(
             HTTPStatus.NOT_FOUND,
-            {"error": "not_found", "available_routes": ["/health", "/demo"]},
+            {"error": "not_found", "available_routes": ["/", "/health", "/demo"]},
         )
 
     def log_message(self, _format: str, *_args: Any) -> None:

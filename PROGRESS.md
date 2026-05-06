@@ -7,7 +7,7 @@ Official human-readable progress tracker for Picwise Production.
 - Project: Picwise Production
 - Primary domain: picwise.subby.cloud
 - Product type: decision engine, not search engine
-- Current phase: Local app implementation + live-production integration readiness through stage 25
+- Current phase: Local app implementation + live-production integration readiness through stage 26
 
 ## 2) Source Of Truth Order
 
@@ -55,6 +55,7 @@ PASSED:
 - 23. Real product/feed and affiliate redirect connection — NEEDS_REAL_FEED_CONFIG
 - 24. Live Subby dashboard event integration — NEEDS_LIVE_SUBBY_PROOF
 - 25. Production V1 live audit closure — NEEDS_LIVE_PROOF
+- 26. Live route and proof response cleanup — PASSED
 - Stage 22 has operator-supplied live URL proof; stages 23-25 remain non-PASSED pending real provider/Subby credentials and live proof.
 
 ## 4) Locked Implementation Roadmap Status
@@ -86,6 +87,7 @@ PASSED:
 | 23 | Real product/feed and affiliate redirect connection | NEEDS_REAL_FEED_CONFIG |
 | 24 | Live Subby dashboard event integration | NEEDS_LIVE_SUBBY_PROOF |
 | 25 | Production V1 live audit closure | NEEDS_LIVE_PROOF |
+| 26 | Live route and proof response cleanup | PASSED |
 
 ## 5) Completion Rule
 
@@ -128,3 +130,4 @@ Obtain real feed/affiliate provider credentials and proof, plus live Subby endpo
 - 2026-05-06: Added operator live proof endpoint `GET /subby-proof` for stage 24 with env-driven Subby bridge send, safe missing-config behavior, and mocked test coverage (no real network calls). Stage 24 remains `NEEDS_LIVE_SUBBY_PROOF` pending operator confirmation that the test event appears in the live Subby dashboard; stage 25 remains `NEEDS_LIVE_PROOF`.
 - 2026-05-06: Added safe non-secret diagnostics for stage 24 `/subby-proof` outbound bridge failures (`safe_error_type`, `safe_error_message`, and HTTP status passthrough for HTTPError), with sanitizer-based redaction for API key/token-like values and expanded mocked tests. Stage 24 remains `NEEDS_LIVE_SUBBY_PROOF`; stage 25 remains `NEEDS_LIVE_PROOF`.
 - 2026-05-06: Improved stage 24 outbound HTTP diagnostics in `UrllibSubbyBridgeEventSender` and `/subby-proof` to prioritize explicit POST/json bridge behavior, short timeout, sanitized HTTPError/rejection diagnostics (`bridge_http_status`, `safe_error_type`, `safe_error_message`), and optional `accepted` extraction from error/rejection payloads. Stage 24 remains `NEEDS_LIVE_SUBBY_PROOF`; stage 25 remains `NEEDS_LIVE_PROOF`.
+- 2026-05-06: Stage 26 implemented and validated with `python -m unittest discover -s tests` (101 tests, OK). `GET /` now renders the same landing content as `GET /demo`, landing output is polished with lightweight inline CSS while keeping decision-contract constraints, and `/subby-proof` timeout/read-timeout responses are now represented as `sent_unconfirmed` with `dashboard_check_required: true` and sanitized non-secret diagnostics. Stage 24 remains `NEEDS_LIVE_SUBBY_PROOF` and stage 25 remains `NEEDS_LIVE_PROOF`.

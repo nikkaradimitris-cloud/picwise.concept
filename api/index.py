@@ -51,7 +51,7 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
         return _response("200 OK", "application/json; charset=utf-8", body, start_response)
 
-    if path == "/demo":
+    if path in {"/", "/demo"}:
         query_string = str(environ.get("QUERY_STRING", ""))
         query = parse_qs(query_string).get("q", ["power bank 20000mah for iphone"])[0]
         html = _APP.demo_html(query)
@@ -63,7 +63,7 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
         return _response("200 OK", "application/json; charset=utf-8", body, start_response)
 
-    payload = {"error": "not_found", "available_routes": ["/health", "/demo", "/subby-proof"]}
+    payload = {"error": "not_found", "available_routes": ["/", "/health", "/demo", "/subby-proof"]}
     body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
     return _response("404 Not Found", "application/json; charset=utf-8", body, start_response)
 

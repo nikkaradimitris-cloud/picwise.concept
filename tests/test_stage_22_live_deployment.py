@@ -66,6 +66,33 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn("local_test_fixture", body)
         self.assertIn("not_production_data", body)
 
+    def test_root_route_returns_landing_html_not_not_found(self) -> None:
+        status, headers, body = _call_wsgi("/")
+        self.assertEqual(status, "200 OK")
+        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+        self.assertIn("<main", body.lower())
+        self.assertIn("Showing 4 decision-ready options for:", body)
+        self.assertNotIn("not_found", body)
+
+    def test_root_route_contains_four_primary_cards_and_one_recommended_marker(self) -> None:
+        _status, _headers, body = _call_wsgi("/")
+        self.assertEqual(body.count('<article class="choice-card'), 4)
+        self.assertEqual(body.count("Recommended by Picwise"), 1)
+
+    def test_landing_html_avoids_cart_checkout_and_fake_markers(self) -> None:
+        _status, _headers, body = _call_wsgi("/")
+        lowered = body.lower()
+        for forbidden in ("add to cart", "cart", "checkout", "e-shop"):
+            self.assertNotIn(forbidden, lowered)
+        for forbidden_fake in (
+            "fake revenue",
+            "fake conversion",
+            "fake review",
+            "fake rating",
+            "fake urgency",
+        ):
+            self.assertNotIn(forbidden_fake, lowered)
+
     def test_subby_proof_missing_env_returns_safe_missing_config(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
             status, headers, body = _call_wsgi("/subby-proof")
@@ -148,6 +175,37 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIsNone(response_payload["bridge_http_status"])
         self.assertEqual(response_payload["safe_error_type"], "URLError")
         self.assertIn("safe_error_message", response_payload)
+        self.assertNotIn("secret-live-key-value", body)
+        self.assertFalse(response_payload["secret_values_exposed"])
+
+    def test_subby_proof_timeout_returns_sent_unconfirmed_with_dashboard_check(self) -> None:
+        class TimeoutSender:
+            def send(
+                self,
+                *,
+                endpoint: str,
+                headers: dict[str, str],
+                payload: dict[str, Any],
+            ) -> tuple[int, dict[str, Any]]:
+                _ = (endpoint, headers, payload)
+                raise TimeoutError("read timed out for secret-live-key-value")
+
+        env = {
+            "PICWISE_SUBBY_ENDPOINT": "https://manager.subby.cloud/events/bridge",
+            "PICWISE_SUBBY_PROJECT_ID": "picwise-prod",
+            "PICWISE_SUBBY_API_KEY": "secret-live-key-value",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with patch("api.index.UrllibSubbyBridgeEventSender", return_value=TimeoutSender()):
+                status, _headers, body = _call_wsgi("/subby-proof")
+        response_payload = json.loads(body)
+        self.assertEqual(status, "200 OK")
+        self.assertEqual(response_payload["status"], "sent_unconfirmed")
+        self.assertIsNone(response_payload["bridge_http_status"])
+        self.assertTrue(response_payload["dashboard_check_required"])
+        self.assertEqual(response_payload["safe_error_type"], "TimeoutError")
+        self.assertIn("safe_error_message", response_payload)
+        self.assertIn("response timed out", response_payload["message"])
         self.assertNotIn("secret-live-key-value", body)
         self.assertFalse(response_payload["secret_values_exposed"])
 

@@ -310,6 +310,21 @@ def send_subby_live_proof_event(
         return response
     except (URLError, TimeoutError, socket.timeout, ssl.SSLError) as error:
         safe_message = _sanitize_error_message(str(error), api_key=api_key, env=source)
+        if _is_timeout_error(error):
+            return {
+                "status": "sent_unconfirmed",
+                "bridge_http_status": None,
+                "dashboard_check_required": True,
+                "safe_error_type": "TimeoutError",
+                "safe_error_message": safe_message,
+                "message": (
+                    "Request may have reached Subby but response timed out. "
+                    "Check Subby dashboard for accepted payload."
+                ),
+                "project_id": project_id,
+                "endpoint_host": endpoint_host,
+                "secret_values_exposed": False,
+            }
         return {
             "status": "error",
             "bridge_http_status": None,
@@ -412,6 +427,22 @@ def _extract_http_error_details(error: HTTPError) -> tuple[str, dict[str, Any]]:
             body_snippet = body_text
         return f"{reason}: {body_snippet}", parsed_body
     return reason, parsed_body
+
+
+def _is_timeout_error(error: Exception) -> bool:
+    if isinstance(error, (TimeoutError, socket.timeout)):
+        return True
+    if isinstance(error, ssl.SSLError) and "timed out" in str(error).lower():
+        return True
+    if isinstance(error, URLError):
+        reason = getattr(error, "reason", None)
+        if isinstance(reason, (TimeoutError, socket.timeout)):
+            return True
+        if reason and "timed out" in str(reason).lower():
+            return True
+        if "timed out" in str(error).lower():
+            return True
+    return "timed out" in str(error).lower()
 
 
 def _build_rejected_http_message(
