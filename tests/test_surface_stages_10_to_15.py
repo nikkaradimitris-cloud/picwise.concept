@@ -83,6 +83,12 @@ def build_decision_output(
 
 
 class LandingUiTests(unittest.TestCase):
+    @staticmethod
+    def _extract_inline_css(html: str) -> str:
+        start = html.index("<style>") + len("<style>")
+        end = html.index("</style>")
+        return html[start:end]
+
     def test_landing_topbar_precedes_hero_and_brand_is_visible(self) -> None:
         html = render_landing_surface(build_decision_output())
         self.assertIn('class="pw-topbar"', html)
@@ -147,6 +153,27 @@ class LandingUiTests(unittest.TestCase):
         html = render_landing_surface(build_decision_output(include_more=True))
         self.assertIn('class="pw-more"', html)
         self.assertEqual(html.count('<li data-choice-id="m'), 4)
+
+    def test_css_has_no_negative_margin_top_on_shell_or_hero(self) -> None:
+        css = self._extract_inline_css(render_landing_surface(build_decision_output())).replace(" ", "")
+        self.assertNotIn(".pw-shell{margin-top:-", css)
+        self.assertNotIn(".pw-hero{margin-top:-", css)
+
+    def test_css_has_no_negative_translate_for_topbar_or_hero(self) -> None:
+        css = self._extract_inline_css(render_landing_surface(build_decision_output())).replace(" ", "")
+        self.assertNotIn(".pw-topbar{transform:translateY(-", css)
+        self.assertNotIn(".pw-hero{transform:translateY(-", css)
+        self.assertNotIn("translateY(-", css)
+
+    def test_topbar_is_not_absolutely_positioned(self) -> None:
+        css = self._extract_inline_css(render_landing_surface(build_decision_output())).replace(" ", "")
+        self.assertIn(".pw-topbar{position:relative;", css)
+        self.assertNotIn(".pw-topbar{position:absolute", css)
+
+    def test_hero_has_clear_spacing_below_topbar(self) -> None:
+        css = self._extract_inline_css(render_landing_surface(build_decision_output())).replace(" ", "")
+        self.assertIn(".pw-topbar{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0028px;padding:2px0;min-height:42px;}", css)
+        self.assertIn(".pw-hero{position:relative;z-index:1;text-align:center;max-width:860px;margin:0auto24px;padding-top:0;}", css)
 
 
 class CtaRedirectTrackingTests(unittest.TestCase):
