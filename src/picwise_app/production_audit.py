@@ -250,8 +250,13 @@ def _stage_24_progress_honest(
     subby_readiness_status: str,
 ) -> bool:
     if live_subby_proven:
-        return stage24_status in {"PASSED", "INTEGRATION_READY", "NEEDS_LIVE_SUBBY_CONFIG"}
-    if stage24_status not in {"INTEGRATION_READY", "NEEDS_LIVE_SUBBY_CONFIG"}:
+        return stage24_status in {
+            "PASSED",
+            "INTEGRATION_READY",
+            "NEEDS_LIVE_SUBBY_CONFIG",
+            "NEEDS_LIVE_SUBBY_PROOF",
+        }
+    if stage24_status not in {"INTEGRATION_READY", "NEEDS_LIVE_SUBBY_CONFIG", "NEEDS_LIVE_SUBBY_PROOF"}:
         return False
     if subby_readiness_status == "NEEDS_LIVE_SUBBY_CONFIG" and stage24_status == "PASSED":
         return False

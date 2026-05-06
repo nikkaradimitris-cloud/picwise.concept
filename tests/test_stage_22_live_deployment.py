@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import io
+import json
+import os
 import sys
 import unittest
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -57,6 +60,120 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn(query, body)
         self.assertIn("local_test_fixture", body)
         self.assertIn("not_production_data", body)
+
+    def test_subby_proof_missing_env_returns_safe_missing_config(self) -> None:
+        with patch.dict(os.environ, {}, clear=True):
+            status, headers, body = _call_wsgi("/subby-proof")
+        payload = json.loads(body)
+        self.assertEqual(status, "200 OK")
+        self.assertEqual(headers["Content-Type"], "application/json; charset=utf-8")
+        self.assertEqual(payload["status"], "missing_config")
+        self.assertEqual(
+            payload["missing"],
+            [
+                "PICWISE_SUBBY_ENDPOINT",
+                "PICWISE_SUBBY_PROJECT_ID",
+                "PICWISE_SUBBY_API_KEY",
+            ],
+        )
+        self.assertFalse(payload["secret_values_exposed"])
+
+    def test_subby_proof_does_not_expose_api_key_in_response(self) -> None:
+        class SpySender:
+            def __init__(self) -> None:
+                self.called = False
+                self.headers: dict[str, str] = {}
+                self.payload: dict[str, Any] = {}
+
+            def send(
+                self,
+                *,
+                endpoint: str,
+                headers: dict[str, str],
+                payload: dict[str, Any],
+            ) -> tuple[int, dict[str, Any]]:
+                self.called = True
+                self.headers = headers
+                self.payload = payload
+                _ = endpoint
+                return 202, {"accepted": True}
+
+        sender = SpySender()
+        env = {
+            "PICWISE_SUBBY_ENDPOINT": "https://bridge.subby.cloud/events",
+            "PICWISE_SUBBY_PROJECT_ID": "picwise-prod",
+            "PICWISE_SUBBY_API_KEY": "secret-live-key-value",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with patch("api.index.UrllibSubbyBridgeEventSender", return_value=sender):
+                status, _headers, body = _call_wsgi("/subby-proof")
+        payload = json.loads(body)
+        self.assertEqual(status, "200 OK")
+        self.assertTrue(sender.called)
+        self.assertNotIn("secret-live-key-value", body)
+        self.assertNotIn("api_key", payload)
+        self.assertFalse(payload["secret_values_exposed"])
+        self.assertEqual(payload["status"], "sent")
+        self.assertEqual(payload["bridge_http_status"], 202)
+        self.assertTrue(payload["accepted"])
+
+    def test_subby_proof_sender_payload_and_headers_are_correct_and_mockable(self) -> None:
+        class SpySender:
+            def __init__(self) -> None:
+                self.calls = 0
+                self.endpoint = ""
+                self.headers: dict[str, str] = {}
+                self.payload: dict[str, Any] = {}
+
+            def send(
+                self,
+                *,
+                endpoint: str,
+                headers: dict[str, str],
+                payload: dict[str, Any],
+            ) -> tuple[int, dict[str, Any]]:
+                self.calls += 1
+                self.endpoint = endpoint
+                self.headers = headers
+                self.payload = payload
+                return 200, {"accepted": True}
+
+        sender = SpySender()
+        env = {
+            "PICWISE_SUBBY_ENDPOINT": "https://bridge.subby.cloud/events",
+            "PICWISE_SUBBY_PROJECT_ID": "picwise-prod",
+            "PICWISE_SUBBY_API_KEY": "super-secret-key",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with patch("api.index.UrllibSubbyBridgeEventSender", return_value=sender):
+                _status, _headers, body = _call_wsgi("/subby-proof")
+        response_payload = json.loads(body)
+        self.assertEqual(sender.calls, 1)
+        self.assertEqual(sender.endpoint, "https://bridge.subby.cloud/events")
+        self.assertEqual(sender.headers["X-Bridge-Project-ID"], "picwise-prod")
+        self.assertEqual(sender.headers["X-Bridge-API-Key"], "super-secret-key")
+        self.assertEqual(sender.headers["Content-Type"], "application/json")
+
+        self.assertEqual(sender.payload["schema_version"], "1.0")
+        self.assertEqual(sender.payload["source_app"], "picwise")
+        self.assertEqual(sender.payload["source"], "picwise_live_proof")
+        self.assertEqual(sender.payload["project_id"], "picwise-prod")
+        self.assertEqual(sender.payload["signal_type"], "health/live_proof")
+        self.assertTrue(sender.payload["test_mode"])
+        self.assertTrue(sender.payload["operator_generated"])
+        self.assertEqual(sender.payload["payload"]["domain"], "picwise.subby.cloud")
+        self.assertEqual(sender.payload["payload"]["route"], "/subby-proof")
+        self.assertEqual(sender.payload["payload"]["proof_type"], "live_subby_bridge_event")
+        self.assertTrue(sender.payload["payload"]["no_revenue"])
+        self.assertTrue(sender.payload["payload"]["no_conversion"])
+        self.assertEqual(sender.payload["payload"]["missing_data_state"], "not_applicable")
+        self.assertNotIn("revenue", sender.payload)
+        self.assertNotIn("conversion", sender.payload)
+
+        self.assertEqual(response_payload["project_id"], "picwise-prod")
+        self.assertEqual(response_payload["endpoint_host"], "bridge.subby.cloud")
+        self.assertNotIn("X-Bridge-API-Key", response_payload)
+        self.assertNotIn("super-secret-key", body)
 
 
 class DeploymentConfigAndDocsTests(unittest.TestCase):

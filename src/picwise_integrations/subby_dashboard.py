@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
+import json
 import os
 from typing import Any, Mapping, Protocol
+from urllib.error import HTTPError
+from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 
 from picwise_contracts import ContractValidationError, DecisionOutput
 from picwise_surface import build_dashboard_compatibility_payload
@@ -13,6 +18,12 @@ CANONICAL_MISSING_DATA_VALUES = {
     "not_applicable",
     "unknown",
 }
+
+SUBBY_PROOF_REQUIRED_ENV_VARS = (
+    "PICWISE_SUBBY_ENDPOINT",
+    "PICWISE_SUBBY_PROJECT_ID",
+    "PICWISE_SUBBY_API_KEY",
+)
 
 
 class SubbyTransport(Protocol):
@@ -106,6 +117,40 @@ class NoopSubbyHttpSender:
     ) -> SubbyHttpResponse:
         _ = (endpoint, project_id, api_key, payload)
         return SubbyHttpResponse(accepted=False, reason="No live sender configured.")
+
+
+class SubbyBridgeEventSender(Protocol):
+    def send(
+        self,
+        *,
+        endpoint: str,
+        headers: Mapping[str, str],
+        payload: dict[str, Any],
+    ) -> tuple[int, dict[str, Any]]:
+        """Send one Subby bridge event and return HTTP status + response JSON."""
+
+
+class UrllibSubbyBridgeEventSender:
+    def __init__(self, *, timeout_seconds: float = 8.0) -> None:
+        self._timeout_seconds = timeout_seconds
+
+    def send(
+        self,
+        *,
+        endpoint: str,
+        headers: Mapping[str, str],
+        payload: dict[str, Any],
+    ) -> tuple[int, dict[str, Any]]:
+        body = json.dumps(payload, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
+        request = Request(endpoint, data=body, headers=dict(headers), method="POST")
+        try:
+            with urlopen(request, timeout=self._timeout_seconds) as response:
+                status_code = int(getattr(response, "status", 200))
+                response_body = response.read().decode("utf-8")
+                return status_code, _parse_response_json(response_body)
+        except HTTPError as http_error:
+            response_body = http_error.read().decode("utf-8") if http_error.fp is not None else ""
+            return int(http_error.code), _parse_response_json(response_body)
 
 
 def load_subby_config_from_env(env: Mapping[str, str] | None = None) -> SubbyConfig:
@@ -211,3 +256,99 @@ def _find_forbidden_fake_markers(payload: Any) -> list[str]:
             if marker in lowered:
                 hits.append(payload)
     return hits
+
+
+def send_subby_live_proof_event(
+    *,
+    env: Mapping[str, str] | None = None,
+    sender: SubbyBridgeEventSender | None = None,
+    now_utc: datetime | None = None,
+) -> dict[str, Any]:
+    source = env if env is not None else os.environ
+    missing = [
+        var_name for var_name in SUBBY_PROOF_REQUIRED_ENV_VARS if not str(source.get(var_name, "")).strip()
+    ]
+    if missing:
+        return {
+            "status": "missing_config",
+            "missing": missing,
+            "secret_values_exposed": False,
+        }
+
+    endpoint = str(source.get("PICWISE_SUBBY_ENDPOINT", "")).strip()
+    project_id = str(source.get("PICWISE_SUBBY_PROJECT_ID", "")).strip()
+    api_key = str(source.get("PICWISE_SUBBY_API_KEY", "")).strip()
+    endpoint_host = urlparse(endpoint).netloc
+
+    payload = _build_live_proof_payload(project_id=project_id, now_utc=now_utc)
+    headers = _build_live_proof_headers(project_id=project_id, api_key=api_key)
+    selected_sender = sender or UrllibSubbyBridgeEventSender()
+    try:
+        bridge_http_status, bridge_payload = selected_sender.send(
+            endpoint=endpoint,
+            headers=headers,
+            payload=payload,
+        )
+    except Exception:
+        return {
+            "status": "error",
+            "bridge_http_status": None,
+            "project_id": project_id,
+            "endpoint_host": endpoint_host,
+            "secret_values_exposed": False,
+        }
+
+    response: dict[str, Any] = {
+        "status": "sent" if 200 <= bridge_http_status < 300 else "rejected",
+        "bridge_http_status": bridge_http_status,
+        "project_id": project_id,
+        "endpoint_host": endpoint_host,
+        "secret_values_exposed": False,
+    }
+    if isinstance(bridge_payload, Mapping) and "accepted" in bridge_payload:
+        response["accepted"] = bool(bridge_payload.get("accepted"))
+    return response
+
+
+def _build_live_proof_payload(*, project_id: str, now_utc: datetime | None = None) -> dict[str, Any]:
+    timestamp_source = now_utc or datetime.now(timezone.utc)
+    timestamp = timestamp_source.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    return {
+        "schema_version": "1.0",
+        "source_app": "picwise",
+        "source": "picwise_live_proof",
+        "project_id": project_id,
+        "timestamp": timestamp,
+        "signal_type": "health/live_proof",
+        "test_mode": True,
+        "operator_generated": True,
+        "payload": {
+            "domain": "picwise.subby.cloud",
+            "route": "/subby-proof",
+            "proof_type": "live_subby_bridge_event",
+            "no_revenue": True,
+            "no_conversion": True,
+            "missing_data_state": "not_applicable",
+        },
+    }
+
+
+def _build_live_proof_headers(*, project_id: str, api_key: str) -> dict[str, str]:
+    return {
+        "X-Bridge-Project-ID": project_id,
+        "X-Bridge-API-Key": api_key,
+        "Content-Type": "application/json",
+    }
+
+
+def _parse_response_json(response_body: str) -> dict[str, Any]:
+    text = response_body.strip()
+    if not text:
+        return {}
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        return {}
+    if isinstance(parsed, dict):
+        return parsed
+    return {}

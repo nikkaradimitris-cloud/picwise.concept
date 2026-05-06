@@ -53,7 +53,7 @@ PASSED:
   - 21. Production V1 audit closure (needs live proof)
 - 22. Live deployment to picwise.subby.cloud — PASSED
 - 23. Real product/feed and affiliate redirect connection — NEEDS_REAL_FEED_CONFIG
-- 24. Live Subby dashboard event integration — NEEDS_LIVE_SUBBY_CONFIG
+- 24. Live Subby dashboard event integration — NEEDS_LIVE_SUBBY_PROOF
 - 25. Production V1 live audit closure — NEEDS_LIVE_PROOF
 - Stage 22 has operator-supplied live URL proof; stages 23-25 remain non-PASSED pending real provider/Subby credentials and live proof.
 
@@ -84,7 +84,7 @@ PASSED:
 | 21 | Production V1 audit closure | NEEDS_LIVE_PROOF |
 | 22 | Live deployment to picwise.subby.cloud | PASSED |
 | 23 | Real product/feed and affiliate redirect connection | NEEDS_REAL_FEED_CONFIG |
-| 24 | Live Subby dashboard event integration | NEEDS_LIVE_SUBBY_CONFIG |
+| 24 | Live Subby dashboard event integration | NEEDS_LIVE_SUBBY_PROOF |
 | 25 | Production V1 live audit closure | NEEDS_LIVE_PROOF |
 
 ## 5) Completion Rule
@@ -124,4 +124,5 @@ Obtain real feed/affiliate provider credentials and proof, plus live Subby endpo
 - 2026-05-06: Group 3 stages 10-15 implemented under src/picwise_surface with tests in tests/test_surface_stages_10_to_15.py and docs/STAGE_10_TO_15_PRODUCT_SURFACE_READINESS.md. Test command: python -m unittest discover -s tests. Result: 55 tests passed (OK). Stages 10-15 marked PASSED for local implementation/test status only; no live deployment, no live dashboard/Subby channel, no real product feed, and no real revenue/conversion tracking.
 - 2026-05-06: Integrated stages 16-21 implemented under src/picwise_app, src/picwise_feeds, src/picwise_redirects, src/picwise_integrations with docs/STAGE_16_TO_21_APP_PRODUCTION_PATH.md, docs/STAGE_19_LIVE_APP_DEPLOYMENT.md, docs/STAGE_20_LIVE_SUBBY_DASHBOARD_INTEGRATION.md, deployment templates, and tests/test_app_stages_16_to_21.py. Test command: python -m unittest discover -s tests. Result: 72 tests passed (OK). Statuses updated honestly: 16-18 PASSED, 19 DEPLOYMENT_READY, 20 INTEGRATION_READY, 21 NEEDS_LIVE_PROOF.
 - 2026-05-06: Stage 22 deployment-readiness layer added with WSGI deployment entrypoints (`wsgi.py`, `api/index.py`), Vercel routing config (`vercel.json`), stage doc (`docs/STAGE_22_LIVE_DEPLOYMENT_TO_PICWISE_SUBBY_CLOUD.md`), and deployment-entrypoint tests. Status set to `DEPLOYMENT_READY` pending real live URL proof at picwise.subby.cloud.
-- 2026-05-06: Stage 22 upgraded to `PASSED` using operator-supplied live proof: `https://picwise.subby.cloud/health` (OK) and `https://picwise.subby.cloud/demo` (OK). Added stage 23-25 live-production integration readiness layer: env-driven feed/affiliate/Subby configs, strict anti-fake and anti-commission validations, honest readiness/audit gates, `docs/STAGE_23_TO_25_LIVE_PRODUCTION_INTEGRATION.md`, and test coverage. Honest statuses remain: 23 `NEEDS_REAL_FEED_CONFIG`, 24 `NEEDS_LIVE_SUBBY_CONFIG`, 25 `NEEDS_LIVE_PROOF`.
+- 2026-05-06: Stage 22 upgraded to `PASSED` using operator-supplied live proof: `https://picwise.subby.cloud/health` (OK) and `https://picwise.subby.cloud/demo` (OK). Added stage 23-25 live-production integration readiness layer: env-driven feed/affiliate/Subby configs, strict anti-fake and anti-commission validations, honest readiness/audit gates, `docs/STAGE_23_TO_25_LIVE_PRODUCTION_INTEGRATION.md`, and test coverage. Honest statuses remain: 23 `NEEDS_REAL_FEED_CONFIG`, 24 `NEEDS_LIVE_SUBBY_PROOF`, 25 `NEEDS_LIVE_PROOF`.
+- 2026-05-06: Added operator live proof endpoint `GET /subby-proof` for stage 24 with env-driven Subby bridge send, safe missing-config behavior, and mocked test coverage (no real network calls). Stage 24 remains `NEEDS_LIVE_SUBBY_PROOF` pending operator confirmation that the test event appears in the live Subby dashboard; stage 25 remains `NEEDS_LIVE_PROOF`.

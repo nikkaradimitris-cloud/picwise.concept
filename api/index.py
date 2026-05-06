@@ -12,6 +12,10 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from picwise_app import PicwiseLocalApp  # noqa: E402
+from picwise_integrations import (  # noqa: E402
+    UrllibSubbyBridgeEventSender,
+    send_subby_live_proof_event,
+)
 
 StartResponse = Callable[[str, list[tuple[str, str]]], None]
 
@@ -54,7 +58,12 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
-    payload = {"error": "not_found", "available_routes": ["/health", "/demo"]}
+    if path == "/subby-proof":
+        payload = send_subby_live_proof_event(sender=UrllibSubbyBridgeEventSender())
+        body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
+        return _response("200 OK", "application/json; charset=utf-8", body, start_response)
+
+    payload = {"error": "not_found", "available_routes": ["/health", "/demo", "/subby-proof"]}
     body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
     return _response("404 Not Found", "application/json; charset=utf-8", body, start_response)
 
