@@ -49,12 +49,10 @@ class PicwiseLocalApp:
             "non_live_demo:true -->"
         )
         return rendered.replace(
-            "</main>",
+            "</body>",
             (
-                f'<section class="demo-metadata"><p>Demo data source: local_test_fixture '
-                f"(not_production_data).</p></section>"
                 f'<script type="application/json" id="redirect-preview">{payload_text}</script>'
-                f"{marker}</main>"
+                f"{marker}</body>"
             ),
         )
 

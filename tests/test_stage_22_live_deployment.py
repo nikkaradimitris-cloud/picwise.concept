@@ -80,8 +80,10 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn('class="pw-search-shell"', body)
         self.assertIn('class="pw-search-icon"', body)
         self.assertIn('class="pw-search-button"', body)
+        self.assertIn('class="pw-search-button-icon"', body)
         self.assertIn('name="q"', body)
         self.assertIn(f'value="{query}"', body)
+        self.assertNotIn('class="pw-search-button" type="submit" aria-label="Search">→</button>', body)
 
     def test_root_route_contains_four_primary_cards_and_one_recommended_marker(self) -> None:
         _status, _headers, body = _call_wsgi("/")
@@ -122,6 +124,8 @@ class DeploymentEntrypointTests(unittest.TestCase):
     def test_landing_contains_header_nav_and_theme_toggle_pill(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
         self.assertIn('class="pw-topbar"', body)
+        self.assertIn('class="pw-hero"', body)
+        self.assertLess(body.index('class="pw-topbar"'), body.index('class="pw-hero"'))
         self.assertIn('class="pw-brand"', body)
         self.assertIn("picwise", body)
         self.assertIn("Πώς λειτουργεί", body)
@@ -150,6 +154,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn("Όροι", body)
         self.assertIn("Ρυθμίσεις", body)
         self.assertIn("Design by subby.cloud", body)
+        self.assertEqual(body.count("Design by subby.cloud"), 1)
         self.assertNotIn("Designed by Subby.cloud", body)
         lowered = body.lower()
         self.assertNotIn("advertising", lowered)
@@ -164,6 +169,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "Demo data source: local_test_fixture (not_production_data).",
             body,
         )
+        self.assertEqual(body.count("Demo data source"), 1)
         self.assertIn('class="pw-demo-note"', body)
         demo_note_index = body.index('<p class="pw-demo-note">')
         footer_index = body.index('<footer class="pw-footer">')

@@ -83,6 +83,14 @@ def build_decision_output(
 
 
 class LandingUiTests(unittest.TestCase):
+    def test_landing_topbar_precedes_hero_and_brand_is_visible(self) -> None:
+        html = render_landing_surface(build_decision_output())
+        self.assertIn('class="pw-topbar"', html)
+        self.assertIn('class="pw-hero"', html)
+        self.assertLess(html.index('class="pw-topbar"'), html.index('class="pw-hero"'))
+        self.assertIn('class="pw-brand"', html)
+        self.assertIn("picwise", html)
+
     def test_landing_renders_exactly_4_primary_cards(self) -> None:
         html = render_landing_surface(build_decision_output())
         self.assertEqual(html.count('<article class="pw-card'), 4)
@@ -90,6 +98,17 @@ class LandingUiTests(unittest.TestCase):
     def test_landing_renders_exactly_1_recommended_card(self) -> None:
         html = render_landing_surface(build_decision_output())
         self.assertEqual(html.count("Recommended by Picwise"), 1)
+        self.assertIn("pw-rec-bubble-top", html)
+        self.assertIn("pw-rec-bubble-bottom", html)
+        self.assertIn("pw-rec-pulse-1", html)
+        self.assertIn("pw-rec-pulse-2", html)
+        self.assertIn("pw-rec-pulse-3", html)
+
+    def test_search_button_uses_magnifier_icon_not_arrow_only(self) -> None:
+        html = render_landing_surface(build_decision_output())
+        self.assertIn('class="pw-search-button"', html)
+        self.assertIn('class="pw-search-button-icon"', html)
+        self.assertNotIn('class="pw-search-button" type="submit" aria-label="Search">→</button>', html)
 
     def test_landing_includes_query_confirmation(self) -> None:
         decision = build_decision_output()
@@ -100,12 +119,21 @@ class LandingUiTests(unittest.TestCase):
     def test_landing_does_not_render_infinite_list_behavior(self) -> None:
         html = render_landing_surface(build_decision_output())
         self.assertIn('data-card-count="4"', html)
-        self.assertNotIn("infinite", html.lower())
+        self.assertNotIn("infinite scroll", html.lower())
 
     def test_landing_does_not_include_cart_checkout_eshop_behavior(self) -> None:
         html = render_landing_surface(build_decision_output())
         for forbidden in ("add to cart", "cart", "checkout", "e-shop"):
             self.assertNotIn(forbidden, html.lower())
+
+    def test_landing_has_single_demo_note_before_footer_and_single_credit(self) -> None:
+        html = render_landing_surface(build_decision_output())
+        self.assertEqual(html.count("Demo data source"), 1)
+        self.assertIn('class="pw-demo-note"', html)
+        self.assertIn('class="pw-footer"', html)
+        self.assertLess(html.index('class="pw-demo-note"'), html.index('class="pw-footer"'))
+        self.assertEqual(html.count("Design by subby.cloud"), 1)
+        self.assertNotIn(">Night mode<", html)
 
     def test_more_section_is_secondary_and_max_4_choices(self) -> None:
         html = render_landing_surface(build_decision_output(include_more=True))

@@ -98,6 +98,10 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertIn('class="pw-search-shell"', body)
         self.assertIn('class="pw-search-icon"', body)
         self.assertIn('class="pw-search-button"', body)
+        self.assertIn('class="pw-search-button-icon"', body)
+        self.assertNotIn('class="pw-search-button" type="submit" aria-label="Search">→</button>', body)
+        self.assertIn('class="pw-hero"', body)
+        self.assertLess(body.index('class="pw-topbar"'), body.index('class="pw-hero"'))
         self.assertIn('id="theme-toggle"', body)
         self.assertIn("☀ Day", body)
         self.assertIn("☾ Night", body)
@@ -117,9 +121,11 @@ class AppHttpEndpointTests(unittest.TestCase):
             "Demo data source: local_test_fixture (not_production_data).",
             body,
         )
+        self.assertEqual(body.count("Demo data source"), 1)
         demo_note_index = body.index('<p class="pw-demo-note">')
         footer_index = body.index('<footer class="pw-footer">')
         self.assertLess(demo_note_index, footer_index)
+        self.assertEqual(body.count("Design by subby.cloud"), 1)
 
     def test_demo_has_exactly_four_primary_cards_and_one_recommended(self) -> None:
         body = self._fetch("/demo")
