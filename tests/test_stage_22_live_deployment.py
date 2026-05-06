@@ -74,10 +74,37 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn("Showing 4 decision-ready options for:", body)
         self.assertNotIn("not_found", body)
 
+    def test_demo_has_search_form_with_query_value(self) -> None:
+        query = "best office chair under 200"
+        _status, _headers, body = _call_wsgi("/demo", f"q={quote(query)}")
+        self.assertIn('<form class="search-form" action="/demo" method="get">', body)
+        self.assertIn('name="q"', body)
+        self.assertIn(f'value="{query}"', body)
+
     def test_root_route_contains_four_primary_cards_and_one_recommended_marker(self) -> None:
         _status, _headers, body = _call_wsgi("/")
         self.assertEqual(body.count('<article class="choice-card'), 4)
         self.assertEqual(body.count("Recommended by Picwise"), 1)
+
+    def test_recommended_card_has_badge_and_bubble_elements(self) -> None:
+        _status, _headers, body = _call_wsgi("/demo")
+        self.assertIn("Recommended by Picwise", body)
+        self.assertIn('<div class="recommended-bubbles"', body)
+        self.assertIn("Best fit", body)
+        self.assertIn("Fast decision", body)
+
+    def test_landing_contains_theme_toggle_control(self) -> None:
+        _status, _headers, body = _call_wsgi("/demo")
+        self.assertIn('id="theme-toggle"', body)
+        self.assertIn("Toggle day/night theme", body)
+        self.assertIn("localStorage", body)
+
+    def test_landing_contains_minimal_bottom_bar_credit(self) -> None:
+        _status, _headers, body = _call_wsgi("/demo")
+        self.assertIn("Designed by Subby.cloud", body)
+        lowered = body.lower()
+        self.assertNotIn("advertising", lowered)
+        self.assertNotIn("η τρίτη δεκαετία", lowered)
 
     def test_landing_html_avoids_cart_checkout_and_fake_markers(self) -> None:
         _status, _headers, body = _call_wsgi("/")

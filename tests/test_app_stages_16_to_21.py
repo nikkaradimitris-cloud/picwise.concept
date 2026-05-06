@@ -67,6 +67,12 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertIn(query, body)
         self.assertIn("Showing 4 decision-ready options for:", body)
 
+    def test_demo_includes_search_theme_and_footer_controls(self) -> None:
+        body = self._fetch("/demo?q=power+bank")
+        self.assertIn('<form class="search-form" action="/demo" method="get">', body)
+        self.assertIn('id="theme-toggle"', body)
+        self.assertIn("Designed by Subby.cloud", body)
+
     def test_demo_has_exactly_four_primary_cards_and_one_recommended(self) -> None:
         body = self._fetch("/demo")
         self.assertEqual(body.count('<article class="choice-card'), 4)
