@@ -7,7 +7,7 @@ Official human-readable progress tracker for Picwise Production.
 - Project: Picwise Production
 - Primary domain: picwise.subby.cloud
 - Product type: decision engine, not search engine
-- Current phase: Local V1 product-surface readiness layer completed (stages 10-15)
+- Current phase: Local app implementation + production path readiness layer completed through stages 16-21 (with live-proof blockers)
 
 ## 2) Source Of Truth Order
 
@@ -44,6 +44,13 @@ PASSED:
   - 13. Dashboard/Subby event compatibility
   - 14. Performance audit
   - 15. Final V1 audit closure
+- App/production path stages 16-21 implemented with honest non-live statuses:
+  - 16. App implementation foundation
+  - 17. Real product feed adapter
+  - 18. Affiliate/provider redirect integration
+  - 19. Live app deployment (deployment readiness only)
+  - 20. Live Subby dashboard integration (integration readiness only)
+  - 21. Production V1 audit closure (needs live proof)
 - Local implementation remains non-live and non-deployed
 
 ## 4) Locked Implementation Roadmap Status
@@ -65,6 +72,12 @@ PASSED:
 | 13 | Dashboard/Subby event compatibility | PASSED |
 | 14 | Performance audit | PASSED |
 | 15 | Final V1 audit closure | PASSED |
+| 16 | App implementation foundation | PASSED |
+| 17 | Real product feed adapter | PASSED |
+| 18 | Affiliate/provider redirect integration | PASSED |
+| 19 | Live app deployment | DEPLOYMENT_READY |
+| 20 | Live Subby dashboard integration | INTEGRATION_READY |
+| 21 | Production V1 audit closure | NEEDS_LIVE_PROOF |
 
 ## 5) Completion Rule
 
@@ -79,7 +92,7 @@ A step may only be marked PASSED when there is:
 
 ## 6) Current Next Step
 
-Prepare real integration stages (live redirect transport, browser/RUM performance audit, and dashboard channel connection) under explicit non-fake and neutrality rules.
+Obtain actual live deployment proof and live Subby endpoint/key proof before upgrading stages 19-21 to PASSED.
 
 ## 7) Do-Not-Claim Rules
 
@@ -87,7 +100,10 @@ Prepare real integration stages (live redirect transport, browser/RUM performanc
 - Do not claim live dashboard/Subby integration.
 - Do not claim real product feed integration.
 - Do not claim live revenue/conversion tracking.
-- Current status is local implementation + local tests for stages 1-15.
+- 19. Live app deployment must NOT be PASSED unless actual live deployment proof exists.
+- 20. Live Subby dashboard integration must NOT be PASSED unless actual live Subby proof exists.
+- 21. Production V1 audit closure must NOT be PASSED unless both live deployment and live Subby proofs exist.
+- Current status is local implementation + local tests through stage 18, with readiness-only status for stages 19-20 and audit `NEEDS_LIVE_PROOF` for stage 21.
 
 ## 8) Progress Log
 
@@ -95,3 +111,4 @@ Prepare real integration stages (live redirect transport, browser/RUM performanc
 - 2026-05-06: Contracts/schemas stage implemented under src/picwise_contracts with tests in tests/test_contracts.py. Test command: python -m unittest discover -s tests. Result: 16 tests passed (OK). Next step is Core decision engine.
 - 2026-05-06: Engine stages 5-9 implemented under src/picwise_engine with integrated tests in tests/test_engine_stages_5_to_9.py. Test command: python -m unittest discover -s tests. Result: 36 tests passed (OK). Stages 5-9 marked PASSED. No frontend/backend/dashboard/live redirect implementation added.
 - 2026-05-06: Group 3 stages 10-15 implemented under src/picwise_surface with tests in tests/test_surface_stages_10_to_15.py and docs/STAGE_10_TO_15_PRODUCT_SURFACE_READINESS.md. Test command: python -m unittest discover -s tests. Result: 55 tests passed (OK). Stages 10-15 marked PASSED for local implementation/test status only; no live deployment, no live dashboard/Subby channel, no real product feed, and no real revenue/conversion tracking.
+- 2026-05-06: Integrated stages 16-21 implemented under src/picwise_app, src/picwise_feeds, src/picwise_redirects, src/picwise_integrations with docs/STAGE_16_TO_21_APP_PRODUCTION_PATH.md, docs/STAGE_19_LIVE_APP_DEPLOYMENT.md, docs/STAGE_20_LIVE_SUBBY_DASHBOARD_INTEGRATION.md, deployment templates, and tests/test_app_stages_16_to_21.py. Test command: python -m unittest discover -s tests. Result: 72 tests passed (OK). Statuses updated honestly: 16-18 PASSED, 19 DEPLOYMENT_READY, 20 INTEGRATION_READY, 21 NEEDS_LIVE_PROOF.

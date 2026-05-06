@@ -17,6 +17,12 @@
 13. Dashboard/Subby event compatibility
 14. Performance audit
 15. Final V1 audit closure
+16. App implementation foundation
+17. Real product feed adapter
+18. Affiliate/provider redirect integration
+19. Live app deployment
+20. Live Subby dashboard integration
+21. Production V1 audit closure
 
 ## Step Completion Requirements (Apply To Every Step)
 
