@@ -7,6 +7,7 @@ import sys
 import unittest
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from unittest.mock import patch
 
@@ -116,6 +117,102 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(payload["status"], "sent")
         self.assertEqual(payload["bridge_http_status"], 202)
         self.assertTrue(payload["accepted"])
+
+    def test_subby_proof_urlerror_returns_safe_diagnostics_without_secret(self) -> None:
+        class FailingSender:
+            def send(
+                self,
+                *,
+                endpoint: str,
+                headers: dict[str, str],
+                payload: dict[str, Any],
+            ) -> tuple[int, dict[str, Any]]:
+                _ = (endpoint, headers, payload)
+                raise URLError("upstream timeout for secret-live-key-value")
+
+        env = {
+            "PICWISE_SUBBY_ENDPOINT": "https://manager.subby.cloud/events/bridge",
+            "PICWISE_SUBBY_PROJECT_ID": "picwise-prod",
+            "PICWISE_SUBBY_API_KEY": "secret-live-key-value",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with patch("api.index.UrllibSubbyBridgeEventSender", return_value=FailingSender()):
+                status, _headers, body = _call_wsgi("/subby-proof")
+        response_payload = json.loads(body)
+        self.assertEqual(status, "200 OK")
+        self.assertEqual(response_payload["status"], "error")
+        self.assertIsNone(response_payload["bridge_http_status"])
+        self.assertEqual(response_payload["safe_error_type"], "URLError")
+        self.assertIn("safe_error_message", response_payload)
+        self.assertNotIn("secret-live-key-value", body)
+        self.assertFalse(response_payload["secret_values_exposed"])
+
+    def test_subby_proof_httperror_returns_http_status_and_safe_type(self) -> None:
+        class FailingSender:
+            def send(
+                self,
+                *,
+                endpoint: str,
+                headers: dict[str, str],
+                payload: dict[str, Any],
+            ) -> tuple[int, dict[str, Any]]:
+                _ = (endpoint, headers, payload)
+                raise HTTPError(
+                    url="https://manager.subby.cloud/events/bridge",
+                    code=503,
+                    msg="service unavailable",
+                    hdrs=None,
+                    fp=io.BytesIO(b'{"error":"token secret-live-key-value rejected"}'),
+                )
+
+        env = {
+            "PICWISE_SUBBY_ENDPOINT": "https://manager.subby.cloud/events/bridge",
+            "PICWISE_SUBBY_PROJECT_ID": "picwise-prod",
+            "PICWISE_SUBBY_API_KEY": "secret-live-key-value",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with patch("api.index.UrllibSubbyBridgeEventSender", return_value=FailingSender()):
+                status, _headers, body = _call_wsgi("/subby-proof")
+        response_payload = json.loads(body)
+        self.assertEqual(status, "200 OK")
+        self.assertEqual(response_payload["status"], "error")
+        self.assertEqual(response_payload["bridge_http_status"], 503)
+        self.assertEqual(response_payload["safe_error_type"], "HTTPError")
+        self.assertIn("safe_error_message", response_payload)
+        self.assertNotIn("secret-live-key-value", body)
+        self.assertFalse(response_payload["secret_values_exposed"])
+
+    def test_subby_proof_safe_error_message_redacts_api_key_and_token_like_strings(self) -> None:
+        class FailingSender:
+            def send(
+                self,
+                *,
+                endpoint: str,
+                headers: dict[str, str],
+                payload: dict[str, Any],
+            ) -> tuple[int, dict[str, Any]]:
+                _ = (endpoint, headers, payload)
+                raise RuntimeError(
+                    "PICWISE_SUBBY_API_KEY=secret-live-key-value token ABCDEFGHIJKLMNOPQRSTUVWX123456"
+                )
+
+        env = {
+            "PICWISE_SUBBY_ENDPOINT": "https://manager.subby.cloud/events/bridge",
+            "PICWISE_SUBBY_PROJECT_ID": "picwise-prod",
+            "PICWISE_SUBBY_API_KEY": "secret-live-key-value",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with patch("api.index.UrllibSubbyBridgeEventSender", return_value=FailingSender()):
+                status, _headers, body = _call_wsgi("/subby-proof")
+        response_payload = json.loads(body)
+        self.assertEqual(status, "200 OK")
+        self.assertEqual(response_payload["status"], "error")
+        self.assertEqual(response_payload["safe_error_type"], "RuntimeError")
+        self.assertIn("safe_error_message", response_payload)
+        self.assertIn("[REDACTED]", response_payload["safe_error_message"])
+        self.assertIn("[REDACTED_TOKEN]", response_payload["safe_error_message"])
+        self.assertNotIn("secret-live-key-value", body)
+        self.assertFalse(response_payload["secret_values_exposed"])
 
     def test_subby_proof_sender_payload_and_headers_are_correct_and_mockable(self) -> None:
         class SpySender:

@@ -21,6 +21,11 @@ Current stage status in this repository is `NEEDS_LIVE_SUBBY_PROOF`.
   - `test_mode: true`
   - `operator_generated: true`
   - signal `health/live_proof`
+- If outbound bridge send fails, returns safe operator diagnostics:
+  - `status: "error"`
+  - `bridge_http_status`: populated for HTTP errors, otherwise `null`
+  - `safe_error_type`: non-secret exception class name
+  - `safe_error_message`: short sanitized message for debugging
 
 ## Safety Rules
 
@@ -28,6 +33,8 @@ Current stage status in this repository is `NEEDS_LIVE_SUBBY_PROOF`.
 - No revenue or conversion event values are sent.
 - API key is only read from Vercel environment variables.
 - API key is never returned in endpoint response JSON.
+- Error diagnostics redact API key values and token-like strings.
+- Error diagnostics never return request headers.
 
 ## Live Proof Requirement
 

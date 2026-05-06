@@ -4,8 +4,11 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
 import os
+import re
+import socket
+import ssl
 from typing import Any, Mapping, Protocol
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
@@ -24,6 +27,7 @@ SUBBY_PROOF_REQUIRED_ENV_VARS = (
     "PICWISE_SUBBY_PROJECT_ID",
     "PICWISE_SUBBY_API_KEY",
 )
+MAX_SAFE_ERROR_MESSAGE_LENGTH = 220
 
 
 class SubbyTransport(Protocol):
@@ -143,14 +147,10 @@ class UrllibSubbyBridgeEventSender:
     ) -> tuple[int, dict[str, Any]]:
         body = json.dumps(payload, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
         request = Request(endpoint, data=body, headers=dict(headers), method="POST")
-        try:
-            with urlopen(request, timeout=self._timeout_seconds) as response:
-                status_code = int(getattr(response, "status", 200))
-                response_body = response.read().decode("utf-8")
-                return status_code, _parse_response_json(response_body)
-        except HTTPError as http_error:
-            response_body = http_error.read().decode("utf-8") if http_error.fp is not None else ""
-            return int(http_error.code), _parse_response_json(response_body)
+        with urlopen(request, timeout=self._timeout_seconds) as response:
+            status_code = int(getattr(response, "status", 200))
+            response_body = response.read().decode("utf-8")
+            return status_code, _parse_response_json(response_body)
 
 
 def load_subby_config_from_env(env: Mapping[str, str] | None = None) -> SubbyConfig:
@@ -289,13 +289,42 @@ def send_subby_live_proof_event(
             headers=headers,
             payload=payload,
         )
-    except Exception:
+    except HTTPError as error:
+        safe_message = _sanitize_error_message(
+            _format_http_error_message(error),
+            api_key=api_key,
+            env=source,
+        )
+        return {
+            "status": "error",
+            "bridge_http_status": int(error.code),
+            "project_id": project_id,
+            "endpoint_host": endpoint_host,
+            "secret_values_exposed": False,
+            "safe_error_type": "HTTPError",
+            "safe_error_message": safe_message,
+        }
+    except (URLError, TimeoutError, socket.timeout, ssl.SSLError) as error:
+        safe_message = _sanitize_error_message(str(error), api_key=api_key, env=source)
         return {
             "status": "error",
             "bridge_http_status": None,
             "project_id": project_id,
             "endpoint_host": endpoint_host,
             "secret_values_exposed": False,
+            "safe_error_type": type(error).__name__,
+            "safe_error_message": safe_message,
+        }
+    except Exception as error:
+        safe_message = _sanitize_error_message(str(error), api_key=api_key, env=source)
+        return {
+            "status": "error",
+            "bridge_http_status": None,
+            "project_id": project_id,
+            "endpoint_host": endpoint_host,
+            "secret_values_exposed": False,
+            "safe_error_type": type(error).__name__,
+            "safe_error_message": safe_message,
         }
 
     response: dict[str, Any] = {
@@ -352,3 +381,43 @@ def _parse_response_json(response_body: str) -> dict[str, Any]:
     if isinstance(parsed, dict):
         return parsed
     return {}
+
+
+def _format_http_error_message(error: HTTPError) -> str:
+    reason = str(error.reason or error.msg or "HTTP request failed")
+    body_snippet = ""
+    if error.fp is not None:
+        try:
+            body_snippet = error.read().decode("utf-8", errors="replace").strip()
+        except Exception:
+            body_snippet = ""
+    if body_snippet:
+        combined = f"{reason}: {body_snippet}"
+    else:
+        combined = reason
+    return combined
+
+
+def _sanitize_error_message(message: str, *, api_key: str, env: Mapping[str, str]) -> str:
+    text = " ".join(str(message).split())
+    if not text:
+        return "request_failed"
+    text = _redact_secrets(text, api_key=api_key, env=env)
+    if len(text) > MAX_SAFE_ERROR_MESSAGE_LENGTH:
+        return text[:MAX_SAFE_ERROR_MESSAGE_LENGTH].rstrip() + "..."
+    return text
+
+
+def _redact_secrets(text: str, *, api_key: str, env: Mapping[str, str]) -> str:
+    redacted = text
+    potential_secrets = [api_key, str(env.get("PICWISE_SUBBY_API_KEY", "")).strip()]
+    for secret in potential_secrets:
+        if secret:
+            redacted = redacted.replace(secret, "[REDACTED]")
+    redacted = re.sub(
+        r"(PICWISE_SUBBY_API_KEY\s*=\s*)(['\"]?)([^'\"\s]+)(['\"]?)",
+        r"\1\2[REDACTED]\4",
+        redacted,
+    )
+    redacted = re.sub(r"\b[A-Za-z0-9_-]{24,}\b", "[REDACTED_TOKEN]", redacted)
+    return redacted
