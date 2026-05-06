@@ -84,6 +84,8 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn('name="q"', body)
         self.assertIn(f'value="{query}"', body)
         self.assertNotIn('class="pw-search-button" type="submit" aria-label="Search">→</button>', body)
+        self.assertNotIn("&#128269;", body)
+        self.assertNotIn("🔍", body)
 
     def test_root_route_contains_four_primary_cards_and_one_recommended_marker(self) -> None:
         _status, _headers, body = _call_wsgi("/")
@@ -127,7 +129,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn('class="pw-hero"', body)
         self.assertLess(body.index('class="pw-topbar"'), body.index('class="pw-hero"'))
         self.assertIn('class="pw-brand"', body)
-        self.assertIn("Picwise", body)
+        self.assertIn(">picwise<", body)
         self.assertIn("Πώς λειτουργεί", body)
         self.assertIn("FAQ", body)
         self.assertIn("Σχετικά με", body)

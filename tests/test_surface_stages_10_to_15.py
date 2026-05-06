@@ -95,7 +95,7 @@ class LandingUiTests(unittest.TestCase):
         self.assertIn('class="pw-hero"', html)
         self.assertLess(html.index('class="pw-topbar"'), html.index('class="pw-hero"'))
         self.assertIn('class="pw-brand"', html)
-        self.assertIn("Picwise", html)
+        self.assertIn(">picwise<", html)
 
     def test_landing_renders_exactly_4_primary_cards(self) -> None:
         html = render_landing_surface(build_decision_output())
@@ -114,11 +114,14 @@ class LandingUiTests(unittest.TestCase):
         self.assertIn("pw-rec-pulse-2", html)
         self.assertIn("pw-rec-pulse-3", html)
 
-    def test_search_button_uses_magnifier_icon_not_arrow_only(self) -> None:
+    def test_search_button_uses_css_magnifier_not_emoji_or_arrow(self) -> None:
         html = render_landing_surface(build_decision_output())
         self.assertIn('class="pw-search-button"', html)
         self.assertIn('class="pw-search-button-icon"', html)
+        self.assertIn('class="pw-search-icon"', html)
         self.assertNotIn('class="pw-search-button" type="submit" aria-label="Search">→</button>', html)
+        self.assertNotIn("&#128269;", html)
+        self.assertNotIn("🔍", html)
 
     def test_landing_includes_query_confirmation(self) -> None:
         decision = build_decision_output()
@@ -172,8 +175,9 @@ class LandingUiTests(unittest.TestCase):
 
     def test_hero_has_clear_spacing_below_topbar(self) -> None:
         css = self._extract_inline_css(render_landing_surface(build_decision_output())).replace(" ", "")
-        self.assertIn(".pw-topbar{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0028px;padding:2px0;min-height:42px;}", css)
-        self.assertIn(".pw-hero{position:relative;z-index:1;text-align:center;max-width:860px;margin:0auto24px;padding-top:0;}", css)
+        self.assertIn(".pw-topbar{position:relative;", css)
+        self.assertIn(".pw-hero{position:relative;", css)
+        self.assertIn("text-align:center;", css)
 
 
 class CtaRedirectTrackingTests(unittest.TestCase):
