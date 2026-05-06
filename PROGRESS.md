@@ -7,7 +7,7 @@ Official human-readable progress tracker for Picwise Production.
 - Project: Picwise Production
 - Primary domain: picwise.subby.cloud
 - Product type: decision engine, not search engine
-- Current phase: Engine stages 5-9 completed, Landing UI next
+- Current phase: Local V1 product-surface readiness layer completed (stages 10-15)
 
 ## 2) Source Of Truth Order
 
@@ -37,7 +37,14 @@ PASSED:
   - 7. Decision depth selector
   - 8. Product candidate adapter
   - 9. Decision arbitration
-- No frontend/backend implementation created yet
+- Product-surface readiness stages 10-15 implemented and tested locally:
+  - 10. Landing UI
+  - 11. CTA/redirect tracking
+  - 12. SEO landing generation
+  - 13. Dashboard/Subby event compatibility
+  - 14. Performance audit
+  - 15. Final V1 audit closure
+- Local implementation remains non-live and non-deployed
 
 ## 4) Locked Implementation Roadmap Status
 
@@ -52,12 +59,12 @@ PASSED:
 | 7 | Decision depth selector | PASSED |
 | 8 | Product candidate adapter | PASSED |
 | 9 | Decision arbitration | PASSED |
-| 10 | Landing UI | PENDING |
-| 11 | CTA/redirect tracking | PENDING |
-| 12 | SEO landing generation | PENDING |
-| 13 | Dashboard/Subby event compatibility | PENDING |
-| 14 | Performance audit | PENDING |
-| 15 | Final V1 audit closure | PENDING |
+| 10 | Landing UI | PASSED |
+| 11 | CTA/redirect tracking | PASSED |
+| 12 | SEO landing generation | PASSED |
+| 13 | Dashboard/Subby event compatibility | PASSED |
+| 14 | Performance audit | PASSED |
+| 15 | Final V1 audit closure | PASSED |
 
 ## 5) Completion Rule
 
@@ -72,20 +79,19 @@ A step may only be marked PASSED when there is:
 
 ## 6) Current Next Step
 
-Landing UI (still pending by roadmap; not implemented in this stage).
+Prepare real integration stages (live redirect transport, browser/RUM performance audit, and dashboard channel connection) under explicit non-fake and neutrality rules.
 
 ## 7) Do-Not-Claim Rules
 
-- Do not claim Picwise is implemented.
-- Do not claim UI exists.
-- Do not claim backend exists.
-- Do not claim product data exists.
-- Do not claim dashboard integration exists.
-- Do not claim affiliate/revenue tracking exists.
-- Only docs/spec foundation is currently passed.
+- Do not claim live production deployment.
+- Do not claim live dashboard/Subby integration.
+- Do not claim real product feed integration.
+- Do not claim live revenue/conversion tracking.
+- Current status is local implementation + local tests for stages 1-15.
 
 ## 8) Progress Log
 
 - 2026-05-06: Root rules, concept lock, docs/spec foundation, quality/testing strategy, missing-data enum alignment, and docs contract review are passed. Next step is Contracts / Schemas Foundation. No app code exists yet.
 - 2026-05-06: Contracts/schemas stage implemented under src/picwise_contracts with tests in tests/test_contracts.py. Test command: python -m unittest discover -s tests. Result: 16 tests passed (OK). Next step is Core decision engine.
 - 2026-05-06: Engine stages 5-9 implemented under src/picwise_engine with integrated tests in tests/test_engine_stages_5_to_9.py. Test command: python -m unittest discover -s tests. Result: 36 tests passed (OK). Stages 5-9 marked PASSED. No frontend/backend/dashboard/live redirect implementation added.
+- 2026-05-06: Group 3 stages 10-15 implemented under src/picwise_surface with tests in tests/test_surface_stages_10_to_15.py and docs/STAGE_10_TO_15_PRODUCT_SURFACE_READINESS.md. Test command: python -m unittest discover -s tests. Result: 55 tests passed (OK). Stages 10-15 marked PASSED for local implementation/test status only; no live deployment, no live dashboard/Subby channel, no real product feed, and no real revenue/conversion tracking.
