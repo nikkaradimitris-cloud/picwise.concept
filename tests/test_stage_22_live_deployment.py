@@ -14,8 +14,12 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
 
 from api.index import app as deployment_app  # noqa: E402
+from picwise_integrations.subby_dashboard import UrllibSubbyBridgeEventSender  # noqa: E402
 from wsgi import app as wsgi_app  # noqa: E402
 
 
@@ -159,10 +163,12 @@ class DeploymentEntrypointTests(unittest.TestCase):
                 _ = (endpoint, headers, payload)
                 raise HTTPError(
                     url="https://manager.subby.cloud/events/bridge",
-                    code=503,
-                    msg="service unavailable",
+                    code=403,
+                    msg="forbidden",
                     hdrs=None,
-                    fp=io.BytesIO(b'{"error":"token secret-live-key-value rejected"}'),
+                    fp=io.BytesIO(
+                        b'{"accepted":false,"error":"token secret-live-key-value rejected"}'
+                    ),
                 )
 
         env = {
@@ -176,9 +182,40 @@ class DeploymentEntrypointTests(unittest.TestCase):
         response_payload = json.loads(body)
         self.assertEqual(status, "200 OK")
         self.assertEqual(response_payload["status"], "error")
-        self.assertEqual(response_payload["bridge_http_status"], 503)
+        self.assertEqual(response_payload["bridge_http_status"], 403)
         self.assertEqual(response_payload["safe_error_type"], "HTTPError")
+        self.assertFalse(response_payload["accepted"])
         self.assertIn("safe_error_message", response_payload)
+        self.assertNotIn("secret-live-key-value", body)
+        self.assertFalse(response_payload["secret_values_exposed"])
+
+    def test_subby_proof_rejected_response_includes_safe_diagnostics(self) -> None:
+        class RejectedSender:
+            def send(
+                self,
+                *,
+                endpoint: str,
+                headers: dict[str, str],
+                payload: dict[str, Any],
+            ) -> tuple[int, dict[str, Any]]:
+                _ = (endpoint, headers, payload)
+                return 405, {"accepted": False, "error": "bridge token secret-live-key-value rejected"}
+
+        env = {
+            "PICWISE_SUBBY_ENDPOINT": "https://manager.subby.cloud/events/bridge",
+            "PICWISE_SUBBY_PROJECT_ID": "picwise-prod",
+            "PICWISE_SUBBY_API_KEY": "secret-live-key-value",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with patch("api.index.UrllibSubbyBridgeEventSender", return_value=RejectedSender()):
+                status, _headers, body = _call_wsgi("/subby-proof")
+        response_payload = json.loads(body)
+        self.assertEqual(status, "200 OK")
+        self.assertEqual(response_payload["status"], "rejected")
+        self.assertEqual(response_payload["bridge_http_status"], 405)
+        self.assertEqual(response_payload["safe_error_type"], "HTTPStatusRejected")
+        self.assertIn("safe_error_message", response_payload)
+        self.assertFalse(response_payload["accepted"])
         self.assertNotIn("secret-live-key-value", body)
         self.assertFalse(response_payload["secret_values_exposed"])
 
@@ -271,6 +308,48 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(response_payload["endpoint_host"], "bridge.subby.cloud")
         self.assertNotIn("X-Bridge-API-Key", response_payload)
         self.assertNotIn("super-secret-key", body)
+
+    def test_urllib_sender_uses_post_json_bytes_and_configured_timeout(self) -> None:
+        capture: dict[str, Any] = {}
+
+        class FakeResponse:
+            status = 202
+
+            def __enter__(self) -> "FakeResponse":
+                return self
+
+            def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> bool:
+                _ = (exc_type, exc, tb)
+                return False
+
+            def read(self) -> bytes:
+                return b'{"accepted":true}'
+
+        def fake_urlopen(request: Any, timeout: float) -> FakeResponse:
+            capture["request"] = request
+            capture["timeout"] = timeout
+            return FakeResponse()
+
+        sender = UrllibSubbyBridgeEventSender(timeout_seconds=4.0)
+        with patch("picwise_integrations.subby_dashboard.urlopen", side_effect=fake_urlopen):
+            status_code, response_payload = sender.send(
+                endpoint="https://manager.subby.cloud/api/bridge/ingest",
+                headers={
+                    "X-Bridge-Project-ID": "picwise-prod",
+                    "X-Bridge-API-Key": "secret-live-key-value",
+                    "Content-Type": "application/json",
+                },
+                payload={"foo": "bar"},
+            )
+
+        request = capture["request"]
+        self.assertEqual(capture["timeout"], 4.0)
+        self.assertEqual(request.get_method(), "POST")
+        self.assertIsInstance(request.data, bytes)
+        self.assertEqual(request.data, b'{"foo":"bar"}')
+        self.assertEqual(request.get_header("Content-type"), "application/json")
+        self.assertEqual(status_code, 202)
+        self.assertEqual(response_payload["accepted"], True)
 
 
 class DeploymentConfigAndDocsTests(unittest.TestCase):

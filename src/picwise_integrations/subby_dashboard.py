@@ -135,7 +135,7 @@ class SubbyBridgeEventSender(Protocol):
 
 
 class UrllibSubbyBridgeEventSender:
-    def __init__(self, *, timeout_seconds: float = 8.0) -> None:
+    def __init__(self, *, timeout_seconds: float = 4.0) -> None:
         self._timeout_seconds = timeout_seconds
 
     def send(
@@ -290,12 +290,13 @@ def send_subby_live_proof_event(
             payload=payload,
         )
     except HTTPError as error:
+        http_error_message, http_error_payload = _extract_http_error_details(error)
         safe_message = _sanitize_error_message(
-            _format_http_error_message(error),
+            http_error_message,
             api_key=api_key,
             env=source,
         )
-        return {
+        response: dict[str, Any] = {
             "status": "error",
             "bridge_http_status": int(error.code),
             "project_id": project_id,
@@ -304,6 +305,9 @@ def send_subby_live_proof_event(
             "safe_error_type": "HTTPError",
             "safe_error_message": safe_message,
         }
+        if isinstance(http_error_payload, Mapping) and "accepted" in http_error_payload:
+            response["accepted"] = bool(http_error_payload.get("accepted"))
+        return response
     except (URLError, TimeoutError, socket.timeout, ssl.SSLError) as error:
         safe_message = _sanitize_error_message(str(error), api_key=api_key, env=source)
         return {
@@ -336,6 +340,14 @@ def send_subby_live_proof_event(
     }
     if isinstance(bridge_payload, Mapping) and "accepted" in bridge_payload:
         response["accepted"] = bool(bridge_payload.get("accepted"))
+    if response["status"] == "rejected":
+        response["safe_error_type"] = "HTTPStatusRejected"
+        response["safe_error_message"] = _build_rejected_http_message(
+            bridge_http_status=bridge_http_status,
+            bridge_payload=bridge_payload,
+            api_key=api_key,
+            env=source,
+        )
     return response
 
 
@@ -383,19 +395,44 @@ def _parse_response_json(response_body: str) -> dict[str, Any]:
     return {}
 
 
-def _format_http_error_message(error: HTTPError) -> str:
+def _extract_http_error_details(error: HTTPError) -> tuple[str, dict[str, Any]]:
     reason = str(error.reason or error.msg or "HTTP request failed")
-    body_snippet = ""
+    parsed_body: dict[str, Any] = {}
+    body_text = ""
     if error.fp is not None:
         try:
-            body_snippet = error.read().decode("utf-8", errors="replace").strip()
+            body_text = error.read().decode("utf-8", errors="replace").strip()
         except Exception:
-            body_snippet = ""
-    if body_snippet:
-        combined = f"{reason}: {body_snippet}"
-    else:
-        combined = reason
-    return combined
+            body_text = ""
+    if body_text:
+        parsed_body = _parse_response_json(body_text)
+        if parsed_body:
+            body_snippet = json.dumps(parsed_body, ensure_ascii=True, separators=(",", ":"))
+        else:
+            body_snippet = body_text
+        return f"{reason}: {body_snippet}", parsed_body
+    return reason, parsed_body
+
+
+def _build_rejected_http_message(
+    *,
+    bridge_http_status: int,
+    bridge_payload: Mapping[str, Any] | dict[str, Any],
+    api_key: str,
+    env: Mapping[str, str],
+) -> str:
+    message = f"Bridge rejected request with HTTP {bridge_http_status}."
+    payload_snippet = ""
+    if isinstance(bridge_payload, Mapping):
+        if "error" in bridge_payload:
+            payload_snippet = str(bridge_payload.get("error", ""))
+        elif "message" in bridge_payload:
+            payload_snippet = str(bridge_payload.get("message", ""))
+        elif bridge_payload:
+            payload_snippet = json.dumps(dict(bridge_payload), ensure_ascii=True, separators=(",", ":"))
+    if payload_snippet:
+        message = f"{message} {payload_snippet}"
+    return _sanitize_error_message(message, api_key=api_key, env=env)
 
 
 def _sanitize_error_message(message: str, *, api_key: str, env: Mapping[str, str]) -> str:

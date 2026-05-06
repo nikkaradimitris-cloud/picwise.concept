@@ -26,6 +26,17 @@ Current stage status in this repository is `NEEDS_LIVE_SUBBY_PROOF`.
   - `bridge_http_status`: populated for HTTP errors, otherwise `null`
   - `safe_error_type`: non-secret exception class name
   - `safe_error_message`: short sanitized message for debugging
+- If bridge call returns non-2xx without raising, returns:
+  - `status: "rejected"`
+  - `bridge_http_status`: response status code
+  - `safe_error_type: "HTTPStatusRejected"`
+  - `safe_error_message`: sanitized rejection snippet
+
+## Live Endpoint Reachability Note
+
+- Browser `GET https://manager.subby.cloud/api/bridge/ingest` returning `403 Forbidden` indicates the endpoint is reachable.
+- This is **not** proof that Picwise POST ingestion is accepted.
+- Stage 24 proof still requires successful operator-triggered `POST` event visibility in the live Subby dashboard.
 
 ## Safety Rules
 
