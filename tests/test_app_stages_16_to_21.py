@@ -114,6 +114,10 @@ class AppHttpEndpointTests(unittest.TestCase):
     def test_demo_includes_hero_subtitle_and_demo_note(self) -> None:
         body = self._fetch("/demo")
         self.assertIn(
+            "4 decision-ready options for power bank 20000mah for iphone",
+            body,
+        )
+        self.assertIn(
             "Smart recommendations, side-by-side. Compare and choose with confidence.",
             body,
         )

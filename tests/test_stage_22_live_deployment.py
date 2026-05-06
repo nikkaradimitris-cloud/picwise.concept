@@ -127,7 +127,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn('class="pw-hero"', body)
         self.assertLess(body.index('class="pw-topbar"'), body.index('class="pw-hero"'))
         self.assertIn('class="pw-brand"', body)
-        self.assertIn("picwise", body)
+        self.assertIn("Picwise", body)
         self.assertIn("Πώς λειτουργεί", body)
         self.assertIn("FAQ", body)
         self.assertIn("Σχετικά με", body)
@@ -140,6 +140,10 @@ class DeploymentEntrypointTests(unittest.TestCase):
 
     def test_landing_contains_hero_subtitle(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
+        self.assertIn(
+            "4 decision-ready options for power bank 20000mah for iphone",
+            body,
+        )
         self.assertIn(
             "Smart recommendations, side-by-side. Compare and choose with confidence.",
             body,

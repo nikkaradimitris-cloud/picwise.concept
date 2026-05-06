@@ -89,7 +89,7 @@ class LandingUiTests(unittest.TestCase):
         self.assertIn('class="pw-hero"', html)
         self.assertLess(html.index('class="pw-topbar"'), html.index('class="pw-hero"'))
         self.assertIn('class="pw-brand"', html)
-        self.assertIn("picwise", html)
+        self.assertIn("Picwise", html)
 
     def test_landing_renders_exactly_4_primary_cards(self) -> None:
         html = render_landing_surface(build_decision_output())
@@ -98,6 +98,10 @@ class LandingUiTests(unittest.TestCase):
     def test_landing_renders_exactly_1_recommended_card(self) -> None:
         html = render_landing_surface(build_decision_output())
         self.assertEqual(html.count("Recommended by Picwise"), 1)
+        self.assertGreater(
+            html.rfind('<article class="pw-card pw-card-recommended"'),
+            html.find('<article class="pw-card"'),
+        )
         self.assertIn("pw-rec-bubble-top", html)
         self.assertIn("pw-rec-bubble-bottom", html)
         self.assertIn("pw-rec-pulse-1", html)
@@ -113,6 +117,10 @@ class LandingUiTests(unittest.TestCase):
     def test_landing_includes_query_confirmation(self) -> None:
         decision = build_decision_output()
         html = render_landing_surface(decision)
+        self.assertIn(
+            f"4 decision-ready options for {decision.query}",
+            html,
+        )
         self.assertIn(decision.query, html)
         self.assertIn("Showing 4 decision-ready options for:", html)
 
