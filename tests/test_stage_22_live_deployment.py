@@ -77,29 +77,53 @@ class DeploymentEntrypointTests(unittest.TestCase):
     def test_demo_has_search_form_with_query_value(self) -> None:
         query = "best office chair under 200"
         _status, _headers, body = _call_wsgi("/demo", f"q={quote(query)}")
-        self.assertIn('<form class="search-form" action="/demo" method="get">', body)
-        self.assertIn('class="search-shell"', body)
-        self.assertIn('class="search-icon"', body)
+        self.assertIn('class="pw-search-shell"', body)
+        self.assertIn('class="pw-search-icon"', body)
+        self.assertIn('class="pw-search-button"', body)
         self.assertIn('name="q"', body)
         self.assertIn(f'value="{query}"', body)
 
     def test_root_route_contains_four_primary_cards_and_one_recommended_marker(self) -> None:
         _status, _headers, body = _call_wsgi("/")
-        self.assertEqual(body.count('<article class="choice-card'), 4)
+        self.assertEqual(body.count('<article class="pw-card'), 4)
+        self.assertEqual(body.count('<article class="pw-card pw-card-recommended"'), 1)
         self.assertEqual(body.count("Recommended by Picwise"), 1)
 
     def test_recommended_card_has_badge_bubbles_and_pulse_elements(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
+        required_classes = (
+            "pw-topbar",
+            "pw-brand",
+            "pw-nav",
+            "pw-theme-toggle",
+            "pw-search-shell",
+            "pw-search-button",
+            "pw-bg-network-left",
+            "pw-bg-circuit-right",
+            "pw-grid",
+            "pw-card-recommended",
+            "pw-rec-badge",
+            "pw-rec-bubble-top",
+            "pw-rec-bubble-bottom",
+            "pw-rec-pulse-1",
+            "pw-rec-pulse-2",
+            "pw-rec-pulse-3",
+            "pw-footer",
+            "pw-footer-left",
+            "pw-footer-right",
+            "pw-demo-note",
+        )
+        for class_name in required_classes:
+            self.assertIn(class_name, body)
         self.assertIn("Recommended by Picwise", body)
-        self.assertIn("recommended-bubble-top", body)
-        self.assertIn("recommended-bubble-bottom", body)
-        self.assertIn("recommended-pulse-1", body)
-        self.assertIn("recommended-pulse-2", body)
-        self.assertIn("recommended-pulse-3", body)
+        self.assertNotIn("Best fit", body)
+        self.assertNotIn("Fast decision", body)
 
     def test_landing_contains_header_nav_and_theme_toggle_pill(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
-        self.assertIn('<div class="brand">Picwise</div>', body)
+        self.assertIn('class="pw-topbar"', body)
+        self.assertIn('class="pw-brand"', body)
+        self.assertIn("picwise", body)
         self.assertIn("Πώς λειτουργεί", body)
         self.assertIn("FAQ", body)
         self.assertIn("Σχετικά με", body)
@@ -119,11 +143,14 @@ class DeploymentEntrypointTests(unittest.TestCase):
 
     def test_landing_contains_footer_nav_and_design_credit(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
-        self.assertIn('class="site-footer"', body)
+        self.assertIn('class="pw-footer"', body)
+        self.assertIn('class="pw-footer-left"', body)
+        self.assertIn('class="pw-footer-right"', body)
         self.assertIn("Επικοινωνία", body)
         self.assertIn("Όροι", body)
         self.assertIn("Ρυθμίσεις", body)
         self.assertIn("Design by subby.cloud", body)
+        self.assertNotIn("Designed by Subby.cloud", body)
         lowered = body.lower()
         self.assertNotIn("advertising", lowered)
         self.assertNotIn("η τρίτη δεκαετία", lowered)
@@ -137,6 +164,10 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "Demo data source: local_test_fixture (not_production_data).",
             body,
         )
+        self.assertIn('class="pw-demo-note"', body)
+        demo_note_index = body.index('<p class="pw-demo-note">')
+        footer_index = body.index('<footer class="pw-footer">')
+        self.assertLess(demo_note_index, footer_index)
 
     def test_landing_html_avoids_cart_checkout_and_fake_markers(self) -> None:
         _status, _headers, body = _call_wsgi("/")

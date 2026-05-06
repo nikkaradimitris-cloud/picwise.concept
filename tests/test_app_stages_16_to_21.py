@@ -69,17 +69,43 @@ class AppHttpEndpointTests(unittest.TestCase):
 
     def test_demo_includes_header_search_theme_and_footer_controls(self) -> None:
         body = self._fetch("/demo?q=power+bank")
-        self.assertIn('<div class="brand">Picwise</div>', body)
+        for class_name in (
+            "pw-topbar",
+            "pw-brand",
+            "pw-nav",
+            "pw-theme-toggle",
+            "pw-search-shell",
+            "pw-search-button",
+            "pw-bg-network-left",
+            "pw-bg-circuit-right",
+            "pw-grid",
+            "pw-card-recommended",
+            "pw-rec-badge",
+            "pw-rec-bubble-top",
+            "pw-rec-bubble-bottom",
+            "pw-rec-pulse-1",
+            "pw-rec-pulse-2",
+            "pw-rec-pulse-3",
+            "pw-footer",
+            "pw-footer-left",
+            "pw-footer-right",
+            "pw-demo-note",
+        ):
+            self.assertIn(class_name, body)
         self.assertIn("Πώς λειτουργεί", body)
         self.assertIn("FAQ", body)
         self.assertIn("Σχετικά με", body)
-        self.assertIn('<form class="search-form" action="/demo" method="get">', body)
-        self.assertIn('class="search-shell"', body)
+        self.assertIn('class="pw-search-shell"', body)
+        self.assertIn('class="pw-search-icon"', body)
+        self.assertIn('class="pw-search-button"', body)
         self.assertIn('id="theme-toggle"', body)
         self.assertIn("☀ Day", body)
         self.assertIn("☾ Night", body)
         self.assertNotIn(">Night mode<", body)
         self.assertIn("Design by subby.cloud", body)
+        self.assertNotIn("Designed by Subby.cloud", body)
+        self.assertNotIn("Best fit", body)
+        self.assertNotIn("Fast decision", body)
 
     def test_demo_includes_hero_subtitle_and_demo_note(self) -> None:
         body = self._fetch("/demo")
@@ -91,16 +117,20 @@ class AppHttpEndpointTests(unittest.TestCase):
             "Demo data source: local_test_fixture (not_production_data).",
             body,
         )
+        demo_note_index = body.index('<p class="pw-demo-note">')
+        footer_index = body.index('<footer class="pw-footer">')
+        self.assertLess(demo_note_index, footer_index)
 
     def test_demo_has_exactly_four_primary_cards_and_one_recommended(self) -> None:
         body = self._fetch("/demo")
-        self.assertEqual(body.count('<article class="choice-card'), 4)
+        self.assertEqual(body.count('<article class="pw-card'), 4)
+        self.assertEqual(body.count('<article class="pw-card pw-card-recommended"'), 1)
         self.assertEqual(body.count("Recommended by Picwise"), 1)
-        self.assertIn("recommended-bubble-top", body)
-        self.assertIn("recommended-bubble-bottom", body)
-        self.assertIn("recommended-pulse-1", body)
-        self.assertIn("recommended-pulse-2", body)
-        self.assertIn("recommended-pulse-3", body)
+        self.assertIn("pw-rec-bubble-top", body)
+        self.assertIn("pw-rec-bubble-bottom", body)
+        self.assertIn("pw-rec-pulse-1", body)
+        self.assertIn("pw-rec-pulse-2", body)
+        self.assertIn("pw-rec-pulse-3", body)
 
     def test_demo_avoids_cart_checkout_and_fake_markers(self) -> None:
         body = self._fetch("/demo").lower()

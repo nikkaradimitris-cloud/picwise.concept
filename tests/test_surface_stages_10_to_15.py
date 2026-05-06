@@ -85,7 +85,7 @@ def build_decision_output(
 class LandingUiTests(unittest.TestCase):
     def test_landing_renders_exactly_4_primary_cards(self) -> None:
         html = render_landing_surface(build_decision_output())
-        self.assertEqual(html.count('<article class="choice-card'), 4)
+        self.assertEqual(html.count('<article class="pw-card'), 4)
 
     def test_landing_renders_exactly_1_recommended_card(self) -> None:
         html = render_landing_surface(build_decision_output())
@@ -109,7 +109,7 @@ class LandingUiTests(unittest.TestCase):
 
     def test_more_section_is_secondary_and_max_4_choices(self) -> None:
         html = render_landing_surface(build_decision_output(include_more=True))
-        self.assertIn('class="more-section secondary"', html)
+        self.assertIn('class="pw-more"', html)
         self.assertEqual(html.count('<li data-choice-id="m'), 4)
 
 
