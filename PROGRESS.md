@@ -7,7 +7,7 @@ Official human-readable progress tracker for Picwise Production.
 - Project: Picwise Production
 - Primary domain: picwise.subby.cloud
 - Product type: decision engine, not search engine
-- Current phase: Contracts / Schemas Foundation completed, Core decision engine next
+- Current phase: Engine stages 5-9 completed, Landing UI next
 
 ## 2) Source Of Truth Order
 
@@ -31,6 +31,12 @@ PASSED:
   - unknown
 - Final docs contract review passed
 - Contracts/schemas foundation implemented with validation tests passing
+- Engine stages 5-9 implemented and tested:
+  - 5. Core decision engine
+  - 6. Brain selector
+  - 7. Decision depth selector
+  - 8. Product candidate adapter
+  - 9. Decision arbitration
 - No frontend/backend implementation created yet
 
 ## 4) Locked Implementation Roadmap Status
@@ -41,11 +47,11 @@ PASSED:
 | 2 | Mission docs/spec foundation | PASSED |
 | 3 | Quality rules and testing strategy | PASSED |
 | 4 | Contracts/schemas | PASSED |
-| 5 | Core decision engine | PENDING |
-| 6 | Brain selector | PENDING |
-| 7 | Decision depth selector | PENDING |
-| 8 | Product candidate adapter | PENDING |
-| 9 | Decision arbitration | PENDING |
+| 5 | Core decision engine | PASSED |
+| 6 | Brain selector | PASSED |
+| 7 | Decision depth selector | PASSED |
+| 8 | Product candidate adapter | PASSED |
+| 9 | Decision arbitration | PASSED |
 | 10 | Landing UI | PENDING |
 | 11 | CTA/redirect tracking | PENDING |
 | 12 | SEO landing generation | PENDING |
@@ -66,7 +72,7 @@ A step may only be marked PASSED when there is:
 
 ## 6) Current Next Step
 
-Core decision engine.
+Landing UI (still pending by roadmap; not implemented in this stage).
 
 ## 7) Do-Not-Claim Rules
 
@@ -82,3 +88,4 @@ Core decision engine.
 
 - 2026-05-06: Root rules, concept lock, docs/spec foundation, quality/testing strategy, missing-data enum alignment, and docs contract review are passed. Next step is Contracts / Schemas Foundation. No app code exists yet.
 - 2026-05-06: Contracts/schemas stage implemented under src/picwise_contracts with tests in tests/test_contracts.py. Test command: python -m unittest discover -s tests. Result: 16 tests passed (OK). Next step is Core decision engine.
+- 2026-05-06: Engine stages 5-9 implemented under src/picwise_engine with integrated tests in tests/test_engine_stages_5_to_9.py. Test command: python -m unittest discover -s tests. Result: 36 tests passed (OK). Stages 5-9 marked PASSED. No frontend/backend/dashboard/live redirect implementation added.
