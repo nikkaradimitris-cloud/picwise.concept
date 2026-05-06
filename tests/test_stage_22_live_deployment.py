@@ -78,6 +78,8 @@ class DeploymentEntrypointTests(unittest.TestCase):
         query = "best office chair under 200"
         _status, _headers, body = _call_wsgi("/demo", f"q={quote(query)}")
         self.assertIn('<form class="search-form" action="/demo" method="get">', body)
+        self.assertIn('class="search-shell"', body)
+        self.assertIn('class="search-icon"', body)
         self.assertIn('name="q"', body)
         self.assertIn(f'value="{query}"', body)
 
@@ -86,25 +88,55 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(body.count('<article class="choice-card'), 4)
         self.assertEqual(body.count("Recommended by Picwise"), 1)
 
-    def test_recommended_card_has_badge_and_bubble_elements(self) -> None:
+    def test_recommended_card_has_badge_bubbles_and_pulse_elements(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
         self.assertIn("Recommended by Picwise", body)
-        self.assertIn('<div class="recommended-bubbles"', body)
-        self.assertIn("Best fit", body)
-        self.assertIn("Fast decision", body)
+        self.assertIn("recommended-bubble-top", body)
+        self.assertIn("recommended-bubble-bottom", body)
+        self.assertIn("recommended-pulse-1", body)
+        self.assertIn("recommended-pulse-2", body)
+        self.assertIn("recommended-pulse-3", body)
 
-    def test_landing_contains_theme_toggle_control(self) -> None:
+    def test_landing_contains_header_nav_and_theme_toggle_pill(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
+        self.assertIn('<div class="brand">Picwise</div>', body)
+        self.assertIn("Πώς λειτουργεί", body)
+        self.assertIn("FAQ", body)
+        self.assertIn("Σχετικά με", body)
         self.assertIn('id="theme-toggle"', body)
+        self.assertIn("☀ Day", body)
+        self.assertIn("☾ Night", body)
         self.assertIn("Toggle day/night theme", body)
+        self.assertNotIn(">Night mode<", body)
         self.assertIn("localStorage", body)
 
-    def test_landing_contains_minimal_bottom_bar_credit(self) -> None:
+    def test_landing_contains_hero_subtitle(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
-        self.assertIn("Designed by Subby.cloud", body)
+        self.assertIn(
+            "Smart recommendations, side-by-side. Compare and choose with confidence.",
+            body,
+        )
+
+    def test_landing_contains_footer_nav_and_design_credit(self) -> None:
+        _status, _headers, body = _call_wsgi("/demo")
+        self.assertIn('class="site-footer"', body)
+        self.assertIn("Επικοινωνία", body)
+        self.assertIn("Όροι", body)
+        self.assertIn("Ρυθμίσεις", body)
+        self.assertIn("Design by subby.cloud", body)
         lowered = body.lower()
         self.assertNotIn("advertising", lowered)
         self.assertNotIn("η τρίτη δεκαετία", lowered)
+        self.assertNotIn("διαφήμιση", lowered)
+        self.assertNotIn("leaf", lowered)
+        self.assertNotIn("climate", lowered)
+
+    def test_landing_contains_discreet_demo_note_above_footer(self) -> None:
+        _status, _headers, body = _call_wsgi("/demo")
+        self.assertIn(
+            "Demo data source: local_test_fixture (not_production_data).",
+            body,
+        )
 
     def test_landing_html_avoids_cart_checkout_and_fake_markers(self) -> None:
         _status, _headers, body = _call_wsgi("/")

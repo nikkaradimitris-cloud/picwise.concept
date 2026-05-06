@@ -67,16 +67,40 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertIn(query, body)
         self.assertIn("Showing 4 decision-ready options for:", body)
 
-    def test_demo_includes_search_theme_and_footer_controls(self) -> None:
+    def test_demo_includes_header_search_theme_and_footer_controls(self) -> None:
         body = self._fetch("/demo?q=power+bank")
+        self.assertIn('<div class="brand">Picwise</div>', body)
+        self.assertIn("Πώς λειτουργεί", body)
+        self.assertIn("FAQ", body)
+        self.assertIn("Σχετικά με", body)
         self.assertIn('<form class="search-form" action="/demo" method="get">', body)
+        self.assertIn('class="search-shell"', body)
         self.assertIn('id="theme-toggle"', body)
-        self.assertIn("Designed by Subby.cloud", body)
+        self.assertIn("☀ Day", body)
+        self.assertIn("☾ Night", body)
+        self.assertNotIn(">Night mode<", body)
+        self.assertIn("Design by subby.cloud", body)
+
+    def test_demo_includes_hero_subtitle_and_demo_note(self) -> None:
+        body = self._fetch("/demo")
+        self.assertIn(
+            "Smart recommendations, side-by-side. Compare and choose with confidence.",
+            body,
+        )
+        self.assertIn(
+            "Demo data source: local_test_fixture (not_production_data).",
+            body,
+        )
 
     def test_demo_has_exactly_four_primary_cards_and_one_recommended(self) -> None:
         body = self._fetch("/demo")
         self.assertEqual(body.count('<article class="choice-card'), 4)
         self.assertEqual(body.count("Recommended by Picwise"), 1)
+        self.assertIn("recommended-bubble-top", body)
+        self.assertIn("recommended-bubble-bottom", body)
+        self.assertIn("recommended-pulse-1", body)
+        self.assertIn("recommended-pulse-2", body)
+        self.assertIn("recommended-pulse-3", body)
 
     def test_demo_avoids_cart_checkout_and_fake_markers(self) -> None:
         body = self._fetch("/demo").lower()
