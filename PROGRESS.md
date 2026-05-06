@@ -7,7 +7,7 @@ Official human-readable progress tracker for Picwise Production.
 - Project: Picwise Production
 - Primary domain: picwise.subby.cloud
 - Product type: decision engine, not search engine
-- Current phase: Local app implementation + production path readiness through stage 22 (with live-proof blockers)
+- Current phase: Local app implementation + live-production integration readiness through stage 25
 
 ## 2) Source Of Truth Order
 
@@ -51,8 +51,11 @@ PASSED:
   - 19. Live app deployment (deployment readiness only)
   - 20. Live Subby dashboard integration (integration readiness only)
   - 21. Production V1 audit closure (needs live proof)
-- 22. Live deployment to picwise.subby.cloud — DEPLOYMENT_READY
-- Local implementation remains non-live and non-deployed
+- 22. Live deployment to picwise.subby.cloud — PASSED
+- 23. Real product/feed and affiliate redirect connection — NEEDS_REAL_FEED_CONFIG
+- 24. Live Subby dashboard event integration — NEEDS_LIVE_SUBBY_CONFIG
+- 25. Production V1 live audit closure — NEEDS_LIVE_PROOF
+- Stage 22 has operator-supplied live URL proof; stages 23-25 remain non-PASSED pending real provider/Subby credentials and live proof.
 
 ## 4) Locked Implementation Roadmap Status
 
@@ -79,7 +82,10 @@ PASSED:
 | 19 | Live app deployment | DEPLOYMENT_READY |
 | 20 | Live Subby dashboard integration | INTEGRATION_READY |
 | 21 | Production V1 audit closure | NEEDS_LIVE_PROOF |
-| 22 | Live deployment to picwise.subby.cloud | DEPLOYMENT_READY |
+| 22 | Live deployment to picwise.subby.cloud | PASSED |
+| 23 | Real product/feed and affiliate redirect connection | NEEDS_REAL_FEED_CONFIG |
+| 24 | Live Subby dashboard event integration | NEEDS_LIVE_SUBBY_CONFIG |
+| 25 | Production V1 live audit closure | NEEDS_LIVE_PROOF |
 
 ## 5) Completion Rule
 
@@ -94,18 +100,21 @@ A step may only be marked PASSED when there is:
 
 ## 6) Current Next Step
 
-Obtain actual live deployment proof on `https://picwise.subby.cloud/health` and `https://picwise.subby.cloud/demo`, plus live Subby endpoint/key proof, before upgrading readiness-only stages to PASSED.
+Obtain real feed/affiliate provider credentials and proof, plus live Subby endpoint/key proof and dashboard-ingested event proof, before upgrading stages 23-25 to PASSED.
 
 ## 7) Do-Not-Claim Rules
 
-- Do not claim live production deployment.
 - Do not claim live dashboard/Subby integration.
 - Do not claim real product feed integration.
 - Do not claim live revenue/conversion tracking.
+- 22. Live deployment to picwise.subby.cloud is PASSED only because operator supplied live URL proof.
 - 19. Live app deployment must NOT be PASSED unless actual live deployment proof exists.
 - 20. Live Subby dashboard integration must NOT be PASSED unless actual live Subby proof exists.
 - 21. Production V1 audit closure must NOT be PASSED unless both live deployment and live Subby proofs exist.
-- Current status is local implementation + local tests through stage 18, with readiness-only status for stages 19-20 and audit `NEEDS_LIVE_PROOF` for stage 21.
+- 23. Real product/feed and affiliate redirect connection must NOT be PASSED unless real provider config/proof exists.
+- 24. Live Subby dashboard event integration must NOT be PASSED unless real Subby config/proof exists.
+- 25. Production V1 live audit closure must NOT be PASSED unless stages 22-24 all have required live proof.
+- Current status is: 22 PASSED with live URL proof; 23-24 readiness layer implemented but missing real credentials/live proof; 25 remains `NEEDS_LIVE_PROOF`.
 
 ## 8) Progress Log
 
@@ -115,3 +124,4 @@ Obtain actual live deployment proof on `https://picwise.subby.cloud/health` and 
 - 2026-05-06: Group 3 stages 10-15 implemented under src/picwise_surface with tests in tests/test_surface_stages_10_to_15.py and docs/STAGE_10_TO_15_PRODUCT_SURFACE_READINESS.md. Test command: python -m unittest discover -s tests. Result: 55 tests passed (OK). Stages 10-15 marked PASSED for local implementation/test status only; no live deployment, no live dashboard/Subby channel, no real product feed, and no real revenue/conversion tracking.
 - 2026-05-06: Integrated stages 16-21 implemented under src/picwise_app, src/picwise_feeds, src/picwise_redirects, src/picwise_integrations with docs/STAGE_16_TO_21_APP_PRODUCTION_PATH.md, docs/STAGE_19_LIVE_APP_DEPLOYMENT.md, docs/STAGE_20_LIVE_SUBBY_DASHBOARD_INTEGRATION.md, deployment templates, and tests/test_app_stages_16_to_21.py. Test command: python -m unittest discover -s tests. Result: 72 tests passed (OK). Statuses updated honestly: 16-18 PASSED, 19 DEPLOYMENT_READY, 20 INTEGRATION_READY, 21 NEEDS_LIVE_PROOF.
 - 2026-05-06: Stage 22 deployment-readiness layer added with WSGI deployment entrypoints (`wsgi.py`, `api/index.py`), Vercel routing config (`vercel.json`), stage doc (`docs/STAGE_22_LIVE_DEPLOYMENT_TO_PICWISE_SUBBY_CLOUD.md`), and deployment-entrypoint tests. Status set to `DEPLOYMENT_READY` pending real live URL proof at picwise.subby.cloud.
+- 2026-05-06: Stage 22 upgraded to `PASSED` using operator-supplied live proof: `https://picwise.subby.cloud/health` (OK) and `https://picwise.subby.cloud/demo` (OK). Added stage 23-25 live-production integration readiness layer: env-driven feed/affiliate/Subby configs, strict anti-fake and anti-commission validations, honest readiness/audit gates, `docs/STAGE_23_TO_25_LIVE_PRODUCTION_INTEGRATION.md`, and test coverage. Honest statuses remain: 23 `NEEDS_REAL_FEED_CONFIG`, 24 `NEEDS_LIVE_SUBBY_CONFIG`, 25 `NEEDS_LIVE_PROOF`.

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol
+import os
+from typing import Any, Mapping, Protocol
 
 from picwise_contracts import (
     ContractValidationError,
@@ -26,6 +27,30 @@ class FeedAdapterProtocol(Protocol):
         """Return engine-compatible candidate dictionaries for a query."""
 
 
+@dataclass(frozen=True)
+class FeedSourceConfig:
+    source_type: str
+    source_url: str
+    api_key: str
+
+
+@dataclass(frozen=True)
+class FeedReadiness:
+    status: str
+    reason: str
+
+
+class FeedTransportProtocol(Protocol):
+    def fetch_candidates(self, query: str, config: FeedSourceConfig) -> list[dict[str, Any]]:
+        """Fetch raw feed candidates from a configured source."""
+
+
+class NoopFeedTransport:
+    def fetch_candidates(self, query: str, config: FeedSourceConfig) -> list[dict[str, Any]]:
+        _ = (query, config)
+        return []
+
+
 FORBIDDEN_FEED_KEYS = {
     "reviews",
     "review_count",
@@ -42,12 +67,31 @@ FORBIDDEN_FEED_KEYS = {
     "fake_urgency",
     "fake_confidence",
     "fake_ai_confidence",
+    "fake_price",
+    "fake_prices",
+    "fake_availability",
     "commission",
     "commission_score",
     "commission_rank",
+    "commission_ranking",
     "rank_by_commission",
     "recommend_by_commission",
+    "rank_by_commission_rate",
+    "commission_weight",
 }
+
+FORBIDDEN_FAKE_VALUE_MARKERS = (
+    "fake review",
+    "fake rating",
+    "fake price",
+    "fake availability",
+    "fake revenue",
+    "fake conversion",
+    "fake savings",
+    "fake urgency",
+    "fake confidence",
+    "fake ai confidence",
+)
 
 
 def _contains_forbidden_keys(payload: Any) -> list[str]:
@@ -64,6 +108,23 @@ def _contains_forbidden_keys(payload: Any) -> list[str]:
     return found
 
 
+def _contains_forbidden_markers(payload: Any) -> list[str]:
+    found: list[str] = []
+    if isinstance(payload, dict):
+        for key, value in payload.items():
+            found.extend(_contains_forbidden_markers(key))
+            found.extend(_contains_forbidden_markers(value))
+    elif isinstance(payload, list):
+        for item in payload:
+            found.extend(_contains_forbidden_markers(item))
+    elif isinstance(payload, str):
+        lowered = payload.lower()
+        for marker in FORBIDDEN_FAKE_VALUE_MARKERS:
+            if marker in lowered:
+                found.append(payload)
+    return found
+
+
 def _normalize_missing_states(raw_states: list[str] | None) -> list[MissingDataState]:
     if not raw_states:
         return [MissingDataState.UNKNOWN]
@@ -71,7 +132,13 @@ def _normalize_missing_states(raw_states: list[str] | None) -> list[MissingDataS
     return [MissingDataState(state) for state in raw_states]
 
 
-def _normalize_feed_candidate(candidate: dict[str, Any], source_id: str) -> dict[str, Any]:
+def _normalize_feed_candidate(
+    candidate: dict[str, Any],
+    source_id: str,
+    *,
+    data_origin: str,
+    data_classification: str,
+) -> dict[str, Any]:
     alias_map = {
         "id": "product_id",
         "provider": "merchant_or_provider",
@@ -110,8 +177,8 @@ def _normalize_feed_candidate(candidate: dict[str, Any], source_id: str) -> dict
             "provider_id": str(normalized.get("provider_id", normalized["merchant_or_provider"])),
             "merchant_or_provider": str(normalized["merchant_or_provider"]),
             "source_id": source_id,
-            "data_origin": "local_test_fixture",
-            "data_classification": "not_production_data",
+            "data_origin": data_origin,
+            "data_classification": data_classification,
         }
     )
     normalized["tracking_metadata"] = metadata
@@ -128,7 +195,12 @@ class LocalFixtureFeedAdapter:
         if not query or not query.strip():
             raise FeedValidationError("Query is required for feed adapter.")
         fixtures = self._build_fixture_candidates()
-        normalized = validate_feed_candidates(fixtures, source_id=self._source_id)
+        normalized = validate_feed_candidates(
+            fixtures,
+            source_id=self._source_id,
+            data_origin="local_test_fixture",
+            data_classification="not_production_data",
+        )
         return FeedAdapterResult(
             candidates=normalized,
             source_metadata={
@@ -210,14 +282,97 @@ class LocalFixtureFeedAdapter:
         ]
 
 
+class ConfiguredFeedAdapter:
+    """Live-ready feed adapter that is config-driven and test-safe by default."""
+
+    def __init__(
+        self,
+        *,
+        config: FeedSourceConfig,
+        transport: FeedTransportProtocol | None = None,
+    ) -> None:
+        self._config = config
+        self._transport = transport or NoopFeedTransport()
+        self._source_id = f"configured_feed_{config.source_type or 'unknown'}"
+
+    def fetch_candidates(self, query: str) -> FeedAdapterResult:
+        if not query or not query.strip():
+            raise FeedValidationError("Query is required for feed adapter.")
+        readiness = evaluate_feed_connection_readiness(self._config)
+        if readiness.status != "FEED_READY":
+            return FeedAdapterResult(
+                candidates=[],
+                source_metadata={
+                    "adapter": "ConfiguredFeedAdapter",
+                    "source_id": self._source_id,
+                    "status": readiness.status,
+                    "reason": readiness.reason,
+                },
+                missing_data_states=[MissingDataState.NOT_CONNECTED, MissingDataState.DATA_NOT_YET],
+            )
+        raw_candidates = self._transport.fetch_candidates(query, self._config)
+        normalized = validate_feed_candidates(
+            raw_candidates,
+            source_id=self._source_id,
+            data_origin="configured_external_feed",
+            data_classification="production_ready_not_verified",
+        )
+        return FeedAdapterResult(
+            candidates=normalized,
+            source_metadata={
+                "adapter": "ConfiguredFeedAdapter",
+                "source_id": self._source_id,
+                "status": readiness.status,
+                "reason": readiness.reason,
+            },
+            missing_data_states=[MissingDataState.DATA_NOT_YET, MissingDataState.UNKNOWN],
+        )
+
+
+def load_feed_source_config_from_env(
+    env: Mapping[str, str] | None = None,
+) -> FeedSourceConfig:
+    source = env if env is not None else os.environ
+    return FeedSourceConfig(
+        source_type=str(source.get("PICWISE_FEED_SOURCE_TYPE", "")).strip(),
+        source_url=str(source.get("PICWISE_FEED_SOURCE_URL", "")).strip(),
+        api_key=str(source.get("PICWISE_FEED_API_KEY", "")).strip(),
+    )
+
+
+def evaluate_feed_connection_readiness(config: FeedSourceConfig) -> FeedReadiness:
+    if not config.source_type or not config.source_url or not config.api_key:
+        return FeedReadiness(
+            status="NEEDS_REAL_FEED_CONFIG",
+            reason=(
+                "Missing PICWISE_FEED_SOURCE_TYPE, PICWISE_FEED_SOURCE_URL, "
+                "or PICWISE_FEED_API_KEY."
+            ),
+        )
+    return FeedReadiness(status="FEED_READY", reason="Feed config is present. Live proof still required.")
+
+
 def validate_feed_candidates(
     raw_candidates: list[dict[str, Any]],
     *,
     source_id: str,
+    data_origin: str = "local_test_fixture",
+    data_classification: str = "not_production_data",
 ) -> list[dict[str, Any]]:
     forbidden = _contains_forbidden_keys(raw_candidates)
     if forbidden:
         raise FeedValidationError(
             f"Forbidden fake/commission fields in feed candidates: {sorted(set(forbidden))}"
         )
-    return [_normalize_feed_candidate(item, source_id) for item in raw_candidates]
+    forbidden_markers = _contains_forbidden_markers(raw_candidates)
+    if forbidden_markers:
+        raise FeedValidationError("Forbidden fake marker values detected in feed payload.")
+    return [
+        _normalize_feed_candidate(
+            item,
+            source_id,
+            data_origin=data_origin,
+            data_classification=data_classification,
+        )
+        for item in raw_candidates
+    ]

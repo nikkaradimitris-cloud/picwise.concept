@@ -4,7 +4,16 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 
-from picwise_feeds import LocalFixtureFeedAdapter
+from picwise_feeds import (
+    LocalFixtureFeedAdapter,
+    evaluate_feed_connection_readiness,
+    load_feed_source_config_from_env,
+)
+from picwise_integrations import evaluate_subby_readiness, load_subby_config_from_env
+from picwise_redirects import (
+    evaluate_affiliate_redirect_readiness,
+    load_affiliate_redirect_config_from_env,
+)
 
 
 EXPECTED_TITLES_1_TO_15 = [
@@ -34,6 +43,13 @@ EXPECTED_TITLES_16_TO_21 = [
     "21. Production V1 audit closure",
 ]
 
+EXPECTED_TITLES_22_TO_25 = [
+    "22. Live deployment to picwise.subby.cloud",
+    "23. Real product/feed and affiliate redirect connection",
+    "24. Live Subby dashboard event integration",
+    "25. Production V1 live audit closure",
+]
+
 
 @dataclass(frozen=True)
 class ProductionV1AuditResult:
@@ -48,17 +64,30 @@ def run_production_v1_audit(
     tests_passed: bool,
     live_deployment_proven: bool,
     live_subby_proven: bool,
+    live_feed_affiliate_proven: bool = False,
 ) -> ProductionV1AuditResult:
     root = Path(repo_root)
     progress_path = root / "PROGRESS.md"
     readme_path = root / "README.md"
     fixture_result = LocalFixtureFeedAdapter().fetch_candidates("power bank 20000mah for iphone")
+    feed_readiness = evaluate_feed_connection_readiness(load_feed_source_config_from_env())
+    affiliate_readiness = evaluate_affiliate_redirect_readiness(
+        load_affiliate_redirect_config_from_env()
+    )
+    subby_readiness = evaluate_subby_readiness(load_subby_config_from_env())
+    stage22_status = _extract_stage_status(progress_path, 22)
+    stage23_status = _extract_stage_status(progress_path, 23)
+    stage24_status = _extract_stage_status(progress_path, 24)
+    stage25_status = _extract_stage_status(progress_path, 25)
     checks = {
         "stage_16_local_app_ready": (root / "src" / "picwise_app" / "app.py").exists(),
         "stage_17_feed_adapter_ready": (root / "src" / "picwise_feeds" / "adapters.py").exists(),
         "stage_18_redirect_ready": (root / "src" / "picwise_redirects" / "resolver.py").exists(),
         "stage_19_deployment_doc_ready": (root / "docs" / "STAGE_19_LIVE_APP_DEPLOYMENT.md").exists(),
         "stage_20_subby_doc_ready": (root / "docs" / "STAGE_20_LIVE_SUBBY_DASHBOARD_INTEGRATION.md").exists(),
+        "stage_23_to_25_doc_ready": (
+            root / "docs" / "STAGE_23_TO_25_LIVE_PRODUCTION_INTEGRATION.md"
+        ).exists(),
         "tests_passed": tests_passed,
         "no_fake_data_fields": _fixture_candidates_have_no_forbidden_fields(
             fixture_result.candidates, _forbidden_fake_patterns()
@@ -69,16 +98,47 @@ def run_production_v1_audit(
         "no_committed_secrets": _scan_forbidden_patterns(root, _secret_like_patterns()) == [],
         "roadmap_titles_1_to_15_unchanged": _contains_all_fragments(progress_path, EXPECTED_TITLES_1_TO_15),
         "roadmap_titles_16_to_21_present": _contains_all_fragments(progress_path, EXPECTED_TITLES_16_TO_21),
-        "progress_is_honest_for_live_stages": _progress_honest_for_live(prog_path=progress_path),
+        "roadmap_titles_22_to_25_present": _contains_all_fragments(progress_path, EXPECTED_TITLES_22_TO_25),
+        "stage_22_live_proof_logged": _progress_has_stage_22_proof(progress_path),
+        "stage_23_progress_honest": _stage_23_progress_honest(
+            stage23_status=stage23_status,
+            live_feed_affiliate_proven=live_feed_affiliate_proven,
+            feed_readiness_status=feed_readiness.status,
+            affiliate_readiness_status=affiliate_readiness.status,
+        ),
+        "stage_24_progress_honest": _stage_24_progress_honest(
+            stage24_status=stage24_status,
+            live_subby_proven=live_subby_proven,
+            subby_readiness_status=subby_readiness.status,
+        ),
+        "stage_25_progress_honest": _stage_25_progress_honest(
+            stage25_status=stage25_status,
+            live_deployment_proven=live_deployment_proven,
+            live_feed_affiliate_proven=live_feed_affiliate_proven,
+            live_subby_proven=live_subby_proven,
+        ),
+        "stage_22_marked_passed": stage22_status == "PASSED",
+        "stage_22_input_proof_flag": live_deployment_proven,
+        "stage_23_feed_readiness_known": feed_readiness.status in {"NEEDS_REAL_FEED_CONFIG", "FEED_READY"},
+        "stage_23_affiliate_readiness_known": affiliate_readiness.status
+        in {"NEEDS_AFFILIATE_CONFIG", "REDIRECT_READY"},
+        "stage_24_subby_readiness_known": subby_readiness.status
+        in {"NEEDS_LIVE_SUBBY_CONFIG", "INTEGRATION_READY"},
         "not_live_statements_present": _contains_not_live_statements(progress_path, readme_path),
     }
     notes = []
     if not checks["no_committed_secrets"]:
         notes.append("Secret-like patterns detected; remove before release.")
-    if not checks["progress_is_honest_for_live_stages"]:
-        notes.append("PROGRESS.md overstates live deployment/subby status.")
+    if not checks["stage_23_progress_honest"]:
+        notes.append("Stage 23 progress status overclaims feed/affiliate live status.")
+    if not checks["stage_24_progress_honest"]:
+        notes.append("Stage 24 progress status overclaims live Subby status.")
+    if not checks["stage_25_progress_honest"]:
+        notes.append("Stage 25 progress status overclaims audit closure.")
     if not checks["tests_passed"]:
         notes.append("Tests did not pass.")
+    if not checks["stage_22_live_proof_logged"]:
+        notes.append("Stage 22 live proof URLs are not logged in PROGRESS.md.")
 
     local_readiness_ok = all(
         checks[key]
@@ -88,21 +148,30 @@ def run_production_v1_audit(
             "stage_18_redirect_ready",
             "stage_19_deployment_doc_ready",
             "stage_20_subby_doc_ready",
+            "stage_23_to_25_doc_ready",
             "tests_passed",
             "no_fake_data_fields",
             "no_commission_ranking_fields",
             "no_committed_secrets",
             "roadmap_titles_1_to_15_unchanged",
             "roadmap_titles_16_to_21_present",
-            "progress_is_honest_for_live_stages",
+            "roadmap_titles_22_to_25_present",
+            "stage_22_live_proof_logged",
+            "stage_22_marked_passed",
+            "stage_23_progress_honest",
+            "stage_24_progress_honest",
+            "stage_25_progress_honest",
+            "stage_23_feed_readiness_known",
+            "stage_23_affiliate_readiness_known",
+            "stage_24_subby_readiness_known",
             "not_live_statements_present",
         )
     )
     if not local_readiness_ok:
         return ProductionV1AuditResult(status="FAILED", checks=checks, notes=notes)
-    if live_deployment_proven and live_subby_proven:
+    if live_deployment_proven and live_feed_affiliate_proven and live_subby_proven:
         return ProductionV1AuditResult(status="PASSED", checks=checks, notes=notes)
-    notes.append("Local readiness passed but missing proof for live deployment and/or live Subby integration.")
+    notes.append("Local readiness passed but missing live feed/affiliate and/or Subby proof.")
     return ProductionV1AuditResult(status="NEEDS_LIVE_PROOF", checks=checks, notes=notes)
 
 
@@ -127,14 +196,78 @@ def _contains_not_live_statements(progress_path: Path, readme_path: Path) -> boo
     return all(snippet.lower() in text for snippet in snippets)
 
 
-def _progress_honest_for_live(*, prog_path: Path) -> bool:
-    if not prog_path.exists():
+def _progress_has_stage_22_proof(progress_path: Path) -> bool:
+    if not progress_path.exists():
         return False
-    text = prog_path.read_text(encoding="utf-8")
-    stage19_ok = "19 | Live app deployment | DEPLOYMENT_READY |" in text or "19 | Live app deployment | NEEDS_LIVE_DEPLOY |" in text
-    stage20_ok = "20 | Live Subby dashboard integration | INTEGRATION_READY |" in text or "20 | Live Subby dashboard integration | NEEDS_LIVE_SUBBY_PROOF |" in text
-    stage21_ok = "21 | Production V1 audit closure | NEEDS_LIVE_PROOF |" in text
-    return stage19_ok and stage20_ok and stage21_ok
+    text = progress_path.read_text(encoding="utf-8")
+    return (
+        "https://picwise.subby.cloud/health" in text
+        and "https://picwise.subby.cloud/demo" in text
+        and "22. Live deployment to picwise.subby.cloud — PASSED" in text
+    )
+
+
+def _extract_stage_status(progress_path: Path, stage_number: int) -> str:
+    if not progress_path.exists():
+        return ""
+    text = progress_path.read_text(encoding="utf-8")
+    pattern = re.compile(rf"^\|\s*{stage_number}\s*\|.*\|\s*([A-Z_]+)\s*\|$", re.MULTILINE)
+    match = pattern.search(text)
+    if not match:
+        return ""
+    return match.group(1)
+
+
+def _stage_23_progress_honest(
+    *,
+    stage23_status: str,
+    live_feed_affiliate_proven: bool,
+    feed_readiness_status: str,
+    affiliate_readiness_status: str,
+) -> bool:
+    if live_feed_affiliate_proven:
+        return stage23_status in {
+            "PASSED",
+            "FEED_READY",
+            "REDIRECT_READY",
+            "NEEDS_REAL_FEED_CONFIG",
+            "NEEDS_AFFILIATE_CONFIG",
+        }
+    allowed = {"FEED_READY", "REDIRECT_READY", "NEEDS_REAL_FEED_CONFIG", "NEEDS_AFFILIATE_CONFIG"}
+    if stage23_status not in allowed:
+        return False
+    if feed_readiness_status == "NEEDS_REAL_FEED_CONFIG" and stage23_status == "PASSED":
+        return False
+    if affiliate_readiness_status == "NEEDS_AFFILIATE_CONFIG" and stage23_status == "PASSED":
+        return False
+    return True
+
+
+def _stage_24_progress_honest(
+    *,
+    stage24_status: str,
+    live_subby_proven: bool,
+    subby_readiness_status: str,
+) -> bool:
+    if live_subby_proven:
+        return stage24_status in {"PASSED", "INTEGRATION_READY", "NEEDS_LIVE_SUBBY_CONFIG"}
+    if stage24_status not in {"INTEGRATION_READY", "NEEDS_LIVE_SUBBY_CONFIG"}:
+        return False
+    if subby_readiness_status == "NEEDS_LIVE_SUBBY_CONFIG" and stage24_status == "PASSED":
+        return False
+    return True
+
+
+def _stage_25_progress_honest(
+    *,
+    stage25_status: str,
+    live_deployment_proven: bool,
+    live_feed_affiliate_proven: bool,
+    live_subby_proven: bool,
+) -> bool:
+    if live_deployment_proven and live_feed_affiliate_proven and live_subby_proven:
+        return stage25_status in {"PASSED", "NEEDS_LIVE_PROOF"}
+    return stage25_status == "NEEDS_LIVE_PROOF"
 
 
 def _scan_forbidden_patterns(root: Path, patterns: list[re.Pattern[str]]) -> list[str]:

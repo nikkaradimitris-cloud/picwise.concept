@@ -1,6 +1,6 @@
 # 22. Live deployment to picwise.subby.cloud
 
-Stage 22 is prepared as **deployment readiness** for the production target and is not marked live until URL proof exists.
+Stage 22 is now marked **PASSED** because live URL proof was supplied by the operator.
 
 ## Deployment Target
 
@@ -48,12 +48,12 @@ Stage 22 is prepared as **deployment readiness** for the production target and i
 
 ## Live Proof Checklist
 
-- [ ] `https://picwise.subby.cloud/health` works
-- [ ] `https://picwise.subby.cloud/demo` works
+- [x] `https://picwise.subby.cloud/health` works
+- [x] `https://picwise.subby.cloud/demo` works
 
 ## Honest Status Rule
 
 If not live proven, mark `NEEDS_LIVE_PROOF` or `DEPLOYMENT_READY`, not `PASSED`.
 
-Current stage status in this repository remains `DEPLOYMENT_READY` until the two live URLs above are verified.
+Current stage status in this repository is `PASSED`, based on operator-supplied live proof for the two URLs above.
 

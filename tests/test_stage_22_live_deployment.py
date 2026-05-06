@@ -75,10 +75,9 @@ class DeploymentConfigAndDocsTests(unittest.TestCase):
             ROOT / "docs" / "STAGE_22_LIVE_DEPLOYMENT_TO_PICWISE_SUBBY_CLOUD.md"
         ).read_text(encoding="utf-8")
         self.assertIn("# 22. Live deployment to picwise.subby.cloud", stage_doc)
-        self.assertIn("Current stage status in this repository remains `DEPLOYMENT_READY`", stage_doc)
-        self.assertIn("not `PASSED`", stage_doc)
-        self.assertIn("- [ ] `https://picwise.subby.cloud/health` works", stage_doc)
-        self.assertIn("- [ ] `https://picwise.subby.cloud/demo` works", stage_doc)
+        self.assertIn("Current stage status in this repository is `PASSED`", stage_doc)
+        self.assertIn("- [x] `https://picwise.subby.cloud/health` works", stage_doc)
+        self.assertIn("- [x] `https://picwise.subby.cloud/demo` works", stage_doc)
 
 
 if __name__ == "__main__":

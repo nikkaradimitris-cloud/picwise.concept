@@ -1,6 +1,6 @@
 # Picwise Production
 
-Current status: **local app implementation + production-path readiness (not live)**.
+Current status: **local implementation + partial live proof (stage 22 only)**.
 
 ## Mandatory Reading Order
 
@@ -21,6 +21,7 @@ Current status: **local app implementation + production-path readiness (not live
 - Keep recommendation logic revenue-neutral and non-fake.
 - Do not commit real credentials or API keys.
 - Do not claim live deployment or live Subby integration without proof.
+- Do not claim live feed/affiliate integration without provider proof.
 
 ## Local Run
 
@@ -35,6 +36,21 @@ Current status: **local app implementation + production-path readiness (not live
 - Vercel function entrypoint: `api/index.py` (`app`)
 - Vercel routing config: `vercel.json`
 
+## Required Env Variable Names (No Secrets In Repo)
+
+- Feed/source:
+  - `PICWISE_FEED_SOURCE_TYPE`
+  - `PICWISE_FEED_SOURCE_URL`
+  - `PICWISE_FEED_API_KEY`
+- Affiliate/redirect:
+  - `PICWISE_AFFILIATE_PROVIDER`
+  - `PICWISE_AFFILIATE_TRACKING_ID`
+  - `PICWISE_AFFILIATE_REDIRECT_TEMPLATE`
+- Subby:
+  - `PICWISE_SUBBY_ENDPOINT`
+  - `PICWISE_SUBBY_PROJECT_ID`
+  - `PICWISE_SUBBY_API_KEY`
+
 ## Tests
 
 - Command: `python -m unittest discover -s tests`
@@ -43,6 +59,12 @@ Current status: **local app implementation + production-path readiness (not live
 
 - Primary domain plan remains `picwise.subby.cloud`.
 - Optional future standalone domain remains `picwise.cloud`.
+- Stages 23-25 are currently not live.
 - Stage 19 is deployment-ready only unless live deploy proof exists.
 - Stage 20 is integration-ready only unless live Subby proof exists.
-- Stage 22 is deployment-ready only unless live URL proof exists for `/health` and `/demo`.
+- Stage 22 is PASSED because operator proof exists for:
+  - `https://picwise.subby.cloud/health`
+  - `https://picwise.subby.cloud/demo`
+- Stage 23 remains non-PASSED until real feed/affiliate config and live proof exist.
+- Stage 24 remains non-PASSED until real Subby config and live dashboard proof exist.
+- Stage 25 remains `NEEDS_LIVE_PROOF` until stages 23 and 24 have live proof.

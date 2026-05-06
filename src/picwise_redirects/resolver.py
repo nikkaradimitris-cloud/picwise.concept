@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+import os
+from typing import Any, Mapping
 from urllib.parse import quote, urlparse
 
 from picwise_contracts import ContractValidationError, DecisionOutput
@@ -18,6 +19,29 @@ class RedirectResolution:
     tracking_payload: RedirectPreparation
     mode: str
     budget_ms: int
+
+
+@dataclass(frozen=True)
+class AffiliateRedirectConfig:
+    provider: str
+    tracking_id: str
+    redirect_template: str
+
+
+@dataclass(frozen=True)
+class AffiliateRedirectReadiness:
+    status: str
+    reason: str
+
+
+@dataclass(frozen=True)
+class AffiliateRedirectResolution:
+    status: str
+    resolved_target: str
+    original_target: str
+    provider: str
+    used_affiliate_redirect: bool
+    reason: str
 
 
 def resolve_redirect(
@@ -73,6 +97,71 @@ def build_redirect_tracking_payload(resolution: RedirectResolution) -> dict[str,
         "contains_conversion_data": False,
         "contains_revenue_data": False,
     }
+
+
+def load_affiliate_redirect_config_from_env(
+    env: Mapping[str, str] | None = None,
+) -> AffiliateRedirectConfig:
+    source = env if env is not None else os.environ
+    return AffiliateRedirectConfig(
+        provider=str(source.get("PICWISE_AFFILIATE_PROVIDER", "")).strip(),
+        tracking_id=str(source.get("PICWISE_AFFILIATE_TRACKING_ID", "")).strip(),
+        redirect_template=str(source.get("PICWISE_AFFILIATE_REDIRECT_TEMPLATE", "")).strip(),
+    )
+
+
+def evaluate_affiliate_redirect_readiness(
+    config: AffiliateRedirectConfig,
+) -> AffiliateRedirectReadiness:
+    if not config.provider or not config.tracking_id or not config.redirect_template:
+        return AffiliateRedirectReadiness(
+            status="NEEDS_AFFILIATE_CONFIG",
+            reason=(
+                "Missing PICWISE_AFFILIATE_PROVIDER, PICWISE_AFFILIATE_TRACKING_ID, "
+                "or PICWISE_AFFILIATE_REDIRECT_TEMPLATE."
+            ),
+        )
+    if "{target}" not in config.redirect_template:
+        return AffiliateRedirectReadiness(
+            status="NEEDS_AFFILIATE_CONFIG",
+            reason="Affiliate redirect template must include {target} placeholder.",
+        )
+    return AffiliateRedirectReadiness(
+        status="REDIRECT_READY",
+        reason="Affiliate redirect config is present. Live proof still required.",
+    )
+
+
+def resolve_affiliate_provider_redirect(
+    original_target: str,
+    *,
+    config: AffiliateRedirectConfig | None = None,
+) -> AffiliateRedirectResolution:
+    _validate_redirect_target(original_target)
+    chosen_config = config or load_affiliate_redirect_config_from_env()
+    readiness = evaluate_affiliate_redirect_readiness(chosen_config)
+    if readiness.status != "REDIRECT_READY":
+        return AffiliateRedirectResolution(
+            status=readiness.status,
+            resolved_target=original_target,
+            original_target=original_target,
+            provider=chosen_config.provider or "not_configured",
+            used_affiliate_redirect=False,
+            reason=readiness.reason,
+        )
+    resolved = chosen_config.redirect_template.format(
+        provider=quote(chosen_config.provider, safe=""),
+        tracking_id=quote(chosen_config.tracking_id, safe=""),
+        target=quote(original_target, safe=""),
+    )
+    return AffiliateRedirectResolution(
+        status="REDIRECT_READY",
+        resolved_target=resolved,
+        original_target=original_target,
+        provider=chosen_config.provider,
+        used_affiliate_redirect=True,
+        reason="Configured affiliate redirect template applied.",
+    )
 
 
 def _build_local_safe_target(target_url: str) -> str:
