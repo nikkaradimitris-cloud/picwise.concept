@@ -28,6 +28,13 @@ Current status: **local app implementation + production-path readiness (not live
 - Local URL: `http://127.0.0.1:8016`
 - Demo URL: `http://127.0.0.1:8016/demo?q=power+bank+20000mah+for+iphone`
 
+## Deployment Readiness
+
+- Deployment target domain: `picwise.subby.cloud`
+- WSGI entrypoint for deployment: `wsgi.py` (`app`)
+- Vercel function entrypoint: `api/index.py` (`app`)
+- Vercel routing config: `vercel.json`
+
 ## Tests
 
 - Command: `python -m unittest discover -s tests`
@@ -38,3 +45,4 @@ Current status: **local app implementation + production-path readiness (not live
 - Optional future standalone domain remains `picwise.cloud`.
 - Stage 19 is deployment-ready only unless live deploy proof exists.
 - Stage 20 is integration-ready only unless live Subby proof exists.
+- Stage 22 is deployment-ready only unless live URL proof exists for `/health` and `/demo`.

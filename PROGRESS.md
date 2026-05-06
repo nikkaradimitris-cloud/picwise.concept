@@ -7,7 +7,7 @@ Official human-readable progress tracker for Picwise Production.
 - Project: Picwise Production
 - Primary domain: picwise.subby.cloud
 - Product type: decision engine, not search engine
-- Current phase: Local app implementation + production path readiness layer completed through stages 16-21 (with live-proof blockers)
+- Current phase: Local app implementation + production path readiness through stage 22 (with live-proof blockers)
 
 ## 2) Source Of Truth Order
 
@@ -51,6 +51,7 @@ PASSED:
   - 19. Live app deployment (deployment readiness only)
   - 20. Live Subby dashboard integration (integration readiness only)
   - 21. Production V1 audit closure (needs live proof)
+- 22. Live deployment to picwise.subby.cloud — DEPLOYMENT_READY
 - Local implementation remains non-live and non-deployed
 
 ## 4) Locked Implementation Roadmap Status
@@ -78,6 +79,7 @@ PASSED:
 | 19 | Live app deployment | DEPLOYMENT_READY |
 | 20 | Live Subby dashboard integration | INTEGRATION_READY |
 | 21 | Production V1 audit closure | NEEDS_LIVE_PROOF |
+| 22 | Live deployment to picwise.subby.cloud | DEPLOYMENT_READY |
 
 ## 5) Completion Rule
 
@@ -92,7 +94,7 @@ A step may only be marked PASSED when there is:
 
 ## 6) Current Next Step
 
-Obtain actual live deployment proof and live Subby endpoint/key proof before upgrading stages 19-21 to PASSED.
+Obtain actual live deployment proof on `https://picwise.subby.cloud/health` and `https://picwise.subby.cloud/demo`, plus live Subby endpoint/key proof, before upgrading readiness-only stages to PASSED.
 
 ## 7) Do-Not-Claim Rules
 
@@ -112,3 +114,4 @@ Obtain actual live deployment proof and live Subby endpoint/key proof before upg
 - 2026-05-06: Engine stages 5-9 implemented under src/picwise_engine with integrated tests in tests/test_engine_stages_5_to_9.py. Test command: python -m unittest discover -s tests. Result: 36 tests passed (OK). Stages 5-9 marked PASSED. No frontend/backend/dashboard/live redirect implementation added.
 - 2026-05-06: Group 3 stages 10-15 implemented under src/picwise_surface with tests in tests/test_surface_stages_10_to_15.py and docs/STAGE_10_TO_15_PRODUCT_SURFACE_READINESS.md. Test command: python -m unittest discover -s tests. Result: 55 tests passed (OK). Stages 10-15 marked PASSED for local implementation/test status only; no live deployment, no live dashboard/Subby channel, no real product feed, and no real revenue/conversion tracking.
 - 2026-05-06: Integrated stages 16-21 implemented under src/picwise_app, src/picwise_feeds, src/picwise_redirects, src/picwise_integrations with docs/STAGE_16_TO_21_APP_PRODUCTION_PATH.md, docs/STAGE_19_LIVE_APP_DEPLOYMENT.md, docs/STAGE_20_LIVE_SUBBY_DASHBOARD_INTEGRATION.md, deployment templates, and tests/test_app_stages_16_to_21.py. Test command: python -m unittest discover -s tests. Result: 72 tests passed (OK). Statuses updated honestly: 16-18 PASSED, 19 DEPLOYMENT_READY, 20 INTEGRATION_READY, 21 NEEDS_LIVE_PROOF.
+- 2026-05-06: Stage 22 deployment-readiness layer added with WSGI deployment entrypoints (`wsgi.py`, `api/index.py`), Vercel routing config (`vercel.json`), stage doc (`docs/STAGE_22_LIVE_DEPLOYMENT_TO_PICWISE_SUBBY_CLOUD.md`), and deployment-entrypoint tests. Status set to `DEPLOYMENT_READY` pending real live URL proof at picwise.subby.cloud.
