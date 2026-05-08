@@ -73,8 +73,8 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertIn("shopping assistant", body)
         self.assertIn("Search your product here", body)
         self.assertIn("What is Picwise?", body)
-        self.assertIn("Showing 4 options for:", body)
-        self.assertIn("power bank 20000mah for iphone", body)
+        self.assertNotIn("Showing 4 options for:", body)
+        self.assertNotIn("power bank 20000mah for iphone", body)
         for forbidden_image_placeholder in (
             "TravelCore 20K product image placeholder",
             "DailyBalance PD20 product image placeholder",
