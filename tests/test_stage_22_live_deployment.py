@@ -78,7 +78,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         status, headers, body = _call_wsgi("/picwise-reference")
         self.assertEqual(status, "200 OK")
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
-        self.assertIn("See the 4 best products before you buy.", body)
+        self.assertIn("See the 4 best products before you buy", body)
         self.assertIn("shopping assistant", body)
         self.assertIn("Search your product here", body)
         for forbidden_image_placeholder in (
@@ -125,7 +125,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(demo_status, "200 OK")
         self.assertEqual(reference_status, "200 OK")
 
-        self.assertIn("See the 4 best products before you buy.", reference_body)
+        self.assertIn("See the 4 best products before you buy", reference_body)
         self.assertIn("shopping assistant", reference_body)
         self.assertIn("Search your product here", reference_body)
         self.assertIn("What is Picwise?", reference_body)
@@ -195,7 +195,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
     def test_landing_contains_hero_subtitle(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
         self.assertIn(
-            "See the 4 best products before you buy.",
+            "See the 4 best products before you buy",
             body,
         )
 

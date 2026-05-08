@@ -151,17 +151,17 @@ def render_picwise_reference_surface() -> str:
         ".pw-topbar{display:flex;justify-content:space-between;align-items:center;height:52px;margin-bottom:14px;}"
         ".pw-brand{display:flex;align-items:flex-start;gap:10px;text-decoration:none;color:#0f1f3a;}"
         ".pw-brand-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1;}"
-        ".pw-logo{width:34px;height:34px;border-radius:12px;background:linear-gradient(160deg,#30a0ff 0%,#1f6cff 70%);position:relative;box-shadow:0 9px 18px rgba(31,108,255,.2);margin-top:2px;}"
-        ".pw-logo::before{content:'';position:absolute;left:8px;top:8px;width:14px;height:14px;border:3px solid #fff;border-right-color:transparent;border-radius:999px;}"
-        ".pw-logo::after{content:'';position:absolute;right:8px;bottom:8px;width:6px;height:6px;background:#fff;border-radius:999px;}"
-        ".pw-brand-name{display:block;font-size:34px;line-height:1;font-weight:800;letter-spacing:-.04em;text-transform:lowercase;}"
-        ".pw-brand-tagline{display:block;margin-top:2px;margin-left:0;padding-left:0;align-self:flex-start;font-size:11px;color:#304768;line-height:1.2;letter-spacing:.02em;text-align:left;}"
+        ".pw-logo{width:38px;height:38px;border-radius:13px;background:linear-gradient(160deg,#30a0ff 0%,#1f6cff 70%);position:relative;box-shadow:0 9px 18px rgba(31,108,255,.2);margin-top:1px;}"
+        ".pw-logo::before{content:'';position:absolute;left:9px;top:9px;width:16px;height:16px;border:3px solid #fff;border-right-color:transparent;border-radius:999px;}"
+        ".pw-logo::after{content:'';position:absolute;right:9px;bottom:9px;width:7px;height:7px;background:#fff;border-radius:999px;}"
+        ".pw-brand-name{display:block;font-size:38px;line-height:1;font-weight:800;letter-spacing:-.04em;text-transform:lowercase;}"
+        ".pw-brand-tagline{display:block;margin-top:1px;margin-left:0;padding-left:0;align-self:flex-start;font-size:12px;color:#304768;line-height:1.05;letter-spacing:.02em;text-align:left;}"
         ".pw-actions{display:flex;align-items:center;gap:8px;padding-top:0;flex-wrap:wrap;justify-content:flex-end;row-gap:8px;}"
         ".pw-topbar-control{display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 13px;border-radius:999px;font-size:13px;font-weight:600;line-height:1;border:1px solid transparent;white-space:nowrap;}"
         ".pw-login-btn{background:#fff;color:#1d3a63;border-color:#ccdbf2;box-shadow:0 1px 3px rgba(17,53,110,.08);cursor:pointer;}"
         ".pw-register{background:#1f6dff;color:#fff;border-color:#1f6dff;text-decoration:none;box-shadow:0 6px 14px rgba(31,109,255,.2);}"
         ".pw-hero{text-align:center;height:86px;margin-bottom:12px;}"
-        ".pw-hero h1{margin:8px 0 0;font-size:43px;font-weight:700;letter-spacing:-.02em;color:#0f1f3a;line-height:1.1;position:relative;display:inline-block;animation:pwHeadlinePulse 1.2s ease-out 2;}"
+        ".pw-hero h1{margin:8px 0 0;font-size:36px;font-weight:700;letter-spacing:-.02em;color:#2e435f;line-height:1.1;position:relative;display:inline-block;animation:pwHeadlinePulse 1.2s ease-out 2;}"
         ".pw-hero h1::after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.16) 40%,rgba(255,255,255,.62) 50%,rgba(255,255,255,.16) 60%,rgba(255,255,255,0) 100%);transform:translateX(-130%);mix-blend-mode:screen;pointer-events:none;animation:pwHeadlineShimmer 1.25s ease-out 2;}"
         "@keyframes pwHeadlineShimmer{0%{transform:translateX(-130%);}100%{transform:translateX(130%);}}"
         "@keyframes pwHeadlinePulse{0%{transform:scale(1);text-shadow:0 0 0 rgba(62,118,225,0);}50%{transform:scale(1.007);text-shadow:0 0 14px rgba(62,118,225,.2);}100%{transform:scale(1);text-shadow:0 0 0 rgba(62,118,225,0);}}"
@@ -216,7 +216,7 @@ def render_picwise_reference_surface() -> str:
         ".pw-footer a{color:#6e83a3;text-decoration:none;margin-left:22px;}"
         "@media (min-width:1100px){.pw-reference-viewport{padding:8px;}.pw-reference-frame{padding:12px 20px 16px;}.pw-topbar{height:46px;margin-bottom:10px;}.pw-hero{height:72px;margin-bottom:8px;}.pw-search-wrap{height:52px;margin:0 auto 10px;}.pw-query{margin:0 0 12px;height:22px;}.pw-card{padding:12px 12px 10px;min-height:444px;}.pw-product-image-wrap{height:74px;margin:0 0 8px;}.pw-product-image{width:228px;height:74px;}}"
         "@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:760px;}.pw-topbar{height:auto;gap:10px;}.pw-hero{height:auto;}}"
-        "@media (max-width:699px){.pw-reference-frame{padding:14px 12px 20px;}.pw-topbar{flex-direction:column;align-items:center;margin-bottom:12px;}.pw-actions{width:100%;justify-content:center;gap:8px;}.pw-brand-name{font-size:30px;}.pw-hero h1{font-size:33px;}.pw-search-wrap{height:auto;}.pw-search-shell{height:52px;padding:0 8px 0 14px;}.pw-search-input{height:50px;font-size:16px;}.pw-grid{grid-template-columns:1fr;max-width:360px;}.pw-card{max-width:360px;}.pw-query{height:auto;padding:0 6px;}.pw-tooltip{width:min(430px,calc(100% - 8px));}}"
+        "@media (max-width:699px){.pw-reference-frame{padding:14px 12px 20px;}.pw-topbar{flex-direction:column;align-items:center;margin-bottom:12px;}.pw-actions{width:100%;justify-content:center;gap:8px;}.pw-brand-name{font-size:33px;}.pw-hero h1{font-size:28px;}.pw-search-wrap{height:auto;}.pw-search-shell{height:52px;padding:0 8px 0 14px;}.pw-search-input{height:50px;font-size:16px;}.pw-grid{grid-template-columns:1fr;max-width:360px;}.pw-card{max-width:360px;}.pw-query{height:auto;padding:0 6px;}.pw-tooltip{width:min(430px,calc(100% - 8px));}}"
         "</style></head><body>"
         '<main class="pw-reference-viewport">'
         '<div class="pw-reference-scale-shell" id="pw-reference-scale-shell">'
@@ -228,7 +228,7 @@ def render_picwise_reference_surface() -> str:
         "</a>"
         '<div class="pw-actions"><button class="pw-topbar-control pw-login-btn" type="button">Login</button><a class="pw-topbar-control pw-register" href="#">Register</a><section class="pw-info-wrap" id="pw-info-wrap"><button class="pw-topbar-control pw-info-link" id="pw-info-button" type="button" aria-label="What is Picwise?" aria-expanded="false" aria-controls="pw-tooltip">What is Picwise?</button><div class="pw-tooltip" id="pw-tooltip">Picwise is your shopping assistant. It compares products for what you want to buy, recommends the 4 best matches, saves you time, and helps you choose faster.</div></section></div>'
         "</header>"
-        '<section class="pw-hero"><h1>See the 4 best products before you buy.</h1></section>'
+        '<section class="pw-hero"><h1>See the 4 best products before you buy</h1></section>'
         '<section class="pw-search-wrap" aria-label="Search">'
         '<div class="pw-search-shell">'
         '<span class="pw-search-icon" aria-hidden="true"></span>'

@@ -69,7 +69,7 @@ class AppHttpEndpointTests(unittest.TestCase):
 
     def test_picwise_reference_route_renders_static_reference_page(self) -> None:
         body = self._fetch("/picwise-reference")
-        self.assertIn("See the 4 best products before you buy.", body)
+        self.assertIn("See the 4 best products before you buy", body)
         self.assertIn("shopping assistant", body)
         self.assertIn("Search your product here", body)
         self.assertIn("What is Picwise?", body)
@@ -156,7 +156,7 @@ class AppHttpEndpointTests(unittest.TestCase):
     def test_demo_includes_hero_subtitle_and_demo_note(self) -> None:
         body = self._fetch("/demo")
         self.assertIn(
-            "See the 4 best products before you buy.",
+            "See the 4 best products before you buy",
             body,
         )
         self.assertIn(
