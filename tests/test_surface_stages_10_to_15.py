@@ -95,6 +95,7 @@ class LandingUiTests(unittest.TestCase):
         self.assertIn('class="pw-hero"', html)
         self.assertLess(html.index('class="pw-topbar"'), html.index('class="pw-hero"'))
         self.assertIn('class="pw-brand"', html)
+        self.assertIn("shopping assistant", html)
         self.assertIn(">picwise<", html)
 
     def test_landing_renders_exactly_4_primary_cards(self) -> None:
@@ -108,11 +109,9 @@ class LandingUiTests(unittest.TestCase):
             html.rfind('<article class="pw-card pw-card-recommended"'),
             html.find('<article class="pw-card"'),
         )
-        self.assertIn("pw-rec-bubble-top", html)
-        self.assertIn("pw-rec-bubble-bottom", html)
-        self.assertIn("pw-rec-pulse-1", html)
-        self.assertIn("pw-rec-pulse-2", html)
-        self.assertIn("pw-rec-pulse-3", html)
+        self.assertIn("pw-rec-ring-a", html)
+        self.assertIn("pw-rec-ring-b", html)
+        self.assertIn("pw-rec-ring-c", html)
 
     def test_search_button_uses_css_magnifier_not_emoji_or_arrow(self) -> None:
         html = render_landing_surface(build_decision_output())
@@ -126,12 +125,9 @@ class LandingUiTests(unittest.TestCase):
     def test_landing_includes_query_confirmation(self) -> None:
         decision = build_decision_output()
         html = render_landing_surface(decision)
-        self.assertIn(
-            f"4 decision-ready options for {decision.query}",
-            html,
-        )
+        self.assertIn("See the 4 best products before you buy.", html)
         self.assertIn(decision.query, html)
-        self.assertIn("Showing 4 decision-ready options for:", html)
+        self.assertIn("Showing 4 options for:", html)
 
     def test_landing_does_not_render_infinite_list_behavior(self) -> None:
         html = render_landing_surface(build_decision_output())
@@ -149,17 +145,21 @@ class LandingUiTests(unittest.TestCase):
         self.assertIn('class="pw-demo-note"', html)
         self.assertIn('class="pw-footer"', html)
         self.assertLess(html.index('class="pw-demo-note"'), html.index('class="pw-footer"'))
-        self.assertEqual(html.count("Design by subby.cloud"), 1)
-        self.assertNotIn(">Night mode<", html)
+        self.assertIn("All rights reserved.", html)
 
-    def test_more_section_is_secondary_and_max_4_choices(self) -> None:
-        html = render_landing_surface(build_decision_output(include_more=True))
-        self.assertIn('class="pw-more"', html)
-        self.assertEqual(html.count('<li data-choice-id="m'), 4)
+    def test_landing_contains_required_info_link_and_tooltip_text(self) -> None:
+        html = render_landing_surface(build_decision_output())
+        self.assertIn("What is Picwise?", html)
+        self.assertIn(
+            "Picwise is your shopping assistant. It compares products for what you want to buy, "
+            "recommends the 4 best matches, saves you time, and helps you choose faster.",
+            html,
+        )
+        self.assertNotIn('class="pw-more"', html)
 
     def test_css_has_no_negative_margin_top_on_shell_or_hero(self) -> None:
         css = self._extract_inline_css(render_landing_surface(build_decision_output())).replace(" ", "")
-        self.assertNotIn(".pw-shell{margin-top:-", css)
+        self.assertNotIn(".pw-page{margin-top:-", css)
         self.assertNotIn(".pw-hero{margin-top:-", css)
 
     def test_css_has_no_negative_translate_for_topbar_or_hero(self) -> None:

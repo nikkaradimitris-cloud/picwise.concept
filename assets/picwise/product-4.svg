@@ -1,0 +1,14 @@
+<svg width="252" height="84" viewBox="0 0 252 84" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="252" height="84" rx="12" fill="#EEF3FB"/>
+  <g transform="translate(35 12) rotate(-11 90 30)">
+    <rect x="14" y="8" width="176" height="44" rx="14" fill="#8A95A6"/>
+    <rect x="26" y="16" width="132" height="28" rx="10" fill="url(#shine-silver)"/>
+    <rect x="162" y="24" width="14" height="12" rx="6" fill="#D6DEE9"/>
+  </g>
+  <defs>
+    <linearGradient id="shine-silver" x1="26" y1="16" x2="158" y2="44" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C4CCD8"/>
+      <stop offset="1" stop-color="#9FAABA"/>
+    </linearGradient>
+  </defs>
+</svg>

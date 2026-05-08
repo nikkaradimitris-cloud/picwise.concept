@@ -16,7 +16,7 @@ def main() -> None:
     port = 8016
     server = run_local_server(host=host, port=port)
     print(f"Picwise local app running on http://{host}:{port}")
-    print("Routes: GET /health, GET /demo?q=power+bank+20000mah+for+iphone")
+    print("Routes: GET /health, GET /demo?q=power+bank+20000mah+for+iphone, GET /picwise-reference")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

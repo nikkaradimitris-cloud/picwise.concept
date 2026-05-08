@@ -1,0 +1,14 @@
+<svg width="252" height="84" viewBox="0 0 252 84" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="252" height="84" rx="12" fill="#EEF3FB"/>
+  <g transform="translate(34 11) rotate(-13 92 30)">
+    <rect x="14" y="8" width="176" height="44" rx="14" fill="#182B56"/>
+    <rect x="26" y="16" width="132" height="28" rx="10" fill="url(#shine-navy)"/>
+    <circle cx="168" cy="30" r="4" fill="#9AB1D6"/>
+  </g>
+  <defs>
+    <linearGradient id="shine-navy" x1="26" y1="16" x2="158" y2="44" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#32508D"/>
+      <stop offset="1" stop-color="#20366A"/>
+    </linearGradient>
+  </defs>
+</svg>

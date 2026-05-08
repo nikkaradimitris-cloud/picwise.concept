@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import mimetypes
 import sys
 from pathlib import Path
 from typing import Callable
@@ -16,6 +17,7 @@ from picwise_integrations import (  # noqa: E402
     UrllibSubbyBridgeEventSender,
     send_subby_live_proof_event,
 )
+from picwise_surface import render_picwise_reference_surface  # noqa: E402
 
 StartResponse = Callable[[str, list[tuple[str, str]]], None]
 
@@ -51,10 +53,21 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
         return _response("200 OK", "application/json; charset=utf-8", body, start_response)
 
+    if path.startswith("/assets/"):
+        asset_result = _asset_response(path)
+        if asset_result is not None:
+            content_type, body = asset_result
+            return _response("200 OK", content_type, body, start_response)
+
     if path in {"/", "/demo"}:
         query_string = str(environ.get("QUERY_STRING", ""))
         query = parse_qs(query_string).get("q", ["power bank 20000mah for iphone"])[0]
         html = _APP.demo_html(query)
+        body = html.encode("utf-8")
+        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+
+    if path == "/picwise-reference":
+        html = render_picwise_reference_surface()
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
@@ -63,7 +76,25 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
         return _response("200 OK", "application/json; charset=utf-8", body, start_response)
 
-    payload = {"error": "not_found", "available_routes": ["/", "/health", "/demo", "/subby-proof"]}
+    payload = {
+        "error": "not_found",
+        "available_routes": ["/", "/health", "/demo", "/picwise-reference", "/subby-proof"],
+    }
     body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
     return _response("404 Not Found", "application/json; charset=utf-8", body, start_response)
+
+
+def _asset_response(path: str) -> tuple[str, bytes] | None:
+    relative_path = path.removeprefix("/")
+    asset_path = (ROOT / relative_path).resolve()
+    assets_root = (ROOT / "assets").resolve()
+    if not str(asset_path).startswith(str(assets_root)):
+        return None
+    if not asset_path.exists() or not asset_path.is_file():
+        return None
+    mime_type, _ = mimetypes.guess_type(str(asset_path))
+    content_type = (
+        f"{mime_type}; charset=utf-8" if mime_type == "text/css" else (mime_type or "application/octet-stream")
+    )
+    return content_type, asset_path.read_bytes()
 

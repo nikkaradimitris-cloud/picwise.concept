@@ -71,8 +71,71 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(status, "200 OK")
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
         self.assertIn("<main", body.lower())
-        self.assertIn("Showing 4 decision-ready options for:", body)
+        self.assertIn("Showing 4 options for:", body)
         self.assertNotIn("not_found", body)
+
+    def test_picwise_reference_route_returns_static_reference_html(self) -> None:
+        status, headers, body = _call_wsgi("/picwise-reference")
+        self.assertEqual(status, "200 OK")
+        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+        self.assertIn("See the 4 best products before you buy.", body)
+        self.assertIn("shopping assistant", body)
+        self.assertIn("Search your product here", body)
+        for forbidden_image_placeholder in (
+            "TravelCore 20K product image placeholder",
+            "DailyBalance PD20 product image placeholder",
+            "EverydaySure 22.5W product image placeholder",
+            "PowerMax Elite 25K product image placeholder",
+        ):
+            self.assertNotIn(forbidden_image_placeholder, body)
+        self.assertIn("What is Picwise?", body)
+        self.assertIn(
+            "Demo data source: local_test_fixture (not_production_data).",
+            body,
+        )
+        self.assertIn("All rights reserved.", body)
+        self.assertIn("Privacy", body)
+        self.assertIn("Terms", body)
+        self.assertIn("Contact", body)
+        self.assertEqual(body.count('<article class="pw-card'), 4)
+        self.assertNotIn("&middot;", body)
+        for asset in (
+            "/assets/picwise/product-1.svg",
+            "/assets/picwise/product-2.svg",
+            "/assets/picwise/product-3.svg",
+            "/assets/picwise/product-4.svg",
+        ):
+            self.assertIn(asset, body)
+        for product_name in (
+            "TravelCore 20K",
+            "DailyBalance PD20",
+            "EverydaySure 22.5W",
+            "PowerMax Elite 25K",
+        ):
+            self.assertIn(product_name, body)
+
+    def test_reference_route_and_required_core_routes_are_registered(self) -> None:
+        health_status, _health_headers, _health_body = _call_wsgi("/health")
+        root_status, _root_headers, _root_body = _call_wsgi("/")
+        demo_status, _demo_headers, _demo_body = _call_wsgi("/demo")
+        reference_status, _reference_headers, reference_body = _call_wsgi("/picwise-reference")
+
+        self.assertEqual(health_status, "200 OK")
+        self.assertEqual(root_status, "200 OK")
+        self.assertEqual(demo_status, "200 OK")
+        self.assertEqual(reference_status, "200 OK")
+
+        self.assertIn("See the 4 best products before you buy.", reference_body)
+        self.assertIn("shopping assistant", reference_body)
+        self.assertIn("Search your product here", reference_body)
+        self.assertIn("What is Picwise?", reference_body)
+        for product_name in (
+            "TravelCore 20K",
+            "DailyBalance PD20",
+            "EverydaySure 22.5W",
+            "PowerMax Elite 25K",
+        ):
+            self.assertIn(product_name, reference_body)
 
     def test_demo_has_search_form_with_query_value(self) -> None:
         query = "best office chair under 200"
@@ -93,28 +156,22 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(body.count('<article class="pw-card pw-card-recommended"'), 1)
         self.assertEqual(body.count("Recommended by Picwise"), 1)
 
-    def test_recommended_card_has_badge_bubbles_and_pulse_elements(self) -> None:
+    def test_recommended_card_has_required_highlight_elements(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
         required_classes = (
             "pw-topbar",
             "pw-brand",
-            "pw-nav",
-            "pw-theme-toggle",
             "pw-search-shell",
             "pw-search-button",
-            "pw-bg-network-left",
-            "pw-bg-circuit-right",
+            "pw-bg-left",
+            "pw-bg-right",
             "pw-grid",
             "pw-card-recommended",
             "pw-rec-badge",
-            "pw-rec-bubble-top",
-            "pw-rec-bubble-bottom",
-            "pw-rec-pulse-1",
-            "pw-rec-pulse-2",
-            "pw-rec-pulse-3",
+            "pw-rec-ring-a",
+            "pw-rec-ring-b",
+            "pw-rec-ring-c",
             "pw-footer",
-            "pw-footer-left",
-            "pw-footer-right",
             "pw-demo-note",
         )
         for class_name in required_classes:
@@ -123,46 +180,32 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertNotIn("Best fit", body)
         self.assertNotIn("Fast decision", body)
 
-    def test_landing_contains_header_nav_and_theme_toggle_pill(self) -> None:
+    def test_landing_contains_header_with_login_register(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
         self.assertIn('class="pw-topbar"', body)
         self.assertIn('class="pw-hero"', body)
         self.assertLess(body.index('class="pw-topbar"'), body.index('class="pw-hero"'))
         self.assertIn('class="pw-brand"', body)
         self.assertIn(">picwise<", body)
-        self.assertIn("Πώς λειτουργεί", body)
-        self.assertIn("FAQ", body)
-        self.assertIn("Σχετικά με", body)
-        self.assertIn('id="theme-toggle"', body)
-        self.assertIn('class="pw-theme-knob"', body)
-        self.assertIn("Day / Night", body)
-        self.assertIn("☾", body)
-        self.assertIn("Toggle day/night theme", body)
-        self.assertNotIn(">Night mode<", body)
-        self.assertIn("localStorage", body)
+        self.assertIn("shopping assistant", body)
+        self.assertIn("Login", body)
+        self.assertIn("Register", body)
+        self.assertNotIn("FAQ", body)
 
     def test_landing_contains_hero_subtitle(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
         self.assertIn(
-            "4 decision-ready options for power bank 20000mah for iphone",
-            body,
-        )
-        self.assertIn(
-            "Smart recommendations, side-by-side. Compare and choose with confidence.",
+            "See the 4 best products before you buy.",
             body,
         )
 
-    def test_landing_contains_footer_nav_and_design_credit(self) -> None:
+    def test_landing_contains_footer_nav_links(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
         self.assertIn('class="pw-footer"', body)
-        self.assertIn('class="pw-footer-left"', body)
-        self.assertIn('class="pw-footer-right"', body)
-        self.assertIn("Επικοινωνία", body)
-        self.assertIn("Όροι", body)
-        self.assertIn("Ρυθμίσεις", body)
-        self.assertIn("Design by subby.cloud", body)
-        self.assertEqual(body.count("Design by subby.cloud"), 1)
-        self.assertNotIn("Designed by Subby.cloud", body)
+        self.assertIn("All rights reserved.", body)
+        self.assertIn("Privacy", body)
+        self.assertIn("Terms", body)
+        self.assertIn("Contact", body)
         lowered = body.lower()
         self.assertNotIn("advertising", lowered)
         self.assertNotIn("η τρίτη δεκαετία", lowered)

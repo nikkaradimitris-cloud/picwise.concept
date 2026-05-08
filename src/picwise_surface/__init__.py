@@ -9,6 +9,7 @@ from .final_audit import (
     run_final_v1_audit_closure,
 )
 from .landing import render_landing_surface
+from .reference import render_picwise_reference_surface
 from .performance import (
     PerformanceAuditResult,
     audit_surface_performance,
@@ -35,5 +36,6 @@ __all__ = [
     "build_surface_metrics",
     "prepare_redirect_tracking",
     "render_landing_surface",
+    "render_picwise_reference_surface",
     "run_final_v1_audit_closure",
 ]
