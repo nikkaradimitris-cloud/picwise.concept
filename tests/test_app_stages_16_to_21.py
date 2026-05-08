@@ -70,11 +70,19 @@ class AppHttpEndpointTests(unittest.TestCase):
     def test_picwise_reference_route_renders_static_reference_page(self) -> None:
         body = self._fetch("/picwise-reference")
         self.assertIn("See the 4 best products before you buy", body)
-        self.assertIn("shopping assistant", body)
-        self.assertIn("Search your product here", body)
+        self.assertNotIn("shopping assistant", body)
+        self.assertIn(
+            'placeholder="See the 4 best products before you buy"',
+            body,
+        )
+        self.assertNotIn("<h1>See the 4 best products before you buy</h1>", body)
+        self.assertNotIn("Search your product here", body)
+        self.assertNotIn('value="See the 4 best products before you buy"', body)
         self.assertIn("What is Picwise?", body)
-        self.assertNotIn("Showing 4 options for:", body)
-        self.assertNotIn("power bank 20000mah for iphone", body)
+        self.assertIn("Showing 4 options for: power bank 20000mah for iphone", body)
+        self.assertNotIn("LIVE RENDERER PROOF V1", body)
+        self.assertNotIn("picwise-reference-live-renderer-proof-v1", body)
+        self.assertEqual(body.count('class="pw-brand"'), 1)
         for forbidden_image_placeholder in (
             "TravelCore 20K product image placeholder",
             "DailyBalance PD20 product image placeholder",

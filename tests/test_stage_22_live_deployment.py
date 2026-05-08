@@ -79,8 +79,14 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(status, "200 OK")
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
         self.assertIn("See the 4 best products before you buy", body)
-        self.assertIn("shopping assistant", body)
-        self.assertIn("Search your product here", body)
+        self.assertNotIn("shopping assistant", body)
+        self.assertIn(
+            'placeholder="See the 4 best products before you buy"',
+            body,
+        )
+        self.assertNotIn("<h1>See the 4 best products before you buy</h1>", body)
+        self.assertNotIn("Search your product here", body)
+        self.assertNotIn('value="See the 4 best products before you buy"', body)
         for forbidden_image_placeholder in (
             "TravelCore 20K product image placeholder",
             "DailyBalance PD20 product image placeholder",
@@ -88,7 +94,11 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "PowerMax Elite 25K product image placeholder",
         ):
             self.assertNotIn(forbidden_image_placeholder, body)
+        self.assertIn("Showing 4 options for: power bank 20000mah for iphone", body)
+        self.assertNotIn("LIVE RENDERER PROOF V1", body)
+        self.assertNotIn("picwise-reference-live-renderer-proof-v1", body)
         self.assertIn("What is Picwise?", body)
+        self.assertEqual(body.count('class="pw-brand"'), 1)
         self.assertIn(
             "Demo data source: local_test_fixture (not_production_data).",
             body,
@@ -126,9 +136,22 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(reference_status, "200 OK")
 
         self.assertIn("See the 4 best products before you buy", reference_body)
-        self.assertIn("shopping assistant", reference_body)
-        self.assertIn("Search your product here", reference_body)
+        self.assertNotIn("shopping assistant", reference_body)
+        self.assertIn(
+            'placeholder="See the 4 best products before you buy"',
+            reference_body,
+        )
+        self.assertNotIn("<h1>See the 4 best products before you buy</h1>", reference_body)
+        self.assertNotIn("Search your product here", reference_body)
+        self.assertNotIn('value="See the 4 best products before you buy"', reference_body)
+        self.assertIn(
+            "Showing 4 options for: power bank 20000mah for iphone",
+            reference_body,
+        )
+        self.assertNotIn("LIVE RENDERER PROOF V1", reference_body)
+        self.assertNotIn("picwise-reference-live-renderer-proof-v1", reference_body)
         self.assertIn("What is Picwise?", reference_body)
+        self.assertEqual(reference_body.count('class="pw-brand"'), 1)
         for product_name in (
             "TravelCore 20K",
             "DailyBalance PD20",
