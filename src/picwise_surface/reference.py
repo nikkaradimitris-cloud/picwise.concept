@@ -160,7 +160,7 @@ def render_picwise_reference_surface() -> str:
         ".pw-login-btn{background:#fff;color:#1d3a63;border-color:#ccdbf2;box-shadow:0 1px 3px rgba(17,53,110,.08);cursor:pointer;}"
         ".pw-register{background:#1f6dff;color:#fff;border-color:#1f6dff;text-decoration:none;box-shadow:0 6px 14px rgba(31,109,255,.2);}"
         ".pw-hero{text-align:center;height:86px;margin-bottom:12px;}"
-        ".pw-hero h1{margin:8px 0 0;font-size:32px;font-weight:700;letter-spacing:-.02em;color:#5f6670;line-height:1.1;position:relative;display:inline-block;animation:pwHeadlinePulse 1.2s ease-out 2;}"
+        ".pw-hero h1{margin:8px 0 0;font-size:32px;font-weight:700;letter-spacing:-.02em;color:#304768;line-height:1.1;position:relative;display:inline-block;animation:pwHeadlinePulse 1.2s ease-out 2;}"
         ".pw-hero h1::after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.16) 40%,rgba(255,255,255,.62) 50%,rgba(255,255,255,.16) 60%,rgba(255,255,255,0) 100%);transform:translateX(-130%);mix-blend-mode:screen;pointer-events:none;animation:pwHeadlineShimmer 1.25s ease-out 2;}"
         "@keyframes pwHeadlineShimmer{0%{transform:translateX(-130%);}100%{transform:translateX(130%);}}"
         "@keyframes pwHeadlinePulse{0%{transform:scale(1);text-shadow:0 0 0 rgba(62,118,225,0);}50%{transform:scale(1.007);text-shadow:0 0 14px rgba(62,118,225,.2);}100%{transform:scale(1);text-shadow:0 0 0 rgba(62,118,225,0);}}"
