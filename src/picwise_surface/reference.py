@@ -156,9 +156,10 @@ def render_picwise_reference_surface() -> str:
         ".pw-logo::after{content:'';position:absolute;right:8px;bottom:8px;width:6px;height:6px;background:#fff;border-radius:999px;}"
         ".pw-brand-name{display:block;font-size:34px;line-height:1;font-weight:800;letter-spacing:-.04em;text-transform:lowercase;}"
         ".pw-brand-tagline{display:block;margin-top:2px;margin-left:0;padding-left:0;align-self:flex-start;font-size:11px;color:#304768;line-height:1.2;letter-spacing:.02em;text-align:left;}"
-        ".pw-actions{display:flex;align-items:center;gap:12px;padding-top:0;flex-wrap:wrap;justify-content:flex-end;}"
-        ".pw-login{font-size:16px;color:#1d2d4a;text-decoration:none;font-weight:600;}"
-        ".pw-register{display:inline-flex;align-items:center;justify-content:center;width:118px;height:40px;border-radius:999px;background:#1f6dff;color:#fff;font-size:16px;font-weight:700;text-decoration:none;box-shadow:0 10px 22px rgba(31,109,255,.28);}"
+        ".pw-actions{display:flex;align-items:center;gap:8px;padding-top:0;flex-wrap:wrap;justify-content:flex-end;row-gap:8px;}"
+        ".pw-topbar-control{display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 13px;border-radius:999px;font-size:13px;font-weight:600;line-height:1;border:1px solid transparent;white-space:nowrap;}"
+        ".pw-login-btn{background:#fff;color:#1d3a63;border-color:#ccdbf2;box-shadow:0 1px 3px rgba(17,53,110,.08);cursor:pointer;}"
+        ".pw-register{background:#1f6dff;color:#fff;border-color:#1f6dff;text-decoration:none;box-shadow:0 6px 14px rgba(31,109,255,.2);}"
         ".pw-hero{text-align:center;height:86px;margin-bottom:12px;}"
         ".pw-hero h1{margin:8px 0 0;font-size:43px;font-weight:700;letter-spacing:-.02em;color:#0f1f3a;line-height:1.1;position:relative;display:inline-block;animation:pwHeadlinePulse 1.2s ease-out 2;}"
         ".pw-hero h1::after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.16) 40%,rgba(255,255,255,.62) 50%,rgba(255,255,255,.16) 60%,rgba(255,255,255,0) 100%);transform:translateX(-130%);mix-blend-mode:screen;pointer-events:none;animation:pwHeadlineShimmer 1.25s ease-out 2;}"
@@ -174,7 +175,7 @@ def render_picwise_reference_surface() -> str:
         ".pw-search-button{width:42px;height:42px;border-radius:999px;border:0;background:#1f6dff;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(31,109,255,.3);}"
         ".pw-search-button .pw-search-button-icon{color:#fff;}"
         ".pw-info-wrap{position:relative;display:inline-flex;flex-direction:column;align-items:stretch;gap:0;z-index:3;}"
-        ".pw-info-link{display:inline-flex;align-items:center;justify-content:center;height:40px;border:0;background:#1f6dff;color:#fff;font-size:16px;font-weight:700;padding:0 18px;border-radius:999px;cursor:pointer;box-shadow:0 8px 18px rgba(31,109,255,.25);white-space:nowrap;}"
+        ".pw-info-link{background:#2d79f5;color:#fff;border-color:#2d79f5;cursor:pointer;box-shadow:0 6px 14px rgba(45,121,245,.2);}"
         ".pw-info-link:focus-visible{outline:2px solid #2a6deb;outline-offset:3px;}"
         ".pw-tooltip{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);width:min(430px,calc(100vw - 24px));background:#fff;border:1px solid #dbe6f8;border-radius:12px;box-shadow:0 14px 30px rgba(16,39,77,.12);padding:12px 14px;font-size:14px;line-height:1.5;color:#112849;text-align:left;display:none;z-index:2;}"
         ".pw-tooltip::before{content:'';position:absolute;left:50%;top:-7px;transform:translateX(-50%) rotate(45deg);width:14px;height:14px;background:#fff;border-left:1px solid #dbe6f8;border-top:1px solid #dbe6f8;}"
@@ -215,7 +216,7 @@ def render_picwise_reference_surface() -> str:
         ".pw-footer a{color:#6e83a3;text-decoration:none;margin-left:22px;}"
         "@media (min-width:1100px){.pw-reference-viewport{padding:8px;}.pw-reference-frame{padding:12px 20px 16px;}.pw-topbar{height:46px;margin-bottom:10px;}.pw-hero{height:72px;margin-bottom:8px;}.pw-search-wrap{height:52px;margin:0 auto 10px;}.pw-query{margin:0 0 12px;height:22px;}.pw-card{padding:12px 12px 10px;min-height:444px;}.pw-product-image-wrap{height:74px;margin:0 0 8px;}.pw-product-image{width:228px;height:74px;}}"
         "@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:760px;}.pw-topbar{height:auto;gap:10px;}.pw-hero{height:auto;}}"
-        "@media (max-width:699px){.pw-reference-frame{padding:14px 12px 20px;}.pw-topbar{flex-direction:column;align-items:center;margin-bottom:12px;}.pw-actions{width:100%;justify-content:center;gap:10px;}.pw-brand-name{font-size:30px;}.pw-hero h1{font-size:33px;}.pw-search-wrap{height:auto;}.pw-search-shell{height:52px;padding:0 8px 0 14px;}.pw-search-input{height:50px;font-size:16px;}.pw-grid{grid-template-columns:1fr;max-width:360px;}.pw-card{max-width:360px;}.pw-query{height:auto;padding:0 6px;}.pw-tooltip{width:min(430px,calc(100% - 8px));}}"
+        "@media (max-width:699px){.pw-reference-frame{padding:14px 12px 20px;}.pw-topbar{flex-direction:column;align-items:center;margin-bottom:12px;}.pw-actions{width:100%;justify-content:center;gap:8px;}.pw-brand-name{font-size:30px;}.pw-hero h1{font-size:33px;}.pw-search-wrap{height:auto;}.pw-search-shell{height:52px;padding:0 8px 0 14px;}.pw-search-input{height:50px;font-size:16px;}.pw-grid{grid-template-columns:1fr;max-width:360px;}.pw-card{max-width:360px;}.pw-query{height:auto;padding:0 6px;}.pw-tooltip{width:min(430px,calc(100% - 8px));}}"
         "</style></head><body>"
         '<main class="pw-reference-viewport">'
         '<div class="pw-reference-scale-shell" id="pw-reference-scale-shell">'
@@ -225,7 +226,7 @@ def render_picwise_reference_surface() -> str:
         '<span class="pw-logo" aria-hidden="true"></span>'
         '<span class="pw-brand-text"><span class="pw-brand-name">picwise</span><span class="pw-brand-tagline">shopping assistant</span></span>'
         "</a>"
-        '<div class="pw-actions"><a class="pw-login" href="#">Login</a><section class="pw-info-wrap" id="pw-info-wrap"><button class="pw-info-link" id="pw-info-button" type="button" aria-label="What is Picwise?" aria-expanded="false" aria-controls="pw-tooltip">What is Picwise?</button><div class="pw-tooltip" id="pw-tooltip">Picwise is your shopping assistant. It compares products for what you want to buy, recommends the 4 best matches, saves you time, and helps you choose faster.</div></section><a class="pw-register" href="#">Register</a></div>'
+        '<div class="pw-actions"><button class="pw-topbar-control pw-login-btn" type="button">Login</button><a class="pw-topbar-control pw-register" href="#">Register</a><section class="pw-info-wrap" id="pw-info-wrap"><button class="pw-topbar-control pw-info-link" id="pw-info-button" type="button" aria-label="What is Picwise?" aria-expanded="false" aria-controls="pw-tooltip">What is Picwise?</button><div class="pw-tooltip" id="pw-tooltip">Picwise is your shopping assistant. It compares products for what you want to buy, recommends the 4 best matches, saves you time, and helps you choose faster.</div></section></div>'
         "</header>"
         '<section class="pw-hero"><h1>See the 4 best products before you buy.</h1></section>'
         '<section class="pw-search-wrap" aria-label="Search">'
