@@ -148,7 +148,7 @@ def render_picwise_reference_surface() -> str:
         ".pw-reference-viewport{min-height:100vh;padding:12px;display:flex;justify-content:center;align-items:flex-start;}"
         ".pw-reference-scale-shell{position:relative;display:flex;justify-content:center;width:100%;}"
         ".pw-reference-frame{width:100%;max-width:1280px;padding:18px 24px 26px;position:relative;background:#f8fbff;}"
-        ".pw-topbar{display:flex;justify-content:space-between;align-items:flex-start;height:52px;margin-bottom:14px;}"
+        ".pw-topbar{display:flex;justify-content:space-between;align-items:center;height:52px;margin-bottom:14px;}"
         ".pw-brand{display:flex;align-items:flex-start;gap:10px;text-decoration:none;color:#0f1f3a;}"
         ".pw-brand-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1;}"
         ".pw-logo{width:34px;height:34px;border-radius:12px;background:linear-gradient(160deg,#30a0ff 0%,#1f6cff 70%);position:relative;box-shadow:0 9px 18px rgba(31,108,255,.2);margin-top:2px;}"
@@ -156,7 +156,7 @@ def render_picwise_reference_surface() -> str:
         ".pw-logo::after{content:'';position:absolute;right:8px;bottom:8px;width:6px;height:6px;background:#fff;border-radius:999px;}"
         ".pw-brand-name{display:block;font-size:34px;line-height:1;font-weight:800;letter-spacing:-.04em;text-transform:lowercase;}"
         ".pw-brand-tagline{display:block;margin-top:2px;margin-left:0;padding-left:0;align-self:flex-start;font-size:11px;color:#304768;line-height:1.2;letter-spacing:.02em;text-align:left;}"
-        ".pw-actions{display:flex;align-items:center;gap:18px;padding-top:4px;}"
+        ".pw-actions{display:flex;align-items:center;gap:12px;padding-top:0;flex-wrap:wrap;justify-content:flex-end;}"
         ".pw-login{font-size:16px;color:#1d2d4a;text-decoration:none;font-weight:600;}"
         ".pw-register{display:inline-flex;align-items:center;justify-content:center;width:118px;height:40px;border-radius:999px;background:#1f6dff;color:#fff;font-size:16px;font-weight:700;text-decoration:none;box-shadow:0 10px 22px rgba(31,109,255,.28);}"
         ".pw-hero{text-align:center;height:86px;margin-bottom:12px;}"
@@ -173,8 +173,8 @@ def render_picwise_reference_surface() -> str:
         ".pw-search-input{flex:1;height:56px;border:0;background:transparent;outline:none;font-size:19px;color:#95a8c7;font-weight:500;}"
         ".pw-search-button{width:42px;height:42px;border-radius:999px;border:0;background:#1f6dff;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(31,109,255,.3);}"
         ".pw-search-button .pw-search-button-icon{color:#fff;}"
-        ".pw-info-wrap{text-align:center;position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;width:fit-content;margin:0 auto 10px;z-index:3;}"
-        ".pw-info-link{display:inline-flex;align-items:center;justify-content:center;border:0;background:#1f6dff;color:#fff;font-size:13px;font-weight:700;padding:8px 14px;border-radius:999px;cursor:pointer;box-shadow:0 8px 18px rgba(31,109,255,.25);}"
+        ".pw-info-wrap{position:relative;display:inline-flex;flex-direction:column;align-items:stretch;gap:0;z-index:3;}"
+        ".pw-info-link{display:inline-flex;align-items:center;justify-content:center;height:40px;border:0;background:#1f6dff;color:#fff;font-size:16px;font-weight:700;padding:0 18px;border-radius:999px;cursor:pointer;box-shadow:0 8px 18px rgba(31,109,255,.25);white-space:nowrap;}"
         ".pw-info-link:focus-visible{outline:2px solid #2a6deb;outline-offset:3px;}"
         ".pw-tooltip{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);width:min(430px,calc(100vw - 24px));background:#fff;border:1px solid #dbe6f8;border-radius:12px;box-shadow:0 14px 30px rgba(16,39,77,.12);padding:12px 14px;font-size:14px;line-height:1.5;color:#112849;text-align:left;display:none;z-index:2;}"
         ".pw-tooltip::before{content:'';position:absolute;left:50%;top:-7px;transform:translateX(-50%) rotate(45deg);width:14px;height:14px;background:#fff;border-left:1px solid #dbe6f8;border-top:1px solid #dbe6f8;}"
@@ -215,7 +215,7 @@ def render_picwise_reference_surface() -> str:
         ".pw-footer a{color:#6e83a3;text-decoration:none;margin-left:22px;}"
         "@media (min-width:1100px){.pw-reference-viewport{padding:8px;}.pw-reference-frame{padding:12px 20px 16px;}.pw-topbar{height:46px;margin-bottom:10px;}.pw-hero{height:72px;margin-bottom:8px;}.pw-search-wrap{height:52px;margin:0 auto 10px;}.pw-query{margin:0 0 12px;height:22px;}.pw-card{padding:12px 12px 10px;min-height:444px;}.pw-product-image-wrap{height:74px;margin:0 0 8px;}.pw-product-image{width:228px;height:74px;}}"
         "@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:760px;}.pw-topbar{height:auto;gap:10px;}.pw-hero{height:auto;}}"
-        "@media (max-width:699px){.pw-reference-frame{padding:14px 12px 20px;}.pw-topbar{flex-direction:column;align-items:flex-start;margin-bottom:12px;}.pw-actions{padding-top:0;}.pw-brand-name{font-size:30px;}.pw-hero h1{font-size:33px;}.pw-search-wrap{height:auto;}.pw-search-shell{height:52px;padding:0 8px 0 14px;}.pw-search-input{height:50px;font-size:16px;}.pw-grid{grid-template-columns:1fr;max-width:360px;}.pw-card{max-width:360px;}.pw-query{height:auto;padding:0 6px;}.pw-tooltip{width:min(430px,calc(100% - 8px));}}"
+        "@media (max-width:699px){.pw-reference-frame{padding:14px 12px 20px;}.pw-topbar{flex-direction:column;align-items:center;margin-bottom:12px;}.pw-actions{width:100%;justify-content:center;gap:10px;}.pw-brand-name{font-size:30px;}.pw-hero h1{font-size:33px;}.pw-search-wrap{height:auto;}.pw-search-shell{height:52px;padding:0 8px 0 14px;}.pw-search-input{height:50px;font-size:16px;}.pw-grid{grid-template-columns:1fr;max-width:360px;}.pw-card{max-width:360px;}.pw-query{height:auto;padding:0 6px;}.pw-tooltip{width:min(430px,calc(100% - 8px));}}"
         "</style></head><body>"
         '<main class="pw-reference-viewport">'
         '<div class="pw-reference-scale-shell" id="pw-reference-scale-shell">'
@@ -225,12 +225,8 @@ def render_picwise_reference_surface() -> str:
         '<span class="pw-logo" aria-hidden="true"></span>'
         '<span class="pw-brand-text"><span class="pw-brand-name">picwise</span><span class="pw-brand-tagline">shopping assistant</span></span>'
         "</a>"
-        '<div class="pw-actions"><a class="pw-login" href="#">Login</a><a class="pw-register" href="#">Register</a></div>'
+        '<div class="pw-actions"><a class="pw-login" href="#">Login</a><section class="pw-info-wrap" id="pw-info-wrap"><button class="pw-info-link" id="pw-info-button" type="button" aria-label="What is Picwise?" aria-expanded="false" aria-controls="pw-tooltip">What is Picwise?</button><div class="pw-tooltip" id="pw-tooltip">Picwise is your shopping assistant. It compares products for what you want to buy, recommends the 4 best matches, saves you time, and helps you choose faster.</div></section><a class="pw-register" href="#">Register</a></div>'
         "</header>"
-        '<section class="pw-info-wrap" id="pw-info-wrap">'
-        '<button class="pw-info-link" id="pw-info-button" type="button" aria-label="What is Picwise?" aria-expanded="false" aria-controls="pw-tooltip">What is Picwise?</button>'
-        '<div class="pw-tooltip" id="pw-tooltip">Picwise is your shopping assistant. It compares products for what you want to buy, recommends the 4 best matches, saves you time, and helps you choose faster.</div>'
-        "</section>"
         '<section class="pw-hero"><h1>See the 4 best products before you buy.</h1></section>'
         '<section class="pw-search-wrap" aria-label="Search">'
         '<div class="pw-search-shell">'
