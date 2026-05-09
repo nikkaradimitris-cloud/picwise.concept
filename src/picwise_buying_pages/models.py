@@ -8,6 +8,16 @@ from .slugging import normalize_keyword_text, slugify_keyword
 
 PRICE_BAND_MIN_EUR = 80.0
 PRICE_BAND_MAX_EUR = 250.0
+NON_STANDARD_PRICE_BAND_EXEMPT_CATEGORIES = frozenset(
+    {
+        "software/programs",
+        "insurance/lead-gen",
+    }
+)
+
+
+def is_price_band_exempt_category(category: str) -> bool:
+    return str(category).strip() in NON_STANDARD_PRICE_BAND_EXEMPT_CATEGORIES
 
 
 class BuyingPageValidationError(ValueError):
@@ -33,6 +43,16 @@ class ApprovalStatus(str, Enum):
     APPROVED = "approved"
     PENDING_REVIEW = "pending_review"
     REJECTED = "rejected"
+
+
+class SellerReliabilityStatus(str, Enum):
+    TRUSTED = "trusted"
+    ACCEPTABLE = "acceptable"
+    UNKNOWN = "unknown"
+    UNRELIABLE = "unreliable"
+    BLOCKED = "blocked"
+    NOT_CONNECTED = "not_connected"
+    DATA_NOT_YET = "data_not_yet"
 
 
 @dataclass(frozen=True)
@@ -85,6 +105,19 @@ class ProductSlot:
     availability: str
     reason_summary: str
     buying_reason: str
+    short_description: str | None = None
+    specifications: tuple[str, ...] = ()
+    model_code: str | None = None
+    seller_name: str | None = None
+    seller_id: str | None = None
+    seller_reliability_status: SellerReliabilityStatus = SellerReliabilityStatus.UNKNOWN
+    seller_rating: float | None = None
+    seller_reviews_count: int | None = None
+    return_policy_available: bool | None = None
+    shipping_info_available: bool | None = None
+    comparison_family: str | None = None
+    comparison_useful: bool = True
+    suspicious_markers: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not str(self.product_id).strip():
@@ -109,6 +142,23 @@ class ProductSlot:
             raise BuyingPageValidationError(
                 "ProductSlot.reason_summary and buying_reason are required."
             )
+        if self.seller_rating is not None and not (0 <= float(self.seller_rating) <= 5):
+            raise BuyingPageValidationError("ProductSlot.seller_rating must be between 0 and 5.")
+        if self.seller_reviews_count is not None and int(self.seller_reviews_count) < 0:
+            raise BuyingPageValidationError("ProductSlot.seller_reviews_count must be >= 0.")
+        specs = tuple(str(item).strip() for item in self.specifications if str(item).strip())
+        object.__setattr__(self, "specifications", specs)
+        markers = tuple(str(item).strip().lower() for item in self.suspicious_markers if str(item).strip())
+        object.__setattr__(self, "suspicious_markers", markers)
+        try:
+            seller_status = (
+                self.seller_reliability_status
+                if isinstance(self.seller_reliability_status, SellerReliabilityStatus)
+                else SellerReliabilityStatus(str(self.seller_reliability_status))
+            )
+        except ValueError as exc:
+            raise BuyingPageValidationError("seller_reliability_status is invalid.") from exc
+        object.__setattr__(self, "seller_reliability_status", seller_status)
 
 
 @dataclass(frozen=True)
@@ -194,7 +244,15 @@ class BuyingPage:
                     raise BuyingPageValidationError(
                         "All products must be priced in EUR when price band applies."
                     )
-                if not (PRICE_BAND_MIN_EUR <= float(product.price) <= PRICE_BAND_MAX_EUR):
-                    raise BuyingPageValidationError(
-                        "Product prices must be within the 80-250 EUR target band."
-                    )
+            if not any(
+                PRICE_BAND_MIN_EUR <= float(product.price) <= PRICE_BAND_MAX_EUR
+                for product in self.products
+            ):
+                raise BuyingPageValidationError(
+                    "At least one anchor product must be within the 80-250 EUR target band."
+                )
+        else:
+            if not is_price_band_exempt_category(self.category):
+                raise BuyingPageValidationError(
+                    "price_band_applicable may be false only for approved non-standard categories."
+                )

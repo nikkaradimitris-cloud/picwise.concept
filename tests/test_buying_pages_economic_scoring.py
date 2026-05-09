@@ -27,6 +27,17 @@ def _candidate() -> KeywordClusterCandidate:
     )
 
 
+def _non_standard_candidate() -> KeywordClusterCandidate:
+    return KeywordClusterCandidate(
+        slug="best-insurance-plans",
+        main_keyword="best insurance plans",
+        keyword_aliases=("insurance comparison", "insurance plans for families"),
+        category="insurance/lead-gen",
+        price_band_applicable=False,
+        generation_trace=("seed=test",),
+    )
+
+
 class BuyingPagesEconomicScoringTests(unittest.TestCase):
     def test_scoring_includes_all_required_inputs(self) -> None:
         scored = score_candidate(
@@ -97,6 +108,47 @@ class BuyingPagesEconomicScoringTests(unittest.TestCase):
         self.assertEqual(approved.approval_status, CandidateApprovalStatus.APPROVED_CANDIDATE)
         self.assertEqual(review.approval_status, CandidateApprovalStatus.REVIEW_REQUIRED)
         self.assertEqual(rejected.approval_status, CandidateApprovalStatus.REJECTED_CANDIDATE)
+
+    def test_price_target_fit_treats_80_250_band_as_economic_target_when_applicable(self) -> None:
+        candidate = _candidate()
+        weak_fit = score_candidate(
+            candidate,
+            buying_intent_strength=0.85,
+            product_availability=0.80,
+            price_target_fit=0.15,
+            commission_potential=0.75,
+            estimated_traffic=0.70,
+            competition_inverse=0.62,
+            expected_revenue=0.72,
+        )
+        strong_fit = score_candidate(
+            candidate,
+            buying_intent_strength=0.85,
+            product_availability=0.80,
+            price_target_fit=0.95,
+            commission_potential=0.75,
+            estimated_traffic=0.70,
+            competition_inverse=0.62,
+            expected_revenue=0.72,
+        )
+        self.assertGreater(strong_fit.weighted_score, weak_fit.weighted_score)
+        self.assertIn(strong_fit.approval_status, (CandidateApprovalStatus.APPROVED_CANDIDATE,))
+
+    def test_non_standard_candidates_are_not_forced_into_80_250_fit(self) -> None:
+        scored = score_candidate(
+            _non_standard_candidate(),
+            buying_intent_strength=0.86,
+            product_availability=0.76,
+            price_target_fit=0.30,
+            commission_potential=0.82,
+            estimated_traffic=0.72,
+            competition_inverse=0.68,
+            expected_revenue=0.75,
+        )
+        self.assertIn(
+            scored.approval_status,
+            (CandidateApprovalStatus.APPROVED_CANDIDATE, CandidateApprovalStatus.REVIEW_REQUIRED),
+        )
 
 
 if __name__ == "__main__":

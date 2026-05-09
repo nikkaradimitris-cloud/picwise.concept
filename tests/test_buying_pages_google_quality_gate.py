@@ -20,6 +20,7 @@ from picwise_buying_pages import (  # noqa: E402
 )
 from picwise_buying_pages.fixtures import load_seed_buying_pages  # noqa: E402
 from picwise_buying_pages.models import IndexStatus  # noqa: E402
+from picwise_buying_pages.models import SellerReliabilityStatus  # noqa: E402
 
 
 def _unsafe_mutate_page(page, **changes):
@@ -87,6 +88,7 @@ class BuyingPagesGoogleQualityGateTests(unittest.TestCase):
                 page.products[0],
                 availability="fake_in_stock",
                 reason_summary="fake reviews and ratings here",
+                suspicious_markers=("fake_price",),
             ),
             *page.products[1:],
         )
@@ -97,6 +99,21 @@ class BuyingPagesGoogleQualityGateTests(unittest.TestCase):
         result = evaluate_google_quality_gate(mutated)
         self.assertFalse(result.quality_passed)
         self.assertIn("fake_product_data", result.reasons)
+        self.assertIn("product_display_incomplete", result.reasons)
+
+    def test_unknown_seller_requires_manual_review_and_is_not_public(self) -> None:
+        page = load_seed_buying_pages()[0]
+        unknown = _unsafe_mutate_page(
+            replace(page),
+            products=(
+                replace(page.products[0], seller_reliability_status=SellerReliabilityStatus.UNKNOWN),
+                *page.products[1:],
+            ),
+        )
+        result = evaluate_google_quality_gate(unknown)
+        self.assertFalse(result.publication_ready)
+        self.assertFalse(is_publicly_eligible(unknown))
+        self.assertIn("seller_manual_review_required", result.reasons)
 
     def test_structured_data_mismatch_is_rejected(self) -> None:
         page = load_seed_buying_pages()[4]
@@ -155,6 +172,35 @@ class BuyingPagesGoogleQualityGateTests(unittest.TestCase):
         repository = BuyingPagesRepository(public_pages)
         self.assertIsNotNone(repository.get_by_slug(page.slug))
         self.assertIsNone(repository.get_by_slug(broken.slug))
+
+    def test_missing_anchor_price_blocks_public_eligibility(self) -> None:
+        page = next(item for item in load_seed_buying_pages() if item.price_band_applicable)
+        no_anchor = _unsafe_mutate_page(
+            replace(page),
+            products=(
+                replace(page.products[0], price=42.0),
+                replace(page.products[1], price=65.0),
+                replace(page.products[2], price=301.0),
+                replace(page.products[3], price=420.0),
+            ),
+        )
+        self.assertFalse(is_publicly_eligible(no_anchor))
+        self.assertIn("missing_price_band_anchor", evaluate_google_quality_gate(no_anchor).reasons)
+
+    def test_non_standard_pages_can_skip_price_band_without_forcing_80_250(self) -> None:
+        page = next(item for item in load_seed_buying_pages() if not item.price_band_applicable)
+        widened = _unsafe_mutate_page(
+            replace(page),
+            products=(
+                replace(page.products[0], price=35.0),
+                replace(page.products[1], price=410.0),
+                page.products[2],
+                page.products[3],
+            ),
+        )
+        result = evaluate_google_quality_gate(widened)
+        self.assertTrue(result.publication_ready)
+        self.assertNotIn("index_gate_not_passed", result.reasons)
 
 
 if __name__ == "__main__":

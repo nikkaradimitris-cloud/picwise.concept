@@ -41,6 +41,7 @@ class BuyingPagesSecondScaleBatchTests(unittest.TestCase):
             self.assertEqual(page_a.slug, page_b.slug)
             self.assertEqual(page_a.main_keyword, page_b.main_keyword)
             self.assertTrue(evaluate_index_gate(page_a).indexable)
+            self.assertEqual(len(page_a.products), 4)
 
     def test_sitemap_batching_is_ready_for_scale(self) -> None:
         batch = generate_second_scale_batch()

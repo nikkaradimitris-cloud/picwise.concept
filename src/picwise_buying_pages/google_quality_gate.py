@@ -212,6 +212,14 @@ def evaluate_google_quality_gate(
     index_result = evaluate_index_gate(page)
     if not index_result.indexable:
         reasons.append("index_gate_not_passed")
+        if any("seller_unreliable_or_blocked" in reason for reason in index_result.reasons):
+            reasons.append("seller_reliability_not_passed")
+        if any("seller_manual_review_required" in reason for reason in index_result.reasons):
+            reasons.append("seller_manual_review_required")
+        if any("missing_" in reason or "fake_or_suspicious_product_data" in reason for reason in index_result.reasons):
+            reasons.append("product_display_incomplete")
+        if "missing_in_band_anchor_product" in index_result.reasons:
+            reasons.append("missing_price_band_anchor")
 
     if page.approval_status != ApprovalStatus.APPROVED:
         reasons.append("approval_status_not_approved")

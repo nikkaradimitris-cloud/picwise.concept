@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 import unittest
+from dataclasses import replace
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -14,9 +15,16 @@ from picwise_buying_pages import (  # noqa: E402
     build_sitemap_batches,
     collect_indexable_entries,
     generate_second_scale_batch,
+    is_publicly_eligible,
     render_sitemap_index_xml,
     split_sitemap_entries,
 )
+
+
+def _unsafe_mutate_page(page, **changes):
+    for key, value in changes.items():
+        object.__setattr__(page, key, value)
+    return page
 
 
 class BuyingPagesSitemapBatchesTests(unittest.TestCase):
@@ -51,6 +59,18 @@ class BuyingPagesSitemapBatchesTests(unittest.TestCase):
                 "https://localhost/sitemaps/buying-pages-2.xml",
             ],
         )
+
+    def test_entries_exclude_pages_failing_product_eligibility_rule(self) -> None:
+        batch = generate_second_scale_batch()
+        good_page = batch.published_pages[0]
+        broken_page = _unsafe_mutate_page(
+            replace(good_page),
+            products=(replace(good_page.products[0], availability="out_of_stock"), *good_page.products[1:]),
+        )
+        self.assertTrue(is_publicly_eligible(good_page))
+        self.assertFalse(is_publicly_eligible(broken_page))
+        entries = collect_indexable_entries((broken_page,))
+        self.assertEqual(entries, tuple())
 
 
 if __name__ == "__main__":

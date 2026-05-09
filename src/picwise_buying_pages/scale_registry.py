@@ -4,7 +4,16 @@ from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from .models import ApprovalStatus, BuyingPage, FAQItem, IndexStatus, ProductSlot, RefreshMetadata, RefreshStatus
+from .models import (
+    ApprovalStatus,
+    BuyingPage,
+    FAQItem,
+    IndexStatus,
+    ProductSlot,
+    RefreshMetadata,
+    RefreshStatus,
+    SellerReliabilityStatus,
+)
 from .slugging import normalize_keyword_text
 
 SCALE_100K_TARGET_DISTRIBUTION: tuple[tuple[str, int, bool, tuple[str, ...]], ...] = (
@@ -211,6 +220,26 @@ def _build_products(slug: str, category: str, ordinal: int, price_band_applicabl
                 availability="in_stock",
                 reason_summary="Deterministic scale batch option suitable for comparison pages.",
                 buying_reason="Generated from the deterministic scale registry for predictable testing.",
+                short_description=f"Scale fixture option {slot + 1} for {slug}.",
+                specifications=(
+                    f"Scale category: {category}",
+                    f"Scale ordinal: {ordinal}",
+                    f"Slot: {slot + 1}",
+                ),
+                model_code=f"SCALE-{slug.upper()}-{slot + 1}",
+                seller_name=f"Scale Seller {((ordinal + slot) % 7) + 1}",
+                seller_id=f"scale-seller-{(ordinal % 41) + 1:03d}",
+                seller_reliability_status=(
+                    SellerReliabilityStatus.TRUSTED
+                    if slot % 2 == 0
+                    else SellerReliabilityStatus.ACCEPTABLE
+                ),
+                seller_rating=4.1 + (slot * 0.2),
+                seller_reviews_count=200 + ordinal + slot * 13,
+                return_policy_available=True,
+                shipping_info_available=True,
+                comparison_family=f"{slug}-family",
+                comparison_useful=True,
             )
         )
     return tuple(products)

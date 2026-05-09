@@ -18,6 +18,7 @@ from picwise_buying_pages.models import (  # noqa: E402
     ProductSlot,
     RefreshMetadata,
     RefreshStatus,
+    SellerReliabilityStatus,
 )
 from picwise_buying_pages.slugging import slugify_keyword  # noqa: E402
 
@@ -37,6 +38,18 @@ def build_product(product_id: str, price: float = 99.0, currency: str = "EUR") -
         availability="in_stock",
         reason_summary="Strong value and balanced features.",
         buying_reason="Good fit for most buyers in this intent.",
+        short_description="Reliable product with clear fit and visibility.",
+        specifications=("Capacity 20,000mAh", "USB-C fast charging", "2-year warranty"),
+        model_code=f"MODEL-{product_id}",
+        seller_name="Reliable Seller",
+        seller_id=f"seller-{product_id}",
+        seller_reliability_status=SellerReliabilityStatus.TRUSTED,
+        seller_rating=4.5,
+        seller_reviews_count=300,
+        return_policy_available=True,
+        shipping_info_available=True,
+        comparison_family="family-a",
+        comparison_useful=True,
     )
 
 
@@ -45,6 +58,7 @@ def build_page(
     keyword_aliases: tuple[str, ...] = ("alias one", "alias two"),
     products: tuple[ProductSlot, ...] | None = None,
     recommended_product_id: str = "p2",
+    category: str = "office_tools",
     price_band_applicable: bool = True,
     target_min: float | None = 80.0,
     target_max: float | None = 250.0,
@@ -59,7 +73,7 @@ def build_page(
         slug=slugify_keyword("best widgets for office"),
         main_keyword="best widgets for office",
         keyword_aliases=keyword_aliases,
-        category="office_tools",
+        category=category,
         products=resolved_products,
         recommended_product_id=recommended_product_id,
         faq_items=(FAQItem(question="Q1?", answer="A1"), FAQItem(question="Q2?", answer="A2")),
@@ -113,15 +127,56 @@ class BuyingPagesModelTests(unittest.TestCase):
         with self.assertRaises(BuyingPageValidationError):
             build_page(keyword_aliases=("Power-Bank", "power bank"))
 
-    def test_price_band_validation_applies_when_enabled(self) -> None:
+    def test_price_band_requires_anchor_when_enabled(self) -> None:
         products = (
             build_product("p1", price=70.0),
-            build_product("p2", price=90.0),
-            build_product("p3", price=120.0),
-            build_product("p4", price=150.0),
+            build_product("p2", price=75.0),
+            build_product("p3", price=260.0),
+            build_product("p4", price=300.0),
         )
         with self.assertRaises(BuyingPageValidationError):
             build_page(products=products, price_band_applicable=True)
+
+    def test_price_band_boundaries_are_inclusive(self) -> None:
+        products = (
+            build_product("p1", price=80.0),
+            build_product("p2", price=120.0),
+            build_product("p3", price=180.0),
+            build_product("p4", price=250.0),
+        )
+        page = build_page(products=products, price_band_applicable=True)
+        self.assertTrue(page.price_band_applicable)
+
+    def test_price_band_allows_useful_lower_and_higher_variants_with_anchor(self) -> None:
+        page = build_page(
+            products=(
+                build_product("p1", price=79.99),
+                build_product("p2", price=120.0),
+                build_product("p3", price=180.0),
+                build_product("p4", price=250.01),
+            ),
+            price_band_applicable=True,
+        )
+        self.assertTrue(page.price_band_applicable)
+
+    def test_product_slot_validates_seller_status_enum(self) -> None:
+        with self.assertRaises(BuyingPageValidationError):
+            ProductSlot(
+                product_id="p-invalid",
+                title="Invalid",
+                brand="Brand",
+                price=99.0,
+                currency="EUR",
+                image_url="https://img.example.com/x.jpg",
+                product_url="https://example.com/x",
+                affiliate_url="https://aff.example.com/x",
+                rating=4.0,
+                reviews_count=40,
+                availability="in_stock",
+                reason_summary="Reason summary",
+                buying_reason="Buying reason",
+                seller_reliability_status="totally_safe",
+            )
 
     def test_price_band_is_skipped_when_not_applicable(self) -> None:
         products = (
@@ -132,11 +187,27 @@ class BuyingPagesModelTests(unittest.TestCase):
         )
         page = build_page(
             products=products,
+            category="insurance/lead-gen",
             price_band_applicable=False,
             target_min=None,
             target_max=None,
         )
         self.assertFalse(page.price_band_applicable)
+
+    def test_price_band_cannot_be_disabled_for_physical_categories(self) -> None:
+        products = (
+            build_product("p1", price=40.0),
+            build_product("p2", price=60.0),
+            build_product("p3", price=75.0),
+            build_product("p4", price=300.0),
+        )
+        with self.assertRaises(BuyingPageValidationError):
+            build_page(
+                products=products,
+                price_band_applicable=False,
+                target_min=None,
+                target_max=None,
+            )
 
     def test_refresh_due_is_not_valid_index_status(self) -> None:
         with self.assertRaises(BuyingPageValidationError):

@@ -3,7 +3,16 @@ from __future__ import annotations
 from collections.abc import Iterable
 from datetime import datetime, timezone
 
-from .models import ApprovalStatus, BuyingPage, FAQItem, IndexStatus, ProductSlot, RefreshMetadata, RefreshStatus
+from .models import (
+    ApprovalStatus,
+    BuyingPage,
+    FAQItem,
+    IndexStatus,
+    ProductSlot,
+    RefreshMetadata,
+    RefreshStatus,
+    SellerReliabilityStatus,
+)
 from .slugging import slugify_keyword
 
 _FIXTURE_UPDATED_AT = datetime(2026, 5, 9, 8, 0, tzinfo=timezone.utc)
@@ -190,6 +199,26 @@ def _build_products(slug: str, category: str, page_index: int, price_band_applic
                 availability="in_stock",
                 reason_summary=reason_summary,
                 buying_reason=buying_reason,
+                short_description=f"{title} shortlist pick for {slug}.",
+                specifications=(
+                    f"Category: {category}",
+                    f"Variant: option-{slot_index + 1}",
+                    "Renderer-safe image and pricing metadata",
+                ),
+                model_code=f"PW-{slug.upper()}-{slot_index + 1}",
+                seller_name=f"PickWise Partner {((page_index + slot_index) % 5) + 1}",
+                seller_id=f"seller-{(page_index % 37) + 1:03d}",
+                seller_reliability_status=(
+                    SellerReliabilityStatus.TRUSTED
+                    if slot_index in (0, 2)
+                    else SellerReliabilityStatus.ACCEPTABLE
+                ),
+                seller_rating=4.2 + (slot_index * 0.15),
+                seller_reviews_count=140 + page_index * 2 + slot_index * 9,
+                return_policy_available=True,
+                shipping_info_available=True,
+                comparison_family=f"{slug}-family",
+                comparison_useful=True,
             )
         )
     return tuple(products)

@@ -4,6 +4,7 @@ from dataclasses import replace
 from datetime import datetime, timedelta
 from enum import Enum
 
+from .index_gate import is_product_slot_publicly_valid
 from .models import BuyingPage, ProductSlot, RefreshMetadata, RefreshStatus
 
 
@@ -37,8 +38,10 @@ def choose_recommended_product_id(page: BuyingPage, products: tuple[ProductSlot,
         distance = min(abs(float(product.price) - lower), abs(float(product.price) - upper))
         return max(0.0, 1.0 - (distance / max(upper - lower, 1.0)))
 
+    valid_products = tuple(product for product in products if is_product_slot_publicly_valid(page, product))
+    pool = valid_products or products
     ranked = sorted(
-        products,
+        pool,
         key=lambda product: (
             _availability_rank(product.availability),
             _price_fit(product),
@@ -99,6 +102,16 @@ def refresh_page_products(
     """Refresh 4 product slots while keeping URL/slug unchanged."""
     if len(refreshed_products) != 4:
         raise ValueError("refreshed_products must contain exactly 4 product slots.")
+    invalid_slots = [
+        idx
+        for idx, product in enumerate(refreshed_products, start=1)
+        if not is_product_slot_publicly_valid(page, product)
+    ]
+    if invalid_slots:
+        joined = ",".join(str(idx) for idx in invalid_slots)
+        raise ValueError(
+            f"refreshed_products contain public-ineligible slots: {joined}."
+        )
 
     recommended_product_id = choose_recommended_product_id(page, refreshed_products)
     refreshed_page = replace(

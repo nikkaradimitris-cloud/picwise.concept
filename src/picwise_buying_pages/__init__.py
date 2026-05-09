@@ -10,6 +10,7 @@ from .models import (
     ProductSlot,
     RefreshMetadata,
     RefreshStatus,
+    SellerReliabilityStatus,
 )
 from .repository import BuyingPagesRepository, BuyingPagesRepositoryError
 from .refresh import (
@@ -65,6 +66,7 @@ __all__ = [
     "ProductSlot",
     "RefreshMetadata",
     "RefreshStatus",
+    "SellerReliabilityStatus",
     "load_seed_buying_pages",
     "KeywordClusterCandidate",
     "KeywordSeed",

@@ -13,6 +13,7 @@ if str(SRC) not in sys.path:
 
 from picwise_buying_pages.fixtures import load_seed_buying_pages  # noqa: E402
 from picwise_buying_pages.models import RefreshStatus  # noqa: E402
+from picwise_buying_pages.models import SellerReliabilityStatus  # noqa: E402
 from picwise_buying_pages.refresh import (  # noqa: E402
     RefreshTransition,
     choose_recommended_product_id,
@@ -107,6 +108,40 @@ class BuyingPagesRefreshLogicTests(unittest.TestCase):
             ),
         )
         self.assertEqual(determine_refresh_status(manual_page, now), RefreshStatus.MANUAL_REQUIRED)
+
+    def test_recommendation_prefers_in_band_products_when_price_band_applies(self) -> None:
+        page = next(item for item in load_seed_buying_pages() if item.price_band_applicable)
+        refreshed_products = (
+            replace(page.products[0], price=79.99, availability="in_stock", rating=5.0, reviews_count=999),
+            replace(page.products[1], price=95.0, availability="in_stock", rating=4.3, reviews_count=120),
+            replace(page.products[2], price=140.0, availability="preorder", rating=4.1, reviews_count=100),
+            replace(page.products[3], price=220.0, availability="limited", rating=4.0, reviews_count=90),
+        )
+        chosen = choose_recommended_product_id(page, refreshed_products)
+        self.assertEqual(chosen, refreshed_products[1].product_id)
+
+    def test_recommendation_ignores_public_ineligible_products(self) -> None:
+        page = next(item for item in load_seed_buying_pages() if item.price_band_applicable)
+        refreshed_products = (
+            replace(page.products[0], seller_reliability_status=SellerReliabilityStatus.BLOCKED, rating=5.0),
+            replace(page.products[1], rating=4.2, reviews_count=180),
+            replace(page.products[2], rating=4.1, reviews_count=170),
+            replace(page.products[3], rating=4.0, reviews_count=160),
+        )
+        chosen = choose_recommended_product_id(page, refreshed_products)
+        self.assertNotEqual(chosen, refreshed_products[0].product_id)
+
+    def test_refresh_rejects_invalid_replacement_products(self) -> None:
+        page = load_seed_buying_pages()[0]
+        now = datetime(2026, 5, 9, 10, 0, tzinfo=timezone.utc)
+        invalid_products = (
+            replace(page.products[0], availability="out_of_stock"),
+            page.products[1],
+            page.products[2],
+            page.products[3],
+        )
+        with self.assertRaises(ValueError):
+            refresh_page_products(page, refreshed_products=invalid_products, now=now)
 
 
 if __name__ == "__main__":

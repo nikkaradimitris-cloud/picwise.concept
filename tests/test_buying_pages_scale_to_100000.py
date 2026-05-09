@@ -62,6 +62,16 @@ class BuyingPagesScaleTo100000Tests(unittest.TestCase):
         with self.assertRaises(IndexError):
             registry.descriptor_at(100000)
 
+    def test_price_band_flag_is_only_disabled_for_non_standard_categories(self) -> None:
+        registry = build_100k_registry()
+        exempt_categories = {"software/programs", "insurance/lead-gen"}
+        for ordinal in (0, 24999, 25000, 60000, 95000, 99999):
+            descriptor = registry.descriptor_at(ordinal)
+            if descriptor.category in exempt_categories:
+                self.assertFalse(descriptor.price_band_applicable)
+            else:
+                self.assertTrue(descriptor.price_band_applicable)
+
 
 if __name__ == "__main__":
     unittest.main()

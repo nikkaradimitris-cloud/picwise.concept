@@ -62,6 +62,14 @@ def generate_scale_batch(
                 collected_published.append(page)
         if len(collected_published) >= published_target and len(collected_candidates) >= candidate_target:
             break
+    if len(collected_published) != published_target:
+        raise RuntimeError(
+            "Unable to generate required published pages with current public eligibility gates."
+        )
+    if len(collected_candidates) != candidate_target:
+        raise RuntimeError(
+            "Unable to generate required candidate pages with current gating distribution."
+        )
 
     return ScaleBatch(
         name=name,

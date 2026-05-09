@@ -16,6 +16,11 @@ from picwise_buying_pages import (  # noqa: E402
     generate_first_scale_batch,
     render_buying_pages_sitemap_xml,
 )
+from picwise_buying_pages.models import (  # noqa: E402
+    PRICE_BAND_MAX_EUR,
+    PRICE_BAND_MIN_EUR,
+    SellerReliabilityStatus,
+)
 
 
 class BuyingPagesFirstScaleBatchTests(unittest.TestCase):
@@ -62,6 +67,32 @@ class BuyingPagesFirstScaleBatchTests(unittest.TestCase):
             self.assertNotIn(f"/best/{candidate.slug}", xml)
         for published in batch.published_pages[:20]:
             self.assertIn(f"/best/{published.slug}", xml)
+
+    def test_generated_pages_respect_price_band_when_applicable(self) -> None:
+        batch = generate_first_scale_batch()
+        for page in (*batch.published_pages, *batch.candidate_pages):
+            if page.price_band_applicable:
+                self.assertTrue(
+                    any(
+                        PRICE_BAND_MIN_EUR <= product.price <= PRICE_BAND_MAX_EUR
+                        for product in page.products
+                    )
+                )
+
+    def test_public_pages_have_exactly_four_valid_display_safe_products(self) -> None:
+        batch = generate_first_scale_batch()
+        for page in batch.published_pages[:250]:
+            self.assertEqual(len(page.products), 4)
+            gate = evaluate_index_gate(page)
+            self.assertTrue(gate.indexable)
+            self.assertIn(page.recommended_product_id, {product.product_id for product in page.products})
+            for product in page.products:
+                self.assertIn(
+                    product.seller_reliability_status,
+                    (SellerReliabilityStatus.TRUSTED, SellerReliabilityStatus.ACCEPTABLE),
+                )
+                self.assertTrue(product.specifications)
+                self.assertTrue((product.short_description or "").strip())
 
 
 if __name__ == "__main__":
