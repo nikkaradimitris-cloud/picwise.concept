@@ -78,7 +78,7 @@ class BuyingPagesRepositoryTests(unittest.TestCase):
 
     def test_repository_lookup_by_alias_works(self) -> None:
         repository = BuyingPagesRepository(load_seed_buying_pages())
-        page = repository.get_by_keyword("Best Dash Cam For Taxi Drivers")
+        page = repository.get_by_keyword("dash cam gia taxi comparison sample-027")
         self.assertIsNotNone(page)
         self.assertEqual(page.slug, "dash-cam-gia-taxi")
 

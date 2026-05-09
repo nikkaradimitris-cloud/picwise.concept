@@ -13,6 +13,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from picwise_app import PicwiseLocalApp  # noqa: E402
+from picwise_app.buying_routes import render_best_slug_html, render_buying_sitemap_xml  # noqa: E402
 from picwise_integrations import (  # noqa: E402
     UrllibSubbyBridgeEventSender,
     send_subby_live_proof_event,
@@ -43,6 +44,8 @@ def _response(
 def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes]:
     method = str(environ.get("REQUEST_METHOD", "GET")).upper()
     path = str(environ.get("PATH_INFO", "/"))
+    host = str(environ.get("HTTP_HOST") or environ.get("SERVER_NAME") or "picwise.subby.cloud")
+    scheme = str(environ.get("wsgi.url_scheme", "https"))
 
     if method != "GET":
         body = json.dumps({"error": "method_not_allowed"}, ensure_ascii=True).encode("utf-8")
@@ -71,6 +74,18 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
+    if path.startswith("/best/"):
+        slug = path.removeprefix("/best/")
+        status_code, html = render_best_slug_html(slug)
+        body = html.encode("utf-8")
+        status = "200 OK" if status_code == 200 else "404 Not Found"
+        return _response(status, "text/html; charset=utf-8", body, start_response)
+
+    if path == "/sitemap-buying-pages.xml":
+        xml = render_buying_sitemap_xml(base_url=f"{scheme}://{host}")
+        body = xml.encode("utf-8")
+        return _response("200 OK", "application/xml; charset=utf-8", body, start_response)
+
     if path == "/subby-proof":
         payload = send_subby_live_proof_event(sender=UrllibSubbyBridgeEventSender())
         body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
@@ -78,7 +93,15 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
 
     payload = {
         "error": "not_found",
-        "available_routes": ["/", "/health", "/demo", "/picwise-reference", "/subby-proof"],
+        "available_routes": [
+            "/",
+            "/health",
+            "/demo",
+            "/picwise-reference",
+            "/best/{slug}",
+            "/sitemap-buying-pages.xml",
+            "/subby-proof",
+        ],
     }
     body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
     return _response("404 Not Found", "application/json; charset=utf-8", body, start_response)

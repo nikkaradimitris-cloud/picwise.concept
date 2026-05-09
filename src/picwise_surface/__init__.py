@@ -2,6 +2,7 @@ from .dashboard import (
     CANONICAL_MISSING_DATA_ENUM,
     build_dashboard_compatibility_payload,
 )
+from .buying_page import render_buying_page_surface
 from .final_audit import (
     LOCKED_ROADMAP_TITLES,
     FinalV1AuditEvidence,
@@ -35,6 +36,7 @@ __all__ = [
     "build_seo_landing_bundle",
     "build_surface_metrics",
     "prepare_redirect_tracking",
+    "render_buying_page_surface",
     "render_landing_surface",
     "render_picwise_reference_surface",
     "run_final_v1_audit_closure",

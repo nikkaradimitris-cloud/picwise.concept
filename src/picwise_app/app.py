@@ -14,6 +14,7 @@ from picwise_engine import PicwiseDecisionEngine
 from picwise_feeds import FeedAdapterProtocol, LocalFixtureFeedAdapter
 from picwise_redirects import build_redirect_tracking_payload, resolve_redirect
 from picwise_surface import render_landing_surface, render_picwise_reference_surface
+from .buying_routes import render_best_slug_html, render_buying_sitemap_xml
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 
@@ -92,6 +93,7 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
+        host = self.headers.get("Host", "127.0.0.1:8016")
         if parsed.path.startswith("/assets/"):
             if self._send_static_asset(parsed.path):
                 return
@@ -107,9 +109,28 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             html = self.app.picwise_reference_html()
             self._send_html(HTTPStatus.OK, html)
             return
+        if parsed.path.startswith("/best/"):
+            slug = parsed.path.removeprefix("/best/")
+            status_code, html = render_best_slug_html(slug)
+            self._send_html(HTTPStatus(status_code), html)
+            return
+        if parsed.path == "/sitemap-buying-pages.xml":
+            xml = render_buying_sitemap_xml(base_url=f"http://{host}")
+            self._send_xml(HTTPStatus.OK, xml)
+            return
         self._send_json(
             HTTPStatus.NOT_FOUND,
-            {"error": "not_found", "available_routes": ["/", "/health", "/demo", "/picwise-reference"]},
+            {
+                "error": "not_found",
+                "available_routes": [
+                    "/",
+                    "/health",
+                    "/demo",
+                    "/picwise-reference",
+                    "/best/{slug}",
+                    "/sitemap-buying-pages.xml",
+                ],
+            },
         )
 
     def log_message(self, _format: str, *_args: Any) -> None:
@@ -127,6 +148,14 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
         body = html.encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _send_xml(self, status: HTTPStatus, xml: str) -> None:
+        body = xml.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/xml; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
