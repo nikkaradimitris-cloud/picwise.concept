@@ -52,6 +52,19 @@ from .sitemap_batches import (
     render_sitemap_index_xml,
     split_sitemap_entries,
 )
+from .publish_gate import (
+    APPROVAL_DECISION_APPROVED,
+    APPROVAL_DECISION_MANUAL_REQUIRED,
+    APPROVAL_DECISION_PENDING,
+    APPROVAL_DECISION_REJECTED,
+    APPROVAL_DECISION_REVIEW_REQUIRED,
+    PUBLISH_OUTCOME_BLOCKED,
+    PUBLISH_OUTCOME_NEEDS_REVIEW,
+    PUBLISH_OUTCOME_PUBLISHED,
+    PublishGateResult,
+    evaluate_publish_gate,
+    normalize_approval_decision,
+)
 
 __all__ = [
     "BuyingPage",
@@ -108,6 +121,17 @@ __all__ = [
     "render_sitemap_batch_xml",
     "render_sitemap_index_xml",
     "split_sitemap_entries",
+    "APPROVAL_DECISION_APPROVED",
+    "APPROVAL_DECISION_MANUAL_REQUIRED",
+    "APPROVAL_DECISION_PENDING",
+    "APPROVAL_DECISION_REJECTED",
+    "APPROVAL_DECISION_REVIEW_REQUIRED",
+    "PUBLISH_OUTCOME_BLOCKED",
+    "PUBLISH_OUTCOME_NEEDS_REVIEW",
+    "PUBLISH_OUTCOME_PUBLISHED",
+    "PublishGateResult",
+    "evaluate_publish_gate",
+    "normalize_approval_decision",
     "normalize_keyword_text",
     "evaluate_index_gate",
     "render_buying_pages_sitemap_xml",
