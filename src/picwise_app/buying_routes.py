@@ -3,13 +3,19 @@ from __future__ import annotations
 from functools import lru_cache
 from urllib.parse import unquote
 
-from picwise_buying_pages import BuyingPagesRepository, load_seed_buying_pages, render_buying_pages_sitemap_xml
+from picwise_buying_pages import (
+    BuyingPagesRepository,
+    is_publicly_eligible,
+    load_seed_buying_pages,
+    render_buying_pages_sitemap_xml,
+)
 from picwise_surface.buying_page import render_buying_page_surface
 
 
 @lru_cache(maxsize=1)
 def get_buying_pages_repository() -> BuyingPagesRepository:
-    return BuyingPagesRepository(load_seed_buying_pages())
+    public_pages = tuple(page for page in load_seed_buying_pages() if is_publicly_eligible(page))
+    return BuyingPagesRepository(public_pages)
 
 
 def render_best_slug_html(raw_slug: str) -> tuple[int, str]:

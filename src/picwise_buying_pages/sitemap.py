@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from xml.etree.ElementTree import Element, SubElement, tostring
 
-from .index_gate import evaluate_index_gate
+from .google_quality_gate import is_publicly_eligible
 from .models import BuyingPage
 
 DEFAULT_PUBLIC_BASE_URL = "https://picwise.subby.cloud"
@@ -27,7 +27,7 @@ def render_buying_pages_sitemap_xml(pages: Iterable[BuyingPage], base_url: str |
         (
             page
             for page in pages
-            if evaluate_index_gate(page).indexable
+            if is_publicly_eligible(page)
         ),
         key=lambda page: page.slug,
     )

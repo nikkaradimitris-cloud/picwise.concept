@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from datetime import datetime, timezone
 
-from .models import BuyingPage, FAQItem, IndexStatus, ProductSlot, RefreshMetadata, RefreshStatus
+from .models import ApprovalStatus, BuyingPage, FAQItem, IndexStatus, ProductSlot, RefreshMetadata, RefreshStatus
 from .slugging import slugify_keyword
 
 _FIXTURE_UPDATED_AT = datetime(2026, 5, 9, 8, 0, tzinfo=timezone.utc)
@@ -230,6 +230,7 @@ def _build_page(main_keyword: str, category: str, page_index: int, price_band_ap
         price_band_applicable=price_band_applicable,
         target_price_min_eur=80.0 if price_band_applicable else None,
         target_price_max_eur=250.0 if price_band_applicable else None,
+        approval_status=ApprovalStatus.APPROVED,
     )
 
 

@@ -29,6 +29,12 @@ class RefreshStatus(str, Enum):
     MANUAL_REQUIRED = "manual_required"
 
 
+class ApprovalStatus(str, Enum):
+    APPROVED = "approved"
+    PENDING_REVIEW = "pending_review"
+    REJECTED = "rejected"
+
+
 @dataclass(frozen=True)
 class FAQItem:
     question: str
@@ -121,6 +127,7 @@ class BuyingPage:
     price_band_applicable: bool
     target_price_min_eur: float | None = None
     target_price_max_eur: float | None = None
+    approval_status: ApprovalStatus = ApprovalStatus.APPROVED
 
     def __post_init__(self) -> None:
         canonical_slug = slugify_keyword(self.main_keyword)
@@ -159,6 +166,16 @@ class BuyingPage:
         except ValueError as exc:
             raise BuyingPageValidationError("index_status is invalid.") from exc
         object.__setattr__(self, "index_status", status)
+
+        try:
+            approval = (
+                self.approval_status
+                if isinstance(self.approval_status, ApprovalStatus)
+                else ApprovalStatus(str(self.approval_status))
+            )
+        except ValueError as exc:
+            raise BuyingPageValidationError("approval_status is invalid.") from exc
+        object.__setattr__(self, "approval_status", approval)
 
         if self.price_band_applicable:
             if self.target_price_min_eur is None or self.target_price_max_eur is None:
