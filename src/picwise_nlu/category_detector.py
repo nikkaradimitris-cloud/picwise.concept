@@ -31,6 +31,13 @@ _POWER_BANK_KEYWORDS = {
     "power bank",
     "powerbank",
 }
+_CHARGER_KEYWORDS = {
+    "charger",
+    "φορτιστης",
+    "fortistis",
+    "usb-c",
+    "usbc",
+}
 _TYRE_STRONG_TERMS = {
     "goodyear",
     "bridgestone",
@@ -63,6 +70,7 @@ def detect_category(text: str) -> dict:
     car_score = 0
     calculator_score = 0
     power_bank_score = 0
+    charger_score = 0
     reason_codes: list[str] = []
 
     tyre_context = any(_contains_term(safe, term) for term in _TYRE_KEYWORDS)
@@ -102,11 +110,27 @@ def detect_category(text: str) -> dict:
     if _contains_term(safe, "iphone") and _contains_term(safe, "battery"):
         power_bank_score += 2
         reason_codes.append("category_signal_iphone_battery_context")
+    if _contains_term(safe, "iphone") and _contains_term(safe, "μπαταρια"):
+        power_bank_score += 2
+        reason_codes.append("category_signal_iphone_battery_context_greek")
+
+    if any(_contains_term(safe, term) for term in _CHARGER_KEYWORDS):
+        charger_score += 2
+        reason_codes.append("category_signal_charger_keyword")
+    if _contains_term(safe, "iphone") and any(_contains_term(safe, term) for term in {"charger", "φορτιστης", "usb-c", "usbc"}):
+        charger_score += 1
+        reason_codes.append("category_signal_iphone_charger_context")
+    if any(_contains_term(safe, term) for term in {"fast", "γρηγορη", "grigoros"}) and any(
+        _contains_term(safe, term) for term in {"charger", "φορτιστης", "usb-c", "usbc"}
+    ):
+        charger_score += 1
+        reason_codes.append("category_signal_fast_charger_context")
 
     scores = {
         "car_tyres": car_score,
         "calculators": calculator_score,
         "power_banks": power_bank_score,
+        "chargers": charger_score,
     }
     best_category = max(scores, key=scores.get)
     best_score = scores[best_category]

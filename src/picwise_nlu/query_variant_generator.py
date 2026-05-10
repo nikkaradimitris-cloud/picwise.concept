@@ -122,7 +122,11 @@ _VARIANT_BLUEPRINTS: dict[str, list[dict[str, Any]]] = {
         {"variant_type": "clean", "input": "Goodyear EfficientGrip Performance 2 195/65 R15 comfort"},
         {"variant_type": "lowercase", "input": "goodyear efficientgrip performance 2 195/65 r15 comfort"},
         {"variant_type": "greeklish", "input": "goodyear efficientgrip performance 2 195 65 r15 pio aneto"},
-        {"variant_type": "typo", "input": "goodyar eficiency grim 195 65 15 pio aneto"},
+        {
+            "variant_type": "typo",
+            "input": "goodyar eficiency grim 195 65 15 pio aneto",
+            "expected_updates": {"model_candidates": ["EfficientGrip"]},
+        },
         {
             "variant_type": "partial_model",
             "input": "goodyear efficientgrip 195/65 r15 comfort",
@@ -136,30 +140,48 @@ _VARIANT_BLUEPRINTS: dict[str, list[dict[str, Any]]] = {
         {
             "variant_type": "missing_model",
             "input": "goodyear 195/65 r15 comfort tyres",
-            "expected_updates": {"model_candidates": []},
+            "expected_updates": {"model_candidates": [], "status": "general_intent_resolved"},
         },
         {
             "variant_type": "mixed_greek_english",
             "input": "thelo Goodyear lastixa 195/65 R15 comfort",
+            "expected_updates": {"model_candidates": [], "status": "general_intent_resolved"},
         },
-        {"variant_type": "messy_spacing", "input": "  goodyear   efficientgrip   195 / 65   r15   comfort  "},
-        {"variant_type": "messy_tire_size", "input": "goodyear efficientgrip 195-65-15 comfort"},
+        {
+            "variant_type": "messy_spacing",
+            "input": "  goodyear   efficientgrip   195 / 65   r15   comfort  ",
+            "expected_updates": {"model_candidates": ["EfficientGrip"]},
+        },
+        {
+            "variant_type": "messy_tire_size",
+            "input": "goodyear efficientgrip 195-65-15 comfort",
+            "expected_updates": {"model_candidates": ["EfficientGrip"]},
+        },
         {
             "variant_type": "priority_only",
             "input": "aneta lastixa gia 195 65 15",
-            "expected_updates": {"brand_candidates": [], "model_candidates": []},
+            "expected_updates": {"brand_candidates": [], "model_candidates": [], "status": "general_intent_resolved"},
         },
         {
             "variant_type": "category_only",
             "input": "car tyres 195/65 r15",
-            "expected_updates": {"brand_candidates": [], "model_candidates": [], "buying_priority": []},
+            "expected_updates": {
+                "brand_candidates": [],
+                "model_candidates": [],
+                "buying_priority": [],
+                "status": "general_intent_resolved",
+            },
         },
     ],
     "stage19_tyre_bridgestone_exactish": [
         {"variant_type": "clean", "input": "Bridgestone Turanza 195/65 R15 low noise"},
         {"variant_type": "lowercase", "input": "bridgestone turanza 195/65 r15 low noise"},
         {"variant_type": "greeklish", "input": "bridgestone turanza 195 65 r15 pio isixa"},
-        {"variant_type": "typo", "input": "brizestone touranza iparxi 195 65 r15"},
+        {
+            "variant_type": "typo",
+            "input": "brizestone touranza iparxi 195 65 r15",
+            "expected_updates": {"buying_priority": []},
+        },
         {
             "variant_type": "partial_model",
             "input": "bridgestone turan 195/65 r15 quiet",
@@ -190,7 +212,11 @@ _VARIANT_BLUEPRINTS: dict[str, list[dict[str, Any]]] = {
     "stage19_powerbank_iphone": [
         {"variant_type": "clean", "input": "power bank iphone 20000mah fast charge"},
         {"variant_type": "lowercase", "input": "power bank iphone 20000mah fast charge"},
-        {"variant_type": "greeklish", "input": "power bank gia iphone megali bataria 20000mah"},
+        {
+            "variant_type": "greeklish",
+            "input": "power bank gia iphone megali bataria 20000mah",
+            "expected_updates": {"buying_priority": ["battery_life"]},
+        },
         {"variant_type": "typo", "input": "pwer bank iphone 20000 mah fast chrge"},
         {
             "variant_type": "missing_model",
@@ -213,12 +239,12 @@ _VARIANT_BLUEPRINTS: dict[str, list[dict[str, Any]]] = {
         {
             "variant_type": "ambiguous",
             "input": "kati kalo gia to aftokinito",
-            "expected_updates": {"expected_status": "ambiguous_needs_review", "needs_review": True},
+            "expected_updates": {"expected_status": "insufficient_data", "needs_review": True},
         },
         {
             "variant_type": "ambiguous",
             "input": "thelo kati kalo alla den ksero ti",
-            "expected_updates": {"expected_status": "manual_review_required", "needs_review": True},
+            "expected_updates": {"expected_status": "insufficient_data", "needs_review": True},
         },
         {
             "variant_type": "priority_only",

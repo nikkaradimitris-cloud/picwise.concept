@@ -26,7 +26,8 @@ def _dict_contains(actual: Any, expected: dict[str, Any]) -> bool:
     if not isinstance(actual, dict):
         return False
     for key, expected_value in expected.items():
-        actual_value = actual.get(key)
+        actual_key = "status" if key == "expected_status" else key
+        actual_value = actual.get(actual_key)
         if isinstance(expected_value, dict):
             if not _dict_contains(actual_value, expected_value):
                 return False
@@ -62,7 +63,8 @@ def evaluate_single_case(case: dict) -> dict:
     actual = build_local_nlu_intent(user_input)
     mismatches: list[str] = []
     for key, expected_value in expected.items():
-        actual_value = actual.get(key)
+        actual_key = "status" if key == "expected_status" else key
+        actual_value = actual.get(actual_key)
         if isinstance(expected_value, dict):
             if not _dict_contains(actual_value, expected_value):
                 mismatches.append(key)

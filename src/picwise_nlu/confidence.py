@@ -63,6 +63,8 @@ def _has_conflict(analysis: dict[str, Any]) -> bool:
         return True
     if category == "power_banks" and "low_noise" in priorities:
         return True
+    if category == "chargers" and has_tyre_size:
+        return True
     return False
 
 
@@ -78,11 +80,22 @@ def _infer_query_type(analysis: dict[str, Any], conflict: bool) -> str:
 
     has_tyre_size = all(specs.get(key) for key in ("width", "profile", "rim"))
     has_specific_specs = has_tyre_size or bool(specs.get("capacity_mah")) or bool(specs.get("model_code"))
-    has_specific_signals = bool(category and models and (brands or has_specific_specs))
+    generic_powerbank_models = {"10000mah", "20000mah", "magsafe"}
+    only_generic_powerbank_models = bool(
+        category == "power_banks"
+        and models
+        and all(str(model).lower() in generic_powerbank_models for model in models)
+    )
+    has_specific_signals = bool(
+        category
+        and models
+        and (brands or has_specific_specs)
+        and not only_generic_powerbank_models
+    )
     if has_specific_signals:
         return "specific_product"
 
-    has_general_signals = bool(category and (brands or priorities or specs))
+    has_general_signals = bool(category and (brands or priorities or specs or category == "chargers"))
     if has_general_signals:
         return "general_intent"
 
@@ -164,7 +177,7 @@ def resolve_safe_status(analysis: dict, confidence: float, raw_query: str = "") 
     has_tyre_size = all(specs.get(key) for key in ("width", "profile", "rim"))
     has_specific_specs = has_tyre_size or bool(specs.get("capacity_mah")) or bool(specs.get("model_code"))
     strong_specific = bool(category and models and (brands or has_specific_specs))
-    strong_general = bool(category and (priorities or brands or specs))
+    strong_general = bool(category and (priorities or brands or specs or category == "chargers"))
 
     status = "manual_review_required"
     if not raw:

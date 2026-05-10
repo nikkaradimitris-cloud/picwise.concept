@@ -10,6 +10,10 @@ _PHRASE_ALIAS_MAP = {
     "efficiency grim": "efficientgrip",
     "efisiency grip": "efficientgrip",
     "efficient grip": "efficientgrip",
+    "fz 991": "fx 991",
+    "fast chrge": "fast charge",
+    "megali bataria": "μεγαλη μπαταρια",
+    "pwer bank": "power bank",
 }
 
 _TOKEN_ALIAS_MAP = {
@@ -20,7 +24,12 @@ _TOKEN_ALIAS_MAP = {
     "micelin": "michelin",
     "continantal": "continental",
     "touransa": "turanza",
+    "touranza": "turanza",
     "turansa": "turanza",
+    "turan": "turanza",
+    "pwer": "power",
+    "chrge": "charge",
+    "fz-991": "fx-991",
 }
 
 _GREEKLISH_TERM_MAP = {
@@ -29,9 +38,14 @@ _GREEKLISH_TERM_MAP = {
     "panellinies": "πανελληνιες",
     "panelinies": "πανελληνιες",
     "aneto": "ανετο",
+    "aneta": "ανετα",
     "isixo": "ησυχο",
     "fthino": "φτηνο",
     "oikonomiko": "οικονομικο",
+    "grigoros": "γρηγορη",
+    "fortistis": "φορτιστης",
+    "bataria": "μπαταρια",
+    "megali": "μεγαλη",
 }
 
 

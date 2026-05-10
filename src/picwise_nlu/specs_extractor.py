@@ -50,6 +50,10 @@ def extract_specs(text: str, category: str | None = None) -> dict:
         specs["model_code"] = f"fx-{fx_match.group('code')}"
         reason_codes.append("spec_fx_model_code_extracted")
 
+    if category in {None, "chargers"} and any(term in safe for term in {"usb-c", "usbc", "usb c"}):
+        specs["connector"] = "usb-c"
+        reason_codes.append("spec_connector_usb_c_extracted")
+
     if not specs:
         return {"specs": {}, "confidence": 0.0, "reason_codes": ["no_specs_extracted"]}
 

@@ -4,13 +4,13 @@ import re
 from typing import Any
 
 _PRIORITY_TERMS = {
-    "comfort": {"ανετο", "ανετα", "comfort", "μαλακο"},
-    "low_noise": {"ησυχο", "αθορυβο", "quiet", "low noise"},
+    "comfort": {"ανετο", "ανετα", "comfort", "comfortable", "μαλακο"},
+    "low_noise": {"ησυχο", "ησυχα", "isixa", "αθορυβο", "quiet", "low noise"},
     "budget": {"φτηνο", "οικονομικο", "value", "budget"},
     "wet_grip": {"βροχη", "wet grip", "κρατημα βροχη"},
     "fuel_efficiency": {"οικονομια καυσιμου", "fuel efficient"},
     "battery_life": {"μεγαλη μπαταρια", "battery", "battery life"},
-    "fast_charging": {"fast charge", "γρηγορη φορτιση"},
+    "fast_charging": {"fast", "fast charge", "fast charging", "γρηγορη", "γρηγορη φορτιση"},
     "exam_approved": {"πανελληνιες", "εξετασεις", "σχολειο"},
 }
 
@@ -18,6 +18,7 @@ _CATEGORY_PRIORITY_ALLOWLIST = {
     "car_tyres": {"comfort", "low_noise", "budget", "wet_grip", "fuel_efficiency"},
     "calculators": {"budget", "exam_approved"},
     "power_banks": {"budget", "battery_life", "fast_charging"},
+    "chargers": {"budget", "fast_charging"},
 }
 
 
