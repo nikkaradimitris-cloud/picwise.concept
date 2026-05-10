@@ -13,6 +13,7 @@ from uuid import uuid4
 from picwise_contracts import DecisionDepth, DecisionOutput, MissingDataState, ProductBrain
 from picwise_engine import PicwiseDecisionEngine
 from picwise_feeds import FeedAdapterProtocol, LocalFixtureFeedAdapter
+from picwise_nlu import adapt_local_nlu_intent_for_router, build_local_nlu_intent
 from picwise_redirects import build_redirect_tracking_payload, resolve_redirect
 from picwise_search import route_search_query
 from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
@@ -71,9 +72,50 @@ class PicwiseLocalApp:
 
     def build_demo_output(self, query: str) -> DecisionOutput:
         raw_query = str(query or "")
-        decision = route_search_query(raw_query)
+        local_nlu_intent: dict[str, Any] | None = None
+        local_nlu_adapter: dict[str, Any] | None = None
+        router_input_query = raw_query
+        enforce_safe_no_result = False
+        router_fallback_used = False
+        adapter_decision = "router_only"
+        nlu_error: str | None = None
+
+        try:
+            local_nlu_intent = build_local_nlu_intent(raw_query)
+            local_nlu_adapter = adapt_local_nlu_intent_for_router(local_nlu_intent)
+            adapter_decision = str(local_nlu_adapter.get("adapter_decision", "safe_review_only"))
+            metadata = local_nlu_adapter.get("router_metadata", {})
+            if isinstance(metadata, dict):
+                enforce_safe_no_result = bool(metadata.get("enforce_safe_no_result", False))
+        except Exception as error:  # pragma: no cover - explicit runtime safety fallback.
+            router_fallback_used = True
+            nlu_error = str(error.__class__.__name__)
+            router_input_query = raw_query
+            enforce_safe_no_result = False
+            local_nlu_intent = None
+            local_nlu_adapter = None
+            adapter_decision = "router_fallback_on_nlu_error"
+
+        decision = route_search_query(router_input_query)
+        if enforce_safe_no_result:
+            decision = route_search_query("")
+            router_input_query = ""
+        local_nlu_debug = self._build_local_nlu_debug_payload(
+            raw_query=raw_query,
+            local_nlu_intent=local_nlu_intent,
+            local_nlu_adapter=local_nlu_adapter,
+            router_input_query=router_input_query,
+            router_fallback_used=router_fallback_used,
+            adapter_decision=adapter_decision,
+            nlu_error=nlu_error,
+        )
         if decision.route_type in {"ambiguous_query", "no_safe_result"}:
-            return self._build_safe_no_result_output(raw_query=raw_query, decision=decision)
+            return self._build_safe_no_result_output(
+                raw_query=raw_query,
+                decision=decision,
+                local_nlu_debug=local_nlu_debug,
+                local_nlu_adapter=local_nlu_adapter,
+            )
         normalized_query = raw_query.strip()
 
         feed_result = self._feed_adapter.fetch_candidates(normalized_query)
@@ -87,6 +129,8 @@ class PicwiseLocalApp:
                 decision=decision,
                 offer_set=offer_set,
                 ranking=ranking,
+                local_nlu_debug=local_nlu_debug,
+                local_nlu_adapter=local_nlu_adapter,
             )
         context_metadata = {
             "category": "electronics",
@@ -103,6 +147,8 @@ class PicwiseLocalApp:
                 "search_decision": decision.to_dict(),
                 "raw_query": raw_query,
                 "effective_query": normalized_query,
+                "local_nlu_debug": local_nlu_debug,
+                "local_nlu_adapter": local_nlu_adapter or {"source": "local_nlu_adapter", "adapter_decision": "not_available"},
             },
         }
         return self._engine.run(
@@ -111,7 +157,52 @@ class PicwiseLocalApp:
             context_metadata=context_metadata,
         )
 
-    def _build_safe_no_result_output(self, *, raw_query: str, decision: Any) -> DecisionOutput:
+    def _build_local_nlu_debug_payload(
+        self,
+        *,
+        raw_query: str,
+        local_nlu_intent: dict[str, Any] | None,
+        local_nlu_adapter: dict[str, Any] | None,
+        router_input_query: str,
+        router_fallback_used: bool,
+        adapter_decision: str,
+        nlu_error: str | None,
+    ) -> dict[str, Any]:
+        intent = local_nlu_intent or {}
+        visual_intent = {
+            "category": intent.get("category"),
+            "brands": list(intent.get("brand_candidates", [])),
+            "models": list(intent.get("model_candidates", [])),
+            "specs": dict(intent.get("specs", {})) if isinstance(intent.get("specs"), dict) else {},
+            "priorities": list(intent.get("buying_priority", [])),
+            "confidence": intent.get("confidence", 0.0),
+            "status": intent.get("status", "not_available"),
+            "needs_review": bool(intent.get("needs_review", True)),
+        }
+        system_flow = {
+            "raw_query": raw_query,
+            "normalized_query": intent.get("normalized_query") or raw_query.strip().lower(),
+            "typo_normalized_query": intent.get("normalized_query"),
+            "adapter_decision": adapter_decision,
+            "router_fallback_used": router_fallback_used,
+            "router_input_query": router_input_query,
+            "nlu_error": nlu_error,
+        }
+        return {
+            "json_output": intent if intent else {"status": "not_available", "source": "local_nlu"},
+            "visual_intent": visual_intent,
+            "system_flow": system_flow,
+            "adapter_metadata": local_nlu_adapter or {"source": "local_nlu_adapter", "adapter_decision": "not_available"},
+        }
+
+    def _build_safe_no_result_output(
+        self,
+        *,
+        raw_query: str,
+        decision: Any,
+        local_nlu_debug: dict[str, Any] | None = None,
+        local_nlu_adapter: dict[str, Any] | None = None,
+    ) -> DecisionOutput:
         normalized_query = raw_query.strip()
         return DecisionOutput(
             query=normalized_query or raw_query,
@@ -128,6 +219,8 @@ class PicwiseLocalApp:
                 "effective_query": normalized_query,
                 "status": decision.status,
                 "result_mode": decision.result_mode,
+                "local_nlu_debug": local_nlu_debug or {},
+                "local_nlu_adapter": local_nlu_adapter or {"source": "local_nlu_adapter", "adapter_decision": "not_available"},
             },
             more_choices=[],
             warnings=[],
@@ -140,6 +233,8 @@ class PicwiseLocalApp:
         decision: Any,
         offer_set: Any,
         ranking: Any,
+        local_nlu_debug: dict[str, Any] | None = None,
+        local_nlu_adapter: dict[str, Any] | None = None,
     ) -> DecisionOutput:
         resolved_status = "manual_review_required"
         resolved_result_mode = "review_only"
@@ -177,6 +272,8 @@ class PicwiseLocalApp:
                     "recommended_offer_index": getattr(ranking, "recommended_offer_index", None),
                     "reason_codes": list(getattr(ranking, "reason_codes", ())),
                 },
+                "local_nlu_debug": local_nlu_debug or {},
+                "local_nlu_adapter": local_nlu_adapter or {"source": "local_nlu_adapter", "adapter_decision": "not_available"},
             },
             more_choices=[],
             warnings=[],

@@ -12,6 +12,12 @@ from .output_builder import (
     build_local_nlu_intent,
     build_local_nlu_intent_from_normalized,
 )
+from .integration_adapter import (
+    adapt_local_nlu_intent_for_router,
+    build_router_query_from_intent,
+    build_safe_router_metadata,
+    should_use_local_nlu_intent,
+)
 from .dataset_generator import generate_default_stage_11_dataset, generate_query_variants
 from .expected_dataset import get_expected_intent_cases
 from .evaluation_runner import evaluate_local_nlu_cases, evaluate_single_case
@@ -45,6 +51,10 @@ __all__ = [
     "resolve_safe_status",
     "build_local_nlu_intent",
     "build_local_nlu_intent_from_normalized",
+    "adapt_local_nlu_intent_for_router",
+    "should_use_local_nlu_intent",
+    "build_router_query_from_intent",
+    "build_safe_router_metadata",
     "generate_query_variants",
     "generate_default_stage_11_dataset",
     "get_expected_intent_cases",
