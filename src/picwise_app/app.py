@@ -15,6 +15,7 @@ from picwise_engine import PicwiseDecisionEngine
 from picwise_feeds import FeedAdapterProtocol, LocalFixtureFeedAdapter
 from picwise_redirects import build_redirect_tracking_payload, resolve_redirect
 from picwise_search import route_search_query
+from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
 from picwise_surface import render_landing_surface, render_picwise_reference_surface
 from .buying_routes import render_best_slug_html, render_buying_sitemap_xml
 
@@ -77,6 +78,17 @@ class PicwiseLocalApp:
         normalized_query = raw_query.strip() or fallback_query
 
         feed_result = self._feed_adapter.fetch_candidates(normalized_query)
+        if decision.route_type == "specific_product":
+            offer_set, ranking = resolve_specific_product_offers_from_candidates(
+                decision.normalized_query or normalized_query,
+                feed_result.candidates,
+            )
+            return self._build_specific_product_safe_output(
+                raw_query=raw_query,
+                decision=decision,
+                offer_set=offer_set,
+                ranking=ranking,
+            )
         context_metadata = {
             "category": "electronics",
             "product_type": "power bank",
@@ -117,6 +129,55 @@ class PicwiseLocalApp:
                 "effective_query": normalized_query,
                 "status": decision.status,
                 "result_mode": decision.result_mode,
+            },
+            more_choices=[],
+            warnings=[],
+        )
+
+    def _build_specific_product_safe_output(
+        self,
+        *,
+        raw_query: str,
+        decision: Any,
+        offer_set: Any,
+        ranking: Any,
+    ) -> DecisionOutput:
+        resolved_status = "manual_review_required"
+        resolved_result_mode = "review_only"
+        resolver_reason_codes = list(getattr(offer_set, "reason_codes", ()))
+        if getattr(offer_set, "status", "") == "no_valid_offers":
+            resolved_status = "no_valid_offers"
+            resolved_result_mode = "no_result"
+        elif getattr(offer_set, "status", "") == "ready":
+            # Specific-product offer rendering is intentionally isolated from the 4-choice engine path.
+            resolved_status = "manual_review_required"
+            resolved_result_mode = "review_only"
+            resolver_reason_codes = resolver_reason_codes or ["specific_product_surface_not_enabled"]
+        return DecisionOutput(
+            query=raw_query.strip() or raw_query,
+            selected_brain=ProductBrain.TECH_SPECS_ELECTRONICS,
+            decision_depth=DecisionDepth.FAST_DECISION,
+            page_title="Picwise specific product safe result",
+            choices=[],
+            recommended_product_id="",
+            missing_data_states=[MissingDataState.NOT_APPLICABLE],
+            tracking_context={
+                "safe_no_result": True,
+                "search_decision": {
+                    **decision.to_dict(),
+                    "status": resolved_status,
+                    "result_mode": resolved_result_mode,
+                    "reason_codes": resolver_reason_codes,
+                },
+                "raw_query": raw_query,
+                "effective_query": decision.normalized_query or raw_query.strip(),
+                "specific_product_resolution": {
+                    "status": getattr(offer_set, "status", "unknown"),
+                    "identity_key": getattr(getattr(offer_set, "identity", None), "normalized_key", ""),
+                    "matched_offer_count": len(getattr(offer_set, "offers", ())),
+                    "recommended_offer_index": getattr(ranking, "recommended_offer_index", None),
+                    "reason_codes": list(getattr(ranking, "reason_codes", ())),
+                },
             },
             more_choices=[],
             warnings=[],

@@ -106,6 +106,21 @@ class SearchDecisionRouterTests(unittest.TestCase):
         self.assertFalse(empty_output.tracking_context["search_decision"]["indexable_allowed"])
         self.assertFalse(empty_output.tracking_context["search_decision"]["sitemap_allowed"])
 
+    def test_specific_product_without_same_product_runtime_data_returns_safe_no_valid_offers(self) -> None:
+        tracking_feed = self._TrackingFeedAdapter()
+        app = PicwiseLocalApp(feed_adapter=tracking_feed)
+        output = app.build_demo_output("Goodyear EfficientGrip Performance 2 195/65 R15")
+        self.assertEqual(tracking_feed.calls, 1)
+        self.assertEqual(output.choices, [])
+        self.assertEqual(output.more_choices, [])
+        self.assertEqual(output.recommended_product_id, "")
+        self.assertEqual(output.tracking_context["search_decision"]["route_type"], "specific_product")
+        self.assertEqual(output.tracking_context["search_decision"]["status"], "no_valid_offers")
+        self.assertEqual(output.tracking_context["search_decision"]["result_mode"], "no_result")
+        self.assertFalse(output.tracking_context["search_decision"]["public_allowed"])
+        self.assertFalse(output.tracking_context["search_decision"]["indexable_allowed"])
+        self.assertFalse(output.tracking_context["search_decision"]["sitemap_allowed"])
+
     def test_ambiguous_and_no_safe_result_html_has_no_product_cards_or_fallback_query(self) -> None:
         app = PicwiseLocalApp()
         ambiguous_html = app.demo_html("Goodyar eco contact performanc 2 195/65/15")

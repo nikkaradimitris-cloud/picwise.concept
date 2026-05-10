@@ -91,6 +91,16 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertNotIn("power bank 20000mah for iphone", body)
         self.assertNotIn('<article class="pw-card', body)
 
+    def test_demo_specific_product_without_real_same_product_offers_returns_safe_no_valid_offers(self) -> None:
+        query = "Goodyear EfficientGrip Performance 2 195/65 R15"
+        body = self._fetch(f"/demo?q={quote(query)}")
+        self.assertIn("Safe no-result response", body)
+        self.assertIn("route_type: specific_product", body)
+        self.assertIn("status: no_valid_offers", body)
+        self.assertIn("products/results: empty", body)
+        self.assertNotIn("TravelCore 20K", body)
+        self.assertNotIn('<article class="pw-card', body)
+
     def test_picwise_reference_route_renders_static_reference_page(self) -> None:
         body = self._fetch("/picwise-reference")
         self.assertIn("See the 4 best products before you buy", body)
