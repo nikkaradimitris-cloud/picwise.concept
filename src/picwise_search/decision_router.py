@@ -8,34 +8,6 @@ RouteType = str
 
 _DEFAULT_CONFIDENCE = 0.5
 _MIN_QUERY_LENGTH = 3
-_DEFAULT_QUERY_FALLBACK = "power bank 20000mah for iphone"
-
-_KNOWN_BRANDS = frozenset(
-    {
-        "goodyear",
-        "continental",
-        "michelin",
-        "bridgestone",
-        "pirelli",
-        "dunlop",
-        "yokohama",
-        "hankook",
-        "nokian",
-        "firestone",
-    }
-)
-_KNOWN_MODEL_TOKENS = frozenset(
-    {
-        "efficientgrip",
-        "performance",
-        "ecocontact",
-        "primacy",
-        "pilot",
-        "potenza",
-        "turanza",
-    }
-)
-_TYPO_BRAND_TOKENS = frozenset({"goodyar", "michelan", "continetal"})
 _STOPWORDS = frozenset(
     {
         "the",
@@ -56,10 +28,54 @@ _STOPWORDS = frozenset(
     }
 )
 _MEANINGLESS_TOKENS = frozenset({"?", ".", "-", "_", "x", "xx", "test", "none", "n/a"})
+_GENERAL_INTENT_TERMS = frozenset(
+    {
+        "best",
+        "cheap",
+        "budget",
+        "top",
+        "for",
+        "under",
+        "need",
+        "needs",
+        "gift",
+        "travel",
+        "office",
+        "school",
+        "home",
+        "daily",
+        "compare",
+        "comparison",
+        "guide",
+        "versus",
+        "vs",
+        "for",
+        "για",
+        "καλύτερο",
+        "καλυτερο",
+        "καλύτερα",
+        "ανάγκη",
+        "αναγκη",
+        "ταξί",
+        "ταξι",
+    }
+)
+_CONFLICT_TERMS = frozenset({"vs", "versus", "or", "compare", "between"})
 
 _SIZE_REGEX = re.compile(r"\b\d{3}/\d{2}(?:\s*r\d{2}|/\d{2})\b", flags=re.IGNORECASE)
+_STRICT_SIZE_REGEX = re.compile(r"\b\d{3}/\d{2}\s*r\d{2}\b", flags=re.IGNORECASE)
+_MALFORMED_SIZE_REGEX = re.compile(r"\b\d{3}/\d{2}/\d{2}\b", flags=re.IGNORECASE)
+_STORAGE_SPEC_REGEX = re.compile(r"\b\d+(?:\.\d+)?\s?(?:gb|tb|mb|mah|wh)\b", flags=re.IGNORECASE)
+_DIMENSION_SPEC_REGEX = re.compile(
+    r"\b\d+(?:\.\d+)?\s?(?:mm|cm|m|inch|in|kg|g|w|kw|hz|mhz)\b",
+    flags=re.IGNORECASE,
+)
+_MODEL_CODE_REGEX = re.compile(r"\b(?!r\d+\b)[a-z]{1,6}[-]?\d{2,}[a-z0-9-]*\b", flags=re.IGNORECASE)
 _SPACE_REGEX = re.compile(r"\s+")
 _TOKEN_REGEX = re.compile(r"[^\w]+", flags=re.UNICODE)
+_LATIN_ALPHA_REGEX = re.compile(r"^[a-z]+$")
+_MODEL_TOKEN_REGEX = re.compile(r"^(?!r\d+$)(?=.*[a-z])(?=.*\d)[a-z0-9-]+$", flags=re.IGNORECASE)
+_STORAGE_TOKEN_REGEX = re.compile(r"^\d+(?:\.\d+)?(?:gb|tb|mb|mah|wh)$", flags=re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -113,34 +129,101 @@ def _is_meaningless_query(normalized_query: str, tokens: list[str]) -> bool:
     return not has_alnum
 
 
-def _detect_conflicting_brand_model(tokens: list[str]) -> bool:
-    token_set = set(tokens)
-    has_goodyear_family = bool({"goodyear", "goodyar", "efficientgrip"} & token_set)
-    has_continental_family = bool({"continental", "ecocontact", "eco", "contact"} & token_set)
-    if has_goodyear_family and has_continental_family:
-        return True
-    brand_hits = token_set & (_KNOWN_BRANDS | _TYPO_BRAND_TOKENS)
-    return len(brand_hits) > 1
+def _concrete_tokens(tokens: list[str]) -> list[str]:
+    return [token for token in tokens if token not in _STOPWORDS and token not in _MEANINGLESS_TOKENS]
 
 
-def _is_ambiguous(tokens: list[str]) -> tuple[bool, tuple[str, ...]]:
+def _count_model_like_tokens(tokens: list[str]) -> int:
+    return sum(1 for token in tokens if _MODEL_TOKEN_REGEX.match(token) and not _STORAGE_TOKEN_REGEX.match(token))
+
+
+def _count_descriptive_latin_tokens(tokens: list[str]) -> int:
+    return sum(
+        1
+        for token in tokens
+        if len(token) >= 4 and _LATIN_ALPHA_REGEX.match(token) and token not in _GENERAL_INTENT_TERMS
+    )
+
+
+def _count_numeric_tokens(tokens: list[str]) -> int:
+    return sum(1 for token in tokens if any(char.isdigit() for char in token))
+
+
+def _product_signal_score(tokens: list[str], normalized_query: str) -> int:
+    score = 0
+    if _STRICT_SIZE_REGEX.search(normalized_query):
+        score += 2
+    if _STORAGE_SPEC_REGEX.search(normalized_query):
+        score += 2
+    if _DIMENSION_SPEC_REGEX.search(normalized_query):
+        score += 1
+    if _MODEL_CODE_REGEX.search(normalized_query):
+        score += 2
+    if _count_model_like_tokens(tokens) >= 1:
+        score += 1
+    if _count_descriptive_latin_tokens(tokens) >= 2:
+        score += 2
+    return score
+
+
+def _is_ambiguous(tokens: list[str], normalized_query: str) -> tuple[bool, tuple[str, ...]]:
     reasons: list[str] = []
-    token_set = set(tokens)
-    if token_set & _TYPO_BRAND_TOKENS:
-        reasons.append("brand_typo_detected")
-    if _detect_conflicting_brand_model(tokens):
-        reasons.append("brand_model_conflict_detected")
-    if "??" in "".join(tokens):
+    concrete = _concrete_tokens(tokens)
+    token_set = set(concrete)
+    token_set_all = set(tokens)
+    if _MALFORMED_SIZE_REGEX.search(normalized_query):
+        reasons.append("malformed_spec_pattern")
+    if token_set_all & _CONFLICT_TERMS:
+        reasons.append("conflicting_intent_signals")
+    if "??" in normalized_query or "!!" in normalized_query:
         reasons.append("query_noise_detected")
+    score = _product_signal_score(concrete, normalized_query)
+    has_any_spec = bool(
+        _SIZE_REGEX.search(normalized_query)
+        or _STORAGE_SPEC_REGEX.search(normalized_query)
+        or _DIMENSION_SPEC_REGEX.search(normalized_query)
+        or _MODEL_CODE_REGEX.search(normalized_query)
+    )
+    if (
+        has_any_spec
+        and score <= 2
+        and len(concrete) <= 3
+        and not (token_set & _GENERAL_INTENT_TERMS)
+    ):
+        reasons.append("low_confidence_product_identity")
     return bool(reasons), tuple(reasons)
 
 
 def _is_specific_product(tokens: list[str], normalized_query: str) -> bool:
-    token_set = set(tokens)
-    has_size = bool(_SIZE_REGEX.search(normalized_query))
-    has_known_brand_or_model = bool((_KNOWN_BRANDS | _KNOWN_MODEL_TOKENS) & token_set)
-    has_numeric_spec = any(char.isdigit() for char in normalized_query)
-    return has_size and has_known_brand_or_model and has_numeric_spec
+    concrete = _concrete_tokens(tokens)
+    if len(concrete) < 3:
+        return False
+    score = _product_signal_score(concrete, normalized_query)
+    descriptive_count = _count_descriptive_latin_tokens(concrete)
+    has_strict_size = bool(_STRICT_SIZE_REGEX.search(normalized_query))
+    has_model_code = bool(_MODEL_CODE_REGEX.search(normalized_query))
+    has_model_like_token = _count_model_like_tokens(concrete) >= 1
+    numeric_token_count = _count_numeric_tokens(concrete)
+    has_identity_anchor = bool(
+        has_model_code
+        or has_model_like_token
+        or (has_strict_size and descriptive_count >= 2)
+        or (numeric_token_count >= 2 and descriptive_count >= 1)
+    )
+    has_general_intent_language = bool(set(concrete) & _GENERAL_INTENT_TERMS)
+    has_any_spec = bool(
+        _SIZE_REGEX.search(normalized_query)
+        or _STORAGE_SPEC_REGEX.search(normalized_query)
+        or _DIMENSION_SPEC_REGEX.search(normalized_query)
+        or _MODEL_CODE_REGEX.search(normalized_query)
+    )
+    has_numeric_identity_combo = numeric_token_count >= 2 and descriptive_count >= 1
+    return (
+        (score >= 3 or has_numeric_identity_combo)
+        and has_any_spec
+        and has_identity_anchor
+        and not (has_general_intent_language and not has_model_code and not has_strict_size)
+    )
 
 
 def _safe_no_result_decision(
@@ -180,7 +263,7 @@ def route_search_query(query: str) -> SearchDecision:
                 confidence=1.0,
             )
 
-        is_ambiguous, ambiguity_reasons = _is_ambiguous(tokens)
+        is_ambiguous, ambiguity_reasons = _is_ambiguous(tokens, normalized_query)
         if is_ambiguous:
             return SearchDecision(
                 query=raw_query,
@@ -225,7 +308,7 @@ def route_search_query(query: str) -> SearchDecision:
         # Safe deterministic fallback; never throw from router path.
         return _safe_no_result_decision(
             query=raw_query,
-            normalized_query=normalized_query or _DEFAULT_QUERY_FALLBACK,
+            normalized_query=normalized_query,
             status="insufficient_data",
             reasons=("router_fallback",),
             confidence=_DEFAULT_CONFIDENCE,

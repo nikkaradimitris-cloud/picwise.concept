@@ -70,12 +70,11 @@ class PicwiseLocalApp:
         return render_picwise_reference_surface()
 
     def build_demo_output(self, query: str) -> DecisionOutput:
-        fallback_query = "power bank 20000mah for iphone"
         raw_query = str(query or "")
         decision = route_search_query(raw_query)
         if decision.route_type in {"ambiguous_query", "no_safe_result"}:
             return self._build_safe_no_result_output(raw_query=raw_query, decision=decision)
-        normalized_query = raw_query.strip() or fallback_query
+        normalized_query = raw_query.strip()
 
         feed_result = self._feed_adapter.fetch_candidates(normalized_query)
         if decision.route_type == "specific_product":
@@ -236,7 +235,7 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.OK, self.app.health_payload())
             return
         if parsed.path in {"/", "/demo"}:
-            query = parse_qs(parsed.query).get("q", ["power bank 20000mah for iphone"])[0]
+            query = parse_qs(parsed.query).get("q", ["best products to buy"])[0]
             html = self.app.demo_html(query)
             self._send_html(HTTPStatus.OK, html)
             return
