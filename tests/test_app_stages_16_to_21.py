@@ -67,6 +67,30 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertIn(query, body)
         self.assertIn("Showing 4 options for:", body)
 
+    def test_demo_ambiguous_query_returns_review_only_safe_no_result(self) -> None:
+        query = "Goodyar eco contact performanc 2 195/65/15"
+        body = self._fetch(f"/demo?q={quote(query)}")
+        self.assertIn("Safe no-result response", body)
+        self.assertIn("route_type: ambiguous_query", body)
+        self.assertIn("status: manual_review_required", body)
+        self.assertIn("result_mode: review_only", body)
+        self.assertIn("products/results: empty", body)
+        self.assertIn("public_allowed: false", body)
+        self.assertNotIn("power bank 20000mah for iphone", body)
+        self.assertNotIn('<article class="pw-card', body)
+
+    def test_demo_no_safe_result_query_returns_explicit_no_result(self) -> None:
+        body = self._fetch("/demo?q=%20")
+        self.assertIn("Safe no-result response", body)
+        self.assertIn("route_type: no_safe_result", body)
+        self.assertIn("status: no_valid_offers", body)
+        self.assertIn("result_mode: no_result", body)
+        self.assertIn("products/results: empty", body)
+        self.assertIn("indexable_allowed: false", body)
+        self.assertIn("sitemap_allowed: false", body)
+        self.assertNotIn("power bank 20000mah for iphone", body)
+        self.assertNotIn('<article class="pw-card', body)
+
     def test_picwise_reference_route_renders_static_reference_page(self) -> None:
         body = self._fetch("/picwise-reference")
         self.assertIn("See the 4 best products before you buy", body)

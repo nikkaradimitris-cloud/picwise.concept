@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from html import escape
 import json
 import mimetypes
 from http import HTTPStatus
@@ -9,10 +10,11 @@ from typing import Any
 from urllib.parse import parse_qs, urlparse
 from uuid import uuid4
 
-from picwise_contracts import DecisionOutput
+from picwise_contracts import DecisionDepth, DecisionOutput, MissingDataState, ProductBrain
 from picwise_engine import PicwiseDecisionEngine
 from picwise_feeds import FeedAdapterProtocol, LocalFixtureFeedAdapter
 from picwise_redirects import build_redirect_tracking_payload, resolve_redirect
+from picwise_search import route_search_query
 from picwise_surface import render_landing_surface, render_picwise_reference_surface
 from .buying_routes import render_best_slug_html, render_buying_sitemap_xml
 
@@ -39,6 +41,8 @@ class PicwiseLocalApp:
 
     def demo_html(self, query: str) -> str:
         output = self.build_demo_output(query)
+        if not output.choices:
+            return self._safe_no_result_html(output)
         rendered = render_landing_surface(output)
         resolution = resolve_redirect(
             output,
@@ -65,7 +69,13 @@ class PicwiseLocalApp:
         return render_picwise_reference_surface()
 
     def build_demo_output(self, query: str) -> DecisionOutput:
-        normalized_query = query.strip() or "power bank 20000mah for iphone"
+        fallback_query = "power bank 20000mah for iphone"
+        raw_query = str(query or "")
+        decision = route_search_query(raw_query)
+        if decision.route_type in {"ambiguous_query", "no_safe_result"}:
+            return self._build_safe_no_result_output(raw_query=raw_query, decision=decision)
+        normalized_query = raw_query.strip() or fallback_query
+
         feed_result = self._feed_adapter.fetch_candidates(normalized_query)
         context_metadata = {
             "category": "electronics",
@@ -79,12 +89,76 @@ class PicwiseLocalApp:
                 "source_id": feed_result.source_metadata.get("source_id"),
                 "local_test_fixture": True,
                 "not_production_data": True,
+                "search_decision": decision.to_dict(),
+                "raw_query": raw_query,
+                "effective_query": normalized_query,
             },
         }
         return self._engine.run(
             query=normalized_query,
             candidates=feed_result.candidates,
             context_metadata=context_metadata,
+        )
+
+    def _build_safe_no_result_output(self, *, raw_query: str, decision: Any) -> DecisionOutput:
+        normalized_query = raw_query.strip()
+        return DecisionOutput(
+            query=normalized_query or raw_query,
+            selected_brain=ProductBrain.TECH_SPECS_ELECTRONICS,
+            decision_depth=DecisionDepth.FAST_DECISION,
+            page_title="Picwise safe search result",
+            choices=[],
+            recommended_product_id="",
+            missing_data_states=[MissingDataState.NOT_APPLICABLE],
+            tracking_context={
+                "safe_no_result": True,
+                "search_decision": decision.to_dict(),
+                "raw_query": raw_query,
+                "effective_query": normalized_query,
+                "status": decision.status,
+                "result_mode": decision.result_mode,
+            },
+            more_choices=[],
+            warnings=[],
+        )
+
+    def _safe_no_result_html(self, output: DecisionOutput) -> str:
+        decision = output.tracking_context.get("search_decision", {})
+        route_type = str(decision.get("route_type", "no_safe_result"))
+        status = str(decision.get("status", "no_valid_offers"))
+        result_mode = str(decision.get("result_mode", "no_result"))
+        query = escape((output.query or "").strip() or "(empty query)")
+        reason_codes = decision.get("reason_codes") or []
+        reasons_text = ", ".join(escape(str(code)) for code in reason_codes) if reason_codes else "none"
+        return (
+            "<!doctype html>"
+            '<html lang="en"><head><meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">'
+            "<title>Picwise Safe Search</title>"
+            "<style>"
+            "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f9ff;color:#102744;}"
+            ".pw-wrap{max-width:860px;margin:0 auto;padding:32px 20px;}"
+            ".pw-card{background:#fff;border:1px solid #dbe8fb;border-radius:14px;padding:18px 20px;box-shadow:0 8px 24px rgba(17,44,91,.08);}"
+            ".pw-chip{display:inline-block;background:#eaf2ff;color:#2a6deb;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700;margin-right:8px;}"
+            ".pw-note{margin:12px 0 0;color:#355174;line-height:1.5;}"
+            ".pw-list{margin:12px 0 0;padding-left:18px;line-height:1.6;}"
+            "code{background:#eef4ff;padding:2px 6px;border-radius:6px;}"
+            "</style></head><body>"
+            '<main class="pw-wrap"><section class="pw-card">'
+            "<h1>Safe no-result response</h1>"
+            f"<p>Query: <code>{query}</code></p>"
+            f'<p><span class="pw-chip">route_type: {escape(route_type)}</span>'
+            f'<span class="pw-chip">status: {escape(status)}</span>'
+            f'<span class="pw-chip">result_mode: {escape(result_mode)}</span></p>'
+            '<ul class="pw-list">'
+            "<li>public_allowed: false</li>"
+            "<li>indexable_allowed: false</li>"
+            "<li>sitemap_allowed: false</li>"
+            "<li>products/results: empty</li>"
+            f"<li>reason_codes: {reasons_text}</li>"
+            "</ul>"
+            '<p class="pw-note">No fallback products are shown. Manual review or query refinement is required.</p>'
+            "</section></main></body></html>"
         )
 
 
