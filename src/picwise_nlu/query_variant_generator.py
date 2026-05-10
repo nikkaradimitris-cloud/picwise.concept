@@ -1,0 +1,396 @@
+from __future__ import annotations
+
+import json
+from typing import Any
+
+_PARTIAL_EXPECTED_KEYS = {
+    "category",
+    "brand_candidates",
+    "model_candidates",
+    "specs",
+    "buying_priority",
+    "status",
+    "expected_status",
+    "needs_review",
+}
+
+_FORBIDDEN_KEYS = {
+    "product",
+    "products",
+    "offer",
+    "offers",
+    "price",
+    "prices",
+    "affiliate",
+    "affiliate_url",
+}
+
+_DEFAULT_TRAINING_SEEDS: list[dict[str, Any]] = [
+    {
+        "seed_id": "stage19_tyre_goodyear_exact",
+        "case_id": "stage19_tyre_goodyear_exact_seed",
+        "family": "car_tyre_exact_product",
+        "input": "Goodyear EfficientGrip Performance 2 195/65 R15 comfort",
+        "expected": {
+            "category": "car_tyres",
+            "brand_candidates": ["Goodyear"],
+            "model_candidates": ["EfficientGrip Performance 2"],
+            "specs": {"width": "195", "profile": "65", "rim": "R15"},
+            "buying_priority": ["comfort"],
+            "status": "specific_product_resolved",
+            "needs_review": False,
+        },
+    },
+    {
+        "seed_id": "stage19_tyre_bridgestone_exactish",
+        "case_id": "stage19_tyre_bridgestone_exactish_seed",
+        "family": "car_tyre_exactish_product",
+        "input": "Bridgestone Turanza 195/65 R15 low noise",
+        "expected": {
+            "category": "car_tyres",
+            "brand_candidates": ["Bridgestone"],
+            "model_candidates": ["Turanza"],
+            "specs": {"width": "195", "profile": "65", "rim": "R15"},
+            "buying_priority": ["low_noise"],
+            "status": "specific_product_resolved",
+            "needs_review": False,
+        },
+    },
+    {
+        "seed_id": "stage19_tyre_general_octavia",
+        "case_id": "stage19_tyre_general_octavia_seed",
+        "family": "car_tyre_general_intent",
+        "input": "comfortable tyres 195/65 R15 for Octavia",
+        "expected": {
+            "category": "car_tyres",
+            "specs": {"width": "195", "profile": "65", "rim": "R15"},
+            "buying_priority": ["comfort"],
+            "status": "general_intent_resolved",
+        },
+    },
+    {
+        "seed_id": "stage19_calculator_exam_casio",
+        "case_id": "stage19_calculator_exam_casio_seed",
+        "family": "calculator_exam_intent",
+        "input": "Casio fx-991 calculator for Panellinies exams",
+        "expected": {
+            "category": "calculators",
+            "brand_candidates": ["Casio"],
+            "model_candidates": ["fx-991"],
+            "buying_priority": ["exam_approved"],
+            "status": "specific_product_resolved",
+            "needs_review": False,
+        },
+    },
+    {
+        "seed_id": "stage19_powerbank_iphone",
+        "case_id": "stage19_powerbank_iphone_seed",
+        "family": "powerbank_iphone_intent",
+        "input": "power bank iphone 20000mah fast charge",
+        "expected": {
+            "category": "power_banks",
+            "specs": {"capacity_mah": "20000"},
+            "buying_priority": ["fast_charging"],
+            "status": "general_intent_resolved",
+        },
+    },
+    {
+        "seed_id": "stage19_charger_fast_iphone",
+        "case_id": "stage19_charger_fast_iphone_seed",
+        "family": "charger_fast_charging_intent",
+        "input": "fast charger iphone USB-C",
+        "expected": {
+            "category": "chargers",
+            "buying_priority": ["fast_charging"],
+            "status": "general_intent_resolved",
+        },
+    },
+    {
+        "seed_id": "stage19_ambiguous_unknown",
+        "case_id": "stage19_ambiguous_unknown_seed",
+        "family": "ambiguous_unknown",
+        "input": "kati kalo gia to aftokinito",
+        "expected": {
+            "expected_status": "ambiguous_needs_review",
+            "needs_review": True,
+        },
+    },
+]
+
+_VARIANT_BLUEPRINTS: dict[str, list[dict[str, Any]]] = {
+    "stage19_tyre_goodyear_exact": [
+        {"variant_type": "clean", "input": "Goodyear EfficientGrip Performance 2 195/65 R15 comfort"},
+        {"variant_type": "lowercase", "input": "goodyear efficientgrip performance 2 195/65 r15 comfort"},
+        {"variant_type": "greeklish", "input": "goodyear efficientgrip performance 2 195 65 r15 pio aneto"},
+        {"variant_type": "typo", "input": "goodyar eficiency grim 195 65 15 pio aneto"},
+        {
+            "variant_type": "partial_model",
+            "input": "goodyear efficientgrip 195/65 r15 comfort",
+            "expected_updates": {"model_candidates": ["EfficientGrip"]},
+        },
+        {
+            "variant_type": "missing_brand",
+            "input": "efficientgrip performance 2 195/65 r15 comfort tyres",
+            "expected_updates": {"brand_candidates": []},
+        },
+        {
+            "variant_type": "missing_model",
+            "input": "goodyear 195/65 r15 comfort tyres",
+            "expected_updates": {"model_candidates": []},
+        },
+        {
+            "variant_type": "mixed_greek_english",
+            "input": "thelo Goodyear lastixa 195/65 R15 comfort",
+        },
+        {"variant_type": "messy_spacing", "input": "  goodyear   efficientgrip   195 / 65   r15   comfort  "},
+        {"variant_type": "messy_tire_size", "input": "goodyear efficientgrip 195-65-15 comfort"},
+        {
+            "variant_type": "priority_only",
+            "input": "aneta lastixa gia 195 65 15",
+            "expected_updates": {"brand_candidates": [], "model_candidates": []},
+        },
+        {
+            "variant_type": "category_only",
+            "input": "car tyres 195/65 r15",
+            "expected_updates": {"brand_candidates": [], "model_candidates": [], "buying_priority": []},
+        },
+    ],
+    "stage19_tyre_bridgestone_exactish": [
+        {"variant_type": "clean", "input": "Bridgestone Turanza 195/65 R15 low noise"},
+        {"variant_type": "lowercase", "input": "bridgestone turanza 195/65 r15 low noise"},
+        {"variant_type": "greeklish", "input": "bridgestone turanza 195 65 r15 pio isixa"},
+        {"variant_type": "typo", "input": "brizestone touranza iparxi 195 65 r15"},
+        {
+            "variant_type": "partial_model",
+            "input": "bridgestone turan 195/65 r15 quiet",
+            "expected_updates": {"model_candidates": ["Turanza"]},
+        },
+        {
+            "variant_type": "missing_brand",
+            "input": "turanza 195/65 r15 low noise tyres",
+            "expected_updates": {"brand_candidates": []},
+        },
+    ],
+    "stage19_tyre_general_octavia": [
+        {"variant_type": "clean", "input": "comfortable tyres 195/65 R15 for Octavia"},
+        {"variant_type": "greeklish", "input": "thelo aneta lastixa gia octavia 195 65 15"},
+        {"variant_type": "messy_spacing", "input": " comfortable   tyres   195 / 65   r15   octavia "},
+    ],
+    "stage19_calculator_exam_casio": [
+        {"variant_type": "clean", "input": "Casio fx-991 calculator for Panellinies exams"},
+        {"variant_type": "lowercase", "input": "casio fx-991 calculator for panellinies"},
+        {"variant_type": "greeklish", "input": "kompiouteraki panellinies casio fx 991"},
+        {"variant_type": "typo", "input": "casio fz-991 kompiouteraki gia panelinies"},
+        {
+            "variant_type": "missing_brand",
+            "input": "fx 991 calculator for panellinies",
+            "expected_updates": {"brand_candidates": []},
+        },
+    ],
+    "stage19_powerbank_iphone": [
+        {"variant_type": "clean", "input": "power bank iphone 20000mah fast charge"},
+        {"variant_type": "lowercase", "input": "power bank iphone 20000mah fast charge"},
+        {"variant_type": "greeklish", "input": "power bank gia iphone megali bataria 20000mah"},
+        {"variant_type": "typo", "input": "pwer bank iphone 20000 mah fast chrge"},
+        {
+            "variant_type": "missing_model",
+            "input": "power bank iphone fast charging",
+            "expected_updates": {"specs": {"capacity_mah": ""}},
+        },
+    ],
+    "stage19_charger_fast_iphone": [
+        {"variant_type": "clean", "input": "fast charger iphone USB-C"},
+        {"variant_type": "lowercase", "input": "fast charger iphone usb-c"},
+        {"variant_type": "greeklish", "input": "fortistis iphone grigoros usb c"},
+        {"variant_type": "typo", "input": "fast chager iphone usbc"},
+        {
+            "variant_type": "category_only",
+            "input": "charger iphone",
+            "expected_updates": {"buying_priority": []},
+        },
+    ],
+    "stage19_ambiguous_unknown": [
+        {
+            "variant_type": "ambiguous",
+            "input": "kati kalo gia to aftokinito",
+            "expected_updates": {"expected_status": "ambiguous_needs_review", "needs_review": True},
+        },
+        {
+            "variant_type": "ambiguous",
+            "input": "thelo kati kalo alla den ksero ti",
+            "expected_updates": {"expected_status": "manual_review_required", "needs_review": True},
+        },
+        {
+            "variant_type": "priority_only",
+            "input": "na einai aplo kai kalo",
+            "expected_updates": {"expected_status": "insufficient_data", "needs_review": True},
+        },
+    ],
+}
+
+
+def _compact_text(value: Any) -> str:
+    return " ".join(str(value or "").split()).strip()
+
+
+def _normalize_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    items: list[str] = []
+    seen: set[str] = set()
+    for item in value:
+        text = _compact_text(item)
+        if text and text not in seen:
+            items.append(text)
+            seen.add(text)
+    return items
+
+
+def _normalize_specs(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        return {}
+    safe_specs: dict[str, Any] = {}
+    for key, raw in value.items():
+        key_text = _compact_text(key)
+        if not key_text:
+            continue
+        if isinstance(raw, (int, float, bool)) or raw is None:
+            safe_specs[key_text] = raw
+            continue
+        text_value = _compact_text(raw)
+        if text_value:
+            safe_specs[key_text] = text_value
+    return safe_specs
+
+
+def _sanitize_expected(expected: Any) -> dict[str, Any]:
+    payload = dict(expected or {}) if isinstance(expected, dict) else {}
+    safe: dict[str, Any] = {}
+    for key in _PARTIAL_EXPECTED_KEYS:
+        if key not in payload:
+            continue
+        value = payload.get(key)
+        if key in {"brand_candidates", "model_candidates", "buying_priority"}:
+            safe[key] = _normalize_list(value)
+        elif key == "specs":
+            safe[key] = _normalize_specs(value)
+        elif key in {"status", "expected_status", "category"}:
+            text = _compact_text(value)
+            if text:
+                safe[key] = text
+        elif key == "needs_review":
+            safe[key] = bool(value)
+    for forbidden in _FORBIDDEN_KEYS:
+        safe.pop(forbidden, None)
+    return safe
+
+
+def _merge_expected(base: dict[str, Any], updates: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(base)
+    for key, value in updates.items():
+        merged[key] = value
+    return _sanitize_expected(merged)
+
+
+def _seed_identity(seed: dict[str, Any], index: int) -> str:
+    explicit = _compact_text(seed.get("seed_id"))
+    if explicit:
+        return explicit
+    fallback = _compact_text(seed.get("case_id"))
+    if fallback:
+        return fallback
+    return f"seed_{index}"
+
+
+def get_default_training_seeds() -> list[dict]:
+    return json.loads(json.dumps(_DEFAULT_TRAINING_SEEDS, ensure_ascii=True, sort_keys=True))
+
+
+def normalize_variant_record(record: dict) -> dict:
+    payload = dict(record or {})
+    case_id = _compact_text(payload.get("case_id"))
+    seed_id = _compact_text(payload.get("seed_id"))
+    variant_type = _compact_text(payload.get("variant_type"))
+    user_input = _compact_text(payload.get("input"))
+    expected = _sanitize_expected(payload.get("expected"))
+
+    normalized = {
+        "case_id": case_id,
+        "input": user_input,
+        "expected": expected,
+        "seed_id": seed_id,
+        "variant_type": variant_type or "clean",
+        "source": "local_variant_generator",
+    }
+    return json.loads(json.dumps(normalized, ensure_ascii=True, sort_keys=True))
+
+
+def generate_variants_for_seed(seed: dict, max_variants: int = 200) -> list[dict]:
+    if not isinstance(seed, dict):
+        return []
+    limit = max(0, int(max_variants))
+    if limit == 0:
+        return []
+    seed_id = _compact_text(seed.get("seed_id"))
+    if not seed_id:
+        return []
+
+    base_expected = _sanitize_expected(seed.get("expected"))
+    blueprints = _VARIANT_BLUEPRINTS.get(seed_id, [])
+    if not blueprints:
+        clean_input = _compact_text(seed.get("input"))
+        if clean_input:
+            blueprints = [{"variant_type": "clean", "input": clean_input}]
+
+    records: list[dict] = []
+    dedupe_keys: set[tuple[str, str]] = set()
+    for index, variant in enumerate(blueprints, start=1):
+        if len(records) >= limit:
+            break
+        variant_type = _compact_text(variant.get("variant_type")) or "clean"
+        user_input = _compact_text(variant.get("input"))
+        if not user_input:
+            continue
+        expected_updates = variant.get("expected_updates", {})
+        merged_expected = _merge_expected(base_expected, expected_updates if isinstance(expected_updates, dict) else {})
+        signature = (variant_type.lower(), user_input.lower())
+        if signature in dedupe_keys:
+            continue
+        dedupe_keys.add(signature)
+        candidate = normalize_variant_record(
+            {
+                "case_id": f"{seed_id}_v{index:03d}",
+                "input": user_input,
+                "expected": merged_expected,
+                "seed_id": seed_id,
+                "variant_type": variant_type,
+            }
+        )
+        records.append(candidate)
+    return records
+
+
+def generate_variants_for_training_pack(
+    seeds: list[dict] | None = None,
+    max_variants_per_seed: int = 200,
+) -> list[dict]:
+    source_seeds = seeds if isinstance(seeds, list) and seeds else get_default_training_seeds()
+    normalized_seeds: list[dict[str, Any]] = []
+    for index, seed in enumerate(source_seeds, start=1):
+        if not isinstance(seed, dict):
+            continue
+        seed_id = _seed_identity(seed, index)
+        normalized_seeds.append(
+            {
+                "seed_id": seed_id,
+                "case_id": _compact_text(seed.get("case_id")) or f"{seed_id}_seed",
+                "input": _compact_text(seed.get("input")),
+                "expected": _sanitize_expected(seed.get("expected")),
+                "family": _compact_text(seed.get("family")),
+            }
+        )
+
+    pack: list[dict] = []
+    for seed in normalized_seeds:
+        pack.extend(generate_variants_for_seed(seed, max_variants=max_variants_per_seed))
+    return json.loads(json.dumps(pack, ensure_ascii=True, sort_keys=True))

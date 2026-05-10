@@ -19,8 +19,19 @@ from .integration_adapter import (
     should_use_local_nlu_intent,
 )
 from .dataset_generator import generate_default_stage_11_dataset, generate_query_variants
+from .query_variant_generator import (
+    generate_variants_for_seed,
+    generate_variants_for_training_pack,
+    get_default_training_seeds,
+    normalize_variant_record,
+)
 from .expected_dataset import get_expected_intent_cases
 from .evaluation_runner import evaluate_local_nlu_cases, evaluate_single_case
+from .training_pack import (
+    evaluate_stage_19_training_pack,
+    get_stage_19_training_pack,
+    summarize_stage_19_training_pack,
+)
 from .mistake_collector import collect_mistakes, summarize_mistakes
 from .brand_resolver import resolve_brand_candidates
 from .category_detector import detect_category
@@ -57,9 +68,16 @@ __all__ = [
     "build_safe_router_metadata",
     "generate_query_variants",
     "generate_default_stage_11_dataset",
+    "generate_variants_for_seed",
+    "generate_variants_for_training_pack",
+    "get_default_training_seeds",
+    "normalize_variant_record",
     "get_expected_intent_cases",
     "evaluate_single_case",
     "evaluate_local_nlu_cases",
+    "get_stage_19_training_pack",
+    "summarize_stage_19_training_pack",
+    "evaluate_stage_19_training_pack",
     "collect_mistakes",
     "summarize_mistakes",
     "detect_category",
