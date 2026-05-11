@@ -25,6 +25,18 @@ from .stage29_validation import (
     validate_learning_suggestion,
     validate_seed_record,
 )
+from .stage30_config import Stage30ShadowConfig, build_default_stage30_config
+from .stage30_contracts import (
+    STAGE30_ID,
+    Stage30FailureCandidate,
+    Stage30ShadowRecord,
+    Stage30ShadowSummary,
+)
+from .stage30_failure_bridge import build_failure_candidate, build_failure_candidates
+from .stage30_runtime_probe import Stage30RuntimeProbe, build_default_stage30_runtime_probe
+from .stage30_shadow_runner import Stage30ShadowRunner
+from .stage30_summary import build_shadow_summary
+from .stage30_validation import validate_shadow_record
 
 __all__ = [
     "STAGE29_ID",
@@ -51,4 +63,17 @@ __all__ = [
     "validate_seed_record",
     "validate_generated_query_record",
     "validate_learning_suggestion",
+    "STAGE30_ID",
+    "Stage30ShadowConfig",
+    "build_default_stage30_config",
+    "Stage30ShadowRecord",
+    "Stage30FailureCandidate",
+    "Stage30ShadowSummary",
+    "Stage30ShadowRunner",
+    "Stage30RuntimeProbe",
+    "build_default_stage30_runtime_probe",
+    "build_failure_candidate",
+    "build_failure_candidates",
+    "build_shadow_summary",
+    "validate_shadow_record",
 ]

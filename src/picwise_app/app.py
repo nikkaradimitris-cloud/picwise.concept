@@ -13,6 +13,7 @@ from uuid import uuid4
 from picwise_contracts import DecisionDepth, DecisionOutput, MissingDataState, ProductBrain
 from picwise_engine import PicwiseDecisionEngine
 from picwise_feeds import FeedAdapterProtocol, LocalFixtureFeedAdapter
+from picwise_learning.stage30_runtime_probe import build_default_stage30_runtime_probe
 from picwise_nlu import adapt_local_nlu_intent_for_router, build_local_nlu_intent
 from picwise_redirects import build_redirect_tracking_payload, resolve_redirect
 from picwise_search import route_search_query
@@ -29,9 +30,11 @@ class PicwiseLocalApp:
         *,
         feed_adapter: FeedAdapterProtocol | None = None,
         engine: PicwiseDecisionEngine | None = None,
+        stage30_probe: Any | None = None,
     ) -> None:
         self._feed_adapter = feed_adapter or LocalFixtureFeedAdapter()
         self._engine = engine or PicwiseDecisionEngine()
+        self._stage30_probe = stage30_probe if stage30_probe is not None else build_default_stage30_runtime_probe()
 
     def health_payload(self) -> dict[str, Any]:
         return {
@@ -108,6 +111,11 @@ class PicwiseLocalApp:
             router_fallback_used=router_fallback_used,
             adapter_decision=adapter_decision,
             nlu_error=nlu_error,
+        )
+        self._observe_stage30_shadow(
+            raw_query=raw_query,
+            decision=decision.to_dict(),
+            local_nlu_debug=local_nlu_debug,
         )
         if decision.route_type in {"ambiguous_query", "no_safe_result"}:
             return self._build_safe_no_result_output(
@@ -278,6 +286,33 @@ class PicwiseLocalApp:
             more_choices=[],
             warnings=[],
         )
+
+    def _observe_stage30_shadow(
+        self,
+        *,
+        raw_query: str,
+        decision: dict[str, Any],
+        local_nlu_debug: dict[str, Any],
+    ) -> None:
+        if self._stage30_probe is None:
+            return
+        runtime_decision = {
+            **decision,
+            "existing_runtime_decision": str(decision.get("status") or ""),
+            "existing_runtime_target": str(local_nlu_debug.get("visual_intent", {}).get("category") or "unknown"),
+            "existing_runtime_vertical": "retail_physical_products",
+            "vertical": "retail_physical_products",
+        }
+        try:
+            self._stage30_probe.observe_runtime_decision(
+                runtime_query=raw_query,
+                runtime_decision=runtime_decision,
+                source_surface="runtime_app",
+                source_route="/demo",
+            )
+        except Exception:
+            # Shadow instrumentation must never change user-facing flow.
+            return
 
     def _safe_no_result_html(self, output: DecisionOutput) -> str:
         decision = output.tracking_context.get("search_decision", {})
