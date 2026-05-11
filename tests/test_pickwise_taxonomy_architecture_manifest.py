@@ -35,7 +35,7 @@ class TestPickwiseTaxonomyArchitectureManifest(unittest.TestCase):
                     "deep_packs",
                     "workbench",
                     "importers",
-                    "future_mapping_layer",
+                    "mapping_layer",
                     "future_canonical_registry",
                     "future_nlu_export",
                 ]
@@ -68,9 +68,9 @@ class TestPickwiseTaxonomyArchitectureManifest(unittest.TestCase):
         self.assertEqual(layer["importer_scope"], "source_item_producer_only")
         self.assertFalse(layer["maps_directly_to_runtime"])
 
-    def test_future_layers_are_marked_planned_not_implemented(self) -> None:
+    def test_mapping_layer_is_implemented_and_future_layers_remain_planned(self) -> None:
         manifest = get_taxonomy_architecture_manifest()
-        self.assertEqual(manifest["layers"]["future_mapping_layer"]["status"], "planned")
+        self.assertEqual(manifest["layers"]["mapping_layer"]["status"], "implemented")
         self.assertEqual(manifest["layers"]["future_canonical_registry"]["status"], "planned")
         self.assertEqual(manifest["layers"]["future_nlu_export"]["status"], "planned")
 

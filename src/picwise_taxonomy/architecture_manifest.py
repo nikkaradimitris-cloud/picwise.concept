@@ -112,8 +112,8 @@ _ARCHITECTURE_LAYERS = {
         "product_inventory_forbidden": True,
         "commercial_fields_forbidden": True,
     },
-    "future_mapping_layer": {
-        "status": "planned",
+    "mapping_layer": {
+        "status": "implemented",
         "path": "src/picwise_taxonomy/mapping/",
         "role": (
             "Map imported source_items into PickWise engines, mega-categories, "
@@ -167,14 +167,14 @@ _EXPECTED_LAYER_NAMES = [
     "deep_packs",
     "workbench",
     "importers",
-    "future_mapping_layer",
+    "mapping_layer",
     "future_canonical_registry",
     "future_nlu_export",
 ]
 
 _MANIFEST = {
-    "stage_id": "24A.5",
-    "stage_name": "taxonomy_architecture_reconciliation",
+    "stage_id": "24B",
+    "stage_name": "taxonomy_mapping_gap_system",
     "taxonomy_scope": "taxonomy_architecture_only",
     "pickwise_is_e_shop": False,
     "keeps_owned_product_inventory": False,
@@ -260,8 +260,9 @@ def validate_taxonomy_architecture_manifest() -> dict:
         "importers_not_runtime_mapping": not manifest["layers"]["importers"]["maps_directly_to_runtime"],
         "future_layers_are_planned_not_implemented": all(
             manifest["layers"][name]["status"] == "planned"
-            for name in ("future_mapping_layer", "future_canonical_registry", "future_nlu_export")
-        ),
+            for name in ("future_canonical_registry", "future_nlu_export")
+        )
+        and manifest["layers"]["mapping_layer"]["status"] == "implemented",
         "product_inventory_responsibility_forbidden": manifest["forbidden_responsibilities"][
             "product_inventory"
         ],

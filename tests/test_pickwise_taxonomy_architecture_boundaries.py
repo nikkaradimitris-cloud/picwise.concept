@@ -58,6 +58,7 @@ class TestPickwiseTaxonomyArchitectureBoundaries(unittest.TestCase):
         import picwise_taxonomy.deep_packs  # noqa: F401
         import picwise_taxonomy.engine_registry  # noqa: F401
         import picwise_taxonomy.importers  # noqa: F401
+        import picwise_taxonomy.mapping  # noqa: F401
         import picwise_taxonomy.mega_category_registry  # noqa: F401
         import picwise_taxonomy.workbench  # noqa: F401
 
