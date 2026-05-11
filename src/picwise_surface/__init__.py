@@ -3,6 +3,7 @@ from .dashboard import (
     build_dashboard_compatibility_payload,
 )
 from .buying_page import render_buying_page_surface
+from .buying_page_seo_surface import render_buying_page_seo_surface
 from .final_audit import (
     LOCKED_ROADMAP_TITLES,
     FinalV1AuditEvidence,
@@ -38,6 +39,7 @@ __all__ = [
     "build_surface_metrics",
     "prepare_redirect_tracking",
     "render_buying_page_surface",
+    "render_buying_page_seo_surface",
     "render_landing_surface",
     "render_picwise_reference_surface",
     "render_mvp_search_results_surface",

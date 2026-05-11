@@ -65,6 +65,15 @@ from .publish_gate import (
     evaluate_publish_gate,
     normalize_approval_decision,
 )
+from .seo_contracts import PageQualityStatus, SEOIndexStatus, SEOBuyingPage, SEOBuyingPageContractError
+from .seo_page_builder import SEOPageBuildRequest, build_seo_buying_page
+from .seo_quality_gate import SEOQualityGateInput, SEOQualityGateResult, evaluate_seo_quality_gate
+from .seo_sitemap_control import (
+    MAX_STAGE37_SITEMAP_ENTRIES,
+    render_stage37_sitemap_xml,
+    select_stage37_sitemap_pages,
+)
+from .seo_slug_builder import SlugBuildResult, build_buying_page_slug
 
 __all__ = [
     "BuyingPage",
@@ -130,10 +139,24 @@ __all__ = [
     "PUBLISH_OUTCOME_NEEDS_REVIEW",
     "PUBLISH_OUTCOME_PUBLISHED",
     "PublishGateResult",
+    "MAX_STAGE37_SITEMAP_ENTRIES",
     "evaluate_publish_gate",
+    "SEOBuyingPage",
+    "SEOBuyingPageContractError",
+    "PageQualityStatus",
+    "SEOIndexStatus",
+    "SEOPageBuildRequest",
+    "SEOQualityGateInput",
+    "SEOQualityGateResult",
+    "SlugBuildResult",
+    "build_buying_page_slug",
+    "build_seo_buying_page",
+    "evaluate_seo_quality_gate",
     "normalize_approval_decision",
     "normalize_keyword_text",
     "evaluate_index_gate",
+    "render_stage37_sitemap_xml",
     "render_buying_pages_sitemap_xml",
+    "select_stage37_sitemap_pages",
     "slugify_keyword",
 ]
