@@ -5,6 +5,7 @@ from pathlib import Path
 from picwise_taxonomy.importers.google_taxonomy_importer import import_google_taxonomy_local_file
 
 from .batch_mapper import map_source_items_batch
+from .gap_report_stage24e import build_stage24e_gap_report
 from .mapper import map_source_item_to_taxonomy
 from .validation import build_mapping_catalog, normalize_path_segments
 
@@ -125,4 +126,35 @@ def map_google_taxonomy_local_file_stage24d(file_path: str | Path | None = None)
         "mapping_batch": batch_result,
         "stage24e_gap_report_created": False,
         "canonical_registry_created": False,
+    }
+
+
+def map_google_source_items_stage24e_gap_report(source_items: list[dict]) -> dict:
+    stage24d_batch = map_google_source_items_stage24d(source_items)
+    stage24e_report = build_stage24e_gap_report(
+        source_items=source_items,
+        mapped_results=stage24d_batch.get("mapped_results", []),
+    )
+    return {
+        "stage24d_mapping_batch": stage24d_batch,
+        "stage24e_gap_report": stage24e_report,
+        "stage24e_gap_report_created": True,
+        "canonical_registry_created": False,
+        "coverage_matrix_created": False,
+        "dedup_rules_created": False,
+    }
+
+
+def map_google_taxonomy_local_file_stage24e(file_path: str | Path | None = None) -> dict:
+    loaded = load_google_source_items_from_local_import_path(file_path=file_path)
+    stage24e = map_google_source_items_stage24e_gap_report(loaded["items"])
+    return {
+        "file_path": loaded["file_path"],
+        "import_report": loaded["import_report"],
+        "stage24d_mapping_batch": stage24e["stage24d_mapping_batch"],
+        "stage24e_gap_report": stage24e["stage24e_gap_report"],
+        "stage24e_gap_report_created": True,
+        "canonical_registry_created": False,
+        "coverage_matrix_created": False,
+        "dedup_rules_created": False,
     }

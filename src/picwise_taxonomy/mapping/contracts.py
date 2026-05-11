@@ -30,6 +30,7 @@ class GapReason(str, Enum):
     INVALID_SOURCE_ITEM = "invalid_source_item"
     FORBIDDEN_INVENTORY_FIELD = "forbidden_inventory_field"
     WEAK_MATCH_NEEDS_REVIEW = "weak_match_needs_review"
+    UNSUPPORTED_GOOGLE_PATH = "unsupported_google_path"
 
 
 @dataclass(frozen=True)

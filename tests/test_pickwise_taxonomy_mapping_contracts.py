@@ -35,6 +35,7 @@ class TestPickwiseTaxonomyMappingContracts(unittest.TestCase):
             "invalid_source_item",
             "forbidden_inventory_field",
             "weak_match_needs_review",
+            "unsupported_google_path",
         }
         self.assertTrue(expected.issubset({reason.value for reason in GapReason}))
 
