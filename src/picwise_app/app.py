@@ -6,6 +6,7 @@ import mimetypes
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+import socket
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 from uuid import uuid4
@@ -24,6 +25,17 @@ from picwise_surface import render_landing_surface, render_mvp_search_results_su
 from .buying_routes import render_best_slug_html, render_buying_sitemap_xml
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
+LOCAL_AVAILABLE_ROUTES = (
+    "/",
+    "/health",
+    "/demo",
+    "/search",
+    "/results",
+    "/picwise-reference",
+    "/private-beta-readiness",
+    "/best/{slug}",
+    "/sitemap-buying-pages.xml",
+)
 
 
 class PicwiseLocalApp:
@@ -424,17 +436,7 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             HTTPStatus.NOT_FOUND,
             {
                 "error": "not_found",
-                "available_routes": [
-                    "/",
-                    "/health",
-                    "/demo",
-                    "/search",
-                    "/results",
-                    "/picwise-reference",
-                    "/private-beta-readiness",
-                    "/best/{slug}",
-                    "/sitemap-buying-pages.xml",
-                ],
+                "available_routes": list(LOCAL_AVAILABLE_ROUTES),
             },
         )
 
@@ -486,6 +488,18 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
         return True
 
 
+class PicwiseThreadingHTTPServer(ThreadingHTTPServer):
+    # Prevent multiple local harness instances from binding the same port,
+    # which can route requests to stale code processes on Windows.
+    allow_reuse_address = False
+    allow_reuse_port = False
+
+    def server_bind(self) -> None:
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
 def run_local_server(host: str = "127.0.0.1", port: int = 8016) -> ThreadingHTTPServer:
-    server = ThreadingHTTPServer((host, port), PicwiseRequestHandler)
+    server = PicwiseThreadingHTTPServer((host, port), PicwiseRequestHandler)
     return server

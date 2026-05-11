@@ -14,9 +14,18 @@ from picwise_app import run_local_server  # noqa: E402
 def main() -> None:
     host = "127.0.0.1"
     port = 8016
-    server = run_local_server(host=host, port=port)
+    try:
+        server = run_local_server(host=host, port=port)
+    except OSError as error:
+        print(f"Failed to start Picwise local app on http://{host}:{port}: {error}")
+        print("Stop any existing run_picwise_app.py process and retry.")
+        raise SystemExit(1) from error
     print(f"Picwise local app running on http://{host}:{port}")
-    print("Routes: GET /health, GET /demo?q=power+bank+20000mah+for+iphone, GET /picwise-reference")
+    print(
+        "Routes: GET /health, GET /, GET /demo?q=power+bank+20000mah+for+iphone, "
+        "GET /search?q=power+bank, GET /results?q=power+bank, GET /picwise-reference, "
+        "GET /private-beta-readiness, GET /best/{slug}, GET /sitemap-buying-pages.xml"
+    )
     try:
         server.serve_forever()
     except KeyboardInterrupt:

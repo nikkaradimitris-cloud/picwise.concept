@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import io
+import json
 import sys
+import threading
 import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError
+from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -15,6 +19,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from api.index import app as deployment_app  # noqa: E402
+from picwise_app import run_local_server  # noqa: E402
 from picwise_mvp import run_pickwise_mvp_search_flow  # noqa: E402
 
 
@@ -41,7 +46,63 @@ def _call_wsgi(path: str, query_string: str = "") -> tuple[str, dict[str, str], 
     return status_holder["status"], status_holder["headers"], body
 
 
+def _call_local_http(base_url: str, path: str) -> tuple[int, dict[str, str], str]:
+    try:
+        with urlopen(f"{base_url}{path}") as response:
+            body = response.read().decode("utf-8")
+            headers = {key: value for key, value in response.headers.items()}
+            return int(response.status), headers, body
+    except HTTPError as error:
+        body = error.read().decode("utf-8")
+        headers = {key: value for key, value in error.headers.items()}
+        return int(error.code), headers, body
+
+
 class PickWiseStage3236RuntimeGuardrailsTests(unittest.TestCase):
+    def test_local_runtime_handler_exposes_stage32_to_36_routes(self) -> None:
+        server = run_local_server(host="127.0.0.1", port=0)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        host, port = server.server_address
+        base_url = f"http://{host}:{port}"
+        try:
+            for path in (
+                "/health",
+                "/",
+                "/demo?q=power+bank",
+                "/search?q=power+bank",
+                "/results?q=power+bank",
+                "/picwise-reference",
+                "/private-beta-readiness",
+                "/best/power-bank-20000mah-for-iphone",
+                "/sitemap-buying-pages.xml",
+            ):
+                status, _headers, _body = _call_local_http(base_url, path)
+                self.assertEqual(status, 200)
+            missing_status, _missing_headers, missing_body = _call_local_http(base_url, "/not-a-route")
+            self.assertEqual(missing_status, 404)
+            payload = json.loads(missing_body)
+            available_routes = payload.get("available_routes", [])
+            for expected_route in ("/search", "/results", "/private-beta-readiness"):
+                self.assertIn(expected_route, available_routes)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2.0)
+
+    def test_local_runtime_server_refuses_second_bind_on_same_port(self) -> None:
+        server = run_local_server(host="127.0.0.1", port=0)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        _host, port = server.server_address
+        try:
+            with self.assertRaises(OSError):
+                run_local_server(host="127.0.0.1", port=int(port))
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2.0)
+
     def test_no_owned_inventory_cart_checkout_payment_implementation(self) -> None:
         source = "\n".join(
             [
