@@ -5,6 +5,13 @@ from .contracts import (
     CanonicalTaxonomyRecord,
     CanonicalTaxonomyStatus,
 )
+from .coverage_matrix import (
+    CoverageMatrixInput,
+    CoverageMatrixResult,
+    CoverageMatrixRow,
+    CoverageStrength,
+    build_canonical_coverage_matrix,
+)
 from .registry_builder import build_canonical_taxonomy_registry
 from .validation import (
     CanonicalRegistryCatalog,
@@ -19,9 +26,14 @@ __all__ = [
     "CanonicalTaxonomyBuildResult",
     "CanonicalTaxonomyRecord",
     "CanonicalTaxonomyStatus",
+    "CoverageMatrixInput",
+    "CoverageMatrixResult",
+    "CoverageMatrixRow",
+    "CoverageStrength",
     "CanonicalRegistryCatalog",
     "build_canonical_registry_catalog",
     "validate_canonical_record",
     "validate_canonical_records",
     "build_canonical_taxonomy_registry",
+    "build_canonical_coverage_matrix",
 ]
