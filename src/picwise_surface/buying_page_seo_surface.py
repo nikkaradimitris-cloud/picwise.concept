@@ -44,7 +44,8 @@ def render_buying_page_seo_surface(page: SEOBuyingPage) -> str:
         reason = escape(str(page.noindex_reason or "not_ready"))
         noindex_notice = f'<section class="pw-state"><p>This page is not indexable yet: {reason}</p></section>'
 
-    cards_html = _render_product_cards(page) if page.valid_product_count > 0 else ""
+    should_render_cards = page.index_status == SEOIndexStatus.INDEXABLE and page.valid_product_count > 0
+    cards_html = _render_product_cards(page) if should_render_cards else ""
     if not cards_html:
         cards_html = (
             '<section class="pw-state">'

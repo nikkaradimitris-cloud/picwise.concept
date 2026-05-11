@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+import re
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 from .seo_contracts import PageQualityStatus, SEOIndexStatus, SEOBuyingPage
 
 MAX_STAGE37_SITEMAP_ENTRIES = 200
+_CANONICAL_PATTERN = re.compile(r"^/best/[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
 def _is_sitemap_eligible(page: SEOBuyingPage) -> bool:
@@ -13,7 +15,7 @@ def _is_sitemap_eligible(page: SEOBuyingPage) -> bool:
         page.index_status == SEOIndexStatus.INDEXABLE
         and page.page_quality_status == PageQualityStatus.QUALITY_PASSED
         and page.sitemap_eligible
-        and page.canonical_path.startswith("/best/")
+        and bool(_CANONICAL_PATTERN.match(page.canonical_path))
         and page.valid_product_count >= 4
     )
 

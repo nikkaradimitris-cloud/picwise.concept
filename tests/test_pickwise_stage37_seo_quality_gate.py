@@ -78,6 +78,17 @@ class PickWiseStage37SEOQualityGateTests(unittest.TestCase):
         self.assertEqual(result.index_status, SEOIndexStatus.BLOCKED)
         self.assertIn("invalid_slug", result.reasons)
 
+    def test_generic_or_thin_keyword_is_not_ready_noindex(self) -> None:
+        payload = replace(
+            _base_payload(),
+            main_keyword="best products",
+            detected_intent="general_intent",
+        )
+        result = evaluate_seo_quality_gate(payload)
+        self.assertEqual(result.page_quality_status, PageQualityStatus.NOT_READY)
+        self.assertEqual(result.index_status, SEOIndexStatus.NOINDEX)
+        self.assertIn("ambiguous_or_unsupported_intent", result.reasons)
+
 
 if __name__ == "__main__":
     unittest.main()

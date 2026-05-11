@@ -67,6 +67,7 @@ class PickWiseStage37PageBuilderTests(unittest.TestCase):
         self.assertEqual(page.page_quality_status, PageQualityStatus.NEEDS_DATA)
         self.assertEqual(page.index_status, SEOIndexStatus.NOINDEX)
         self.assertEqual(page.valid_product_count, 2)
+        self.assertIsNone(page.wise_recommended_product)
 
     def test_builder_sets_manual_review_for_finance_flow(self) -> None:
         request = _request_for_query("loan insurance comparison")
@@ -81,6 +82,20 @@ class PickWiseStage37PageBuilderTests(unittest.TestCase):
         self.assertEqual(page.page_quality_status, PageQualityStatus.BLOCKED)
         self.assertEqual(page.index_status, SEOIndexStatus.BLOCKED)
         self.assertEqual(page.slug, "invalid")
+
+    def test_builder_filters_slots_outside_eligible_set(self) -> None:
+        request = _request_for_query("power bank for iphone")
+        request = replace(
+            request,
+            eligibility_result=replace(
+                request.eligibility_result,
+                eligible_candidates=request.eligibility_result.eligible_candidates[:3],
+            ),
+        )
+        page = build_seo_buying_page(request)
+        self.assertEqual(page.valid_product_count, 3)
+        self.assertEqual(page.product_slot_count, 3)
+        self.assertEqual(page.page_quality_status, PageQualityStatus.NEEDS_DATA)
 
 
 if __name__ == "__main__":

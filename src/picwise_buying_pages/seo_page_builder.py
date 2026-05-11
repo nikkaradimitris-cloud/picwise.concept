@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from hashlib import sha1
 from typing import Any
@@ -20,7 +20,7 @@ class SEOPageBuildRequest:
     search_decision: SearchDecision
     intake_result: OfferIntakeResult
     eligibility_result: EligibilityGateResult
-    recommendation_set: PickWiseRecommendationSet
+    recommendation_set: PickWiseRecommendationSet | None
     existing_slugs: tuple[str, ...] = ()
     metadata: dict[str, Any] | None = None
 
@@ -67,6 +67,32 @@ def _build_page_id(canonical_path: str) -> str:
     return f"seo-{digest}"
 
 
+def _filter_recommendation_set(
+    recommendation_set: PickWiseRecommendationSet | None,
+    *,
+    eligible_candidate_ids: set[str],
+) -> PickWiseRecommendationSet | None:
+    if recommendation_set is None:
+        return None
+    filtered_slots = tuple(
+        slot
+        for slot in recommendation_set.display_slots
+        if slot.candidate_id in eligible_candidate_ids
+        and str(slot.title or "").strip()
+        and slot.price is not None
+        and float(slot.price) > 0
+        and str(slot.availability_status or "").strip()
+    )
+    wise = recommendation_set.wise_recommended_product
+    if wise is not None and wise.candidate_id not in {slot.candidate_id for slot in filtered_slots}:
+        wise = None
+    return replace(
+        recommendation_set,
+        display_slots=filtered_slots,
+        wise_recommended_product=wise,
+    )
+
+
 def build_seo_buying_page(request: SEOPageBuildRequest) -> SEOBuyingPage:
     query = str(request.target_query or "").strip()
     slug_result = build_buying_page_slug(query)
@@ -79,10 +105,19 @@ def build_seo_buying_page(request: SEOPageBuildRequest) -> SEOBuyingPage:
 
     existing_slugs = {str(item).strip() for item in request.existing_slugs if str(item).strip()}
     slug_is_unique = bool(slug and slug not in existing_slugs)
-    valid_product_count = len(request.eligibility_result.eligible_candidates)
-    product_slot_count = len(request.recommendation_set.display_slots)
+    eligible_candidate_ids = {candidate.candidate_id for candidate in request.eligibility_result.eligible_candidates}
+    recommendation_set = _filter_recommendation_set(
+        request.recommendation_set,
+        eligible_candidate_ids=eligible_candidate_ids,
+    )
+    valid_product_count = len(eligible_candidate_ids)
+    product_slot_count = len(recommendation_set.display_slots) if recommendation_set is not None else 0
     metadata = _build_metadata(request, canonical_path)
-    has_content = bool(str(metadata.get("title", "")).strip() and str(metadata.get("description", "")).strip())
+    has_content = bool(
+        str(metadata.get("title", "")).strip()
+        and str(metadata.get("description", "")).strip()
+        and product_slot_count > 0
+    )
 
     quality_result = evaluate_seo_quality_gate(
         SEOQualityGateInput(
@@ -90,7 +125,7 @@ def build_seo_buying_page(request: SEOPageBuildRequest) -> SEOBuyingPage:
             detected_intent=request.search_decision.route_type,
             vertical=vertical,
             source_status=request.intake_result.status,
-            recommendation_set=request.recommendation_set,
+            recommendation_set=recommendation_set,
             product_slot_count=product_slot_count,
             valid_product_count=valid_product_count,
             canonical_path=canonical_path,
@@ -101,11 +136,13 @@ def build_seo_buying_page(request: SEOPageBuildRequest) -> SEOBuyingPage:
         )
     )
 
-    wise = request.recommendation_set.wise_recommended_product
+    wise = recommendation_set.wise_recommended_product if recommendation_set is not None else None
     if quality_result.page_quality_status != PageQualityStatus.QUALITY_PASSED:
+        wise = None
         metadata["recommendation_mode"] = "safe_noindex"
     else:
         metadata["recommendation_mode"] = "public_indexable"
+    metadata["quality_reasons"] = list(quality_result.reasons)
 
     return SEOBuyingPage(
         page_id=_build_page_id(canonical_path),
@@ -120,7 +157,7 @@ def build_seo_buying_page(request: SEOPageBuildRequest) -> SEOBuyingPage:
         google_taxonomy_path=google_taxonomy_path,
         saas_erp_contract_ref=saas_erp_contract_ref,
         finance_insurance_contract_ref=finance_insurance_contract_ref,
-        recommendation_set=request.recommendation_set,
+        recommendation_set=recommendation_set,
         wise_recommended_product=wise,
         product_slot_count=product_slot_count,
         valid_product_count=valid_product_count,
