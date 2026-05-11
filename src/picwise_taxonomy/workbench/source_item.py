@@ -32,10 +32,23 @@ def _normalize_string_list(values: object) -> list[str]:
 def _normalize_string_dict(values: object) -> dict:
     if not isinstance(values, dict):
         return {}
-    normalized: dict[str, str] = {}
+    normalized: dict[str, object] = {}
     for key in sorted(values.keys(), key=lambda item: str(item)):
-        normalized[_normalize_string(key)] = _normalize_string(values[key])
+        normalized[_normalize_string(key)] = _normalize_metadata_value(values[key])
     return normalized
+
+
+def _normalize_metadata_value(value: object) -> object:
+    if isinstance(value, str):
+        return _normalize_string(value)
+    if isinstance(value, list):
+        return [_normalize_metadata_value(entry) for entry in value]
+    if isinstance(value, dict):
+        normalized_dict: dict[str, object] = {}
+        for key in sorted(value.keys(), key=lambda item: str(item)):
+            normalized_dict[_normalize_string(key)] = _normalize_metadata_value(value[key])
+        return normalized_dict
+    return value
 
 
 def build_source_item(

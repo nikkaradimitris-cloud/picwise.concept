@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
 
+from .import_validation import validate_imported_source_items
 from .path_parser import build_source_item_from_path
 
 _GOOGLE_SOURCE_NAME = "google_product_taxonomy"
@@ -62,12 +65,22 @@ def parse_google_taxonomy_file(file_path: str) -> list[dict]:
     return parse_google_taxonomy_text(text)
 
 
+def _taxonomy_paths(items: list[dict]) -> list[str]:
+    return sorted(
+        {str(item.get("raw_path", "")).strip() for item in items or [] if str(item.get("raw_path", "")).strip()}
+    )
+
+
+def _deterministic_path_fingerprint(paths: list[str]) -> str:
+    payload = json.dumps(paths or [], sort_keys=True, ensure_ascii=True)
+    return hashlib.sha1(payload.encode("utf-8")).hexdigest()
+
+
 def summarize_google_taxonomy_import(items: list[dict]) -> dict:
     parsed_items = items or []
-    unique_paths = sorted(
-        {str(item.get("raw_path", "")).strip() for item in parsed_items if str(item.get("raw_path", "")).strip()}
-    )
+    unique_paths = _taxonomy_paths(parsed_items)
     depth_values = [int(item.get("raw_metadata", {}).get("depth", 0)) for item in parsed_items]
+    top_levels = sorted({path.split(" > ", 1)[0] for path in unique_paths if path})
     return {
         "source_name": _GOOGLE_SOURCE_NAME,
         "source_type": _GOOGLE_SOURCE_TYPE,
@@ -76,7 +89,30 @@ def summarize_google_taxonomy_import(items: list[dict]) -> dict:
         "max_depth": max(depth_values) if depth_values else 0,
         "min_depth": min(depth_values) if depth_values else 0,
         "sample_paths": unique_paths[:5],
+        "top_level_count": len(top_levels),
+        "sample_top_levels": top_levels[:10],
+        "deterministic_path_fingerprint": _deterministic_path_fingerprint(unique_paths),
         "local_file_or_text_only": True,
         "network_calls_used": False,
         "external_downloads_used": False,
+    }
+
+
+def import_google_taxonomy_local_file(file_path: str) -> dict:
+    items = parse_google_taxonomy_file(file_path)
+    summary = summarize_google_taxonomy_import(items)
+    validation = validate_imported_source_items(items)
+    return {
+        "source_name": _GOOGLE_SOURCE_NAME,
+        "source_type": _GOOGLE_SOURCE_TYPE,
+        "file_path": str(file_path),
+        "items": items,
+        "summary": summary,
+        "validation": validation,
+        "valid": validation["valid"],
+        "passed": validation["passed"],
+        "local_file_or_text_only": True,
+        "network_calls_used": False,
+        "external_downloads_used": False,
+        "mapping_layer_used": False,
     }

@@ -1,4 +1,5 @@
 from .google_taxonomy_importer import (
+    import_google_taxonomy_local_file,
     parse_google_taxonomy_file,
     parse_google_taxonomy_lines,
     parse_google_taxonomy_text,
@@ -30,6 +31,7 @@ __all__ = [
     "parse_google_taxonomy_lines",
     "parse_google_taxonomy_text",
     "parse_google_taxonomy_file",
+    "import_google_taxonomy_local_file",
     "summarize_google_taxonomy_import",
     "import_source_records",
     "import_source_json_text",
