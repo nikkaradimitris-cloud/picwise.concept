@@ -15,11 +15,12 @@ from picwise_engine import PicwiseDecisionEngine
 from picwise_feeds import FeedAdapterProtocol, LocalFixtureFeedAdapter
 from picwise_learning.stage30_runtime_probe import build_default_stage30_runtime_probe
 from picwise_learning.stage31_runtime_controller import build_default_stage31_runtime_controller
+from picwise_mvp import build_mvp_private_beta_readiness_report, run_pickwise_mvp_search_flow
 from picwise_nlu import adapt_local_nlu_intent_for_router, build_local_nlu_intent
 from picwise_redirects import build_redirect_tracking_payload, resolve_redirect
 from picwise_search import route_search_query
 from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
-from picwise_surface import render_landing_surface, render_picwise_reference_surface
+from picwise_surface import render_landing_surface, render_mvp_search_results_surface, render_picwise_reference_surface
 from .buying_routes import render_best_slug_html, render_buying_sitemap_xml
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -77,6 +78,22 @@ class PicwiseLocalApp:
 
     def picwise_reference_html(self) -> str:
         return render_picwise_reference_surface()
+
+    def mvp_search_html(self, query: str) -> str:
+        flow = run_pickwise_mvp_search_flow(query)
+        return render_mvp_search_results_surface(flow)
+
+    def private_beta_readiness_payload(self) -> dict[str, Any]:
+        report = build_mvp_private_beta_readiness_report()
+        return {
+            "status": report.status.value,
+            "sample_flow_state": report.sample_flow_state,
+            "reason_codes": list(report.reason_codes),
+            "checks": [
+                {"key": check.key, "status": check.status.value, "details": check.details}
+                for check in report.checks
+            ],
+        }
 
     def build_demo_output(self, query: str) -> DecisionOutput:
         raw_query = str(query or "")
@@ -382,9 +399,17 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             html = self.app.demo_html(query)
             self._send_html(HTTPStatus.OK, html)
             return
+        if parsed.path in {"/search", "/results"}:
+            query = parse_qs(parsed.query).get("q", [""])[0]
+            html = self.app.mvp_search_html(query)
+            self._send_html(HTTPStatus.OK, html)
+            return
         if parsed.path == "/picwise-reference":
             html = self.app.picwise_reference_html()
             self._send_html(HTTPStatus.OK, html)
+            return
+        if parsed.path == "/private-beta-readiness":
+            self._send_json(HTTPStatus.OK, self.app.private_beta_readiness_payload())
             return
         if parsed.path.startswith("/best/"):
             slug = parsed.path.removeprefix("/best/")
@@ -403,7 +428,10 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
                     "/",
                     "/health",
                     "/demo",
+                    "/search",
+                    "/results",
                     "/picwise-reference",
+                    "/private-beta-readiness",
                     "/best/{slug}",
                     "/sitemap-buying-pages.xml",
                 ],

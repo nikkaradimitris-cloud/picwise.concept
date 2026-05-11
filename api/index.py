@@ -18,7 +18,8 @@ from picwise_integrations import (  # noqa: E402
     UrllibSubbyBridgeEventSender,
     send_subby_live_proof_event,
 )
-from picwise_surface import render_picwise_reference_surface  # noqa: E402
+from picwise_mvp import run_pickwise_mvp_search_flow  # noqa: E402
+from picwise_surface import render_mvp_search_results_surface, render_picwise_reference_surface  # noqa: E402
 
 StartResponse = Callable[[str, list[tuple[str, str]]], None]
 
@@ -69,6 +70,14 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
+    if path in {"/search", "/results"}:
+        query_string = str(environ.get("QUERY_STRING", ""))
+        query = parse_qs(query_string).get("q", [""])[0]
+        flow = run_pickwise_mvp_search_flow(query)
+        html = render_mvp_search_results_surface(flow)
+        body = html.encode("utf-8")
+        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+
     if path == "/picwise-reference":
         html = render_picwise_reference_surface()
         body = html.encode("utf-8")
@@ -91,16 +100,24 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
         return _response("200 OK", "application/json; charset=utf-8", body, start_response)
 
+    if path == "/private-beta-readiness":
+        payload = _APP.private_beta_readiness_payload()
+        body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
+        return _response("200 OK", "application/json; charset=utf-8", body, start_response)
+
     payload = {
         "error": "not_found",
         "available_routes": [
             "/",
             "/health",
             "/demo",
+            "/search",
+            "/results",
             "/picwise-reference",
             "/best/{slug}",
             "/sitemap-buying-pages.xml",
             "/subby-proof",
+            "/private-beta-readiness",
         ],
     }
     body = json.dumps(payload, ensure_ascii=True).encode("utf-8")

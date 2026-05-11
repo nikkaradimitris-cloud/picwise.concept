@@ -11,6 +11,7 @@ from .final_audit import (
 )
 from .landing import render_landing_surface
 from .reference import render_picwise_reference_surface
+from .mvp_search_results import render_mvp_search_results_surface
 from .performance import (
     PerformanceAuditResult,
     audit_surface_performance,
@@ -39,5 +40,6 @@ __all__ = [
     "render_buying_page_surface",
     "render_landing_surface",
     "render_picwise_reference_surface",
+    "render_mvp_search_results_surface",
     "run_final_v1_audit_closure",
 ]

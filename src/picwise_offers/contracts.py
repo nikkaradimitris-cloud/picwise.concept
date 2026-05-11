@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 
 class ExternalOfferStatus(str, Enum):
@@ -56,3 +57,65 @@ class ExternalOfferValidationResult:
     status: ExternalOfferStatus
     errors: tuple[str, ...]
     offer: ExternalOffer | None = None
+
+
+class SourceTrustLevel(str, Enum):
+    TRUSTED = "trusted"
+    PARTNER_VERIFIED = "partner_verified"
+    UNKNOWN = "unknown"
+    UNSAFE = "unsafe"
+
+
+class ProductSourceStatus(str, Enum):
+    CONNECTED = "connected"
+    NOT_CONNECTED = "not_connected"
+    NEEDS_DATA = "needs_data"
+    MANUAL_REVIEW = "manual_review"
+    NOT_READY = "not_ready"
+
+
+@dataclass(frozen=True)
+class ProductSourceRecord:
+    source_id: str
+    source_type: str
+    source_label: str
+    status: ProductSourceStatus
+    trust_level: SourceTrustLevel
+    verticals: tuple[str, ...]
+    metadata: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class OfferCandidate:
+    candidate_id: str
+    source_id: str
+    source_type: str
+    title: str | None
+    brand: str | None
+    model: str | None
+    image_url: str | None
+    price: float | None
+    currency: str | None
+    seller_name: str | None
+    seller_url: str | None
+    availability_status: str | None
+    outbound_url: str | None
+    affiliate_url: str | None
+    category: str | None
+    vertical: str | None
+    engine: str | None
+    category_bucket: str | None
+    google_taxonomy_path: str | None
+    saas_erp_contract_ref: str | None
+    finance_insurance_contract_ref: str | None
+    source_updated_at: str | None
+    metadata: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class OfferIntakeResult:
+    source: ProductSourceRecord
+    status: ProductSourceStatus
+    candidates: tuple[OfferCandidate, ...]
+    reason_codes: tuple[str, ...]
+    metadata: dict[str, Any]
