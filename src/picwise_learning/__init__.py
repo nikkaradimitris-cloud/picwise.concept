@@ -37,6 +37,22 @@ from .stage30_runtime_probe import Stage30RuntimeProbe, build_default_stage30_ru
 from .stage30_shadow_runner import Stage30ShadowRunner
 from .stage30_summary import build_shadow_summary
 from .stage30_validation import validate_shadow_record
+from .stage31_activation_gate import Stage31GateResult, evaluate_stage31_activation_gate
+from .stage31_audit import Stage31AuditLog, build_stage31_audit_record
+from .stage31_candidate_builder import build_stage31_activation_candidate
+from .stage31_config import Stage31ActivationConfig, build_default_stage31_config
+from .stage31_contracts import (
+    ACTIVATION_STATUSES,
+    RISK_LEVELS,
+    STAGE31_ID,
+    Stage31ActivationCandidate,
+    Stage31ActivationSummary,
+    Stage31AuditRecord,
+)
+from .stage31_rollback import Stage31RollbackResult, rollback_stage31_runtime_result
+from .stage31_runtime_controller import Stage31RuntimeController, build_default_stage31_runtime_controller
+from .stage31_summary import build_stage31_activation_summary
+from .stage31_validation import validate_stage31_activation_candidate
 
 __all__ = [
     "STAGE29_ID",
@@ -76,4 +92,23 @@ __all__ = [
     "build_failure_candidates",
     "build_shadow_summary",
     "validate_shadow_record",
+    "STAGE31_ID",
+    "ACTIVATION_STATUSES",
+    "RISK_LEVELS",
+    "Stage31ActivationCandidate",
+    "Stage31AuditRecord",
+    "Stage31ActivationSummary",
+    "Stage31ActivationConfig",
+    "build_default_stage31_config",
+    "Stage31GateResult",
+    "evaluate_stage31_activation_gate",
+    "build_stage31_activation_candidate",
+    "Stage31RollbackResult",
+    "rollback_stage31_runtime_result",
+    "Stage31AuditLog",
+    "build_stage31_audit_record",
+    "build_stage31_activation_summary",
+    "validate_stage31_activation_candidate",
+    "Stage31RuntimeController",
+    "build_default_stage31_runtime_controller",
 ]

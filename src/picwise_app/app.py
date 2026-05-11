@@ -14,6 +14,7 @@ from picwise_contracts import DecisionDepth, DecisionOutput, MissingDataState, P
 from picwise_engine import PicwiseDecisionEngine
 from picwise_feeds import FeedAdapterProtocol, LocalFixtureFeedAdapter
 from picwise_learning.stage30_runtime_probe import build_default_stage30_runtime_probe
+from picwise_learning.stage31_runtime_controller import build_default_stage31_runtime_controller
 from picwise_nlu import adapt_local_nlu_intent_for_router, build_local_nlu_intent
 from picwise_redirects import build_redirect_tracking_payload, resolve_redirect
 from picwise_search import route_search_query
@@ -31,10 +32,14 @@ class PicwiseLocalApp:
         feed_adapter: FeedAdapterProtocol | None = None,
         engine: PicwiseDecisionEngine | None = None,
         stage30_probe: Any | None = None,
+        stage31_controller: Any | None = None,
     ) -> None:
         self._feed_adapter = feed_adapter or LocalFixtureFeedAdapter()
         self._engine = engine or PicwiseDecisionEngine()
         self._stage30_probe = stage30_probe if stage30_probe is not None else build_default_stage30_runtime_probe()
+        self._stage31_controller = (
+            stage31_controller if stage31_controller is not None else build_default_stage31_runtime_controller()
+        )
 
     def health_payload(self) -> dict[str, Any]:
         return {
@@ -304,14 +309,20 @@ class PicwiseLocalApp:
             "vertical": "retail_physical_products",
         }
         try:
-            self._stage30_probe.observe_runtime_decision(
+            shadow_record = self._stage30_probe.observe_runtime_decision(
                 runtime_query=raw_query,
                 runtime_decision=runtime_decision,
                 source_surface="runtime_app",
                 source_route="/demo",
             )
+            if self._stage31_controller is not None:
+                self._stage31_controller.process_runtime_decision(
+                    runtime_query=raw_query,
+                    runtime_decision=runtime_decision,
+                    source_shadow_record=shadow_record,
+                )
         except Exception:
-            # Shadow instrumentation must never change user-facing flow.
+            # Stage30/31 instrumentation must never change user-facing flow.
             return
 
     def _safe_no_result_html(self, output: DecisionOutput) -> str:
