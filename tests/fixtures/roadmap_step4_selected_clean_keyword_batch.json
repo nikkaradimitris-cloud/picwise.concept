@@ -1,0 +1,232 @@
+[
+  {
+    "cluster_id": "selected-clean-us-power-bank-buyer-intent",
+    "locale": "en-US",
+    "market": "US",
+    "target_category": "electronics/power-banks",
+    "buyer_intent": true,
+    "intent_type": "buyer_intent",
+    "main_keyword": "best power bank 20000mah for travel",
+    "support_keywords": [
+      "portable charger usb c pd",
+      "power bank for iphone and android",
+      "fast charging battery pack",
+      "power bank buyer comparison"
+    ],
+    "long_tail_keywords": [
+      "best power bank 20000mah for airplane carry on",
+      "power bank 20000mah with low heat charging",
+      "portable charger usb c pd for laptop and phone",
+      "best power bank for iphone 15 pro travel",
+      "battery pack with pass through charging support",
+      "power bank with digital battery percentage display",
+      "best value power bank under 60 usd",
+      "durable power bank for daily commute",
+      "power bank with multiple usb c output ports",
+      "reliable power bank for weekend camping",
+      "thin high capacity power bank for backpack",
+      "best fast charging battery pack for flights"
+    ],
+    "variants": [
+      {"keyword": "best portable charger 20000mah", "variant_type": "language_variant"},
+      {"keyword": "powerbank 20000mah", "variant_type": "typo_variant"},
+      {"keyword": "20000 mah usb c pd", "variant_type": "spec_variant"}
+    ],
+    "product_spec_signals": ["20000mah", "usb-c pd", "fast charging"],
+    "brand_model_signals": ["anker", "baseus", "ugreen"],
+    "source_type": "local_fixture",
+    "volume_bucket_by_keyword": {
+      "best power bank 20000mah for travel": "high",
+      "portable charger usb c pd": "medium",
+      "powerbank 20000mah": "unknown",
+      "best value power bank under 60 usd": "unknown"
+    },
+    "confidence_score": 0.9,
+    "review_required": false,
+    "rejection_reasons": [],
+    "blocker_reasons": []
+  },
+  {
+    "cluster_id": "selected-clean-uk-tyres-comparison-intent",
+    "locale": "en-GB",
+    "market": "UK",
+    "target_category": "automotive/tyres",
+    "buyer_intent": true,
+    "intent_type": "comparison_intent",
+    "main_keyword": "best all season tyres for uk roads",
+    "support_keywords": [
+      "winter tyres vs all season tyres",
+      "car tyres uk wet grip",
+      "best value tyres fitting included"
+    ],
+    "long_tail_keywords": [
+      "best all season tyres for uk motorway commute",
+      "quiet all season tyres for electric hatchback",
+      "best tyres for wet braking in british weather",
+      "uk tyre comparison for family suv buyers",
+      "tyres with strong mileage warranty uk",
+      "all season tyres with low rolling resistance",
+      "best value tyres for city and motorway driving",
+      "premium tyres for rainy road conditions uk",
+      "fuel efficient tyres for long uk trips",
+      "best all season tyres for 205 55 r16",
+      "uk tyres with balanced comfort and grip",
+      "how to choose tyres for wet and cold roads"
+    ],
+    "variants": [
+      {"keyword": "best all season tires for uk roads", "variant_type": "language_variant"},
+      {"keyword": "best all season tyre for uk roads", "variant_type": "language_variant"},
+      {"keyword": "tyres 205 55 r16", "variant_type": "spec_variant"},
+      {"keyword": "best all season tyers uk roads", "variant_type": "typo_variant"}
+    ],
+    "product_spec_signals": ["205/55 R16", "wet grip", "rolling resistance"],
+    "brand_model_signals": ["michelin", "goodyear", "continental"],
+    "source_type": "manual_review",
+    "volume_bucket_by_keyword": {
+      "best all season tyres for uk roads": "high",
+      "winter tyres vs all season tyres": "medium",
+      "best all season tyers uk roads": "unknown"
+    },
+    "confidence_score": 0.89,
+    "review_required": false,
+    "rejection_reasons": [],
+    "blocker_reasons": []
+  },
+  {
+    "cluster_id": "selected-clean-de-reifen-buyer-intent",
+    "locale": "de-DE",
+    "market": "DE",
+    "target_category": "automotive/reifen",
+    "buyer_intent": true,
+    "intent_type": "buyer_intent",
+    "main_keyword": "beste winterreifen fuer suv kaufen",
+    "support_keywords": [
+      "reifen vergleich fuer winter",
+      "reifen online bestellen deutschland",
+      "winterreifen preis leistung"
+    ],
+    "long_tail_keywords": [
+      "beste winterreifen fuer suv auf autobahn",
+      "reifen mit kurzer bremsweg bei naesse test",
+      "winterreifen fuer elektro suv mit hoher reichweite",
+      "reifen kaufberatung fuer familienfahrzeug deutschland",
+      "winterreifen mit niedrigem geraeuschpegel",
+      "reifen mit hoher laufleistung fuer pendler",
+      "winterreifen mit starker traktion im schnee",
+      "beste reifen fuer kalte und nasse strassen",
+      "winterreifen guenstig mit montage in deutschland",
+      "reifen kaufvergleich fuer 205 55 r16",
+      "winterreifen fuer lange urlaubsfahrten",
+      "beste winterreifen fuer sicherheit und komfort"
+    ],
+    "variants": [
+      {"keyword": "beste winter reifen fuer suv kaufen", "variant_type": "typo_variant"},
+      {"keyword": "reifen 205 55 r16", "variant_type": "spec_variant"},
+      {"keyword": "winterreifen vergleich suv", "variant_type": "language_variant"}
+    ],
+    "product_spec_signals": ["205/55 R16", "Nasshaftung A", "Laufleistung"],
+    "brand_model_signals": ["continental", "bridgestone", "goodyear"],
+    "source_type": "provider_feed",
+    "volume_bucket_by_keyword": {
+      "beste winterreifen fuer suv kaufen": "high",
+      "reifen vergleich fuer winter": "medium",
+      "beste winter reifen fuer suv kaufen": "unknown"
+    },
+    "confidence_score": 0.87,
+    "review_required": false,
+    "rejection_reasons": [],
+    "blocker_reasons": []
+  },
+  {
+    "cluster_id": "selected-clean-gr-power-bank-greek-greeklish",
+    "locale": "el-GR",
+    "market": "GR",
+    "target_category": "electronics/power-banks",
+    "buyer_intent": true,
+    "intent_type": "product_specific",
+    "main_keyword": "kalytero power bank 20000mah gia taxidi",
+    "support_keywords": [
+      "fortistis kinhtou me grhgorh fortisi",
+      "power bank gia iphone kai samsung",
+      "power bank sygkrisi agoras"
+    ],
+    "long_tail_keywords": [
+      "kalytero power bank gia taxidi se aeroplano",
+      "power bank 20000mah gia iphone 15 pro",
+      "power bank me usb c kai pd fortisi",
+      "fortistos power bank gia laptop kai kinhto",
+      "power bank me endei3i mpatarias akriveias",
+      "aksiopisto power bank se kalh timh ellada",
+      "power bank me prostasia apo yperthermansi",
+      "mikro kai dynato power bank gia tsanta",
+      "power bank gia kathimerinh ergasia",
+      "kalo power bank gia android me fast charging",
+      "power bank me duo usb c thyries",
+      "best value power bank gia holiday trip"
+    ],
+    "variants": [
+      {"keyword": "καλύτερο power bank 20000mah για ταξίδι", "variant_type": "language_variant"},
+      {"keyword": "φορτιστής κινητού με γρήγορη φόρτιση", "variant_type": "language_variant"},
+      {"keyword": "kalytero powerbank 20000mah", "variant_type": "typo_variant"},
+      {"keyword": "20000mah usb c pd", "variant_type": "spec_variant"}
+    ],
+    "product_spec_signals": ["20000mah", "usb-c", "pd"],
+    "brand_model_signals": ["anker", "xiaomi"],
+    "source_type": "manual_review",
+    "volume_bucket_by_keyword": {
+      "kalytero power bank 20000mah gia taxidi": "medium",
+      "fortistis kinhtou me grhgorh fortisi": "unknown",
+      "kalytero powerbank 20000mah": "unknown"
+    },
+    "confidence_score": 0.86,
+    "review_required": false,
+    "rejection_reasons": [],
+    "blocker_reasons": []
+  },
+  {
+    "cluster_id": "selected-clean-brand-model-spec-anker-737",
+    "locale": "en-US",
+    "market": "US",
+    "target_category": "electronics/power-banks",
+    "buyer_intent": true,
+    "intent_type": "product_specific",
+    "main_keyword": "anker 737 power bank 140w buyer review",
+    "support_keywords": [
+      "anker 737 vs ugreen nexode 25000",
+      "best 140w usb c power bank comparison",
+      "anker 737 power bank for macbook pro"
+    ],
+    "long_tail_keywords": [
+      "anker 737 power bank charging speed real use",
+      "anker 737 battery life for creator workflow",
+      "anker 737 travel carry on buying decision",
+      "anker 737 thermal behavior during fast charge",
+      "anker 737 usb c pd 3.1 performance",
+      "anker 737 value compared to premium rivals",
+      "anker 737 pass through charging support test",
+      "anker 737 display readability in daily use",
+      "anker 737 durability after extended usage",
+      "best alternatives to anker 737 for laptop users",
+      "anker 737 for remote work desk setup",
+      "anker 737 total charging output for two devices"
+    ],
+    "variants": [
+      {"keyword": "Anker 737", "variant_type": "brand_model_variant"},
+      {"keyword": "Anker737", "variant_type": "typo_variant"},
+      {"keyword": "140w usb c", "variant_type": "spec_variant"},
+      {"keyword": "anker powercore 24k", "variant_type": "brand_model_variant"}
+    ],
+    "product_spec_signals": ["140W", "24000mAh", "USB-C PD 3.1"],
+    "brand_model_signals": ["Anker 737", "UGREEN Nexode 25000"],
+    "source_type": "provider_feed",
+    "volume_bucket_by_keyword": {
+      "anker 737 power bank 140w buyer review": "medium",
+      "anker 737 vs ugreen nexode 25000": "low",
+      "anker737": "unknown"
+    },
+    "confidence_score": 0.9,
+    "review_required": false,
+    "rejection_reasons": [],
+    "blocker_reasons": []
+  }
+]
