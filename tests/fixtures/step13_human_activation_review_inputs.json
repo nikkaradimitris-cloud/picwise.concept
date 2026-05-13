@@ -1,0 +1,168 @@
+{
+  "pilot_results": {
+    "clean_pilot_ready_packet": {
+      "provider_name": "trusted-affiliate-export-v1",
+      "target_market": "US",
+      "target_locale": "en-US",
+      "dry_run_only": true,
+      "pilot_status": "pilot_ready",
+      "can_request_human_activation_review": true,
+      "governance_approval_ready_count": 3,
+      "feed_rows_total": 4,
+      "candidate_pages_built": 1,
+      "limited_rollout_ready_count": 1,
+      "blocker_reasons": [],
+      "remediation_actions": [],
+      "rollback_drill": {
+        "is_complete": true
+      }
+    },
+    "pilot_needs_remediation_packet": {
+      "provider_name": "trusted-affiliate-export-v1",
+      "target_market": "US",
+      "target_locale": "en-US",
+      "dry_run_only": true,
+      "pilot_status": "pilot_needs_remediation",
+      "can_request_human_activation_review": false,
+      "governance_approval_ready_count": 1,
+      "feed_rows_total": 4,
+      "candidate_pages_built": 1,
+      "limited_rollout_ready_count": 0,
+      "blocker_reasons": [],
+      "remediation_actions": [
+        "collect_operator_observation_events_for_step8_9"
+      ],
+      "rollback_drill": {
+        "is_complete": true
+      }
+    },
+    "pilot_blocked_packet": {
+      "provider_name": "trusted-affiliate-export-v1",
+      "target_market": "US",
+      "target_locale": "en-US",
+      "dry_run_only": true,
+      "pilot_status": "pilot_blocked",
+      "can_request_human_activation_review": false,
+      "governance_approval_ready_count": 0,
+      "feed_rows_total": 0,
+      "candidate_pages_built": 0,
+      "limited_rollout_ready_count": 0,
+      "blocker_reasons": [
+        "missing_provider_feed_export_file"
+      ],
+      "remediation_actions": [],
+      "rollback_drill": {
+        "is_complete": false
+      }
+    },
+    "rollback_simulation_failure_packet": {
+      "provider_name": "trusted-affiliate-export-v1",
+      "target_market": "US",
+      "target_locale": "en-US",
+      "dry_run_only": true,
+      "pilot_status": "pilot_ready",
+      "can_request_human_activation_review": true,
+      "governance_approval_ready_count": 2,
+      "feed_rows_total": 4,
+      "candidate_pages_built": 1,
+      "limited_rollout_ready_count": 1,
+      "blocker_reasons": [],
+      "remediation_actions": [],
+      "rollback_drill": {
+        "is_complete": false
+      }
+    }
+  },
+  "governance_batch_clean": {
+    "total_records": 3,
+    "approval_ready_count": 3,
+    "blocked_count": 0,
+    "rollback_required_count": 0,
+    "rejected_count": 0,
+    "can_move_to_real_provider_activation_review": true
+  },
+  "governance_batch_pending": {
+    "total_records": 3,
+    "approval_ready_count": 1,
+    "blocked_count": 0,
+    "rollback_required_count": 0,
+    "rejected_count": 0,
+    "can_move_to_real_provider_activation_review": false
+  },
+  "operator_scenarios": {
+    "missing_operator_action": {},
+    "explicit_approve": {
+      "operator_action": "approve",
+      "operator_id": "operator-step13-a",
+      "reason": "All checks passed and rollback simulation passed."
+    },
+    "explicit_reject": {
+      "operator_action": "reject",
+      "operator_id": "operator-step13-b",
+      "reason": "Rejected by operator policy review."
+    },
+    "explicit_hold": {
+      "operator_action": "hold",
+      "operator_id": "operator-step13-c",
+      "reason": "Hold for manual verification."
+    },
+    "request_remediation": {
+      "operator_action": "request_remediation",
+      "operator_id": "operator-step13-d",
+      "reason": "Needs remediation before any next phase."
+    }
+  },
+  "selected_clean_approval_cohort": [
+    {
+      "provider_name": "trusted-affiliate-export-v1",
+      "target_market": "US",
+      "target_locale": "en-US",
+      "dry_run_only": true,
+      "pilot_status": "pilot_ready",
+      "can_request_human_activation_review": true,
+      "governance_approval_ready_count": 3,
+      "feed_rows_total": 4,
+      "candidate_pages_built": 1,
+      "limited_rollout_ready_count": 1,
+      "blocker_reasons": [],
+      "remediation_actions": [],
+      "rollback_drill": {
+        "is_complete": true
+      }
+    },
+    {
+      "provider_name": "trusted-affiliate-export-v2",
+      "target_market": "UK",
+      "target_locale": "en-GB",
+      "dry_run_only": true,
+      "pilot_status": "pilot_ready",
+      "can_request_human_activation_review": true,
+      "governance_approval_ready_count": 3,
+      "feed_rows_total": 4,
+      "candidate_pages_built": 1,
+      "limited_rollout_ready_count": 1,
+      "blocker_reasons": [],
+      "remediation_actions": [],
+      "rollback_drill": {
+        "is_complete": true
+      }
+    },
+    {
+      "provider_name": "trusted-affiliate-export-v3",
+      "target_market": "DE",
+      "target_locale": "de-DE",
+      "dry_run_only": true,
+      "pilot_status": "pilot_ready",
+      "can_request_human_activation_review": true,
+      "governance_approval_ready_count": 3,
+      "feed_rows_total": 4,
+      "candidate_pages_built": 1,
+      "limited_rollout_ready_count": 1,
+      "blocker_reasons": [],
+      "remediation_actions": [],
+      "rollback_drill": {
+        "is_complete": true
+      }
+    }
+  ]
+}

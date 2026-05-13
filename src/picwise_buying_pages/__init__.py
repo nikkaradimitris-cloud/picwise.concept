@@ -159,6 +159,20 @@ from .provider_activation_pilot import (
     evaluate_provider_activation_pilot,
     validate_provider_activation_input,
 )
+from .human_activation_review import (
+    HumanActivationAuditRecord,
+    HumanActivationBatchResult,
+    HumanActivationDecision,
+    HumanActivationDecisionStatus,
+    HumanActivationReviewPacket,
+    HumanActivationRollbackSimulation,
+    HumanActivationReviewPolicy,
+    HumanApprovalAction,
+    build_human_activation_review_packet,
+    evaluate_human_activation_batch,
+    evaluate_human_activation_decision,
+    simulate_human_activation_rollback,
+)
 
 __all__ = [
     "BuyingPage",
@@ -311,4 +325,16 @@ __all__ = [
     "build_provider_activation_checklist",
     "build_provider_activation_rollback_drill",
     "evaluate_provider_activation_pilot",
+    "HumanActivationDecisionStatus",
+    "HumanApprovalAction",
+    "HumanActivationReviewPacket",
+    "HumanActivationRollbackSimulation",
+    "HumanActivationAuditRecord",
+    "HumanActivationDecision",
+    "HumanActivationBatchResult",
+    "HumanActivationReviewPolicy",
+    "build_human_activation_review_packet",
+    "simulate_human_activation_rollback",
+    "evaluate_human_activation_decision",
+    "evaluate_human_activation_batch",
 ]
