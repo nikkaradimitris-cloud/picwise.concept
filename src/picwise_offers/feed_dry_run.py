@@ -5,6 +5,7 @@ from typing import Any
 
 from .affiliate_feed_adapter import AffiliateFeedRowStatus, adapt_affiliate_feed_rows
 from .contracts import SourceTrustLevel
+from .feed_enrichment import FeedEnrichmentContracts, build_feed_enrichment_remediation_summary
 from .eligibility import run_product_eligibility_gate
 from .recommendation_engine import build_pickwise_recommendation_set
 
@@ -27,6 +28,7 @@ class AffiliateFeedDryRunReport:
     seller_reliability_counts: dict[str, int]
     readiness_status: str
     blockers_before_3000_candidate_pages: tuple[str, ...]
+    enrichment_remediation_summary: dict[str, Any] | None = None
 
 
 def _increment(counter: dict[str, int], key: str) -> None:
@@ -80,6 +82,8 @@ def run_affiliate_feed_dry_run(
     source_trust_level: SourceTrustLevel = SourceTrustLevel.PARTNER_VERIFIED,
     source_connected: bool = True,
     recommendation_query: str = "affiliate feed dry run",
+    include_enrichment_remediation_summary: bool = False,
+    enrichment_contracts: FeedEnrichmentContracts | None = None,
 ) -> AffiliateFeedDryRunReport:
     local_rows = _to_local_rows_or_raise(rows)
     batch = adapt_affiliate_feed_rows(
@@ -185,6 +189,12 @@ def run_affiliate_feed_dry_run(
         recommendation_ready_count=recommendation_ready_count,
         blockers_before_3000_candidate_pages=blockers_before_3000_candidate_pages,
     )
+    enrichment_remediation_summary: dict[str, Any] | None = None
+    if include_enrichment_remediation_summary:
+        enrichment_remediation_summary = build_feed_enrichment_remediation_summary(
+            mapped_candidates,
+            contracts=enrichment_contracts,
+        )
 
     return AffiliateFeedDryRunReport(
         total_rows=len(local_rows),
@@ -203,4 +213,5 @@ def run_affiliate_feed_dry_run(
         seller_reliability_counts=seller_reliability_counts,
         readiness_status=readiness_status,
         blockers_before_3000_candidate_pages=blockers_before_3000_candidate_pages,
+        enrichment_remediation_summary=enrichment_remediation_summary,
     )

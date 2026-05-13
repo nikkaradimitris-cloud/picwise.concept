@@ -19,6 +19,12 @@ from .affiliate_feed_adapter import (
     adapt_affiliate_feed_rows,
 )
 from .feed_dry_run import AffiliateFeedDryRunReport, run_affiliate_feed_dry_run
+from .feed_enrichment import (
+    FeedEnrichmentContracts,
+    FeedEnrichmentRemediationResult,
+    build_feed_enrichment_remediation_summary,
+    remediate_feed_enrichment_candidates,
+)
 from .import_adapter import import_offer_candidates_from_csv_text, import_offer_candidates_from_json_text
 from .ranking import (
     OfferRankingInput,
@@ -68,6 +74,10 @@ __all__ = [
     "adapt_affiliate_feed_rows",
     "AffiliateFeedDryRunReport",
     "run_affiliate_feed_dry_run",
+    "FeedEnrichmentContracts",
+    "FeedEnrichmentRemediationResult",
+    "remediate_feed_enrichment_candidates",
+    "build_feed_enrichment_remediation_summary",
     "OfferIntakeRequest",
     "build_default_product_source",
     "intake_offer_candidates",
