@@ -1,0 +1,73 @@
+{
+  "page_summaries": [
+    {
+      "candidate_page_id": "step9-clean-us-power-banks",
+      "slug": "best-power-banks-for-travel-usa",
+      "locale": "en-US",
+      "market": "US",
+      "is_live_mvp_ready": true,
+      "controlled_and_reversible": true,
+      "total_events": 3,
+      "preview_render_count": 2,
+      "outbound_click_count": 1,
+      "preview_error_count": 0,
+      "outbound_error_count": 0,
+      "manual_review_count": 0,
+      "blocker_event_count": 0,
+      "rejected_event_count": 0,
+      "status": "observation_ready",
+      "promotion_ready": true,
+      "reasons": [
+        "promotion_readiness_contract_satisfied"
+      ]
+    },
+    {
+      "candidate_page_id": "step9-clean-uk-tyres",
+      "slug": "best-all-season-tyres-uk",
+      "locale": "en-GB",
+      "market": "UK",
+      "is_live_mvp_ready": true,
+      "controlled_and_reversible": true,
+      "total_events": 4,
+      "preview_render_count": 2,
+      "outbound_click_count": 2,
+      "preview_error_count": 0,
+      "outbound_error_count": 0,
+      "manual_review_count": 0,
+      "blocker_event_count": 0,
+      "rejected_event_count": 0,
+      "status": "observation_ready",
+      "promotion_ready": true,
+      "reasons": [
+        "promotion_readiness_contract_satisfied"
+      ]
+    },
+    {
+      "candidate_page_id": "step9-clean-de-kaffee",
+      "slug": "beste-kaffeevollautomaten-fuer-zuhause",
+      "locale": "de-DE",
+      "market": "DE",
+      "is_live_mvp_ready": true,
+      "controlled_and_reversible": true,
+      "total_events": 3,
+      "preview_render_count": 1,
+      "outbound_click_count": 1,
+      "preview_error_count": 0,
+      "outbound_error_count": 0,
+      "manual_review_count": 0,
+      "blocker_event_count": 0,
+      "rejected_event_count": 0,
+      "status": "observation_ready",
+      "promotion_ready": true,
+      "reasons": [
+        "promotion_readiness_contract_satisfied"
+      ]
+    }
+  ],
+  "assertions": {
+    "policy_only_no_publish_or_index_side_effects": true,
+    "no_live_sitemap_expansion": true,
+    "no_public_route_exposure": true,
+    "no_fabricated_revenue_conversion_search_volume": true
+  }
+}

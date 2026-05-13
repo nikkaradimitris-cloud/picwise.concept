@@ -1,0 +1,182 @@
+{
+  "page_summaries": [
+    {
+      "candidate_page_id": "step8-clean-ready-us",
+      "slug": "best-power-banks-for-travel-usa",
+      "locale": "en-US",
+      "market": "US",
+      "is_live_mvp_ready": true,
+      "controlled_and_reversible": true,
+      "total_events": 3,
+      "preview_render_count": 2,
+      "outbound_click_count": 1,
+      "preview_error_count": 0,
+      "outbound_error_count": 0,
+      "manual_review_count": 0,
+      "blocker_event_count": 0,
+      "rejected_event_count": 0,
+      "status": "observation_ready",
+      "promotion_ready": true,
+      "reasons": [
+        "promotion_readiness_contract_satisfied"
+      ]
+    },
+    {
+      "candidate_page_id": "step8-needs-more-data-uk",
+      "slug": "best-all-season-tyres-uk",
+      "locale": "en-GB",
+      "market": "UK",
+      "is_live_mvp_ready": true,
+      "controlled_and_reversible": true,
+      "total_events": 1,
+      "preview_render_count": 1,
+      "outbound_click_count": 0,
+      "preview_error_count": 0,
+      "outbound_error_count": 0,
+      "manual_review_count": 0,
+      "blocker_event_count": 0,
+      "rejected_event_count": 0,
+      "status": "needs_more_data",
+      "promotion_ready": false,
+      "reasons": [
+        "outbound_or_coverage_evidence_missing"
+      ]
+    },
+    {
+      "candidate_page_id": "step8-manual-review-de",
+      "slug": "beste-kaffeevollautomaten-fuer-zuhause",
+      "locale": "de-DE",
+      "market": "DE",
+      "is_live_mvp_ready": true,
+      "controlled_and_reversible": true,
+      "total_events": 3,
+      "preview_render_count": 1,
+      "outbound_click_count": 1,
+      "preview_error_count": 0,
+      "outbound_error_count": 0,
+      "manual_review_count": 1,
+      "blocker_event_count": 0,
+      "rejected_event_count": 0,
+      "status": "hold_manual_review",
+      "promotion_ready": false,
+      "reasons": [
+        "manual_review_opened"
+      ]
+    },
+    {
+      "candidate_page_id": "step8-blocker-reject-fr",
+      "slug": "meilleurs-banque-alimentation-voyage",
+      "locale": "en-US",
+      "market": "US",
+      "is_live_mvp_ready": true,
+      "controlled_and_reversible": true,
+      "total_events": 2,
+      "preview_render_count": 1,
+      "outbound_click_count": 1,
+      "preview_error_count": 0,
+      "outbound_error_count": 0,
+      "manual_review_count": 0,
+      "blocker_event_count": 1,
+      "rejected_event_count": 0,
+      "status": "blocked",
+      "promotion_ready": false,
+      "reasons": [
+        "blocker_events_present"
+      ]
+    },
+    {
+      "candidate_page_id": "step8-outbound-errors-hold-es",
+      "slug": "best-laptop-stands-home-office",
+      "locale": "en-US",
+      "market": "US",
+      "is_live_mvp_ready": true,
+      "controlled_and_reversible": true,
+      "total_events": 4,
+      "preview_render_count": 2,
+      "outbound_click_count": 1,
+      "preview_error_count": 0,
+      "outbound_error_count": 1,
+      "manual_review_count": 0,
+      "blocker_event_count": 0,
+      "rejected_event_count": 0,
+      "status": "observation_ready",
+      "promotion_ready": true,
+      "reasons": [
+        "promotion_readiness_contract_satisfied"
+      ]
+    },
+    {
+      "candidate_page_id": "step8-preview-errors-hold-it",
+      "slug": "best-gaming-mouse-wireless",
+      "locale": "en-US",
+      "market": "US",
+      "is_live_mvp_ready": true,
+      "controlled_and_reversible": true,
+      "total_events": 4,
+      "preview_render_count": 1,
+      "outbound_click_count": 1,
+      "preview_error_count": 1,
+      "outbound_error_count": 0,
+      "manual_review_count": 0,
+      "blocker_event_count": 0,
+      "rejected_event_count": 0,
+      "status": "observation_ready",
+      "promotion_ready": true,
+      "reasons": [
+        "promotion_readiness_contract_satisfied"
+      ]
+    },
+    {
+      "candidate_page_id": "step8-non-live-ready-gr",
+      "slug": "best-budget-router-for-home",
+      "locale": "en-US",
+      "market": "US",
+      "is_live_mvp_ready": false,
+      "controlled_and_reversible": true,
+      "total_events": 2,
+      "preview_render_count": 1,
+      "outbound_click_count": 1,
+      "preview_error_count": 0,
+      "outbound_error_count": 0,
+      "manual_review_count": 0,
+      "blocker_event_count": 0,
+      "rejected_event_count": 0,
+      "status": "blocked",
+      "promotion_ready": false,
+      "reasons": [
+        "not_live_mvp_ready"
+      ]
+    },
+    {
+      "candidate_page_id": "step8-rollback-required-jp",
+      "slug": "best-standing-desk-converters",
+      "locale": "en-US",
+      "market": "US",
+      "is_live_mvp_ready": true,
+      "controlled_and_reversible": true,
+      "total_events": 5,
+      "preview_render_count": 2,
+      "outbound_click_count": 1,
+      "preview_error_count": 0,
+      "outbound_error_count": 3,
+      "manual_review_count": 0,
+      "blocker_event_count": 1,
+      "rejected_event_count": 0,
+      "status": "blocked",
+      "promotion_ready": false,
+      "reasons": [
+        "blocker_events_present",
+        "provider_contract_regression"
+      ]
+    }
+  ],
+  "selected_clean_promotion_cohort_ids": [
+    "step8-clean-ready-us"
+  ],
+  "assertions": {
+    "policy_only_no_publish_side_effects": true,
+    "policy_flag_is_not_live_sitemap_inclusion": true,
+    "no_route_wiring_to_best": true,
+    "no_fake_metrics_or_products": true
+  }
+}

@@ -119,6 +119,14 @@ from .mvp_observation import (
     summarize_mvp_observations,
     validate_mvp_observation_event,
 )
+from .promotion_policy import (
+    PromotionDecision,
+    PromotionDecisionStatus,
+    PromotionPolicy,
+    PromotionPolicyBatchResult,
+    evaluate_promotion_decision,
+    evaluate_promotion_policy_batch,
+)
 
 __all__ = [
     "BuyingPage",
@@ -239,4 +247,10 @@ __all__ = [
     "validate_mvp_observation_event",
     "summarize_mvp_observations",
     "evaluate_mvp_promotion_readiness",
+    "PromotionDecisionStatus",
+    "PromotionDecision",
+    "PromotionPolicy",
+    "PromotionPolicyBatchResult",
+    "evaluate_promotion_decision",
+    "evaluate_promotion_policy_batch",
 ]
