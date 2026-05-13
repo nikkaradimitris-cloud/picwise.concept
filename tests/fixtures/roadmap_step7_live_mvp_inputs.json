@@ -1,0 +1,218 @@
+{
+  "candidate_pages": [
+    {
+      "candidate_page_id": "step7-clean-us-power-banks",
+      "slug": "best-power-banks-for-travel-usa",
+      "locale": "en-US",
+      "market": "US",
+      "main_keyword": "best power banks for travel usa",
+      "selected_product_ids": [
+        "pb-us-clean-1",
+        "pb-us-clean-2",
+        "pb-us-clean-3",
+        "pb-us-clean-4"
+      ],
+      "recommended_product_id": "pb-us-clean-1"
+    },
+    {
+      "candidate_page_id": "step7-clean-uk-tyres",
+      "slug": "best-all-season-tyres-uk",
+      "locale": "en-GB",
+      "market": "UK",
+      "main_keyword": "best all season tyres uk",
+      "selected_product_ids": [
+        "tyre-uk-clean-1",
+        "tyre-uk-clean-2",
+        "tyre-uk-clean-3",
+        "tyre-uk-clean-4"
+      ],
+      "recommended_product_id": "tyre-uk-clean-1"
+    },
+    {
+      "candidate_page_id": "step7-clean-de-kaffee",
+      "slug": "beste-kaffeevollautomaten-fuer-zuhause",
+      "locale": "de-DE",
+      "market": "DE",
+      "main_keyword": "beste kaffeevollautomaten fuer zuhause",
+      "selected_product_ids": [
+        "coffee-de-clean-1",
+        "coffee-de-clean-2",
+        "coffee-de-clean-3",
+        "coffee-de-clean-4"
+      ],
+      "recommended_product_id": "coffee-de-clean-1"
+    },
+    {
+      "candidate_page_id": "step7-noindex-candidate",
+      "slug": "best-budget-smartwatch-for-teens",
+      "locale": "en-US",
+      "market": "US",
+      "main_keyword": "best budget smartwatch for teens",
+      "selected_product_ids": [
+        "sw-1",
+        "sw-2",
+        "sw-3",
+        "sw-4"
+      ],
+      "recommended_product_id": "sw-1"
+    },
+    {
+      "candidate_page_id": "step7-hold-candidate",
+      "slug": "best-budget-router-for-home",
+      "locale": "en-US",
+      "market": "US",
+      "main_keyword": "best budget router for home",
+      "selected_product_ids": [
+        "rt-1",
+        "rt-2",
+        "rt-3",
+        "rt-4"
+      ],
+      "recommended_product_id": "rt-1"
+    },
+    {
+      "candidate_page_id": "step7-rejected-candidate",
+      "slug": "best-office-chair-for-back-support",
+      "locale": "en-US",
+      "market": "US",
+      "main_keyword": "best office chair for back support",
+      "selected_product_ids": [
+        "ch-1",
+        "ch-2",
+        "ch-3",
+        "ch-4"
+      ],
+      "recommended_product_id": "ch-1"
+    },
+    {
+      "candidate_page_id": "step7-duplicate-candidate",
+      "slug": "best-gaming-laptops-for-college-students",
+      "locale": "en-US",
+      "market": "US",
+      "main_keyword": "best gaming laptops for college students",
+      "selected_product_ids": [
+        "gl-5",
+        "gl-6",
+        "gl-7",
+        "gl-8"
+      ],
+      "recommended_product_id": "gl-5"
+    },
+    {
+      "candidate_page_id": "step7-missing-recommended-evidence",
+      "slug": "best-quiet-air-purifier-for-bedroom",
+      "locale": "en-US",
+      "market": "US",
+      "main_keyword": "best quiet air purifier for bedroom",
+      "selected_product_ids": [
+        "ap-1",
+        "ap-2",
+        "ap-3",
+        "ap-4"
+      ],
+      "recommended_product_id": "ap-1"
+    }
+  ],
+  "index_decisions": [
+    {
+      "candidate_page_id": "step7-clean-us-power-banks",
+      "slug": "best-power-banks-for-travel-usa",
+      "status": "index_candidate",
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "evidence_summary": {
+        "recommended_product_in_selected": true
+      }
+    },
+    {
+      "candidate_page_id": "step7-clean-uk-tyres",
+      "slug": "best-all-season-tyres-uk",
+      "status": "index_candidate",
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "evidence_summary": {
+        "recommended_product_in_selected": true
+      }
+    },
+    {
+      "candidate_page_id": "step7-clean-de-kaffee",
+      "slug": "beste-kaffeevollautomaten-fuer-zuhause",
+      "status": "index_candidate",
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "evidence_summary": {
+        "recommended_product_in_selected": true
+      }
+    },
+    {
+      "candidate_page_id": "step7-noindex-candidate",
+      "slug": "best-budget-smartwatch-for-teens",
+      "status": "noindex_candidate",
+      "blocker_reasons": [
+        "thin_content_indicators_detected"
+      ],
+      "review_reasons": [],
+      "evidence_summary": {
+        "recommended_product_in_selected": true
+      }
+    },
+    {
+      "candidate_page_id": "step7-hold-candidate",
+      "slug": "best-budget-router-for-home",
+      "status": "hold_manual_review",
+      "blocker_reasons": [],
+      "review_reasons": [
+        "uncertain_supporting_evidence"
+      ],
+      "evidence_summary": {
+        "recommended_product_in_selected": true
+      }
+    },
+    {
+      "candidate_page_id": "step7-rejected-candidate",
+      "slug": "best-office-chair-for-back-support",
+      "status": "rejected",
+      "blocker_reasons": [
+        "keyword_stuffing_detected"
+      ],
+      "review_reasons": [],
+      "evidence_summary": {
+        "recommended_product_in_selected": true
+      }
+    },
+    {
+      "candidate_page_id": "step7-duplicate-candidate",
+      "slug": "best-gaming-laptops-for-college-students",
+      "status": "duplicate_canonical_required",
+      "blocker_reasons": [
+        "near_duplicate_candidate_requires_canonical"
+      ],
+      "review_reasons": [],
+      "evidence_summary": {
+        "recommended_product_in_selected": true
+      }
+    },
+    {
+      "candidate_page_id": "step7-missing-recommended-evidence",
+      "slug": "best-quiet-air-purifier-for-bedroom",
+      "status": "index_candidate",
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "evidence_summary": {
+        "recommended_product_in_selected": false
+      }
+    }
+  ],
+  "selected_clean_batch": {
+    "candidate_page_ids": [
+      "step7-clean-us-power-banks",
+      "step7-clean-uk-tyres",
+      "step7-clean-de-kaffee"
+    ],
+    "sitemap_candidate_page_ids": [
+      "step7-clean-us-power-banks",
+      "step7-clean-uk-tyres"
+    ],
+    "public_exposure_candidate_page_ids": []
+  }
+}

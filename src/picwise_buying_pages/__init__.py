@@ -101,6 +101,13 @@ from .candidate_index_gate import (
     evaluate_candidate_index_batch,
     evaluate_candidate_index_eligibility,
 )
+from .live_mvp_gate import (
+    LiveMVPBatchResult,
+    LiveMVPExposureStatus,
+    LiveMVPGatePolicy,
+    LiveMVPPageRecord,
+    build_live_mvp_batch,
+)
 
 __all__ = [
     "BuyingPage",
@@ -207,4 +214,9 @@ __all__ = [
     "CandidateIndexGatePolicy",
     "evaluate_candidate_index_eligibility",
     "evaluate_candidate_index_batch",
+    "LiveMVPExposureStatus",
+    "LiveMVPPageRecord",
+    "LiveMVPBatchResult",
+    "LiveMVPGatePolicy",
+    "build_live_mvp_batch",
 ]
