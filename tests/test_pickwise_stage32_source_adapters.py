@@ -11,6 +11,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from picwise_offers.fixture_adapter import LocalFixtureOfferSourceAdapter  # noqa: E402
+from picwise_offers.affiliate_feed_adapter import adapt_affiliate_feed_rows  # noqa: E402
 from picwise_offers.import_adapter import (  # noqa: E402
     import_offer_candidates_from_csv_text,
     import_offer_candidates_from_json_text,
@@ -62,9 +63,25 @@ class PickWiseStage32SourceAdaptersTests(unittest.TestCase):
         self.assertEqual(json_candidates[0].candidate_id, "c-1")
         self.assertEqual(csv_candidates[0].candidate_id, "c-2")
 
+    def test_affiliate_feed_adapter_maps_local_rows_without_network(self) -> None:
+        result = adapt_affiliate_feed_rows(
+            [
+                {
+                    "product_id": "c-3",
+                    "title": "Feed Product",
+                    "merchant": "Seller",
+                    "product_url": "https://example.com/p/3",
+                }
+            ],
+            source_id="affiliate_local_feed_v1",
+        )
+        self.assertEqual(len(result.mapped_candidates), 1)
+        self.assertEqual(result.mapped_candidates[0].candidate_id, "c-3")
+
     def test_source_adapters_do_not_include_scraping_or_live_network_calls(self) -> None:
         source_text = (
             inspect.getsource(LocalFixtureOfferSourceAdapter.fetch)
+            + inspect.getsource(adapt_affiliate_feed_rows)
             + inspect.getsource(import_offer_candidates_from_json_text)
             + inspect.getsource(import_offer_candidates_from_csv_text)
         ).lower()

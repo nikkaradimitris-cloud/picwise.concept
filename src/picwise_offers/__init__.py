@@ -12,6 +12,12 @@ from .contracts import (
 )
 from .eligibility import CandidateEligibilityDecision, EligibilityGateResult, EligibilityStatus, run_product_eligibility_gate
 from .fixture_adapter import LocalFixtureOfferSourceAdapter
+from .affiliate_feed_adapter import (
+    AffiliateFeedBatchResult,
+    AffiliateFeedRowResult,
+    AffiliateFeedRowStatus,
+    adapt_affiliate_feed_rows,
+)
 from .import_adapter import import_offer_candidates_from_csv_text, import_offer_candidates_from_json_text
 from .ranking import (
     OfferRankingInput,
@@ -55,6 +61,10 @@ __all__ = [
     "EligibilityGateResult",
     "run_product_eligibility_gate",
     "LocalFixtureOfferSourceAdapter",
+    "AffiliateFeedRowStatus",
+    "AffiliateFeedRowResult",
+    "AffiliateFeedBatchResult",
+    "adapt_affiliate_feed_rows",
     "OfferIntakeRequest",
     "build_default_product_source",
     "intake_offer_candidates",
