@@ -1,0 +1,77 @@
+{
+  "promotion_decisions": [
+    {
+      "candidate_page_id": "step10-clean-rollout-us-power-banks",
+      "slug": "best-power-banks-for-travel-usa",
+      "source_observation_status": "observation_ready",
+      "decision_status": "promoted_to_limited_exposure",
+      "can_enter_limited_exposure": true,
+      "can_expand_sitemap_candidate": true,
+      "requires_manual_review": false,
+      "requires_rollback": false,
+      "reasons": [
+        "observation_ready_for_limited_exposure"
+      ],
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "promotion_ready": true,
+        "outbound_click_count": 1
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step10-clean-rollout-uk-tyres",
+      "slug": "best-all-season-tyres-uk",
+      "source_observation_status": "observation_ready",
+      "decision_status": "promoted_to_limited_exposure",
+      "can_enter_limited_exposure": true,
+      "can_expand_sitemap_candidate": true,
+      "requires_manual_review": false,
+      "requires_rollback": false,
+      "reasons": [
+        "observation_ready_for_limited_exposure"
+      ],
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "promotion_ready": true,
+        "outbound_click_count": 2
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step10-clean-rollout-de-kaffee",
+      "slug": "beste-kaffeevollautomaten-fuer-zuhause",
+      "source_observation_status": "observation_ready",
+      "decision_status": "promoted_to_limited_exposure",
+      "can_enter_limited_exposure": true,
+      "can_expand_sitemap_candidate": true,
+      "requires_manual_review": false,
+      "requires_rollback": false,
+      "reasons": [
+        "observation_ready_for_limited_exposure"
+      ],
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "promotion_ready": true,
+        "outbound_click_count": 1
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false
+    }
+  ],
+  "assertions": {
+    "policy_only_no_publish_or_index_side_effects": true,
+    "no_live_sitemap_expansion": true,
+    "no_public_route_exposure": true,
+    "no_mass_publish": true,
+    "no_fabricated_revenue_conversion_search_volume": true
+  }
+}

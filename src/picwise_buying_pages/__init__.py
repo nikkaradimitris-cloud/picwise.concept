@@ -127,6 +127,15 @@ from .promotion_policy import (
     evaluate_promotion_decision,
     evaluate_promotion_policy_batch,
 )
+from .controlled_rollout import (
+    ControlledRolloutBatchResult,
+    ControlledRolloutDecision,
+    ControlledRolloutDecisionStatus,
+    ControlledRolloutPolicy,
+    ControlledRolloutTier,
+    evaluate_controlled_rollout_batch,
+    evaluate_controlled_rollout_decision,
+)
 
 __all__ = [
     "BuyingPage",
@@ -253,4 +262,11 @@ __all__ = [
     "PromotionPolicyBatchResult",
     "evaluate_promotion_decision",
     "evaluate_promotion_policy_batch",
+    "ControlledRolloutDecisionStatus",
+    "ControlledRolloutTier",
+    "ControlledRolloutDecision",
+    "ControlledRolloutBatchResult",
+    "ControlledRolloutPolicy",
+    "evaluate_controlled_rollout_decision",
+    "evaluate_controlled_rollout_batch",
 ]

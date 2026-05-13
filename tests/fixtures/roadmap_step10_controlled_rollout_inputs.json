@@ -1,0 +1,201 @@
+{
+  "promotion_decisions": [
+    {
+      "candidate_page_id": "step10-promoted-clean-us",
+      "slug": "best-power-banks-for-travel-usa",
+      "source_observation_status": "observation_ready",
+      "decision_status": "promoted_to_limited_exposure",
+      "can_enter_limited_exposure": true,
+      "can_expand_sitemap_candidate": true,
+      "requires_manual_review": false,
+      "requires_rollback": false,
+      "reasons": [
+        "observation_ready_for_limited_exposure"
+      ],
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "promotion_ready": true,
+        "is_live_mvp_ready": true,
+        "controlled_and_reversible": true,
+        "preview_render_count": 2,
+        "outbound_click_count": 1,
+        "preview_error_count": 0,
+        "outbound_error_count": 0
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step10-keep-preview-uk",
+      "slug": "best-all-season-tyres-uk",
+      "source_observation_status": "observation_ready",
+      "decision_status": "keep_controlled",
+      "can_enter_limited_exposure": false,
+      "can_expand_sitemap_candidate": false,
+      "requires_manual_review": false,
+      "requires_rollback": false,
+      "reasons": [
+        "policy_forces_keep_controlled"
+      ],
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "promotion_ready": false
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step10-hold-review-de",
+      "slug": "beste-kaffeevollautomaten-fuer-zuhause",
+      "source_observation_status": "hold_manual_review",
+      "decision_status": "hold_manual_review",
+      "can_enter_limited_exposure": false,
+      "can_expand_sitemap_candidate": false,
+      "requires_manual_review": true,
+      "requires_rollback": false,
+      "reasons": [
+        "manual_review_required"
+      ],
+      "blocker_reasons": [],
+      "review_reasons": [
+        "manual_review_event_present"
+      ],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "manual_review_count": 1
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step10-reject-blocked-fr",
+      "slug": "meilleurs-banque-alimentation-voyage",
+      "source_observation_status": "blocked",
+      "decision_status": "reject_from_promotion",
+      "can_enter_limited_exposure": false,
+      "can_expand_sitemap_candidate": false,
+      "requires_manual_review": false,
+      "requires_rollback": false,
+      "reasons": [
+        "blocked_evidence_rejects_promotion"
+      ],
+      "blocker_reasons": [
+        "source_blocked_or_blocker_event_present"
+      ],
+      "review_reasons": [],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "blocker_event_count": 1
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step10-rollback-required-jp",
+      "slug": "best-standing-desk-converters",
+      "source_observation_status": "blocked",
+      "decision_status": "rollback_required",
+      "can_enter_limited_exposure": false,
+      "can_expand_sitemap_candidate": false,
+      "requires_manual_review": false,
+      "requires_rollback": true,
+      "reasons": [
+        "error_threshold_requires_rollback"
+      ],
+      "blocker_reasons": [
+        "source_blocked_or_blocker_event_present"
+      ],
+      "review_reasons": [],
+      "rollback_reasons": [
+        "outbound_error_trend_requires_rollback",
+        "rollback_token_detected:provider_contract_regression"
+      ],
+      "evidence_summary": {
+        "outbound_error_count": 3
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step10-needs-more-es",
+      "slug": "best-laptop-stands-home-office",
+      "source_observation_status": "needs_more_data",
+      "decision_status": "needs_more_observation",
+      "can_enter_limited_exposure": false,
+      "can_expand_sitemap_candidate": false,
+      "requires_manual_review": false,
+      "requires_rollback": false,
+      "reasons": [
+        "source_status_needs_more_data"
+      ],
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "outbound_click_count": 0
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step10-promoted-cap-overflow-it",
+      "slug": "best-gaming-mouse-wireless",
+      "source_observation_status": "observation_ready",
+      "decision_status": "promoted_to_limited_exposure",
+      "can_enter_limited_exposure": true,
+      "can_expand_sitemap_candidate": true,
+      "requires_manual_review": false,
+      "requires_rollback": false,
+      "reasons": [
+        "observation_ready_for_limited_exposure"
+      ],
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "promotion_ready": true,
+        "preview_render_count": 1,
+        "outbound_click_count": 1
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step10-promoted-with-blocker-signal-gr",
+      "slug": "best-budget-router-for-home",
+      "source_observation_status": "observation_ready",
+      "decision_status": "promoted_to_limited_exposure",
+      "can_enter_limited_exposure": true,
+      "can_expand_sitemap_candidate": true,
+      "requires_manual_review": false,
+      "requires_rollback": false,
+      "reasons": [
+        "observation_ready_for_limited_exposure",
+        "quality_gate_blocked_signal"
+      ],
+      "blocker_reasons": [
+        "quality_gate_blocked_signal"
+      ],
+      "review_reasons": [],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "promotion_ready": true
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false
+    }
+  ],
+  "selected_clean_rollout_cohort_ids": [
+    "step10-promoted-clean-us"
+  ],
+  "assertions": {
+    "policy_only_no_publish_side_effects": true,
+    "policy_flag_is_not_live_sitemap_inclusion": true,
+    "no_route_wiring_to_best": true,
+    "no_fake_metrics_or_products": true
+  }
+}
