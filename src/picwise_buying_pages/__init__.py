@@ -1,6 +1,18 @@
 from .fixtures import load_seed_buying_pages
 from .index_gate import IndexGateResult, evaluate_index_gate
 from .keyword_clusters import KeywordClusterCandidate, KeywordSeed, build_keyword_clusters, generate_keyword_aliases
+from .keyword_source_contract import (
+    KeywordCluster,
+    KeywordClusterStatus,
+    KeywordClusterValidationResult,
+    KeywordIntentType,
+    KeywordSourceType,
+    KeywordVariant,
+    KeywordVariantType,
+    KeywordVolumeBucket,
+    build_keyword_cluster_from_local_input,
+    validate_keyword_cluster_batch,
+)
 from .models import (
     ApprovalStatus,
     BuyingPage,
@@ -94,6 +106,16 @@ __all__ = [
     "KeywordSeed",
     "build_keyword_clusters",
     "generate_keyword_aliases",
+    "KeywordVolumeBucket",
+    "KeywordIntentType",
+    "KeywordVariantType",
+    "KeywordSourceType",
+    "KeywordClusterStatus",
+    "KeywordVariant",
+    "KeywordCluster",
+    "KeywordClusterValidationResult",
+    "build_keyword_cluster_from_local_input",
+    "validate_keyword_cluster_batch",
     "CandidateApprovalStatus",
     "ScoredCandidate",
     "score_candidate",

@@ -1,0 +1,439 @@
+[
+  {
+    "cluster_id": "valid-us-power-bank",
+    "locale": "en-US",
+    "market": "US",
+    "target_category": "electronics/power-banks",
+    "buyer_intent": true,
+    "intent_type": "buyer_intent",
+    "main_keyword": "best power bank 20000mah",
+    "support_keywords": [
+      "power bank fast charging",
+      "power bank for iphone",
+      "portable charger usb c",
+      "best portable charger"
+    ],
+    "long_tail_keywords": [
+      "best power bank 20000mah for iphone 15",
+      "power bank airplane safe 20000mah",
+      "portable charger usb c pd 65w",
+      "thin power bank for travel",
+      "fast charging power bank for samsung",
+      "best power bank for macbook air m2",
+      "power bank with pass through charging",
+      "reliable portable charger for camping",
+      "power bank with digital battery display",
+      "best value power bank under 50 usd",
+      "power bank with low heat charging",
+      "durable power bank for daily commute"
+    ],
+    "variants": [
+      {"keyword": "best power bank", "variant_type": "language_variant"},
+      {"keyword": "portable power bank", "variant_type": "brand_model_variant"},
+      {"keyword": "powerbank", "variant_type": "typo_variant"},
+      {"keyword": "20000 mah power bank", "variant_type": "spec_variant"}
+    ],
+    "product_spec_signals": ["20000mah", "usb-c", "pd 65w"],
+    "brand_model_signals": ["anker", "baseus", "xiaomi"],
+    "source_type": "local_fixture",
+    "volume_bucket_by_keyword": {
+      "best power bank 20000mah": "high",
+      "power bank fast charging": "medium",
+      "power bank for iphone": "medium",
+      "best value power bank under 50 usd": "low",
+      "powerbank": "unknown"
+    },
+    "confidence_score": 0.9,
+    "review_required": false,
+    "rejection_reasons": [],
+    "blocker_reasons": []
+  },
+  {
+    "cluster_id": "valid-uk-tyres-spelling",
+    "locale": "en-GB",
+    "market": "UK",
+    "target_category": "automotive/tyres",
+    "buyer_intent": true,
+    "intent_type": "comparison_intent",
+    "main_keyword": "best winter tyres",
+    "support_keywords": [
+      "best all season tyres",
+      "car tyres uk deals",
+      "tyres for wet roads"
+    ],
+    "long_tail_keywords": [
+      "best winter tyres for small hatchback",
+      "best all season tyres for uk rain",
+      "budget winter tyres with low noise",
+      "run flat tyres for city driving",
+      "best tyres for motorway commuting",
+      "premium tyres for family suv",
+      "fuel efficient tyres for long trips",
+      "quiet tyres for electric cars",
+      "best value tyres fitting included",
+      "grip focused tyres for wet braking",
+      "tyres with high mileage warranty"
+    ],
+    "variants": [
+      {"keyword": "best winter tires", "variant_type": "language_variant"},
+      {"keyword": "best winter tyre", "variant_type": "language_variant"},
+      {"keyword": "tyres 205 55 r16", "variant_type": "spec_variant"},
+      {"keyword": "tyers uk", "variant_type": "typo_variant"}
+    ],
+    "product_spec_signals": ["205/55 R16", "wet grip", "rolling resistance"],
+    "brand_model_signals": ["michelin", "goodyear", "continental"],
+    "source_type": "provider_feed",
+    "volume_bucket_by_keyword": {
+      "best winter tyres": "high",
+      "best all season tyres": "medium",
+      "tyers uk": "low"
+    },
+    "confidence_score": 0.88,
+    "review_required": false,
+    "rejection_reasons": [],
+    "blocker_reasons": []
+  },
+  {
+    "cluster_id": "valid-de-reifen",
+    "locale": "de-DE",
+    "market": "DE",
+    "target_category": "automotive/reifen",
+    "buyer_intent": true,
+    "intent_type": "buyer_intent",
+    "main_keyword": "beste winterreifen kaufen",
+    "support_keywords": [
+      "reifen vergleich winter",
+      "reifen fuer suv",
+      "reifen online bestellen"
+    ],
+    "long_tail_keywords": [
+      "beste winterreifen fuer autobahn",
+      "reifen mit kurzer bremsweg bei naesse",
+      "gute winterreifen fuer kleinwagen",
+      "winterreifen testsieger fuer familienauto",
+      "reifen guenstig mit montage",
+      "winterreifen fuer elektroauto",
+      "reifen mit hoher laufleistung",
+      "winterreifen fuer lange pendelstrecke",
+      "beste reifen fuer bergregion",
+      "reifen mit niedrigem geraeusch",
+      "winterreifen preis leistung sieger"
+    ],
+    "variants": [
+      {"keyword": "beste winter reifen kaufen", "variant_type": "typo_variant"},
+      {"keyword": "reifen 205 55 r16", "variant_type": "spec_variant"},
+      {"keyword": "reifen test vergleich", "variant_type": "language_variant"}
+    ],
+    "product_spec_signals": ["205/55 R16", "Nasshaftung A", "Laufleistung"],
+    "brand_model_signals": ["continental", "bridgestone", "goodyear"],
+    "source_type": "google_keyword_planner_export",
+    "volume_bucket_by_keyword": {
+      "beste winterreifen kaufen": "high",
+      "reifen vergleich winter": "medium",
+      "reifen mit niedrigem geraeusch": "low"
+    },
+    "confidence_score": 0.86,
+    "review_required": false,
+    "rejection_reasons": [],
+    "blocker_reasons": []
+  },
+  {
+    "cluster_id": "valid-gr-greek-greeklish",
+    "locale": "el-GR",
+    "market": "GR",
+    "target_category": "electronics/power-banks",
+    "buyer_intent": true,
+    "intent_type": "product_specific",
+    "main_keyword": "kalytero power bank 20000mah",
+    "support_keywords": [
+      "fortistis kinhtou power bank",
+      "power bank gia iphone",
+      "power bank grhgorh fortisi"
+    ],
+    "long_tail_keywords": [
+      "kalytero power bank gia taxidi",
+      "power bank 20000mah gia iphone 15",
+      "power bank me usb c kai pd",
+      "fortistos power bank gia laptop",
+      "power bank me endei3h mpatarias",
+      "power bank gia kathimerinh xrhsh",
+      "aksiopisto power bank se kalh timh",
+      "kalo power bank gia samsung",
+      "power bank me asfaleia fortishs",
+      "power bank me mikro varos",
+      "power bank me anti-overheat prostasia"
+    ],
+    "variants": [
+      {"keyword": "καλύτερο power bank", "variant_type": "language_variant"},
+      {"keyword": "φορτιστής κινητού power bank", "variant_type": "language_variant"},
+      {"keyword": "powerbank", "variant_type": "typo_variant"},
+      {"keyword": "20000mah", "variant_type": "spec_variant"}
+    ],
+    "product_spec_signals": ["20000mah", "usb-c", "pd"],
+    "brand_model_signals": ["anker", "xiaomi"],
+    "source_type": "manual_review",
+    "volume_bucket_by_keyword": {
+      "kalytero power bank 20000mah": "medium",
+      "fortistis kinhtou power bank": "medium",
+      "powerbank": "unknown"
+    },
+    "confidence_score": 0.8,
+    "review_required": false,
+    "rejection_reasons": [],
+    "blocker_reasons": []
+  },
+  {
+    "cluster_id": "missing-main-keyword",
+    "locale": "en-US",
+    "market": "US",
+    "target_category": "electronics/power-banks",
+    "buyer_intent": true,
+    "intent_type": "buyer_intent",
+    "main_keyword": "",
+    "support_keywords": ["power bank deals", "portable charger comparison", "fast charging battery pack"],
+    "long_tail_keywords": [
+      "power bank for work commute",
+      "power bank for college students",
+      "power bank under 30 usd",
+      "lightweight battery pack for travel",
+      "fast charging power bank usb c",
+      "power bank with pass through charging",
+      "portable charger for android phones",
+      "best daily use power bank",
+      "safe power bank for flights",
+      "power bank for gaming phone"
+    ],
+    "variants": [],
+    "product_spec_signals": ["usb-c"],
+    "brand_model_signals": [],
+    "source_type": "local_fixture",
+    "volume_bucket_by_keyword": {},
+    "confidence_score": 0.5,
+    "review_required": false,
+    "rejection_reasons": [],
+    "blocker_reasons": []
+  },
+  {
+    "cluster_id": "too-few-long-tail",
+    "locale": "en-US",
+    "market": "US",
+    "target_category": "electronics/power-banks",
+    "buyer_intent": true,
+    "intent_type": "buyer_intent",
+    "main_keyword": "best magnetic power bank",
+    "support_keywords": [
+      "magnetic power bank for iphone",
+      "magsafe power bank",
+      "wireless power bank"
+    ],
+    "long_tail_keywords": [
+      "best magnetic power bank slim",
+      "magnetic power bank for iphone 15",
+      "magsafe power bank for travel",
+      "wireless magnetic battery pack"
+    ],
+    "variants": [{"keyword": "magsafe powerbank", "variant_type": "typo_variant"}],
+    "product_spec_signals": ["magsafe", "10000mah"],
+    "brand_model_signals": ["anker"],
+    "source_type": "taxonomy_generated",
+    "volume_bucket_by_keyword": {
+      "best magnetic power bank": "medium"
+    },
+    "confidence_score": 0.61,
+    "review_required": false,
+    "rejection_reasons": [],
+    "blocker_reasons": []
+  },
+  {
+    "cluster_id": "informational-only-cluster",
+    "locale": "en-US",
+    "market": "US",
+    "target_category": "electronics/power-banks",
+    "buyer_intent": false,
+    "intent_type": "informational_only",
+    "main_keyword": "how power banks work",
+    "support_keywords": [
+      "what is mah in power banks",
+      "is fast charging safe",
+      "battery chemistry explained"
+    ],
+    "long_tail_keywords": [
+      "what does 20000mah mean for runtime",
+      "difference between pd and qc charging",
+      "how to maintain lithium battery lifespan",
+      "can i take power bank on airplane",
+      "power bank safety certifications guide",
+      "how to store power bank correctly",
+      "charging cycles explained for beginners",
+      "what is pass through charging",
+      "how to avoid overheating power bank",
+      "why power banks lose capacity over time"
+    ],
+    "variants": [{"keyword": "power bank basics", "variant_type": "language_variant"}],
+    "product_spec_signals": [],
+    "brand_model_signals": [],
+    "source_type": "search_console_export",
+    "volume_bucket_by_keyword": {
+      "how power banks work": "medium"
+    },
+    "confidence_score": 0.72,
+    "review_required": false,
+    "rejection_reasons": [],
+    "blocker_reasons": []
+  },
+  {
+    "cluster_id": "ambiguous-cluster",
+    "locale": "en-US",
+    "market": "US",
+    "target_category": "electronics/power-banks",
+    "buyer_intent": true,
+    "intent_type": "ambiguous",
+    "main_keyword": "power bank options",
+    "support_keywords": [
+      "power bank types",
+      "power bank recommendations",
+      "power bank list"
+    ],
+    "long_tail_keywords": [
+      "power bank options for students",
+      "power bank options for office use",
+      "power bank options for travel",
+      "power bank options under 50 usd",
+      "power bank options for iphone",
+      "power bank options for samsung",
+      "power bank options usb c",
+      "power bank options thin design",
+      "power bank options fast charging",
+      "power bank options safe charging"
+    ],
+    "variants": [{"keyword": "powerbank options", "variant_type": "typo_variant"}],
+    "product_spec_signals": ["usb-c"],
+    "brand_model_signals": [],
+    "source_type": "nlu_generated",
+    "volume_bucket_by_keyword": {
+      "power bank options": "unknown"
+    },
+    "confidence_score": 0.45,
+    "review_required": false,
+    "rejection_reasons": [],
+    "blocker_reasons": []
+  },
+  {
+    "cluster_id": "duplicate-heavy-cluster",
+    "locale": "en-US",
+    "market": "US",
+    "target_category": "electronics/power-banks",
+    "buyer_intent": true,
+    "intent_type": "comparison_intent",
+    "main_keyword": "best power bank",
+    "support_keywords": [
+      "best power bank",
+      "best power bank",
+      "best power bank"
+    ],
+    "long_tail_keywords": [
+      "best power bank for iphone",
+      "best power bank for iphone",
+      "best power bank for iphone",
+      "best power bank for iphone",
+      "best power bank for iphone",
+      "best power bank for iphone",
+      "best power bank for iphone",
+      "best power bank for iphone",
+      "best power bank for iphone",
+      "best power bank for iphone"
+    ],
+    "variants": [
+      {"keyword": "best power bank", "variant_type": "language_variant"},
+      {"keyword": "best power bank", "variant_type": "language_variant"}
+    ],
+    "product_spec_signals": ["usb-c"],
+    "brand_model_signals": ["anker"],
+    "source_type": "local_fixture",
+    "volume_bucket_by_keyword": {
+      "best power bank": "high"
+    },
+    "confidence_score": 0.5,
+    "review_required": false,
+    "rejection_reasons": [],
+    "blocker_reasons": []
+  },
+  {
+    "cluster_id": "locale-market-mismatch-cluster",
+    "locale": "en-US",
+    "market": "DE",
+    "target_category": "automotive/reifen",
+    "buyer_intent": true,
+    "intent_type": "buyer_intent",
+    "main_keyword": "beste reifen kaufen",
+    "support_keywords": ["reifen test", "reifen online", "reifen guenstig"],
+    "long_tail_keywords": [
+      "beste reifen fuer suv",
+      "reifen fuer autobahn",
+      "reifen fuer winter",
+      "reifen fuer naesse",
+      "reifen fuer alltag",
+      "reifen fuer langstrecke",
+      "reifen mit guter laufleistung",
+      "reifen mit wenig geraeusch",
+      "reifen mit guter bremsleistung",
+      "reifen preis leistung"
+    ],
+    "variants": [{"keyword": "reifen", "variant_type": "language_variant"}],
+    "product_spec_signals": ["205/55 R16"],
+    "brand_model_signals": ["continental"],
+    "source_type": "provider_feed",
+    "volume_bucket_by_keyword": {
+      "beste reifen kaufen": "medium"
+    },
+    "confidence_score": 0.58,
+    "review_required": false,
+    "rejection_reasons": [],
+    "blocker_reasons": []
+  },
+  {
+    "cluster_id": "product-brand-model-spec-cluster",
+    "locale": "en-US",
+    "market": "US",
+    "target_category": "electronics/power-banks",
+    "buyer_intent": true,
+    "intent_type": "product_specific",
+    "main_keyword": "anker 737 power bank review for buyers",
+    "support_keywords": [
+      "anker 737 power bank comparison",
+      "anker 737 vs ugreen nexode",
+      "best 140w usb c power bank"
+    ],
+    "long_tail_keywords": [
+      "anker 737 power bank for macbook pro",
+      "anker 737 charging speed real world",
+      "anker 737 battery capacity practical use",
+      "anker 737 travel suitability",
+      "anker 737 thermal performance",
+      "anker 737 pass through charging support",
+      "anker 737 price to value comparison",
+      "anker 737 alternatives for creators",
+      "anker 737 usb c port behavior",
+      "anker 737 long term reliability",
+      "anker 737 for remote work setup"
+    ],
+    "variants": [
+      {"keyword": "Anker 737", "variant_type": "brand_model_variant"},
+      {"keyword": "Anker737", "variant_type": "typo_variant"},
+      {"keyword": "140w usb c", "variant_type": "spec_variant"},
+      {"keyword": "anker powercore 24k", "variant_type": "brand_model_variant"}
+    ],
+    "product_spec_signals": ["140W", "24000mAh", "USB-C PD 3.1"],
+    "brand_model_signals": ["Anker 737", "UGREEN Nexode 25000"],
+    "source_type": "manual_review",
+    "volume_bucket_by_keyword": {
+      "anker 737 power bank review for buyers": "medium",
+      "anker 737 vs ugreen nexode": "low",
+      "anker737": "unknown"
+    },
+    "confidence_score": 0.84,
+    "review_required": false,
+    "rejection_reasons": [],
+    "blocker_reasons": []
+  }
+]
