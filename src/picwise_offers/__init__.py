@@ -25,6 +25,15 @@ from .feed_enrichment import (
     build_feed_enrichment_remediation_summary,
     remediate_feed_enrichment_candidates,
 )
+from .provider_contract import (
+    ALLOWED_REMEDIATION_INPUTS,
+    PROVIDER_FEED_CONTRACT,
+    ProviderBatchReadinessResult,
+    ProviderBatchThresholds,
+    ProviderFeedContract,
+    describe_provider_contract,
+    evaluate_provider_batch_readiness,
+)
 from .import_adapter import import_offer_candidates_from_csv_text, import_offer_candidates_from_json_text
 from .ranking import (
     OfferRankingInput,
@@ -78,6 +87,13 @@ __all__ = [
     "FeedEnrichmentRemediationResult",
     "remediate_feed_enrichment_candidates",
     "build_feed_enrichment_remediation_summary",
+    "ProviderFeedContract",
+    "ProviderBatchThresholds",
+    "ProviderBatchReadinessResult",
+    "PROVIDER_FEED_CONTRACT",
+    "ALLOWED_REMEDIATION_INPUTS",
+    "describe_provider_contract",
+    "evaluate_provider_batch_readiness",
     "OfferIntakeRequest",
     "build_default_product_source",
     "intake_offer_candidates",
