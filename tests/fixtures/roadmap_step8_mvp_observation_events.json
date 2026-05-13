@@ -1,0 +1,207 @@
+{
+  "live_mvp_records": [
+    {
+      "candidate_page_id": "step7-clean-us-power-banks",
+      "slug": "best-power-banks-for-travel-usa",
+      "locale": "en-US",
+      "market": "US",
+      "exposure_status": "live_mvp_ready"
+    },
+    {
+      "candidate_page_id": "step7-clean-uk-tyres",
+      "slug": "best-all-season-tyres-uk",
+      "locale": "en-GB",
+      "market": "UK",
+      "exposure_status": "live_mvp_ready"
+    },
+    {
+      "candidate_page_id": "step7-clean-de-kaffee",
+      "slug": "beste-kaffeevollautomaten-fuer-zuhause",
+      "locale": "de-DE",
+      "market": "DE",
+      "exposure_status": "live_mvp_ready"
+    },
+    {
+      "candidate_page_id": "step7-hold-candidate",
+      "slug": "best-budget-router-for-home",
+      "locale": "en-US",
+      "market": "US",
+      "exposure_status": "hold_manual_review"
+    }
+  ],
+  "events": [
+    {
+      "event_id": "step8-preview-us-1",
+      "candidate_page_id": "step7-clean-us-power-banks",
+      "slug": "best-power-banks-for-travel-usa",
+      "event_type": "preview_rendered",
+      "timestamp": "2026-05-13T08:00:00Z",
+      "source": "local_preview_runner",
+      "test_mode": true,
+      "operator_generated": true,
+      "locale": "en-US",
+      "market": "US",
+      "metadata": {
+        "render_version": "step8-local"
+      }
+    },
+    {
+      "event_id": "step8-outbound-us-1",
+      "candidate_page_id": "step7-clean-us-power-banks",
+      "slug": "best-power-banks-for-travel-usa",
+      "event_type": "outbound_click",
+      "timestamp": "2026-05-13T08:05:00Z",
+      "source": "local_preview_runner",
+      "test_mode": true,
+      "operator_generated": true,
+      "locale": "en-US",
+      "market": "US",
+      "product_id": "pb-us-clean-1",
+      "outbound_url": "https://example.test/us/pb-us-clean-1",
+      "metadata": {
+        "slot": "primary"
+      }
+    },
+    {
+      "event_id": "step8-preview-error-uk-1",
+      "candidate_page_id": "step7-clean-uk-tyres",
+      "slug": "best-all-season-tyres-uk",
+      "event_type": "preview_error",
+      "timestamp": "2026-05-13T08:10:00Z",
+      "source": "local_preview_runner",
+      "test_mode": true,
+      "operator_generated": true,
+      "locale": "en-GB",
+      "market": "UK",
+      "metadata": {
+        "error_code": "template_missing_block"
+      }
+    },
+    {
+      "event_id": "step8-outbound-error-uk-1",
+      "candidate_page_id": "step7-clean-uk-tyres",
+      "slug": "best-all-season-tyres-uk",
+      "event_type": "outbound_error",
+      "timestamp": "2026-05-13T08:11:00Z",
+      "source": "local_preview_runner",
+      "test_mode": true,
+      "operator_generated": true,
+      "locale": "en-GB",
+      "market": "UK",
+      "metadata": {
+        "error_code": "missing_outbound_tracking_payload"
+      }
+    },
+    {
+      "event_id": "step8-manual-review-de-1",
+      "candidate_page_id": "step7-clean-de-kaffee",
+      "slug": "beste-kaffeevollautomaten-fuer-zuhause",
+      "event_type": "manual_review_opened",
+      "timestamp": "2026-05-13T08:20:00Z",
+      "source": "manual_ops_review",
+      "test_mode": true,
+      "operator_generated": true,
+      "locale": "de-DE",
+      "market": "DE",
+      "metadata": {
+        "reason": "copy_needs_human_pass"
+      }
+    },
+    {
+      "event_id": "step8-blocker-de-1",
+      "candidate_page_id": "step7-clean-de-kaffee",
+      "slug": "beste-kaffeevollautomaten-fuer-zuhause",
+      "event_type": "blocker_detected",
+      "timestamp": "2026-05-13T08:22:00Z",
+      "source": "quality_contract_checker",
+      "test_mode": true,
+      "operator_generated": true,
+      "locale": "de-DE",
+      "market": "DE",
+      "metadata": {
+        "blocker": "provider_contract_regression"
+      }
+    },
+    {
+      "event_id": "step8-invalid-type-1",
+      "candidate_page_id": "step7-clean-us-power-banks",
+      "slug": "best-power-banks-for-travel-usa",
+      "event_type": "impression_tracked",
+      "timestamp": "2026-05-13T08:30:00Z",
+      "source": "local_preview_runner",
+      "test_mode": true,
+      "operator_generated": true,
+      "locale": "en-US",
+      "market": "US",
+      "metadata": {}
+    },
+    {
+      "event_id": "step8-missing-slug-1",
+      "candidate_page_id": "step7-clean-uk-tyres",
+      "slug": "",
+      "event_type": "preview_rendered",
+      "timestamp": "2026-05-13T08:31:00Z",
+      "source": "local_preview_runner",
+      "test_mode": true,
+      "operator_generated": true,
+      "locale": "en-GB",
+      "market": "UK",
+      "metadata": {}
+    },
+    {
+      "event_id": "step8-outbound-missing-product-id-1",
+      "candidate_page_id": "step7-clean-uk-tyres",
+      "slug": "best-all-season-tyres-uk",
+      "event_type": "outbound_click",
+      "timestamp": "2026-05-13T08:32:00Z",
+      "source": "local_preview_runner",
+      "test_mode": true,
+      "operator_generated": true,
+      "locale": "en-GB",
+      "market": "UK",
+      "outbound_url": "https://example.test/uk/tyre-uk-clean-1",
+      "metadata": {}
+    },
+    {
+      "event_id": "step8-non-ready-preview-1",
+      "candidate_page_id": "step7-hold-candidate",
+      "slug": "best-budget-router-for-home",
+      "event_type": "preview_rendered",
+      "timestamp": "2026-05-13T08:40:00Z",
+      "source": "local_preview_runner",
+      "test_mode": true,
+      "operator_generated": true,
+      "locale": "en-US",
+      "market": "US",
+      "metadata": {}
+    },
+    {
+      "event_id": "step8-fabricated-revenue-1",
+      "candidate_page_id": "step7-clean-us-power-banks",
+      "slug": "best-power-banks-for-travel-usa",
+      "event_type": "preview_rendered",
+      "timestamp": "2026-05-13T08:50:00Z",
+      "source": "local_preview_runner",
+      "test_mode": true,
+      "operator_generated": true,
+      "locale": "en-US",
+      "market": "US",
+      "metadata": {
+        "revenue": 999
+      }
+    },
+    {
+      "event_id": "step8-non-explicit-flags-1",
+      "candidate_page_id": "step7-clean-us-power-banks",
+      "slug": "best-power-banks-for-travel-usa",
+      "event_type": "preview_rendered",
+      "timestamp": "2026-05-13T08:55:00Z",
+      "source": "local_preview_runner",
+      "test_mode": "true",
+      "operator_generated": "true",
+      "locale": "en-US",
+      "market": "US",
+      "metadata": {}
+    }
+  ]
+}

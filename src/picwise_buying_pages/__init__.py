@@ -108,6 +108,17 @@ from .live_mvp_gate import (
     LiveMVPPageRecord,
     build_live_mvp_batch,
 )
+from .mvp_observation import (
+    MVPObservationBatchResult,
+    MVPObservationEvent,
+    MVPObservationEventType,
+    MVPObservationStatus,
+    MVPPageObservationSummary,
+    MVPPromotionPolicy,
+    evaluate_mvp_promotion_readiness,
+    summarize_mvp_observations,
+    validate_mvp_observation_event,
+)
 
 __all__ = [
     "BuyingPage",
@@ -219,4 +230,13 @@ __all__ = [
     "LiveMVPBatchResult",
     "LiveMVPGatePolicy",
     "build_live_mvp_batch",
+    "MVPObservationEventType",
+    "MVPObservationStatus",
+    "MVPObservationEvent",
+    "MVPPageObservationSummary",
+    "MVPObservationBatchResult",
+    "MVPPromotionPolicy",
+    "validate_mvp_observation_event",
+    "summarize_mvp_observations",
+    "evaluate_mvp_promotion_readiness",
 ]

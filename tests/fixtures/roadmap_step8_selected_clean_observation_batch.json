@@ -1,0 +1,129 @@
+{
+  "live_mvp_records": [
+    {
+      "candidate_page_id": "step7-clean-us-power-banks",
+      "slug": "best-power-banks-for-travel-usa",
+      "locale": "en-US",
+      "market": "US",
+      "exposure_status": "live_mvp_ready"
+    },
+    {
+      "candidate_page_id": "step7-clean-uk-tyres",
+      "slug": "best-all-season-tyres-uk",
+      "locale": "en-GB",
+      "market": "UK",
+      "exposure_status": "live_mvp_ready"
+    },
+    {
+      "candidate_page_id": "step7-clean-de-kaffee",
+      "slug": "beste-kaffeevollautomaten-fuer-zuhause",
+      "locale": "de-DE",
+      "market": "DE",
+      "exposure_status": "live_mvp_ready"
+    }
+  ],
+  "events": [
+    {
+      "event_id": "step8-clean-preview-us-1",
+      "candidate_page_id": "step7-clean-us-power-banks",
+      "slug": "best-power-banks-for-travel-usa",
+      "event_type": "preview_rendered",
+      "timestamp": "2026-05-13T09:00:00Z",
+      "source": "local_preview_runner",
+      "test_mode": true,
+      "operator_generated": true,
+      "locale": "en-US",
+      "market": "US",
+      "metadata": {
+        "batch": "selected_clean"
+      }
+    },
+    {
+      "event_id": "step8-clean-outbound-us-1",
+      "candidate_page_id": "step7-clean-us-power-banks",
+      "slug": "best-power-banks-for-travel-usa",
+      "event_type": "outbound_click",
+      "timestamp": "2026-05-13T09:01:00Z",
+      "source": "local_preview_runner",
+      "test_mode": true,
+      "operator_generated": true,
+      "locale": "en-US",
+      "market": "US",
+      "product_id": "pb-us-clean-1",
+      "outbound_url": "https://example.test/us/pb-us-clean-1",
+      "metadata": {
+        "slot": "primary"
+      }
+    },
+    {
+      "event_id": "step8-clean-preview-uk-1",
+      "candidate_page_id": "step7-clean-uk-tyres",
+      "slug": "best-all-season-tyres-uk",
+      "event_type": "preview_rendered",
+      "timestamp": "2026-05-13T09:02:00Z",
+      "source": "local_preview_runner",
+      "test_mode": true,
+      "operator_generated": true,
+      "locale": "en-GB",
+      "market": "UK",
+      "metadata": {
+        "batch": "selected_clean"
+      }
+    },
+    {
+      "event_id": "step8-clean-outbound-uk-1",
+      "candidate_page_id": "step7-clean-uk-tyres",
+      "slug": "best-all-season-tyres-uk",
+      "event_type": "outbound_click",
+      "timestamp": "2026-05-13T09:03:00Z",
+      "source": "local_preview_runner",
+      "test_mode": true,
+      "operator_generated": true,
+      "locale": "en-GB",
+      "market": "UK",
+      "product_id": "tyre-uk-clean-1",
+      "outbound_url": "https://example.test/uk/tyre-uk-clean-1",
+      "metadata": {
+        "slot": "primary"
+      }
+    },
+    {
+      "event_id": "step8-clean-preview-de-1",
+      "candidate_page_id": "step7-clean-de-kaffee",
+      "slug": "beste-kaffeevollautomaten-fuer-zuhause",
+      "event_type": "preview_rendered",
+      "timestamp": "2026-05-13T09:04:00Z",
+      "source": "local_preview_runner",
+      "test_mode": true,
+      "operator_generated": true,
+      "locale": "de-DE",
+      "market": "DE",
+      "metadata": {
+        "batch": "selected_clean"
+      }
+    },
+    {
+      "event_id": "step8-clean-outbound-de-1",
+      "candidate_page_id": "step7-clean-de-kaffee",
+      "slug": "beste-kaffeevollautomaten-fuer-zuhause",
+      "event_type": "outbound_click",
+      "timestamp": "2026-05-13T09:05:00Z",
+      "source": "local_preview_runner",
+      "test_mode": true,
+      "operator_generated": true,
+      "locale": "de-DE",
+      "market": "DE",
+      "product_id": "coffee-de-clean-1",
+      "outbound_url": "https://example.test/de/coffee-de-clean-1",
+      "metadata": {
+        "slot": "primary"
+      }
+    }
+  ],
+  "assertions": {
+    "no_publishing_side_effects": true,
+    "no_live_sitemap_expansion": true,
+    "no_best_route_replacement": true,
+    "no_revenue_or_conversion_fabrication": true
+  }
+}
