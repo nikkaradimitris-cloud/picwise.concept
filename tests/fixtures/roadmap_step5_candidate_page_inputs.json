@@ -1,0 +1,314 @@
+{
+  "keyword_clusters": [
+    {
+      "cluster_id": "step5-us-power-bank-a",
+      "status": "page_ready",
+      "is_page_ready": true,
+      "locale": "en-US",
+      "market": "US",
+      "target_category": "electronics/power-banks",
+      "buyer_intent": true,
+      "main_keyword": "best power bank for travel",
+      "support_keywords": [
+        "best power bank for flights",
+        "power bank fast charging",
+        "best 20000mah power bank"
+      ],
+      "long_tail_keywords": [
+        "best power bank for travel 2026",
+        "power bank for iphone and usb c",
+        "power bank with airline safe battery",
+        "lightweight power bank for carry on",
+        "best fast charging power bank usa",
+        "usb c power bank for laptop travel",
+        "power bank with pass through charging",
+        "power bank for road trips",
+        "best compact power bank for phones",
+        "power bank comparison for travel"
+      ],
+      "source_provider_batch_id": "step2-provider-batch-a",
+      "deterministic_scale_slots": 300
+    },
+    {
+      "cluster_id": "step5-us-power-bank-b",
+      "status": "page_ready",
+      "is_page_ready": true,
+      "locale": "en-US",
+      "market": "US",
+      "target_category": "electronics/power-banks",
+      "buyer_intent": true,
+      "main_keyword": "best power bank for travel",
+      "support_keywords": [
+        "top rated travel power bank",
+        "portable charger buying guide",
+        "power bank for weekend trips"
+      ],
+      "long_tail_keywords": [
+        "best travel power bank with display",
+        "durable power bank for frequent flyers",
+        "best us shipping power bank brands",
+        "how to pick travel power bank",
+        "power bank for tablet travel use",
+        "best high capacity power bank for travel",
+        "airline friendly power bank options",
+        "power bank for camping and travel",
+        "light travel charger with usb c",
+        "most reliable travel power bank"
+      ],
+      "source_provider_batch_id": "step2-provider-batch-a",
+      "deterministic_scale_slots": 280
+    },
+    {
+      "cluster_id": "step5-uk-tyres-ready",
+      "status": "page_ready",
+      "is_page_ready": true,
+      "locale": "en-GB",
+      "market": "UK",
+      "target_category": "automotive/tyres",
+      "buyer_intent": true,
+      "main_keyword": "best all season tyres for uk roads",
+      "support_keywords": [
+        "all season tyres uk comparison",
+        "quiet all season tyres uk",
+        "best grip tyres for rain uk"
+      ],
+      "long_tail_keywords": [
+        "best all season tyres for motorway uk",
+        "all season tyres for family cars uk",
+        "all season tyres with best mileage uk",
+        "all season tyres with low road noise",
+        "best all weather tyres uk buying guide",
+        "best all season tyres under budget uk",
+        "all season tyres for city and motorway",
+        "uk all season tyre performance review",
+        "which all season tyres last longest uk",
+        "all season tyres for wet roads uk"
+      ],
+      "source_provider_batch_id": "step2-provider-batch-b",
+      "deterministic_scale_slots": 340
+    },
+    {
+      "cluster_id": "step5-de-kaffee-four-products-missing",
+      "status": "page_ready",
+      "is_page_ready": true,
+      "locale": "de-DE",
+      "market": "DE",
+      "target_category": "home/coffee-machines",
+      "buyer_intent": true,
+      "main_keyword": "beste kaffeevollautomaten fuer zuhause",
+      "support_keywords": [
+        "kaffeevollautomat vergleich",
+        "bester kaffeevollautomat milchsystem",
+        "kaffeevollautomat kaufen ratgeber"
+      ],
+      "long_tail_keywords": [
+        "bester kaffeevollautomat fuer kleine kueche",
+        "kaffeevollautomat mit leisem mahlwerk",
+        "kaffeevollautomat mit einfacher reinigung",
+        "kaffeevollautomat fuer cappuccino zuhause",
+        "kaffeevollautomat mit gutem preis leistung",
+        "welcher kaffeevollautomat fuer familien",
+        "kaffeevollautomat mit app steuerung",
+        "kaffeevollautomat fuer einsteiger",
+        "kaffeevollautomat mit langlebigen teilen",
+        "kaffeevollautomat test fuer zuhause"
+      ],
+      "source_provider_batch_id": "step2-provider-batch-c",
+      "deterministic_scale_slots": 250
+    },
+    {
+      "cluster_id": "step5-gr-non-page-ready-cluster",
+      "status": "review_required",
+      "is_page_ready": false,
+      "locale": "el-GR",
+      "market": "GR",
+      "target_category": "electronics/power-banks",
+      "buyer_intent": true,
+      "main_keyword": "kalitero power bank gia taxidi",
+      "support_keywords": [
+        "power bank 20000mah ellada",
+        "power bank me grigori fortisi",
+        "power bank gia iphone taxidi"
+      ],
+      "long_tail_keywords": [
+        "kalitero power bank me usb c",
+        "power bank me asfali metakinisi",
+        "power bank gia polyimeri taxidia",
+        "power bank me endiksi mpatarias",
+        "power bank gia camera taxidiou",
+        "power bank me eggyisi ellada",
+        "power bank agoras ellada",
+        "power bank me xamilo varos",
+        "power bank gia laptop",
+        "power bank sygkrisi timon"
+      ],
+      "source_provider_batch_id": "step2-provider-batch-a",
+      "deterministic_scale_slots": 120
+    }
+  ],
+  "products": [
+    {
+      "product_id": "pb-us-1",
+      "target_category": "electronics/power-banks",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.96
+    },
+    {
+      "product_id": "pb-us-2",
+      "target_category": "electronics/power-banks",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.81
+    },
+    {
+      "product_id": "pb-us-3",
+      "target_category": "electronics/power-banks",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.73
+    },
+    {
+      "product_id": "pb-us-4",
+      "target_category": "electronics/power-banks",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.65
+    },
+    {
+      "product_id": "pb-wrong-locale-gr-1",
+      "target_category": "electronics/power-banks",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.70
+    },
+    {
+      "product_id": "pb-not-provider-ready-1",
+      "target_category": "electronics/power-banks",
+      "provider_ready": false,
+      "provider_status": "needs_provider"
+    },
+    {
+      "product_id": "tyre-uk-1",
+      "target_category": "automotive/tyres",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.91
+    },
+    {
+      "product_id": "tyre-uk-2",
+      "target_category": "automotive/tyres",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.83
+    },
+    {
+      "product_id": "tyre-uk-3",
+      "target_category": "automotive/tyres",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.79
+    },
+    {
+      "product_id": "tyre-uk-4",
+      "target_category": "automotive/tyres",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.74
+    },
+    {
+      "product_id": "coffee-de-1",
+      "target_category": "home/coffee-machines",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.88
+    },
+    {
+      "product_id": "coffee-de-2",
+      "target_category": "home/coffee-machines",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.82
+    },
+    {
+      "product_id": "coffee-de-3",
+      "target_category": "home/coffee-machines",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.77
+    }
+  ],
+  "locale_decisions": [
+    {
+      "product_id": "pb-us-1",
+      "status": "locale_ready",
+      "target_market": "US"
+    },
+    {
+      "product_id": "pb-us-2",
+      "status": "locale_ready",
+      "target_market": "US"
+    },
+    {
+      "product_id": "pb-us-3",
+      "status": "locale_ready",
+      "target_market": "US"
+    },
+    {
+      "product_id": "pb-us-4",
+      "status": "locale_ready",
+      "target_market": "US"
+    },
+    {
+      "product_id": "pb-wrong-locale-gr-1",
+      "status": "locale_ready",
+      "target_market": "GR"
+    },
+    {
+      "product_id": "pb-not-provider-ready-1",
+      "status": "locale_ready",
+      "target_market": "US"
+    },
+    {
+      "product_id": "tyre-uk-1",
+      "status": "locale_ready",
+      "target_market": "UK"
+    },
+    {
+      "product_id": "tyre-uk-2",
+      "status": "locale_ready",
+      "target_market": "UK"
+    },
+    {
+      "product_id": "tyre-uk-3",
+      "status": "locale_ready",
+      "target_market": "UK"
+    },
+    {
+      "product_id": "tyre-uk-4",
+      "status": "locale_ready",
+      "target_market": "UK"
+    },
+    {
+      "product_id": "coffee-de-1",
+      "status": "locale_ready",
+      "target_market": "DE"
+    },
+    {
+      "product_id": "coffee-de-2",
+      "status": "locale_ready",
+      "target_market": "DE"
+    },
+    {
+      "product_id": "coffee-de-3",
+      "status": "locale_ready",
+      "target_market": "DE"
+    }
+  ],
+  "recommendation_mapping": {
+    "step5-us-power-bank-a": "pb-us-1",
+    "step5-us-power-bank-b": "pb-us-1",
+    "step5-uk-tyres-ready": "tyre-uk-1",
+    "step5-de-kaffee-four-products-missing": "coffee-de-1"
+  }
+}

@@ -86,6 +86,13 @@ from .seo_sitemap_control import (
     select_stage37_sitemap_pages,
 )
 from .seo_slug_builder import SlugBuildResult, build_buying_page_slug
+from .candidate_page_batch import (
+    CandidatePageBatchResult,
+    CandidatePageBuildInput,
+    CandidatePageRecord,
+    CandidatePageStatus,
+    build_candidate_page_batch,
+)
 
 __all__ = [
     "BuyingPage",
@@ -181,4 +188,9 @@ __all__ = [
     "render_buying_pages_sitemap_xml",
     "select_stage37_sitemap_pages",
     "slugify_keyword",
+    "CandidatePageStatus",
+    "CandidatePageRecord",
+    "CandidatePageBatchResult",
+    "CandidatePageBuildInput",
+    "build_candidate_page_batch",
 ]

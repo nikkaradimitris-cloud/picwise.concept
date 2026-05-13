@@ -1,0 +1,324 @@
+{
+  "target_count": 3000,
+  "max_candidate_pages": 3000,
+  "keyword_clusters": [
+    {
+      "cluster_id": "clean-us-power-banks",
+      "status": "page_ready",
+      "is_page_ready": true,
+      "locale": "en-US",
+      "market": "US",
+      "target_category": "electronics/power-banks",
+      "buyer_intent": true,
+      "main_keyword": "best power banks for travel usa",
+      "support_keywords": [
+        "best fast charging power banks usa",
+        "power bank comparison usa",
+        "top rated portable chargers usa"
+      ],
+      "long_tail_keywords": [
+        "best travel power banks for flights usa",
+        "power banks for usb c laptop travel",
+        "portable charger buying guide usa",
+        "best slim power bank usa",
+        "best high capacity power bank usa",
+        "power bank with airline safe capacity",
+        "best power bank for iphone usa",
+        "best power bank for android usa",
+        "top power bank brands usa",
+        "power bank for road trips usa"
+      ],
+      "source_provider_batch_id": "clean-provider-batch-1",
+      "deterministic_scale_slots": 800
+    },
+    {
+      "cluster_id": "clean-uk-tyres",
+      "status": "page_ready",
+      "is_page_ready": true,
+      "locale": "en-GB",
+      "market": "UK",
+      "target_category": "automotive/tyres",
+      "buyer_intent": true,
+      "main_keyword": "best all season tyres uk",
+      "support_keywords": [
+        "all season tyres comparison uk",
+        "best wet grip tyres uk",
+        "quiet all season tyres uk"
+      ],
+      "long_tail_keywords": [
+        "best all season tyres for family hatchback uk",
+        "all season tyres for motorway commutes uk",
+        "best all weather tyres uk buying guide",
+        "best all season tyres for rain uk",
+        "all season tyres with long mileage uk",
+        "all season tyres performance review uk",
+        "all season tyre value for money uk",
+        "best all season tyres under budget uk",
+        "all season tyres for mixed city motorway",
+        "trusted all season tyres uk list"
+      ],
+      "source_provider_batch_id": "clean-provider-batch-2",
+      "deterministic_scale_slots": 750
+    },
+    {
+      "cluster_id": "clean-de-kaffee",
+      "status": "page_ready",
+      "is_page_ready": true,
+      "locale": "de-DE",
+      "market": "DE",
+      "target_category": "home/coffee-machines",
+      "buyer_intent": true,
+      "main_keyword": "beste kaffeevollautomaten fuer zuhause",
+      "support_keywords": [
+        "kaffeevollautomat vergleich",
+        "kaffeevollautomat mit milchsystem",
+        "kaffeevollautomat kaufberatung"
+      ],
+      "long_tail_keywords": [
+        "bester kaffeevollautomat fuer kleine kueche",
+        "kaffeevollautomat fuer cappuccino zuhause",
+        "kaffeevollautomat mit leisem mahlwerk",
+        "kaffeevollautomat mit einfacher reinigung",
+        "kaffeevollautomat mit gutem preis leistung",
+        "kaffeevollautomat fuer buero",
+        "kaffeevollautomat testsieger zuhause",
+        "kaffeevollautomat mit app steuerung",
+        "welcher kaffeevollautomat fuer familien",
+        "kaffeevollautomat fuer einsteiger"
+      ],
+      "source_provider_batch_id": "clean-provider-batch-3",
+      "deterministic_scale_slots": 700
+    },
+    {
+      "cluster_id": "clean-gr-power-banks",
+      "status": "page_ready",
+      "is_page_ready": true,
+      "locale": "el-GR",
+      "market": "GR",
+      "target_category": "electronics/power-banks",
+      "buyer_intent": true,
+      "main_keyword": "kalitero power bank 20000mah",
+      "support_keywords": [
+        "power bank me grigori fortisi",
+        "power bank gia taxidi ellada",
+        "power bank agora ellada"
+      ],
+      "long_tail_keywords": [
+        "kalitero power bank gia taxidi me iphone",
+        "power bank me asfali fortisi stin ptisi",
+        "power bank 20000mah gia android",
+        "power bank me usb c gia laptop",
+        "power bank me endiksi mpatarias",
+        "power bank me xamilo varos gia taxidi",
+        "power bank me eggyisi ellada",
+        "power bank me polles theseis fortisis",
+        "power bank sygkrisi timis ellada",
+        "power bank me megali autnomia"
+      ],
+      "source_provider_batch_id": "clean-provider-batch-1",
+      "deterministic_scale_slots": 750
+    }
+  ],
+  "products": [
+    {
+      "product_id": "pb-us-clean-1",
+      "target_category": "electronics/power-banks",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.97
+    },
+    {
+      "product_id": "pb-us-clean-2",
+      "target_category": "electronics/power-banks",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.85
+    },
+    {
+      "product_id": "pb-us-clean-3",
+      "target_category": "electronics/power-banks",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.79
+    },
+    {
+      "product_id": "pb-us-clean-4",
+      "target_category": "electronics/power-banks",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.74
+    },
+    {
+      "product_id": "pb-gr-clean-1",
+      "target_category": "electronics/power-banks",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.95
+    },
+    {
+      "product_id": "pb-gr-clean-2",
+      "target_category": "electronics/power-banks",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.84
+    },
+    {
+      "product_id": "pb-gr-clean-3",
+      "target_category": "electronics/power-banks",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.77
+    },
+    {
+      "product_id": "pb-gr-clean-4",
+      "target_category": "electronics/power-banks",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.72
+    },
+    {
+      "product_id": "tyre-uk-clean-1",
+      "target_category": "automotive/tyres",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.94
+    },
+    {
+      "product_id": "tyre-uk-clean-2",
+      "target_category": "automotive/tyres",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.86
+    },
+    {
+      "product_id": "tyre-uk-clean-3",
+      "target_category": "automotive/tyres",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.81
+    },
+    {
+      "product_id": "tyre-uk-clean-4",
+      "target_category": "automotive/tyres",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.76
+    },
+    {
+      "product_id": "coffee-de-clean-1",
+      "target_category": "home/coffee-machines",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.93
+    },
+    {
+      "product_id": "coffee-de-clean-2",
+      "target_category": "home/coffee-machines",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.87
+    },
+    {
+      "product_id": "coffee-de-clean-3",
+      "target_category": "home/coffee-machines",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.82
+    },
+    {
+      "product_id": "coffee-de-clean-4",
+      "target_category": "home/coffee-machines",
+      "provider_ready": true,
+      "provider_status": "provider_ready",
+      "recommendation_score": 0.78
+    }
+  ],
+  "locale_decisions": [
+    {
+      "product_id": "pb-us-clean-1",
+      "status": "locale_ready",
+      "target_market": "US"
+    },
+    {
+      "product_id": "pb-us-clean-2",
+      "status": "locale_ready",
+      "target_market": "US"
+    },
+    {
+      "product_id": "pb-us-clean-3",
+      "status": "locale_ready",
+      "target_market": "US"
+    },
+    {
+      "product_id": "pb-us-clean-4",
+      "status": "locale_ready",
+      "target_market": "US"
+    },
+    {
+      "product_id": "pb-gr-clean-1",
+      "status": "locale_ready",
+      "target_market": "GR"
+    },
+    {
+      "product_id": "pb-gr-clean-2",
+      "status": "locale_ready",
+      "target_market": "GR"
+    },
+    {
+      "product_id": "pb-gr-clean-3",
+      "status": "locale_ready",
+      "target_market": "GR"
+    },
+    {
+      "product_id": "pb-gr-clean-4",
+      "status": "locale_ready",
+      "target_market": "GR"
+    },
+    {
+      "product_id": "tyre-uk-clean-1",
+      "status": "locale_ready",
+      "target_market": "UK"
+    },
+    {
+      "product_id": "tyre-uk-clean-2",
+      "status": "locale_ready",
+      "target_market": "UK"
+    },
+    {
+      "product_id": "tyre-uk-clean-3",
+      "status": "locale_ready",
+      "target_market": "UK"
+    },
+    {
+      "product_id": "tyre-uk-clean-4",
+      "status": "locale_ready",
+      "target_market": "UK"
+    },
+    {
+      "product_id": "coffee-de-clean-1",
+      "status": "locale_ready",
+      "target_market": "DE"
+    },
+    {
+      "product_id": "coffee-de-clean-2",
+      "status": "locale_ready",
+      "target_market": "DE"
+    },
+    {
+      "product_id": "coffee-de-clean-3",
+      "status": "locale_ready",
+      "target_market": "DE"
+    },
+    {
+      "product_id": "coffee-de-clean-4",
+      "status": "locale_ready",
+      "target_market": "DE"
+    }
+  ],
+  "recommendation_mapping": {
+    "clean-us-power-banks": "pb-us-clean-1",
+    "clean-uk-tyres": "tyre-uk-clean-1",
+    "clean-de-kaffee": "coffee-de-clean-1",
+    "clean-gr-power-banks": "pb-gr-clean-1"
+  }
+}
