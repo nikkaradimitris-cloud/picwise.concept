@@ -136,6 +136,17 @@ from .controlled_rollout import (
     evaluate_controlled_rollout_batch,
     evaluate_controlled_rollout_decision,
 )
+from .release_governance import (
+    GovernanceDecisionStatus,
+    ReleaseApprovalStatus,
+    ReleaseAuditRecord,
+    ReleaseGovernanceBatchResult,
+    ReleaseGovernanceDecision,
+    ReleaseGovernancePolicy,
+    build_release_audit_record,
+    evaluate_release_governance_batch,
+    evaluate_release_governance_decision,
+)
 
 __all__ = [
     "BuyingPage",
@@ -269,4 +280,13 @@ __all__ = [
     "ControlledRolloutPolicy",
     "evaluate_controlled_rollout_decision",
     "evaluate_controlled_rollout_batch",
+    "GovernanceDecisionStatus",
+    "ReleaseApprovalStatus",
+    "ReleaseGovernanceDecision",
+    "ReleaseGovernanceBatchResult",
+    "ReleaseGovernancePolicy",
+    "ReleaseAuditRecord",
+    "evaluate_release_governance_decision",
+    "evaluate_release_governance_batch",
+    "build_release_audit_record",
 ]

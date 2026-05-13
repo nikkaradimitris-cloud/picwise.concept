@@ -1,0 +1,294 @@
+{
+  "rollout_decisions": [
+    {
+      "candidate_page_id": "step11-limited-ready-approval-not-requested",
+      "slug": "best-power-banks-for-travel-usa",
+      "source_promotion_status": "promoted_to_limited_exposure",
+      "rollout_status": "limited_rollout_ready",
+      "rollout_tier": "limited",
+      "can_enter_limited_rollout": true,
+      "can_expand_beyond_limited": false,
+      "can_be_considered_for_sitemap_later": true,
+      "requires_manual_review": false,
+      "requires_rollback": false,
+      "reasons": [
+        "promotion_ready_for_controlled_limited_rollout"
+      ],
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "promotion_ready": true,
+        "outbound_click_count": 1
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false,
+      "is_mass_publish": false
+    },
+    {
+      "candidate_page_id": "step11-keep-preview",
+      "slug": "best-all-season-tyres-uk",
+      "source_promotion_status": "keep_controlled",
+      "rollout_status": "keep_in_preview",
+      "rollout_tier": "preview_only",
+      "can_enter_limited_rollout": false,
+      "can_expand_beyond_limited": false,
+      "can_be_considered_for_sitemap_later": false,
+      "requires_manual_review": false,
+      "requires_rollback": false,
+      "reasons": [
+        "promotion_kept_controlled_preview_only"
+      ],
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "promotion_ready": false
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false,
+      "is_mass_publish": false
+    },
+    {
+      "candidate_page_id": "step11-hold-manual-review",
+      "slug": "beste-kaffeevollautomaten-fuer-zuhause",
+      "source_promotion_status": "hold_manual_review",
+      "rollout_status": "hold_manual_review",
+      "rollout_tier": "preview_only",
+      "can_enter_limited_rollout": false,
+      "can_expand_beyond_limited": false,
+      "can_be_considered_for_sitemap_later": false,
+      "requires_manual_review": true,
+      "requires_rollback": false,
+      "reasons": [
+        "manual_review_blocking_limited_rollout"
+      ],
+      "blocker_reasons": [],
+      "review_reasons": [
+        "promotion_policy_requires_manual_review"
+      ],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "manual_review_count": 1
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false,
+      "is_mass_publish": false
+    },
+    {
+      "candidate_page_id": "step11-rollback-required",
+      "slug": "best-standing-desk-converters",
+      "source_promotion_status": "rollback_required",
+      "rollout_status": "rollback_required",
+      "rollout_tier": "none",
+      "can_enter_limited_rollout": false,
+      "can_expand_beyond_limited": false,
+      "can_be_considered_for_sitemap_later": false,
+      "requires_manual_review": false,
+      "requires_rollback": true,
+      "reasons": [
+        "rollback_forces_controlled_rollback"
+      ],
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "rollback_reasons": [
+        "rollback_signal_detected"
+      ],
+      "evidence_summary": {
+        "outbound_error_count": 3
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false,
+      "is_mass_publish": false
+    },
+    {
+      "candidate_page_id": "step11-scale-blocked",
+      "slug": "best-budget-router-for-home",
+      "source_promotion_status": "reject_from_promotion",
+      "rollout_status": "scale_blocked",
+      "rollout_tier": "none",
+      "can_enter_limited_rollout": false,
+      "can_expand_beyond_limited": false,
+      "can_be_considered_for_sitemap_later": false,
+      "requires_manual_review": false,
+      "requires_rollback": false,
+      "reasons": [
+        "promotion_reject_blocks_scale"
+      ],
+      "blocker_reasons": [
+        "promotion_rejected_from_scale"
+      ],
+      "review_reasons": [],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "quality_gate_blocked_signal": true
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false,
+      "is_mass_publish": false
+    },
+    {
+      "candidate_page_id": "step11-needs-more-observation",
+      "slug": "best-laptop-stands-home-office",
+      "source_promotion_status": "needs_more_observation",
+      "rollout_status": "needs_more_observation",
+      "rollout_tier": "preview_only",
+      "can_enter_limited_rollout": false,
+      "can_expand_beyond_limited": false,
+      "can_be_considered_for_sitemap_later": false,
+      "requires_manual_review": false,
+      "requires_rollback": false,
+      "reasons": [
+        "requires_more_observation_before_rollout"
+      ],
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "outbound_click_count": 0
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false,
+      "is_mass_publish": false
+    },
+    {
+      "candidate_page_id": "step11-limited-ready-pending-approval",
+      "slug": "best-gaming-mouse-wireless",
+      "source_promotion_status": "promoted_to_limited_exposure",
+      "rollout_status": "limited_rollout_ready",
+      "rollout_tier": "limited",
+      "can_enter_limited_rollout": true,
+      "can_expand_beyond_limited": false,
+      "can_be_considered_for_sitemap_later": true,
+      "requires_manual_review": false,
+      "requires_rollback": false,
+      "reasons": [
+        "promotion_ready_for_controlled_limited_rollout"
+      ],
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "promotion_ready": true,
+        "outbound_click_count": 1
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false,
+      "is_mass_publish": false
+    },
+    {
+      "candidate_page_id": "step11-limited-ready-explicit-rejected-approval",
+      "slug": "best-noise-cancelling-earbuds-under-100",
+      "source_promotion_status": "promoted_to_limited_exposure",
+      "rollout_status": "limited_rollout_ready",
+      "rollout_tier": "limited",
+      "can_enter_limited_rollout": true,
+      "can_expand_beyond_limited": false,
+      "can_be_considered_for_sitemap_later": true,
+      "requires_manual_review": false,
+      "requires_rollback": false,
+      "reasons": [
+        "promotion_ready_for_controlled_limited_rollout"
+      ],
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "promotion_ready": true,
+        "outbound_click_count": 2
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false,
+      "is_mass_publish": false
+    }
+  ],
+  "approval_status_by_candidate": {
+    "step11-limited-ready-approval-not-requested": "not_requested",
+    "step11-keep-preview": "not_requested",
+    "step11-hold-manual-review": "pending_human_approval",
+    "step11-rollback-required": "rollback_approved",
+    "step11-scale-blocked": "not_requested",
+    "step11-needs-more-observation": "not_requested",
+    "step11-limited-ready-pending-approval": "pending_human_approval",
+    "step11-limited-ready-explicit-rejected-approval": "rejected"
+  },
+  "selected_clean_governance_cohort": [
+    {
+      "candidate_page_id": "step11-clean-governance-us-power-banks",
+      "slug": "best-power-banks-for-travel-usa",
+      "source_promotion_status": "promoted_to_limited_exposure",
+      "rollout_status": "limited_rollout_ready",
+      "rollout_tier": "limited",
+      "can_enter_limited_rollout": true,
+      "can_expand_beyond_limited": false,
+      "can_be_considered_for_sitemap_later": true,
+      "requires_manual_review": false,
+      "requires_rollback": false,
+      "reasons": [
+        "promotion_ready_for_controlled_limited_rollout"
+      ],
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "promotion_ready": true
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false,
+      "is_mass_publish": false
+    },
+    {
+      "candidate_page_id": "step11-clean-governance-uk-tyres",
+      "slug": "best-all-season-tyres-uk",
+      "source_promotion_status": "promoted_to_limited_exposure",
+      "rollout_status": "limited_rollout_ready",
+      "rollout_tier": "limited",
+      "can_enter_limited_rollout": true,
+      "can_expand_beyond_limited": false,
+      "can_be_considered_for_sitemap_later": true,
+      "requires_manual_review": false,
+      "requires_rollback": false,
+      "reasons": [
+        "promotion_ready_for_controlled_limited_rollout"
+      ],
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "promotion_ready": true
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false,
+      "is_mass_publish": false
+    },
+    {
+      "candidate_page_id": "step11-clean-governance-de-kaffee",
+      "slug": "beste-kaffeevollautomaten-fuer-zuhause",
+      "source_promotion_status": "promoted_to_limited_exposure",
+      "rollout_status": "limited_rollout_ready",
+      "rollout_tier": "limited",
+      "can_enter_limited_rollout": true,
+      "can_expand_beyond_limited": false,
+      "can_be_considered_for_sitemap_later": true,
+      "requires_manual_review": false,
+      "requires_rollback": false,
+      "reasons": [
+        "promotion_ready_for_controlled_limited_rollout"
+      ],
+      "blocker_reasons": [],
+      "review_reasons": [],
+      "rollback_reasons": [],
+      "evidence_summary": {
+        "promotion_ready": true
+      },
+      "is_public": false,
+      "is_live_sitemap_included": false,
+      "is_mass_publish": false
+    }
+  ],
+  "selected_clean_approval_status_by_candidate": {
+    "step11-clean-governance-us-power-banks": "approved",
+    "step11-clean-governance-uk-tyres": "approved",
+    "step11-clean-governance-de-kaffee": "approved"
+  }
+}
