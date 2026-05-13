@@ -1,0 +1,158 @@
+[
+  {
+    "product_id": "selected-strong-1",
+    "title": "PowerBank Pro 20000 USB-C",
+    "brand": "PowerBank Pro",
+    "model": "PBP-20",
+    "image_url": "https://example.com/images/pbp-20.jpg",
+    "price": "59.99",
+    "currency": "EUR",
+    "merchant": "Trusted Merchant",
+    "merchant_url": "https://example.com/stores/trusted",
+    "availability": "available",
+    "product_url": "https://example.com/products/pbp-20",
+    "affiliate_url": "https://example.invalid/aff/pbp-20",
+    "category": "power_bank",
+    "vertical": "retail_physical_products",
+    "engine": "electronics_hypermarket",
+    "category_bucket": "power_banks",
+    "google_taxonomy_path": "Electronics > Electronics Accessories > Power Banks",
+    "description": "Strong flagship row for Step 2 closure proof.",
+    "specifications": [
+      "20000mAh",
+      "USB-C PD"
+    ],
+    "shipping_info_available": true,
+    "return_policy_available": true,
+    "locale": "en-IE",
+    "market": "IE"
+  },
+  {
+    "product_id": "selected-missing-desc-specs-1",
+    "title": "Basic Fast Charger 10000",
+    "brand": "BasicCharge",
+    "model": "BC-10",
+    "image_url": "https://example.com/images/bc-10.jpg",
+    "price": "24.50",
+    "currency": "EUR",
+    "merchant": "Trusted Merchant",
+    "availability": "available",
+    "product_url": "https://example.com/products/bc-10",
+    "affiliate_url": "https://example.invalid/aff/bc-10",
+    "category_bucket": "power_banks",
+    "google_taxonomy_path": "Electronics > Electronics Accessories > Power Banks",
+    "shipping_info_available": true,
+    "return_policy_available": true
+  },
+  {
+    "product_id": "selected-missing-affiliate-1",
+    "title": "Outbound Link Only Pack",
+    "brand": "OutboundOnly",
+    "model": "OO-12",
+    "image_url": "https://example.com/images/oo-12.jpg",
+    "price": "33.00",
+    "currency": "EUR",
+    "merchant": "Trusted Merchant",
+    "availability": "available",
+    "product_url": "https://example.com/products/oo-12",
+    "category_bucket": "power_banks",
+    "google_taxonomy_path": "Electronics > Electronics Accessories > Power Banks",
+    "description": "Has outbound URL but missing affiliate URL.",
+    "specifications": [
+      "12000mAh"
+    ],
+    "shipping_info_available": true,
+    "return_policy_available": true
+  },
+  {
+    "product_id": "selected-missing-category-1",
+    "title": "Category Gap Battery",
+    "brand": "TaxoGap",
+    "model": "TG-15",
+    "image_url": "https://example.com/images/tg-15.jpg",
+    "price": "42.00",
+    "currency": "EUR",
+    "merchant": "Trusted Merchant",
+    "availability": "available",
+    "product_url": "https://example.com/products/tg-15",
+    "affiliate_url": "https://example.invalid/aff/tg-15",
+    "description": "Deliberately missing category data.",
+    "specifications": [
+      "15000mAh"
+    ],
+    "shipping_info_available": true,
+    "return_policy_available": true
+  },
+  {
+    "product_id": "selected-missing-image-1",
+    "title": "Image Gap Power Pack",
+    "brand": "ImageGap",
+    "model": "IG-11",
+    "price": "19.99",
+    "currency": "EUR",
+    "merchant": "Trusted Merchant",
+    "availability": "available",
+    "product_url": "https://example.com/products/ig-11",
+    "affiliate_url": "https://example.invalid/aff/ig-11",
+    "category_bucket": "power_banks",
+    "google_taxonomy_path": "Electronics > Electronics Accessories > Power Banks",
+    "description": "Missing image for closure blocker proof.",
+    "specifications": [
+      "11000mAh"
+    ],
+    "shipping_info_available": true,
+    "return_policy_available": true
+  },
+  {
+    "product_id": "selected-missing-trust-1",
+    "title": "Unmapped Seller Device",
+    "brand": "TrustGap",
+    "model": "UG-9",
+    "image_url": "https://example.com/images/ug-9.jpg",
+    "price": "27.00",
+    "currency": "EUR",
+    "merchant": "Unmapped Merchant",
+    "availability": "available",
+    "product_url": "https://example.com/products/ug-9",
+    "affiliate_url": "https://example.invalid/aff/ug-9",
+    "category_bucket": "power_banks",
+    "google_taxonomy_path": "Electronics > Electronics Accessories > Power Banks",
+    "description": "Has merchant but no trusted mapping.",
+    "specifications": [
+      "9000mAh"
+    ],
+    "shipping_info_available": true,
+    "return_policy_available": true
+  },
+  {
+    "product_id": "selected-locale-currency-mismatch-1",
+    "title": "Locale Currency Mismatch Pack",
+    "brand": "LocaleMismatch",
+    "model": "LM-14",
+    "image_url": "https://example.com/images/lm-14.jpg",
+    "price": "36.00",
+    "currency": "USD",
+    "merchant": "Trusted Merchant",
+    "availability": "available",
+    "product_url": "https://example.com/products/lm-14",
+    "affiliate_url": "https://example.invalid/aff/lm-14",
+    "category_bucket": "power_banks",
+    "google_taxonomy_path": "Electronics > Electronics Accessories > Power Banks",
+    "description": "Locale/currency mismatch row.",
+    "specifications": [
+      "14000mAh"
+    ],
+    "shipping_info_available": true,
+    "return_policy_available": true,
+    "locale": "en-IE",
+    "market": "IE"
+  },
+  {
+    "product_id": "selected-rejected-row-1",
+    "title": "",
+    "brand": "Rejected",
+    "model": "RJ-1",
+    "merchant": "Trusted Merchant",
+    "product_url": "javascript:alert(1)"
+  }
+]
