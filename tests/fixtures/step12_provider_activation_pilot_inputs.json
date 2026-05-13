@@ -1,0 +1,296 @@
+{
+  "clean_local_provider_pilot_input": {
+    "provider_name": "trusted-affiliate-export-v1",
+    "provider_feed_export_file_path": "local/provider_feed_clean.json",
+    "trusted_seller_map_file_path": "local/trusted_sellers.json",
+    "shipping_return_enrichment_map_path": "local/shipping_returns.json",
+    "taxonomy_category_map_path": "local/taxonomy_map.json",
+    "keyword_cluster_batch_path": "local/keyword_clusters_clean.json",
+    "target_market": "US",
+    "target_locale": "en-US",
+    "dry_run_only": true
+  },
+  "missing_provider_feed_file_scenario": {
+    "provider_name": "trusted-affiliate-export-v1",
+    "provider_feed_export_file_path": "local/provider_feed_missing.json",
+    "trusted_seller_map_file_path": "local/trusted_sellers.json",
+    "shipping_return_enrichment_map_path": "local/shipping_returns.json",
+    "taxonomy_category_map_path": "local/taxonomy_map.json",
+    "keyword_cluster_batch_path": "local/keyword_clusters_clean.json",
+    "target_market": "US",
+    "target_locale": "en-US",
+    "dry_run_only": true
+  },
+  "missing_trusted_seller_map_scenario": {
+    "provider_name": "trusted-affiliate-export-v1",
+    "provider_feed_export_file_path": "local/provider_feed_clean.json",
+    "trusted_seller_map_file_path": null,
+    "shipping_return_enrichment_map_path": "local/shipping_returns.json",
+    "taxonomy_category_map_path": "local/taxonomy_map.json",
+    "keyword_cluster_batch_path": "local/keyword_clusters_clean.json",
+    "target_market": "US",
+    "target_locale": "en-US",
+    "dry_run_only": true
+  },
+  "missing_keyword_cluster_batch_scenario": {
+    "provider_name": "trusted-affiliate-export-v1",
+    "provider_feed_export_file_path": "local/provider_feed_clean.json",
+    "trusted_seller_map_file_path": "local/trusted_sellers.json",
+    "shipping_return_enrichment_map_path": "local/shipping_returns.json",
+    "taxonomy_category_map_path": "local/taxonomy_map.json",
+    "keyword_cluster_batch_path": "local/keyword_clusters_missing.json",
+    "target_market": "US",
+    "target_locale": "en-US",
+    "dry_run_only": true
+  },
+  "wrong_target_market_locale_scenario": {
+    "provider_name": "trusted-affiliate-export-v1",
+    "provider_feed_export_file_path": "local/provider_feed_clean.json",
+    "trusted_seller_map_file_path": "local/trusted_sellers.json",
+    "shipping_return_enrichment_map_path": "local/shipping_returns.json",
+    "taxonomy_category_map_path": "local/taxonomy_map.json",
+    "keyword_cluster_batch_path": "local/keyword_clusters_clean.json",
+    "target_market": "US",
+    "target_locale": "de-DE",
+    "dry_run_only": true
+  },
+  "dry_run_only_false_scenario": {
+    "provider_name": "trusted-affiliate-export-v1",
+    "provider_feed_export_file_path": "local/provider_feed_clean.json",
+    "trusted_seller_map_file_path": "local/trusted_sellers.json",
+    "shipping_return_enrichment_map_path": "local/shipping_returns.json",
+    "taxonomy_category_map_path": "local/taxonomy_map.json",
+    "keyword_cluster_batch_path": "local/keyword_clusters_clean.json",
+    "target_market": "US",
+    "target_locale": "en-US",
+    "dry_run_only": false
+  },
+  "selected_clean_pilot_scenario": {
+    "provider_name": "trusted-affiliate-export-v1",
+    "provider_feed_export_file_path": "local/provider_feed_clean.json",
+    "trusted_seller_map_file_path": "local/trusted_sellers.json",
+    "shipping_return_enrichment_map_path": "local/shipping_returns.json",
+    "taxonomy_category_map_path": "local/taxonomy_map.json",
+    "keyword_cluster_batch_path": "local/keyword_clusters_clean.json",
+    "target_market": "US",
+    "target_locale": "en-US",
+    "dry_run_only": true
+  },
+  "local_inputs": {
+    "files": {
+      "local/provider_feed_clean.json": [
+        {
+          "candidate_id": "offer-pilot-001",
+          "title": "Power Bank 20000mAh Fast Charge",
+          "seller_name": "TrustedSellerA",
+          "outbound_url": "https://example.com/products/powerbank-20000",
+          "affiliate_url": "https://affiliate.example.com/powerbank-20000",
+          "image_url": "https://cdn.example.com/powerbank-20000.jpg",
+          "currency": "USD",
+          "price": "59.99",
+          "availability": "in_stock",
+          "category": "power banks",
+          "category_bucket": "power banks",
+          "google_taxonomy_path": "Electronics > Power Banks",
+          "locale": "en-US",
+          "market": "US",
+          "delivery_coverage": [
+            "US"
+          ],
+          "shipping_info_available": true,
+          "return_policy_available": true,
+          "short_description": "Compact high-capacity battery pack.",
+          "specifications": [
+            "20000mAh",
+            "USB-C PD"
+          ]
+        },
+        {
+          "candidate_id": "offer-pilot-002",
+          "title": "Power Bank 10000mAh Slim",
+          "seller_name": "TrustedSellerB",
+          "outbound_url": "https://example.com/products/powerbank-10000",
+          "affiliate_url": "https://affiliate.example.com/powerbank-10000",
+          "image_url": "https://cdn.example.com/powerbank-10000.jpg",
+          "currency": "USD",
+          "price": "34.50",
+          "availability": "in_stock",
+          "category": "power banks",
+          "category_bucket": "power banks",
+          "google_taxonomy_path": "Electronics > Power Banks",
+          "locale": "en-US",
+          "market": "US",
+          "delivery_coverage": [
+            "US"
+          ],
+          "shipping_info_available": true,
+          "return_policy_available": true,
+          "short_description": "Slim battery pack for travel.",
+          "specifications": [
+            "10000mAh",
+            "Dual USB"
+          ]
+        },
+        {
+          "candidate_id": "offer-pilot-003",
+          "title": "Power Bank Wireless 15000mAh",
+          "seller_name": "TrustedSellerA",
+          "outbound_url": "https://example.com/products/powerbank-wireless",
+          "affiliate_url": "https://affiliate.example.com/powerbank-wireless",
+          "image_url": "https://cdn.example.com/powerbank-wireless.jpg",
+          "currency": "USD",
+          "price": "45.00",
+          "availability": "in_stock",
+          "category": "power banks",
+          "category_bucket": "power banks",
+          "google_taxonomy_path": "Electronics > Power Banks",
+          "locale": "en-US",
+          "market": "US",
+          "delivery_coverage": [
+            "US"
+          ],
+          "shipping_info_available": true,
+          "return_policy_available": true,
+          "short_description": "Wireless charging battery pack.",
+          "specifications": [
+            "15000mAh",
+            "Qi charging"
+          ]
+        },
+        {
+          "candidate_id": "offer-pilot-004",
+          "title": "Power Bank Rugged 25000mAh",
+          "seller_name": "TrustedSellerB",
+          "outbound_url": "https://example.com/products/powerbank-rugged",
+          "affiliate_url": "https://affiliate.example.com/powerbank-rugged",
+          "image_url": "https://cdn.example.com/powerbank-rugged.jpg",
+          "currency": "USD",
+          "price": "79.00",
+          "availability": "in_stock",
+          "category": "power banks",
+          "category_bucket": "power banks",
+          "google_taxonomy_path": "Electronics > Power Banks",
+          "locale": "en-US",
+          "market": "US",
+          "delivery_coverage": [
+            "US"
+          ],
+          "shipping_info_available": true,
+          "return_policy_available": true,
+          "short_description": "Outdoor-ready large-capacity pack.",
+          "specifications": [
+            "25000mAh",
+            "Rugged shell"
+          ]
+        }
+      ],
+      "local/trusted_sellers.json": {
+        "TrustedSellerA": "trusted",
+        "TrustedSellerB": "acceptable"
+      },
+      "local/shipping_returns.json": {
+        "shipping_info_available_by_candidate_id": {
+          "offer-pilot-001": true,
+          "offer-pilot-002": true,
+          "offer-pilot-003": true,
+          "offer-pilot-004": true
+        },
+        "return_policy_available_by_candidate_id": {
+          "offer-pilot-001": true,
+          "offer-pilot-002": true,
+          "offer-pilot-003": true,
+          "offer-pilot-004": true
+        }
+      },
+      "local/taxonomy_map.json": {
+        "offer-pilot-001": "Electronics > Power Banks",
+        "offer-pilot-002": "Electronics > Power Banks",
+        "offer-pilot-003": "Electronics > Power Banks",
+        "offer-pilot-004": "Electronics > Power Banks"
+      },
+      "local/keyword_clusters_clean.json": [
+        {
+          "cluster_id": "cluster-pilot-001",
+          "locale": "en-US",
+          "market": "US",
+          "target_category": "power banks",
+          "buyer_intent": true,
+          "intent_type": "buyer_intent",
+          "main_keyword": "best power banks for travel usa",
+          "support_keywords": [
+            "portable charger best",
+            "top usb c power banks",
+            "fast charging power banks"
+          ],
+          "long_tail_keywords": [
+            "best 20000mah power bank for travel",
+            "best slim power bank for iphone",
+            "best usb c pd power bank under 100",
+            "best power bank for airplane travel",
+            "best power bank for camping trip",
+            "best compact power bank fast charge",
+            "best trusted seller power bank",
+            "best power bank with return policy",
+            "best power bank with warranty",
+            "best high capacity portable charger"
+          ],
+          "variants": [],
+          "product_spec_signals": [
+            "20000mah",
+            "usb-c"
+          ],
+          "brand_model_signals": [],
+          "source_type": "provider_feed",
+          "volume_bucket_by_keyword": {
+            "best power banks for travel usa": "high"
+          },
+          "confidence_score": 0.93,
+          "review_required": false,
+          "rejection_reasons": [],
+          "blocker_reasons": [],
+          "status": "page_ready",
+          "is_page_ready": true,
+          "deterministic_scale_slots": 1,
+          "source_provider_batch_id": "step12-provider-batch-001"
+        }
+      ]
+    },
+    "mvp_observation_events": [
+      {
+        "event_id": "step12-obs-001",
+        "candidate_page_id": "candidate-page-cluster-pilot-001",
+        "slug": "best-power-banks-for-travel-usa",
+        "event_type": "preview_rendered",
+        "timestamp": "2026-05-13T21:30:00Z",
+        "source": "operator_dry_run",
+        "test_mode": true,
+        "operator_generated": true,
+        "locale": "en-US",
+        "market": "US",
+        "metadata": {
+          "note": "preview passed"
+        }
+      },
+      {
+        "event_id": "step12-obs-002",
+        "candidate_page_id": "candidate-page-cluster-pilot-001",
+        "slug": "best-power-banks-for-travel-usa",
+        "event_type": "outbound_click",
+        "timestamp": "2026-05-13T21:31:00Z",
+        "source": "operator_dry_run",
+        "test_mode": true,
+        "operator_generated": true,
+        "locale": "en-US",
+        "market": "US",
+        "product_id": "offer-pilot-001",
+        "outbound_url": "https://example.com/products/powerbank-20000",
+        "metadata": {
+          "note": "outbound path validated"
+        }
+      }
+    ],
+    "approval_status_by_candidate": {
+      "candidate-page-cluster-pilot-001": "approved"
+    }
+  }
+}

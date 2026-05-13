@@ -147,6 +147,18 @@ from .release_governance import (
     evaluate_release_governance_batch,
     evaluate_release_governance_decision,
 )
+from .provider_activation_pilot import (
+    ProviderActivationChecklist,
+    ProviderActivationInputContract,
+    ProviderActivationPilotResult,
+    ProviderActivationPilotStatus,
+    ProviderActivationRollbackDrill,
+    ProviderActivationRunbookStep,
+    build_provider_activation_checklist,
+    build_provider_activation_rollback_drill,
+    evaluate_provider_activation_pilot,
+    validate_provider_activation_input,
+)
 
 __all__ = [
     "BuyingPage",
@@ -289,4 +301,14 @@ __all__ = [
     "evaluate_release_governance_decision",
     "evaluate_release_governance_batch",
     "build_release_audit_record",
+    "ProviderActivationPilotStatus",
+    "ProviderActivationInputContract",
+    "ProviderActivationPilotResult",
+    "ProviderActivationChecklist",
+    "ProviderActivationRollbackDrill",
+    "ProviderActivationRunbookStep",
+    "validate_provider_activation_input",
+    "build_provider_activation_checklist",
+    "build_provider_activation_rollback_drill",
+    "evaluate_provider_activation_pilot",
 ]
