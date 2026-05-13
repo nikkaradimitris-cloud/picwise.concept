@@ -1,0 +1,161 @@
+[
+  {
+    "product_id": "strong-1",
+    "title": "PowerCore 20000mAh USB-C PD Power Bank",
+    "brand": "PowerCore",
+    "model": "PC-20K",
+    "image_url": "https://example.com/images/powercore-20k.jpg",
+    "price": "49.90",
+    "currency": "EUR",
+    "merchant": "Trusted Merchant",
+    "merchant_url": "https://example.com/stores/trusted",
+    "availability": "available",
+    "product_url": "https://example.com/products/powercore-20k",
+    "affiliate_url": "https://example.invalid/aff/powercore-20k",
+    "category": "power_bank",
+    "vertical": "retail_physical_products",
+    "engine": "electronics_hypermarket",
+    "category_bucket": "power_banks",
+    "google_taxonomy_path": "Electronics > Electronics Accessories > Power Banks",
+    "description": "High-capacity battery with USB-C power delivery.",
+    "specifications": [
+      "20000mAh",
+      "USB-C PD"
+    ],
+    "shipping_info_available": true,
+    "return_policy_available": true
+  },
+  {
+    "product_id": "missing-image-1",
+    "title": "QuickCharge Slim Battery Pack",
+    "brand": "QuickCharge",
+    "model": "Slim-10K",
+    "price": "29.99",
+    "currency": "EUR",
+    "merchant": "Trusted Merchant",
+    "product_url": "https://example.com/products/slim-10k",
+    "affiliate_url": "https://example.invalid/aff/slim-10k",
+    "availability": "available",
+    "vertical": "retail_physical_products",
+    "category_bucket": "power_banks",
+    "google_taxonomy_path": "Electronics > Electronics Accessories > Power Banks",
+    "shipping_info_available": true,
+    "return_policy_available": true,
+    "specifications": [
+      "10000mAh",
+      "USB-C"
+    ]
+  },
+  {
+    "product_id": "missing-price-1",
+    "title": "Travel Battery Pack 15000mAh",
+    "brand": "TravelPower",
+    "model": "TP-15",
+    "image_url": "https://example.com/images/travel-15k.jpg",
+    "currency": "EUR",
+    "merchant": "Trusted Merchant",
+    "product_url": "https://example.com/products/travel-15k",
+    "affiliate_url": "https://example.invalid/aff/travel-15k",
+    "availability": "available",
+    "vertical": "retail_physical_products",
+    "category_bucket": "power_banks",
+    "google_taxonomy_path": "Electronics > Electronics Accessories > Power Banks",
+    "shipping_info_available": true,
+    "return_policy_available": true,
+    "specifications": [
+      "15000mAh"
+    ]
+  },
+  {
+    "product_id": "missing-trust-1",
+    "title": "Unknown Seller Rapid Charger Pack",
+    "brand": "RapidPack",
+    "model": "RP-12",
+    "image_url": "https://example.com/images/rapid-12k.jpg",
+    "price": "25.50",
+    "currency": "EUR",
+    "merchant": "Unknown Merchant",
+    "product_url": "https://example.com/products/rapid-12k",
+    "affiliate_url": "https://example.invalid/aff/rapid-12k",
+    "availability": "available",
+    "vertical": "retail_physical_products",
+    "category_bucket": "power_banks",
+    "google_taxonomy_path": "Electronics > Electronics Accessories > Power Banks",
+    "shipping_info_available": true,
+    "return_policy_available": true,
+    "specifications": [
+      "12000mAh"
+    ]
+  },
+  {
+    "product_id": "missing-shipping-returns-1",
+    "title": "NoPolicy Battery Dock",
+    "brand": "NoPolicy",
+    "model": "NP-10",
+    "image_url": "https://example.com/images/nopolicy-10k.jpg",
+    "price": "18.00",
+    "currency": "EUR",
+    "merchant": "Trusted Merchant",
+    "product_url": "https://example.com/products/nopolicy-10k",
+    "affiliate_url": "https://example.invalid/aff/nopolicy-10k",
+    "availability": "available",
+    "vertical": "retail_physical_products",
+    "category_bucket": "power_banks",
+    "google_taxonomy_path": "Electronics > Electronics Accessories > Power Banks",
+    "specifications": [
+      "10000mAh"
+    ]
+  },
+  {
+    "product_id": "missing-affiliate-1",
+    "title": "OutboundOnly Portable Charger",
+    "brand": "OutboundOnly",
+    "model": "OO-20",
+    "image_url": "https://example.com/images/outboundonly-20k.jpg",
+    "price": "39.99",
+    "currency": "USD",
+    "merchant": "Trusted Merchant",
+    "product_url": "https://example.com/products/outboundonly-20k",
+    "availability": "available",
+    "vertical": "retail_physical_products",
+    "category_bucket": "power_banks",
+    "google_taxonomy_path": "Electronics > Electronics Accessories > Power Banks",
+    "shipping_info_available": true,
+    "return_policy_available": true,
+    "specifications": [
+      "20000mAh",
+      "USB-C PD"
+    ]
+  },
+  {
+    "product_id": "locale-market-1",
+    "title": "Euro Travel Charger Battery",
+    "brand": "EuroCharge",
+    "model": "EC-18",
+    "image_url": "https://example.com/images/eurocharge-18k.jpg",
+    "price": "45.00",
+    "currency": "EUR",
+    "merchant": "Trusted Merchant",
+    "product_url": "https://example.com/products/eurocharge-18k",
+    "affiliate_url": "https://example.invalid/aff/eurocharge-18k",
+    "availability": "available",
+    "vertical": "retail_physical_products",
+    "category_bucket": "power_banks",
+    "google_taxonomy_path": "Electronics > Electronics Accessories > Power Banks",
+    "shipping_info_available": true,
+    "return_policy_available": true,
+    "specifications": [
+      "18000mAh"
+    ],
+    "locale": "en-IE",
+    "market": "IE"
+  },
+  {
+    "product_id": "rejected-invalid-url-1",
+    "title": "",
+    "brand": "Broken",
+    "model": "B-1",
+    "merchant": "Trusted Merchant",
+    "product_url": "javascript:alert(1)"
+  }
+]

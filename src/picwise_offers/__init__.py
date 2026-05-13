@@ -18,6 +18,7 @@ from .affiliate_feed_adapter import (
     AffiliateFeedRowStatus,
     adapt_affiliate_feed_rows,
 )
+from .feed_dry_run import AffiliateFeedDryRunReport, run_affiliate_feed_dry_run
 from .import_adapter import import_offer_candidates_from_csv_text, import_offer_candidates_from_json_text
 from .ranking import (
     OfferRankingInput,
@@ -65,6 +66,8 @@ __all__ = [
     "AffiliateFeedRowResult",
     "AffiliateFeedBatchResult",
     "adapt_affiliate_feed_rows",
+    "AffiliateFeedDryRunReport",
+    "run_affiliate_feed_dry_run",
     "OfferIntakeRequest",
     "build_default_product_source",
     "intake_offer_candidates",
