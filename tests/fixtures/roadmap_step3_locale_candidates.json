@@ -1,0 +1,86 @@
+[
+  {
+    "candidate_id": "us-valid-usd",
+    "market": "US",
+    "locale": "en-US",
+    "currency": "USD",
+    "delivery_coverage": ["US"]
+  },
+  {
+    "candidate_id": "uk-valid-gbp",
+    "market": "UK",
+    "locale": "en-GB",
+    "currency": "GBP",
+    "delivery_coverage": ["UK"]
+  },
+  {
+    "candidate_id": "de-valid-eur",
+    "market": "DE",
+    "locale": "de-DE",
+    "currency": "EUR",
+    "delivery_coverage": ["DE"]
+  },
+  {
+    "candidate_id": "gr-valid-eur",
+    "market": "GR",
+    "locale": "el-GR",
+    "currency": "EUR",
+    "delivery_coverage": ["GR"]
+  },
+  {
+    "candidate_id": "eu-valid-for-de",
+    "market": "EU",
+    "locale": "en-EU",
+    "currency": "EUR",
+    "delivery_coverage": ["EU", "DE"]
+  },
+  {
+    "candidate_id": "eu-valid-for-gr",
+    "market": "EU",
+    "locale": "en-EU",
+    "currency": "EUR",
+    "delivery_coverage": ["EU", "GR"]
+  },
+  {
+    "candidate_id": "us-targeted-to-de-invalid",
+    "market": "US",
+    "locale": "en-US",
+    "currency": "USD",
+    "delivery_coverage": ["US"]
+  },
+  {
+    "candidate_id": "de-targeted-to-us-invalid",
+    "market": "DE",
+    "locale": "de-DE",
+    "currency": "EUR",
+    "delivery_coverage": ["DE"]
+  },
+  {
+    "candidate_id": "uk-usd-mismatch",
+    "market": "UK",
+    "locale": "en-GB",
+    "currency": "USD",
+    "delivery_coverage": ["UK"]
+  },
+  {
+    "candidate_id": "gr-missing-delivery",
+    "market": "GR",
+    "locale": "el-GR",
+    "currency": "EUR",
+    "delivery_coverage": []
+  },
+  {
+    "candidate_id": "unknown-market-candidate",
+    "market": "ZZ",
+    "locale": "en-ZZ",
+    "currency": "EUR",
+    "delivery_coverage": ["EU"]
+  },
+  {
+    "candidate_id": "de-missing-currency",
+    "market": "DE",
+    "locale": "de-DE",
+    "currency": "",
+    "delivery_coverage": ["DE"]
+  }
+]

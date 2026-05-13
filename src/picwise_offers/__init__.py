@@ -34,6 +34,16 @@ from .provider_contract import (
     describe_provider_contract,
     evaluate_provider_batch_readiness,
 )
+from .locale_logic import (
+    DEFAULT_LOCALE_RULESET,
+    LocaleEligibilityDecision,
+    LocaleEligibilityStatus,
+    LocaleRuleSet,
+    ProductLocaleProfile,
+    TargetMarket,
+    evaluate_locale_batch_eligibility,
+    evaluate_locale_product_eligibility,
+)
 from .roadmap_step2_closure import RoadmapStep2ClosureResult, run_roadmap_step2_closure_proof
 from .import_adapter import import_offer_candidates_from_csv_text, import_offer_candidates_from_json_text
 from .ranking import (
@@ -95,6 +105,14 @@ __all__ = [
     "ALLOWED_REMEDIATION_INPUTS",
     "describe_provider_contract",
     "evaluate_provider_batch_readiness",
+    "TargetMarket",
+    "ProductLocaleProfile",
+    "LocaleEligibilityStatus",
+    "LocaleEligibilityDecision",
+    "LocaleRuleSet",
+    "DEFAULT_LOCALE_RULESET",
+    "evaluate_locale_product_eligibility",
+    "evaluate_locale_batch_eligibility",
     "RoadmapStep2ClosureResult",
     "run_roadmap_step2_closure_proof",
     "OfferIntakeRequest",
