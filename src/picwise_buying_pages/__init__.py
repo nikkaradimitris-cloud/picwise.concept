@@ -93,6 +93,14 @@ from .candidate_page_batch import (
     CandidatePageStatus,
     build_candidate_page_batch,
 )
+from .candidate_index_gate import (
+    CandidateIndexBatchResult,
+    CandidateIndexDecision,
+    CandidateIndexDecisionStatus,
+    CandidateIndexGatePolicy,
+    evaluate_candidate_index_batch,
+    evaluate_candidate_index_eligibility,
+)
 
 __all__ = [
     "BuyingPage",
@@ -193,4 +201,10 @@ __all__ = [
     "CandidatePageBatchResult",
     "CandidatePageBuildInput",
     "build_candidate_page_batch",
+    "CandidateIndexDecisionStatus",
+    "CandidateIndexDecision",
+    "CandidateIndexBatchResult",
+    "CandidateIndexGatePolicy",
+    "evaluate_candidate_index_eligibility",
+    "evaluate_candidate_index_batch",
 ]

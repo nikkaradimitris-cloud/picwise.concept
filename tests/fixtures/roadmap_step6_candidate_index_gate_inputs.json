@@ -1,0 +1,481 @@
+{
+  "candidate_pages": [
+    {
+      "candidate_page_id": "step6-clean-index-candidate",
+      "slug": "best-power-bank-for-travel-usa",
+      "locale": "en-US",
+      "market": "US",
+      "main_keyword": "best power bank for travel usa",
+      "support_keywords": [
+        "best fast charging power bank usa",
+        "portable charger comparison usa"
+      ],
+      "long_tail_keywords": [
+        "best power bank for flights usa",
+        "power bank for iphone and usb c"
+      ],
+      "selected_product_ids": [
+        "pb-us-clean-1",
+        "pb-us-clean-2",
+        "pb-us-clean-3",
+        "pb-us-clean-4"
+      ],
+      "recommended_product_id": "pb-us-clean-1",
+      "product_count": 4,
+      "status": "candidate_ready",
+      "is_public": false,
+      "is_indexable": false,
+      "sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step6-missing-four-products",
+      "slug": "best-coffee-grinder-home-use",
+      "locale": "en-US",
+      "market": "US",
+      "main_keyword": "best coffee grinder home use",
+      "support_keywords": [
+        "coffee grinder buying guide",
+        "quiet coffee grinder review"
+      ],
+      "long_tail_keywords": [
+        "best burr coffee grinder for beginners"
+      ],
+      "selected_product_ids": [
+        "cg-1",
+        "cg-2",
+        "cg-3"
+      ],
+      "recommended_product_id": "cg-1",
+      "product_count": 3,
+      "status": "needs_four_products",
+      "is_public": false,
+      "is_indexable": false,
+      "sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step6-recommended-outside-selection",
+      "slug": "best-budget-monitor-for-office",
+      "locale": "en-GB",
+      "market": "UK",
+      "main_keyword": "best budget monitor for office",
+      "support_keywords": [
+        "office monitor buying guide",
+        "budget monitor comparison uk"
+      ],
+      "long_tail_keywords": [
+        "best 27 inch monitor for office work uk"
+      ],
+      "selected_product_ids": [
+        "mon-1",
+        "mon-2",
+        "mon-3",
+        "mon-4"
+      ],
+      "recommended_product_id": "mon-9",
+      "product_count": 4,
+      "status": "candidate_ready",
+      "is_public": false,
+      "is_indexable": false,
+      "sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step6-duplicate-slug-a",
+      "slug": "best-noise-cancelling-headphones",
+      "locale": "en-US",
+      "market": "US",
+      "main_keyword": "best noise cancelling headphones",
+      "support_keywords": [
+        "headphones for travel",
+        "wireless headphones comparison"
+      ],
+      "long_tail_keywords": [
+        "best bluetooth headphones with anc"
+      ],
+      "selected_product_ids": [
+        "hp-1",
+        "hp-2",
+        "hp-3",
+        "hp-4"
+      ],
+      "recommended_product_id": "hp-1",
+      "product_count": 4,
+      "status": "candidate_ready",
+      "is_public": false,
+      "is_indexable": false,
+      "sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step6-duplicate-slug-b",
+      "slug": "best-noise-cancelling-headphones",
+      "locale": "en-GB",
+      "market": "UK",
+      "main_keyword": "best noise cancelling headphones uk",
+      "support_keywords": [
+        "best anc headphones uk",
+        "top travel headphones uk"
+      ],
+      "long_tail_keywords": [
+        "best over ear anc headphones uk 2026"
+      ],
+      "selected_product_ids": [
+        "hp-5",
+        "hp-6",
+        "hp-7",
+        "hp-8"
+      ],
+      "recommended_product_id": "hp-5",
+      "product_count": 4,
+      "status": "candidate_ready",
+      "is_public": false,
+      "is_indexable": false,
+      "sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step6-similar-candidate-source",
+      "slug": "best-gaming-laptop-for-college",
+      "locale": "en-US",
+      "market": "US",
+      "main_keyword": "best gaming laptop for college",
+      "support_keywords": [
+        "gaming laptop battery life",
+        "gaming laptop for students"
+      ],
+      "long_tail_keywords": [
+        "best 14 inch gaming laptop for college classes"
+      ],
+      "selected_product_ids": [
+        "gl-1",
+        "gl-2",
+        "gl-3",
+        "gl-4"
+      ],
+      "recommended_product_id": "gl-1",
+      "product_count": 4,
+      "status": "candidate_ready",
+      "is_public": false,
+      "is_indexable": false,
+      "sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step6-similar-candidate-duplicate",
+      "slug": "best-gaming-laptops-for-college-students",
+      "locale": "en-US",
+      "market": "US",
+      "main_keyword": "best gaming laptops for college students",
+      "support_keywords": [
+        "best gaming laptop for campus",
+        "college gaming laptop battery"
+      ],
+      "long_tail_keywords": [
+        "best gaming laptop for student dorm setup"
+      ],
+      "selected_product_ids": [
+        "gl-5",
+        "gl-6",
+        "gl-7",
+        "gl-8"
+      ],
+      "recommended_product_id": "gl-5",
+      "product_count": 4,
+      "status": "candidate_ready",
+      "is_public": false,
+      "is_indexable": false,
+      "sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step6-missing-affiliate",
+      "slug": "best-home-printers-for-small-office",
+      "locale": "en-US",
+      "market": "US",
+      "main_keyword": "best home printers for small office",
+      "support_keywords": [
+        "home printer buying guide",
+        "small office printer review"
+      ],
+      "long_tail_keywords": [
+        "best wireless printer for home office use"
+      ],
+      "selected_product_ids": [
+        "pr-1",
+        "pr-2",
+        "pr-3",
+        "pr-4"
+      ],
+      "recommended_product_id": "pr-1",
+      "product_count": 4,
+      "status": "candidate_ready",
+      "is_public": false,
+      "is_indexable": false,
+      "sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step6-unsupported-locale-currency",
+      "slug": "best-kitchen-knives-for-chefs",
+      "locale": "fr-FR",
+      "market": "FR",
+      "main_keyword": "best kitchen knives for chefs",
+      "support_keywords": [
+        "kitchen knife set comparison",
+        "chef knife buying guide"
+      ],
+      "long_tail_keywords": [
+        "best chef knife for home kitchen"
+      ],
+      "selected_product_ids": [
+        "kn-1",
+        "kn-2",
+        "kn-3",
+        "kn-4"
+      ],
+      "recommended_product_id": "kn-1",
+      "product_count": 4,
+      "status": "candidate_ready",
+      "is_public": false,
+      "is_indexable": false,
+      "sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step6-keyword-stuffing",
+      "slug": "best-office-chair-for-back-support",
+      "locale": "en-US",
+      "market": "US",
+      "main_keyword": "best office chair for back support",
+      "support_keywords": [
+        "office chair office chair office chair",
+        "best office chair best office chair"
+      ],
+      "long_tail_keywords": [
+        "office chair office chair for office office"
+      ],
+      "selected_product_ids": [
+        "ch-1",
+        "ch-2",
+        "ch-3",
+        "ch-4"
+      ],
+      "recommended_product_id": "ch-1",
+      "product_count": 4,
+      "status": "candidate_ready",
+      "is_public": false,
+      "is_indexable": false,
+      "sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step6-thin-content",
+      "slug": "best-smartwatch-for-fitness",
+      "locale": "en-GB",
+      "market": "UK",
+      "main_keyword": "best smartwatch for fitness",
+      "support_keywords": [
+        "smartwatch buying guide uk",
+        "fitness smartwatch comparison"
+      ],
+      "long_tail_keywords": [
+        "best smartwatch for daily fitness tracking"
+      ],
+      "selected_product_ids": [
+        "sw-1",
+        "sw-2",
+        "sw-3",
+        "sw-4"
+      ],
+      "recommended_product_id": "sw-1",
+      "product_count": 4,
+      "status": "candidate_ready",
+      "is_public": false,
+      "is_indexable": false,
+      "sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step6-uncertain-evidence",
+      "slug": "best-budget-router-for-home",
+      "locale": "en-US",
+      "market": "US",
+      "main_keyword": "best budget router for home",
+      "support_keywords": [
+        "home wifi router buying guide",
+        "budget wifi router comparison"
+      ],
+      "long_tail_keywords": [
+        "best dual band router for apartment"
+      ],
+      "selected_product_ids": [
+        "rt-1",
+        "rt-2",
+        "rt-3",
+        "rt-4"
+      ],
+      "recommended_product_id": "rt-1",
+      "product_count": 4,
+      "status": "candidate_ready",
+      "is_public": false,
+      "is_indexable": false,
+      "sitemap_included": false
+    }
+  ],
+  "candidate_evidence": {
+    "step6-clean-index-candidate": {
+      "provider_ready": true,
+      "locale_ready": true,
+      "page_ready_keyword_evidence": true,
+      "is_monetized": true,
+      "affiliate_coverage": 1.0,
+      "title_meta_intent_ready": true,
+      "keyword_stuffing_ratio": 0.12,
+      "thin_content": false,
+      "content_word_count": 920,
+      "currency": "USD",
+      "evidence_confidence": 0.98
+    },
+    "step6-missing-four-products": {
+      "provider_ready": true,
+      "locale_ready": true,
+      "page_ready_keyword_evidence": true,
+      "is_monetized": true,
+      "affiliate_coverage": 1.0,
+      "title_meta_intent_ready": true,
+      "keyword_stuffing_ratio": 0.1,
+      "thin_content": false,
+      "content_word_count": 860,
+      "currency": "USD",
+      "evidence_confidence": 0.95
+    },
+    "step6-recommended-outside-selection": {
+      "provider_ready": true,
+      "locale_ready": true,
+      "page_ready_keyword_evidence": true,
+      "is_monetized": true,
+      "affiliate_coverage": 1.0,
+      "title_meta_intent_ready": true,
+      "keyword_stuffing_ratio": 0.11,
+      "thin_content": false,
+      "content_word_count": 870,
+      "currency": "GBP",
+      "evidence_confidence": 0.92
+    },
+    "step6-duplicate-slug-a": {
+      "provider_ready": true,
+      "locale_ready": true,
+      "page_ready_keyword_evidence": true,
+      "is_monetized": true,
+      "affiliate_coverage": 1.0,
+      "title_meta_intent_ready": true,
+      "keyword_stuffing_ratio": 0.13,
+      "thin_content": false,
+      "content_word_count": 910,
+      "currency": "USD",
+      "evidence_confidence": 0.93
+    },
+    "step6-duplicate-slug-b": {
+      "provider_ready": true,
+      "locale_ready": true,
+      "page_ready_keyword_evidence": true,
+      "is_monetized": true,
+      "affiliate_coverage": 1.0,
+      "title_meta_intent_ready": true,
+      "keyword_stuffing_ratio": 0.14,
+      "thin_content": false,
+      "content_word_count": 905,
+      "currency": "GBP",
+      "evidence_confidence": 0.93
+    },
+    "step6-similar-candidate-source": {
+      "provider_ready": true,
+      "locale_ready": true,
+      "page_ready_keyword_evidence": true,
+      "is_monetized": true,
+      "affiliate_coverage": 1.0,
+      "title_meta_intent_ready": true,
+      "keyword_stuffing_ratio": 0.1,
+      "thin_content": false,
+      "content_word_count": 940,
+      "currency": "USD",
+      "evidence_confidence": 0.97
+    },
+    "step6-similar-candidate-duplicate": {
+      "provider_ready": true,
+      "locale_ready": true,
+      "page_ready_keyword_evidence": true,
+      "is_monetized": true,
+      "affiliate_coverage": 1.0,
+      "title_meta_intent_ready": true,
+      "keyword_stuffing_ratio": 0.1,
+      "thin_content": false,
+      "content_word_count": 930,
+      "currency": "USD",
+      "similarity_score": 0.94,
+      "similar_to_slug": "best-gaming-laptop-for-college",
+      "evidence_confidence": 0.96
+    },
+    "step6-missing-affiliate": {
+      "provider_ready": true,
+      "locale_ready": true,
+      "page_ready_keyword_evidence": true,
+      "is_monetized": true,
+      "affiliate_coverage": 0.75,
+      "missing_affiliate_product_ids": [
+        "pr-4"
+      ],
+      "title_meta_intent_ready": true,
+      "keyword_stuffing_ratio": 0.1,
+      "thin_content": false,
+      "content_word_count": 760,
+      "currency": "USD",
+      "evidence_confidence": 0.93
+    },
+    "step6-unsupported-locale-currency": {
+      "provider_ready": true,
+      "locale_ready": true,
+      "page_ready_keyword_evidence": true,
+      "is_monetized": true,
+      "affiliate_coverage": 1.0,
+      "title_meta_intent_ready": true,
+      "keyword_stuffing_ratio": 0.09,
+      "thin_content": false,
+      "content_word_count": 880,
+      "currency": "CHF",
+      "unsupported_locale_currency": true,
+      "evidence_confidence": 0.9
+    },
+    "step6-keyword-stuffing": {
+      "provider_ready": true,
+      "locale_ready": true,
+      "page_ready_keyword_evidence": true,
+      "is_monetized": true,
+      "affiliate_coverage": 1.0,
+      "title_meta_intent_ready": true,
+      "keyword_stuffing_ratio": 0.57,
+      "thin_content": false,
+      "content_word_count": 700,
+      "currency": "USD",
+      "evidence_confidence": 0.91
+    },
+    "step6-thin-content": {
+      "provider_ready": true,
+      "locale_ready": true,
+      "page_ready_keyword_evidence": true,
+      "is_monetized": true,
+      "affiliate_coverage": 1.0,
+      "title_meta_intent_ready": true,
+      "keyword_stuffing_ratio": 0.08,
+      "thin_content": true,
+      "content_word_count": 210,
+      "currency": "GBP",
+      "evidence_confidence": 0.92
+    },
+    "step6-uncertain-evidence": {
+      "provider_ready": true,
+      "locale_ready": true,
+      "page_ready_keyword_evidence": true,
+      "is_monetized": true,
+      "affiliate_coverage": 1.0,
+      "title_meta_intent_ready": true,
+      "keyword_stuffing_ratio": 0.11,
+      "thin_content": false,
+      "content_word_count": 760,
+      "currency": "USD",
+      "uncertain_evidence": true,
+      "evidence_confidence": 0.52
+    }
+  }
+}

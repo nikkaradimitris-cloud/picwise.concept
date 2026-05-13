@@ -1,0 +1,172 @@
+{
+  "candidate_pages": [
+    {
+      "candidate_page_id": "step6-clean-us-power-banks",
+      "slug": "best-power-banks-for-travel-usa",
+      "locale": "en-US",
+      "market": "US",
+      "main_keyword": "best power banks for travel usa",
+      "support_keywords": [
+        "best fast charging power banks usa",
+        "power bank comparison usa"
+      ],
+      "long_tail_keywords": [
+        "best power banks for flights usa",
+        "power bank buying guide usa"
+      ],
+      "selected_product_ids": [
+        "pb-us-clean-1",
+        "pb-us-clean-2",
+        "pb-us-clean-3",
+        "pb-us-clean-4"
+      ],
+      "recommended_product_id": "pb-us-clean-1",
+      "product_count": 4,
+      "status": "candidate_ready",
+      "is_public": false,
+      "is_indexable": false,
+      "sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step6-clean-uk-tyres",
+      "slug": "best-all-season-tyres-uk",
+      "locale": "en-GB",
+      "market": "UK",
+      "main_keyword": "best all season tyres uk",
+      "support_keywords": [
+        "all season tyres comparison uk",
+        "best wet grip tyres uk"
+      ],
+      "long_tail_keywords": [
+        "best all season tyres for family cars uk",
+        "all season tyres buying guide uk"
+      ],
+      "selected_product_ids": [
+        "tyre-uk-clean-1",
+        "tyre-uk-clean-2",
+        "tyre-uk-clean-3",
+        "tyre-uk-clean-4"
+      ],
+      "recommended_product_id": "tyre-uk-clean-1",
+      "product_count": 4,
+      "status": "candidate_ready",
+      "is_public": false,
+      "is_indexable": false,
+      "sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step6-clean-de-kaffee",
+      "slug": "beste-kaffeevollautomaten-fuer-zuhause",
+      "locale": "de-DE",
+      "market": "DE",
+      "main_keyword": "beste kaffeevollautomaten fuer zuhause",
+      "support_keywords": [
+        "kaffeevollautomat vergleich",
+        "kaffeevollautomat kaufberatung"
+      ],
+      "long_tail_keywords": [
+        "bester kaffeevollautomat fuer kleine kueche",
+        "kaffeevollautomat test fuer zuhause"
+      ],
+      "selected_product_ids": [
+        "coffee-de-clean-1",
+        "coffee-de-clean-2",
+        "coffee-de-clean-3",
+        "coffee-de-clean-4"
+      ],
+      "recommended_product_id": "coffee-de-clean-1",
+      "product_count": 4,
+      "status": "candidate_ready",
+      "is_public": false,
+      "is_indexable": false,
+      "sitemap_included": false
+    },
+    {
+      "candidate_page_id": "step6-clean-gr-power-banks",
+      "slug": "kalitero-power-bank-20000mah",
+      "locale": "el-GR",
+      "market": "GR",
+      "main_keyword": "kalitero power bank 20000mah",
+      "support_keywords": [
+        "power bank me grigori fortisi",
+        "power bank gia taxidi ellada"
+      ],
+      "long_tail_keywords": [
+        "power bank 20000mah gia android",
+        "power bank me asfali fortisi stin ptisi"
+      ],
+      "selected_product_ids": [
+        "pb-gr-clean-1",
+        "pb-gr-clean-2",
+        "pb-gr-clean-3",
+        "pb-gr-clean-4"
+      ],
+      "recommended_product_id": "pb-gr-clean-1",
+      "product_count": 4,
+      "status": "candidate_ready",
+      "is_public": false,
+      "is_indexable": false,
+      "sitemap_included": false
+    }
+  ],
+  "candidate_evidence": {
+    "step6-clean-us-power-banks": {
+      "provider_ready": true,
+      "locale_ready": true,
+      "page_ready_keyword_evidence": true,
+      "is_monetized": true,
+      "affiliate_coverage": 1.0,
+      "title_meta_intent_ready": true,
+      "keyword_stuffing_ratio": 0.12,
+      "thin_content": false,
+      "content_word_count": 910,
+      "currency": "USD",
+      "evidence_confidence": 0.98
+    },
+    "step6-clean-uk-tyres": {
+      "provider_ready": true,
+      "locale_ready": true,
+      "page_ready_keyword_evidence": true,
+      "is_monetized": true,
+      "affiliate_coverage": 1.0,
+      "title_meta_intent_ready": true,
+      "keyword_stuffing_ratio": 0.1,
+      "thin_content": false,
+      "content_word_count": 940,
+      "currency": "GBP",
+      "evidence_confidence": 0.97
+    },
+    "step6-clean-de-kaffee": {
+      "provider_ready": true,
+      "locale_ready": true,
+      "page_ready_keyword_evidence": true,
+      "is_monetized": true,
+      "affiliate_coverage": 1.0,
+      "title_meta_intent_ready": true,
+      "keyword_stuffing_ratio": 0.09,
+      "thin_content": false,
+      "content_word_count": 890,
+      "currency": "EUR",
+      "evidence_confidence": 0.97
+    },
+    "step6-clean-gr-power-banks": {
+      "provider_ready": true,
+      "locale_ready": true,
+      "page_ready_keyword_evidence": true,
+      "is_monetized": true,
+      "affiliate_coverage": 1.0,
+      "title_meta_intent_ready": true,
+      "keyword_stuffing_ratio": 0.11,
+      "thin_content": false,
+      "content_word_count": 860,
+      "currency": "EUR",
+      "evidence_confidence": 0.96
+    }
+  },
+  "assertions": {
+    "no_live_sitemap_file_changes": true,
+    "no_best_route_wiring": true,
+    "candidate_only_sitemap_allowed": true,
+    "step6_closure_expected": true
+  }
+}
