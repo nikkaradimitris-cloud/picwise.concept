@@ -84,14 +84,33 @@ class AppHttpEndpointTests(unittest.TestCase):
 
     def test_root_route_shows_review_safe_landing_without_demo_cards(self) -> None:
         body = self._fetch("/")
-        self.assertIn("PicWise helps you compare before you buy.", body)
-        self.assertIn("How PicWise works", body)
-        self.assertIn("Not an online store", body)
+        self.assertIn("Welcome to PicWise.", body)
+        self.assertIn(
+            "PicWise is a shopping decision assistant that helps users compare product options, understand trade-offs, and choose more confidently before visiting external providers.",
+            body,
+        )
+        self.assertIn(
+            "PicWise does not sell products directly, process checkout, handle shipping, returns, warranties, subscriptions, or applications.",
+            body,
+        )
         self.assertIn("shopping decision assistant", body)
-        self.assertIn("Provider and affiliate integrations are currently being configured.", body)
-        self.assertIn("<title>PicWise — Compare Product Options Before You Buy</title>", body)
+        self.assertIn(
+            "Provider and affiliate integrations are being configured. Demo product listings are previews only and are not live Amazon offers.",
+            body,
+        )
+        self.assertIn(
+            "Thank you for visiting PicWise. We are preparing a safer product comparison experience for shoppers.",
+            body,
+        )
+        self.assertIn("<title>PicWise — Shopping Decision Assistant</title>", body)
         self._assert_common_footer_links(body)
-        self.assertIn("View demo", body)
+        self.assertIn('href="/picwise-reference">Demo</a>', body)
+        self.assertEqual(body.count('data-main-cta-area="true"'), 1)
+        self.assertEqual(body.count('class="pw-btn pw-btn-primary"'), 1)
+        self.assertNotIn("View demo", body)
+        self.assertNotIn("What is PicWise?", body)
+        self.assertNotIn("Login", body)
+        self.assertNotIn("Register", body)
         self.assertNotIn("mysubby.cloud@gmail.com", body)
         for forbidden in (
             "Recommended by Picwise",
@@ -143,8 +162,8 @@ class AppHttpEndpointTests(unittest.TestCase):
 
     def test_root_what_is_picwise_link_targets_safe_demo_section(self) -> None:
         body = self._fetch("/")
-        self.assertIn('href="/demo#what-is-picwise"', body)
-        self.assertIn('href="/picwise-reference">View demo</a>', body)
+        self.assertNotIn('href="/demo#what-is-picwise"', body)
+        self.assertIn('href="/picwise-reference">Demo</a>', body)
 
     def test_picwise_reference_route_renders_static_reference_page(self) -> None:
         body = self._fetch("/picwise-reference")

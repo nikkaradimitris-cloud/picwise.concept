@@ -168,10 +168,32 @@ class LandingUiTests(unittest.TestCase):
     def test_review_safe_root_and_demo_info_pages_have_no_commerce_cards_or_store_ctas(self) -> None:
         root_html = render_review_safe_landing_page()
         demo_html = render_demo_info_page()
-        self.assertIn("How PicWise works", root_html)
-        self.assertIn("Not an online store", root_html)
+        self.assertIn("Welcome to PicWise.", root_html)
+        self.assertIn(
+            "PicWise is a shopping decision assistant that helps users compare product options, understand trade-offs, and choose more confidently before visiting external providers.",
+            root_html,
+        )
+        self.assertIn(
+            "PicWise does not sell products directly, process checkout, handle shipping, returns, warranties, subscriptions, or applications.",
+            root_html,
+        )
+        self.assertIn(
+            "Provider and affiliate integrations are being configured. Demo product listings are previews only and are not live Amazon offers.",
+            root_html,
+        )
+        self.assertIn(
+            "Thank you for visiting PicWise. We are preparing a safer product comparison experience for shoppers.",
+            root_html,
+        )
         self.assertIn("shopping decision assistant", root_html)
         self.assertNotIn("mysubby.cloud@gmail.com", root_html)
+        self.assertEqual(root_html.count('data-main-cta-area="true"'), 1)
+        self.assertEqual(root_html.count('class="pw-btn pw-btn-primary"'), 1)
+        self.assertIn('href="/picwise-reference">Demo</a>', root_html)
+        self.assertNotIn("View demo", root_html)
+        self.assertNotIn("What is PicWise?", root_html)
+        self.assertNotIn("Login", root_html)
+        self.assertNotIn("Register", root_html)
         for html in (root_html, demo_html):
             lowered = html.lower()
             for forbidden in (
@@ -187,7 +209,7 @@ class LandingUiTests(unittest.TestCase):
             ):
                 self.assertNotIn(forbidden, lowered)
         self.assertNotIn("class=\"pw-rating-row\"", demo_html)
-        self.assertIn('href="/demo#what-is-picwise"', root_html)
+        self.assertNotIn('href="/demo#what-is-picwise"', root_html)
         self.assertIn("How PicWise will help shoppers decide.", demo_html)
         self.assertIn("Back to home", demo_html)
         self.assertNotIn("What is PicWise?", demo_html)

@@ -100,14 +100,34 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(status, "200 OK")
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
         self.assertIn("<main", body.lower())
-        self.assertIn("PicWise helps you compare before you buy.", body)
-        self.assertIn("How PicWise works", body)
-        self.assertIn("Not an online store", body)
-        self.assertIn("Provider and affiliate integrations are currently being configured.", body)
+        self.assertIn(
+            "PicWise is a shopping decision assistant that helps users compare product options, understand trade-offs, and choose more confidently before visiting external providers.",
+            body,
+        )
+        self.assertIn(
+            "PicWise does not sell products directly, process checkout, handle shipping, returns, warranties, subscriptions, or applications.",
+            body,
+        )
+        self.assertIn(
+            "Provider and affiliate integrations are being configured. Demo product listings are previews only and are not live Amazon offers.",
+            body,
+        )
+        self.assertIn(
+            "Thank you for visiting PicWise. We are preparing a safer product comparison experience for shoppers.",
+            body,
+        )
         self.assertIn("shopping decision assistant", body)
-        self.assertIn("<title>PicWise — Compare Product Options Before You Buy</title>", body)
+        self.assertIn("<title>PicWise — Shopping Decision Assistant</title>", body)
         self.assertIn('<meta name="description"', body)
         self._assert_common_footer_links(body)
+        self.assertIn('href="/picwise-reference">Demo</a>', body)
+        self.assertEqual(body.count('data-main-cta-area="true"'), 1)
+        self.assertEqual(body.count('class="pw-btn pw-btn-primary"'), 1)
+        self.assertEqual(body.count(">Demo<"), 2)
+        self.assertNotIn("View demo", body)
+        self.assertNotIn("What is PicWise?", body)
+        self.assertNotIn("Login", body)
+        self.assertNotIn("Register", body)
         self.assertNotIn("Showing 4 options for:", body)
         self.assertNotIn('class="pw-card pw-card-recommended"', body)
         self.assertNotIn("not_found", body)
@@ -296,8 +316,12 @@ class DeploymentEntrypointTests(unittest.TestCase):
 
     def test_root_route_contains_four_primary_cards_and_one_recommended_marker(self) -> None:
         _status, _headers, body = _call_wsgi("/")
-        self.assertIn("PicWise helps you compare before you buy.", body)
-        self.assertIn("View demo", body)
+        self.assertIn("Welcome to PicWise.", body)
+        self.assertIn('href="/picwise-reference">Demo</a>', body)
+        self.assertNotIn("View demo", body)
+        self.assertNotIn("What is PicWise?", body)
+        self.assertNotIn("Login", body)
+        self.assertNotIn("Register", body)
         self.assertNotIn('<article class="pw-card pw-card-recommended"', body)
         self.assertNotIn("Recommended by Picwise", body)
 
