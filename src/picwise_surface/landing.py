@@ -3,6 +3,7 @@ from __future__ import annotations
 from html import escape
 
 from picwise_contracts import ContractValidationError, DecisionOutput
+from .legal import render_public_footer
 
 
 def render_review_safe_landing_page() -> str:
@@ -12,7 +13,8 @@ def render_review_safe_landing_page() -> str:
         '<html lang="en"><head>'
         '<meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
-        "<title>Picwise | Compare before you buy</title>"
+        "<title>PicWise — Compare Product Options Before You Buy</title>"
+        '<meta name="description" content="PicWise helps shoppers compare product options and make clearer buying decisions before visiting external stores.">'
         "<style>"
         "*{box-sizing:border-box;}"
         "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:#102744;background:linear-gradient(180deg,#f8fbff 0%,#f3f8ff 100%);}"
@@ -34,7 +36,7 @@ def render_review_safe_landing_page() -> str:
         "@media (max-width:760px){.pw-title{font-size:31px;}.pw-grid{grid-template-columns:1fr;}}"
         "</style></head><body>"
         '<main class="pw-wrap">'
-        '<a class="pw-brand" href="/" aria-label="Picwise home">picwise</a>'
+        '<a class="pw-brand" href="/" aria-label="PicWise home">PicWise</a>'
         '<section class="pw-card">'
         '<h1 class="pw-title">PicWise helps you compare before you buy.</h1>'
         '<p class="pw-subtitle">Search for a product category, compare a focused set of options, and choose the best external store offer with more confidence.</p>'
@@ -47,11 +49,11 @@ def render_review_safe_landing_page() -> str:
         "</section>"
         '<div class="pw-actions">'
         '<a class="pw-btn pw-btn-primary" href="/picwise-reference">View demo</a>'
-        '<a class="pw-btn pw-btn-secondary" href="/demo#what-is-picwise">What is Picwise?</a>'
+        '<a class="pw-btn pw-btn-secondary" href="/demo#what-is-picwise">What is PicWise?</a>'
         "</div>"
         '<p class="pw-note">No live provider integration or real product availability is claimed on this page.</p>'
         "</section>"
-        '<footer class="pw-footer">&copy; 2026 PicWise. All rights reserved.</footer>'
+        f"{render_public_footer()}"
         "</main></body></html>"
     )
 
@@ -63,7 +65,8 @@ def render_demo_info_page() -> str:
         '<html lang="en"><head>'
         '<meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
-        "<title>How PicWise will help shoppers decide</title>"
+        "<title>PicWise Demo — Buying Decision Preview</title>"
+        '<meta name="description" content="Preview how PicWise supports product comparison and buying decisions while provider integrations are being configured.">'
         "<style>"
         "*{box-sizing:border-box;}"
         "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:#102744;background:linear-gradient(180deg,#f8fbff 0%,#f3f8ff 100%);}"
@@ -85,7 +88,7 @@ def render_demo_info_page() -> str:
         "@media (max-width:760px){.pw-title{font-size:30px;}.pw-list-wrap{grid-template-columns:1fr;}}"
         "</style></head><body>"
         '<main class="pw-wrap">'
-        '<a class="pw-brand" href="/" aria-label="Picwise home">picwise</a>'
+        '<a class="pw-brand" href="/" aria-label="PicWise home">PicWise</a>'
         '<section class="pw-card">'
         '<h1 class="pw-title">How PicWise will help shoppers decide.</h1>'
         '<p class="pw-body">PicWise is being prepared as a buying-decision assistant. Users will be able to search for a product category, compare a small set of relevant options, and follow external store offers once provider integrations are configured.</p>'
@@ -100,7 +103,7 @@ def render_demo_info_page() -> str:
         '<a class="pw-btn pw-btn-primary" href="/">Back to home</a>'
         "</div>"
         "</section>"
-        '<footer class="pw-footer">&copy; 2026 PicWise. All rights reserved.</footer>'
+        f"{render_public_footer()}"
         "</main></body></html>"
     )
 
@@ -206,7 +209,7 @@ def render_landing_surface(decision_output: DecisionOutput) -> str:
     for idx, card in enumerate(card_specs, start=1):
         rec_class = " pw-card-recommended" if card["recommended"] else ""
         rec_header = (
-            '<div class="pw-rec-badge">&#9733; Recommended by Picwise</div>'
+            '<div class="pw-rec-badge">&#9733; Recommended by PicWise</div>'
             '<span class="pw-rec-ring-a" aria-hidden="true"></span>'
             '<span class="pw-rec-ring-b" aria-hidden="true"></span>'
             '<span class="pw-rec-ring-c" aria-hidden="true"></span>'
@@ -251,7 +254,7 @@ def render_landing_surface(decision_output: DecisionOutput) -> str:
         '<html lang="en"><head>'
         '<meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
-        f"<title>{escape(decision_output.page_title)} | Picwise</title>"
+        f"<title>{escape(decision_output.page_title)} | PicWise</title>"
         "<style>"
         "*{box-sizing:border-box;}html,body{min-height:100%;}"
         "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:#0f1f3a;background:linear-gradient(180deg,#f9fcff 0%,#f5f9ff 48%,#f9fcff 100%);}"
@@ -352,8 +355,8 @@ def render_landing_surface(decision_output: DecisionOutput) -> str:
         '<span class="pw-search-button-icon" aria-hidden="true"></span>'
         "</button></div></form>"
         '<section class="pw-info-wrap" id="pw-info-wrap" data-open="true">'
-        '<button type="button" class="pw-info-link" id="pw-info-link" aria-expanded="true" aria-controls="pw-tooltip">&#9432; What is Picwise?</button>'
-        '<div class="pw-tooltip" id="pw-tooltip">Picwise is your shopping assistant. It compares products for what you want to buy, recommends the 4 best matches, saves you time, and helps you choose faster.</div>'
+        '<button type="button" class="pw-info-link" id="pw-info-link" aria-expanded="true" aria-controls="pw-tooltip">&#9432; What is PicWise?</button>'
+        '<div class="pw-tooltip" id="pw-tooltip">PicWise is your shopping assistant. It compares products for what you want to buy, recommends the 4 best matches, saves you time, and helps you choose faster.</div>'
         "</section>"
         f'<p class="pw-query">Showing 4 options for: <span class="pw-query-keyword">{query}</span></p>'
         '<section class="pw-grid" data-card-count="4">'

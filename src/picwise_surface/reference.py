@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from html import escape
 
+from .legal import render_public_footer
+
 
 def render_picwise_reference_surface() -> str:
     card_specs = [
@@ -95,7 +97,7 @@ def render_picwise_reference_surface() -> str:
     for idx, card in enumerate(card_specs, start=1):
         rec_class = " pw-card-recommended" if card["recommended"] else ""
         rec_header = (
-            '<div class="pw-rec-badge">&#9733; Recommended by Picwise</div>'
+            '<div class="pw-rec-badge">&#9733; Recommended by PicWise</div>'
             if card["recommended"]
             else ""
         )
@@ -137,7 +139,8 @@ def render_picwise_reference_surface() -> str:
         '<html lang="en"><head>'
         '<meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
-        "<title>Picwise Reference</title>"
+        "<title>PicWise Reference — Buying Decision Preview</title>"
+        '<meta name="description" content="Preview how PicWise supports product comparison and buying decisions while provider integrations are being configured.">'
         "<style>"
         "*{box-sizing:border-box;}html,body{height:100%;}"
         "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:#0f1f3a;background:#f8fbff;}"
@@ -197,6 +200,7 @@ def render_picwise_reference_surface() -> str:
         ".pw-card-cta{margin-top:auto;width:100%;height:40px;border-radius:11px;border:1px solid #2e75ee;color:#2e75ee;background:#fff;font-size:16px;font-weight:700;}"
         ".pw-card-recommended .pw-card-cta{background:#1f6dff;color:#fff;border-color:#1f6dff;}"
         ".pw-demo-note{text-align:center;font-size:12px;color:#7389ac;margin:16px 0 8px;}"
+        ".pw-reference-disclaimer{margin:0 auto 16px;max-width:900px;padding:10px 12px;border:1px solid #dbe8fb;border-radius:12px;background:#f6f9ff;color:#284a76;font-size:14px;line-height:1.6;text-align:center;}"
         ".pw-footer{text-align:center;padding:4px 0 8px;font-size:12px;color:#6e83a3;}"
         ".pw-footer a{color:#6e83a3;text-decoration:none;margin-left:22px;}"
         "@media (min-width:1100px){.pw-reference-viewport{padding:8px;}.pw-reference-frame{padding:12px 20px 16px;}.pw-topbar{height:46px;margin-bottom:16px;}.pw-brand-wrap{margin:0 0 24px;}.pw-search-wrap{height:52px;margin:0 auto 20px;}.pw-query-line{margin:0 auto 40px;}.pw-card{padding:12px 12px 10px;min-height:444px;}.pw-product-image-wrap{height:74px;margin:0 0 8px;}.pw-product-image{width:228px;height:74px;}}"
@@ -208,12 +212,12 @@ def render_picwise_reference_surface() -> str:
         '<div class="pw-reference-scale-shell" id="pw-reference-scale-shell">'
         '<div class="pw-reference-frame" id="pw-reference-frame">'
         '<header class="pw-topbar">'
-        '<div class="pw-actions"><button class="pw-topbar-control pw-login-btn" type="button">Login</button><a class="pw-topbar-control pw-register" href="#">Register</a><section class="pw-info-wrap" id="pw-info-wrap"><button class="pw-topbar-control pw-info-link" id="pw-info-button" type="button" aria-label="What is Picwise?" aria-expanded="false" aria-controls="pw-tooltip">What is Picwise?</button><div class="pw-tooltip" id="pw-tooltip">Picwise compares products for what you want to buy, recommends the 4 best matches, saves you time, and helps you choose faster.</div></section></div>'
+        '<div class="pw-actions"><button class="pw-topbar-control pw-login-btn" type="button">Login</button><a class="pw-topbar-control pw-register" href="#">Register</a><section class="pw-info-wrap" id="pw-info-wrap"><button class="pw-topbar-control pw-info-link" id="pw-info-button" type="button" aria-label="What is PicWise?" aria-expanded="false" aria-controls="pw-tooltip">What is PicWise?</button><div class="pw-tooltip" id="pw-tooltip">PicWise compares products for what you want to buy, recommends the 4 best matches, saves you time, and helps you choose faster.</div></section></div>'
         "</header>"
-        '<section class="pw-brand-wrap" aria-label="Picwise brand">'
-        '<a class="pw-brand" href="#" aria-label="Picwise home">'
+        '<section class="pw-brand-wrap" aria-label="PicWise brand">'
+        '<a class="pw-brand" href="/" aria-label="PicWise home">'
         '<span class="pw-logo" aria-hidden="true"></span>'
-        '<span class="pw-brand-text"><span class="pw-brand-name">picwise</span></span>'
+        '<span class="pw-brand-text"><span class="pw-brand-name">PicWise</span></span>'
         "</a>"
         "</section>"
         '<section class="pw-search-wrap" aria-label="Search">'
@@ -224,11 +228,12 @@ def render_picwise_reference_surface() -> str:
         '<span class="pw-search-button-icon" aria-hidden="true"></span>'
         "</button></div></section>"
         '<p class="pw-query-line">Showing 4 options for: power bank 20000mah for iphone</p>'
+        '<p class="pw-reference-disclaimer">Demo preview only — not live Amazon, Linkwise, SaaS, finance, insurance, or provider offers. Product cards, prices, ratings, and store actions shown here are for visual demonstration only.</p>'
         '<section class="pw-grid" data-card-count="4">'
         f"{''.join(card_html)}"
         "</section>"
         '<p class="pw-demo-note">&#9432; Demo data source: local_test_fixture (not_production_data).</p>'
-        '<footer class="pw-footer">&copy; 2024 Picwise. All rights reserved.<a href="#">Privacy</a><a href="#">Terms</a><a href="#">Contact</a></footer>'
+        f"{render_public_footer()}"
         "</div>"
         "</div>"
         '<script>'

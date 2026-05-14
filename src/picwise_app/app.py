@@ -20,10 +20,16 @@ from picwise_nlu import adapt_local_nlu_intent_for_router, build_local_nlu_inten
 from picwise_search import route_search_query
 from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
 from picwise_surface import (
+    render_affiliate_disclosure_page,
+    render_branded_not_found_page,
+    render_contact_page,
+    render_cookies_page,
     render_demo_info_page,
     render_mvp_search_results_surface,
     render_picwise_reference_surface,
+    render_privacy_page,
     render_review_safe_landing_page,
+    render_terms_page,
 )
 from .buying_routes import render_best_slug_html, render_buying_sitemap_xml
 
@@ -32,6 +38,11 @@ LOCAL_AVAILABLE_ROUTES = (
     "/",
     "/health",
     "/demo",
+    "/terms",
+    "/privacy",
+    "/cookies",
+    "/affiliate-disclosure",
+    "/contact",
     "/search",
     "/results",
     "/picwise-reference",
@@ -74,6 +85,24 @@ class PicwiseLocalApp:
 
     def picwise_reference_html(self) -> str:
         return render_picwise_reference_surface()
+
+    def terms_html(self) -> str:
+        return render_terms_page()
+
+    def privacy_html(self) -> str:
+        return render_privacy_page()
+
+    def cookies_html(self) -> str:
+        return render_cookies_page()
+
+    def affiliate_disclosure_html(self) -> str:
+        return render_affiliate_disclosure_page()
+
+    def contact_html(self) -> str:
+        return render_contact_page()
+
+    def not_found_html(self) -> str:
+        return render_branded_not_found_page()
 
     def mvp_search_html(self, query: str) -> str:
         flow = run_pickwise_mvp_search_flow(query)
@@ -399,6 +428,26 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             html = self.app.demo_html(query)
             self._send_html(HTTPStatus.OK, html)
             return
+        if parsed.path == "/terms":
+            html = self.app.terms_html()
+            self._send_html(HTTPStatus.OK, html)
+            return
+        if parsed.path == "/privacy":
+            html = self.app.privacy_html()
+            self._send_html(HTTPStatus.OK, html)
+            return
+        if parsed.path == "/cookies":
+            html = self.app.cookies_html()
+            self._send_html(HTTPStatus.OK, html)
+            return
+        if parsed.path == "/affiliate-disclosure":
+            html = self.app.affiliate_disclosure_html()
+            self._send_html(HTTPStatus.OK, html)
+            return
+        if parsed.path == "/contact":
+            html = self.app.contact_html()
+            self._send_html(HTTPStatus.OK, html)
+            return
         if parsed.path in {"/search", "/results"}:
             query = parse_qs(parsed.query).get("q", [""])[0]
             html = self.app.mvp_search_html(query)
@@ -420,13 +469,7 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             xml = render_buying_sitemap_xml(base_url=f"http://{host}")
             self._send_xml(HTTPStatus.OK, xml)
             return
-        self._send_json(
-            HTTPStatus.NOT_FOUND,
-            {
-                "error": "not_found",
-                "available_routes": list(LOCAL_AVAILABLE_ROUTES),
-            },
-        )
+        self._send_html(HTTPStatus.NOT_FOUND, self.app.not_found_html())
 
     def log_message(self, _format: str, *_args: Any) -> None:
         return

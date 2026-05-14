@@ -22,6 +22,12 @@ from picwise_surface import (  # noqa: E402
     render_demo_info_page,
     render_landing_surface,
     render_review_safe_landing_page,
+    render_affiliate_disclosure_page,
+    render_contact_page,
+    render_cookies_page,
+    render_privacy_page,
+    render_terms_page,
+    render_branded_not_found_page,
     run_final_v1_audit_closure,
 )
 
@@ -106,7 +112,7 @@ class LandingUiTests(unittest.TestCase):
 
     def test_landing_renders_exactly_1_recommended_card(self) -> None:
         html = render_landing_surface(build_decision_output())
-        self.assertEqual(html.count("Recommended by Picwise"), 1)
+        self.assertEqual(html.count("Recommended by PicWise"), 1)
         self.assertGreater(
             html.rfind('<article class="pw-card pw-card-recommended"'),
             html.find('<article class="pw-card"'),
@@ -151,9 +157,9 @@ class LandingUiTests(unittest.TestCase):
 
     def test_landing_contains_required_info_link_and_tooltip_text(self) -> None:
         html = render_landing_surface(build_decision_output())
-        self.assertIn("What is Picwise?", html)
+        self.assertIn("What is PicWise?", html)
         self.assertIn(
-            "Picwise is your shopping assistant. It compares products for what you want to buy, "
+            "PicWise is your shopping assistant. It compares products for what you want to buy, "
             "recommends the 4 best matches, saves you time, and helps you choose faster.",
             html,
         )
@@ -180,8 +186,14 @@ class LandingUiTests(unittest.TestCase):
         self.assertIn('href="/demo#what-is-picwise"', root_html)
         self.assertIn("How PicWise will help shoppers decide.", demo_html)
         self.assertIn("Back to home", demo_html)
-        self.assertNotIn("What is Picwise?", demo_html)
+        self.assertNotIn("What is PicWise?", demo_html)
         self.assertIn("This demo page is informational only.", demo_html)
+        for page in (root_html, demo_html):
+            self.assertIn('href="/terms"', page)
+            self.assertIn('href="/privacy"', page)
+            self.assertIn('href="/cookies"', page)
+            self.assertIn('href="/affiliate-disclosure"', page)
+            self.assertIn('href="/contact"', page)
 
     def test_css_has_no_negative_margin_top_on_shell_or_hero(self) -> None:
         css = self._extract_inline_css(render_landing_surface(build_decision_output())).replace(" ", "")
@@ -204,6 +216,94 @@ class LandingUiTests(unittest.TestCase):
         self.assertIn(".pw-topbar{position:relative;", css)
         self.assertIn(".pw-hero{position:relative;", css)
         self.assertIn("text-align:center;", css)
+
+    def test_legal_pages_have_headings_sections_footer_and_meta(self) -> None:
+        pages = (
+            render_terms_page(),
+            render_privacy_page(),
+            render_cookies_page(),
+            render_affiliate_disclosure_page(),
+            render_contact_page(),
+        )
+        for page in pages:
+            self.assertEqual(page.count('<main class="pw-wrap">'), 1)
+            self.assertIn("<h1", page)
+            self.assertIn("<h2", page)
+            self.assertIn('<meta name="description"', page)
+            self.assertEqual(page.count('<footer class="pw-footer">'), 1)
+            self.assertIn('href="/terms"', page)
+            self.assertIn('href="/privacy"', page)
+            self.assertIn('href="/cookies"', page)
+            self.assertIn('href="/affiliate-disclosure"', page)
+            self.assertIn('href="/contact"', page)
+
+    def test_legal_pages_do_not_claim_live_tracking_stack_or_fake_commerce(self) -> None:
+        legal_blob = " ".join(
+            [
+                render_terms_page().lower(),
+                render_privacy_page().lower(),
+                render_cookies_page().lower(),
+                render_affiliate_disclosure_page().lower(),
+                render_contact_page().lower(),
+            ]
+        )
+        for forbidden in (
+            "add to cart",
+            "checkout now",
+            "buy now",
+            "google analytics is active",
+            "meta pixel is active",
+            "amazon pixel is active",
+            "linkwise pixel is active",
+        ):
+            self.assertNotIn(forbidden, legal_blob)
+
+    def test_terms_privacy_cookies_affiliate_contact_required_wording(self) -> None:
+        terms = render_terms_page()
+        privacy = render_privacy_page()
+        cookies = render_cookies_page()
+        affiliate = render_affiliate_disclosure_page()
+        contact = render_contact_page()
+
+        self.assertIn("PicWise does not sell products directly", terms)
+        self.assertIn("no checkout", terms.lower())
+        self.assertIn("SaaS", terms)
+        self.assertIn("finance", terms.lower())
+        self.assertIn("no financial advice", terms.lower())
+        self.assertIn("Disclaimer", terms)
+        self.assertIn("Limitation of liability", terms)
+        self.assertIn("Use of PicWise is at the user's own risk.", terms)
+        self.assertIn("No professional advice", terms)
+        self.assertIn("Users remain responsible for their final decision", terms)
+
+        self.assertIn("cookies", privacy.lower())
+        self.assertIn("pixels", privacy.lower())
+        self.assertIn("European Economic Area", privacy)
+        self.assertIn("United Kingdom", privacy)
+        self.assertIn("legal basis", privacy.lower())
+        self.assertIn("affiliate", privacy.lower())
+        self.assertIn("SaaS", privacy)
+        self.assertIn("finance", privacy.lower())
+
+        self.assertIn("essential cookies", cookies.lower())
+        self.assertIn("non-essential cookies", cookies.lower())
+        self.assertIn("pixels", cookies.lower())
+        self.assertIn("consent", cookies.lower())
+        self.assertIn("affiliate", cookies.lower())
+
+        self.assertIn("As an Amazon Associate I earn from qualifying purchases.", affiliate)
+        self.assertIn("Linkwise", affiliate)
+        self.assertIn("SaaS", affiliate)
+        self.assertIn("finance", affiliate.lower())
+
+        self.assertIn("mysubby.cloud@gmail.com", contact)
+
+    def test_branded_not_found_page_has_required_elements(self) -> None:
+        html = render_branded_not_found_page()
+        self.assertIn("Page not found — PicWise", html)
+        self.assertIn("The page you requested could not be found.", html)
+        self.assertIn('href="/"', html)
+        self.assertIn('href="/terms"', html)
 
 
 class CtaRedirectTrackingTests(unittest.TestCase):

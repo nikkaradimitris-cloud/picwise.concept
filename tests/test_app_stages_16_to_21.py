@@ -34,6 +34,24 @@ def _pick_open_port() -> int:
 
 
 class AppHttpEndpointTests(unittest.TestCase):
+    @staticmethod
+    def _assert_common_footer_links(body: str) -> None:
+        for href in (
+            "/",
+            "/demo",
+            "/picwise-reference",
+            "/terms",
+            "/privacy",
+            "/cookies",
+            "/affiliate-disclosure",
+            "/contact",
+        ):
+            assert f'href="{href}"' in body
+        assert (
+            "PicWise may earn commissions from qualifying purchases, referrals, or provider links "
+            "when affiliate or provider integrations are active."
+        ) in body
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.port = _pick_open_port()
@@ -60,6 +78,8 @@ class AppHttpEndpointTests(unittest.TestCase):
         body = self._fetch("/")
         self.assertIn("PicWise helps you compare before you buy.", body)
         self.assertIn("Provider and affiliate integrations are currently being configured.", body)
+        self.assertIn("<title>PicWise — Compare Product Options Before You Buy</title>", body)
+        self._assert_common_footer_links(body)
         self.assertIn("View demo", body)
         for forbidden in (
             "Recommended by Picwise",
@@ -75,6 +95,8 @@ class AppHttpEndpointTests(unittest.TestCase):
         body = self._fetch("/demo")
         self.assertIn("<html", body.lower())
         self.assertIn("How PicWise will help shoppers decide.", body)
+        self.assertIn("<title>PicWise Demo — Buying Decision Preview</title>", body)
+        self._assert_common_footer_links(body)
 
     def test_demo_includes_query_confirmation(self) -> None:
         query = "power bank 20000mah for iphone"
@@ -115,6 +137,8 @@ class AppHttpEndpointTests(unittest.TestCase):
     def test_picwise_reference_route_renders_static_reference_page(self) -> None:
         body = self._fetch("/picwise-reference")
         self.assertIn("See the 4 best products before you buy", body)
+        self.assertIn("Demo preview only", body)
+        self.assertIn("not live Amazon, Linkwise, SaaS, finance, insurance, or provider offers.", body)
         self.assertNotIn("shopping assistant", body)
         self.assertIn(
             'placeholder="See the 4 best products before you buy"',
@@ -123,7 +147,7 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertNotIn("<h1>See the 4 best products before you buy</h1>", body)
         self.assertNotIn("Search your product here", body)
         self.assertNotIn('value="See the 4 best products before you buy"', body)
-        self.assertIn("What is Picwise?", body)
+        self.assertIn("What is PicWise?", body)
         self.assertIn("Showing 4 options for: power bank 20000mah for iphone", body)
         self.assertNotIn("LIVE RENDERER PROOF V1", body)
         self.assertNotIn("picwise-reference-live-renderer-proof-v1", body)
@@ -140,11 +164,9 @@ class AppHttpEndpointTests(unittest.TestCase):
             body,
         )
         self.assertIn("All rights reserved.", body)
-        self.assertIn("Privacy", body)
-        self.assertIn("Terms", body)
-        self.assertIn("Contact", body)
+        self._assert_common_footer_links(body)
         self.assertEqual(body.count('<article class="pw-card'), 4)
-        self.assertEqual(body.count("Recommended by Picwise"), 1)
+        self.assertEqual(body.count("Recommended by PicWise"), 1)
         self.assertNotIn("&middot;", body)
         for product_name in (
             "TravelCore 20K",
@@ -176,6 +198,7 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertIn("Back to home", body)
         self.assertNotIn("What is Picwise?", body)
         self.assertIn("All rights reserved.", body)
+        self._assert_common_footer_links(body)
         for forbidden in (
             "View in Store",
             "Go to Store",
@@ -235,6 +258,29 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertIn("informational only", body)
         self.assertIn("No live Amazon offers are currently claimed", body)
 
+    def test_legal_routes_and_404_are_exposed_on_local_server(self) -> None:
+        for path, token in (
+            ("/terms", "Terms of Use"),
+            ("/privacy", "Privacy Policy"),
+            ("/cookies", "Cookie Policy"),
+            ("/affiliate-disclosure", "As an Amazon Associate I earn from qualifying purchases."),
+            ("/contact", "mysubby.cloud@gmail.com"),
+        ):
+            body = self._fetch(path)
+            self.assertIn(token, body)
+            self.assertIn('<meta name="description"', body)
+            self._assert_common_footer_links(body)
+
+        from urllib.error import HTTPError
+
+        with self.assertRaises(HTTPError) as ctx:
+            self._fetch("/not-real-page")
+        self.assertEqual(ctx.exception.code, 404)
+        body = ctx.exception.read().decode("utf-8")
+        self.assertIn("Page not found — PicWise", body)
+        self.assertIn("The page you requested could not be found.", body)
+        self._assert_common_footer_links(body)
+
 
 class SpyFeedAdapter(FeedAdapterProtocol):
     def __init__(self) -> None:
@@ -254,7 +300,7 @@ class PipelineAndFeedTests(unittest.TestCase):
         html = render_landing_surface(output)
         self.assertTrue(feed.called)
         self.assertIn(output.recommended_product_id, {choice.product_id for choice in output.choices})
-        self.assertIn("Recommended by Picwise", html)
+        self.assertIn("Recommended by PicWise", html)
 
     def test_feed_adapter_validates_fixture_candidates(self) -> None:
         result = LocalFixtureFeedAdapter().fetch_candidates("power bank")

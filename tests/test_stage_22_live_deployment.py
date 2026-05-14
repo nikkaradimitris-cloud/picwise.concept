@@ -46,6 +46,24 @@ def _call_wsgi(path: str, query_string: str = "") -> tuple[str, dict[str, str], 
 
 
 class DeploymentEntrypointTests(unittest.TestCase):
+    @staticmethod
+    def _assert_common_footer_links(body: str) -> None:
+        for href in (
+            "/",
+            "/demo",
+            "/picwise-reference",
+            "/terms",
+            "/privacy",
+            "/cookies",
+            "/affiliate-disclosure",
+            "/contact",
+        ):
+            assert f'href="{href}"' in body
+        assert (
+            "PicWise may earn commissions from qualifying purchases, referrals, or provider links "
+            "when affiliate or provider integrations are active."
+        ) in body
+
     def test_deployment_entrypoint_imports(self) -> None:
         self.assertTrue(callable(deployment_app))
         self.assertTrue(callable(wsgi_app))
@@ -65,6 +83,9 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn("How PicWise will help shoppers decide.", body)
         self.assertIn("This demo page is informational only.", body)
         self.assertNotIn(query, body)
+        self.assertIn("<title>PicWise Demo — Buying Decision Preview</title>", body)
+        self.assertIn('<meta name="description"', body)
+        self._assert_common_footer_links(body)
 
     def test_root_route_returns_landing_html_not_not_found(self) -> None:
         status, headers, body = _call_wsgi("/")
@@ -73,6 +94,9 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn("<main", body.lower())
         self.assertIn("PicWise helps you compare before you buy.", body)
         self.assertIn("Provider and affiliate integrations are currently being configured.", body)
+        self.assertIn("<title>PicWise — Compare Product Options Before You Buy</title>", body)
+        self.assertIn('<meta name="description"', body)
+        self._assert_common_footer_links(body)
         self.assertNotIn("Showing 4 options for:", body)
         self.assertNotIn('class="pw-card pw-card-recommended"', body)
         self.assertNotIn("not_found", body)
@@ -82,6 +106,8 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(status, "200 OK")
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
         self.assertIn("See the 4 best products before you buy", body)
+        self.assertIn("Demo preview only", body)
+        self.assertIn("not live Amazon, Linkwise, SaaS, finance, insurance, or provider offers.", body)
         self.assertNotIn("shopping assistant", body)
         self.assertIn(
             'placeholder="See the 4 best products before you buy"',
@@ -100,16 +126,14 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn("Showing 4 options for: power bank 20000mah for iphone", body)
         self.assertNotIn("LIVE RENDERER PROOF V1", body)
         self.assertNotIn("picwise-reference-live-renderer-proof-v1", body)
-        self.assertIn("What is Picwise?", body)
+        self.assertIn("What is PicWise?", body)
         self.assertEqual(body.count('class="pw-brand"'), 1)
         self.assertIn(
             "Demo data source: local_test_fixture (not_production_data).",
             body,
         )
         self.assertIn("All rights reserved.", body)
-        self.assertIn("Privacy", body)
-        self.assertIn("Terms", body)
-        self.assertIn("Contact", body)
+        self._assert_common_footer_links(body)
         self.assertEqual(body.count('<article class="pw-card'), 4)
         self.assertNotIn("&middot;", body)
         for asset in (
@@ -153,7 +177,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         )
         self.assertNotIn("LIVE RENDERER PROOF V1", reference_body)
         self.assertNotIn("picwise-reference-live-renderer-proof-v1", reference_body)
-        self.assertIn("What is Picwise?", reference_body)
+        self.assertIn("What is PicWise?", reference_body)
         self.assertEqual(reference_body.count('class="pw-brand"'), 1)
         for product_name in (
             "TravelCore 20K",
@@ -162,6 +186,78 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "PowerMax Elite 25K",
         ):
             self.assertIn(product_name, reference_body)
+        self._assert_common_footer_links(reference_body)
+
+    def test_terms_privacy_cookies_affiliate_contact_routes(self) -> None:
+        expected = {
+            "/terms": ("Terms of Use", "<title>Terms of Use — PicWise</title>"),
+            "/privacy": ("Privacy Policy", "<title>Privacy Policy — PicWise</title>"),
+            "/cookies": ("Cookie Policy", "<title>Cookie Policy — PicWise</title>"),
+            "/affiliate-disclosure": ("Affiliate Disclosure", "<title>Affiliate Disclosure — PicWise</title>"),
+            "/contact": ("mysubby.cloud@gmail.com", "<title>Contact — PicWise</title>"),
+        }
+        for path, (must_have, title_tag) in expected.items():
+            status, headers, body = _call_wsgi(path)
+            self.assertEqual(status, "200 OK")
+            self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+            self.assertIn(must_have, body)
+            self.assertIn(title_tag, body)
+            self.assertIn('<meta name="description"', body)
+            self._assert_common_footer_links(body)
+
+    def test_affiliate_disclosure_contains_required_terms(self) -> None:
+        _status, _headers, body = _call_wsgi("/affiliate-disclosure")
+        self.assertIn("As an Amazon Associate I earn from qualifying purchases.", body)
+        self.assertIn("Linkwise", body)
+        self.assertIn("SaaS", body)
+        self.assertIn("finance", body.lower())
+
+    def test_privacy_contains_required_terms(self) -> None:
+        _status, _headers, body = _call_wsgi("/privacy")
+        lowered = body.lower()
+        self.assertIn("cookies", lowered)
+        self.assertIn("pixels", lowered)
+        self.assertIn("european economic area", lowered)
+        self.assertIn("united kingdom", lowered)
+        self.assertIn("legal basis", lowered)
+        self.assertIn("affiliate", lowered)
+        self.assertIn("saas", lowered)
+        self.assertIn("finance", lowered)
+
+    def test_cookies_contains_required_terms(self) -> None:
+        _status, _headers, body = _call_wsgi("/cookies")
+        lowered = body.lower()
+        self.assertIn("essential cookies", lowered)
+        self.assertIn("non-essential cookies", lowered)
+        self.assertIn("pixels", lowered)
+        self.assertIn("consent", lowered)
+        self.assertIn("affiliate", lowered)
+
+    def test_terms_contains_required_disclaimer_and_liability_terms(self) -> None:
+        _status, _headers, body = _call_wsgi("/terms")
+        lowered = body.lower()
+        self.assertIn("picwise does not sell products directly", lowered)
+        self.assertIn("no checkout", lowered)
+        self.assertIn("external seller/provider", lowered)
+        self.assertIn("saas", lowered)
+        self.assertIn("finance", lowered)
+        self.assertIn("no financial advice", lowered)
+        self.assertIn("disclaimer", lowered)
+        self.assertIn("Limitation of liability", body)
+        self.assertIn("Use of PicWise is at the user's own risk.", body)
+        self.assertIn("No professional advice", body)
+        self.assertIn("does not guarantee", lowered)
+        self.assertIn("best, cheapest, most suitable", lowered)
+        self.assertIn("Users remain responsible for their final decision", body)
+
+    def test_branded_404_page_is_returned(self) -> None:
+        status, headers, body = _call_wsgi("/missing-legal-route")
+        self.assertEqual(status, "404 Not Found")
+        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+        self.assertIn("Page not found — PicWise", body)
+        self.assertIn("The page you requested could not be found.", body)
+        self.assertIn('href="/"', body)
+        self._assert_common_footer_links(body)
 
     def test_demo_has_search_form_with_query_value(self) -> None:
         query = "best office chair under 200"
@@ -195,7 +291,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
     def test_landing_contains_header_with_login_register(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
         self.assertIn('class="pw-brand"', body)
-        self.assertIn(">picwise<", body)
+        self.assertIn(">PicWise<", body)
         self.assertIn("Back to home", body)
         self.assertNotIn("What is Picwise?", body)
 

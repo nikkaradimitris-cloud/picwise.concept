@@ -20,9 +20,15 @@ from picwise_integrations import (  # noqa: E402
 )
 from picwise_mvp import run_pickwise_mvp_search_flow  # noqa: E402
 from picwise_surface import (  # noqa: E402
+    render_affiliate_disclosure_page,
+    render_branded_not_found_page,
+    render_contact_page,
+    render_cookies_page,
     render_mvp_search_results_surface,
     render_picwise_reference_surface,
+    render_privacy_page,
     render_review_safe_landing_page,
+    render_terms_page,
 )
 
 StartResponse = Callable[[str, list[tuple[str, str]]], None]
@@ -84,6 +90,31 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
+    if path == "/terms":
+        html = render_terms_page()
+        body = html.encode("utf-8")
+        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+
+    if path == "/privacy":
+        html = render_privacy_page()
+        body = html.encode("utf-8")
+        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+
+    if path == "/cookies":
+        html = render_cookies_page()
+        body = html.encode("utf-8")
+        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+
+    if path == "/affiliate-disclosure":
+        html = render_affiliate_disclosure_page()
+        body = html.encode("utf-8")
+        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+
+    if path == "/contact":
+        html = render_contact_page()
+        body = html.encode("utf-8")
+        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+
     if path in {"/search", "/results"}:
         query_string = str(environ.get("QUERY_STRING", ""))
         query = parse_qs(query_string).get("q", [""])[0]
@@ -119,23 +150,9 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
         return _response("200 OK", "application/json; charset=utf-8", body, start_response)
 
-    payload = {
-        "error": "not_found",
-        "available_routes": [
-            "/",
-            "/health",
-            "/demo",
-            "/search",
-            "/results",
-            "/picwise-reference",
-            "/best/{slug}",
-            "/sitemap-buying-pages.xml",
-            "/subby-proof",
-            "/private-beta-readiness",
-        ],
-    }
-    body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
-    return _response("404 Not Found", "application/json; charset=utf-8", body, start_response)
+    html = render_branded_not_found_page()
+    body = html.encode("utf-8")
+    return _response("404 Not Found", "text/html; charset=utf-8", body, start_response)
 
 
 def _asset_response(path: str) -> tuple[str, bytes] | None:
