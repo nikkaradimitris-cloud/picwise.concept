@@ -20,6 +20,7 @@ from picwise_surface import (  # noqa: E402
     build_surface_metrics,
     prepare_redirect_tracking,
     render_demo_info_page,
+    render_demo_search_page,
     render_landing_surface,
     render_review_safe_landing_page,
     run_final_v1_audit_closure,
@@ -162,6 +163,7 @@ class LandingUiTests(unittest.TestCase):
     def test_review_safe_root_and_demo_info_pages_have_no_commerce_cards_or_store_ctas(self) -> None:
         root_html = render_review_safe_landing_page()
         demo_html = render_demo_info_page()
+        demo_search_html = render_demo_search_page("power bank")
         for html in (root_html, demo_html):
             lowered = html.lower()
             for forbidden in (
@@ -176,10 +178,28 @@ class LandingUiTests(unittest.TestCase):
                 "eur ",
             ):
                 self.assertNotIn(forbidden, lowered)
+        lowered_demo_search = demo_search_html.lower()
+        for forbidden in (
+            "travelcore 20k",
+            "dailybalance pd20",
+            "everydaysure 22.5w",
+            "powermax elite 25k",
+            "view in store",
+            "go to store",
+            "view details and buy",
+            "eur ",
+            "class=\"pw-rating-row\"",
+        ):
+            self.assertNotIn(forbidden, lowered_demo_search)
         self.assertNotIn("class=\"pw-rating-row\"", demo_html)
         self.assertIn('href="/demo#what-is-picwise"', root_html)
         self.assertIn("How PicWise will help shoppers decide.", demo_html)
         self.assertIn("This demo page is informational only.", demo_html)
+        self.assertIn("Search-focused PicWise demo", demo_search_html)
+        self.assertIn(
+            "Provider integrations are being configured. Live product results are not available yet.",
+            demo_search_html,
+        )
 
     def test_css_has_no_negative_margin_top_on_shell_or_hero(self) -> None:
         css = self._extract_inline_css(render_landing_surface(build_decision_output())).replace(" ", "")

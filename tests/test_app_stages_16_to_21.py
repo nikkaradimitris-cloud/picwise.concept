@@ -74,35 +74,48 @@ class AppHttpEndpointTests(unittest.TestCase):
     def test_demo_responds_successfully(self) -> None:
         body = self._fetch("/demo")
         self.assertIn("<html", body.lower())
-        self.assertIn("How PicWise will help shoppers decide.", body)
+        self.assertIn("Search-focused PicWise demo", body)
+        self.assertIn('name="q"', body)
 
     def test_demo_includes_query_confirmation(self) -> None:
         query = "power bank 20000mah for iphone"
         body = self._fetch(f"/demo?q={quote(query)}")
-        self.assertIn("informational only", body)
-        self.assertIn("Search by product need", body)
-        self.assertNotIn(query, body)
+        self.assertIn("Search submitted:", body)
+        self.assertIn(query, body)
+        self.assertIn(
+            "Provider integrations are being configured. Live product results are not available yet.",
+            body,
+        )
 
     def test_demo_ambiguous_query_returns_review_only_safe_no_result(self) -> None:
         query = "Goodyar eco contact performanc 2 195/65/15"
         body = self._fetch(f"/demo?q={quote(query)}")
-        self.assertIn("How PicWise will help shoppers decide.", body)
-        self.assertIn("This demo page is informational only.", body)
+        self.assertIn("Search-focused PicWise demo", body)
+        self.assertIn(
+            "Provider integrations are being configured. Live product results are not available yet.",
+            body,
+        )
         self.assertNotIn("Safe no-result response", body)
         self.assertNotIn('<article class="pw-card', body)
 
     def test_demo_no_safe_result_query_returns_explicit_no_result(self) -> None:
         body = self._fetch("/demo?q=%20")
-        self.assertIn("How PicWise will help shoppers decide.", body)
-        self.assertIn("This demo page is informational only.", body)
+        self.assertIn("Search-focused PicWise demo", body)
+        self.assertNotIn(
+            "Provider integrations are being configured. Live product results are not available yet.",
+            body,
+        )
         self.assertNotIn("Safe no-result response", body)
         self.assertNotIn('<article class="pw-card', body)
 
     def test_demo_specific_product_without_real_same_product_offers_returns_safe_no_valid_offers(self) -> None:
         query = "Goodyear EfficientGrip Performance 2 195/65 R15"
         body = self._fetch(f"/demo?q={quote(query)}")
-        self.assertIn("How PicWise will help shoppers decide.", body)
-        self.assertIn("This demo page is informational only.", body)
+        self.assertIn("Search-focused PicWise demo", body)
+        self.assertIn(
+            "Provider integrations are being configured. Live product results are not available yet.",
+            body,
+        )
         self.assertNotIn("Safe no-result response", body)
         self.assertNotIn("TravelCore 20K", body)
         self.assertNotIn('<article class="pw-card', body)
@@ -172,9 +185,10 @@ class AppHttpEndpointTests(unittest.TestCase):
 
     def test_demo_includes_header_search_and_footer_controls(self) -> None:
         body = self._fetch("/demo?q=power+bank")
-        self.assertIn("How PicWise will help shoppers decide.", body)
+        self.assertIn("Search-focused PicWise demo", body)
         self.assertIn("Back to home", body)
-        self.assertIn("What is Picwise?", body)
+        self.assertIn('name="q"', body)
+        self.assertIn('type="submit">Search</button>', body)
         self.assertIn("All rights reserved.", body)
         for forbidden in (
             "View in Store",
@@ -188,14 +202,16 @@ class AppHttpEndpointTests(unittest.TestCase):
     def test_demo_includes_hero_subtitle_and_demo_note(self) -> None:
         body = self._fetch("/demo")
         self.assertIn(
-            "How PicWise will help shoppers decide.",
+            "This page demonstrates the PicWise search experience concept in a review-safe format.",
             body,
         )
         self.assertIn(
-            "This demo page is informational only.",
+            "No products, prices, ratings, availability, affiliate links, or store actions are shown here.",
             body,
         )
-        demo_note_index = body.index("This demo page is informational only.")
+        demo_note_index = body.index(
+            "No products, prices, ratings, availability, affiliate links, or store actions are shown here."
+        )
         footer_index = body.index('<footer class="pw-footer">')
         self.assertLess(demo_note_index, footer_index)
 
@@ -203,8 +219,8 @@ class AppHttpEndpointTests(unittest.TestCase):
         body = self._fetch("/demo")
         self.assertNotIn('<article class="pw-card', body)
         self.assertNotIn("Recommended by Picwise", body)
-        self.assertIn("Search by product need", body)
-        self.assertIn("Compare focused choices", body)
+        self.assertIn("Search-focused PicWise demo", body)
+        self.assertIn('name="q"', body)
 
     def test_demo_avoids_cart_checkout_and_fake_markers(self) -> None:
         body = self._fetch("/demo").lower()
@@ -232,8 +248,8 @@ class AppHttpEndpointTests(unittest.TestCase):
 
     def test_demo_includes_fixture_not_production_markers(self) -> None:
         body = self._fetch("/demo")
-        self.assertIn("informational only", body)
-        self.assertIn("No live Amazon offers are currently claimed", body)
+        self.assertIn("review-safe format", body)
+        self.assertIn("Provider integrations are still being configured.", body)
 
 
 class SpyFeedAdapter(FeedAdapterProtocol):
