@@ -19,7 +19,11 @@ from picwise_integrations import (  # noqa: E402
     send_subby_live_proof_event,
 )
 from picwise_mvp import run_pickwise_mvp_search_flow  # noqa: E402
-from picwise_surface import render_mvp_search_results_surface, render_picwise_reference_surface  # noqa: E402
+from picwise_surface import (  # noqa: E402
+    render_mvp_search_results_surface,
+    render_picwise_reference_surface,
+    render_review_safe_landing_page,
+)
 
 StartResponse = Callable[[str, list[tuple[str, str]]], None]
 
@@ -69,7 +73,7 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
             return _response("200 OK", content_type, body, start_response)
 
     if path == "/":
-        html = render_picwise_reference_surface()
+        html = render_review_safe_landing_page()
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 

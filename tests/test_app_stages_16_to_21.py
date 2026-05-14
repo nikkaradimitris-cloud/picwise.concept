@@ -56,6 +56,21 @@ class AppHttpEndpointTests(unittest.TestCase):
         body = self._fetch("/health")
         self.assertIn('"status": "ok"', body)
 
+    def test_root_route_shows_review_safe_landing_without_demo_cards(self) -> None:
+        body = self._fetch("/")
+        self.assertIn("PicWise helps you compare before you buy.", body)
+        self.assertIn("Provider and affiliate integrations are currently being configured.", body)
+        self.assertIn("View demo", body)
+        for forbidden in (
+            "Recommended by Picwise",
+            "View in Store",
+            "Go to Store",
+            "View Details and Buy",
+            "EUR ",
+            "Showing 4 options for:",
+        ):
+            self.assertNotIn(forbidden, body)
+
     def test_demo_responds_successfully(self) -> None:
         body = self._fetch("/demo")
         self.assertIn("<html", body.lower())

@@ -21,7 +21,12 @@ from picwise_nlu import adapt_local_nlu_intent_for_router, build_local_nlu_inten
 from picwise_redirects import build_redirect_tracking_payload, resolve_redirect
 from picwise_search import route_search_query
 from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
-from picwise_surface import render_landing_surface, render_mvp_search_results_surface, render_picwise_reference_surface
+from picwise_surface import (
+    render_landing_surface,
+    render_mvp_search_results_surface,
+    render_picwise_reference_surface,
+    render_review_safe_landing_page,
+)
 from .buying_routes import render_best_slug_html, render_buying_sitemap_xml
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -87,6 +92,9 @@ class PicwiseLocalApp:
                 f"{marker}</body>"
             ),
         )
+
+    def root_landing_html(self) -> str:
+        return render_review_safe_landing_page()
 
     def picwise_reference_html(self) -> str:
         return render_picwise_reference_surface()
@@ -406,7 +414,11 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
         if parsed.path == "/health":
             self._send_json(HTTPStatus.OK, self.app.health_payload())
             return
-        if parsed.path in {"/", "/demo"}:
+        if parsed.path == "/":
+            html = self.app.root_landing_html()
+            self._send_html(HTTPStatus.OK, html)
+            return
+        if parsed.path == "/demo":
             query = parse_qs(parsed.query).get("q", ["best products to buy"])[0]
             html = self.app.demo_html(query)
             self._send_html(HTTPStatus.OK, html)

@@ -71,7 +71,10 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(status, "200 OK")
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
         self.assertIn("<main", body.lower())
-        self.assertIn("Showing 4 options for:", body)
+        self.assertIn("PicWise helps you compare before you buy.", body)
+        self.assertIn("Provider and affiliate integrations are currently being configured.", body)
+        self.assertNotIn("Showing 4 options for:", body)
+        self.assertNotIn('class="pw-card pw-card-recommended"', body)
         self.assertNotIn("not_found", body)
 
     def test_picwise_reference_route_returns_static_reference_html(self) -> None:
@@ -175,9 +178,10 @@ class DeploymentEntrypointTests(unittest.TestCase):
 
     def test_root_route_contains_four_primary_cards_and_one_recommended_marker(self) -> None:
         _status, _headers, body = _call_wsgi("/")
-        self.assertEqual(body.count('<article class="pw-card'), 4)
-        self.assertEqual(body.count('<article class="pw-card pw-card-recommended"'), 1)
-        self.assertEqual(body.count("Recommended by Picwise"), 1)
+        self.assertIn("PicWise helps you compare before you buy.", body)
+        self.assertIn("View demo", body)
+        self.assertNotIn('<article class="pw-card pw-card-recommended"', body)
+        self.assertNotIn("Recommended by Picwise", body)
 
     def test_recommended_card_has_required_highlight_elements(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
@@ -259,6 +263,9 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "fake review",
             "fake rating",
             "fake urgency",
+            "view in store",
+            "go to store",
+            "view details and buy",
         ):
             self.assertNotIn(forbidden_fake, lowered)
 
