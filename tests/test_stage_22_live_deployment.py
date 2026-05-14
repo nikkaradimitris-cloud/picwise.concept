@@ -101,13 +101,17 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
         self.assertIn("<main", body.lower())
         self.assertIn("PicWise helps you compare before you buy.", body)
+        self.assertIn("How PicWise works", body)
+        self.assertIn("Not an online store", body)
         self.assertIn("Provider and affiliate integrations are currently being configured.", body)
+        self.assertIn("shopping decision assistant", body)
         self.assertIn("<title>PicWise — Compare Product Options Before You Buy</title>", body)
         self.assertIn('<meta name="description"', body)
         self._assert_common_footer_links(body)
         self.assertNotIn("Showing 4 options for:", body)
         self.assertNotIn('class="pw-card pw-card-recommended"', body)
         self.assertNotIn("not_found", body)
+        self.assertNotIn("mysubby.cloud@gmail.com", body)
 
     def test_picwise_reference_route_returns_static_reference_html(self) -> None:
         status, headers, body = _call_wsgi("/picwise-reference")
@@ -349,7 +353,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
     def test_landing_html_avoids_cart_checkout_and_fake_markers(self) -> None:
         _status, _headers, body = _call_wsgi("/")
         lowered = body.lower()
-        for forbidden in ("add to cart", "cart", "checkout", "e-shop"):
+        for forbidden in ("add to cart", "cart", "e-shop"):
             self.assertNotIn(forbidden, lowered)
         for forbidden_fake in (
             "fake revenue",

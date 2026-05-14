@@ -85,10 +85,14 @@ class AppHttpEndpointTests(unittest.TestCase):
     def test_root_route_shows_review_safe_landing_without_demo_cards(self) -> None:
         body = self._fetch("/")
         self.assertIn("PicWise helps you compare before you buy.", body)
+        self.assertIn("How PicWise works", body)
+        self.assertIn("Not an online store", body)
+        self.assertIn("shopping decision assistant", body)
         self.assertIn("Provider and affiliate integrations are currently being configured.", body)
         self.assertIn("<title>PicWise — Compare Product Options Before You Buy</title>", body)
         self._assert_common_footer_links(body)
         self.assertIn("View demo", body)
+        self.assertNotIn("mysubby.cloud@gmail.com", body)
         for forbidden in (
             "Recommended by Picwise",
             "View in Store",

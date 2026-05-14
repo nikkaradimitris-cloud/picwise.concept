@@ -168,6 +168,10 @@ class LandingUiTests(unittest.TestCase):
     def test_review_safe_root_and_demo_info_pages_have_no_commerce_cards_or_store_ctas(self) -> None:
         root_html = render_review_safe_landing_page()
         demo_html = render_demo_info_page()
+        self.assertIn("How PicWise works", root_html)
+        self.assertIn("Not an online store", root_html)
+        self.assertIn("shopping decision assistant", root_html)
+        self.assertNotIn("mysubby.cloud@gmail.com", root_html)
         for html in (root_html, demo_html):
             lowered = html.lower()
             for forbidden in (

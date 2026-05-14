@@ -19,7 +19,13 @@ def render_review_safe_landing_page() -> str:
         "*{box-sizing:border-box;}"
         "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:#102744;background:linear-gradient(180deg,#f8fbff 0%,#f3f8ff 100%);}"
         ".pw-wrap{max-width:980px;margin:0 auto;padding:40px 20px 28px;}"
-        ".pw-brand{font-size:30px;font-weight:800;letter-spacing:-.03em;text-transform:lowercase;color:#1a4fb7;}"
+        ".pw-brand{display:inline-flex;align-items:flex-start;gap:10px;color:#1a4fb7;text-decoration:none;}"
+        ".pw-brand-mark{width:30px;height:30px;border-radius:10px;background:linear-gradient(160deg,#30a0ff 0%,#1f6cff 70%);position:relative;box-shadow:0 7px 14px rgba(31,108,255,.2);margin-top:2px;}"
+        ".pw-brand-mark::before{content:'';position:absolute;left:7px;top:7px;width:11px;height:11px;border:3px solid #fff;border-right-color:transparent;border-radius:999px;}"
+        ".pw-brand-mark::after{content:'';position:absolute;right:7px;bottom:7px;width:5px;height:5px;background:#fff;border-radius:999px;}"
+        ".pw-brand-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1;}"
+        ".pw-brand-name{font-size:30px;font-weight:800;letter-spacing:-.03em;text-transform:lowercase;}"
+        ".pw-brand-tagline{margin-top:4px;font-size:12px;color:#3a5f8e;letter-spacing:.02em;text-transform:none;}"
         ".pw-card{margin-top:20px;background:#fff;border:1px solid #d9e7fb;border-radius:16px;padding:24px;box-shadow:0 12px 28px rgba(20,56,112,.08);}"
         ".pw-title{margin:0;font-size:40px;line-height:1.14;letter-spacing:-.02em;color:#0f2442;}"
         ".pw-subtitle{margin:14px 0 0;font-size:18px;line-height:1.6;color:#2c4567;}"
@@ -27,6 +33,10 @@ def render_review_safe_landing_page() -> str:
         ".pw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:20px;}"
         ".pw-section{background:#f6f9ff;border:1px solid #dfeafb;border-radius:12px;padding:14px 16px;}"
         ".pw-section h2{margin:0;font-size:16px;color:#173862;}"
+        ".pw-trust-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px;}"
+        ".pw-trust-card{background:#f8fbff;border:1px solid #dfeafb;border-radius:12px;padding:12px 14px;}"
+        ".pw-trust-card h2{margin:0;font-size:15px;color:#183a66;}"
+        ".pw-trust-card p{margin:7px 0 0;font-size:13px;line-height:1.55;color:#355174;}"
         ".pw-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;}"
         ".pw-btn{height:42px;padding:0 16px;border-radius:999px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:14px;}"
         ".pw-btn-primary{background:#1f6dff;color:#fff;border:1px solid #1f6dff;}"
@@ -38,13 +48,16 @@ def render_review_safe_landing_page() -> str:
         ".pw-footer-link:hover{background:#eef5ff;border-color:#cddffc;color:#24496f;}"
         ".pw-footer-disclosure{margin:10px 0 0;font-size:12px;line-height:1.5;color:#5f7ea6;max-width:760px;}"
         ".pw-footer-meta{margin:6px 0 0;font-size:12px;color:#6b86ac;}"
-        "@media (max-width:760px){.pw-title{font-size:31px;}.pw-grid{grid-template-columns:1fr;}}"
+        "@media (max-width:760px){.pw-title{font-size:31px;}.pw-grid{grid-template-columns:1fr;}.pw-trust-grid{grid-template-columns:1fr;}}"
         "</style></head><body>"
         '<main class="pw-wrap">'
-        '<a class="pw-brand" href="/" aria-label="PicWise home">PicWise</a>'
+        '<a class="pw-brand" href="/" aria-label="PicWise home">'
+        '<span class="pw-brand-mark" aria-hidden="true"></span>'
+        '<span class="pw-brand-text"><span class="pw-brand-name">picwise</span><span class="pw-brand-tagline">shopping decision assistant</span></span>'
+        "</a>"
         '<section class="pw-card">'
         '<h1 class="pw-title">PicWise helps you compare before you buy.</h1>'
-        '<p class="pw-subtitle">Search for a product category, compare a focused set of options, and choose the best external store offer with more confidence.</p>'
+        '<p class="pw-subtitle">Search a product need, compare a focused set of options, and review trade-offs before visiting external providers.</p>'
         '<p class="pw-body">PicWise is being prepared as a product discovery and buying-decision assistant. Provider and affiliate integrations are currently being configured. Product listings shown in demo areas are previews only and are not live Amazon offers.</p>'
         '<section class="pw-grid" aria-label="Picwise capabilities and readiness">'
         '<article class="pw-section"><h2>Product comparison</h2></article>'
@@ -57,6 +70,11 @@ def render_review_safe_landing_page() -> str:
         '<a class="pw-btn pw-btn-secondary" href="/demo#what-is-picwise">What is PicWise?</a>'
         "</div>"
         '<p class="pw-note">No live provider integration or real product availability is claimed on this page.</p>'
+        "</section>"
+        '<section class="pw-trust-grid" aria-label="PicWise trust details">'
+        '<article class="pw-trust-card"><h2>How PicWise works</h2><p>Search a product need, compare a focused set of options, and review trade-offs before visiting external providers.</p></article>'
+        '<article class="pw-trust-card"><h2>What PicWise compares</h2><p>PicWise is designed for product options, buying guides, external provider offers, and future SaaS or finance/insurance provider comparisons.</p></article>'
+        '<article class="pw-trust-card"><h2>Not an online store</h2><p>PicWise does not sell products directly, process checkout, or handle shipping, returns, warranties, subscriptions, or applications.</p></article>'
         "</section>"
         f"{render_public_footer()}"
         "</main></body></html>"

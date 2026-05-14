@@ -147,18 +147,19 @@ def render_picwise_reference_surface() -> str:
         ".pw-reference-viewport{min-height:100vh;padding:12px;display:flex;justify-content:center;align-items:flex-start;}"
         ".pw-reference-scale-shell{position:relative;display:flex;justify-content:center;width:100%;}"
         ".pw-reference-frame{width:100%;max-width:1280px;padding:18px 24px 26px;position:relative;background:#f8fbff;}"
-        ".pw-topbar{display:flex;justify-content:flex-end;align-items:center;height:52px;margin-bottom:20px;}"
+        ".pw-topbar{display:flex;justify-content:flex-end;align-items:center;height:52px;margin-bottom:18px;}"
         ".pw-brand{display:flex;align-items:flex-start;justify-content:center;gap:10px;text-decoration:none;color:#0f1f3a;width:max-content;margin:0 auto;}"
         ".pw-brand-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1;}"
         ".pw-logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(160deg,#30a0ff 0%,#1f6cff 70%);position:relative;box-shadow:none;filter:none;margin-top:1px;}"
         ".pw-logo::before{content:'';position:absolute;left:9px;top:9px;width:16px;height:16px;border:3px solid #fff;border-right-color:transparent;border-radius:999px;}"
         ".pw-logo::after{content:'';position:absolute;right:9px;bottom:9px;width:7px;height:7px;background:#fff;border-radius:999px;}"
         ".pw-brand-name{display:block;font-size:42px;line-height:1;font-weight:800;letter-spacing:-.04em;text-transform:lowercase;}"
+        ".pw-brand-tagline{display:block;margin-top:5px;font-size:12px;letter-spacing:.02em;color:#3c5f8a;line-height:1.2;}"
         ".pw-actions{display:flex;align-items:center;gap:8px;padding-top:0;flex-wrap:wrap;justify-content:flex-end;row-gap:8px;}"
         ".pw-topbar-control{display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 13px;border-radius:999px;font-size:13px;font-weight:600;line-height:1;border:1px solid transparent;white-space:nowrap;}"
         ".pw-login-btn{background:#fff;color:#1d3a63;border-color:#ccdbf2;box-shadow:none;filter:none;cursor:pointer;}"
         ".pw-register{background:#1f6dff;color:#fff;border-color:#1f6dff;text-decoration:none;box-shadow:none;filter:none;}"
-        ".pw-brand-wrap{margin:0 0 28px;display:flex;justify-content:center;}"
+        ".pw-brand-wrap{margin:0 0 26px;display:flex;justify-content:center;}"
         ".pw-search-wrap{width:100%;max-width:760px;height:58px;margin:0 auto 24px;}"
         ".pw-search-shell{display:flex;align-items:center;gap:10px;width:100%;height:58px;background:#fff;border:1px solid #dbe8fb;border-radius:999px;padding:0 10px 0 18px;box-shadow:none;filter:none;}"
         ".pw-search-icon,.pw-search-button-icon{position:relative;width:16px;height:16px;display:inline-block;color:#7c93b7;flex:0 0 auto;}"
@@ -199,9 +200,9 @@ def render_picwise_reference_surface() -> str:
         ".pw-rec-note{margin:8px 0 0;font-size:11px;line-height:1.35;color:#2e4c7d;background:#eef4ff;border-radius:8px;padding:6px 8px;min-height:42px;}"
         ".pw-card-cta{margin-top:auto;width:100%;height:40px;border-radius:11px;border:1px solid #2e75ee;color:#2e75ee;background:#fff;font-size:16px;font-weight:700;}"
         ".pw-card-recommended .pw-card-cta{background:#1f6dff;color:#fff;border-color:#1f6dff;}"
-        ".pw-demo-note{text-align:center;font-size:12px;color:#7389ac;margin:16px 0 8px;}"
+        ".pw-demo-note{text-align:center;font-size:12px;color:#7389ac;margin:16px 0 10px;}"
         ".pw-reference-disclaimer{margin:0 auto 16px;max-width:900px;padding:10px 12px;border:1px solid #dbe8fb;border-radius:12px;background:#f6f9ff;color:#284a76;font-size:14px;line-height:1.6;text-align:center;}"
-        ".pw-footer{text-align:center;padding:4px 0 8px;font-size:12px;color:#6e83a3;}"
+        ".pw-footer{text-align:center;padding:6px 0 10px;font-size:12px;color:#6e83a3;}"
         ".pw-footer a{color:#6e83a3;text-decoration:none;margin-left:22px;}"
         "@media (min-width:1100px){.pw-reference-viewport{padding:8px;}.pw-reference-frame{padding:12px 20px 16px;}.pw-topbar{height:46px;margin-bottom:16px;}.pw-brand-wrap{margin:0 0 24px;}.pw-search-wrap{height:52px;margin:0 auto 20px;}.pw-query-line{margin:0 auto 40px;}.pw-card{padding:12px 12px 10px;min-height:444px;}.pw-product-image-wrap{height:74px;margin:0 0 8px;}.pw-product-image{width:228px;height:74px;}}"
         "@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:760px;}.pw-topbar{height:auto;gap:10px;}}"
@@ -217,7 +218,7 @@ def render_picwise_reference_surface() -> str:
         '<section class="pw-brand-wrap" aria-label="PicWise brand">'
         '<a class="pw-brand" href="/" aria-label="PicWise home">'
         '<span class="pw-logo" aria-hidden="true"></span>'
-        '<span class="pw-brand-text"><span class="pw-brand-name">PicWise</span></span>'
+        '<span class="pw-brand-text"><span class="pw-brand-name">picwise</span><span class="pw-brand-tagline">shopping decision assistant</span></span>'
         "</a>"
         "</section>"
         '<section class="pw-search-wrap" aria-label="Search">'
