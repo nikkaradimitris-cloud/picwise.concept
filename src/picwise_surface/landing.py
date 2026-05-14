@@ -106,68 +106,6 @@ def render_demo_info_page() -> str:
     )
 
 
-def render_demo_search_page(query: str) -> str:
-    """Render a review-safe search demo page without any commerce claims."""
-    normalized_query = (query or "").strip()
-    query_value = escape(normalized_query)
-    placeholder_message = (
-        "Provider integrations are being configured. Live product results are not available yet."
-    )
-    search_feedback = (
-        f'<p class="pw-feedback">{escape(placeholder_message)}</p>' if normalized_query else ""
-    )
-    query_echo = (
-        f'<p class="pw-query-echo">Search submitted: <span>{query_value}</span></p>'
-        if normalized_query
-        else ""
-    )
-    return (
-        "<!doctype html>"
-        '<html lang="en"><head>'
-        '<meta charset="utf-8">'
-        '<meta name="viewport" content="width=device-width, initial-scale=1">'
-        "<title>PicWise Search Demo</title>"
-        "<style>"
-        "*{box-sizing:border-box;}"
-        "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:#102744;background:linear-gradient(180deg,#f8fbff 0%,#f3f8ff 100%);}"
-        ".pw-wrap{max-width:920px;margin:0 auto;padding:40px 20px 28px;}"
-        ".pw-brand{font-size:30px;font-weight:800;letter-spacing:-.03em;text-transform:lowercase;color:#1a4fb7;text-decoration:none;}"
-        ".pw-card{margin-top:20px;background:#fff;border:1px solid #d9e7fb;border-radius:16px;padding:24px;box-shadow:0 12px 28px rgba(20,56,112,.08);}"
-        ".pw-title{margin:0;font-size:34px;line-height:1.18;letter-spacing:-.02em;color:#0f2442;}"
-        ".pw-body{margin:14px 0 0;font-size:16px;line-height:1.7;color:#355174;}"
-        ".pw-note{margin:14px 0 0;padding:12px 14px;border:1px solid #dbe8fb;border-radius:12px;background:#f6f9ff;color:#24456f;font-size:15px;line-height:1.6;}"
-        ".pw-search{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;}"
-        ".pw-input{flex:1;min-width:220px;height:44px;border:1px solid #cfe0fb;border-radius:12px;padding:0 12px;font-size:15px;color:#102744;background:#fff;}"
-        ".pw-input:focus{outline:2px solid #c5dcff;outline-offset:1px;}"
-        ".pw-btn{height:44px;padding:0 16px;border-radius:12px;border:1px solid #1f6dff;background:#1f6dff;color:#fff;font-size:14px;font-weight:700;cursor:pointer;}"
-        ".pw-query-echo{margin:16px 0 0;font-size:14px;color:#2f4a70;}"
-        ".pw-query-echo span{font-weight:700;color:#1f6dff;}"
-        ".pw-feedback{margin:10px 0 0;padding:12px 14px;border-radius:12px;background:#eef5ff;border:1px solid #d4e4ff;color:#163a67;font-size:15px;line-height:1.6;}"
-        ".pw-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;}"
-        ".pw-link{height:42px;padding:0 16px;border-radius:999px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:14px;background:#fff;color:#1f6dff;border:1px solid #b9d1ff;}"
-        ".pw-footer{margin-top:18px;font-size:12px;color:#6b86ac;}"
-        "@media (max-width:760px){.pw-title{font-size:29px;}}"
-        "</style></head><body>"
-        '<main class="pw-wrap">'
-        '<a class="pw-brand" href="/" aria-label="Picwise home">picwise</a>'
-        '<section class="pw-card">'
-        '<h1 class="pw-title">Search-focused PicWise demo</h1>'
-        '<p class="pw-body">This page demonstrates the PicWise search experience concept in a review-safe format.</p>'
-        '<p class="pw-note">No products, prices, ratings, availability, affiliate links, or store actions are shown here. Provider integrations are still being configured.</p>'
-        '<form class="pw-search" method="get" action="/demo" aria-label="PicWise safe demo search">'
-        '<label for="pw-demo-query" style="position:absolute;left:-9999px;">Search products</label>'
-        f'<input class="pw-input" id="pw-demo-query" type="search" name="q" value="{query_value}" placeholder="Search by product need or category" autocomplete="off">'
-        '<button class="pw-btn" type="submit">Search</button>'
-        "</form>"
-        f"{query_echo}"
-        f"{search_feedback}"
-        '<div class="pw-actions"><a class="pw-link" href="/">Back to home</a></div>'
-        "</section>"
-        '<footer class="pw-footer">&copy; 2026 PicWise. All rights reserved.</footer>'
-        "</main></body></html>"
-    )
-
-
 def render_landing_surface(decision_output: DecisionOutput) -> str:
     """Render pixel-faithful Picwise landing/results UI from deterministic mock cards."""
     choices = decision_output.choices

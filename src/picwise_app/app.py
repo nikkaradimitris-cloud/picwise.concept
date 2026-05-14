@@ -21,7 +21,6 @@ from picwise_search import route_search_query
 from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
 from picwise_surface import (
     render_demo_info_page,
-    render_demo_search_page,
     render_mvp_search_results_surface,
     render_picwise_reference_surface,
     render_review_safe_landing_page,
@@ -67,7 +66,8 @@ class PicwiseLocalApp:
         }
 
     def demo_html(self, query: str) -> str:
-        return render_demo_search_page(query)
+        _ = query
+        return render_demo_info_page()
 
     def root_landing_html(self) -> str:
         return render_review_safe_landing_page()

@@ -62,13 +62,9 @@ class DeploymentEntrypointTests(unittest.TestCase):
         status, headers, body = _call_wsgi("/demo", f"q={quote(query)}")
         self.assertEqual(status, "200 OK")
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
-        self.assertIn("Search-focused PicWise demo", body)
-        self.assertIn("Search submitted:", body)
-        self.assertIn(query, body)
-        self.assertIn(
-            "Provider integrations are being configured. Live product results are not available yet.",
-            body,
-        )
+        self.assertIn("How PicWise will help shoppers decide.", body)
+        self.assertIn("This demo page is informational only.", body)
+        self.assertNotIn(query, body)
 
     def test_root_route_returns_landing_html_not_not_found(self) -> None:
         status, headers, body = _call_wsgi("/")
@@ -170,10 +166,11 @@ class DeploymentEntrypointTests(unittest.TestCase):
     def test_demo_has_search_form_with_query_value(self) -> None:
         query = "best office chair under 200"
         _status, _headers, body = _call_wsgi("/demo", f"q={quote(query)}")
-        self.assertIn("Search-focused PicWise demo", body)
+        self.assertIn("How PicWise will help shoppers decide.", body)
         self.assertIn("Back to home", body)
-        self.assertIn('name="q"', body)
-        self.assertIn(f'value="{query}"', body)
+        self.assertIn("What is Picwise?", body)
+        self.assertNotIn('name="q"', body)
+        self.assertNotIn(f'value="{query}"', body)
 
     def test_root_route_contains_four_primary_cards_and_one_recommended_marker(self) -> None:
         _status, _headers, body = _call_wsgi("/")
@@ -184,8 +181,8 @@ class DeploymentEntrypointTests(unittest.TestCase):
 
     def test_recommended_card_has_required_highlight_elements(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
-        self.assertIn("Search-focused PicWise demo", body)
-        self.assertIn("review-safe format", body)
+        self.assertIn("How PicWise will help shoppers decide.", body)
+        self.assertIn("External provider integrations in progress", body)
         for forbidden in (
             "pw-card-recommended",
             "Recommended by Picwise",
@@ -200,12 +197,12 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn('class="pw-brand"', body)
         self.assertIn(">picwise<", body)
         self.assertIn("Back to home", body)
-        self.assertIn('name="q"', body)
+        self.assertIn("What is Picwise?", body)
 
     def test_landing_contains_hero_subtitle(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
         self.assertIn(
-            "This page demonstrates the PicWise search experience concept in a review-safe format.",
+            "How PicWise will help shoppers decide.",
             body,
         )
 
@@ -223,12 +220,11 @@ class DeploymentEntrypointTests(unittest.TestCase):
     def test_landing_contains_discreet_demo_note_above_footer(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
         self.assertIn(
-            "No products, prices, ratings, availability, affiliate links, or store actions are shown here.",
+            "This demo page is informational only.",
             body,
         )
-        demo_note_index = body.index(
-            "No products, prices, ratings, availability, affiliate links, or store actions are shown here."
-        )
+        self.assertEqual(body.count("informational only"), 1)
+        demo_note_index = body.index("This demo page is informational only.")
         footer_index = body.index('<footer class="pw-footer">')
         self.assertLess(demo_note_index, footer_index)
 
@@ -265,12 +261,9 @@ class DeploymentEntrypointTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, lowered)
         self.assertNotIn("class=\"pw-rating-row\"", body)
-        self.assertIn("Search-focused PicWise demo", body)
-        self.assertIn('name="q"', body)
-        self.assertIn(
-            "Provider integrations are being configured. Live product results are not available yet.",
-            body,
-        )
+        self.assertIn("How PicWise will help shoppers decide.", body)
+        self.assertIn("Search by product need", body)
+        self.assertIn("External provider integrations in progress", body)
 
     def test_subby_proof_missing_env_returns_safe_missing_config(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
