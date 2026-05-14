@@ -231,11 +231,17 @@ class LandingUiTests(unittest.TestCase):
             self.assertIn("<h2", page)
             self.assertIn('<meta name="description"', page)
             self.assertEqual(page.count('<footer class="pw-footer">'), 1)
+            self.assertIn('class="pw-footer-links"', page)
+            self.assertIn('class="pw-footer-link"', page)
             self.assertIn('href="/terms"', page)
             self.assertIn('href="/privacy"', page)
             self.assertIn('href="/cookies"', page)
             self.assertIn('href="/affiliate-disclosure"', page)
             self.assertIn('href="/contact"', page)
+            self.assertNotIn(
+                "HomeDemoPicWise ReferenceTermsPrivacyCookiesAffiliate DisclosureContact",
+                page.replace(" ", "").replace("\n", ""),
+            )
 
     def test_legal_pages_do_not_claim_live_tracking_stack_or_fake_commerce(self) -> None:
         legal_blob = " ".join(
@@ -296,8 +302,10 @@ class LandingUiTests(unittest.TestCase):
         self.assertIn("SaaS", affiliate)
         self.assertIn("finance", affiliate.lower())
 
-        self.assertIn("contact@picwise.subby.cloud", contact)
+        self.assertIn("contact.picwise@subby.cloud", contact)
         for page in (terms, privacy, cookies, affiliate, contact):
+            self.assertIn("contact.picwise@subby.cloud", page)
+            self.assertNotIn("contact@picwise.subby.cloud", page)
             self.assertNotIn("mysubby.cloud@gmail.com", page)
 
     def test_branded_not_found_page_has_required_elements(self) -> None:

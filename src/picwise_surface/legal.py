@@ -12,6 +12,8 @@ FOOTER_LINKS: tuple[tuple[str, str], ...] = (
     ("Contact", "/contact"),
 )
 
+PUBLIC_CONTACT_EMAIL = "contact.picwise@subby.cloud"
+
 SHORT_AFFILIATE_NOTICE = (
     "PicWise may earn commissions from qualifying purchases, referrals, or provider links "
     "when affiliate or provider integrations are active."
@@ -34,8 +36,11 @@ def _base_styles() -> str:
         ".pw-legal li{margin:0 0 8px;line-height:1.6;}"
         ".pw-legal .pw-emphasis{padding:12px 14px;border:1px solid #dbe8fb;border-radius:12px;background:#f6f9ff;}"
         ".pw-footer{margin-top:18px;padding-top:14px;border-top:1px solid #dbe8fb;}"
-        ".pw-footer-links{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;}"
-        ".pw-footer-links a{font-size:13px;color:#3c5f8f;text-decoration:none;}"
+        ".pw-footer-links{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}"
+        ".pw-footer-link{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;"
+        "border:1px solid #d8e6fb;border-radius:999px;background:#f7faff;font-size:13px;"
+        "line-height:1.2;color:#335983;text-decoration:none;white-space:nowrap;}"
+        ".pw-footer-link:hover{background:#eef5ff;border-color:#cddffc;color:#24496f;}"
         ".pw-footer-disclosure{margin:10px 0 0;font-size:12px;line-height:1.5;color:#5f7ea6;max-width:760px;}"
         ".pw-footer-meta{margin:6px 0 0;font-size:12px;color:#6b86ac;}"
         "@media (max-width:760px){.pw-wrap{padding:24px 14px 16px;}.pw-title{font-size:28px;}.pw-legal h2{font-size:18px;}}"
@@ -43,7 +48,9 @@ def _base_styles() -> str:
 
 
 def render_public_footer() -> str:
-    links = "".join(f'<a href="{href}">{label}</a>' for label, href in FOOTER_LINKS)
+    links = "".join(
+        f'<a class="pw-footer-link" href="{href}">{label}</a>' for label, href in FOOTER_LINKS
+    )
     return (
         '<footer class="pw-footer">'
         f'<nav class="pw-footer-links" aria-label="PicWise public footer links">{links}</nav>'
@@ -139,7 +146,7 @@ def render_terms_page() -> str:
         "<h2>Corrections and changes</h2>"
         "<p>Users and providers can contact PicWise to request correction of inaccurate information or external link concerns. PicWise may update these pages and service behavior over time.</p>"
         "<h2>Contact</h2>"
-        "<p>Email: contact@picwise.subby.cloud</p>"
+        f"<p>Email: {PUBLIC_CONTACT_EMAIL}</p>"
         "<p>Last updated: May 2026</p>"
     )
     return _render_legal_page(
@@ -197,7 +204,7 @@ def render_privacy_page() -> str:
         "<p>PicWise may provide informational ranking/comparison outputs, but users should verify provider terms before acting. PicWise does not claim regulated automated credit or insurance decisions.</p>"
         "<h2>Changes and contact</h2>"
         "<p>PicWise may update this policy as the service evolves.</p>"
-        "<p>Email: contact@picwise.subby.cloud</p>"
+        f"<p>Email: {PUBLIC_CONTACT_EMAIL}</p>"
         "<p>Last updated: May 2026</p>"
     )
     return _render_legal_page(
@@ -234,7 +241,7 @@ def render_cookies_page() -> str:
         "<p>Users can control cookies via browser settings and third-party provider settings where applicable.</p>"
         "<h2>Future updates and contact</h2>"
         "<p>This page will be updated when tracking/provider integrations become active.</p>"
-        "<p>Email: contact@picwise.subby.cloud</p>"
+        f"<p>Email: {PUBLIC_CONTACT_EMAIL}</p>"
         "<p>Last updated: May 2026</p>"
     )
     return _render_legal_page(
@@ -277,7 +284,7 @@ def render_affiliate_disclosure_page() -> str:
         "<h2>Disclosure placement rule</h2>"
         "<p>When live affiliate links are added, a clear affiliate disclosure must appear near affiliate link areas or in a clearly visible page/footer location.</p>"
         "<h2>Contact</h2>"
-        "<p>Email: contact@picwise.subby.cloud</p>"
+        f"<p>Email: {PUBLIC_CONTACT_EMAIL}</p>"
         "<p>Last updated: May 2026</p>"
     )
     return _render_legal_page(
@@ -295,7 +302,7 @@ def render_affiliate_disclosure_page() -> str:
 def render_contact_page() -> str:
     sections = (
         "<h2>PicWise contact page</h2>"
-        "<p>Email: contact@picwise.subby.cloud</p>"
+        f"<p>Email: {PUBLIC_CONTACT_EMAIL}</p>"
         "<h2>Contact topics</h2>"
         "<ul>"
         "<li>Website questions</li>"

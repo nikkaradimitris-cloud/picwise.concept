@@ -36,21 +36,29 @@ def _pick_open_port() -> int:
 class AppHttpEndpointTests(unittest.TestCase):
     @staticmethod
     def _assert_common_footer_links(body: str) -> None:
-        for href in (
-            "/",
-            "/demo",
-            "/picwise-reference",
-            "/terms",
-            "/privacy",
-            "/cookies",
-            "/affiliate-disclosure",
-            "/contact",
-        ):
+        expected_links = (
+            ("/", "Home"),
+            ("/demo", "Demo"),
+            ("/picwise-reference", "PicWise Reference"),
+            ("/terms", "Terms"),
+            ("/privacy", "Privacy"),
+            ("/cookies", "Cookies"),
+            ("/affiliate-disclosure", "Affiliate Disclosure"),
+            ("/contact", "Contact"),
+        )
+        for href, label in expected_links:
+            assert f'class="pw-footer-link" href="{href}">{label}<' in body
+        for href, _label in expected_links:
             assert f'href="{href}"' in body
+        assert '<nav class="pw-footer-links" aria-label="PicWise public footer links">' in body
         assert (
             "PicWise may earn commissions from qualifying purchases, referrals, or provider links "
             "when affiliate or provider integrations are active."
         ) in body
+        assert (
+            "HomeDemoPicWise ReferenceTermsPrivacyCookiesAffiliate DisclosureContact"
+            not in body.replace(" ", "").replace("\n", "")
+        )
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -264,10 +272,12 @@ class AppHttpEndpointTests(unittest.TestCase):
             ("/privacy", "Privacy Policy"),
             ("/cookies", "Cookie Policy"),
             ("/affiliate-disclosure", "As an Amazon Associate I earn from qualifying purchases."),
-            ("/contact", "contact@picwise.subby.cloud"),
+            ("/contact", "contact.picwise@subby.cloud"),
         ):
             body = self._fetch(path)
             self.assertIn(token, body)
+            self.assertIn("contact.picwise@subby.cloud", body)
+            self.assertNotIn("contact@picwise.subby.cloud", body)
             self.assertIn('<meta name="description"', body)
             self._assert_common_footer_links(body)
             self.assertNotIn("mysubby.cloud@gmail.com", body)

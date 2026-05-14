@@ -48,21 +48,29 @@ def _call_wsgi(path: str, query_string: str = "") -> tuple[str, dict[str, str], 
 class DeploymentEntrypointTests(unittest.TestCase):
     @staticmethod
     def _assert_common_footer_links(body: str) -> None:
-        for href in (
-            "/",
-            "/demo",
-            "/picwise-reference",
-            "/terms",
-            "/privacy",
-            "/cookies",
-            "/affiliate-disclosure",
-            "/contact",
-        ):
+        expected_links = (
+            ("/", "Home"),
+            ("/demo", "Demo"),
+            ("/picwise-reference", "PicWise Reference"),
+            ("/terms", "Terms"),
+            ("/privacy", "Privacy"),
+            ("/cookies", "Cookies"),
+            ("/affiliate-disclosure", "Affiliate Disclosure"),
+            ("/contact", "Contact"),
+        )
+        for href, label in expected_links:
+            assert f'class="pw-footer-link" href="{href}">{label}<' in body
+        for href, _label in expected_links:
             assert f'href="{href}"' in body
+        assert '<nav class="pw-footer-links" aria-label="PicWise public footer links">' in body
         assert (
             "PicWise may earn commissions from qualifying purchases, referrals, or provider links "
             "when affiliate or provider integrations are active."
         ) in body
+        assert (
+            "HomeDemoPicWise ReferenceTermsPrivacyCookiesAffiliate DisclosureContact"
+            not in body.replace(" ", "").replace("\n", "")
+        )
 
     def test_deployment_entrypoint_imports(self) -> None:
         self.assertTrue(callable(deployment_app))
@@ -190,21 +198,24 @@ class DeploymentEntrypointTests(unittest.TestCase):
 
     def test_terms_privacy_cookies_affiliate_contact_routes(self) -> None:
         expected = {
-            "/terms": ("Terms of Use", "<title>Terms of Use — PicWise</title>"),
-            "/privacy": ("Privacy Policy", "<title>Privacy Policy — PicWise</title>"),
-            "/cookies": ("Cookie Policy", "<title>Cookie Policy — PicWise</title>"),
-            "/affiliate-disclosure": ("Affiliate Disclosure", "<title>Affiliate Disclosure — PicWise</title>"),
-            "/contact": ("contact@picwise.subby.cloud", "<title>Contact — PicWise</title>"),
+            "/terms": ("Terms of Use", "<title>Terms of Use — PicWise</title>", True),
+            "/privacy": ("Privacy Policy", "<title>Privacy Policy — PicWise</title>", True),
+            "/cookies": ("Cookie Policy", "<title>Cookie Policy — PicWise</title>", True),
+            "/affiliate-disclosure": ("Affiliate Disclosure", "<title>Affiliate Disclosure — PicWise</title>", True),
+            "/contact": ("contact.picwise@subby.cloud", "<title>Contact — PicWise</title>", True),
         }
-        for path, (must_have, title_tag) in expected.items():
+        for path, (must_have, title_tag, must_have_email) in expected.items():
             status, headers, body = _call_wsgi(path)
             self.assertEqual(status, "200 OK")
             self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
             self.assertIn(must_have, body)
             self.assertIn(title_tag, body)
+            if must_have_email:
+                self.assertIn("contact.picwise@subby.cloud", body)
+            self.assertNotIn("contact@picwise.subby.cloud", body)
+            self.assertNotIn("mysubby.cloud@gmail.com", body)
             self.assertIn('<meta name="description"', body)
             self._assert_common_footer_links(body)
-            self.assertNotIn("mysubby.cloud@gmail.com", body)
 
     def test_affiliate_disclosure_contains_required_terms(self) -> None:
         _status, _headers, body = _call_wsgi("/affiliate-disclosure")
