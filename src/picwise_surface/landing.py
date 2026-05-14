@@ -51,7 +51,57 @@ def render_review_safe_landing_page() -> str:
         "</div>"
         '<p class="pw-note">No live provider integration or real product availability is claimed on this page.</p>'
         "</section>"
-        '<footer class="pw-footer">&copy; 2026 PicWise</footer>'
+        '<footer class="pw-footer">&copy; 2026 PicWise. All rights reserved.</footer>'
+        "</main></body></html>"
+    )
+
+
+def render_demo_info_page() -> str:
+    """Render a review-safe informational demo page without commerce cards."""
+    return (
+        "<!doctype html>"
+        '<html lang="en"><head>'
+        '<meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">'
+        "<title>How PicWise will help shoppers decide</title>"
+        "<style>"
+        "*{box-sizing:border-box;}"
+        "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:#102744;background:linear-gradient(180deg,#f8fbff 0%,#f3f8ff 100%);}"
+        ".pw-wrap{max-width:940px;margin:0 auto;padding:40px 20px 28px;}"
+        ".pw-brand{font-size:30px;font-weight:800;letter-spacing:-.03em;text-transform:lowercase;color:#1a4fb7;text-decoration:none;}"
+        ".pw-card{margin-top:20px;background:#fff;border:1px solid #d9e7fb;border-radius:16px;padding:24px;box-shadow:0 12px 28px rgba(20,56,112,.08);}"
+        ".pw-title{margin:0;font-size:36px;line-height:1.16;letter-spacing:-.02em;color:#0f2442;}"
+        ".pw-body{margin:14px 0 0;font-size:16px;line-height:1.7;color:#355174;}"
+        ".pw-note{margin:16px 0 0;padding:12px 14px;border:1px solid #dbe8fb;border-radius:12px;background:#f6f9ff;color:#24456f;font-size:15px;line-height:1.6;}"
+        ".pw-list-wrap{margin-top:18px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}"
+        ".pw-item{background:#f6f9ff;border:1px solid #dfeafb;border-radius:12px;padding:14px 16px;}"
+        ".pw-item h2{margin:0;font-size:16px;color:#173862;}"
+        ".pw-item p{margin:8px 0 0;font-size:14px;line-height:1.55;color:#355174;}"
+        ".pw-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;}"
+        ".pw-btn{height:42px;padding:0 16px;border-radius:999px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:14px;}"
+        ".pw-btn-primary{background:#1f6dff;color:#fff;border:1px solid #1f6dff;}"
+        ".pw-btn-secondary{background:#fff;color:#1f6dff;border:1px solid #b9d1ff;}"
+        ".pw-footer{margin-top:18px;font-size:12px;color:#6b86ac;}"
+        "@media (max-width:760px){.pw-title{font-size:30px;}.pw-list-wrap{grid-template-columns:1fr;}}"
+        "</style></head><body>"
+        '<main class="pw-wrap">'
+        '<a class="pw-brand" href="/" aria-label="Picwise home">picwise</a>'
+        '<section class="pw-card">'
+        '<h1 class="pw-title">How PicWise will help shoppers decide.</h1>'
+        '<p class="pw-body">PicWise is being prepared as a buying-decision assistant. Users will be able to search for a product category, compare a small set of relevant options, and follow external store offers once provider integrations are configured.</p>'
+        '<p class="pw-note" id="what-is-picwise"><strong>Important note:</strong> This demo page is informational only. It does not display live Amazon offers, real product availability, affiliate links, prices, or ratings.</p>'
+        '<section class="pw-list-wrap" aria-label="Informational demo sections">'
+        '<article class="pw-item"><h2>Search by product need</h2><p>Users will start from a category or buying need, not from a live offer feed.</p></article>'
+        '<article class="pw-item"><h2>Compare focused choices</h2><p>PicWise will present a short comparison view once integrations are fully configured.</p></article>'
+        '<article class="pw-item"><h2>Understand trade-offs</h2><p>Guidance will help users evaluate practical pros, limits, and suitability.</p></article>'
+        '<article class="pw-item"><h2>External provider integrations in progress</h2><p>Provider and affiliate integrations are being configured. No live Amazon offers are currently claimed.</p></article>'
+        "</section>"
+        '<div class="pw-actions">'
+        '<a class="pw-btn pw-btn-primary" href="/">Back to home</a>'
+        '<a class="pw-btn pw-btn-secondary" href="/demo#what-is-picwise">What is Picwise?</a>'
+        "</div>"
+        "</section>"
+        '<footer class="pw-footer">&copy; 2026 PicWise. All rights reserved.</footer>'
         "</main></body></html>"
     )
 

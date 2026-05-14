@@ -10,7 +10,7 @@ from .final_audit import (
     FinalV1AuditResult,
     run_final_v1_audit_closure,
 )
-from .landing import render_landing_surface, render_review_safe_landing_page
+from .landing import render_demo_info_page, render_landing_surface, render_review_safe_landing_page
 from .reference import render_picwise_reference_surface
 from .mvp_search_results import render_mvp_search_results_surface
 from .performance import (
@@ -40,6 +40,7 @@ __all__ = [
     "prepare_redirect_tracking",
     "render_buying_page_surface",
     "render_buying_page_seo_surface",
+    "render_demo_info_page",
     "render_landing_surface",
     "render_review_safe_landing_page",
     "render_picwise_reference_surface",

@@ -62,9 +62,9 @@ class DeploymentEntrypointTests(unittest.TestCase):
         status, headers, body = _call_wsgi("/demo", f"q={quote(query)}")
         self.assertEqual(status, "200 OK")
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
-        self.assertIn(query, body)
-        self.assertIn("local_test_fixture", body)
-        self.assertIn("not_production_data", body)
+        self.assertIn("How PicWise will help shoppers decide.", body)
+        self.assertIn("This demo page is informational only.", body)
+        self.assertNotIn(query, body)
 
     def test_root_route_returns_landing_html_not_not_found(self) -> None:
         status, headers, body = _call_wsgi("/")
@@ -166,15 +166,11 @@ class DeploymentEntrypointTests(unittest.TestCase):
     def test_demo_has_search_form_with_query_value(self) -> None:
         query = "best office chair under 200"
         _status, _headers, body = _call_wsgi("/demo", f"q={quote(query)}")
-        self.assertIn('class="pw-search-shell"', body)
-        self.assertIn('class="pw-search-icon"', body)
-        self.assertIn('class="pw-search-button"', body)
-        self.assertIn('class="pw-search-button-icon"', body)
-        self.assertIn('name="q"', body)
-        self.assertIn(f'value="{query}"', body)
-        self.assertNotIn('class="pw-search-button" type="submit" aria-label="Search">→</button>', body)
-        self.assertNotIn("&#128269;", body)
-        self.assertNotIn("🔍", body)
+        self.assertIn("How PicWise will help shoppers decide.", body)
+        self.assertIn("Back to home", body)
+        self.assertIn("What is Picwise?", body)
+        self.assertNotIn('name="q"', body)
+        self.assertNotIn(f'value="{query}"', body)
 
     def test_root_route_contains_four_primary_cards_and_one_recommended_marker(self) -> None:
         _status, _headers, body = _call_wsgi("/")
@@ -185,44 +181,28 @@ class DeploymentEntrypointTests(unittest.TestCase):
 
     def test_recommended_card_has_required_highlight_elements(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
-        required_classes = (
-            "pw-topbar",
-            "pw-brand",
-            "pw-search-shell",
-            "pw-search-button",
-            "pw-bg-left",
-            "pw-bg-right",
-            "pw-grid",
+        self.assertIn("How PicWise will help shoppers decide.", body)
+        self.assertIn("External provider integrations in progress", body)
+        for forbidden in (
             "pw-card-recommended",
-            "pw-rec-badge",
-            "pw-rec-ring-a",
-            "pw-rec-ring-b",
-            "pw-rec-ring-c",
-            "pw-footer",
-            "pw-demo-note",
-        )
-        for class_name in required_classes:
-            self.assertIn(class_name, body)
-        self.assertIn("Recommended by Picwise", body)
-        self.assertNotIn("Best fit", body)
-        self.assertNotIn("Fast decision", body)
+            "Recommended by Picwise",
+            "View in Store",
+            "Go to Store",
+            "View Details and Buy",
+        ):
+            self.assertNotIn(forbidden, body)
 
     def test_landing_contains_header_with_login_register(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
-        self.assertIn('class="pw-topbar"', body)
-        self.assertIn('class="pw-hero"', body)
-        self.assertLess(body.index('class="pw-topbar"'), body.index('class="pw-hero"'))
         self.assertIn('class="pw-brand"', body)
         self.assertIn(">picwise<", body)
-        self.assertIn("shopping assistant", body)
-        self.assertIn("Login", body)
-        self.assertIn("Register", body)
-        self.assertNotIn("FAQ", body)
+        self.assertIn("Back to home", body)
+        self.assertIn("What is Picwise?", body)
 
     def test_landing_contains_hero_subtitle(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
         self.assertIn(
-            "See the 4 best products before you buy",
+            "How PicWise will help shoppers decide.",
             body,
         )
 
@@ -230,9 +210,6 @@ class DeploymentEntrypointTests(unittest.TestCase):
         _status, _headers, body = _call_wsgi("/demo")
         self.assertIn('class="pw-footer"', body)
         self.assertIn("All rights reserved.", body)
-        self.assertIn("Privacy", body)
-        self.assertIn("Terms", body)
-        self.assertIn("Contact", body)
         lowered = body.lower()
         self.assertNotIn("advertising", lowered)
         self.assertNotIn("η τρίτη δεκαετία", lowered)
@@ -243,12 +220,11 @@ class DeploymentEntrypointTests(unittest.TestCase):
     def test_landing_contains_discreet_demo_note_above_footer(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
         self.assertIn(
-            "Demo data source: local_test_fixture (not_production_data).",
+            "This demo page is informational only.",
             body,
         )
-        self.assertEqual(body.count("Demo data source"), 1)
-        self.assertIn('class="pw-demo-note"', body)
-        demo_note_index = body.index('<p class="pw-demo-note">')
+        self.assertEqual(body.count("informational only"), 1)
+        demo_note_index = body.index("This demo page is informational only.")
         footer_index = body.index('<footer class="pw-footer">')
         self.assertLess(demo_note_index, footer_index)
 
@@ -268,6 +244,26 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "view details and buy",
         ):
             self.assertNotIn(forbidden_fake, lowered)
+
+    def test_demo_has_no_fake_cards_prices_ratings_or_store_ctas(self) -> None:
+        _status, _headers, body = _call_wsgi("/demo")
+        lowered = body.lower()
+        for forbidden in (
+            "travelcore 20k",
+            "dailybalance pd20",
+            "everydaysure 22.5w",
+            "powermax elite 25k",
+            "recommended by picwise",
+            "view in store",
+            "go to store",
+            "view details and buy",
+            "eur ",
+        ):
+            self.assertNotIn(forbidden, lowered)
+        self.assertNotIn("class=\"pw-rating-row\"", body)
+        self.assertIn("How PicWise will help shoppers decide.", body)
+        self.assertIn("Search by product need", body)
+        self.assertIn("External provider integrations in progress", body)
 
     def test_subby_proof_missing_env_returns_safe_missing_config(self) -> None:
         with patch.dict(os.environ, {}, clear=True):

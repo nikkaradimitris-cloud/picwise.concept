@@ -74,47 +74,43 @@ class AppHttpEndpointTests(unittest.TestCase):
     def test_demo_responds_successfully(self) -> None:
         body = self._fetch("/demo")
         self.assertIn("<html", body.lower())
-        self.assertIn("Recommended by Picwise", body)
+        self.assertIn("How PicWise will help shoppers decide.", body)
 
     def test_demo_includes_query_confirmation(self) -> None:
         query = "power bank 20000mah for iphone"
         body = self._fetch(f"/demo?q={quote(query)}")
-        self.assertIn(query, body)
-        self.assertIn("Showing 4 options for:", body)
+        self.assertIn("informational only", body)
+        self.assertIn("Search by product need", body)
+        self.assertNotIn(query, body)
 
     def test_demo_ambiguous_query_returns_review_only_safe_no_result(self) -> None:
         query = "Goodyar eco contact performanc 2 195/65/15"
         body = self._fetch(f"/demo?q={quote(query)}")
-        self.assertIn("Safe no-result response", body)
-        self.assertIn("route_type: ambiguous_query", body)
-        self.assertIn("status: manual_review_required", body)
-        self.assertIn("result_mode: review_only", body)
-        self.assertIn("products/results: empty", body)
-        self.assertIn("public_allowed: false", body)
-        self.assertNotIn("power bank 20000mah for iphone", body)
+        self.assertIn("How PicWise will help shoppers decide.", body)
+        self.assertIn("This demo page is informational only.", body)
+        self.assertNotIn("Safe no-result response", body)
         self.assertNotIn('<article class="pw-card', body)
 
     def test_demo_no_safe_result_query_returns_explicit_no_result(self) -> None:
         body = self._fetch("/demo?q=%20")
-        self.assertIn("Safe no-result response", body)
-        self.assertIn("route_type: no_safe_result", body)
-        self.assertIn("status: no_valid_offers", body)
-        self.assertIn("result_mode: no_result", body)
-        self.assertIn("products/results: empty", body)
-        self.assertIn("indexable_allowed: false", body)
-        self.assertIn("sitemap_allowed: false", body)
-        self.assertNotIn("power bank 20000mah for iphone", body)
+        self.assertIn("How PicWise will help shoppers decide.", body)
+        self.assertIn("This demo page is informational only.", body)
+        self.assertNotIn("Safe no-result response", body)
         self.assertNotIn('<article class="pw-card', body)
 
     def test_demo_specific_product_without_real_same_product_offers_returns_safe_no_valid_offers(self) -> None:
         query = "Goodyear EfficientGrip Performance 2 195/65 R15"
         body = self._fetch(f"/demo?q={quote(query)}")
-        self.assertIn("Safe no-result response", body)
-        self.assertIn("route_type: specific_product", body)
-        self.assertIn("status: no_valid_offers", body)
-        self.assertIn("products/results: empty", body)
+        self.assertIn("How PicWise will help shoppers decide.", body)
+        self.assertIn("This demo page is informational only.", body)
+        self.assertNotIn("Safe no-result response", body)
         self.assertNotIn("TravelCore 20K", body)
         self.assertNotIn('<article class="pw-card', body)
+
+    def test_root_what_is_picwise_link_targets_safe_demo_section(self) -> None:
+        body = self._fetch("/")
+        self.assertIn('href="/demo#what-is-picwise"', body)
+        self.assertNotIn('href="/picwise-reference"', body)
 
     def test_picwise_reference_route_renders_static_reference_page(self) -> None:
         body = self._fetch("/picwise-reference")
@@ -176,66 +172,39 @@ class AppHttpEndpointTests(unittest.TestCase):
 
     def test_demo_includes_header_search_and_footer_controls(self) -> None:
         body = self._fetch("/demo?q=power+bank")
-        for class_name in (
-            "pw-topbar",
-            "pw-brand",
-            "pw-search-shell",
-            "pw-search-button",
-            "pw-bg-left",
-            "pw-bg-right",
-            "pw-grid",
-            "pw-card-recommended",
-            "pw-rec-badge",
-            "pw-rec-ring-a",
-            "pw-rec-ring-b",
-            "pw-rec-ring-c",
-            "pw-footer",
-            "pw-demo-note",
-        ):
-            self.assertIn(class_name, body)
-        self.assertIn("Login", body)
-        self.assertIn("Register", body)
-        self.assertIn('class="pw-search-shell"', body)
-        self.assertIn('class="pw-search-icon"', body)
-        self.assertIn('class="pw-search-button"', body)
-        self.assertIn('class="pw-search-button-icon"', body)
-        self.assertNotIn('class="pw-search-button" type="submit" aria-label="Search">→</button>', body)
-        self.assertNotIn("&#128269;", body)
-        self.assertNotIn("🔍", body)
-        self.assertIn('class="pw-hero"', body)
-        self.assertLess(body.index('class="pw-topbar"'), body.index('class="pw-hero"'))
-        self.assertIn(">picwise<", body)
-        self.assertIn("shopping assistant", body)
+        self.assertIn("How PicWise will help shoppers decide.", body)
+        self.assertIn("Back to home", body)
+        self.assertIn("What is Picwise?", body)
         self.assertIn("All rights reserved.", body)
-        self.assertNotIn("Best fit", body)
-        self.assertNotIn("Fast decision", body)
+        for forbidden in (
+            "View in Store",
+            "Go to Store",
+            "View Details and Buy",
+            "Recommended by Picwise",
+            "pw-card-recommended",
+        ):
+            self.assertNotIn(forbidden, body)
 
     def test_demo_includes_hero_subtitle_and_demo_note(self) -> None:
         body = self._fetch("/demo")
         self.assertIn(
-            "See the 4 best products before you buy",
+            "How PicWise will help shoppers decide.",
             body,
         )
         self.assertIn(
-            "Demo data source: local_test_fixture (not_production_data).",
+            "This demo page is informational only.",
             body,
         )
-        self.assertEqual(body.count("Demo data source"), 1)
-        demo_note_index = body.index('<p class="pw-demo-note">')
+        demo_note_index = body.index("This demo page is informational only.")
         footer_index = body.index('<footer class="pw-footer">')
         self.assertLess(demo_note_index, footer_index)
-        self.assertIn("Privacy", body)
-        self.assertIn("Terms", body)
-        self.assertIn("Contact", body)
 
     def test_demo_has_exactly_four_primary_cards_and_one_recommended(self) -> None:
         body = self._fetch("/demo")
-        self.assertEqual(body.count('<article class="pw-card'), 4)
-        self.assertEqual(body.count('<article class="pw-card pw-card-recommended"'), 1)
-        self.assertEqual(body.count("Recommended by Picwise"), 1)
-        self.assertIn("pw-rec-ring-a", body)
-        self.assertIn("pw-rec-ring-b", body)
-        self.assertIn("pw-rec-ring-c", body)
+        self.assertNotIn('<article class="pw-card', body)
+        self.assertNotIn("Recommended by Picwise", body)
+        self.assertIn("Search by product need", body)
+        self.assertIn("Compare focused choices", body)
 
     def test_demo_avoids_cart_checkout_and_fake_markers(self) -> None:
         body = self._fetch("/demo").lower()
@@ -249,13 +218,22 @@ class AppHttpEndpointTests(unittest.TestCase):
             "fake savings",
             "fake urgency",
             "fake confidence",
+            "travelcore 20k",
+            "dailybalance pd20",
+            "everydaysure 22.5w",
+            "powermax elite 25k",
+            "view in store",
+            "go to store",
+            "view details and buy",
+            "eur ",
         ):
             self.assertNotIn(forbidden_fake, body)
+        self.assertNotIn("class=\"pw-rating-row\"", body)
 
     def test_demo_includes_fixture_not_production_markers(self) -> None:
         body = self._fetch("/demo")
-        self.assertIn("local_test_fixture", body)
-        self.assertIn("not_production_data", body)
+        self.assertIn("informational only", body)
+        self.assertIn("No live Amazon offers are currently claimed", body)
 
 
 class SpyFeedAdapter(FeedAdapterProtocol):

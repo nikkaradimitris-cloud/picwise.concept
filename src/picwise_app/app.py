@@ -9,7 +9,6 @@ from pathlib import Path
 import socket
 from typing import Any
 from urllib.parse import parse_qs, urlparse
-from uuid import uuid4
 
 from picwise_contracts import DecisionDepth, DecisionOutput, MissingDataState, ProductBrain
 from picwise_engine import PicwiseDecisionEngine
@@ -18,11 +17,10 @@ from picwise_learning.stage30_runtime_probe import build_default_stage30_runtime
 from picwise_learning.stage31_runtime_controller import build_default_stage31_runtime_controller
 from picwise_mvp import build_mvp_private_beta_readiness_report, run_pickwise_mvp_search_flow
 from picwise_nlu import adapt_local_nlu_intent_for_router, build_local_nlu_intent
-from picwise_redirects import build_redirect_tracking_payload, resolve_redirect
 from picwise_search import route_search_query
 from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
 from picwise_surface import (
-    render_landing_surface,
+    render_demo_info_page,
     render_mvp_search_results_surface,
     render_picwise_reference_surface,
     render_review_safe_landing_page,
@@ -68,30 +66,8 @@ class PicwiseLocalApp:
         }
 
     def demo_html(self, query: str) -> str:
-        output = self.build_demo_output(query)
-        if not output.choices:
-            return self._safe_no_result_html(output)
-        rendered = render_landing_surface(output)
-        resolution = resolve_redirect(
-            output,
-            selected_product_id=output.recommended_product_id,
-            session_id=str(uuid4()),
-            click_to_redirect_budget_ms=220,
-            local_safe_mode=True,
-        )
-        redirect_payload = build_redirect_tracking_payload(resolution)
-        payload_text = json.dumps(redirect_payload, ensure_ascii=True, separators=(",", ":"))
-        marker = (
-            "<!-- data_origin:local_test_fixture;data_classification:not_production_data; "
-            "non_live_demo:true -->"
-        )
-        return rendered.replace(
-            "</body>",
-            (
-                f'<script type="application/json" id="redirect-preview">{payload_text}</script>'
-                f"{marker}</body>"
-            ),
-        )
+        _ = query
+        return render_demo_info_page()
 
     def root_landing_html(self) -> str:
         return render_review_safe_landing_page()
