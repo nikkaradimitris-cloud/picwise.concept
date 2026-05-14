@@ -194,6 +194,10 @@ class LandingUiTests(unittest.TestCase):
             self.assertIn('href="/cookies"', page)
             self.assertIn('href="/affiliate-disclosure"', page)
             self.assertIn('href="/contact"', page)
+            self.assertIn('class="pw-footer-links"', page)
+            self.assertIn('class="pw-footer-link"', page)
+            self.assertIn(".pw-footer-links{display:flex;", page)
+            self.assertIn(".pw-footer-link{display:inline-flex;", page)
 
     def test_css_has_no_negative_margin_top_on_shell_or_hero(self) -> None:
         css = self._extract_inline_css(render_landing_surface(build_decision_output())).replace(" ", "")
