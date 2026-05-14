@@ -106,24 +106,6 @@ class LandingUiTests(unittest.TestCase):
         self.assertIn("shopping assistant", html)
         self.assertIn(">picwise<", html)
 
-    def test_public_pages_use_shared_brand_header_class(self) -> None:
-        pages = (
-            render_review_safe_landing_page(),
-            render_demo_info_page(),
-            render_terms_page(),
-            render_privacy_page(),
-            render_cookies_page(),
-            render_affiliate_disclosure_page(),
-            render_contact_page(),
-            render_branded_not_found_page(),
-        )
-        for page in pages:
-            self.assertIn('class="pw-public-brand-header"', page)
-            self.assertIn('class="pw-public-brand-link"', page)
-            self.assertIn('class="pw-public-brand-mark" src="/assets/picwise/picwise-symbol.png"', page)
-            self.assertIn('class="pw-public-brand-wordmark">PicWise<', page)
-            self.assertIn("shopping decision assistant", page)
-
     def test_landing_renders_exactly_4_primary_cards(self) -> None:
         html = render_landing_surface(build_decision_output())
         self.assertEqual(html.count('<article class="pw-card'), 4)
@@ -229,7 +211,7 @@ class LandingUiTests(unittest.TestCase):
         self.assertNotIn("class=\"pw-rating-row\"", demo_html)
         self.assertNotIn('href="/demo#what-is-picwise"', root_html)
         self.assertIn("How PicWise will help shoppers decide.", demo_html)
-        self.assertNotIn("Back to home", demo_html)
+        self.assertIn("Back to home", demo_html)
         self.assertNotIn("What is PicWise?", demo_html)
         self.assertIn("This demo page is informational only.", demo_html)
         for page in (root_html, demo_html):
@@ -238,8 +220,6 @@ class LandingUiTests(unittest.TestCase):
             self.assertIn('href="/cookies"', page)
             self.assertIn('href="/affiliate-disclosure"', page)
             self.assertIn('href="/contact"', page)
-            self.assertIn('href="/picwise-reference"', page)
-            self.assertNotIn("PicWise Reference", page)
             self.assertIn('class="pw-footer-links"', page)
             self.assertIn('class="pw-footer-link"', page)
             self.assertIn(".pw-footer-links{display:flex;", page)

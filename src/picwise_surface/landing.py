@@ -3,7 +3,7 @@ from __future__ import annotations
 from html import escape
 
 from picwise_contracts import ContractValidationError, DecisionOutput
-from .legal import render_public_brand_header, render_public_footer
+from .legal import render_public_footer
 
 
 def render_review_safe_landing_page() -> str:
@@ -19,13 +19,14 @@ def render_review_safe_landing_page() -> str:
         "*{box-sizing:border-box;}"
         "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:#102744;background:linear-gradient(180deg,#f8fbff 0%,#f3f8ff 100%);}"
         ".pw-wrap{max-width:880px;margin:0 auto;padding:40px 20px 28px;}"
-        ".pw-public-brand-header{display:flex;align-items:flex-start;margin:0;}"
-        ".pw-public-brand-link{display:inline-flex;align-items:flex-start;gap:10px;color:#1a4fb7;text-decoration:none;}"
-        ".pw-public-brand-mark{width:26px;height:26px;display:block;object-fit:contain;margin-top:2px;flex:0 0 auto;}"
-        ".pw-public-brand-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1;}"
-        ".pw-public-brand-wordmark{font-size:30px;font-weight:800;letter-spacing:-.03em;color:#1a4fb7;}"
-        ".pw-public-brand-tagline{margin-top:4px;font-size:12px;color:#3a5f8e;letter-spacing:.02em;}"
-        ".pw-card{margin-top:20px;background:#fff;border:1px solid #d9e7fb;border-radius:16px;padding:24px;}"
+        ".pw-brand{display:inline-flex;align-items:flex-start;gap:10px;color:#1a4fb7;text-decoration:none;}"
+        ".pw-brand-mark{width:30px;height:30px;border-radius:10px;background:linear-gradient(160deg,#30a0ff 0%,#1f6cff 70%);position:relative;box-shadow:0 7px 14px rgba(31,108,255,.2);margin-top:2px;}"
+        ".pw-brand-mark::before{content:'';position:absolute;left:7px;top:7px;width:11px;height:11px;border:3px solid #fff;border-right-color:transparent;border-radius:999px;}"
+        ".pw-brand-mark::after{content:'';position:absolute;right:7px;bottom:7px;width:5px;height:5px;background:#fff;border-radius:999px;}"
+        ".pw-brand-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1;}"
+        ".pw-brand-name{font-size:30px;font-weight:800;letter-spacing:-.03em;text-transform:lowercase;}"
+        ".pw-brand-tagline{margin-top:4px;font-size:12px;color:#3a5f8e;letter-spacing:.02em;text-transform:none;}"
+        ".pw-card{margin-top:20px;background:#fff;border:1px solid #d9e7fb;border-radius:16px;padding:24px;box-shadow:0 12px 28px rgba(20,56,112,.08);}"
         ".pw-title{margin:0;font-size:34px;line-height:1.2;letter-spacing:-.02em;color:#0f2442;}"
         ".pw-body{margin:14px 0 0;font-size:16px;line-height:1.7;color:#355174;}"
         ".pw-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;}"
@@ -41,7 +42,10 @@ def render_review_safe_landing_page() -> str:
         "@media (max-width:760px){.pw-title{font-size:29px;}}"
         "</style></head><body>"
         '<main class="pw-wrap">'
-        f"{render_public_brand_header()}"
+        '<a class="pw-brand" href="/" aria-label="PicWise home">'
+        '<span class="pw-brand-mark" aria-hidden="true"></span>'
+        '<span class="pw-brand-text"><span class="pw-brand-name">picwise</span><span class="pw-brand-tagline">shopping decision assistant</span></span>'
+        "</a>"
         '<section class="pw-card">'
         '<h1 class="pw-title">Welcome to PicWise.</h1>'
         '<p class="pw-body">PicWise is a shopping decision assistant that helps users compare product options, understand trade-offs, and choose more confidently before visiting external providers.</p>'
@@ -68,13 +72,8 @@ def render_demo_info_page() -> str:
         "*{box-sizing:border-box;}"
         "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:#102744;background:linear-gradient(180deg,#f8fbff 0%,#f3f8ff 100%);}"
         ".pw-wrap{max-width:940px;margin:0 auto;padding:40px 20px 28px;}"
-        ".pw-public-brand-header{display:flex;align-items:flex-start;margin:0;}"
-        ".pw-public-brand-link{display:inline-flex;align-items:flex-start;gap:10px;color:#1a4fb7;text-decoration:none;}"
-        ".pw-public-brand-mark{width:26px;height:26px;display:block;object-fit:contain;margin-top:2px;flex:0 0 auto;}"
-        ".pw-public-brand-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1;}"
-        ".pw-public-brand-wordmark{font-size:30px;font-weight:800;letter-spacing:-.03em;color:#1a4fb7;}"
-        ".pw-public-brand-tagline{margin-top:4px;font-size:12px;color:#3a5f8e;letter-spacing:.02em;}"
-        ".pw-card{margin-top:20px;background:#fff;border:1px solid #d9e7fb;border-radius:16px;padding:24px;}"
+        ".pw-brand{font-size:30px;font-weight:800;letter-spacing:-.03em;text-transform:lowercase;color:#1a4fb7;text-decoration:none;}"
+        ".pw-card{margin-top:20px;background:#fff;border:1px solid #d9e7fb;border-radius:16px;padding:24px;box-shadow:0 12px 28px rgba(20,56,112,.08);}"
         ".pw-title{margin:0;font-size:36px;line-height:1.16;letter-spacing:-.02em;color:#0f2442;}"
         ".pw-body{margin:14px 0 0;font-size:16px;line-height:1.7;color:#355174;}"
         ".pw-note{margin:16px 0 0;padding:12px 14px;border:1px solid #dbe8fb;border-radius:12px;background:#f6f9ff;color:#24456f;font-size:15px;line-height:1.6;}"
@@ -95,7 +94,7 @@ def render_demo_info_page() -> str:
         "@media (max-width:760px){.pw-title{font-size:30px;}.pw-list-wrap{grid-template-columns:1fr;}}"
         "</style></head><body>"
         '<main class="pw-wrap">'
-        f"{render_public_brand_header()}"
+        '<a class="pw-brand" href="/" aria-label="PicWise home">PicWise</a>'
         '<section class="pw-card">'
         '<h1 class="pw-title">How PicWise will help shoppers decide.</h1>'
         '<p class="pw-body">PicWise is being prepared as a buying-decision assistant. Users will be able to search for a product category, compare a small set of relevant options, and follow external store offers once provider integrations are configured.</p>'
@@ -106,6 +105,9 @@ def render_demo_info_page() -> str:
         '<article class="pw-item"><h2>Understand trade-offs</h2><p>Guidance will help users evaluate practical pros, limits, and suitability.</p></article>'
         '<article class="pw-item"><h2>External provider integrations in progress</h2><p>Provider and affiliate integrations are being configured. No live Amazon offers are currently claimed.</p></article>'
         "</section>"
+        '<div class="pw-actions">'
+        '<a class="pw-btn pw-btn-primary" href="/">Back to home</a>'
+        "</div>"
         "</section>"
         f"{render_public_footer()}"
         "</main></body></html>"
