@@ -174,7 +174,7 @@ class AppHttpEndpointTests(unittest.TestCase):
         body = self._fetch("/demo?q=power+bank")
         self.assertIn("How PicWise will help shoppers decide.", body)
         self.assertIn("Back to home", body)
-        self.assertIn("What is Picwise?", body)
+        self.assertNotIn("What is Picwise?", body)
         self.assertIn("All rights reserved.", body)
         for forbidden in (
             "View in Store",

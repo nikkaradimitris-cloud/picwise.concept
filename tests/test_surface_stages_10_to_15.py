@@ -179,6 +179,8 @@ class LandingUiTests(unittest.TestCase):
         self.assertNotIn("class=\"pw-rating-row\"", demo_html)
         self.assertIn('href="/demo#what-is-picwise"', root_html)
         self.assertIn("How PicWise will help shoppers decide.", demo_html)
+        self.assertIn("Back to home", demo_html)
+        self.assertNotIn("What is Picwise?", demo_html)
         self.assertIn("This demo page is informational only.", demo_html)
 
     def test_css_has_no_negative_margin_top_on_shell_or_hero(self) -> None:

@@ -98,7 +98,6 @@ def render_demo_info_page() -> str:
         "</section>"
         '<div class="pw-actions">'
         '<a class="pw-btn pw-btn-primary" href="/">Back to home</a>'
-        '<a class="pw-btn pw-btn-secondary" href="/demo#what-is-picwise">What is Picwise?</a>'
         "</div>"
         "</section>"
         '<footer class="pw-footer">&copy; 2026 PicWise. All rights reserved.</footer>'

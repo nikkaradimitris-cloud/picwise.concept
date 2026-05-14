@@ -168,7 +168,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         _status, _headers, body = _call_wsgi("/demo", f"q={quote(query)}")
         self.assertIn("How PicWise will help shoppers decide.", body)
         self.assertIn("Back to home", body)
-        self.assertIn("What is Picwise?", body)
+        self.assertNotIn("What is Picwise?", body)
         self.assertNotIn('name="q"', body)
         self.assertNotIn(f'value="{query}"', body)
 
@@ -197,7 +197,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn('class="pw-brand"', body)
         self.assertIn(">picwise<", body)
         self.assertIn("Back to home", body)
-        self.assertIn("What is Picwise?", body)
+        self.assertNotIn("What is Picwise?", body)
 
     def test_landing_contains_hero_subtitle(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
