@@ -296,7 +296,9 @@ class LandingUiTests(unittest.TestCase):
         self.assertIn("SaaS", affiliate)
         self.assertIn("finance", affiliate.lower())
 
-        self.assertIn("mysubby.cloud@gmail.com", contact)
+        self.assertIn("contact@picwise.subby.cloud", contact)
+        for page in (terms, privacy, cookies, affiliate, contact):
+            self.assertNotIn("mysubby.cloud@gmail.com", page)
 
     def test_branded_not_found_page_has_required_elements(self) -> None:
         html = render_branded_not_found_page()

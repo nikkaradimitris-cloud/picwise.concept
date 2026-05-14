@@ -139,7 +139,7 @@ def render_terms_page() -> str:
         "<h2>Corrections and changes</h2>"
         "<p>Users and providers can contact PicWise to request correction of inaccurate information or external link concerns. PicWise may update these pages and service behavior over time.</p>"
         "<h2>Contact</h2>"
-        "<p>Email: mysubby.cloud@gmail.com</p>"
+        "<p>Email: contact@picwise.subby.cloud</p>"
         "<p>Last updated: May 2026</p>"
     )
     return _render_legal_page(
@@ -197,7 +197,7 @@ def render_privacy_page() -> str:
         "<p>PicWise may provide informational ranking/comparison outputs, but users should verify provider terms before acting. PicWise does not claim regulated automated credit or insurance decisions.</p>"
         "<h2>Changes and contact</h2>"
         "<p>PicWise may update this policy as the service evolves.</p>"
-        "<p>Email: mysubby.cloud@gmail.com</p>"
+        "<p>Email: contact@picwise.subby.cloud</p>"
         "<p>Last updated: May 2026</p>"
     )
     return _render_legal_page(
@@ -234,7 +234,7 @@ def render_cookies_page() -> str:
         "<p>Users can control cookies via browser settings and third-party provider settings where applicable.</p>"
         "<h2>Future updates and contact</h2>"
         "<p>This page will be updated when tracking/provider integrations become active.</p>"
-        "<p>Email: mysubby.cloud@gmail.com</p>"
+        "<p>Email: contact@picwise.subby.cloud</p>"
         "<p>Last updated: May 2026</p>"
     )
     return _render_legal_page(
@@ -277,7 +277,7 @@ def render_affiliate_disclosure_page() -> str:
         "<h2>Disclosure placement rule</h2>"
         "<p>When live affiliate links are added, a clear affiliate disclosure must appear near affiliate link areas or in a clearly visible page/footer location.</p>"
         "<h2>Contact</h2>"
-        "<p>Email: mysubby.cloud@gmail.com</p>"
+        "<p>Email: contact@picwise.subby.cloud</p>"
         "<p>Last updated: May 2026</p>"
     )
     return _render_legal_page(
@@ -295,7 +295,7 @@ def render_affiliate_disclosure_page() -> str:
 def render_contact_page() -> str:
     sections = (
         "<h2>PicWise contact page</h2>"
-        "<p>Email: mysubby.cloud@gmail.com</p>"
+        "<p>Email: contact@picwise.subby.cloud</p>"
         "<h2>Contact topics</h2>"
         "<ul>"
         "<li>Website questions</li>"

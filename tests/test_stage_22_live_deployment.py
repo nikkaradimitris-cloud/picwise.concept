@@ -194,7 +194,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "/privacy": ("Privacy Policy", "<title>Privacy Policy — PicWise</title>"),
             "/cookies": ("Cookie Policy", "<title>Cookie Policy — PicWise</title>"),
             "/affiliate-disclosure": ("Affiliate Disclosure", "<title>Affiliate Disclosure — PicWise</title>"),
-            "/contact": ("mysubby.cloud@gmail.com", "<title>Contact — PicWise</title>"),
+            "/contact": ("contact@picwise.subby.cloud", "<title>Contact — PicWise</title>"),
         }
         for path, (must_have, title_tag) in expected.items():
             status, headers, body = _call_wsgi(path)
@@ -204,6 +204,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
             self.assertIn(title_tag, body)
             self.assertIn('<meta name="description"', body)
             self._assert_common_footer_links(body)
+            self.assertNotIn("mysubby.cloud@gmail.com", body)
 
     def test_affiliate_disclosure_contains_required_terms(self) -> None:
         _status, _headers, body = _call_wsgi("/affiliate-disclosure")
