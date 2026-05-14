@@ -63,7 +63,12 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
             content_type, body = asset_result
             return _response("200 OK", content_type, body, start_response)
 
-    if path in {"/", "/demo"}:
+    if path == "/":
+        html = render_picwise_reference_surface()
+        body = html.encode("utf-8")
+        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+
+    if path == "/demo":
         query_string = str(environ.get("QUERY_STRING", ""))
         query = parse_qs(query_string).get("q", ["power bank 20000mah for iphone"])[0]
         html = _APP.demo_html(query)
