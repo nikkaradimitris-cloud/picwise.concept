@@ -53,7 +53,12 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         return _response("405 Method Not Allowed", "application/json; charset=utf-8", body, start_response)
 
     if path == "/health":
-        payload = _APP.health_payload()
+        payload = {
+            "status": "ok",
+            "app": "picwise",
+            "mode": "production",
+            "domain_plan_primary": "picwise.subby.cloud",
+        }
         body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
         return _response("200 OK", "application/json; charset=utf-8", body, start_response)
 
