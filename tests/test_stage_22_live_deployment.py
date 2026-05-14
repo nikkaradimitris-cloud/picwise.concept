@@ -134,6 +134,11 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn("Showing 4 options for: power bank 20000mah for iphone", body)
         self.assertNotIn("LIVE RENDERER PROOF V1", body)
         self.assertNotIn("picwise-reference-live-renderer-proof-v1", body)
+        self.assertNotIn("View in Store", body)
+        self.assertNotIn("Go to Store", body)
+        self.assertNotIn("View Details and Buy", body)
+        self.assertIn("Preview option", body)
+        self.assertIn("Preview recommendation", body)
         self.assertIn("What is PicWise?", body)
         self.assertEqual(body.count('class="pw-brand"'), 1)
         self.assertIn(
@@ -183,6 +188,11 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "Showing 4 options for: power bank 20000mah for iphone",
             reference_body,
         )
+        self.assertNotIn("View in Store", reference_body)
+        self.assertNotIn("Go to Store", reference_body)
+        self.assertNotIn("View Details and Buy", reference_body)
+        self.assertIn("Preview option", reference_body)
+        self.assertIn("Preview recommendation", reference_body)
         self.assertNotIn("LIVE RENDERER PROOF V1", reference_body)
         self.assertNotIn("picwise-reference-live-renderer-proof-v1", reference_body)
         self.assertIn("What is PicWise?", reference_body)
