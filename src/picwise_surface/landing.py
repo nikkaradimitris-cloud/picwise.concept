@@ -46,7 +46,7 @@ def render_review_safe_landing_page() -> str:
         '<article class="pw-section"><h2>Provider integrations in progress</h2></article>'
         "</section>"
         '<div class="pw-actions">'
-        '<a class="pw-btn pw-btn-primary" href="/demo">View demo</a>'
+        '<a class="pw-btn pw-btn-primary" href="/picwise-reference">View demo</a>'
         '<a class="pw-btn pw-btn-secondary" href="/demo#what-is-picwise">What is Picwise?</a>'
         "</div>"
         '<p class="pw-note">No live provider integration or real product availability is claimed on this page.</p>'

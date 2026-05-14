@@ -110,7 +110,7 @@ class AppHttpEndpointTests(unittest.TestCase):
     def test_root_what_is_picwise_link_targets_safe_demo_section(self) -> None:
         body = self._fetch("/")
         self.assertIn('href="/demo#what-is-picwise"', body)
-        self.assertNotIn('href="/picwise-reference"', body)
+        self.assertIn('href="/picwise-reference">View demo</a>', body)
 
     def test_picwise_reference_route_renders_static_reference_page(self) -> None:
         body = self._fetch("/picwise-reference")
