@@ -35,11 +35,18 @@ def _pick_open_port() -> int:
 
 class AppHttpEndpointTests(unittest.TestCase):
     @staticmethod
+    def _assert_shared_brand_header(body: str) -> None:
+        assert 'class="pw-public-brand-header"' in body
+        assert 'class="pw-public-brand-link"' in body
+        assert 'class="pw-public-brand-mark" src="/assets/picwise/picwise-symbol.png"' in body
+        assert 'class="pw-public-brand-wordmark">PicWise<' in body
+        assert "shopping decision assistant" in body
+
+    @staticmethod
     def _assert_common_footer_links(body: str) -> None:
         expected_links = (
             ("/", "Home"),
-            ("/demo", "Demo"),
-            ("/picwise-reference", "PicWise Reference"),
+            ("/picwise-reference", "Demo"),
             ("/terms", "Terms"),
             ("/privacy", "Privacy"),
             ("/cookies", "Cookies"),
@@ -56,7 +63,7 @@ class AppHttpEndpointTests(unittest.TestCase):
             "when affiliate or provider integrations are active."
         ) in body
         assert (
-            "HomeDemoPicWise ReferenceTermsPrivacyCookiesAffiliate DisclosureContact"
+            "HomeDemoTermsPrivacyCookiesAffiliate DisclosureContact"
             not in body.replace(" ", "").replace("\n", "")
         )
 
@@ -103,6 +110,7 @@ class AppHttpEndpointTests(unittest.TestCase):
             body,
         )
         self.assertIn("<title>PicWise — Shopping Decision Assistant</title>", body)
+        self._assert_shared_brand_header(body)
         self._assert_common_footer_links(body)
         self.assertIn('href="/picwise-reference">Demo</a>', body)
         self.assertEqual(body.count('data-main-cta-area="true"'), 1)
@@ -127,6 +135,7 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertIn("<html", body.lower())
         self.assertIn("How PicWise will help shoppers decide.", body)
         self.assertIn("<title>PicWise Demo — Buying Decision Preview</title>", body)
+        self._assert_shared_brand_header(body)
         self._assert_common_footer_links(body)
 
     def test_demo_includes_query_confirmation(self) -> None:
@@ -178,7 +187,10 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertNotIn("<h1>See the 4 best products before you buy</h1>", body)
         self.assertNotIn("Search your product here", body)
         self.assertNotIn('value="See the 4 best products before you buy"', body)
-        self.assertIn("What is PicWise?", body)
+        self._assert_shared_brand_header(body)
+        self.assertNotIn("What is PicWise?", body)
+        self.assertNotIn("Login", body)
+        self.assertNotIn("Register", body)
         self.assertIn("Showing 4 options for: power bank 20000mah for iphone", body)
         self.assertNotIn("View in Store", body)
         self.assertNotIn("Go to Store", body)
@@ -187,7 +199,6 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertIn("Preview recommendation", body)
         self.assertNotIn("LIVE RENDERER PROOF V1", body)
         self.assertNotIn("picwise-reference-live-renderer-proof-v1", body)
-        self.assertEqual(body.count('class="pw-brand"'), 1)
         for forbidden_image_placeholder in (
             "TravelCore 20K product image placeholder",
             "DailyBalance PD20 product image placeholder",
@@ -231,9 +242,10 @@ class AppHttpEndpointTests(unittest.TestCase):
     def test_demo_includes_header_search_and_footer_controls(self) -> None:
         body = self._fetch("/demo?q=power+bank")
         self.assertIn("How PicWise will help shoppers decide.", body)
-        self.assertIn("Back to home", body)
+        self.assertNotIn("Back to home", body)
         self.assertNotIn("What is Picwise?", body)
         self.assertIn("All rights reserved.", body)
+        self._assert_shared_brand_header(body)
         self._assert_common_footer_links(body)
         for forbidden in (
             "View in Store",

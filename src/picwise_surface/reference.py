@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from html import escape
 
-from .legal import render_public_footer
+from .legal import render_public_brand_header, render_public_footer
 
 
 def render_picwise_reference_surface() -> str:
@@ -147,19 +147,12 @@ def render_picwise_reference_surface() -> str:
         ".pw-reference-viewport{min-height:100vh;padding:12px;display:flex;justify-content:center;align-items:flex-start;}"
         ".pw-reference-scale-shell{position:relative;display:flex;justify-content:center;width:100%;}"
         ".pw-reference-frame{width:100%;max-width:1280px;padding:18px 24px 26px;position:relative;background:#f8fbff;}"
-        ".pw-topbar{display:flex;justify-content:flex-end;align-items:center;height:52px;margin-bottom:18px;}"
-        ".pw-brand{display:flex;align-items:flex-start;justify-content:center;gap:10px;text-decoration:none;color:#0f1f3a;width:max-content;margin:0 auto;}"
-        ".pw-brand-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1;}"
-        ".pw-logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(160deg,#30a0ff 0%,#1f6cff 70%);position:relative;box-shadow:none;filter:none;margin-top:1px;}"
-        ".pw-logo::before{content:'';position:absolute;left:9px;top:9px;width:16px;height:16px;border:3px solid #fff;border-right-color:transparent;border-radius:999px;}"
-        ".pw-logo::after{content:'';position:absolute;right:9px;bottom:9px;width:7px;height:7px;background:#fff;border-radius:999px;}"
-        ".pw-brand-name{display:block;font-size:42px;line-height:1;font-weight:800;letter-spacing:-.04em;text-transform:lowercase;}"
-        ".pw-brand-tagline{display:block;margin-top:5px;font-size:12px;letter-spacing:.02em;color:#3c5f8a;line-height:1.2;}"
-        ".pw-actions{display:flex;align-items:center;gap:8px;padding-top:0;flex-wrap:wrap;justify-content:flex-end;row-gap:8px;}"
-        ".pw-topbar-control{display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 13px;border-radius:999px;font-size:13px;font-weight:600;line-height:1;border:1px solid transparent;white-space:nowrap;}"
-        ".pw-login-btn{background:#fff;color:#1d3a63;border-color:#ccdbf2;box-shadow:none;filter:none;cursor:pointer;}"
-        ".pw-register{background:#1f6dff;color:#fff;border-color:#1f6dff;text-decoration:none;box-shadow:none;filter:none;}"
-        ".pw-brand-wrap{margin:0 0 26px;display:flex;justify-content:center;}"
+        ".pw-public-brand-header{display:flex;align-items:flex-start;margin:0 0 26px;}"
+        ".pw-public-brand-link{display:inline-flex;align-items:flex-start;gap:10px;color:#1a4fb7;text-decoration:none;}"
+        ".pw-public-brand-mark{width:26px;height:26px;display:block;object-fit:contain;margin-top:2px;flex:0 0 auto;}"
+        ".pw-public-brand-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1;}"
+        ".pw-public-brand-wordmark{font-size:30px;font-weight:800;letter-spacing:-.03em;color:#1a4fb7;}"
+        ".pw-public-brand-tagline{margin-top:4px;font-size:12px;letter-spacing:.02em;color:#3a5f8e;line-height:1.2;}"
         ".pw-search-wrap{width:100%;max-width:760px;height:58px;margin:0 auto 24px;}"
         ".pw-search-shell{display:flex;align-items:center;gap:10px;width:100%;height:58px;background:#fff;border:1px solid #dbe8fb;border-radius:999px;padding:0 10px 0 18px;box-shadow:none;filter:none;}"
         ".pw-search-icon,.pw-search-button-icon{position:relative;width:16px;height:16px;display:inline-block;color:#7c93b7;flex:0 0 auto;}"
@@ -168,12 +161,6 @@ def render_picwise_reference_surface() -> str:
         ".pw-search-input{flex:1;height:56px;border:0;background:transparent;outline:none;font-size:19px;color:#95a8c7;font-weight:500;}"
         ".pw-search-button{width:42px;height:42px;border-radius:999px;border:0;background:#1f6dff;display:inline-flex;align-items:center;justify-content:center;box-shadow:none;filter:none;}"
         ".pw-search-button .pw-search-button-icon{color:#fff;}"
-        ".pw-info-wrap{position:relative;display:inline-flex;flex-direction:column;align-items:stretch;gap:0;z-index:3;}"
-        ".pw-info-link{background:#2d79f5;color:#fff;border-color:#2d79f5;cursor:pointer;box-shadow:none;filter:none;}"
-        ".pw-info-link:focus-visible{outline:2px solid #2a6deb;outline-offset:3px;}"
-        ".pw-tooltip{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);width:min(430px,calc(100vw - 24px));background:#fff;border:1px solid #dbe6f8;border-radius:12px;box-shadow:none;text-shadow:none;filter:none;padding:12px 14px;font-size:14px;line-height:1.5;color:#112849;text-align:left;display:none;z-index:2;}"
-        ".pw-tooltip::before{content:'';position:absolute;left:50%;top:-7px;transform:translateX(-50%) rotate(45deg);width:14px;height:14px;background:#fff;border-left:1px solid #dbe6f8;border-top:1px solid #dbe6f8;}"
-        ".pw-info-wrap.is-open .pw-tooltip{display:block;}"
         ".pw-query-line{width:100%;max-width:760px;margin:0 auto 44px;text-align:left;font-size:15px;color:#1a3d6b;font-weight:500;}"
         ".pw-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;align-items:start;width:100%;max-width:1190px;margin:0 auto;justify-items:center;}"
         ".pw-card{position:relative;background:#fff;border:1px solid #dbe8fb;border-radius:18px;box-shadow:none;text-shadow:none;filter:none;padding:14px 14px 12px;display:flex;flex-direction:column;min-height:472px;width:100%;max-width:284px;}"
@@ -202,25 +189,15 @@ def render_picwise_reference_surface() -> str:
         ".pw-card-recommended .pw-card-cta{background:#1f6dff;color:#fff;border-color:#1f6dff;}"
         ".pw-demo-note{text-align:center;font-size:12px;color:#7389ac;margin:16px 0 10px;}"
         ".pw-reference-disclaimer{margin:0 auto 16px;max-width:900px;padding:10px 12px;border:1px solid #dbe8fb;border-radius:12px;background:#f6f9ff;color:#284a76;font-size:14px;line-height:1.6;text-align:center;}"
-        ".pw-footer{text-align:center;padding:6px 0 10px;font-size:12px;color:#6e83a3;}"
-        ".pw-footer a{color:#6e83a3;text-decoration:none;margin-left:22px;}"
-        "@media (min-width:1100px){.pw-reference-viewport{padding:8px;}.pw-reference-frame{padding:12px 20px 16px;}.pw-topbar{height:46px;margin-bottom:16px;}.pw-brand-wrap{margin:0 0 24px;}.pw-search-wrap{height:52px;margin:0 auto 20px;}.pw-query-line{margin:0 auto 40px;}.pw-card{padding:12px 12px 10px;min-height:444px;}.pw-product-image-wrap{height:74px;margin:0 0 8px;}.pw-product-image{width:228px;height:74px;}}"
-        "@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:760px;}.pw-topbar{height:auto;gap:10px;}}"
-        "@media (max-width:699px){.pw-reference-frame{padding:14px 12px 20px;}.pw-topbar{flex-direction:column;align-items:center;margin-bottom:20px;}.pw-actions{width:100%;justify-content:center;gap:8px;}.pw-brand-wrap{margin:0 0 24px;}.pw-brand-name{font-size:33px;}.pw-search-wrap{height:auto;}.pw-search-shell{height:52px;padding:0 8px 0 14px;}.pw-search-input{height:50px;font-size:16px;}.pw-query-line{font-size:14px;margin:0 auto 36px;}.pw-grid{grid-template-columns:1fr;max-width:360px;}.pw-card{max-width:360px;}.pw-tooltip{width:min(430px,calc(100% - 8px));}}"
+        "@media (min-width:1100px){.pw-reference-viewport{padding:8px;}.pw-reference-frame{padding:12px 20px 16px;}.pw-public-brand-header{margin:0 0 24px;}.pw-search-wrap{height:52px;margin:0 auto 20px;}.pw-query-line{margin:0 auto 40px;}.pw-card{padding:12px 12px 10px;min-height:444px;}.pw-product-image-wrap{height:74px;margin:0 0 8px;}.pw-product-image{width:228px;height:74px;}}"
+        "@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:760px;}}"
+        "@media (max-width:699px){.pw-reference-frame{padding:14px 12px 20px;}.pw-public-brand-header{margin:0 0 24px;}.pw-search-wrap{height:auto;}.pw-search-shell{height:52px;padding:0 8px 0 14px;}.pw-search-input{height:50px;font-size:16px;}.pw-query-line{font-size:14px;margin:0 auto 36px;}.pw-grid{grid-template-columns:1fr;max-width:360px;}.pw-card{max-width:360px;}}"
         ".pw-reference-viewport *,.pw-reference-viewport *::before,.pw-reference-viewport *::after{box-shadow:none!important;text-shadow:none!important;filter:none!important;}"
         "</style></head><body>"
         '<main class="pw-reference-viewport">'
         '<div class="pw-reference-scale-shell" id="pw-reference-scale-shell">'
         '<div class="pw-reference-frame" id="pw-reference-frame">'
-        '<header class="pw-topbar">'
-        '<div class="pw-actions"><button class="pw-topbar-control pw-login-btn" type="button">Login</button><a class="pw-topbar-control pw-register" href="#">Register</a><section class="pw-info-wrap" id="pw-info-wrap"><button class="pw-topbar-control pw-info-link" id="pw-info-button" type="button" aria-label="What is PicWise?" aria-expanded="false" aria-controls="pw-tooltip">What is PicWise?</button><div class="pw-tooltip" id="pw-tooltip">PicWise compares products for what you want to buy, recommends the 4 best matches, saves you time, and helps you choose faster.</div></section></div>'
-        "</header>"
-        '<section class="pw-brand-wrap" aria-label="PicWise brand">'
-        '<a class="pw-brand" href="/" aria-label="PicWise home">'
-        '<span class="pw-logo" aria-hidden="true"></span>'
-        '<span class="pw-brand-text"><span class="pw-brand-name">picwise</span><span class="pw-brand-tagline">shopping decision assistant</span></span>'
-        "</a>"
-        "</section>"
+        f"{render_public_brand_header()}"
         '<section class="pw-search-wrap" aria-label="Search">'
         '<div class="pw-search-shell">'
         '<span class="pw-search-icon" aria-hidden="true"></span>'
@@ -237,28 +214,6 @@ def render_picwise_reference_surface() -> str:
         f"{render_public_footer()}"
         "</div>"
         "</div>"
-        '<script>'
-        '(function(){'
-        'var infoWrap=document.getElementById("pw-info-wrap");'
-        'var infoButton=document.getElementById("pw-info-button");'
-        'if(!infoWrap||!infoButton){return;}'
-        'var setOpen=function(isOpen){'
-        'infoWrap.classList.toggle("is-open",isOpen);'
-        'infoButton.setAttribute("aria-expanded",isOpen?"true":"false");'
-        '};'
-        'setOpen(false);'
-        'infoButton.addEventListener("click",function(event){'
-        'event.stopPropagation();'
-        'setOpen(!infoWrap.classList.contains("is-open"));'
-        '});'
-        'document.addEventListener("click",function(event){'
-        'if(!infoWrap.contains(event.target)){setOpen(false);}'
-        '});'
-        'document.addEventListener("keydown",function(event){'
-        'if(event.key==="Escape"){setOpen(false);}'
-        '});'
-        '})();'
-        "</script>"
         "</main>"
         "</body></html>"
     )

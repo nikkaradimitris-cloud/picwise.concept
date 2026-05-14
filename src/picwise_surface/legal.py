@@ -3,8 +3,7 @@ from __future__ import annotations
 
 FOOTER_LINKS: tuple[tuple[str, str], ...] = (
     ("Home", "/"),
-    ("Demo", "/demo"),
-    ("PicWise Reference", "/picwise-reference"),
+    ("Demo", "/picwise-reference"),
     ("Terms", "/terms"),
     ("Privacy", "/privacy"),
     ("Cookies", "/cookies"),
@@ -20,13 +19,32 @@ SHORT_AFFILIATE_NOTICE = (
 )
 
 
+def render_public_brand_header() -> str:
+    return (
+        '<header class="pw-public-brand-header">'
+        '<a class="pw-public-brand-link" href="/" aria-label="PicWise home">'
+        '<img class="pw-public-brand-mark" src="/assets/picwise/picwise-symbol.png" alt="" aria-hidden="true">'
+        '<span class="pw-public-brand-text">'
+        '<span class="pw-public-brand-wordmark">PicWise</span>'
+        '<span class="pw-public-brand-tagline">shopping decision assistant</span>'
+        "</span>"
+        "</a>"
+        "</header>"
+    )
+
+
 def _base_styles() -> str:
     return (
         "*{box-sizing:border-box;}"
         "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:#102744;background:linear-gradient(180deg,#f8fbff 0%,#f3f8ff 100%);}"
         ".pw-wrap{max-width:980px;margin:0 auto;padding:32px 20px 20px;}"
-        ".pw-brand{display:inline-block;font-size:30px;font-weight:800;letter-spacing:-.03em;color:#1a4fb7;text-decoration:none;}"
-        ".pw-card{margin-top:16px;background:#fff;border:1px solid #d9e7fb;border-radius:16px;padding:24px;box-shadow:0 12px 28px rgba(20,56,112,.08);}"
+        ".pw-public-brand-header{display:flex;align-items:flex-start;margin:0;}"
+        ".pw-public-brand-link{display:inline-flex;align-items:flex-start;gap:10px;color:#1a4fb7;text-decoration:none;}"
+        ".pw-public-brand-mark{width:26px;height:26px;display:block;object-fit:contain;margin-top:2px;flex:0 0 auto;}"
+        ".pw-public-brand-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1;}"
+        ".pw-public-brand-wordmark{font-size:30px;font-weight:800;letter-spacing:-.03em;color:#1a4fb7;}"
+        ".pw-public-brand-tagline{margin-top:4px;font-size:12px;color:#3a5f8e;letter-spacing:.02em;}"
+        ".pw-card{margin-top:16px;background:#fff;border:1px solid #d9e7fb;border-radius:16px;padding:24px;}"
         ".pw-title{margin:0;font-size:34px;line-height:1.16;letter-spacing:-.02em;color:#0f2442;}"
         ".pw-intro{margin:12px 0 0;font-size:16px;line-height:1.65;color:#2c4567;}"
         ".pw-legal{max-width:760px;}"
@@ -70,7 +88,7 @@ def render_branded_not_found_page() -> str:
         '<meta name="description" content="Page not found on PicWise. Return to the home page and continue comparing options with clear informational guidance.">'
         f"<style>{_base_styles()}</style></head><body>"
         '<main class="pw-wrap">'
-        '<a class="pw-brand" href="/" aria-label="PicWise home">PicWise</a>'
+        f"{render_public_brand_header()}"
         '<section class="pw-card pw-legal">'
         '<h1 class="pw-title">Page not found — PicWise</h1>'
         '<p class="pw-intro">The page you requested could not be found.</p>'
@@ -91,7 +109,7 @@ def _render_legal_page(*, title: str, meta_description: str, heading: str, intro
         f'<meta name="description" content="{meta_description}">'
         f"<style>{_base_styles()}</style></head><body>"
         '<main class="pw-wrap">'
-        '<a class="pw-brand" href="/" aria-label="PicWise home">PicWise</a>'
+        f"{render_public_brand_header()}"
         '<section class="pw-card pw-legal">'
         f'<h1 class="pw-title">{heading}</h1>'
         f'<p class="pw-intro">{intro}</p>'

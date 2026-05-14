@@ -47,11 +47,18 @@ def _call_wsgi(path: str, query_string: str = "") -> tuple[str, dict[str, str], 
 
 class DeploymentEntrypointTests(unittest.TestCase):
     @staticmethod
+    def _assert_shared_brand_header(body: str) -> None:
+        assert 'class="pw-public-brand-header"' in body
+        assert 'class="pw-public-brand-link"' in body
+        assert 'class="pw-public-brand-mark" src="/assets/picwise/picwise-symbol.png"' in body
+        assert 'class="pw-public-brand-wordmark">PicWise<' in body
+        assert "shopping decision assistant" in body
+
+    @staticmethod
     def _assert_common_footer_links(body: str) -> None:
         expected_links = (
             ("/", "Home"),
-            ("/demo", "Demo"),
-            ("/picwise-reference", "PicWise Reference"),
+            ("/picwise-reference", "Demo"),
             ("/terms", "Terms"),
             ("/privacy", "Privacy"),
             ("/cookies", "Cookies"),
@@ -68,7 +75,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "when affiliate or provider integrations are active."
         ) in body
         assert (
-            "HomeDemoPicWise ReferenceTermsPrivacyCookiesAffiliate DisclosureContact"
+            "HomeDemoTermsPrivacyCookiesAffiliate DisclosureContact"
             not in body.replace(" ", "").replace("\n", "")
         )
 
@@ -93,6 +100,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertNotIn(query, body)
         self.assertIn("<title>PicWise Demo — Buying Decision Preview</title>", body)
         self.assertIn('<meta name="description"', body)
+        self._assert_shared_brand_header(body)
         self._assert_common_footer_links(body)
 
     def test_root_route_returns_landing_html_not_not_found(self) -> None:
@@ -119,6 +127,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn("shopping decision assistant", body)
         self.assertIn("<title>PicWise — Shopping Decision Assistant</title>", body)
         self.assertIn('<meta name="description"', body)
+        self._assert_shared_brand_header(body)
         self._assert_common_footer_links(body)
         self.assertIn('href="/picwise-reference">Demo</a>', body)
         self.assertEqual(body.count('data-main-cta-area="true"'), 1)
@@ -163,8 +172,10 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertNotIn("View Details and Buy", body)
         self.assertIn("Preview option", body)
         self.assertIn("Preview recommendation", body)
-        self.assertIn("What is PicWise?", body)
-        self.assertEqual(body.count('class="pw-brand"'), 1)
+        self._assert_shared_brand_header(body)
+        self.assertNotIn("What is PicWise?", body)
+        self.assertNotIn("Login", body)
+        self.assertNotIn("Register", body)
         self.assertIn(
             "Demo data source: local_test_fixture (not_production_data).",
             body,
@@ -219,8 +230,10 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn("Preview recommendation", reference_body)
         self.assertNotIn("LIVE RENDERER PROOF V1", reference_body)
         self.assertNotIn("picwise-reference-live-renderer-proof-v1", reference_body)
-        self.assertIn("What is PicWise?", reference_body)
-        self.assertEqual(reference_body.count('class="pw-brand"'), 1)
+        self._assert_shared_brand_header(reference_body)
+        self.assertNotIn("What is PicWise?", reference_body)
+        self.assertNotIn("Login", reference_body)
+        self.assertNotIn("Register", reference_body)
         for product_name in (
             "TravelCore 20K",
             "DailyBalance PD20",
@@ -249,6 +262,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
             self.assertNotIn("contact@picwise.subby.cloud", body)
             self.assertNotIn("mysubby.cloud@gmail.com", body)
             self.assertIn('<meta name="description"', body)
+            self._assert_shared_brand_header(body)
             self._assert_common_footer_links(body)
 
     def test_affiliate_disclosure_contains_required_terms(self) -> None:
@@ -309,7 +323,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         query = "best office chair under 200"
         _status, _headers, body = _call_wsgi("/demo", f"q={quote(query)}")
         self.assertIn("How PicWise will help shoppers decide.", body)
-        self.assertIn("Back to home", body)
+        self.assertNotIn("Back to home", body)
         self.assertNotIn("What is Picwise?", body)
         self.assertNotIn('name="q"', body)
         self.assertNotIn(f'value="{query}"', body)
@@ -329,6 +343,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         _status, _headers, body = _call_wsgi("/demo")
         self.assertIn("How PicWise will help shoppers decide.", body)
         self.assertIn("External provider integrations in progress", body)
+        self.assertNotIn("Back to home", body)
         for forbidden in (
             "pw-card-recommended",
             "Recommended by Picwise",
@@ -340,9 +355,8 @@ class DeploymentEntrypointTests(unittest.TestCase):
 
     def test_landing_contains_header_with_login_register(self) -> None:
         _status, _headers, body = _call_wsgi("/demo")
-        self.assertIn('class="pw-brand"', body)
-        self.assertIn(">PicWise<", body)
-        self.assertIn("Back to home", body)
+        self._assert_shared_brand_header(body)
+        self.assertNotIn("Back to home", body)
         self.assertNotIn("What is Picwise?", body)
 
     def test_landing_contains_hero_subtitle(self) -> None:
