@@ -19,6 +19,7 @@ from picwise_offers.amazon_manual_affiliate import (  # noqa: E402
     AmazonManualAffiliateSource,
     AmazonManualAffiliateStatus,
     AmazonManualMatchStatus,
+    match_manual_amazon_affiliates,
     match_manual_amazon_affiliate,
     validate_amazon_affiliate_url,
     validate_manual_amazon_record,
@@ -71,6 +72,22 @@ class AmazonAffiliateUrlValidationTests(unittest.TestCase):
 
 
 class AmazonAffiliateRecordValidationTests(unittest.TestCase):
+    def test_power_bank_registry_has_exactly_four_approved_records_and_expected_asins(self) -> None:
+        power_bank_records = [record for record in MANUAL_AMAZON_AFFILIATE_REGISTRY if record.category == "power_banks"]
+        self.assertEqual(len(power_bank_records), 4)
+        approved_records = [record for record in power_bank_records if record.status == AmazonManualAffiliateStatus.APPROVED]
+        self.assertEqual(len(approved_records), 4)
+        asins = {record.asin for record in power_bank_records}
+        self.assertSetEqual(asins, {"B08K7GHZ3V", "B0FQJH2XSY", "B0GR1257LT", "B0GH75LWKN"})
+        self.assertNotIn("B0F518CRGK", asins)
+
+    def test_every_power_bank_registry_record_validates_successfully(self) -> None:
+        power_bank_records = [record for record in MANUAL_AMAZON_AFFILIATE_REGISTRY if record.category == "power_banks"]
+        self.assertEqual(len(power_bank_records), 4)
+        for record in power_bank_records:
+            validation = validate_manual_amazon_record(record)
+            self.assertTrue(validation.valid, msg=f"record {record.asin} should be valid: {validation.errors}")
+
     def test_source_and_status_allow_list_accepts_expected_values(self) -> None:
         for status in (
             AmazonManualAffiliateStatus.APPROVED,
@@ -81,6 +98,7 @@ class AmazonAffiliateRecordValidationTests(unittest.TestCase):
                 asin="B08K7GHZ3V",
                 title="INIU Portable Charger 10500mAh Fast Charging Power Bank",
                 category="power_banks",
+                slot_label="Everyday portable",
                 affiliate_url=MANUAL_AMAZON_AFFILIATE_REGISTRY[0].affiliate_url,
                 tracking_id=AMAZON_ASSOCIATES_TRACKING_ID,
                 source=AmazonManualAffiliateSource.AMAZON_SITESTRIPE_MANUAL,
@@ -95,6 +113,7 @@ class AmazonAffiliateRecordValidationTests(unittest.TestCase):
             asin="B08K7GHZ3V",
             title="INIU Portable Charger 10500mAh Fast Charging Power Bank",
             category="power_banks",
+            slot_label="Everyday portable",
             affiliate_url=MANUAL_AMAZON_AFFILIATE_REGISTRY[0].affiliate_url,
             tracking_id=AMAZON_ASSOCIATES_TRACKING_ID,
             source="unknown_source",  # type: ignore[arg-type]
@@ -110,6 +129,7 @@ class AmazonAffiliateRecordValidationTests(unittest.TestCase):
             asin="B08K7GHZ3V",
             title="INIU Portable Charger 10500mAh Fast Charging Power Bank",
             category="power_banks",
+            slot_label="Everyday portable",
             affiliate_url=MANUAL_AMAZON_AFFILIATE_REGISTRY[0].affiliate_url,
             tracking_id=AMAZON_ASSOCIATES_TRACKING_ID,
             source=AmazonManualAffiliateSource.AMAZON_SITESTRIPE_MANUAL,
@@ -130,6 +150,32 @@ class AmazonAffiliateMatcherTests(unittest.TestCase):
         self.assertIn("tag=picwise-20", result.result.affiliate_url)
         self.assertEqual(result.result.disclosure, AMAZON_ASSOCIATE_DISCLOSURE)
 
+    def test_power_bank_query_returns_four_eligible_results(self) -> None:
+        result = match_manual_amazon_affiliates("power bank")
+        self.assertEqual(result.match_status, AmazonManualMatchStatus.ELIGIBLE)
+        self.assertEqual(len(result.results), 4)
+        self.assertSetEqual(
+            {entry.asin for entry in result.results},
+            {"B08K7GHZ3V", "B0FQJH2XSY", "B0GR1257LT", "B0GH75LWKN"},
+        )
+
+    def test_powerbank_query_returns_four_eligible_results(self) -> None:
+        result = match_manual_amazon_affiliates("powerbank")
+        self.assertEqual(result.match_status, AmazonManualMatchStatus.ELIGIBLE)
+        self.assertEqual(len(result.results), 4)
+
+    def test_compact_power_bank_query_includes_compact_asin(self) -> None:
+        result = match_manual_amazon_affiliates("compact power bank")
+        self.assertEqual(result.match_status, AmazonManualMatchStatus.ELIGIBLE)
+        compact_asins = {entry.asin for entry in result.results}
+        self.assertIn("B0FQJH2XSY", compact_asins)
+
+    def test_20000mah_query_includes_20000mah_asin(self) -> None:
+        result = match_manual_amazon_affiliates("20000mah power bank")
+        self.assertEqual(result.match_status, AmazonManualMatchStatus.ELIGIBLE)
+        asins = {entry.asin for entry in result.results}
+        self.assertIn("B0GR1257LT", asins)
+
     def test_powerbank_fast_charging_query_returns_eligible(self) -> None:
         result = match_manual_amazon_affiliate("powerbank fast charging")
         self.assertEqual(result.match_status, AmazonManualMatchStatus.ELIGIBLE)
@@ -139,8 +185,18 @@ class AmazonAffiliateMatcherTests(unittest.TestCase):
         self.assertEqual(result.match_status, AmazonManualMatchStatus.ELIGIBLE)
 
     def test_unrelated_query_returns_no_match(self) -> None:
-        result = match_manual_amazon_affiliate("standing desk")
-        self.assertIn(result.match_status, (AmazonManualMatchStatus.NO_MATCH, AmazonManualMatchStatus.NEEDS_REVIEW))
+        result = match_manual_amazon_affiliate("laptop")
+        self.assertEqual(result.match_status, AmazonManualMatchStatus.NO_MATCH)
+        multi_result = match_manual_amazon_affiliates("laptop")
+        self.assertEqual(multi_result.match_status, AmazonManualMatchStatus.NO_MATCH)
+        self.assertEqual(len(multi_result.results), 0)
+
+    def test_every_eligible_result_url_contains_required_tag(self) -> None:
+        result = match_manual_amazon_affiliates("portable charger")
+        self.assertEqual(result.match_status, AmazonManualMatchStatus.ELIGIBLE)
+        self.assertEqual(len(result.results), 4)
+        for entry in result.results:
+            self.assertIn("tag=picwise-20", entry.affiliate_url)
 
     def test_eligible_safe_result_has_no_forbidden_data_fields(self) -> None:
         result = match_manual_amazon_affiliate("charger 10500mah")

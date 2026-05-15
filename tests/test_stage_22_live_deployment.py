@@ -219,23 +219,42 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(status, "200 OK")
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
         self.assertIn("Search results for: power bank", body)
-        self.assertIn("Approved Amazon result", body)
+        self.assertIn("Approved Amazon options", body)
+        self.assertIn("Matched query: power bank", body)
+        self.assertIn("Manual affiliate results only", body)
         self.assertIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)
-        self.assertIn("Power bank / portable charger category", body)
-        self.assertIn("ASIN: B08K7GHZ3V", body)
-        self.assertIn(">View on Amazon<", body)
+        self.assertIn("Portable Charger 5000mAh Compact Power Bank", body)
+        self.assertIn("Geavonyg PowerBanks 20000mAh Portable Charger", body)
+        self.assertIn("Portable Charger 40000mAh Fast Charging Power Bank", body)
+        for asin in ("B08K7GHZ3V", "B0FQJH2XSY", "B0GR1257LT", "B0GH75LWKN"):
+            self.assertIn(f"ASIN: {asin}", body)
+        self.assertEqual(body.count(">View on Amazon<"), 4)
+        self.assertEqual(body.count("tag=picwise-20"), 4)
         self.assertIn("tag=picwise-20", body)
         self.assertIn("As an Amazon Associate I earn from qualifying purchases.", body)
         self.assertIn(
             "Prices, availability, ratings, reviews, delivery, and seller terms are shown on Amazon and may change. PicWise does not sell products directly.",
             body,
         )
+        self.assertNotIn("B0F518CRGK", body)
+
+    def test_results_route_renders_controlled_manual_result_for_power_bank_query(self) -> None:
+        status, headers, body = _call_wsgi("/results", "q=power%20bank")
+        self.assertEqual(status, "200 OK")
+        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+        self.assertIn("Search results for: power bank", body)
+        self.assertIn("Approved Amazon options", body)
+        for asin in ("B08K7GHZ3V", "B0FQJH2XSY", "B0GR1257LT", "B0GH75LWKN"):
+            self.assertIn(f"ASIN: {asin}", body)
+        self.assertEqual(body.count(">View on Amazon<"), 4)
+        self.assertEqual(body.count("tag=picwise-20"), 4)
+        self.assertNotIn("B0F518CRGK", body)
 
     def test_search_route_renders_safe_no_result_for_unapproved_query(self) -> None:
         status, _headers, body = _call_wsgi("/search", "q=laptop")
         self.assertEqual(status, "200 OK")
         self.assertIn("Search results for: laptop", body)
-        self.assertIn("No approved Amazon result is available for this query yet.", body)
+        self.assertIn("No approved Amazon options are available for this query yet.", body)
         self.assertIn("PicWise only shows approved manual affiliate results at this stage.", body)
         self.assertIn("No fake product data is shown.", body)
         self.assertNotIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)

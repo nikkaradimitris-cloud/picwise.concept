@@ -49,6 +49,7 @@ class AmazonManualAffiliateRecord:
     asin: str
     title: str
     category: str
+    slot_label: str
     affiliate_url: str
     tracking_id: str
     source: AmazonManualAffiliateSource
@@ -67,6 +68,7 @@ class AmazonManualRecordValidationResult:
 class AmazonManualAffiliateSafeResult:
     title: str
     category: str
+    slot_label: str
     asin: str
     affiliate_url: str
     tracking_id: str
@@ -82,6 +84,15 @@ class AmazonManualAffiliateMatchResult:
     query: str
     matched_category: str | None
     result: AmazonManualAffiliateSafeResult | None
+    reason_codes: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class AmazonManualAffiliateMultiMatchResult:
+    match_status: AmazonManualMatchStatus
+    query: str
+    matched_category: str | None
+    results: tuple[AmazonManualAffiliateSafeResult, ...]
     reason_codes: tuple[str, ...]
 
 
@@ -216,6 +227,7 @@ def _record(
     asin: str,
     title: str,
     category: str,
+    slot_label: str,
     affiliate_url: str,
     tracking_id: str,
     source: AmazonManualAffiliateSource,
@@ -227,6 +239,7 @@ def _record(
         asin=asin,
         title=title,
         category=category,
+        slot_label=slot_label,
         affiliate_url=affiliate_url,
         tracking_id=tracking_id,
         source=source,
@@ -241,6 +254,7 @@ MANUAL_AMAZON_AFFILIATE_REGISTRY: tuple[AmazonManualAffiliateRecord, ...] = (
         asin="B08K7GHZ3V",
         title="INIU Portable Charger 10500mAh Fast Charging Power Bank",
         category="power_banks",
+        slot_label="Everyday portable",
         affiliate_url=(
             "https://www.amazon.com/INIU-Portable-Charger-10500mAh-Charging/dp/B08K7GHZ3V"
             "?crid=167FD632I01EF&dib=eyJ2IjoiMSJ9.vveHnzS65ZgXb2UfnvBQmQ9bt0Y5VqU045bi_7dC0g98_B_yplGmgBeLX9pyRIDIkQk3qJGmoKYyW67ys8YETW0WJFBtgyLHAowwDriIgS9hAA4sobvEg-VmEsx3qgIjpS0xPRSYMy2vuWU5pJHRV0cWJQ7XU6eAZvWOvcIk7V7SWpkws95R_XISBp9l7c0cr4_W2PoXLzhZQlafsb1LiJp9zsPQOxeYYf0UpIPnnfc.4n4VK-OC-3wrBqMPipk1SCSXGKLYddx9BGt9B1MwF_A"
@@ -253,6 +267,60 @@ MANUAL_AMAZON_AFFILIATE_REGISTRY: tuple[AmazonManualAffiliateRecord, ...] = (
         status=AmazonManualAffiliateStatus.APPROVED,
         created_at="2026-05-15T00:00:00Z",
         notes="Stage 1 approved SiteStripe proof link.",
+    ),
+    _record(
+        asin="B0FQJH2XSY",
+        title="Portable Charger 5000mAh Compact Power Bank",
+        category="power_banks",
+        slot_label="Compact carry",
+        affiliate_url=(
+            "https://www.amazon.com/Portable-Charger-5000mAh-Display-Compatible/dp/B0FQJH2XSY"
+            "?crid=VQNXR1L41CLV&dib=eyJ2IjoiMSJ9.D6kMgaHqNvKJ1cw7QsBiwGTBHFj3-3SIJ7itcuMWUi0yWbWhNl8tec5aNQ3ivYbkVdKqha1czJa7hASapCVU8Mvnp8UHnRiXsTlHDP8b32Lyt517sLGP_MPSLd2K88yjUYZuVY0CYNDeGgYQvWak52elggEW4HLFOhnqAem_z62JK4pr5AhPTOwSR8KO9o2E6wTJcM4-1Cov5MmZVABm1hDV3tc8sdClCah3K4r9pc8.B1Df7z0nGidAEChCFM56a1cXgZtkHwfPfJGEbedGgyU"
+            "&dib_tag=se&keywords=compact%2Bpower%2Bbank&qid=1778847524&sprefix=compact%2Bpower%2Bbank%2Caps%2C384"
+            "&sr=8-7&th=1&linkCode=ll2&tag=picwise-20&linkId=2b8cf97d0ba667e96fd60b75b4115bba&language=en_US"
+            "&ref_=as_li_ss_tl"
+        ),
+        tracking_id=AMAZON_ASSOCIATES_TRACKING_ID,
+        source=AmazonManualAffiliateSource.AMAZON_SITESTRIPE_MANUAL,
+        status=AmazonManualAffiliateStatus.APPROVED,
+        created_at="2026-05-15T00:00:00Z",
+        notes="Stage 4 approved SiteStripe compact option.",
+    ),
+    _record(
+        asin="B0GR1257LT",
+        title="Geavonyg PowerBanks 20000mAh Portable Charger",
+        category="power_banks",
+        slot_label="20000mAh capacity",
+        affiliate_url=(
+            "https://www.amazon.com/Geavonyg-PowerBanks-20000mAh-Chargers-Removable/dp/B0GR1257LT"
+            "?crid=3GI30IGT370S9&dib=eyJ2IjoiMSJ9.fk1ZUR1sWfdGCr5G7EP_b-vE5wnA6VuUwnD9mRBufoBcA0f7rK0VmsEqoTeg3Pj_-ka11lU_F-hH14V7wFHaDiq-qMlYTK5X-EAEnlF8M9Jyq8mf_Txyh6Qc7HS5y5n5RNI3PUmAdWBLIoUVcp3uswPQ5M6J-NVgHwwlVMALZHw0AXNxIdefZZAFPAD_sAT7iAMiMVT7aVTGMHOkXicaj84dMsgkyZQbadvbQCdtiVE.PrzwVH197TX0Mepuhg-UGOY5rfCjz1N9MgFjp81qBuI"
+            "&dib_tag=se&keywords=20%2C000mAh%2Bpower%2Bbank&qid=1778846386&sprefix=20%2C000mah%2Bpower%2Bbank%2Caps%2C255"
+            "&sr=8-3&th=1&linkCode=ll2&tag=picwise-20&linkId=9e405083aac7309eb218473fbbff562f&language=en_US"
+            "&ref_=as_li_ss_tl"
+        ),
+        tracking_id=AMAZON_ASSOCIATES_TRACKING_ID,
+        source=AmazonManualAffiliateSource.AMAZON_SITESTRIPE_MANUAL,
+        status=AmazonManualAffiliateStatus.APPROVED,
+        created_at="2026-05-15T00:00:00Z",
+        notes="Stage 4 approved SiteStripe 20000mAh option.",
+    ),
+    _record(
+        asin="B0GH75LWKN",
+        title="Portable Charger 40000mAh Fast Charging Power Bank",
+        category="power_banks",
+        slot_label="High capacity",
+        affiliate_url=(
+            "https://www.amazon.com/Portable-Charger-40000mah-Charging-Battery/dp/B0GH75LWKN"
+            "?crid=27EOP8ZRI2PVJ&dib=eyJ2IjoiMSJ9.tCTJHxhWimVpL8HIyv_29RC_hYmRe4-IiKu9MJwkdv66oGoty47P6HM7d_Pzo5YtfQtoPGn1G_u0u6swe39GHPzSoS_4diKuo6aSirkCfjZW6MCRaCA0clx_NZ-At0uyu5wjpgyCH4gkb_Q1iiID2VOX9p3K0BBoNtWpB3HzCjVC3HMQJYdHy0ZseYpzLtPWhQatflWBjbctyn6YjrpzH_aJ6-KT7jokxDqxxf0Hya8.rqLiVaosoy2HgV2BiLlWmZzf-0QxN6C0eyRThE8aqAY"
+            "&dib_tag=se&keywords=Fast%2Bcharging%2BUSB-C%2BPD%2Bpower%2Bbank&qid=1778846446&sprefix=fast%2Bcharging%2Busb-c%2Bpd%2Bpower%2Bbank%2Caps%2C247"
+            "&sr=8-3&th=1&linkCode=ll2&tag=picwise-20&linkId=d99ec02821dbb297449344f74c98d28c&language=en_US"
+            "&ref_=as_li_ss_tl"
+        ),
+        tracking_id=AMAZON_ASSOCIATES_TRACKING_ID,
+        source=AmazonManualAffiliateSource.AMAZON_SITESTRIPE_MANUAL,
+        status=AmazonManualAffiliateStatus.APPROVED,
+        created_at="2026-05-15T00:00:00Z",
+        notes="Stage 4 approved SiteStripe high-capacity option.",
     ),
 )
 
@@ -272,7 +340,12 @@ def _match_category(query: str) -> str | None:
         "powerbank",
         "portable charger",
         "10500mah",
+        "5000mah",
+        "20000mah",
+        "20,000mah",
+        "40000mah",
         "charger 10500mah",
+        "compact power bank",
         "fast charging",
     )
     if any(signal in normalized for signal in power_bank_signals):
@@ -284,6 +357,7 @@ def _build_safe_result(record: AmazonManualAffiliateRecord) -> AmazonManualAffil
     return AmazonManualAffiliateSafeResult(
         title=record.title,
         category=record.category,
+        slot_label=record.slot_label,
         asin=record.asin,
         affiliate_url=record.affiliate_url,
         tracking_id=record.tracking_id,
@@ -294,63 +368,95 @@ def _build_safe_result(record: AmazonManualAffiliateRecord) -> AmazonManualAffil
     )
 
 
-def _find_record_for_category(category: str) -> AmazonManualAffiliateRecord | None:
-    for record in MANUAL_AMAZON_AFFILIATE_REGISTRY:
-        if record.category == category:
-            return record
-    return None
+def _find_records_for_category(category: str) -> tuple[AmazonManualAffiliateRecord, ...]:
+    return tuple(record for record in MANUAL_AMAZON_AFFILIATE_REGISTRY if record.category == category)
 
 
-def match_manual_amazon_affiliate(query: str) -> AmazonManualAffiliateMatchResult:
+def match_manual_amazon_affiliates(query: str) -> AmazonManualAffiliateMultiMatchResult:
     category = _match_category(query)
     if category is None:
-        return AmazonManualAffiliateMatchResult(
+        return AmazonManualAffiliateMultiMatchResult(
             match_status=AmazonManualMatchStatus.NO_MATCH,
             query=str(query or ""),
             matched_category=None,
-            result=None,
+            results=tuple(),
             reason_codes=("no_manual_category_match",),
         )
-    record = _find_record_for_category(category)
-    if record is None:
-        return AmazonManualAffiliateMatchResult(
+    records = _find_records_for_category(category)
+    if not records:
+        return AmazonManualAffiliateMultiMatchResult(
             match_status=AmazonManualMatchStatus.NEEDS_REVIEW,
             query=str(query or ""),
             matched_category=category,
-            result=None,
+            results=tuple(),
             reason_codes=("missing_registry_record",),
         )
-    record_validation = validate_manual_amazon_record(record)
-    if not record_validation.valid:
-        return AmazonManualAffiliateMatchResult(
+    safe_results: list[AmazonManualAffiliateSafeResult] = []
+    invalid_reason_codes: list[str] = []
+    disabled_count = 0
+    needs_review_count = 0
+    for record in records:
+        record_validation = validate_manual_amazon_record(record)
+        if not record_validation.valid:
+            invalid_reason_codes.extend(record_validation.errors)
+            continue
+        if record.status == AmazonManualAffiliateStatus.DISABLED:
+            disabled_count += 1
+            continue
+        if record.status == AmazonManualAffiliateStatus.NEEDS_REVIEW:
+            needs_review_count += 1
+            continue
+        safe_results.append(_build_safe_result(record))
+    if invalid_reason_codes:
+        return AmazonManualAffiliateMultiMatchResult(
             match_status=AmazonManualMatchStatus.BLOCKED,
             query=str(query or ""),
             matched_category=category,
-            result=None,
-            reason_codes=("invalid_manual_record",) + record_validation.errors,
+            results=tuple(),
+            reason_codes=("invalid_manual_record",) + tuple(sorted(set(invalid_reason_codes))),
         )
-    if record.status == AmazonManualAffiliateStatus.DISABLED:
-        return AmazonManualAffiliateMatchResult(
-            match_status=AmazonManualMatchStatus.BLOCKED,
+    if safe_results:
+        return AmazonManualAffiliateMultiMatchResult(
+            match_status=AmazonManualMatchStatus.ELIGIBLE,
             query=str(query or ""),
             matched_category=category,
-            result=None,
-            reason_codes=("record_disabled",),
+            results=tuple(safe_results),
+            reason_codes=("eligible_manual_amazon_links",),
         )
-    if record.status == AmazonManualAffiliateStatus.NEEDS_REVIEW:
-        return AmazonManualAffiliateMatchResult(
+    if needs_review_count > 0:
+        return AmazonManualAffiliateMultiMatchResult(
             match_status=AmazonManualMatchStatus.NEEDS_REVIEW,
             query=str(query or ""),
             matched_category=category,
-            result=None,
+            results=tuple(),
             reason_codes=("record_needs_review",),
         )
-    return AmazonManualAffiliateMatchResult(
-        match_status=AmazonManualMatchStatus.ELIGIBLE,
+    if disabled_count > 0:
+        return AmazonManualAffiliateMultiMatchResult(
+            match_status=AmazonManualMatchStatus.BLOCKED,
+            query=str(query or ""),
+            matched_category=category,
+            results=tuple(),
+            reason_codes=("record_disabled",),
+        )
+    return AmazonManualAffiliateMultiMatchResult(
+        match_status=AmazonManualMatchStatus.NEEDS_REVIEW,
         query=str(query or ""),
         matched_category=category,
-        result=_build_safe_result(record),
-        reason_codes=("eligible_manual_amazon_link",),
+        results=tuple(),
+        reason_codes=("no_approved_record",),
+    )
+
+
+def match_manual_amazon_affiliate(query: str) -> AmazonManualAffiliateMatchResult:
+    multi_result = match_manual_amazon_affiliates(query)
+    first_result = multi_result.results[0] if multi_result.results else None
+    return AmazonManualAffiliateMatchResult(
+        match_status=multi_result.match_status,
+        query=multi_result.query,
+        matched_category=multi_result.matched_category,
+        result=first_result,
+        reason_codes=multi_result.reason_codes,
     )
 
 
