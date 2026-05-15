@@ -25,6 +25,7 @@ from .legal import (
 )
 from .reference import render_picwise_reference_surface
 from .mvp_search_results import render_mvp_search_results_surface
+from .search_results import render_controlled_search_results_page
 from .performance import (
     PerformanceAuditResult,
     audit_surface_performance,
@@ -67,5 +68,6 @@ __all__ = [
     "render_picwise_reference_surface",
     "render_terms_page",
     "render_mvp_search_results_surface",
+    "render_controlled_search_results_page",
     "run_final_v1_audit_closure",
 ]

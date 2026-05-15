@@ -214,6 +214,55 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertNotIn("amazon.com/images", lowered)
         self.assertNotIn("class=\"pw-rating-row\"", lowered)
 
+    def test_search_route_renders_controlled_manual_result_for_power_bank_query(self) -> None:
+        status, headers, body = _call_wsgi("/search", "q=power%20bank")
+        self.assertEqual(status, "200 OK")
+        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+        self.assertIn("Search results for: power bank", body)
+        self.assertIn("Approved Amazon result", body)
+        self.assertIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)
+        self.assertIn("Power bank / portable charger category", body)
+        self.assertIn("ASIN: B08K7GHZ3V", body)
+        self.assertIn(">View on Amazon<", body)
+        self.assertIn("tag=picwise-20", body)
+        self.assertIn("As an Amazon Associate I earn from qualifying purchases.", body)
+        self.assertIn(
+            "Prices, availability, ratings, reviews, delivery, and seller terms are shown on Amazon and may change. PicWise does not sell products directly.",
+            body,
+        )
+
+    def test_search_route_renders_safe_no_result_for_unapproved_query(self) -> None:
+        status, _headers, body = _call_wsgi("/search", "q=laptop")
+        self.assertEqual(status, "200 OK")
+        self.assertIn("Search results for: laptop", body)
+        self.assertIn("No approved Amazon result is available for this query yet.", body)
+        self.assertIn("PicWise only shows approved manual affiliate results at this stage.", body)
+        self.assertIn("No fake product data is shown.", body)
+        self.assertNotIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)
+        self.assertNotIn("ASIN: B08K7GHZ3V", body)
+        self.assertNotIn(">View on Amazon<", body)
+        self.assertNotIn("tag=picwise-20", body)
+
+    def test_search_route_does_not_show_forbidden_commerce_claims(self) -> None:
+        _status, _headers, body = _call_wsgi("/search", "q=power%20bank")
+        lowered = body.lower()
+        self.assertNotIn("eur ", lowered)
+        self.assertNotIn("in stock", lowered)
+        self.assertNotIn("prime", lowered)
+        self.assertNotIn("discount", lowered)
+        self.assertNotIn("best price", lowered)
+        self.assertNotIn("cheapest", lowered)
+        self.assertNotIn("guaranteed", lowered)
+        self.assertNotIn("<img", lowered)
+        self.assertNotIn("amazon.com/images", lowered)
+        self.assertNotIn("class=\"pw-rating-row\"", lowered)
+        body_without_safe_note = body.replace(
+            "Prices, availability, ratings, reviews, delivery, and seller terms are shown on Amazon and may change. PicWise does not sell products directly.",
+            "",
+        ).lower()
+        self.assertNotIn("rating", body_without_safe_note)
+        self.assertNotIn("reviews", body_without_safe_note)
+
     def test_reference_route_and_required_core_routes_are_registered(self) -> None:
         health_status, _health_headers, _health_body = _call_wsgi("/health")
         root_status, _root_headers, _root_body = _call_wsgi("/")

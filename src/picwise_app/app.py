@@ -15,7 +15,7 @@ from picwise_engine import PicwiseDecisionEngine
 from picwise_feeds import FeedAdapterProtocol, LocalFixtureFeedAdapter
 from picwise_learning.stage30_runtime_probe import build_default_stage30_runtime_probe
 from picwise_learning.stage31_runtime_controller import build_default_stage31_runtime_controller
-from picwise_mvp import build_mvp_private_beta_readiness_report, run_pickwise_mvp_search_flow
+from picwise_mvp import build_mvp_private_beta_readiness_report
 from picwise_nlu import adapt_local_nlu_intent_for_router, build_local_nlu_intent
 from picwise_search import route_search_query
 from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
@@ -23,10 +23,10 @@ from picwise_surface import (
     render_amazon_affiliate_proof_page,
     render_affiliate_disclosure_page,
     render_branded_not_found_page,
+    render_controlled_search_results_page,
     render_contact_page,
     render_cookies_page,
     render_demo_info_page,
-    render_mvp_search_results_surface,
     render_picwise_reference_surface,
     render_privacy_page,
     render_review_safe_landing_page,
@@ -110,8 +110,7 @@ class PicwiseLocalApp:
         return render_branded_not_found_page()
 
     def mvp_search_html(self, query: str) -> str:
-        flow = run_pickwise_mvp_search_flow(query)
-        return render_mvp_search_results_surface(flow)
+        return render_controlled_search_results_page(query)
 
     def private_beta_readiness_payload(self) -> dict[str, Any]:
         report = build_mvp_private_beta_readiness_report()

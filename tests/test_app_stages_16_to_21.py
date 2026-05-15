@@ -243,6 +243,52 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertNotIn("amazon.com/images", lowered)
         self.assertNotIn("class=\"pw-rating-row\"", lowered)
 
+    def test_search_route_renders_controlled_manual_result_for_power_bank_query(self) -> None:
+        body = self._fetch("/search?q=power%20bank")
+        self.assertIn("Search results for: power bank", body)
+        self.assertIn("Approved Amazon result", body)
+        self.assertIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)
+        self.assertIn("Power bank / portable charger category", body)
+        self.assertIn("ASIN: B08K7GHZ3V", body)
+        self.assertIn(">View on Amazon<", body)
+        self.assertIn("tag=picwise-20", body)
+        self.assertIn("As an Amazon Associate I earn from qualifying purchases.", body)
+        self.assertIn(
+            "Prices, availability, ratings, reviews, delivery, and seller terms are shown on Amazon and may change. PicWise does not sell products directly.",
+            body,
+        )
+
+    def test_search_route_renders_safe_no_result_for_unapproved_query(self) -> None:
+        body = self._fetch("/search?q=laptop")
+        self.assertIn("Search results for: laptop", body)
+        self.assertIn("No approved Amazon result is available for this query yet.", body)
+        self.assertIn("PicWise only shows approved manual affiliate results at this stage.", body)
+        self.assertIn("No fake product data is shown.", body)
+        self.assertNotIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)
+        self.assertNotIn("ASIN: B08K7GHZ3V", body)
+        self.assertNotIn(">View on Amazon<", body)
+        self.assertNotIn("tag=picwise-20", body)
+
+    def test_search_route_does_not_show_forbidden_commerce_claims(self) -> None:
+        body = self._fetch("/search?q=power%20bank")
+        lowered = body.lower()
+        self.assertNotIn("eur ", lowered)
+        self.assertNotIn("in stock", lowered)
+        self.assertNotIn("prime", lowered)
+        self.assertNotIn("discount", lowered)
+        self.assertNotIn("best price", lowered)
+        self.assertNotIn("cheapest", lowered)
+        self.assertNotIn("guaranteed", lowered)
+        self.assertNotIn("<img", lowered)
+        self.assertNotIn("amazon.com/images", lowered)
+        self.assertNotIn("class=\"pw-rating-row\"", lowered)
+        body_without_safe_note = body.replace(
+            "Prices, availability, ratings, reviews, delivery, and seller terms are shown on Amazon and may change. PicWise does not sell products directly.",
+            "",
+        ).lower()
+        self.assertNotIn("rating", body_without_safe_note)
+        self.assertNotIn("reviews", body_without_safe_note)
+
     def test_picwise_reference_assets_are_served_locally(self) -> None:
         with urlopen(
             f"http://127.0.0.1:{self.port}/assets/picwise/product-1.svg",

@@ -18,14 +18,13 @@ from picwise_integrations import (  # noqa: E402
     UrllibSubbyBridgeEventSender,
     send_subby_live_proof_event,
 )
-from picwise_mvp import run_pickwise_mvp_search_flow  # noqa: E402
 from picwise_surface import (  # noqa: E402
     render_amazon_affiliate_proof_page,
     render_affiliate_disclosure_page,
     render_branded_not_found_page,
     render_contact_page,
+    render_controlled_search_results_page,
     render_cookies_page,
-    render_mvp_search_results_surface,
     render_picwise_reference_surface,
     render_privacy_page,
     render_review_safe_landing_page,
@@ -119,8 +118,7 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
     if path in {"/search", "/results"}:
         query_string = str(environ.get("QUERY_STRING", ""))
         query = parse_qs(query_string).get("q", [""])[0]
-        flow = run_pickwise_mvp_search_flow(query)
-        html = render_mvp_search_results_surface(flow)
+        html = render_controlled_search_results_page(query)
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
