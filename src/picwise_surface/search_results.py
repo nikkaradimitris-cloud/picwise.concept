@@ -3,6 +3,7 @@ from __future__ import annotations
 from html import escape
 
 from picwise_offers import AmazonManualMatchStatus, match_manual_amazon_affiliates
+from .legal import render_public_footer
 
 
 def _normalize_query_for_display(query: str) -> str:
@@ -65,10 +66,71 @@ def _render_safe_powerbank_visual(slot_label: str) -> str:
     )
 
 
+def _render_search_shell(query: str) -> str:
+    escaped_query_attr = escape(query, quote=True)
+    escaped_query_text = escape(query)
+    return (
+        '<header class="pw-search-shell-header">'
+        '<div class="pw-search-shell-top">'
+        '<a class="pw-brand" href="/" aria-label="PicWise home">PicWise</a>'
+        '<a class="pw-back-home" href="/">Back to home</a>'
+        "</div>"
+        '<form class="pw-search-form" action="/search" method="get" aria-label="Search products">'
+        '<label for="pw-search-query" style="position:absolute;left:-9999px;">Search query</label>'
+        f'<input id="pw-search-query" type="search" name="q" value="{escaped_query_attr}" '
+        'placeholder="Search for a product, e.g. power bank" autocomplete="off">'
+        '<button type="submit">Search</button>'
+        "</form>"
+        f'<p class="pw-current-query">Current query: <strong>{escaped_query_text}</strong></p>'
+        "</header>"
+    )
+
+
+def _base_styles() -> str:
+    return (
+        "*{box-sizing:border-box;}"
+        "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f9ff;color:#102744;}"
+        ".pw-wrap{max-width:1120px;margin:0 auto;padding:24px 20px 20px;}"
+        ".pw-search-shell-header{background:#fff;border:1px solid #dbe8fb;border-radius:14px;padding:16px 16px 14px;box-shadow:0 8px 24px rgba(17,44,91,.08);}"
+        ".pw-search-shell-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}"
+        ".pw-brand{font-size:26px;font-weight:800;letter-spacing:-.03em;color:#1a4fb7;text-decoration:none;}"
+        ".pw-back-home{display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border:1px solid #b9d1ff;border-radius:999px;background:#fff;color:#1f6dff;text-decoration:none;font-size:14px;font-weight:700;}"
+        ".pw-search-form{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;}"
+        ".pw-search-form input{flex:1 1 320px;min-width:220px;height:42px;padding:0 14px;border:1px solid #cddffc;border-radius:999px;background:#fff;color:#102744;font-size:14px;}"
+        ".pw-search-form input:focus{outline:none;border-color:#1f6dff;box-shadow:0 0 0 3px rgba(31,109,255,.15);}"
+        ".pw-search-form button{height:42px;padding:0 16px;border-radius:999px;background:#1f6dff;color:#fff;border:1px solid #1f6dff;font-size:14px;font-weight:700;cursor:pointer;}"
+        ".pw-current-query{margin:10px 0 0;font-size:14px;line-height:1.5;color:#355174;}"
+        ".pw-card{margin-top:14px;background:#fff;border:1px solid #dbe8fb;border-radius:14px;padding:20px;box-shadow:0 8px 24px rgba(17,44,91,.08);}"
+        ".pw-line{margin:12px 0 0;line-height:1.6;color:#355174;}"
+        ".pw-tag{display:inline-flex;align-items:center;justify-content:center;padding:5px 10px;border-radius:999px;background:#eaf2ff;color:#2a6deb;font-size:12px;font-weight:700;margin-top:10px;}"
+        ".pw-search-results-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px auto 0;max-width:1040px;}"
+        ".pw-option{border:1px solid #dbe8fb;border-radius:12px;padding:12px;background:#f9fbff;display:flex;flex-direction:column;min-height:100%;}"
+        ".pw-title{font-weight:700;color:#163a66;}"
+        ".pw-safe-product-visual{border:1px solid #d4e4fb;border-radius:10px;background:#f2f7ff;padding:8px 8px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;}"
+        ".pw-safe-visual-svg{width:100%;height:auto;display:block;max-width:180px;}"
+        ".pw-safe-visual-label{font-size:11px;color:#4a688f;}"
+        ".pw-btn{display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 18px;border-radius:999px;background:#1f6dff;border:1px solid #1f6dff;color:#fff;font-size:14px;font-weight:700;text-decoration:none;margin-top:16px;}"
+        ".pw-disclosure{margin-top:16px;padding:11px 12px;border:1px solid #dbe8fb;border-radius:12px;background:#f7fbff;color:#24456f;font-size:14px;line-height:1.55;}"
+        ".pw-safe-note{margin-top:10px;font-size:14px;line-height:1.6;color:#355174;}"
+        ".pw-footer{margin-top:18px;padding-top:14px;border-top:1px solid #dbe8fb;}"
+        ".pw-footer-links{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}"
+        ".pw-footer-link{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;"
+        "border:1px solid #d8e6fb;border-radius:999px;background:#f7faff;font-size:13px;"
+        "line-height:1.2;color:#335983;text-decoration:none;white-space:nowrap;}"
+        ".pw-footer-link:hover{background:#eef5ff;border-color:#cddffc;color:#24496f;}"
+        ".pw-footer-disclosure{margin:10px 0 0;font-size:12px;line-height:1.5;color:#5f7ea6;max-width:760px;}"
+        ".pw-footer-meta{margin:6px 0 0;font-size:12px;color:#6b86ac;}"
+        "@media (max-width:1040px){.pw-search-results-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:740px;}}"
+        "@media (max-width:640px){.pw-wrap{padding:18px 14px 14px;}.pw-brand{font-size:24px;}.pw-search-results-grid{grid-template-columns:1fr;max-width:420px;}.pw-card{padding:16px;}}"
+    )
+
+
 def render_controlled_search_results_page(query: str) -> str:
     displayed_query = _normalize_query_for_display(query)
     match_result = match_manual_amazon_affiliates(displayed_query)
     escaped_query = escape(displayed_query)
+    page_shell = _render_search_shell(displayed_query)
+    page_footer = render_public_footer()
     if match_result.match_status == AmazonManualMatchStatus.ELIGIBLE and match_result.results:
         results_html = "".join(
             (
@@ -91,32 +153,20 @@ def render_controlled_search_results_page(query: str) -> str:
             '<meta name="viewport" content="width=device-width, initial-scale=1">'
             "<title>PicWise Search Results</title>"
             '<meta name="robots" content="noindex, nofollow">'
-            "<style>"
-            "*{box-sizing:border-box;}"
-            "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f9ff;color:#102744;}"
-            ".pw-wrap{max-width:860px;margin:0 auto;padding:32px 20px;}"
-            ".pw-card{background:#fff;border:1px solid #dbe8fb;border-radius:14px;padding:20px;box-shadow:0 8px 24px rgba(17,44,91,.08);}"
-            ".pw-line{margin:12px 0 0;line-height:1.6;color:#355174;}"
-            ".pw-tag{display:inline-flex;align-items:center;justify-content:center;padding:5px 10px;border-radius:999px;background:#eaf2ff;color:#2a6deb;font-size:12px;font-weight:700;margin-top:10px;}"
-            ".pw-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:14px;}"
-            ".pw-option{border:1px solid #dbe8fb;border-radius:12px;padding:12px;background:#f9fbff;}"
-            ".pw-title{font-weight:700;color:#163a66;}"
-            ".pw-safe-product-visual{border:1px solid #d4e4fb;border-radius:10px;background:#f2f7ff;padding:8px 8px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;}"
-            ".pw-safe-visual-svg{width:100%;height:auto;display:block;max-width:180px;}"
-            ".pw-safe-visual-label{font-size:11px;color:#4a688f;}"
-            ".pw-btn{display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 18px;border-radius:999px;background:#1f6dff;border:1px solid #1f6dff;color:#fff;font-size:14px;font-weight:700;text-decoration:none;margin-top:16px;}"
-            ".pw-disclosure{margin-top:16px;padding:11px 12px;border:1px solid #dbe8fb;border-radius:12px;background:#f7fbff;color:#24456f;font-size:14px;line-height:1.55;}"
-            ".pw-safe-note{margin-top:10px;font-size:14px;line-height:1.6;color:#355174;}"
-            "</style></head><body>"
-            '<main class="pw-wrap"><section class="pw-card">'
+            f"<style>{_base_styles()}</style></head><body>"
+            '<main class="pw-wrap">'
+            f"{page_shell}"
+            '<section class="pw-card">'
             f'<h1 class="pw-line">Search results for: {escaped_query}</h1>'
             '<span class="pw-tag">Approved Amazon options</span>'
             f'<p class="pw-line">Matched query: {escaped_query}</p>'
             '<p class="pw-line">Approved manual Amazon affiliate options</p>'
-            f'<section class="pw-grid">{results_html}</section>'
+            f'<section class="pw-search-results-grid">{results_html}</section>'
             f'<p class="pw-disclosure">{escape(first_result.disclosure)}</p>'
             f'<p class="pw-safe-note">{escape(first_result.safe_note)}</p>'
-            "</section></main></body></html>"
+            "</section>"
+            f"{page_footer}"
+            "</main></body></html>"
         )
 
     return (
@@ -125,16 +175,15 @@ def render_controlled_search_results_page(query: str) -> str:
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         "<title>PicWise Search Results</title>"
         '<meta name="robots" content="noindex, nofollow">'
-        "<style>"
-        "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f9ff;color:#102744;}"
-        ".pw-wrap{max-width:860px;margin:0 auto;padding:32px 20px;}"
-        ".pw-card{background:#fff;border:1px solid #dbe8fb;border-radius:14px;padding:20px;box-shadow:0 8px 24px rgba(17,44,91,.08);}"
-        ".pw-line{margin:12px 0 0;line-height:1.6;color:#355174;}"
-        "</style></head><body>"
-        '<main class="pw-wrap"><section class="pw-card">'
+        f"<style>{_base_styles()}</style></head><body>"
+        '<main class="pw-wrap">'
+        f"{page_shell}"
+        '<section class="pw-card">'
         f'<h1 class="pw-line">Search results for: {escaped_query}</h1>'
         '<p class="pw-line">No approved Amazon options are available for this query yet.</p>'
         '<p class="pw-line">PicWise only shows approved manual affiliate results at this stage.</p>'
         '<p class="pw-line">No fake product data is shown.</p>'
-        "</section></main></body></html>"
+        "</section>"
+        f"{page_footer}"
+        "</main></body></html>"
     )

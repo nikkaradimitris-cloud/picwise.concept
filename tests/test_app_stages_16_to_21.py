@@ -267,11 +267,20 @@ class AppHttpEndpointTests(unittest.TestCase):
 
     def test_search_route_renders_controlled_manual_result_for_power_bank_query(self) -> None:
         body = self._fetch("/search?q=power%20bank")
+        self.assertIn('href="/"', body)
+        self.assertTrue(("Back to home" in body) or ("Home" in body))
+        self.assertIn('form class="pw-search-form" action="/search" method="get"', body)
+        self.assertIn('name="q"', body)
+        self.assertIn('value="power bank"', body)
         self.assertIn("Search results for: power bank", body)
         self.assertIn("Approved Amazon options", body)
         self.assertIn("Matched query: power bank", body)
         self.assertIn("Approved manual Amazon affiliate options", body)
         self.assertEqual(body.count('class="pw-option"'), 4)
+        self.assertIn('class="pw-search-results-grid"', body)
+        self.assertIn("grid-template-columns:repeat(4,minmax(0,1fr));", body)
+        self.assertIn("@media (max-width:1040px){.pw-search-results-grid{grid-template-columns:repeat(2,minmax(0,1fr));", body)
+        self.assertIn("@media (max-width:640px){", body)
         self.assertEqual(body.count('class="pw-safe-product-visual pw-powerbank-visual"'), 4)
         self.assertEqual(body.count('data-visual-slot="'), 4)
         self.assertIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)
@@ -297,13 +306,19 @@ class AppHttpEndpointTests(unittest.TestCase):
             "Prices, availability, ratings, reviews, delivery, and seller terms are shown on Amazon and may change. PicWise does not sell products directly.",
             body,
         )
+        self._assert_common_footer_links(body)
         self.assertNotIn("B0F518CRGK", body)
 
     def test_results_route_renders_controlled_manual_results_for_power_bank_query(self) -> None:
         body = self._fetch("/results?q=power%20bank")
+        self.assertIn('href="/"', body)
+        self.assertIn('form class="pw-search-form" action="/search" method="get"', body)
+        self.assertIn('name="q"', body)
+        self.assertIn('value="power bank"', body)
         self.assertIn("Search results for: power bank", body)
         self.assertIn("Approved Amazon options", body)
         self.assertEqual(body.count('class="pw-option"'), 4)
+        self.assertIn('class="pw-search-results-grid"', body)
         self.assertEqual(body.count('class="pw-safe-product-visual pw-powerbank-visual"'), 4)
         self.assertEqual(body.count('data-visual-slot="'), 4)
         for asin in ("B08K7GHZ3V", "B0FQJH2XSY", "B0GR1257LT", "B0GH75LWKN"):
@@ -320,10 +335,16 @@ class AppHttpEndpointTests(unittest.TestCase):
         hrefs = self._extract_amazon_hrefs(body)
         self.assertEqual(len(hrefs), 4)
         self.assertTrue(all("tag=picwise-20" in href for href in hrefs))
+        self._assert_common_footer_links(body)
         self.assertNotIn("B0F518CRGK", body)
 
     def test_search_route_renders_safe_no_result_for_unapproved_query(self) -> None:
         body = self._fetch("/search?q=laptop")
+        self.assertIn('href="/"', body)
+        self.assertTrue(("Back to home" in body) or ("Home" in body))
+        self.assertIn('form class="pw-search-form" action="/search" method="get"', body)
+        self.assertIn('name="q"', body)
+        self.assertIn('value="laptop"', body)
         self.assertIn("Search results for: laptop", body)
         self.assertIn("No approved Amazon options are available for this query yet.", body)
         self.assertIn("PicWise only shows approved manual affiliate results at this stage.", body)
@@ -333,7 +354,8 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertNotIn(">View on Amazon<", body)
         self.assertNotIn("tag=picwise-20", body)
         self.assertNotIn('class="pw-option"', body)
-        self.assertNotIn("pw-safe-product-visual", body)
+        self.assertNotIn('class="pw-safe-product-visual', body)
+        self._assert_common_footer_links(body)
 
     def test_search_route_renders_safe_no_result_for_empty_query(self) -> None:
         body = self._fetch("/search?q=")
