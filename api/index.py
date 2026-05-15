@@ -143,6 +143,11 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
+    if path == "/amazon-traffic-protocol":
+        html = _APP.amazon_traffic_protocol_html()
+        body = html.encode("utf-8")
+        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+
     if path == "/out/amazon":
         query_string = str(environ.get("QUERY_STRING", ""))
         query_params = parse_qs(query_string)

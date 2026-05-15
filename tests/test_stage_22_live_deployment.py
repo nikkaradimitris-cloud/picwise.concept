@@ -443,6 +443,35 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn("Last click source: search", body)
         self.assertIn("Last event type: amazon_outbound_click", body)
 
+    def test_amazon_traffic_protocol_route_documents_manual_first_live_traffic_checks(self) -> None:
+        status, headers, body = _call_wsgi("/amazon-traffic-protocol")
+        self.assertEqual(status, "200 OK")
+        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+        self.assertIn("First live traffic protocol", body)
+        self.assertIn("Tracking ID: picwise-20", body)
+        self.assertIn("https://picwise.subby.cloud/search?q=power%20bank", body)
+        self.assertIn("/amazon-click-proof", body)
+        self.assertIn("/amazon-launch-check", body)
+
+    def test_amazon_traffic_protocol_readiness_checklist_is_explicit(self) -> None:
+        _status, _headers, body = _call_wsgi("/amazon-traffic-protocol")
+        self.assertIn("Search page active: ready", body)
+        self.assertIn("Active Amazon links: 4", body)
+        self.assertIn("Disabled links blocked: ready", body)
+        self.assertIn("Click proof: ready", body)
+        self.assertIn("Amazon sales proof: manual Amazon Associates only", body)
+        self.assertIn("Ads: not ready", body)
+        self.assertIn("API reporting: not available yet", body)
+
+    def test_amazon_traffic_protocol_has_no_fake_sales_earnings_or_conversion_claims(self) -> None:
+        _status, _headers, body = _call_wsgi("/amazon-traffic-protocol")
+        lowered = body.lower()
+        self.assertNotIn("orders verified", lowered)
+        self.assertNotIn("sales verified", lowered)
+        self.assertNotIn("earnings verified", lowered)
+        self.assertNotIn("conversion rate verified", lowered)
+        self.assertNotIn("ads are ready", lowered)
+
     def test_search_route_renders_safe_no_result_for_unapproved_query(self) -> None:
         status, _headers, body = _call_wsgi("/search", "q=laptop")
         self.assertEqual(status, "200 OK")

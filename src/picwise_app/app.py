@@ -61,6 +61,7 @@ LOCAL_AVAILABLE_ROUTES = (
     "/out/amazon",
     "/amazon-launch-check",
     "/amazon-click-proof",
+    "/amazon-traffic-protocol",
     "/private-beta-readiness",
     "/best/{slug}",
     "/sitemap-buying-pages.xml",
@@ -180,6 +181,110 @@ class PicwiseLocalApp:
             "<li>Sales verification: check Amazon Associates</li>"
             "<li>Amazon sales are not verified here. Check Amazon Associates for actual sales.</li>"
             "</ul></section></main></body></html>"
+        )
+
+    def amazon_traffic_protocol_html(self) -> str:
+        return (
+            "<!doctype html>"
+            '<html lang="en"><head><meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">'
+            "<title>PicWise First Live Traffic Protocol</title>"
+            "<style>"
+            "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f9ff;color:#102744;}"
+            ".pw-wrap{max-width:920px;margin:0 auto;padding:30px 20px;}"
+            ".pw-card{background:#fff;border:1px solid #dbe8fb;border-radius:14px;padding:18px 20px;box-shadow:0 8px 24px rgba(17,44,91,.08);margin-bottom:16px;}"
+            ".pw-list{margin:10px 0 0;padding-left:18px;line-height:1.7;color:#355174;}"
+            "code{background:#eef4ff;padding:2px 6px;border-radius:6px;}"
+            "</style></head><body><main class=\"pw-wrap\">"
+            "<section class=\"pw-card\">"
+            "<h1>First live traffic protocol</h1>"
+            "<ul class=\"pw-list\">"
+            "<li>This page documents a manual operator protocol only.</li>"
+            "<li>This stage does not generate traffic automatically.</li>"
+            "<li>Tracking ID: picwise-20</li>"
+            "</ul>"
+            "</section>"
+            "<section class=\"pw-card\">"
+            "<h2>PicWise can verify</h2>"
+            "<ul class=\"pw-list\">"
+            "<li>outbound click route works</li>"
+            "<li>click is recorded locally</li>"
+            "<li>redirect URL includes <code>tag=picwise-20</code></li>"
+            "<li>disabled products do not redirect</li>"
+            "</ul>"
+            "</section>"
+            "<section class=\"pw-card\">"
+            "<h2>PicWise cannot verify yet</h2>"
+            "<ul class=\"pw-list\">"
+            "<li>Amazon orders</li>"
+            "<li>Amazon shipped items</li>"
+            "<li>Amazon commissions</li>"
+            "<li>Amazon conversion rate</li>"
+            "<li>Amazon buyer behavior</li>"
+            "</ul>"
+            "</section>"
+            "<section class=\"pw-card\">"
+            "<h2>Operator manual Amazon Associates check</h2>"
+            "<ul class=\"pw-list\">"
+            "<li>Reports</li>"
+            "<li>Summary / Full Report</li>"
+            "<li>Clicks</li>"
+            "<li>Ordered items</li>"
+            "<li>Shipped items</li>"
+            "<li>Earnings</li>"
+            "<li>Tracking ID: picwise-20</li>"
+            "</ul>"
+            "</section>"
+            "<section class=\"pw-card\">"
+            "<h2>First traffic test protocol</h2>"
+            "<ul class=\"pw-list\">"
+            "<li>Use only a small controlled test.</li>"
+            "<li>Do not run ads yet.</li>"
+            "<li>Do not spam clicks.</li>"
+            "<li>Do not click your own links repeatedly.</li>"
+            "<li>Share the public search URL with 1-3 trusted real users only.</li>"
+            "<li>Ask them to search/open normally if interested.</li>"
+            "<li>Wait for Amazon Associates reporting delay.</li>"
+            "<li>Then check reports manually.</li>"
+            "</ul>"
+            "</section>"
+            "<section class=\"pw-card\">"
+            "<h2>URLs</h2>"
+            "<ul class=\"pw-list\">"
+            "<li>Safe public test URL: <code>https://picwise.subby.cloud/search?q=power%20bank</code></li>"
+            "<li>Internal proof URL: <code>/amazon-click-proof</code></li>"
+            "<li>Internal proof URL: <code>/amazon-launch-check</code></li>"
+            "</ul>"
+            "</section>"
+            "<section class=\"pw-card\">"
+            "<h2>Readiness checklist</h2>"
+            "<ul class=\"pw-list\">"
+            "<li>Search page active: ready</li>"
+            "<li>Active Amazon links: 4</li>"
+            "<li>Disabled links blocked: ready</li>"
+            "<li>Click proof: ready</li>"
+            "<li>Amazon sales proof: manual Amazon Associates only</li>"
+            "<li>Ads: not ready</li>"
+            "<li>API reporting: not available yet</li>"
+            "</ul>"
+            "</section>"
+            "<section class=\"pw-card\">"
+            "<h2>Hard rules</h2>"
+            "<ul class=\"pw-list\">"
+            "<li>no Amazon API</li>"
+            "<li>no scraping</li>"
+            "<li>no live Amazon report fetch</li>"
+            "<li>no fake sales</li>"
+            "<li>no fake earnings</li>"
+            "<li>no fake conversion rate</li>"
+            "<li>no auto-clicking</li>"
+            "<li>no traffic bot</li>"
+            "<li>no tracking pixel</li>"
+            "<li>no cookies</li>"
+            "<li>no external analytics</li>"
+            "</ul>"
+            "</section>"
+            "</main></body></html>"
         )
 
     def terms_html(self) -> str:
@@ -612,6 +717,10 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/amazon-click-proof":
             html = self.app.amazon_click_proof_html()
+            self._send_html(HTTPStatus.OK, html)
+            return
+        if parsed.path == "/amazon-traffic-protocol":
+            html = self.app.amazon_traffic_protocol_html()
             self._send_html(HTTPStatus.OK, html)
             return
         if parsed.path == "/out/amazon":

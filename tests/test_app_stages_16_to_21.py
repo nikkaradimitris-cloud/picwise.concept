@@ -461,6 +461,36 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertIn("Amazon sales are not verified here. Check Amazon Associates for actual sales.", body)
         self.assertNotIn("https://www.amazon.com/", body)
 
+    def test_amazon_traffic_protocol_route_is_exposed_with_manual_check_instructions(self) -> None:
+        body = self._fetch("/amazon-traffic-protocol")
+        self.assertIn("First live traffic protocol", body)
+        self.assertIn("Tracking ID: picwise-20", body)
+        self.assertIn("https://picwise.subby.cloud/search?q=power%20bank", body)
+        self.assertIn("/amazon-click-proof", body)
+        self.assertIn("/amazon-launch-check", body)
+        self.assertIn("Reports", body)
+        self.assertIn("Summary / Full Report", body)
+        self.assertIn("Clicks", body)
+        self.assertIn("Ordered items", body)
+        self.assertIn("Shipped items", body)
+        self.assertIn("Earnings", body)
+
+    def test_amazon_traffic_protocol_readiness_checklist_and_no_fake_claims(self) -> None:
+        body = self._fetch("/amazon-traffic-protocol")
+        self.assertIn("Search page active: ready", body)
+        self.assertIn("Active Amazon links: 4", body)
+        self.assertIn("Disabled links blocked: ready", body)
+        self.assertIn("Click proof: ready", body)
+        self.assertIn("Amazon sales proof: manual Amazon Associates only", body)
+        self.assertIn("Ads: not ready", body)
+        self.assertIn("API reporting: not available yet", body)
+        lowered = body.lower()
+        self.assertNotIn("orders verified", lowered)
+        self.assertNotIn("sales verified", lowered)
+        self.assertNotIn("earnings verified", lowered)
+        self.assertNotIn("conversion rate verified", lowered)
+        self.assertNotIn("ads are ready", lowered)
+
     def test_outbound_click_recording_for_active_and_disabled_asins(self) -> None:
         from urllib.request import build_opener
 
