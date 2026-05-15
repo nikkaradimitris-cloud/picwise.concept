@@ -52,6 +52,13 @@ class DeploymentEntrypointTests(unittest.TestCase):
         return re.findall(r'href="([^"]+)"[^>]*>View on Amazon<', body)
 
     @staticmethod
+    def _extract_location(headers: dict[str, str]) -> str:
+        for key, value in headers.items():
+            if key.lower() == "location":
+                return value
+        return ""
+
+    @staticmethod
     def _assert_common_footer_links(body: str) -> None:
         expected_links = (
             ("/", "Home"),
@@ -271,7 +278,10 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(body.count(">View on Amazon<"), 4)
         hrefs = self._extract_amazon_hrefs(body)
         self.assertEqual(len(hrefs), 4)
-        self.assertTrue(all("tag=picwise-20" in href for href in hrefs))
+        self.assertTrue(all(href.startswith("/out/amazon?asin=") for href in hrefs))
+        self.assertTrue(all("&q=power%20bank" in href for href in hrefs))
+        self.assertTrue(all("&src=search" in href for href in hrefs))
+        self.assertFalse(any("amazon.com" in href for href in hrefs))
         self.assertIn("As an Amazon Associate I earn from qualifying purchases.", body)
         self.assertIn(
             "Prices, availability, ratings, reviews, delivery, and seller terms are shown on Amazon and may change. PicWise does not sell products directly.",
@@ -307,9 +317,50 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(body.count(">View on Amazon<"), 4)
         hrefs = self._extract_amazon_hrefs(body)
         self.assertEqual(len(hrefs), 4)
-        self.assertTrue(all("tag=picwise-20" in href for href in hrefs))
+        self.assertTrue(all(href.startswith("/out/amazon?asin=") for href in hrefs))
+        self.assertTrue(all("&q=power%20bank" in href for href in hrefs))
+        self.assertTrue(all("&src=results" in href for href in hrefs))
+        self.assertFalse(any("amazon.com" in href for href in hrefs))
         self._assert_common_footer_links(body)
         self.assertNotIn("B0F518CRGK", body)
+
+    def test_outbound_amazon_redirect_returns_302_with_safe_affiliate_location(self) -> None:
+        status, headers, _body = _call_wsgi("/out/amazon", "asin=B08K7GHZ3V&q=power%20bank")
+        self.assertEqual(status, "302 Found")
+        location = self._extract_location(headers)
+        self.assertIn("amazon.com", location)
+        self.assertIn("tag=picwise-20", location)
+        self.assertIn("B08K7GHZ3V", location)
+
+    def test_outbound_amazon_redirect_unknown_asin_returns_not_found(self) -> None:
+        status, headers, body = _call_wsgi("/out/amazon", "asin=B000000000&q=power%20bank")
+        self.assertEqual(status, "404 Not Found")
+        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+        self.assertIn("Page not found — PicWise", body)
+
+    def test_outbound_amazon_redirect_does_not_accept_arbitrary_url(self) -> None:
+        query = (
+            "asin=https%3A%2F%2Fevil.example%2Fbad"
+            "&url=https%3A%2F%2Fevil.example%2Foverride"
+            "&q=power%20bank"
+        )
+        status, headers, body = _call_wsgi("/out/amazon", query)
+        self.assertEqual(status, "404 Not Found")
+        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+        self.assertIn("Page not found — PicWise", body)
+
+    def test_amazon_launch_check_route_reports_launch_safety_state(self) -> None:
+        status, headers, body = _call_wsgi("/amazon-launch-check")
+        self.assertEqual(status, "200 OK")
+        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+        self.assertIn("Tracking ID configured: <code>picwise-20</code>", body)
+        self.assertIn("Approved manual links: 4", body)
+        self.assertIn("/search?q=power%20bank", body)
+        self.assertIn("/results?q=power%20bank", body)
+        self.assertIn("Outbound redirect validation: enabled", body)
+        self.assertIn("API access: not available yet", body)
+        self.assertIn("Amazon images/live prices: not used", body)
+        self.assertIn("Disclosure: present", body)
 
     def test_search_route_renders_safe_no_result_for_unapproved_query(self) -> None:
         status, _headers, body = _call_wsgi("/search", "q=laptop")

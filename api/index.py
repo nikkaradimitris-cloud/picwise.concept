@@ -118,7 +118,8 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
     if path in {"/search", "/results"}:
         query_string = str(environ.get("QUERY_STRING", ""))
         query = parse_qs(query_string).get("q", [""])[0]
-        html = render_controlled_search_results_page(query)
+        source_page = "results" if path == "/results" else "search"
+        html = render_controlled_search_results_page(query, source_page=source_page)
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
@@ -131,6 +132,33 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         html = render_amazon_affiliate_proof_page()
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+
+    if path == "/amazon-launch-check":
+        html = _APP.amazon_launch_check_html()
+        body = html.encode("utf-8")
+        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+
+    if path == "/out/amazon":
+        query_string = str(environ.get("QUERY_STRING", ""))
+        query_params = parse_qs(query_string)
+        asin = (query_params.get("asin") or [""])[0]
+        query = (query_params.get("q") or [""])[0]
+        source_page = (query_params.get("src") or ["unknown"])[0]
+        target_url = _APP.resolve_outbound_amazon_redirect(asin)
+        if target_url is None:
+            html = render_branded_not_found_page()
+            body = html.encode("utf-8")
+            return _response("404 Not Found", "text/html; charset=utf-8", body, start_response)
+        _APP.record_amazon_outbound_click(asin=asin, query=query, source_page=source_page)
+        start_response(
+            "302 Found",
+            [
+                ("Content-Type", "text/plain; charset=utf-8"),
+                ("Content-Length", "0"),
+                ("Location", target_url),
+            ],
+        )
+        return [b""]
 
     if path.startswith("/best/"):
         slug = path.removeprefix("/best/")

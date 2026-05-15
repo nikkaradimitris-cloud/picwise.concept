@@ -3,6 +3,7 @@ from __future__ import annotations
 from html import escape
 import json
 import mimetypes
+from datetime import datetime, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -19,6 +20,12 @@ from picwise_mvp import build_mvp_private_beta_readiness_report
 from picwise_nlu import adapt_local_nlu_intent_for_router, build_local_nlu_intent
 from picwise_search import route_search_query
 from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
+from picwise_offers import (
+    AMAZON_ASSOCIATES_TRACKING_ID,
+    MANUAL_AMAZON_AFFILIATE_REGISTRY,
+    get_approved_manual_amazon_record_by_asin,
+    validate_amazon_affiliate_url,
+)
 from picwise_surface import (
     render_amazon_affiliate_proof_page,
     render_affiliate_disclosure_page,
@@ -48,6 +55,8 @@ LOCAL_AVAILABLE_ROUTES = (
     "/results",
     "/picwise-reference",
     "/amazon-affiliate-proof",
+    "/out/amazon",
+    "/amazon-launch-check",
     "/private-beta-readiness",
     "/best/{slug}",
     "/sitemap-buying-pages.xml",
@@ -69,6 +78,7 @@ class PicwiseLocalApp:
         self._stage31_controller = (
             stage31_controller if stage31_controller is not None else build_default_stage31_runtime_controller()
         )
+        self._amazon_outbound_click_events: list[dict[str, str]] = []
 
     def health_payload(self) -> dict[str, Any]:
         return {
@@ -91,6 +101,33 @@ class PicwiseLocalApp:
     def amazon_affiliate_proof_html(self) -> str:
         return render_amazon_affiliate_proof_page()
 
+    def amazon_launch_check_html(self) -> str:
+        approved_count = sum(1 for record in MANUAL_AMAZON_AFFILIATE_REGISTRY if record.status.value == "approved")
+        return (
+            "<!doctype html>"
+            '<html lang="en"><head><meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">'
+            "<title>PicWise Amazon Launch Check</title>"
+            "<style>"
+            "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f9ff;color:#102744;}"
+            ".pw-wrap{max-width:860px;margin:0 auto;padding:30px 20px;}"
+            ".pw-card{background:#fff;border:1px solid #dbe8fb;border-radius:14px;padding:18px 20px;box-shadow:0 8px 24px rgba(17,44,91,.08);}"
+            ".pw-list{margin:10px 0 0;padding-left:18px;line-height:1.7;color:#355174;}"
+            "code{background:#eef4ff;padding:2px 6px;border-radius:6px;}"
+            "</style></head><body><main class=\"pw-wrap\"><section class=\"pw-card\">"
+            "<h1>Amazon launch check</h1>"
+            "<ul class=\"pw-list\">"
+            f"<li>Tracking ID configured: <code>{escape(AMAZON_ASSOCIATES_TRACKING_ID)}</code></li>"
+            f"<li>Approved manual links: {approved_count}</li>"
+            "<li>Search route: <code>/search?q=power%20bank</code></li>"
+            "<li>Results route: <code>/results?q=power%20bank</code></li>"
+            "<li>Outbound redirect validation: enabled</li>"
+            "<li>API access: not available yet</li>"
+            "<li>Amazon images/live prices: not used</li>"
+            "<li>Disclosure: present</li>"
+            "</ul></section></main></body></html>"
+        )
+
     def terms_html(self) -> str:
         return render_terms_page()
 
@@ -109,8 +146,31 @@ class PicwiseLocalApp:
     def not_found_html(self) -> str:
         return render_branded_not_found_page()
 
-    def mvp_search_html(self, query: str) -> str:
-        return render_controlled_search_results_page(query)
+    def mvp_search_html(self, query: str, *, source_page: str = "search") -> str:
+        return render_controlled_search_results_page(query, source_page=source_page)
+
+    def resolve_outbound_amazon_redirect(self, asin: str) -> str | None:
+        record = get_approved_manual_amazon_record_by_asin(asin)
+        if record is None:
+            return None
+        validation = validate_amazon_affiliate_url(record.affiliate_url, required_tracking_id=AMAZON_ASSOCIATES_TRACKING_ID)
+        if not validation.valid:
+            return None
+        return record.affiliate_url
+
+    def record_amazon_outbound_click(self, *, asin: str, query: str, source_page: str) -> dict[str, str]:
+        event = {
+            "timestamp": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+            "asin": str(asin or "").strip().upper(),
+            "query": " ".join(str(query or "").split()),
+            "source_page": source_page if source_page in {"search", "results", "unknown"} else "unknown",
+            "tracking_id": AMAZON_ASSOCIATES_TRACKING_ID,
+            "event_type": "amazon_outbound_click",
+        }
+        self._amazon_outbound_click_events.append(event)
+        if len(self._amazon_outbound_click_events) > 200:
+            self._amazon_outbound_click_events = self._amazon_outbound_click_events[-200:]
+        return event
 
     def private_beta_readiness_payload(self) -> dict[str, Any]:
         report = build_mvp_private_beta_readiness_report()
@@ -454,7 +514,8 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             return
         if parsed.path in {"/search", "/results"}:
             query = parse_qs(parsed.query).get("q", [""])[0]
-            html = self.app.mvp_search_html(query)
+            source_page = "results" if parsed.path == "/results" else "search"
+            html = self.app.mvp_search_html(query, source_page=source_page)
             self._send_html(HTTPStatus.OK, html)
             return
         if parsed.path == "/picwise-reference":
@@ -464,6 +525,25 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
         if parsed.path == "/amazon-affiliate-proof":
             html = self.app.amazon_affiliate_proof_html()
             self._send_html(HTTPStatus.OK, html)
+            return
+        if parsed.path == "/amazon-launch-check":
+            html = self.app.amazon_launch_check_html()
+            self._send_html(HTTPStatus.OK, html)
+            return
+        if parsed.path == "/out/amazon":
+            params = parse_qs(parsed.query or "")
+            asin = (params.get("asin") or [""])[0]
+            query = (params.get("q") or [""])[0]
+            source_page = (params.get("src") or ["unknown"])[0]
+            target_url = self.app.resolve_outbound_amazon_redirect(asin)
+            if target_url is None:
+                self._send_html(HTTPStatus.NOT_FOUND, self.app.not_found_html())
+                return
+            self.app.record_amazon_outbound_click(asin=asin, query=query, source_page=source_page)
+            self.send_response(HTTPStatus.FOUND)
+            self.send_header("Location", target_url)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
             return
         if parsed.path == "/private-beta-readiness":
             self._send_json(HTTPStatus.OK, self.app.private_beta_readiness_payload())

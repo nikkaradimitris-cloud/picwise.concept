@@ -19,6 +19,7 @@ from picwise_offers.amazon_manual_affiliate import (  # noqa: E402
     AmazonManualAffiliateSource,
     AmazonManualAffiliateStatus,
     AmazonManualMatchStatus,
+    get_approved_manual_amazon_record_by_asin,
     match_manual_amazon_affiliates,
     match_manual_amazon_affiliate,
     validate_amazon_affiliate_url,
@@ -215,6 +216,17 @@ class AmazonAffiliateMatcherTests(unittest.TestCase):
             self.assertNotIn(forbidden, payload)
         self.assertEqual(payload["disclosure"], "As an Amazon Associate I earn from qualifying purchases.")
         self.assertEqual(payload["safe_note"], AMAZON_SAFE_NOTE)
+
+    def test_get_approved_record_by_asin_returns_expected_record(self) -> None:
+        record = get_approved_manual_amazon_record_by_asin("B08K7GHZ3V")
+        self.assertIsNotNone(record)
+        assert record is not None
+        self.assertEqual(record.asin, "B08K7GHZ3V")
+        self.assertEqual(record.status, AmazonManualAffiliateStatus.APPROVED)
+
+    def test_get_approved_record_by_asin_rejects_unknown_or_invalid(self) -> None:
+        self.assertIsNone(get_approved_manual_amazon_record_by_asin("B000000000"))
+        self.assertIsNone(get_approved_manual_amazon_record_by_asin("https://evil.example"))
 
 
 if __name__ == "__main__":

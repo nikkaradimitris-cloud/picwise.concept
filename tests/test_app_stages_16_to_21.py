@@ -6,6 +6,7 @@ import sys
 import threading
 import unittest
 from pathlib import Path
+from urllib.request import HTTPErrorProcessor
 from urllib.parse import quote
 from urllib.request import urlopen
 from uuid import uuid4
@@ -35,6 +36,12 @@ def _pick_open_port() -> int:
 
 
 class AppHttpEndpointTests(unittest.TestCase):
+    class _NoRedirect(HTTPErrorProcessor):
+        def http_response(self, request, response):  # type: ignore[override]
+            return response
+
+        https_response = http_response
+
     @staticmethod
     def _extract_amazon_hrefs(body: str) -> list[str]:
         return re.findall(r'href="([^"]+)"[^>]*>View on Amazon<', body)
@@ -300,7 +307,10 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertEqual(body.count(">View on Amazon<"), 4)
         hrefs = self._extract_amazon_hrefs(body)
         self.assertEqual(len(hrefs), 4)
-        self.assertTrue(all("tag=picwise-20" in href for href in hrefs))
+        self.assertTrue(all(href.startswith("/out/amazon?asin=") for href in hrefs))
+        self.assertTrue(all("&q=power%20bank" in href for href in hrefs))
+        self.assertTrue(all("&src=search" in href for href in hrefs))
+        self.assertFalse(any("amazon.com" in href for href in hrefs))
         self.assertIn("As an Amazon Associate I earn from qualifying purchases.", body)
         self.assertIn(
             "Prices, availability, ratings, reviews, delivery, and seller terms are shown on Amazon and may change. PicWise does not sell products directly.",
@@ -334,9 +344,64 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertEqual(body.count(">View on Amazon<"), 4)
         hrefs = self._extract_amazon_hrefs(body)
         self.assertEqual(len(hrefs), 4)
-        self.assertTrue(all("tag=picwise-20" in href for href in hrefs))
+        self.assertTrue(all(href.startswith("/out/amazon?asin=") for href in hrefs))
+        self.assertTrue(all("&q=power%20bank" in href for href in hrefs))
+        self.assertTrue(all("&src=results" in href for href in hrefs))
+        self.assertFalse(any("amazon.com" in href for href in hrefs))
         self._assert_common_footer_links(body)
         self.assertNotIn("B0F518CRGK", body)
+
+    def test_outbound_amazon_redirect_returns_expected_location(self) -> None:
+        from urllib.error import HTTPError
+        from urllib.request import build_opener
+
+        opener = build_opener(self._NoRedirect)
+        response = opener.open(
+            f"http://127.0.0.1:{self.port}/out/amazon?asin=B08K7GHZ3V&q=power%20bank&src=search",
+            timeout=5,
+        )
+        self.assertEqual(response.status, 302)
+        location = response.headers.get("Location", "")
+        self.assertIn("amazon.com", location)
+        self.assertIn("tag=picwise-20", location)
+        self.assertIn("B08K7GHZ3V", location)
+
+        with self.assertRaises(HTTPError) as ctx:
+            urlopen(
+                f"http://127.0.0.1:{self.port}/out/amazon?asin=B000000000&q=power%20bank",
+                timeout=5,
+            )
+        self.assertEqual(ctx.exception.code, 404)
+        not_found_body = ctx.exception.read().decode("utf-8")
+        self.assertIn("Page not found — PicWise", not_found_body)
+
+    def test_outbound_amazon_redirect_rejects_arbitrary_external_url(self) -> None:
+        from urllib.error import HTTPError
+
+        with self.assertRaises(HTTPError) as ctx:
+            urlopen(
+                (
+                    f"http://127.0.0.1:{self.port}/out/amazon?"
+                    "asin=https%3A%2F%2Fevil.example%2Fbad"
+                    "&url=https%3A%2F%2Fevil.example%2Foverride"
+                    "&q=power%20bank"
+                ),
+                timeout=5,
+            )
+        self.assertEqual(ctx.exception.code, 404)
+        body = ctx.exception.read().decode("utf-8")
+        self.assertIn("Page not found — PicWise", body)
+
+    def test_amazon_launch_check_route_is_exposed(self) -> None:
+        body = self._fetch("/amazon-launch-check")
+        self.assertIn("Tracking ID configured: <code>picwise-20</code>", body)
+        self.assertIn("Approved manual links: 4", body)
+        self.assertIn("/search?q=power%20bank", body)
+        self.assertIn("/results?q=power%20bank", body)
+        self.assertIn("Outbound redirect validation: enabled", body)
+        self.assertIn("API access: not available yet", body)
+        self.assertIn("Amazon images/live prices: not used", body)
+        self.assertIn("Disclosure: present", body)
 
     def test_search_route_renders_safe_no_result_for_unapproved_query(self) -> None:
         body = self._fetch("/search?q=laptop")

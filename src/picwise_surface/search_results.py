@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from html import escape
+from urllib.parse import quote
 
 from picwise_offers import AmazonManualMatchStatus, match_manual_amazon_affiliates
 from .legal import render_public_footer
@@ -125,13 +126,15 @@ def _base_styles() -> str:
     )
 
 
-def render_controlled_search_results_page(query: str) -> str:
+def render_controlled_search_results_page(query: str, *, source_page: str = "search") -> str:
     displayed_query = _normalize_query_for_display(query)
     match_result = match_manual_amazon_affiliates(displayed_query)
     escaped_query = escape(displayed_query)
     page_shell = _render_search_shell(displayed_query)
     page_footer = render_public_footer()
+    normalized_source_page = source_page if source_page in {"search", "results"} else "search"
     if match_result.match_status == AmazonManualMatchStatus.ELIGIBLE and match_result.results:
+        normalized_query_param = quote(displayed_query, safe="")
         results_html = "".join(
             (
                 '<article class="pw-option">'
@@ -141,7 +144,7 @@ def render_controlled_search_results_page(query: str) -> str:
                 f'<p class="pw-line"><strong>Category:</strong> {escape(_customer_friendly_category(safe_result.category))}</p>'
                 f'<p class="pw-line">ASIN: {escape(safe_result.asin)}</p>'
                 f'<p class="pw-line"><strong>Why this option:</strong> {escape(_why_copy_for_slot(safe_result.slot_label))}</p>'
-                f'<a class="pw-btn" href="{escape(safe_result.affiliate_url, quote=True)}" target="_blank" rel="nofollow sponsored noopener">View on Amazon</a>'
+                f'<a class="pw-btn" href="/out/amazon?asin={escape(safe_result.asin, quote=True)}&q={normalized_query_param}&src={escape(normalized_source_page, quote=True)}" rel="nofollow sponsored noopener">View on Amazon</a>'
                 "</article>"
             )
             for safe_result in match_result.results

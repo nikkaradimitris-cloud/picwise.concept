@@ -460,5 +460,29 @@ def match_manual_amazon_affiliate(query: str) -> AmazonManualAffiliateMatchResul
     )
 
 
+def _normalize_asin(value: str) -> str | None:
+    normalized = str(value or "").strip().upper()
+    if len(normalized) != _ASIN_LENGTH:
+        return None
+    if not normalized.isalnum():
+        return None
+    return normalized
+
+
+def get_approved_manual_amazon_record_by_asin(asin: str) -> AmazonManualAffiliateRecord | None:
+    normalized_asin = _normalize_asin(asin)
+    if normalized_asin is None:
+        return None
+    for record in MANUAL_AMAZON_AFFILIATE_REGISTRY:
+        if record.asin != normalized_asin:
+            continue
+        if record.status != AmazonManualAffiliateStatus.APPROVED:
+            continue
+        if not validate_manual_amazon_record(record).valid:
+            continue
+        return record
+    return None
+
+
 def manual_affiliate_registry_as_dicts() -> tuple[dict[str, Any], ...]:
     return tuple(asdict(record) for record in MANUAL_AMAZON_AFFILIATE_REGISTRY)
