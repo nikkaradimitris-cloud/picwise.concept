@@ -60,6 +60,7 @@ LOCAL_AVAILABLE_ROUTES = (
     "/amazon-affiliate-proof",
     "/out/amazon",
     "/amazon-launch-check",
+    "/amazon-click-proof",
     "/private-beta-readiness",
     "/best/{slug}",
     "/sitemap-buying-pages.xml",
@@ -140,6 +141,47 @@ class PicwiseLocalApp:
             "</ul></section></main></body></html>"
         )
 
+    def amazon_click_proof_html(self) -> str:
+        active_count = sum(
+            1
+            for record in MANUAL_AMAZON_AFFILIATE_REGISTRY
+            if record.status == AmazonManualAffiliateStatus.APPROVED
+            and record.quality_status == AmazonManualAffiliateQualityStatus.ACTIVE
+        )
+        disabled_or_review_count = len(MANUAL_AMAZON_AFFILIATE_REGISTRY) - active_count
+        total_clicks = len(self._amazon_outbound_click_events)
+        last_event = self._amazon_outbound_click_events[-1] if self._amazon_outbound_click_events else {}
+        last_asin = escape(last_event.get("asin", "none") or "none")
+        last_query = escape(last_event.get("query", "none") or "none")
+        last_source_page = escape(last_event.get("source_page", "none") or "none")
+        last_event_type = escape(last_event.get("event_type", "none") or "none")
+        return (
+            "<!doctype html>"
+            '<html lang="en"><head><meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">'
+            "<title>PicWise Amazon Click Proof</title>"
+            "<style>"
+            "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f9ff;color:#102744;}"
+            ".pw-wrap{max-width:860px;margin:0 auto;padding:30px 20px;}"
+            ".pw-card{background:#fff;border:1px solid #dbe8fb;border-radius:14px;padding:18px 20px;box-shadow:0 8px 24px rgba(17,44,91,.08);}"
+            ".pw-list{margin:10px 0 0;padding-left:18px;line-height:1.7;color:#355174;}"
+            "code{background:#eef4ff;padding:2px 6px;border-radius:6px;}"
+            "</style></head><body><main class=\"pw-wrap\"><section class=\"pw-card\">"
+            "<h1>Amazon click proof</h1>"
+            "<ul class=\"pw-list\">"
+            f"<li>Tracking ID configured: <code>{escape(AMAZON_ASSOCIATES_TRACKING_ID)}</code></li>"
+            f"<li>Recorded outbound clicks: {total_clicks}</li>"
+            f"<li>Last click ASIN: {last_asin}</li>"
+            f"<li>Last click query: {last_query}</li>"
+            f"<li>Last click source: {last_source_page}</li>"
+            f"<li>Last event type: {last_event_type}</li>"
+            f"<li>Active public links: {active_count}</li>"
+            f"<li>Disabled/manual review links: {disabled_or_review_count}</li>"
+            "<li>Sales verification: check Amazon Associates</li>"
+            "<li>Amazon sales are not verified here. Check Amazon Associates for actual sales.</li>"
+            "</ul></section></main></body></html>"
+        )
+
     def terms_html(self) -> str:
         return render_terms_page()
 
@@ -203,6 +245,12 @@ class PicwiseLocalApp:
         if len(self._amazon_outbound_click_events) > 200:
             self._amazon_outbound_click_events = self._amazon_outbound_click_events[-200:]
         return event
+
+    def get_amazon_outbound_click_count(self) -> int:
+        return len(self._amazon_outbound_click_events)
+
+    def clear_amazon_outbound_click_events(self) -> None:
+        self._amazon_outbound_click_events = []
 
     def private_beta_readiness_payload(self) -> dict[str, Any]:
         report = build_mvp_private_beta_readiness_report()
@@ -560,6 +608,10 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/amazon-launch-check":
             html = self.app.amazon_launch_check_html()
+            self._send_html(HTTPStatus.OK, html)
+            return
+        if parsed.path == "/amazon-click-proof":
+            html = self.app.amazon_click_proof_html()
             self._send_html(HTTPStatus.OK, html)
             return
         if parsed.path == "/out/amazon":

@@ -412,6 +412,37 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn("Amazon images/live prices: not used", body)
         self.assertIn("Disclosure: present", body)
 
+    def test_amazon_click_proof_route_initial_state_is_safe(self) -> None:
+        status, headers, body = _call_wsgi("/amazon-click-proof")
+        self.assertEqual(status, "200 OK")
+        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+        self.assertIn("Amazon click proof", body)
+        self.assertIn("Tracking ID configured: <code>picwise-20</code>", body)
+        self.assertIn("Recorded outbound clicks:", body)
+        self.assertIn("Active public links: 4", body)
+        self.assertIn("Disabled/manual review links: 2", body)
+        self.assertIn("Sales verification: check Amazon Associates", body)
+        self.assertIn("Amazon sales are not verified here. Check Amazon Associates for actual sales.", body)
+        self.assertNotIn("https://www.amazon.com/", body)
+
+    def test_amazon_click_proof_updates_after_outbound_click(self) -> None:
+        status, headers, _body = _call_wsgi(
+            "/out/amazon",
+            "asin=B0GV9RDLM4&q=power%20bank&src=search",
+        )
+        self.assertEqual(status, "302 Found")
+        location = self._extract_location(headers)
+        self.assertIn("tag=picwise-20", location)
+        self.assertIn("B0GV9RDLM4", location)
+
+        status, headers, body = _call_wsgi("/amazon-click-proof")
+        self.assertEqual(status, "200 OK")
+        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+        self.assertIn("Last click ASIN: B0GV9RDLM4", body)
+        self.assertIn("Last click query: power bank", body)
+        self.assertIn("Last click source: search", body)
+        self.assertIn("Last event type: amazon_outbound_click", body)
+
     def test_search_route_renders_safe_no_result_for_unapproved_query(self) -> None:
         status, _headers, body = _call_wsgi("/search", "q=laptop")
         self.assertEqual(status, "200 OK")
