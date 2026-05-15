@@ -164,6 +164,7 @@ def render_controlled_search_results_page(query: str, *, source_page: str = "sea
             '<span class="pw-tag">Approved Amazon options</span>'
             f'<p class="pw-line">Matched query: {escaped_query}</p>'
             '<p class="pw-line">Approved manual Amazon affiliate options</p>'
+            '<p class="pw-line">Only manually reviewed active options are shown.</p>'
             f'<section class="pw-search-results-grid">{results_html}</section>'
             f'<p class="pw-disclosure">{escape(first_result.disclosure)}</p>'
             f'<p class="pw-safe-note">{escape(first_result.safe_note)}</p>'

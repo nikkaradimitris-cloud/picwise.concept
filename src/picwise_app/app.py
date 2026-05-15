@@ -23,6 +23,9 @@ from picwise_search.offer_resolver import resolve_specific_product_offers_from_c
 from picwise_offers import (
     AMAZON_ASSOCIATES_TRACKING_ID,
     MANUAL_AMAZON_AFFILIATE_REGISTRY,
+    AmazonManualAffiliateQualityStatus,
+    AmazonManualAffiliateStatus,
+    get_manual_amazon_record_by_asin,
     get_approved_manual_amazon_record_by_asin,
     validate_amazon_affiliate_url,
 )
@@ -102,7 +105,14 @@ class PicwiseLocalApp:
         return render_amazon_affiliate_proof_page()
 
     def amazon_launch_check_html(self) -> str:
-        approved_count = sum(1 for record in MANUAL_AMAZON_AFFILIATE_REGISTRY if record.status.value == "approved")
+        approved_count = len(MANUAL_AMAZON_AFFILIATE_REGISTRY)
+        active_count = sum(
+            1
+            for record in MANUAL_AMAZON_AFFILIATE_REGISTRY
+            if record.status == AmazonManualAffiliateStatus.APPROVED
+            and record.quality_status == AmazonManualAffiliateQualityStatus.ACTIVE
+        )
+        disabled_or_review_count = len(MANUAL_AMAZON_AFFILIATE_REGISTRY) - active_count
         return (
             "<!doctype html>"
             '<html lang="en"><head><meta charset="utf-8">'
@@ -119,6 +129,8 @@ class PicwiseLocalApp:
             "<ul class=\"pw-list\">"
             f"<li>Tracking ID configured: <code>{escape(AMAZON_ASSOCIATES_TRACKING_ID)}</code></li>"
             f"<li>Approved manual links: {approved_count}</li>"
+            f"<li>Active public links: {active_count}</li>"
+            f"<li>Disabled/manual review links: {disabled_or_review_count}</li>"
             "<li>Search route: <code>/search?q=power%20bank</code></li>"
             "<li>Results route: <code>/results?q=power%20bank</code></li>"
             "<li>Outbound redirect validation: enabled</li>"
@@ -157,6 +169,26 @@ class PicwiseLocalApp:
         if not validation.valid:
             return None
         return record.affiliate_url
+
+    def outbound_asin_manual_status_message(self, asin: str) -> str:
+        record = get_manual_amazon_record_by_asin(asin)
+        if record is None:
+            return (
+                "This Amazon option is not currently available through PicWise. "
+                "Please return to search results."
+            )
+        if record.status == AmazonManualAffiliateStatus.DISABLED or (
+            record.quality_status == AmazonManualAffiliateQualityStatus.UNAVAILABLE_MANUAL
+        ):
+            return (
+                "This Amazon option is not currently available through PicWise. "
+                "This option has been disabled after manual review. "
+                "Please return to search results."
+            )
+        return (
+            "This Amazon option is not currently available through PicWise. "
+            "Please return to search results."
+        )
 
     def record_amazon_outbound_click(self, *, asin: str, query: str, source_page: str) -> dict[str, str]:
         event = {
@@ -537,7 +569,27 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             source_page = (params.get("src") or ["unknown"])[0]
             target_url = self.app.resolve_outbound_amazon_redirect(asin)
             if target_url is None:
-                self._send_html(HTTPStatus.NOT_FOUND, self.app.not_found_html())
+                safe_asin = escape(str(asin or "").strip().upper() or "UNKNOWN")
+                message = escape(self.app.outbound_asin_manual_status_message(asin))
+                html = (
+                    "<!doctype html>"
+                    '<html lang="en"><head><meta charset="utf-8">'
+                    '<meta name="viewport" content="width=device-width, initial-scale=1">'
+                    "<title>PicWise Amazon Option Disabled</title>"
+                    "<style>"
+                    "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f9ff;color:#102744;}"
+                    ".pw-wrap{max-width:860px;margin:0 auto;padding:30px 20px;}"
+                    ".pw-card{background:#fff;border:1px solid #dbe8fb;border-radius:14px;padding:18px 20px;box-shadow:0 8px 24px rgba(17,44,91,.08);}"
+                    ".pw-note{margin:10px 0 0;line-height:1.6;color:#355174;}"
+                    ".pw-btn{display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 18px;border-radius:999px;background:#1f6dff;border:1px solid #1f6dff;color:#fff;font-size:14px;font-weight:700;text-decoration:none;margin-top:16px;}"
+                    "</style></head><body><main class=\"pw-wrap\"><section class=\"pw-card\">"
+                    "<h1>Amazon option disabled</h1>"
+                    f"<p class=\"pw-note\">ASIN: {safe_asin}</p>"
+                    f"<p class=\"pw-note\">{message}</p>"
+                    "<a class=\"pw-btn\" href=\"/search?q=power%20bank\">Return to search results</a>"
+                    "</section></main></body></html>"
+                )
+                self._send_html(HTTPStatus.OK, html)
                 return
             self.app.record_amazon_outbound_click(asin=asin, query=query, source_page=source_page)
             self.send_response(HTTPStatus.FOUND)

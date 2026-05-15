@@ -28,6 +28,13 @@ class AmazonManualAffiliateStatus(str, Enum):
     NEEDS_REVIEW = "needs_review"
 
 
+class AmazonManualAffiliateQualityStatus(str, Enum):
+    ACTIVE = "active"
+    UNAVAILABLE_MANUAL = "unavailable_manual"
+    WEAK_MATCH = "weak_match"
+    NEEDS_MANUAL_REVIEW = "needs_manual_review"
+
+
 class AmazonManualMatchStatus(str, Enum):
     ELIGIBLE = "eligible"
     NEEDS_REVIEW = "needs_review"
@@ -54,6 +61,10 @@ class AmazonManualAffiliateRecord:
     tracking_id: str
     source: AmazonManualAffiliateSource
     status: AmazonManualAffiliateStatus
+    quality_status: AmazonManualAffiliateQualityStatus
+    quality_note: str | None
+    last_manual_reviewed_at: str | None
+    operator_note: str | None
     created_at: str
     notes: str | None = None
 
@@ -74,6 +85,7 @@ class AmazonManualAffiliateSafeResult:
     tracking_id: str
     source: str
     status: str
+    quality_status: str
     disclosure: str
     safe_note: str
 
@@ -212,6 +224,22 @@ def validate_manual_amazon_record(record: AmazonManualAffiliateRecord) -> Amazon
         AmazonManualAffiliateStatus.NEEDS_REVIEW,
     ):
         errors.append("unknown_status")
+    if record.quality_status not in (
+        AmazonManualAffiliateQualityStatus.ACTIVE,
+        AmazonManualAffiliateQualityStatus.UNAVAILABLE_MANUAL,
+        AmazonManualAffiliateQualityStatus.WEAK_MATCH,
+        AmazonManualAffiliateQualityStatus.NEEDS_MANUAL_REVIEW,
+    ):
+        errors.append("unknown_quality_status")
+    if record.status == AmazonManualAffiliateStatus.APPROVED:
+        if record.quality_status != AmazonManualAffiliateQualityStatus.ACTIVE:
+            errors.append("approved_record_must_be_active_quality")
+    if record.status == AmazonManualAffiliateStatus.DISABLED:
+        if record.quality_status == AmazonManualAffiliateQualityStatus.ACTIVE:
+            errors.append("disabled_record_cannot_be_active_quality")
+    if record.status == AmazonManualAffiliateStatus.NEEDS_REVIEW:
+        if record.quality_status == AmazonManualAffiliateQualityStatus.ACTIVE:
+            errors.append("needs_review_record_cannot_be_active_quality")
     if record.tracking_id != AMAZON_ASSOCIATES_TRACKING_ID:
         errors.append("unexpected_tracking_id")
     url_validation = validate_amazon_affiliate_url(record.affiliate_url)
@@ -232,6 +260,10 @@ def _record(
     tracking_id: str,
     source: AmazonManualAffiliateSource,
     status: AmazonManualAffiliateStatus,
+    quality_status: AmazonManualAffiliateQualityStatus,
+    quality_note: str | None,
+    last_manual_reviewed_at: str | None,
+    operator_note: str | None,
     created_at: str,
     notes: str | None = None,
 ) -> AmazonManualAffiliateRecord:
@@ -244,6 +276,10 @@ def _record(
         tracking_id=tracking_id,
         source=source,
         status=status,
+        quality_status=quality_status,
+        quality_note=quality_note,
+        last_manual_reviewed_at=last_manual_reviewed_at,
+        operator_note=operator_note,
         created_at=created_at,
         notes=notes,
     )
@@ -264,7 +300,11 @@ MANUAL_AMAZON_AFFILIATE_REGISTRY: tuple[AmazonManualAffiliateRecord, ...] = (
         ),
         tracking_id=AMAZON_ASSOCIATES_TRACKING_ID,
         source=AmazonManualAffiliateSource.AMAZON_SITESTRIPE_MANUAL,
-        status=AmazonManualAffiliateStatus.APPROVED,
+        status=AmazonManualAffiliateStatus.DISABLED,
+        quality_status=AmazonManualAffiliateQualityStatus.UNAVAILABLE_MANUAL,
+        quality_note="Disabled after manual review: Amazon listing showed 'Currently unavailable'.",
+        last_manual_reviewed_at="2026-05-15T14:00:00Z",
+        operator_note="Keep for audit history; exclude from public results and outbound redirect.",
         created_at="2026-05-15T00:00:00Z",
         notes="Stage 1 approved SiteStripe proof link.",
     ),
@@ -283,6 +323,10 @@ MANUAL_AMAZON_AFFILIATE_REGISTRY: tuple[AmazonManualAffiliateRecord, ...] = (
         tracking_id=AMAZON_ASSOCIATES_TRACKING_ID,
         source=AmazonManualAffiliateSource.AMAZON_SITESTRIPE_MANUAL,
         status=AmazonManualAffiliateStatus.APPROVED,
+        quality_status=AmazonManualAffiliateQualityStatus.ACTIVE,
+        quality_note="Manually reviewed and active for public display.",
+        last_manual_reviewed_at="2026-05-15T14:00:00Z",
+        operator_note="Approved for controlled public result set.",
         created_at="2026-05-15T00:00:00Z",
         notes="Stage 4 approved SiteStripe compact option.",
     ),
@@ -301,6 +345,10 @@ MANUAL_AMAZON_AFFILIATE_REGISTRY: tuple[AmazonManualAffiliateRecord, ...] = (
         tracking_id=AMAZON_ASSOCIATES_TRACKING_ID,
         source=AmazonManualAffiliateSource.AMAZON_SITESTRIPE_MANUAL,
         status=AmazonManualAffiliateStatus.APPROVED,
+        quality_status=AmazonManualAffiliateQualityStatus.ACTIVE,
+        quality_note="Manually reviewed and active for public display.",
+        last_manual_reviewed_at="2026-05-15T14:00:00Z",
+        operator_note="Approved for controlled public result set.",
         created_at="2026-05-15T00:00:00Z",
         notes="Stage 4 approved SiteStripe 20000mAh option.",
     ),
@@ -319,6 +367,10 @@ MANUAL_AMAZON_AFFILIATE_REGISTRY: tuple[AmazonManualAffiliateRecord, ...] = (
         tracking_id=AMAZON_ASSOCIATES_TRACKING_ID,
         source=AmazonManualAffiliateSource.AMAZON_SITESTRIPE_MANUAL,
         status=AmazonManualAffiliateStatus.APPROVED,
+        quality_status=AmazonManualAffiliateQualityStatus.ACTIVE,
+        quality_note="Manually reviewed and active for public display.",
+        last_manual_reviewed_at="2026-05-15T14:00:00Z",
+        operator_note="Approved for controlled public result set.",
         created_at="2026-05-15T00:00:00Z",
         notes="Stage 4 approved SiteStripe high-capacity option.",
     ),
@@ -363,6 +415,7 @@ def _build_safe_result(record: AmazonManualAffiliateRecord) -> AmazonManualAffil
         tracking_id=record.tracking_id,
         source=record.source.value,
         status=record.status.value,
+        quality_status=record.quality_status.value,
         disclosure=AMAZON_ASSOCIATE_DISCLOSURE,
         safe_note=AMAZON_SAFE_NOTE,
     )
@@ -370,6 +423,16 @@ def _build_safe_result(record: AmazonManualAffiliateRecord) -> AmazonManualAffil
 
 def _find_records_for_category(category: str) -> tuple[AmazonManualAffiliateRecord, ...]:
     return tuple(record for record in MANUAL_AMAZON_AFFILIATE_REGISTRY if record.category == category)
+
+
+def is_public_eligible_manual_amazon_record(record: AmazonManualAffiliateRecord) -> bool:
+    if record.status != AmazonManualAffiliateStatus.APPROVED:
+        return False
+    if record.quality_status != AmazonManualAffiliateQualityStatus.ACTIVE:
+        return False
+    if not validate_manual_amazon_record(record).valid:
+        return False
+    return True
 
 
 def match_manual_amazon_affiliates(query: str) -> AmazonManualAffiliateMultiMatchResult:
@@ -404,6 +467,9 @@ def match_manual_amazon_affiliates(query: str) -> AmazonManualAffiliateMultiMatc
             disabled_count += 1
             continue
         if record.status == AmazonManualAffiliateStatus.NEEDS_REVIEW:
+            needs_review_count += 1
+            continue
+        if record.quality_status != AmazonManualAffiliateQualityStatus.ACTIVE:
             needs_review_count += 1
             continue
         safe_results.append(_build_safe_result(record))
@@ -476,11 +542,18 @@ def get_approved_manual_amazon_record_by_asin(asin: str) -> AmazonManualAffiliat
     for record in MANUAL_AMAZON_AFFILIATE_REGISTRY:
         if record.asin != normalized_asin:
             continue
-        if record.status != AmazonManualAffiliateStatus.APPROVED:
-            continue
-        if not validate_manual_amazon_record(record).valid:
-            continue
-        return record
+        if is_public_eligible_manual_amazon_record(record):
+            return record
+    return None
+
+
+def get_manual_amazon_record_by_asin(asin: str) -> AmazonManualAffiliateRecord | None:
+    normalized_asin = _normalize_asin(asin)
+    if normalized_asin is None:
+        return None
+    for record in MANUAL_AMAZON_AFFILIATE_REGISTRY:
+        if record.asin == normalized_asin:
+            return record
     return None
 
 
