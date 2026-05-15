@@ -285,30 +285,34 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertIn("Matched query: power bank", body)
         self.assertIn("Approved manual Amazon affiliate options", body)
         self.assertIn("Only manually reviewed active options are shown.", body)
-        self.assertEqual(body.count('class="pw-option"'), 2)
+        self.assertEqual(body.count('class="pw-option"'), 4)
         self.assertIn('class="pw-search-results-grid"', body)
         self.assertIn("grid-template-columns:repeat(4,minmax(0,1fr));", body)
         self.assertIn("@media (max-width:1040px){.pw-search-results-grid{grid-template-columns:repeat(2,minmax(0,1fr));", body)
         self.assertIn("@media (max-width:640px){", body)
-        self.assertEqual(body.count('class="pw-safe-product-visual pw-powerbank-visual"'), 2)
-        self.assertEqual(body.count('data-visual-slot="'), 2)
+        self.assertEqual(body.count('class="pw-safe-product-visual pw-powerbank-visual"'), 4)
+        self.assertEqual(body.count('data-visual-slot="'), 4)
         self.assertNotIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)
         self.assertNotIn("Portable Charger 5000mAh Compact Power Bank", body)
         self.assertIn("Geavonyg PowerBanks 20000mAh Portable Charger", body)
         self.assertIn("Portable Charger 40000mAh Fast Charging Power Bank", body)
-        for asin in ("B0GR1257LT", "B0GH75LWKN"):
+        self.assertIn("Anker Powerbank 25000mAh 165W USB-C Portable Charger", body)
+        self.assertIn("BoxWave Rejuva 30000mAh 65W PD High Capacity Power Bank", body)
+        for asin in ("B0GR1257LT", "B0GH75LWKN", "B0GV9RDLM4", "B0BJMQBNZP"):
             self.assertIn(f"ASIN: {asin}", body)
         self.assertNotIn("ASIN: B0FQJH2XSY", body)
         self.assertNotIn("ASIN: B08K7GHZ3V", body)
-        self.assertEqual(body.count("Power banks / portable chargers"), 2)
+        self.assertEqual(body.count("Power banks / portable chargers"), 4)
         for why_text in (
             "Higher-capacity option for longer days, travel, or multiple phone charges.",
             "Large-capacity option for users who prioritize maximum backup power.",
+            "Premium high-capacity option for heavy usage, fast USB-C output, and longer travel coverage.",
+            "High-capacity PD backup option for users who need sustained output and broad charging compatibility.",
         ):
             self.assertIn(why_text, body)
-        self.assertEqual(body.count(">View on Amazon<"), 2)
+        self.assertEqual(body.count(">View on Amazon<"), 4)
         hrefs = self._extract_amazon_hrefs(body)
-        self.assertEqual(len(hrefs), 2)
+        self.assertEqual(len(hrefs), 4)
         self.assertTrue(all(href.startswith("/out/amazon?asin=") for href in hrefs))
         self.assertTrue(all("&q=power%20bank" in href for href in hrefs))
         self.assertTrue(all("&src=search" in href for href in hrefs))
@@ -333,23 +337,25 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertIn("Search results for: power bank", body)
         self.assertIn("Approved Amazon options", body)
         self.assertIn("Only manually reviewed active options are shown.", body)
-        self.assertEqual(body.count('class="pw-option"'), 2)
+        self.assertEqual(body.count('class="pw-option"'), 4)
         self.assertIn('class="pw-search-results-grid"', body)
-        self.assertEqual(body.count('class="pw-safe-product-visual pw-powerbank-visual"'), 2)
-        self.assertEqual(body.count('data-visual-slot="'), 2)
-        for asin in ("B0GR1257LT", "B0GH75LWKN"):
+        self.assertEqual(body.count('class="pw-safe-product-visual pw-powerbank-visual"'), 4)
+        self.assertEqual(body.count('data-visual-slot="'), 4)
+        for asin in ("B0GR1257LT", "B0GH75LWKN", "B0GV9RDLM4", "B0BJMQBNZP"):
             self.assertIn(f"ASIN: {asin}", body)
         self.assertNotIn("ASIN: B0FQJH2XSY", body)
         self.assertNotIn("ASIN: B08K7GHZ3V", body)
-        self.assertEqual(body.count("Power banks / portable chargers"), 2)
+        self.assertEqual(body.count("Power banks / portable chargers"), 4)
         for why_text in (
             "Higher-capacity option for longer days, travel, or multiple phone charges.",
             "Large-capacity option for users who prioritize maximum backup power.",
+            "Premium high-capacity option for heavy usage, fast USB-C output, and longer travel coverage.",
+            "High-capacity PD backup option for users who need sustained output and broad charging compatibility.",
         ):
             self.assertIn(why_text, body)
-        self.assertEqual(body.count(">View on Amazon<"), 2)
+        self.assertEqual(body.count(">View on Amazon<"), 4)
         hrefs = self._extract_amazon_hrefs(body)
-        self.assertEqual(len(hrefs), 2)
+        self.assertEqual(len(hrefs), 4)
         self.assertTrue(all(href.startswith("/out/amazon?asin=") for href in hrefs))
         self.assertTrue(all("&q=power%20bank" in href for href in hrefs))
         self.assertTrue(all("&src=results" in href for href in hrefs))
@@ -374,6 +380,26 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertIn("amazon.com", location)
         self.assertIn("tag=picwise-20", location)
         self.assertIn("B0GR1257LT", location)
+
+        response = opener.open(
+            f"http://127.0.0.1:{self.port}/out/amazon?asin=B0GV9RDLM4&q=power%20bank&src=search",
+            timeout=5,
+        )
+        self.assertEqual(response.status, 302)
+        location = response.headers.get("Location", "")
+        self.assertIn("amazon.com", location)
+        self.assertIn("tag=picwise-20", location)
+        self.assertIn("B0GV9RDLM4", location)
+
+        response = opener.open(
+            f"http://127.0.0.1:{self.port}/out/amazon?asin=B0BJMQBNZP&q=power%20bank&src=search",
+            timeout=5,
+        )
+        self.assertEqual(response.status, 302)
+        location = response.headers.get("Location", "")
+        self.assertIn("amazon.com", location)
+        self.assertIn("tag=picwise-20", location)
+        self.assertIn("B0BJMQBNZP", location)
 
         response = opener.open(
             f"http://127.0.0.1:{self.port}/out/amazon?asin=B0FQJH2XSY&q=power%20bank&src=search",
@@ -406,8 +432,8 @@ class AppHttpEndpointTests(unittest.TestCase):
     def test_amazon_launch_check_route_is_exposed(self) -> None:
         body = self._fetch("/amazon-launch-check")
         self.assertIn("Tracking ID configured: <code>picwise-20</code>", body)
-        self.assertIn("Approved manual links: 4", body)
-        self.assertIn("Active public links: 2", body)
+        self.assertIn("Approved manual links: 6", body)
+        self.assertIn("Active public links: 4", body)
         self.assertIn("Disabled/manual review links: 2", body)
         self.assertIn("/search?q=power%20bank", body)
         self.assertIn("/results?q=power%20bank", body)

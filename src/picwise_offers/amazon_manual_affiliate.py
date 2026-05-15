@@ -374,6 +374,50 @@ MANUAL_AMAZON_AFFILIATE_REGISTRY: tuple[AmazonManualAffiliateRecord, ...] = (
         created_at="2026-05-15T00:00:00Z",
         notes="Stage 4 approved SiteStripe high-capacity option.",
     ),
+    _record(
+        asin="B0GV9RDLM4",
+        title="Anker Powerbank 25000mAh 165W USB-C Portable Charger",
+        category="power_banks",
+        slot_label="Premium high capacity",
+        affiliate_url=(
+            "https://www.amazon.com/Anker-Powerbank-25000-Black-W129264929/dp/B0GV9RDLM4"
+            "?content-id=amzn1.sym.3be64970-3b95-4a6d-a45d-78077a3ff871%3Aamzn1.sym.3be64970-3b95-4a6d-a45d-78077a3ff871"
+            "&dib=eyJ2IjoiMSJ9.fk1ZUR1sWfdGCr5G7EP_bz75BIX8-onn4BV1Zf6MJMMw_nWiGTkWWpKfWP5ZB_EwKADcWWcPid_hFp8n_dnTAY00WxDZTYzV4vSGK726eJaz7Lu5Qtiab-olm1KyOnbWoJFmH-k0ZHkm-eGvjzf1Onq9csTMJoy_StfWey7zh0Zyk5IdTHwtfjPBbJlX_r-BKbuu6r97uiHr0Laomd7AFUuwt6SqvIaMt_Fmk29lG9I.JlFfnuo0pUzmRRrbEbM1e_xOrxJINsvexo8QoC7lXog"
+            "&dib_tag=se&keywords=power+bank&pd_rd_r=9cdc2526-5483-49c2-83c7-2b04f6c70be8&pd_rd_w=qN6TD&pd_rd_wg=tiUP2"
+            "&qid=1778858796&sr=8-6&linkCode=ll2&tag=picwise-20&linkId=f6e46a9c474628e532b64429669e82ff&language=en_US"
+            "&ref_=as_li_ss_tl"
+        ),
+        tracking_id=AMAZON_ASSOCIATES_TRACKING_ID,
+        source=AmazonManualAffiliateSource.AMAZON_SITESTRIPE_MANUAL,
+        status=AmazonManualAffiliateStatus.APPROVED,
+        quality_status=AmazonManualAffiliateQualityStatus.ACTIVE,
+        quality_note="Manual review approved: real high-capacity power bank with available Amazon buy flow.",
+        last_manual_reviewed_at="2026-05-15T16:00:00Z",
+        operator_note="Premium/high-capacity replacement offer. Higher price, but valid product type.",
+        created_at="2026-05-15T16:00:00Z",
+        notes="Stage 8.2 manually reviewed replacement offer.",
+    ),
+    _record(
+        asin="B0BJMQBNZP",
+        title="BoxWave Rejuva 30000mAh 65W PD High Capacity Power Bank",
+        category="power_banks",
+        slot_label="High-capacity PD backup",
+        affiliate_url=(
+            "https://www.amazon.com/BoxWave-Power-Compatible-Garmin-DriveSmart/dp/B0BJMQBNZP"
+            "?crid=2FLR6Y1A7ABS0&dib=eyJ2IjoiMSJ9.OsDSBg1TMHj_PMYIE4_SfdpUmClFmG4w221qVfnstygecFi-PAa68xt0RbvLAqRw-84wxllb-uYVqRM0yp3VmwSQ2WLgRZH3PafeMOelplx6YraZ-Pqpd4p2uh9PKIqJ1GO24yoWHZ47xmJ340ZTuyH8q6ARiC-1AIlSl3Tf31o.vlq6oekA9ZovNPS98jllOu7KexpRcUS1JcwK0G7bHFQ"
+            "&dib_tag=se&keywords=power+bank+mobile&qid=1778860710&sprefix=power+bank+mobile%2Caps%2C285&xpid=ioC2cddAjXlbS"
+            "&linkCode=ll2&tag=picwise-20&linkId=a33f0c3eff93fbcf584ae15409f1b49f&language=en_US&ref_=as_li_ss_tl"
+        ),
+        tracking_id=AMAZON_ASSOCIATES_TRACKING_ID,
+        source=AmazonManualAffiliateSource.AMAZON_SITESTRIPE_MANUAL,
+        status=AmazonManualAffiliateStatus.APPROVED,
+        quality_status=AmazonManualAffiliateQualityStatus.ACTIVE,
+        quality_note="Manual review approved: real 30000mAh 65W PD power bank with available Amazon buy flow.",
+        last_manual_reviewed_at="2026-05-15T16:00:00Z",
+        operator_note="Specialized high-capacity replacement offer. Listing is Garmin-focused but product type is a real power bank.",
+        created_at="2026-05-15T16:00:00Z",
+        notes="Stage 8.2 manually reviewed replacement offer.",
+    ),
 )
 
 

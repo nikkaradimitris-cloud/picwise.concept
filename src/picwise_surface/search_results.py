@@ -32,6 +32,12 @@ def _why_copy_for_slot(slot_label: str) -> str:
         "high capacity": (
             "Large-capacity option for users who prioritize maximum backup power."
         ),
+        "premium high capacity": (
+            "Premium high-capacity option for heavy usage, fast USB-C output, and longer travel coverage."
+        ),
+        "high-capacity pd backup": (
+            "High-capacity PD backup option for users who need sustained output and broad charging compatibility."
+        ),
     }
     return reasons.get(normalized, "General-purpose charging option for practical everyday use.")
 
