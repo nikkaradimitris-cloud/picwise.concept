@@ -20,6 +20,7 @@ from picwise_nlu import adapt_local_nlu_intent_for_router, build_local_nlu_inten
 from picwise_search import route_search_query
 from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
 from picwise_surface import (
+    render_amazon_affiliate_proof_page,
     render_affiliate_disclosure_page,
     render_branded_not_found_page,
     render_contact_page,
@@ -46,6 +47,7 @@ LOCAL_AVAILABLE_ROUTES = (
     "/search",
     "/results",
     "/picwise-reference",
+    "/amazon-affiliate-proof",
     "/private-beta-readiness",
     "/best/{slug}",
     "/sitemap-buying-pages.xml",
@@ -85,6 +87,9 @@ class PicwiseLocalApp:
 
     def picwise_reference_html(self) -> str:
         return render_picwise_reference_surface()
+
+    def amazon_affiliate_proof_html(self) -> str:
+        return render_amazon_affiliate_proof_page()
 
     def terms_html(self) -> str:
         return render_terms_page()
@@ -455,6 +460,10 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/picwise-reference":
             html = self.app.picwise_reference_html()
+            self._send_html(HTTPStatus.OK, html)
+            return
+        if parsed.path == "/amazon-affiliate-proof":
+            html = self.app.amazon_affiliate_proof_html()
             self._send_html(HTTPStatus.OK, html)
             return
         if parsed.path == "/private-beta-readiness":

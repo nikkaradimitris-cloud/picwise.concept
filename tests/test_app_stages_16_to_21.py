@@ -219,6 +219,30 @@ class AppHttpEndpointTests(unittest.TestCase):
         ):
             self.assertIn(asset, body)
 
+    def test_amazon_affiliate_proof_route_renders_controlled_manual_result(self) -> None:
+        body = self._fetch("/amazon-affiliate-proof")
+        self.assertIn("Manual Amazon affiliate proof", body)
+        self.assertIn("Matched query: power bank", body)
+        self.assertIn("Approved Amazon result", body)
+        self.assertIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)
+        self.assertIn("Power bank / portable charger category", body)
+        self.assertIn("ASIN: B08K7GHZ3V", body)
+        self.assertIn(">View on Amazon<", body)
+        self.assertIn("tag=picwise-20", body)
+        self.assertIn("As an Amazon Associate I earn from qualifying purchases.", body)
+        self.assertIn(
+            "Prices, availability, ratings, reviews, delivery, and seller terms are shown on Amazon and may change. PicWise does not sell products directly.",
+            body,
+        )
+        lowered = body.lower()
+        self.assertNotIn("eur ", lowered)
+        self.assertNotIn("in stock", lowered)
+        self.assertNotIn("prime", lowered)
+        self.assertNotIn("discount", lowered)
+        self.assertNotIn("<img", lowered)
+        self.assertNotIn("amazon.com/images", lowered)
+        self.assertNotIn("class=\"pw-rating-row\"", lowered)
+
     def test_picwise_reference_assets_are_served_locally(self) -> None:
         with urlopen(
             f"http://127.0.0.1:{self.port}/assets/picwise/product-1.svg",

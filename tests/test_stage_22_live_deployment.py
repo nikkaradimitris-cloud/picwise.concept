@@ -188,6 +188,32 @@ class DeploymentEntrypointTests(unittest.TestCase):
         ):
             self.assertIn(product_name, body)
 
+    def test_amazon_affiliate_proof_route_renders_controlled_manual_result(self) -> None:
+        status, headers, body = _call_wsgi("/amazon-affiliate-proof")
+        self.assertEqual(status, "200 OK")
+        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+        self.assertIn("Manual Amazon affiliate proof", body)
+        self.assertIn("Matched query: power bank", body)
+        self.assertIn("Approved Amazon result", body)
+        self.assertIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)
+        self.assertIn("Power bank / portable charger category", body)
+        self.assertIn("ASIN: B08K7GHZ3V", body)
+        self.assertIn(">View on Amazon<", body)
+        self.assertIn("tag=picwise-20", body)
+        self.assertIn("As an Amazon Associate I earn from qualifying purchases.", body)
+        self.assertIn(
+            "Prices, availability, ratings, reviews, delivery, and seller terms are shown on Amazon and may change. PicWise does not sell products directly.",
+            body,
+        )
+        lowered = body.lower()
+        self.assertNotIn("eur ", lowered)
+        self.assertNotIn("in stock", lowered)
+        self.assertNotIn("prime", lowered)
+        self.assertNotIn("discount", lowered)
+        self.assertNotIn("<img", lowered)
+        self.assertNotIn("amazon.com/images", lowered)
+        self.assertNotIn("class=\"pw-rating-row\"", lowered)
+
     def test_reference_route_and_required_core_routes_are_registered(self) -> None:
         health_status, _health_headers, _health_body = _call_wsgi("/health")
         root_status, _root_headers, _root_body = _call_wsgi("/")

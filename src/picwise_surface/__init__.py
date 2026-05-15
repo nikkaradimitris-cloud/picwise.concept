@@ -4,6 +4,7 @@ from .dashboard import (
 )
 from .buying_page import render_buying_page_surface
 from .buying_page_seo_surface import render_buying_page_seo_surface
+from .amazon_affiliate_proof import render_amazon_affiliate_proof_page
 from .final_audit import (
     LOCKED_ROADMAP_TITLES,
     FinalV1AuditEvidence,
@@ -55,6 +56,7 @@ __all__ = [
     "render_branded_not_found_page",
     "render_buying_page_surface",
     "render_buying_page_seo_surface",
+    "render_amazon_affiliate_proof_page",
     "render_contact_page",
     "render_cookies_page",
     "render_demo_info_page",
