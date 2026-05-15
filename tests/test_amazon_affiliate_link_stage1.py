@@ -78,11 +78,17 @@ class AmazonAffiliateRecordValidationTests(unittest.TestCase):
         power_bank_records = [record for record in MANUAL_AMAZON_AFFILIATE_REGISTRY if record.category == "power_banks"]
         self.assertEqual(len(power_bank_records), 4)
         approved_records = [record for record in power_bank_records if record.status == AmazonManualAffiliateStatus.APPROVED]
-        self.assertEqual(len(approved_records), 3)
+        self.assertEqual(len(approved_records), 2)
         disabled_records = [record for record in power_bank_records if record.status == AmazonManualAffiliateStatus.DISABLED]
-        self.assertEqual(len(disabled_records), 1)
-        self.assertEqual(disabled_records[0].asin, "B08K7GHZ3V")
-        self.assertEqual(disabled_records[0].quality_status, AmazonManualAffiliateQualityStatus.UNAVAILABLE_MANUAL)
+        self.assertEqual(len(disabled_records), 2)
+        self.assertSetEqual({record.asin for record in disabled_records}, {"B08K7GHZ3V", "B0FQJH2XSY"})
+        self.assertSetEqual(
+            {record.quality_status for record in disabled_records},
+            {
+                AmazonManualAffiliateQualityStatus.UNAVAILABLE_MANUAL,
+                AmazonManualAffiliateQualityStatus.WEAK_MATCH,
+            },
+        )
         asins = {record.asin for record in power_bank_records}
         self.assertSetEqual(asins, {"B08K7GHZ3V", "B0FQJH2XSY", "B0GR1257LT", "B0GH75LWKN"})
         self.assertNotIn("B0F518CRGK", asins)
@@ -172,26 +178,27 @@ class AmazonAffiliateMatcherTests(unittest.TestCase):
         self.assertIn("tag=picwise-20", result.result.affiliate_url)
         self.assertEqual(result.result.disclosure, AMAZON_ASSOCIATE_DISCLOSURE)
 
-    def test_power_bank_query_returns_four_eligible_results(self) -> None:
+    def test_power_bank_query_returns_two_eligible_results(self) -> None:
         result = match_manual_amazon_affiliates("power bank")
         self.assertEqual(result.match_status, AmazonManualMatchStatus.ELIGIBLE)
-        self.assertEqual(len(result.results), 3)
+        self.assertEqual(len(result.results), 2)
         self.assertSetEqual(
             {entry.asin for entry in result.results},
-            {"B0FQJH2XSY", "B0GR1257LT", "B0GH75LWKN"},
+            {"B0GR1257LT", "B0GH75LWKN"},
         )
         self.assertNotIn("B08K7GHZ3V", {entry.asin for entry in result.results})
+        self.assertNotIn("B0FQJH2XSY", {entry.asin for entry in result.results})
 
-    def test_powerbank_query_returns_four_eligible_results(self) -> None:
+    def test_powerbank_query_returns_two_eligible_results(self) -> None:
         result = match_manual_amazon_affiliates("powerbank")
         self.assertEqual(result.match_status, AmazonManualMatchStatus.ELIGIBLE)
-        self.assertEqual(len(result.results), 3)
+        self.assertEqual(len(result.results), 2)
 
-    def test_compact_power_bank_query_includes_compact_asin(self) -> None:
+    def test_compact_power_bank_query_excludes_disabled_compact_asin(self) -> None:
         result = match_manual_amazon_affiliates("compact power bank")
         self.assertEqual(result.match_status, AmazonManualMatchStatus.ELIGIBLE)
         compact_asins = {entry.asin for entry in result.results}
-        self.assertIn("B0FQJH2XSY", compact_asins)
+        self.assertNotIn("B0FQJH2XSY", compact_asins)
 
     def test_20000mah_query_includes_20000mah_asin(self) -> None:
         result = match_manual_amazon_affiliates("20000mah power bank")
@@ -217,7 +224,7 @@ class AmazonAffiliateMatcherTests(unittest.TestCase):
     def test_every_eligible_result_url_contains_required_tag(self) -> None:
         result = match_manual_amazon_affiliates("portable charger")
         self.assertEqual(result.match_status, AmazonManualMatchStatus.ELIGIBLE)
-        self.assertEqual(len(result.results), 3)
+        self.assertEqual(len(result.results), 2)
         for entry in result.results:
             self.assertIn("tag=picwise-20", entry.affiliate_url)
 
@@ -240,10 +247,10 @@ class AmazonAffiliateMatcherTests(unittest.TestCase):
         self.assertEqual(payload["safe_note"], AMAZON_SAFE_NOTE)
 
     def test_get_approved_record_by_asin_returns_expected_record(self) -> None:
-        record = get_approved_manual_amazon_record_by_asin("B0FQJH2XSY")
+        record = get_approved_manual_amazon_record_by_asin("B0GR1257LT")
         self.assertIsNotNone(record)
         assert record is not None
-        self.assertEqual(record.asin, "B0FQJH2XSY")
+        self.assertEqual(record.asin, "B0GR1257LT")
         self.assertEqual(record.status, AmazonManualAffiliateStatus.APPROVED)
         self.assertEqual(record.quality_status, AmazonManualAffiliateQualityStatus.ACTIVE)
 
@@ -251,13 +258,11 @@ class AmazonAffiliateMatcherTests(unittest.TestCase):
         self.assertIsNone(get_approved_manual_amazon_record_by_asin("B000000000"))
         self.assertIsNone(get_approved_manual_amazon_record_by_asin("https://evil.example"))
         self.assertIsNone(get_approved_manual_amazon_record_by_asin("B08K7GHZ3V"))
+        self.assertIsNone(get_approved_manual_amazon_record_by_asin("B0FQJH2XSY"))
 
     def test_disabled_record_is_retained_for_audit_history(self) -> None:
-        records = [record for record in MANUAL_AMAZON_AFFILIATE_REGISTRY if record.asin == "B08K7GHZ3V"]
-        self.assertEqual(len(records), 1)
-        record = records[0]
-        self.assertEqual(record.status, AmazonManualAffiliateStatus.DISABLED)
-        self.assertEqual(record.quality_status, AmazonManualAffiliateQualityStatus.UNAVAILABLE_MANUAL)
+        disabled_records = [record for record in MANUAL_AMAZON_AFFILIATE_REGISTRY if record.status == AmazonManualAffiliateStatus.DISABLED]
+        self.assertSetEqual({record.asin for record in disabled_records}, {"B08K7GHZ3V", "B0FQJH2XSY"})
 
 
 if __name__ == "__main__":
