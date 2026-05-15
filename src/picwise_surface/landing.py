@@ -30,6 +30,10 @@ def render_review_safe_landing_page() -> str:
         ".pw-title{margin:0;font-size:34px;line-height:1.2;letter-spacing:-.02em;color:#0f2442;}"
         ".pw-body{margin:14px 0 0;font-size:16px;line-height:1.7;color:#355174;}"
         ".pw-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;}"
+        ".pw-home-search{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;}"
+        ".pw-home-search-input{flex:1 1 340px;min-width:220px;height:42px;padding:0 14px;border:1px solid #cddffc;border-radius:999px;background:#fff;color:#102744;font-size:14px;}"
+        ".pw-home-search-input::placeholder{color:#6c84a5;}"
+        ".pw-home-search-input:focus{outline:none;border-color:#1f6dff;box-shadow:0 0 0 3px rgba(31,109,255,.15);}"
         ".pw-btn{height:42px;padding:0 16px;border-radius:999px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:14px;}"
         ".pw-btn-primary{background:#1f6dff;color:#fff;border:1px solid #1f6dff;}"
         ".pw-note{margin-top:16px;font-size:14px;line-height:1.6;color:#355174;}"
@@ -52,7 +56,13 @@ def render_review_safe_landing_page() -> str:
         '<p class="pw-body">PicWise does not sell products directly, process checkout, handle shipping, returns, warranties, subscriptions, or applications.</p>'
         '<p class="pw-body">Provider and affiliate integrations are being configured. Demo product listings are previews only and are not live Amazon offers.</p>'
         '<p class="pw-note">Thank you for visiting PicWise. We are preparing a safer product comparison experience for shoppers.</p>'
-        '<div class="pw-actions" data-main-cta-area="true"><a class="pw-btn pw-btn-primary" href="/picwise-reference">Demo</a></div>'
+        '<p class="pw-note">Try the current demo search:</p>'
+        '<form class="pw-home-search" action="/search" method="get" data-main-cta-area="true">'
+        '<label for="pw-home-query" style="position:absolute;left:-9999px;">Search query</label>'
+        '<input class="pw-home-search-input" id="pw-home-query" type="search" name="q" value="power bank" placeholder="Search for a product, e.g. power bank" autocomplete="off">'
+        '<button class="pw-btn pw-btn-primary" type="submit">Search</button>'
+        "</form>"
+        '<p class="pw-note">Demo results use approved manual Amazon affiliate links where configured.</p>'
         "</section>"
         f"{render_public_footer()}"
         "</main></body></html>"

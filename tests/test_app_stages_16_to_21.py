@@ -109,13 +109,29 @@ class AppHttpEndpointTests(unittest.TestCase):
         )
         self.assertIn("<title>PicWise — Shopping Decision Assistant</title>", body)
         self._assert_common_footer_links(body)
-        self.assertIn('href="/picwise-reference">Demo</a>', body)
+        self.assertIn('class="pw-home-search"', body)
+        self.assertIn('action="/search"', body)
+        self.assertIn('method="get"', body)
+        self.assertIn('name="q"', body)
+        self.assertIn('placeholder="Search for a product, e.g. power bank"', body)
+        self.assertIn(">Search<", body)
         self.assertEqual(body.count('data-main-cta-area="true"'), 1)
         self.assertEqual(body.count('class="pw-btn pw-btn-primary"'), 1)
+        self.assertIn("Try the current demo search:", body)
+        self.assertIn(
+            "Demo results use approved manual Amazon affiliate links where configured.",
+            body,
+        )
         self.assertNotIn("View demo", body)
         self.assertNotIn("What is PicWise?", body)
         self.assertNotIn("Login", body)
         self.assertNotIn("Register", body)
+        self.assertNotIn("search all amazon", body.lower())
+        self.assertNotIn("live amazon search", body.lower())
+        self.assertNotIn("best prices", body.lower())
+        self.assertNotIn("top rated", body.lower())
+        self.assertNotIn("live deals", body.lower())
+        self.assertNotIn("guaranteed", body.lower())
         self.assertNotIn("mysubby.cloud@gmail.com", body)
         for forbidden in (
             "Recommended by Picwise",
@@ -168,7 +184,8 @@ class AppHttpEndpointTests(unittest.TestCase):
     def test_root_what_is_picwise_link_targets_safe_demo_section(self) -> None:
         body = self._fetch("/")
         self.assertNotIn('href="/demo#what-is-picwise"', body)
-        self.assertIn('href="/picwise-reference">Demo</a>', body)
+        self.assertIn('action="/search"', body)
+        self.assertIn('name="q"', body)
 
     def test_picwise_reference_route_renders_static_reference_page(self) -> None:
         body = self._fetch("/picwise-reference")
@@ -317,6 +334,14 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertNotIn("tag=picwise-20", body)
         self.assertNotIn('class="pw-option"', body)
         self.assertNotIn("pw-safe-product-visual", body)
+
+    def test_search_route_renders_safe_no_result_for_empty_query(self) -> None:
+        body = self._fetch("/search?q=")
+        self.assertIn("No approved Amazon options are available for this query yet.", body)
+        self.assertIn("PicWise only shows approved manual affiliate results at this stage.", body)
+        self.assertNotIn(">View on Amazon<", body)
+        self.assertNotIn("tag=picwise-20", body)
+        self.assertNotIn('class="pw-option"', body)
 
     def test_search_route_does_not_show_forbidden_commerce_claims(self) -> None:
         body = self._fetch("/search?q=power%20bank")

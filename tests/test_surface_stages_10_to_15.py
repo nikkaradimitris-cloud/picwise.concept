@@ -189,11 +189,27 @@ class LandingUiTests(unittest.TestCase):
         self.assertNotIn("mysubby.cloud@gmail.com", root_html)
         self.assertEqual(root_html.count('data-main-cta-area="true"'), 1)
         self.assertEqual(root_html.count('class="pw-btn pw-btn-primary"'), 1)
-        self.assertIn('href="/picwise-reference">Demo</a>', root_html)
+        self.assertIn('class="pw-home-search"', root_html)
+        self.assertIn('action="/search"', root_html)
+        self.assertIn('method="get"', root_html)
+        self.assertIn('name="q"', root_html)
+        self.assertIn('placeholder="Search for a product, e.g. power bank"', root_html)
+        self.assertIn(">Search<", root_html)
+        self.assertIn("Try the current demo search:", root_html)
+        self.assertIn(
+            "Demo results use approved manual Amazon affiliate links where configured.",
+            root_html,
+        )
         self.assertNotIn("View demo", root_html)
         self.assertNotIn("What is PicWise?", root_html)
         self.assertNotIn("Login", root_html)
         self.assertNotIn("Register", root_html)
+        self.assertNotIn("search all amazon", root_html.lower())
+        self.assertNotIn("live amazon search", root_html.lower())
+        self.assertNotIn("best prices", root_html.lower())
+        self.assertNotIn("top rated", root_html.lower())
+        self.assertNotIn("live deals", root_html.lower())
+        self.assertNotIn("guaranteed", root_html.lower())
         for html in (root_html, demo_html):
             lowered = html.lower()
             for forbidden in (
