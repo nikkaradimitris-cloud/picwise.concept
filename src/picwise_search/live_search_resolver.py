@@ -16,24 +16,10 @@ _CONNECTED_PROVIDER_BY_CATEGORY = {
     "power_banks": "manual_amazon_affiliate",
 }
 
-_UNDERSTOOD_CATEGORIES = {
-    "power_banks",
-    "chargers",
-    "car_tyres",
-    "calculators",
-}
-
 _CONNECTED_STATUSES = {
     "intent_resolved",
     "specific_product_resolved",
     "general_intent_resolved",
-}
-
-_CANONICAL_QUERY_BY_CATEGORY = {
-    "power_banks": "power bank",
-    "chargers": "charger",
-    "car_tyres": "car tyres",
-    "calculators": "calculator",
 }
 
 
@@ -44,6 +30,9 @@ class LiveSearchResolution:
     normalized_query: str
     canonical_query: str
     canonical_category: str | None
+    mega_category_id: str | None
+    display_name: str | None
+    lower_level_provider_category: str | None
     intent: str
     query_type: str
     confidence: float
@@ -62,6 +51,9 @@ class LiveSearchResolution:
             "normalized_query": self.normalized_query,
             "canonical_query": self.canonical_query,
             "canonical_category": self.canonical_category,
+            "mega_category_id": self.mega_category_id,
+            "display_name": self.display_name,
+            "lower_level_provider_category": self.lower_level_provider_category,
             "intent": self.intent,
             "query_type": self.query_type,
             "confidence": self.confidence,
@@ -102,24 +94,34 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     category_probe = detect_category(canonicalized_query)
 
     canonical_category = intent.get("category") or category_probe.get("category")
+    mega_category_id = (
+        intent.get("mega_category_id")
+        or category_probe.get("mega_category_id")
+        or (
+            canonical_category
+            if canonical_category and canonical_category != "power_banks"
+            else None
+        )
+    )
+    lower_level_provider_category = category_probe.get("lower_level_provider_category")
+    if canonical_category in _CONNECTED_PROVIDER_BY_CATEGORY:
+        lower_level_provider_category = canonical_category
     query_type = str(intent.get("query_type") or "unknown")
     confidence = max(_safe_confidence(intent.get("confidence")), _safe_confidence(category_probe.get("confidence")))
     status = str(intent.get("status") or "manual_review_required")
     needs_review = bool(intent.get("needs_review", True))
     is_ambiguous_or_invalid = status in {"ambiguous_needs_review", "invalid_intent"} or query_type == "ambiguous_query"
 
-    canonical_query = (
-        _CANONICAL_QUERY_BY_CATEGORY.get(str(canonical_category))
-        or canonicalized_query
-        or normalized_query
-        or _normalized_text(raw_query).lower()
+    canonical_query = "power bank" if canonical_category == "power_banks" else (
+        canonicalized_query or normalized_query or _normalized_text(raw_query).lower()
     )
 
-    provider_key = _CONNECTED_PROVIDER_BY_CATEGORY.get(str(canonical_category), "not_connected")
-    provider_status = "connected" if str(canonical_category) in _CONNECTED_PROVIDER_BY_CATEGORY else "not_connected"
+    provider_lookup_key = str(lower_level_provider_category or canonical_category or "")
+    provider_key = _CONNECTED_PROVIDER_BY_CATEGORY.get(provider_lookup_key, "not_connected")
+    provider_status = "connected" if provider_lookup_key in _CONNECTED_PROVIDER_BY_CATEGORY else "not_connected"
 
     connected_category_safe_gate = bool(
-        canonical_category in _CONNECTED_PROVIDER_BY_CATEGORY
+        provider_lookup_key in _CONNECTED_PROVIDER_BY_CATEGORY
         and provider_status == "connected"
         and _normalized_text(raw_query)
         and not is_ambiguous_or_invalid
@@ -130,7 +132,7 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
         needs_review = False
 
     result_allowed = bool(
-        canonical_category in _CONNECTED_PROVIDER_BY_CATEGORY
+        provider_lookup_key in _CONNECTED_PROVIDER_BY_CATEGORY
         and provider_status == "connected"
         and status in _CONNECTED_STATUSES
         and confidence >= 0.2
@@ -146,11 +148,11 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
         resolver_state = "connected_provider_results"
     elif blocked_or_unsafe:
         resolver_state = "blocked_or_unsafe"
-    elif canonical_category in _UNDERSTOOD_CATEGORIES and provider_status != "connected":
+    elif mega_category_id and provider_status != "connected":
         resolver_state = "understood_provider_not_connected"
-    elif canonical_category in _CONNECTED_PROVIDER_BY_CATEGORY and (needs_review or confidence < 0.2):
+    elif provider_lookup_key in _CONNECTED_PROVIDER_BY_CATEGORY and (needs_review or confidence < 0.2):
         resolver_state = "low_confidence_manual_review"
-    elif not canonical_category:
+    elif not mega_category_id and not canonical_category:
         resolver_state = "not_understood"
     else:
         # Unsupported or weakly resolved categories remain safely un-understood.
@@ -159,9 +161,9 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     reason_codes: list[str] = [str(code) for code in intent.get("reason_codes", []) if str(code).strip()]
     if not _normalized_text(raw_query):
         reason_codes.append("empty_query")
-    if not canonical_category:
+    if not mega_category_id and not canonical_category:
         reason_codes.append("no_canonical_category")
-    if canonical_category in _UNDERSTOOD_CATEGORIES and provider_status != "connected":
+    if mega_category_id and provider_status != "connected":
         reason_codes.append("provider_not_connected")
     if needs_review:
         reason_codes.append("manual_review_required")
@@ -176,6 +178,9 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
         normalized_query=normalized_query,
         canonical_query=canonical_query,
         canonical_category=str(canonical_category) if canonical_category else None,
+        mega_category_id=str(mega_category_id) if mega_category_id else None,
+        display_name=str(category_probe.get("display_name") or "") or None,
+        lower_level_provider_category=str(lower_level_provider_category) if lower_level_provider_category else None,
         intent=str(canonical_category or "unknown"),
         query_type=query_type,
         confidence=confidence,

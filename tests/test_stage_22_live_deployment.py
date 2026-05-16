@@ -435,7 +435,8 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn('form class="pw-search-shell" action="/search" method="get"', body)
         self.assertIn('name="q"', body)
         self.assertIn('value="laptop"', body)
-        self.assertIn("PicWise could not understand this search safely.", body)
+        self.assertIn("PicWise understood this search, but no safe provider is connected yet.", body)
+        self.assertIn("Detected category: Computers / Office / Peripherals", body)
         self.assertNotIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)
         self.assertNotIn("ASIN: B08K7GHZ3V", body)
         self.assertNotIn(">View on Amazon<", body)
@@ -455,7 +456,16 @@ class DeploymentEntrypointTests(unittest.TestCase):
         status, _headers, body = _call_wsgi("/search", "q=wall%20charger")
         self.assertEqual(status, "200 OK")
         self.assertIn("PicWise understood this search, but no safe provider is connected yet.", body)
-        self.assertIn("Detected category: chargers", body)
+        self.assertIn("Detected category: Phones / Mobile / Accessories", body)
+        self.assertNotIn(">View on Amazon<", body)
+        self.assertNotIn("ASIN: B0GR1257LT", body)
+        self.assertNotIn('class="pw-card"', body)
+
+    def test_results_route_provider_not_connected_shows_detected_category(self) -> None:
+        status, _headers, body = _call_wsgi("/results", "q=laptop")
+        self.assertEqual(status, "200 OK")
+        self.assertIn("PicWise understood this search, but no safe provider is connected yet.", body)
+        self.assertIn("Detected category: Computers / Office / Peripherals", body)
         self.assertNotIn(">View on Amazon<", body)
         self.assertNotIn("ASIN: B0GR1257LT", body)
         self.assertNotIn('class="pw-card"', body)
@@ -485,6 +495,28 @@ class DeploymentEntrypointTests(unittest.TestCase):
                 self.assertNotIn("ASIN: B0BJMQBNZP", body)
                 self.assertNotIn(">View on Amazon<", body)
                 self.assertNotIn('class="pw-card"', body)
+
+    def test_no_overmatch_negative_queries(self) -> None:
+        blocked = (
+            "bank",
+            "apple",
+            "charger",
+            "galaxy",
+            "bosch",
+            "nike",
+            "insurance",
+            "loan",
+            "erp",
+            "crm",
+            "accounting software",
+        )
+        for query in blocked:
+            with self.subTest(query=query):
+                status, _headers, body = _call_wsgi("/search", f"q={quote(query)}")
+                self.assertEqual(status, "200 OK")
+                self.assertIn("PicWise could not understand this search safely.", body)
+                self.assertNotIn(">View on Amazon<", body)
+                self.assertNotIn("ASIN: B0GR1257LT", body)
 
     def test_search_route_renders_safe_no_result_for_empty_query(self) -> None:
         status, _headers, body = _call_wsgi("/search", "q=")

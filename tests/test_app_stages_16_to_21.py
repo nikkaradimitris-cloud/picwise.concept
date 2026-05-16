@@ -483,7 +483,8 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertIn('form class="pw-search-shell" action="/search" method="get"', body)
         self.assertIn('name="q"', body)
         self.assertIn('value="laptop"', body)
-        self.assertIn("PicWise could not understand this search safely.", body)
+        self.assertIn("PicWise understood this search, but no safe provider is connected yet.", body)
+        self.assertIn("Detected category: Computers / Office / Peripherals", body)
         self.assertNotIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)
         self.assertNotIn("ASIN: B08K7GHZ3V", body)
         self.assertNotIn(">View on Amazon<", body)
@@ -501,7 +502,7 @@ class AppHttpEndpointTests(unittest.TestCase):
     def test_search_route_provider_not_connected_shows_explicit_message(self) -> None:
         body = self._fetch("/search?q=wall%20charger")
         self.assertIn("PicWise understood this search, but no safe provider is connected yet.", body)
-        self.assertIn("Detected category: chargers", body)
+        self.assertIn("Detected category: Phones / Mobile / Accessories", body)
         self.assertNotIn(">View on Amazon<", body)
         self.assertNotIn("ASIN: B0GR1257LT", body)
         self.assertNotIn('class="pw-card"', body)

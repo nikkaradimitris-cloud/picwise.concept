@@ -95,8 +95,9 @@ def render_picwise_reference_surface(
                 resolution.resolver_state,
                 "PicWise could not understand this search safely.",
             )
-            if resolution.resolver_state == "understood_provider_not_connected" and resolution.canonical_category:
-                human_category = resolution.canonical_category.replace("_", " ")
+            detected_category = resolution.display_name or resolution.mega_category_id or resolution.canonical_category
+            if resolution.resolver_state == "understood_provider_not_connected" and detected_category:
+                human_category = str(detected_category).replace("_", " ")
                 disclaimer_line = f"{base_message} Detected category: {human_category}"
             else:
                 disclaimer_line = base_message
