@@ -81,10 +81,9 @@ class PickWiseStage3236RuntimeGuardrailsTests(unittest.TestCase):
                 self.assertEqual(status, 200)
             missing_status, _missing_headers, missing_body = _call_local_http(base_url, "/not-a-route")
             self.assertEqual(missing_status, 404)
-            payload = json.loads(missing_body)
-            available_routes = payload.get("available_routes", [])
-            for expected_route in ("/search", "/results", "/private-beta-readiness"):
-                self.assertIn(expected_route, available_routes)
+            self.assertIn("Page not found", missing_body)
+            self.assertIn("PicWise", missing_body)
+            self.assertNotIn("Traceback", missing_body)
         finally:
             server.shutdown()
             server.server_close()
@@ -154,9 +153,27 @@ class PickWiseStage3236RuntimeGuardrailsTests(unittest.TestCase):
         ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
         loc_values = [node.text or "" for node in root.findall("sm:url/sm:loc", ns)]
         self.assertTrue(all("/best/" in value for value in loc_values))
+
         search_status, _search_headers, search_body = _call_wsgi("/search", "q=power+bank")
         self.assertEqual(search_status, "200 OK")
-        self.assertIn('content="noindex, nofollow"', search_body)
+        self.assertIn("Safe connected provider mode", search_body)
+        self.assertIn("manual_amazon_affiliate", search_body)
+        self.assertNotIn("fake product", search_body.lower())
+
+    def test_buying_page_and_missing_route_responses_remain_safe(self) -> None:
+        best_status, best_headers, best_body = _call_wsgi("/best/power-bank-20000mah-for-iphone")
+        self.assertEqual(best_status, "200 OK")
+        self.assertEqual(best_headers.get("Content-Type"), "text/html; charset=utf-8")
+        self.assertIn("Best options for", best_body)
+        self.assertIn("View option", best_body)
+        self.assertIn("rel=\"nofollow noopener\"", best_body)
+        self.assertNotIn("fake product", best_body.lower())
+
+        missing_status, missing_headers, missing_body = _call_wsgi("/best/not-a-real-slug")
+        self.assertEqual(missing_status, "404 Not Found")
+        self.assertEqual(missing_headers.get("Content-Type"), "text/html; charset=utf-8")
+        self.assertIn("Buying page not found", missing_body)
+        self.assertNotIn("Traceback", missing_body)
 
     def test_finance_regulated_cases_do_not_auto_decide_quotes_or_approval(self) -> None:
         flow = run_pickwise_mvp_search_flow("loan insurance comparison")

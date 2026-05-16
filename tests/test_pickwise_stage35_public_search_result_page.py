@@ -45,21 +45,22 @@ class PickWiseStage35PublicSearchResultPageTests(unittest.TestCase):
         status, headers, body = _call_wsgi("/search", f"q={quote('power bank for iphone')}")
         self.assertEqual(status, "200 OK")
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
-        self.assertIn("PickWise MVP Search", body)
-        self.assertIn('content="noindex, nofollow"', body)
-        self.assertIn("Detected intent/category", body)
-        self.assertIn("Recommendation status", body)
-        self.assertTrue(
-            ("Wise Recommended Product" in body)
-            or ("wise recommendation is withheld" in body.lower())
-            or ("Outbound contract:</strong> not_available" in body)
-        )
+        self.assertIn("picwise", body.lower())
+        self.assertIn("Showing 4 options for: power bank for iphone", body)
+        self.assertIn("Safe connected provider mode", body)
+        self.assertIn("manual_amazon_affiliate", body)
+        self.assertIn("View on Amazon", body)
+        self.assertNotIn("fake product", body.lower())
+        self.assertNotIn("checkout", body.lower())
 
     def test_search_route_handles_no_data_honestly(self) -> None:
         status, _headers, body = _call_wsgi("/search", f"q={quote('   ')}")
         self.assertEqual(status, "200 OK")
-        self.assertIn("No result state", body)
-        self.assertIn("needs_data", body)
+        self.assertIn("PicWise safely shows no product cards", body)
+        self.assertIn('data-card-count="0"', body)
+        self.assertNotIn("manual_amazon_affiliate", body)
+        self.assertNotIn("provider_not_connected", body)
+        self.assertNotIn("not_understood", body)
         self.assertNotIn("checkout", body.lower())
         self.assertNotIn("fake revenue", body.lower())
 
@@ -67,6 +68,15 @@ class PickWiseStage35PublicSearchResultPageTests(unittest.TestCase):
         for path in ("/health", "/", "/demo", "/picwise-reference", "/sitemap-buying-pages.xml"):
             status, _headers, _body = _call_wsgi(path)
             self.assertEqual(status, "200 OK")
+
+    def test_results_route_for_unrelated_query_stays_safe_and_non_leaky(self) -> None:
+        status, headers, body = _call_wsgi("/results", f"q={quote('wireless earbuds')}")
+        self.assertEqual(status, "200 OK")
+        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+        self.assertIn('data-card-count="0"', body)
+        self.assertIn("PicWise safely shows no product cards", body)
+        self.assertNotIn("power bank", body.lower())
+        self.assertNotIn("manual_amazon_affiliate", body)
 
 
 if __name__ == "__main__":
