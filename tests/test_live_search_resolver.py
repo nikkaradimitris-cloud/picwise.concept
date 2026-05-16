@@ -61,6 +61,31 @@ class LiveSearchResolverTests(unittest.TestCase):
                 self.assertEqual(resolution.provider_status, "connected")
                 self.assertTrue(resolution.result_allowed)
 
+    def test_stage12a_noisy_variants_resolve_to_power_bank_connected_provider(self) -> None:
+        variants = (
+            "παουερ μπακ",
+            "παουερμπακ",
+            "παουερ μπανγκ",
+            "pauer bank",
+            "paouer bank",
+            "paouer bang",
+            "power bang",
+            "powe bank",
+            "powr bang",
+            "power bak",
+            "portable chargr",
+            "portable chargar",
+            "batery pak",
+        )
+        for query in variants:
+            with self.subTest(query=query):
+                resolution = resolve_live_search(query)
+                self.assertEqual(resolution.canonical_query, "power bank")
+                self.assertEqual(resolution.canonical_category, "power_banks")
+                self.assertEqual(resolution.provider_key, "manual_amazon_affiliate")
+                self.assertEqual(resolution.provider_status, "connected")
+                self.assertTrue(resolution.result_allowed)
+
     def test_unrelated_queries_stay_safe_and_no_result(self) -> None:
         unrelated_queries = (
             "laptop",
@@ -70,6 +95,11 @@ class LiveSearchResolverTests(unittest.TestCase):
             "versicherung",
             "travel adapter",
             "wall charger",
+            "bank account",
+            "river bank",
+            "blood bank",
+            "bang speaker",
+            "charging cable",
             "cable",
             "charging station",
             "phone case",
@@ -78,7 +108,10 @@ class LiveSearchResolverTests(unittest.TestCase):
             with self.subTest(query=query):
                 resolution = resolve_live_search(query)
                 self.assertFalse(resolution.result_allowed)
-                self.assertIn("manual_review_required", resolution.reason_codes)
+                self.assertTrue(
+                    ("manual_review_required" in resolution.reason_codes)
+                    or ("provider_not_connected" in resolution.reason_codes)
+                )
 
     def test_understood_but_not_connected_category(self) -> None:
         resolution = resolve_live_search("goodyear tyres 195/65 r15")

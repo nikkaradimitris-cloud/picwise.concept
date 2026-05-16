@@ -74,6 +74,43 @@ class LocalNLUGreeklishTypoNormalizerTests(unittest.TestCase):
         self.assertIn("195/65 R15", result)
         self.assertIn("ανετο", result)
 
+    def test_contextual_power_bank_noisy_variants_map_to_power_bank(self) -> None:
+        variants = (
+            "παουερ μπακ",
+            "παουερμπακ",
+            "παουερ μπανγκ",
+            "pauer bank",
+            "paouer bank",
+            "paouer bang",
+            "power bang",
+            "powe bank",
+            "powr bang",
+            "power bak",
+        )
+        for query in variants:
+            with self.subTest(query=query):
+                normalized = normalize_query(query)
+                resolved = normalize_greeklish_and_typos(normalized)
+                self.assertEqual(resolved, "power bank")
+
+    def test_contextual_portable_charger_and_battery_pack_typos(self) -> None:
+        portable_variants = ("portable chargr", "portable chargar")
+        for query in portable_variants:
+            with self.subTest(query=query):
+                normalized = normalize_query(query)
+                resolved = normalize_greeklish_and_typos(normalized)
+                self.assertEqual(resolved, "portable charger")
+
+        normalized_battery = normalize_query("batery pak")
+        self.assertEqual(normalize_greeklish_and_typos(normalized_battery), "battery pack")
+
+    def test_safety_no_global_unsafe_replacements(self) -> None:
+        self.assertEqual(normalize_greeklish_and_typos(normalize_query("bank account")), "bank account")
+        self.assertEqual(normalize_greeklish_and_typos(normalize_query("river bank")), "river bank")
+        self.assertEqual(normalize_greeklish_and_typos(normalize_query("blood bank")), "blood bank")
+        self.assertEqual(normalize_greeklish_and_typos(normalize_query("bang speaker")), "bang speaker")
+        self.assertEqual(normalize_greeklish_and_typos(normalize_query("wall charger")), "wall charger")
+
     def test_no_structured_intent_is_produced(self) -> None:
         result = normalize_greeklish_and_typos("goodyar eficiency grim")
         self.assertIsInstance(result, str)

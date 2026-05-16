@@ -237,6 +237,36 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self._assert_common_footer_links(body)
         self.assertNotIn("B0F518CRGK", body)
 
+    def test_search_route_noisy_queries_resolve_to_connected_power_bank_results(self) -> None:
+        noisy_queries = (
+            "παουερ μπακ",
+            "παουερμπακ",
+            "παουερ μπανγκ",
+            "pauer bank",
+            "paouer bank",
+            "paouer bang",
+            "power bang",
+            "powe bank",
+            "powr bang",
+            "power bak",
+            "portable chargr",
+            "portable chargar",
+            "batery pak",
+        )
+        for query in noisy_queries:
+            with self.subTest(query=query):
+                status, headers, body = _call_wsgi("/search", f"q={quote(query)}")
+                self.assertEqual(status, "200 OK")
+                self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+                self.assertIn("Showing 4 options for:", body)
+                self.assertIn("Safe connected provider mode", body)
+                self.assertEqual(body.count('<article class="pw-card'), 4)
+                for asin in ("B0GR1257LT", "B0GH75LWKN", "B0GV9RDLM4", "B0BJMQBNZP"):
+                    self.assertIn(f"ASIN: {asin}", body)
+                self.assertNotIn("ASIN: B0FQJH2XSY", body)
+                self.assertNotIn("ASIN: B08K7GHZ3V", body)
+                self.assertEqual(body.count(">View on Amazon<"), 4)
+
     def test_results_route_renders_main_shell_with_live_manual_result_for_power_bank_query(self) -> None:
         status, headers, body = _call_wsgi("/results", "q=power%20bank")
         self.assertEqual(status, "200 OK")
@@ -413,6 +443,36 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertNotIn("tag=picwise-20", body)
         self.assertNotIn('class="pw-card"', body)
         self._assert_common_footer_links(body)
+
+    def test_search_route_unrelated_safety_queries_do_not_show_power_bank_cards(self) -> None:
+        safety_queries = (
+            "bank account",
+            "river bank",
+            "blood bank",
+            "bang speaker",
+            "laptop",
+            "wall charger",
+            "charging cable",
+            "travel adapter",
+            "phone case",
+            "car insurance",
+            "παπούτσια",
+        )
+        for query in safety_queries:
+            with self.subTest(query=query):
+                status, _headers, body = _call_wsgi("/search", f"q={quote(query)}")
+                self.assertEqual(status, "200 OK")
+                self.assertIn("No safe results for:", body)
+                self.assertTrue(
+                    ("Manual review required" in body)
+                    or ("Provider not connected for category:" in body)
+                )
+                self.assertNotIn("ASIN: B0GR1257LT", body)
+                self.assertNotIn("ASIN: B0GH75LWKN", body)
+                self.assertNotIn("ASIN: B0GV9RDLM4", body)
+                self.assertNotIn("ASIN: B0BJMQBNZP", body)
+                self.assertNotIn(">View on Amazon<", body)
+                self.assertNotIn('class="pw-card"', body)
 
     def test_search_route_renders_safe_no_result_for_empty_query(self) -> None:
         status, _headers, body = _call_wsgi("/search", "q=")
