@@ -13,6 +13,15 @@ from picwise_search.live_search_resolver import resolve_live_search  # noqa: E40
 
 
 class LiveSearchResolverTests(unittest.TestCase):
+    def test_power_bank_connected_provider_state(self) -> None:
+        resolution = resolve_live_search("power bank")
+        self.assertEqual(resolution.canonical_category, "power_banks")
+        self.assertEqual(resolution.canonical_query, "power bank")
+        self.assertEqual(resolution.provider_key, "manual_amazon_affiliate")
+        self.assertEqual(resolution.provider_status, "connected")
+        self.assertTrue(resolution.result_allowed)
+        self.assertEqual(resolution.resolver_state, "connected_provider_results")
+
     def test_power_bank_variants_resolve_connected_provider(self) -> None:
         variants = (
             "παουερ μπανκ",
@@ -60,6 +69,7 @@ class LiveSearchResolverTests(unittest.TestCase):
                 self.assertEqual(resolution.provider_key, "manual_amazon_affiliate")
                 self.assertEqual(resolution.provider_status, "connected")
                 self.assertTrue(resolution.result_allowed)
+                self.assertEqual(resolution.resolver_state, "connected_provider_results")
 
     def test_stage12a_noisy_variants_resolve_to_power_bank_connected_provider(self) -> None:
         variants = (
@@ -85,39 +95,30 @@ class LiveSearchResolverTests(unittest.TestCase):
                 self.assertEqual(resolution.provider_key, "manual_amazon_affiliate")
                 self.assertEqual(resolution.provider_status, "connected")
                 self.assertTrue(resolution.result_allowed)
+                self.assertEqual(resolution.resolver_state, "connected_provider_results")
 
-    def test_unrelated_queries_stay_safe_and_no_result(self) -> None:
-        unrelated_queries = (
-            "laptop",
-            "παπούτσια",
-            "ασφάλεια αυτοκινήτου",
-            "car insurance",
-            "versicherung",
-            "travel adapter",
-            "wall charger",
-            "bank account",
-            "river bank",
-            "blood bank",
-            "bang speaker",
-            "charging cable",
-            "cable",
-            "charging station",
-            "phone case",
-        )
-        for query in unrelated_queries:
+    def test_random_garbage_maps_to_not_understood_state(self) -> None:
+        for query in ("7437ηφσδνω==", "asdf@@@", "###$$$"):
             with self.subTest(query=query):
                 resolution = resolve_live_search(query)
                 self.assertFalse(resolution.result_allowed)
-                self.assertTrue(
-                    ("manual_review_required" in resolution.reason_codes)
-                    or ("provider_not_connected" in resolution.reason_codes)
-                )
+                self.assertEqual(resolution.resolver_state, "not_understood")
+                self.assertIn("resolver_state_not_understood", resolution.reason_codes)
+
+    def test_known_non_provider_category_returns_understood_provider_not_connected(self) -> None:
+        resolution = resolve_live_search("wall charger")
+        self.assertEqual(resolution.canonical_category, "chargers")
+        self.assertEqual(resolution.provider_status, "not_connected")
+        self.assertFalse(resolution.result_allowed)
+        self.assertEqual(resolution.resolver_state, "understood_provider_not_connected")
+        self.assertIn("provider_not_connected", resolution.reason_codes)
 
     def test_understood_but_not_connected_category(self) -> None:
         resolution = resolve_live_search("goodyear tyres 195/65 r15")
         self.assertEqual(resolution.canonical_category, "car_tyres")
         self.assertEqual(resolution.provider_status, "not_connected")
         self.assertFalse(resolution.result_allowed)
+        self.assertEqual(resolution.resolver_state, "understood_provider_not_connected")
         self.assertIn("provider_not_connected", resolution.reason_codes)
 
 

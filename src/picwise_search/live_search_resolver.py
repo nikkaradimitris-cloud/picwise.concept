@@ -52,6 +52,7 @@ class LiveSearchResolution:
     provider_key: str
     provider_status: str
     result_allowed: bool
+    resolver_state: str
     reason_codes: tuple[str, ...]
 
     def to_dict(self) -> dict[str, Any]:
@@ -69,6 +70,7 @@ class LiveSearchResolution:
             "provider_key": self.provider_key,
             "provider_status": self.provider_status,
             "result_allowed": self.result_allowed,
+            "resolver_state": self.resolver_state,
             "reason_codes": list(self.reason_codes),
         }
 
@@ -134,6 +136,26 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
         and confidence >= 0.2
     )
 
+    resolver_state = "not_understood"
+    blocked_or_unsafe = status == "invalid_intent" or any(
+        marker in str(code).lower()
+        for code in intent.get("reason_codes", [])
+        for marker in ("unsafe", "blocked")
+    )
+    if result_allowed:
+        resolver_state = "connected_provider_results"
+    elif blocked_or_unsafe:
+        resolver_state = "blocked_or_unsafe"
+    elif canonical_category in _UNDERSTOOD_CATEGORIES and provider_status != "connected":
+        resolver_state = "understood_provider_not_connected"
+    elif canonical_category in _CONNECTED_PROVIDER_BY_CATEGORY and (needs_review or confidence < 0.2):
+        resolver_state = "low_confidence_manual_review"
+    elif not canonical_category:
+        resolver_state = "not_understood"
+    else:
+        # Unsupported or weakly resolved categories remain safely un-understood.
+        resolver_state = "not_understood"
+
     reason_codes: list[str] = [str(code) for code in intent.get("reason_codes", []) if str(code).strip()]
     if not _normalized_text(raw_query):
         reason_codes.append("empty_query")
@@ -145,6 +167,7 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
         reason_codes.append("manual_review_required")
     if provider_status == "connected":
         reason_codes.append("provider_connected")
+    reason_codes.append(f"resolver_state_{resolver_state}")
     reason_codes.append(f"adapter_{adapter.get('adapter_decision', 'safe_review_only')}")
 
     return LiveSearchResolution(
@@ -161,5 +184,6 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
         provider_key=provider_key,
         provider_status=provider_status,
         result_allowed=result_allowed,
+        resolver_state=resolver_state,
         reason_codes=tuple(sorted(set(reason_codes))),
     )

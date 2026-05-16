@@ -8,6 +8,14 @@ from picwise_search import LiveSearchResolution
 from .legal import render_public_footer
 
 
+_SAFE_DISCLAIMER_BY_STATE = {
+    "understood_provider_not_connected": "PicWise understood this search, but no safe provider is connected yet.",
+    "not_understood": "PicWise could not understand this search safely.",
+    "low_confidence_manual_review": "PicWise found weak product signals, but confidence is too low.",
+    "blocked_or_unsafe": "PicWise cannot safely process this search.",
+}
+
+
 def _build_result_cards(
     *,
     resolution: LiveSearchResolution,
@@ -78,21 +86,20 @@ def render_picwise_reference_surface(
             source_page=source_page,
         )
         if display_query.strip():
-            query_line = f"Showing {len(card_specs)} options for: {display_query}" if has_live_results else f"No safe results for: {display_query}"
+            query_line = f"Showing {len(card_specs)} options for: {display_query}" if has_live_results else ""
         if has_live_results and disclosure:
             disclaimer_line = disclosure
             safe_note_line = safe_note
         elif display_query.strip():
-            if resolution.provider_status == "not_connected" and resolution.canonical_category:
-                disclaimer_line = (
-                    f"Provider not connected for category: {resolution.canonical_category}. "
-                    "PicWise shows no fallback products."
-                )
+            base_message = _SAFE_DISCLAIMER_BY_STATE.get(
+                resolution.resolver_state,
+                "PicWise could not understand this search safely.",
+            )
+            if resolution.resolver_state == "understood_provider_not_connected" and resolution.canonical_category:
+                human_category = resolution.canonical_category.replace("_", " ")
+                disclaimer_line = f"{base_message} Detected category: {human_category}"
             else:
-                disclaimer_line = (
-                    "Manual review required or low confidence query. "
-                    "PicWise safely returns no product cards."
-                )
+                disclaimer_line = base_message
         show_demo_note = has_live_results
         if has_live_results:
             query_line = f"Showing {len(card_specs)} options for: {display_query}"

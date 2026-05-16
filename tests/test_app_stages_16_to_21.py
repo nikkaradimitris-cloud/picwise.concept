@@ -483,14 +483,28 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertIn('form class="pw-search-shell" action="/search" method="get"', body)
         self.assertIn('name="q"', body)
         self.assertIn('value="laptop"', body)
-        self.assertIn("No safe results for: laptop", body)
-        self.assertIn("Manual review required", body)
+        self.assertIn("PicWise could not understand this search safely.", body)
         self.assertNotIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)
         self.assertNotIn("ASIN: B08K7GHZ3V", body)
         self.assertNotIn(">View on Amazon<", body)
         self.assertNotIn("tag=picwise-20", body)
         self.assertNotIn('class="pw-card"', body)
         self._assert_common_footer_links(body)
+
+    def test_search_route_random_garbage_query_shows_not_understood_message(self) -> None:
+        body = self._fetch("/search?q=7437%CE%B7%CF%86%CF%83%CE%B4%CE%BD%CF%89%3D%3D")
+        self.assertIn("PicWise could not understand this search safely.", body)
+        self.assertNotIn(">View on Amazon<", body)
+        self.assertNotIn("ASIN: B0GR1257LT", body)
+        self.assertNotIn('class="pw-card"', body)
+
+    def test_search_route_provider_not_connected_shows_explicit_message(self) -> None:
+        body = self._fetch("/search?q=wall%20charger")
+        self.assertIn("PicWise understood this search, but no safe provider is connected yet.", body)
+        self.assertIn("Detected category: chargers", body)
+        self.assertNotIn(">View on Amazon<", body)
+        self.assertNotIn("ASIN: B0GR1257LT", body)
+        self.assertNotIn('class="pw-card"', body)
 
     def test_search_route_renders_safe_no_result_for_empty_query(self) -> None:
         body = self._fetch("/search?q=")
