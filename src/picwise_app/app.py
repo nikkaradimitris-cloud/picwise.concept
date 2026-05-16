@@ -18,7 +18,7 @@ from picwise_learning.stage30_runtime_probe import build_default_stage30_runtime
 from picwise_learning.stage31_runtime_controller import build_default_stage31_runtime_controller
 from picwise_mvp import build_mvp_private_beta_readiness_report
 from picwise_nlu import adapt_local_nlu_intent_for_router, build_local_nlu_intent
-from picwise_search import route_search_query
+from picwise_search import resolve_live_search, route_search_query
 from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
 from picwise_offers import (
     AMAZON_ASSOCIATES_TRACKING_ID,
@@ -98,10 +98,11 @@ class PicwiseLocalApp:
         return render_demo_info_page()
 
     def root_landing_html(self) -> str:
-        return render_review_safe_landing_page()
+        return self.picwise_reference_html("")
 
-    def picwise_reference_html(self) -> str:
-        return render_picwise_reference_surface()
+    def picwise_reference_html(self, query: str = "", *, source_page: str = "search") -> str:
+        resolution = resolve_live_search(query)
+        return render_picwise_reference_surface(query=query, resolution=resolution, source_page=source_page)
 
     def amazon_affiliate_proof_html(self) -> str:
         return render_amazon_affiliate_proof_page()
@@ -306,7 +307,7 @@ class PicwiseLocalApp:
         return render_branded_not_found_page()
 
     def mvp_search_html(self, query: str, *, source_page: str = "search") -> str:
-        return render_controlled_search_results_page(query, source_page=source_page)
+        return self.picwise_reference_html(query, source_page=source_page)
 
     def resolve_outbound_amazon_redirect(self, asin: str) -> str | None:
         record = get_approved_manual_amazon_record_by_asin(asin)
@@ -704,7 +705,8 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             self._send_html(HTTPStatus.OK, html)
             return
         if parsed.path == "/picwise-reference":
-            html = self.app.picwise_reference_html()
+            query = parse_qs(parsed.query).get("q", [""])[0]
+            html = self.app.picwise_reference_html(query, source_page="search")
             self._send_html(HTTPStatus.OK, html)
             return
         if parsed.path == "/amazon-affiliate-proof":

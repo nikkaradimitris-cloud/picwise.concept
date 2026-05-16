@@ -79,7 +79,7 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
             return _response("200 OK", content_type, body, start_response)
 
     if path == "/":
-        html = render_review_safe_landing_page()
+        html = _APP.picwise_reference_html("")
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
@@ -119,12 +119,14 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         query_string = str(environ.get("QUERY_STRING", ""))
         query = parse_qs(query_string).get("q", [""])[0]
         source_page = "results" if path == "/results" else "search"
-        html = render_controlled_search_results_page(query, source_page=source_page)
+        html = _APP.picwise_reference_html(query, source_page=source_page)
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
     if path == "/picwise-reference":
-        html = render_picwise_reference_surface()
+        query_string = str(environ.get("QUERY_STRING", ""))
+        query = parse_qs(query_string).get("q", [""])[0]
+        html = _APP.picwise_reference_html(query, source_page="search")
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 

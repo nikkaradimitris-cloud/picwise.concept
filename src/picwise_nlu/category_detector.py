@@ -30,6 +30,20 @@ _CALCULATOR_CONTEXT_KEYWORDS = {
 _POWER_BANK_KEYWORDS = {
     "power bank",
     "powerbank",
+    "battery pack",
+    "portable charger",
+    "φορητος φορτιστης",
+    "φορητοσ φορτιστησ",
+    "εξωτερικη μπαταρια",
+    "μπαταρια κινητου",
+    "φορτιστης χωρις πριζα",
+    "externe batterie",
+    "externe baterie",
+    "tragbares ladegerat",
+    "handy akku",
+    "handyakku",
+    "akku pack",
+    "akku pak",
 }
 _CHARGER_KEYWORDS = {
     "charger",
@@ -104,6 +118,9 @@ def detect_category(text: str) -> dict:
     if any(term in safe for term in _POWER_BANK_KEYWORDS):
         power_bank_score += 2
         reason_codes.append("category_signal_power_bank_keyword")
+    if any(term in safe for term in {"portable charger", "battery pack"}):
+        power_bank_score += 1
+        reason_codes.append("category_signal_portable_battery_phrase")
     if _contains_term(safe, "mah"):
         power_bank_score += 1
         reason_codes.append("category_signal_mah")

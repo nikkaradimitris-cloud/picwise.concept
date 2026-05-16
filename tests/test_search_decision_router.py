@@ -152,9 +152,8 @@ class SearchDecisionRouterTests(unittest.TestCase):
         ambiguous_html = app.demo_html("laptop or tablet for school 256gb")
         no_result_html = app.demo_html(" ")
         for body in (ambiguous_html, no_result_html):
-            self.assertIn("Safe no-result response", body)
-            self.assertIn("products/results: empty", body)
-            self.assertIn("public_allowed: false", body)
+            self.assertIn("How PicWise will help shoppers decide.", body)
+            self.assertIn("This demo page is informational only.", body)
             self.assertNotIn("TravelCore 20K", body)
             self.assertNotIn("DailyBalance PD20", body)
             self.assertNotIn("EverydaySure 22.5W", body)

@@ -97,61 +97,24 @@ class AppHttpEndpointTests(unittest.TestCase):
         body = self._fetch("/health")
         self.assertIn('"status": "ok"', body)
 
-    def test_root_route_shows_review_safe_landing_without_demo_cards(self) -> None:
+    def test_root_route_shows_main_picwise_reference_ui(self) -> None:
         body = self._fetch("/")
-        self.assertIn("Welcome to PicWise.", body)
-        self.assertIn(
-            "PicWise is a shopping decision assistant that helps users compare product options, understand trade-offs, and choose more confidently before visiting external providers.",
-            body,
-        )
-        self.assertIn(
-            "PicWise does not sell products directly, process checkout, handle shipping, returns, warranties, subscriptions, or applications.",
-            body,
-        )
+        self.assertIn("See the 4 best products before you buy", body)
         self.assertIn("shopping decision assistant", body)
-        self.assertIn(
-            "Provider and affiliate integrations are being configured. Demo product listings are previews only and are not live Amazon offers.",
-            body,
-        )
-        self.assertIn(
-            "Thank you for visiting PicWise. We are preparing a safer product comparison experience for shoppers.",
-            body,
-        )
-        self.assertIn("<title>PicWise — Shopping Decision Assistant</title>", body)
+        self.assertIn("shopping decision assistant", body)
+        self.assertIn("Live safe mode", body)
         self._assert_common_footer_links(body)
-        self.assertIn('class="pw-home-search"', body)
         self.assertIn('action="/search"', body)
         self.assertIn('method="get"', body)
         self.assertIn('name="q"', body)
-        self.assertIn('placeholder="Search for a product, e.g. power bank"', body)
-        self.assertIn(">Search<", body)
-        self.assertEqual(body.count('data-main-cta-area="true"'), 1)
-        self.assertEqual(body.count('class="pw-btn pw-btn-primary"'), 1)
-        self.assertIn("Try the current demo search:", body)
-        self.assertIn(
-            "Demo results use approved manual Amazon affiliate links where configured.",
-            body,
-        )
-        self.assertNotIn("View demo", body)
-        self.assertNotIn("What is PicWise?", body)
-        self.assertNotIn("Login", body)
-        self.assertNotIn("Register", body)
+        self.assertIn('class="pw-search-input"', body)
+        self.assertIn("What is PicWise?", body)
+        self.assertIn("Login", body)
+        self.assertIn("Register", body)
         self.assertNotIn("search all amazon", body.lower())
         self.assertNotIn("live amazon search", body.lower())
-        self.assertNotIn("best prices", body.lower())
-        self.assertNotIn("top rated", body.lower())
-        self.assertNotIn("live deals", body.lower())
-        self.assertNotIn("guaranteed", body.lower())
         self.assertNotIn("mysubby.cloud@gmail.com", body)
-        for forbidden in (
-            "Recommended by Picwise",
-            "View in Store",
-            "Go to Store",
-            "View Details and Buy",
-            "EUR ",
-            "Showing 4 options for:",
-        ):
-            self.assertNotIn(forbidden, body)
+        self.assertNotIn(">View on Amazon<", body)
 
     def test_demo_responds_successfully(self) -> None:
         body = self._fetch("/demo")
@@ -197,12 +160,10 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertIn('action="/search"', body)
         self.assertIn('name="q"', body)
 
-    def test_picwise_reference_route_renders_static_reference_page(self) -> None:
+    def test_picwise_reference_route_renders_main_reference_shell(self) -> None:
         body = self._fetch("/picwise-reference")
         self.assertIn("See the 4 best products before you buy", body)
-        self.assertIn("Demo preview only", body)
-        self.assertIn("not live Amazon, Linkwise, SaaS, finance, insurance, or provider offers.", body)
-        self.assertNotIn("shopping assistant", body)
+        self.assertIn("Live safe mode", body)
         self.assertIn(
             'placeholder="See the 4 best products before you buy"',
             body,
@@ -211,12 +172,10 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertNotIn("Search your product here", body)
         self.assertNotIn('value="See the 4 best products before you buy"', body)
         self.assertIn("What is PicWise?", body)
-        self.assertIn("Showing 4 options for: power bank 20000mah for iphone", body)
+        self.assertNotIn("Showing 4 options for: power bank 20000mah for iphone", body)
         self.assertNotIn("View in Store", body)
         self.assertNotIn("Go to Store", body)
         self.assertNotIn("View Details and Buy", body)
-        self.assertIn("Preview option", body)
-        self.assertIn("Preview recommendation", body)
         self.assertNotIn("LIVE RENDERER PROOF V1", body)
         self.assertNotIn("picwise-reference-live-renderer-proof-v1", body)
         self.assertEqual(body.count('class="pw-brand"'), 1)
@@ -227,29 +186,16 @@ class AppHttpEndpointTests(unittest.TestCase):
             "PowerMax Elite 25K product image placeholder",
         ):
             self.assertNotIn(forbidden_image_placeholder, body)
-        self.assertIn(
+        self.assertNotIn(
             "Demo data source: local_test_fixture (not_production_data).",
             body,
         )
         self.assertIn("All rights reserved.", body)
         self._assert_common_footer_links(body)
-        self.assertEqual(body.count('<article class="pw-card'), 4)
-        self.assertEqual(body.count("Recommended by PicWise"), 1)
+        self.assertEqual(body.count('<article class="pw-card'), 0)
+        self.assertEqual(body.count("Recommended by PicWise"), 0)
         self.assertNotIn("&middot;", body)
-        for product_name in (
-            "TravelCore 20K",
-            "DailyBalance PD20",
-            "EverydaySure 22.5W",
-            "PowerMax Elite 25K",
-        ):
-            self.assertIn(product_name, body)
-        for asset in (
-            "/assets/picwise/product-1.svg",
-            "/assets/picwise/product-2.svg",
-            "/assets/picwise/product-3.svg",
-            "/assets/picwise/product-4.svg",
-        ):
-            self.assertIn(asset, body)
+        self.assertIn("PicWise safely shows no product cards", body)
 
     def test_amazon_affiliate_proof_route_renders_controlled_manual_result(self) -> None:
         body = self._fetch("/amazon-affiliate-proof")
@@ -272,29 +218,24 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertNotIn("in stock", lowered)
         self.assertNotIn("prime", lowered)
         self.assertNotIn("discount", lowered)
-        self.assertNotIn("<img", lowered)
+        self.assertNotIn('<img src="https://', lowered)
         self.assertNotIn("amazon.com/images", lowered)
         self.assertNotIn("class=\"pw-rating-row\"", lowered)
 
-    def test_search_route_renders_controlled_manual_result_for_power_bank_query(self) -> None:
+    def test_search_route_renders_main_shell_and_live_manual_results_for_power_bank_query(self) -> None:
         body = self._fetch("/search?q=power%20bank")
         self.assertIn('href="/"', body)
-        self.assertTrue(("Back to home" in body) or ("Home" in body))
-        self.assertIn('form class="pw-search-form" action="/search" method="get"', body)
+        self.assertIn('form class="pw-search-shell" action="/search" method="get"', body)
         self.assertIn('name="q"', body)
         self.assertIn('value="power bank"', body)
-        self.assertIn("Search results for: power bank", body)
-        self.assertIn("Approved Amazon options", body)
-        self.assertIn("Matched query: power bank", body)
-        self.assertIn("Approved manual Amazon affiliate options", body)
-        self.assertIn("Only manually reviewed active options are shown.", body)
-        self.assertEqual(body.count('class="pw-option"'), 4)
-        self.assertIn('class="pw-search-results-grid"', body)
+        self.assertIn("Showing 4 options for: power bank", body)
+        self.assertIn("Safe connected provider mode", body)
+        self.assertEqual(body.count('<article class="pw-card'), 4)
+        self.assertIn('class="pw-grid"', body)
         self.assertIn("grid-template-columns:repeat(4,minmax(0,1fr));", body)
-        self.assertIn("@media (max-width:1040px){.pw-search-results-grid{grid-template-columns:repeat(2,minmax(0,1fr));", body)
+        self.assertIn("@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));", body)
         self.assertIn("@media (max-width:640px){", body)
-        self.assertEqual(body.count('class="pw-safe-product-visual pw-powerbank-visual"'), 4)
-        self.assertEqual(body.count('data-visual-slot="'), 4)
+        self.assertEqual(body.count('<article class="pw-card'), 4)
         self.assertNotIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)
         self.assertNotIn("Portable Charger 5000mAh Compact Power Bank", body)
         self.assertIn("Geavonyg PowerBanks 20000mAh Portable Charger", body)
@@ -305,20 +246,12 @@ class AppHttpEndpointTests(unittest.TestCase):
             self.assertIn(f"ASIN: {asin}", body)
         self.assertNotIn("ASIN: B0FQJH2XSY", body)
         self.assertNotIn("ASIN: B08K7GHZ3V", body)
-        self.assertEqual(body.count("Power banks / portable chargers"), 4)
-        for why_text in (
-            "Higher-capacity option for longer days, travel, or multiple phone charges.",
-            "Large-capacity option for users who prioritize maximum backup power.",
-            "Premium high-capacity option for heavy usage, fast USB-C output, and longer travel coverage.",
-            "High-capacity PD backup option for users who need sustained output and broad charging compatibility.",
-        ):
-            self.assertIn(why_text, body)
         self.assertEqual(body.count(">View on Amazon<"), 4)
         hrefs = self._extract_amazon_hrefs(body)
         self.assertEqual(len(hrefs), 4)
         self.assertTrue(all(href.startswith("/out/amazon?asin=") for href in hrefs))
-        self.assertTrue(all("&q=power%20bank" in href for href in hrefs))
-        self.assertTrue(all("&src=search" in href for href in hrefs))
+        self.assertTrue(all(("&q=power%20bank" in href) or ("&amp;q=power%20bank" in href) for href in hrefs))
+        self.assertTrue(all(("&src=search" in href) or ("&amp;src=search" in href) for href in hrefs))
         self.assertTrue(all("B08K7GHZ3V" not in href for href in hrefs))
         self.assertTrue(all("B0FQJH2XSY" not in href for href in hrefs))
         self.assertTrue(all("B0F518CRGK" not in href for href in hrefs))
@@ -331,37 +264,25 @@ class AppHttpEndpointTests(unittest.TestCase):
         self._assert_common_footer_links(body)
         self.assertNotIn("B0F518CRGK", body)
 
-    def test_results_route_renders_controlled_manual_results_for_power_bank_query(self) -> None:
+    def test_results_route_renders_main_shell_and_live_manual_results_for_power_bank_query(self) -> None:
         body = self._fetch("/results?q=power%20bank")
         self.assertIn('href="/"', body)
-        self.assertIn('form class="pw-search-form" action="/search" method="get"', body)
+        self.assertIn('form class="pw-search-shell" action="/search" method="get"', body)
         self.assertIn('name="q"', body)
         self.assertIn('value="power bank"', body)
-        self.assertIn("Search results for: power bank", body)
-        self.assertIn("Approved Amazon options", body)
-        self.assertIn("Only manually reviewed active options are shown.", body)
-        self.assertEqual(body.count('class="pw-option"'), 4)
-        self.assertIn('class="pw-search-results-grid"', body)
-        self.assertEqual(body.count('class="pw-safe-product-visual pw-powerbank-visual"'), 4)
-        self.assertEqual(body.count('data-visual-slot="'), 4)
+        self.assertIn("Showing 4 options for: power bank", body)
+        self.assertEqual(body.count('<article class="pw-card'), 4)
+        self.assertIn('class="pw-grid"', body)
         for asin in ("B0GR1257LT", "B0GH75LWKN", "B0GV9RDLM4", "B0BJMQBNZP"):
             self.assertIn(f"ASIN: {asin}", body)
         self.assertNotIn("ASIN: B0FQJH2XSY", body)
         self.assertNotIn("ASIN: B08K7GHZ3V", body)
-        self.assertEqual(body.count("Power banks / portable chargers"), 4)
-        for why_text in (
-            "Higher-capacity option for longer days, travel, or multiple phone charges.",
-            "Large-capacity option for users who prioritize maximum backup power.",
-            "Premium high-capacity option for heavy usage, fast USB-C output, and longer travel coverage.",
-            "High-capacity PD backup option for users who need sustained output and broad charging compatibility.",
-        ):
-            self.assertIn(why_text, body)
         self.assertEqual(body.count(">View on Amazon<"), 4)
         hrefs = self._extract_amazon_hrefs(body)
         self.assertEqual(len(hrefs), 4)
         self.assertTrue(all(href.startswith("/out/amazon?asin=") for href in hrefs))
-        self.assertTrue(all("&q=power%20bank" in href for href in hrefs))
-        self.assertTrue(all("&src=results" in href for href in hrefs))
+        self.assertTrue(all(("&q=power%20bank" in href) or ("&amp;q=power%20bank" in href) for href in hrefs))
+        self.assertTrue(all(("&src=results" in href) or ("&amp;src=results" in href) for href in hrefs))
         self.assertTrue(all("B08K7GHZ3V" not in href for href in hrefs))
         self.assertTrue(all("B0FQJH2XSY" not in href for href in hrefs))
         self.assertTrue(all("B0F518CRGK" not in href for href in hrefs))
@@ -559,29 +480,24 @@ class AppHttpEndpointTests(unittest.TestCase):
     def test_search_route_renders_safe_no_result_for_unapproved_query(self) -> None:
         body = self._fetch("/search?q=laptop")
         self.assertIn('href="/"', body)
-        self.assertTrue(("Back to home" in body) or ("Home" in body))
-        self.assertIn('form class="pw-search-form" action="/search" method="get"', body)
+        self.assertIn('form class="pw-search-shell" action="/search" method="get"', body)
         self.assertIn('name="q"', body)
         self.assertIn('value="laptop"', body)
-        self.assertIn("Search results for: laptop", body)
-        self.assertIn("No approved Amazon options are available for this query yet.", body)
-        self.assertIn("PicWise only shows approved manual affiliate results at this stage.", body)
-        self.assertIn("No fake product data is shown.", body)
+        self.assertIn("No safe results for: laptop", body)
+        self.assertIn("Manual review required", body)
         self.assertNotIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)
         self.assertNotIn("ASIN: B08K7GHZ3V", body)
         self.assertNotIn(">View on Amazon<", body)
         self.assertNotIn("tag=picwise-20", body)
-        self.assertNotIn('class="pw-option"', body)
-        self.assertNotIn('class="pw-safe-product-visual', body)
+        self.assertNotIn('class="pw-card"', body)
         self._assert_common_footer_links(body)
 
     def test_search_route_renders_safe_no_result_for_empty_query(self) -> None:
         body = self._fetch("/search?q=")
-        self.assertIn("No approved Amazon options are available for this query yet.", body)
-        self.assertIn("PicWise only shows approved manual affiliate results at this stage.", body)
+        self.assertIn("PicWise safely shows no product cards", body)
         self.assertNotIn(">View on Amazon<", body)
         self.assertNotIn("tag=picwise-20", body)
-        self.assertNotIn('class="pw-option"', body)
+        self.assertNotIn('class="pw-card"', body)
 
     def test_search_route_does_not_show_forbidden_commerce_claims(self) -> None:
         body = self._fetch("/search?q=power%20bank")
@@ -596,7 +512,7 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertNotIn("recommended by amazon", lowered)
         self.assertNotIn("guaranteed", lowered)
         self.assertNotIn("<img src=\"https://", lowered)
-        self.assertNotIn("<img", lowered)
+        self.assertNotIn('<img src="https://', lowered)
         self.assertNotIn("amazon.com/images", lowered)
         self.assertNotIn("m.media-amazon.com", lowered)
         self.assertNotIn("images-na.ssl-images-amazon.com", lowered)

@@ -1,138 +1,161 @@
 from __future__ import annotations
 
 from html import escape
+from urllib.parse import quote
 
+from picwise_offers import AmazonManualMatchStatus, match_manual_amazon_affiliates
+from picwise_search import LiveSearchResolution
 from .legal import render_public_footer
 
 
-def render_picwise_reference_surface() -> str:
-    card_specs = [
-        {
-            "badge": "BUDGET",
-            "badge_class": "pw-badge-budget",
-            "name": "TravelCore 20K",
-            "description": "Budget pick for occasional travel charging",
-            "rating": "4.4",
-            "reviews": "(1,248)",
-            "price": "EUR 29-34",
-            "meta": "Lightweight  ·  Basic reliability",
-            "bullets": [
-                "Compact size",
-                "Simple cable setup",
-                "Widely available",
-            ],
-            "warning": "Lower sustained output under heavy load.",
-            "cta": "Preview option",
-            "image": "/assets/picwise/product-1.svg",
-            "recommended": False,
-            "rec_note": "",
-        },
-        {
-            "badge": "VALUE",
-            "badge_class": "pw-badge-value",
-            "name": "DailyBalance PD20",
-            "description": "Value pick with stable everyday compatibility",
-            "rating": "4.6",
-            "reviews": "(2,317)",
-            "price": "EUR 37-45",
-            "meta": "USB-C PD  ·  Lower mismatch risk",
-            "bullets": [
-                "Balanced output",
-                "Reliable compatibility",
-                "Solid build quality",
-            ],
-            "warning": "Slightly heavier than compact alternatives.",
-            "cta": "Preview option",
-            "image": "/assets/picwise/product-2.svg",
-            "recommended": False,
-            "rec_note": "",
-        },
-        {
-            "badge": "BEST OVERALL",
-            "badge_class": "pw-badge-best",
-            "name": "EverydaySure 22.5W",
-            "description": "Best overall fit for frequent charging routines",
-            "rating": "4.7",
-            "reviews": "(3,891)",
-            "price": "EUR 44-52",
-            "meta": "Strong output  ·  Better long-run reliability",
-            "bullets": [
-                "Consistent charging speed",
-                "Good cable support",
-                "Trusted warranty terms",
-            ],
-            "warning": "Price sits above entry-level options.",
-            "cta": "Preview recommendation",
-            "image": "/assets/picwise/product-3.svg",
-            "recommended": False,
-            "rec_note": "",
-        },
-        {
-            "badge": "PREMIUM",
-            "badge_class": "pw-badge-premium",
-            "name": "PowerMax Elite 25K",
-            "description": "Premium pick for heavy and multi-device usage",
-            "rating": "4.8",
-            "reviews": "(5,214)",
-            "price": "EUR 59-69",
-            "meta": "Higher capacity  ·  Better sustained output",
-            "bullets": [
-                "High capacity headroom",
-                "Premium thermal design",
-                "Extended accessory kit",
-                "Higher price and larger carry footprint.",
-            ],
-            "warning": "",
-            "cta": "Preview option",
-            "image": "/assets/picwise/product-4.svg",
-            "recommended": True,
-            "rec_note": (
-                "Recommended for stronger overall fit: High capacity headroom, "
-                "Premium thermal design."
-            ),
-        },
-    ]
+def _build_result_cards(
+    *,
+    resolution: LiveSearchResolution,
+    source_page: str,
+) -> tuple[list[dict[str, object]], bool, str, str]:
+    if not resolution.result_allowed:
+        return ([], False, "", "")
+    if resolution.provider_key != "manual_amazon_affiliate":
+        return ([], False, "", "")
+
+    match_result = match_manual_amazon_affiliates(resolution.canonical_query)
+    if match_result.match_status != AmazonManualMatchStatus.ELIGIBLE:
+        return ([], False, "", "")
+    if not match_result.results:
+        return ([], False, "", "")
+
+    cards: list[dict[str, object]] = []
+    for result in match_result.results:
+        cards.append(
+            {
+                "badge": "LIVE OPTION",
+                "badge_class": "pw-badge-value",
+                "name": result.title,
+                "description": f"Manual reviewed match for {result.category.replace('_', ' ')}",
+                "rating": "",
+                "reviews": "",
+                "price": "See Amazon details",
+                "meta": f"ASIN: {result.asin}  ·  Provider: {resolution.provider_key}",
+                "bullets": [
+                    "Approved manual affiliate option",
+                    "No fake commerce metrics shown",
+                    "Redirect validated through /out/amazon",
+                ],
+                "warning": "",
+                "cta": "View on Amazon",
+                "image": "/assets/picwise/product-3.svg",
+                "recommended": False,
+                "rec_note": "",
+                "href": (
+                    f"/out/amazon?asin={escape(result.asin, quote=True)}"
+                    f"&q={quote(resolution.display_query, safe='')}"
+                    f"&src={escape(source_page, quote=True)}"
+                ),
+            }
+        )
+    return cards, True, match_result.results[0].disclosure, match_result.results[0].safe_note
+
+
+def render_picwise_reference_surface(
+    query: str = "",
+    *,
+    resolution: LiveSearchResolution | None = None,
+    source_page: str = "search",
+) -> str:
+    display_query = str(query or "")
+    query_line = ""
+    disclaimer_line = (
+        "Live safe mode — no Amazon API, no scraping, and no fake live commerce claims."
+    )
+    safe_note_line = ""
+    show_demo_note = False
+
+    if resolution is None:
+        card_specs: list[dict[str, object]] = []
+    else:
+        card_specs, has_live_results, disclosure, safe_note = _build_result_cards(
+            resolution=resolution,
+            source_page=source_page,
+        )
+        if display_query.strip():
+            query_line = f"Showing {len(card_specs)} options for: {display_query}" if has_live_results else f"No safe results for: {display_query}"
+        if has_live_results and disclosure:
+            disclaimer_line = disclosure
+            safe_note_line = safe_note
+        elif display_query.strip():
+            if resolution.provider_status == "not_connected" and resolution.canonical_category:
+                disclaimer_line = (
+                    f"Provider not connected for category: {resolution.canonical_category}. "
+                    "PicWise shows no fallback products."
+                )
+            else:
+                disclaimer_line = (
+                    "Manual review required or low confidence query. "
+                    "PicWise safely returns no product cards."
+                )
+        show_demo_note = has_live_results
+        if has_live_results:
+            query_line = f"Showing {len(card_specs)} options for: {display_query}"
+
+    if resolution is None:
+        query_line = ""
+        disclaimer_line = (
+            "Search to see provider-safe results. PicWise shows no fallback products when confidence or provider availability is not sufficient."
+        )
+        card_specs = []
+
+    if not card_specs:
+        card_specs = []
 
     card_html = []
     for idx, card in enumerate(card_specs, start=1):
-        rec_class = " pw-card-recommended" if card["recommended"] else ""
+        rec_class = " pw-card-recommended" if bool(card["recommended"]) else ""
         rec_header = (
             '<div class="pw-rec-badge">&#9733; Recommended by PicWise</div>'
-            if card["recommended"]
+            if bool(card["recommended"])
             else ""
         )
         reasons = "".join(
-            f'<li class="pw-feature-item"><span class="pw-feature-dot" aria-hidden="true"></span><span>{escape(reason)}</span></li>'
-            for reason in card["bullets"]
+            f'<li class="pw-feature-item"><span class="pw-feature-dot" aria-hidden="true"></span><span>{escape(str(reason))}</span></li>'
+            for reason in list(card["bullets"])
         )
         warning_html = (
-            f'<p class="pw-warning"><span class="pw-warning-icon" aria-hidden="true">&#9651;</span>{escape(card["warning"])}</p>'
-            if card["warning"]
+            f'<p class="pw-warning"><span class="pw-warning-icon" aria-hidden="true">&#9651;</span>{escape(str(card["warning"]))}</p>'
+            if str(card["warning"])
             else ""
         )
         rec_note = (
-            f'<p class="pw-rec-note">{escape(card["rec_note"])}</p>' if card["rec_note"] else ""
+            f'<p class="pw-rec-note">{escape(str(card["rec_note"]))}</p>' if str(card["rec_note"]) else ""
+        )
+        cta = (
+            f'<a class="pw-card-cta pw-card-cta-link" href="{escape(str(card["href"]), quote=True)}" rel="nofollow sponsored noopener">{escape(str(card["cta"]))}</a>'
+            if card.get("href")
+            else f'<button class="pw-card-cta" type="submit">{escape(str(card["cta"]))}</button>'
         )
         card_html.append(
             (
                 f'<article class="pw-card{rec_class}" data-choice-id="fixed-{idx}">'
                 f"{rec_header}"
-                f'<span class="pw-badge {card["badge_class"]}">{escape(card["badge"])}</span>'
-                f'<h2 class="pw-card-title">{escape(card["name"])}</h2>'
-                f'<p class="pw-card-description">{escape(card["description"])}</p>'
-                '<p class="pw-rating-row"><span class="pw-rating-number">'
-                f'{escape(card["rating"])}</span><span class="pw-stars" aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9734;</span>'
-                f'<span class="pw-reviews">{escape(card["reviews"])}</span></p>'
-                f'<div class="pw-product-image-wrap"><img class="pw-product-image" src="{escape(card["image"])}" alt="{escape(card["name"])} product image"></div>'
-                f'<p class="pw-price">{escape(card["price"])}</p>'
-                f'<p class="pw-meta">{escape(card["meta"])}</p>'
+                f'<span class="pw-badge {escape(str(card["badge_class"]), quote=True)}">{escape(str(card["badge"]))}</span>'
+                f'<h2 class="pw-card-title">{escape(str(card["name"]))}</h2>'
+                f'<p class="pw-card-description">{escape(str(card["description"]))}</p>'
+                f'<div class="pw-product-image-wrap"><img class="pw-product-image" src="{escape(str(card["image"]), quote=True)}" alt="{escape(str(card["name"]))} product image"></div>'
+                f'<p class="pw-price">{escape(str(card["price"]))}</p>'
+                f'<p class="pw-meta">{escape(str(card["meta"]))}</p>'
                 f'<ul class="pw-feature-list">{reasons}</ul>'
                 f"{warning_html}"
                 f"{rec_note}"
-                f'<button class="pw-card-cta" type="button">{escape(card["cta"])}</button>'
+                f"{cta}"
                 "</article>"
             )
         )
+
+    note_or_empty_html = (
+        '<p class="pw-demo-note">&#9432; Safe connected provider mode: approved manual Amazon records only.</p>'
+        if show_demo_note
+        else '<section class="pw-empty-state">PicWise safely shows no product cards until intent confidence and provider availability are both verified.</section>'
+    )
+    safe_note_html = f'<p class="pw-reference-disclaimer">{escape(safe_note_line)}</p>' if safe_note_line else ""
 
     html = (
         "<!doctype html>"
@@ -174,7 +197,7 @@ def render_picwise_reference_surface() -> str:
         ".pw-tooltip{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);width:min(430px,calc(100vw - 24px));background:#fff;border:1px solid #dbe6f8;border-radius:12px;box-shadow:none;text-shadow:none;filter:none;padding:12px 14px;font-size:14px;line-height:1.5;color:#112849;text-align:left;display:none;z-index:2;}"
         ".pw-tooltip::before{content:'';position:absolute;left:50%;top:-7px;transform:translateX(-50%) rotate(45deg);width:14px;height:14px;background:#fff;border-left:1px solid #dbe6f8;border-top:1px solid #dbe6f8;}"
         ".pw-info-wrap.is-open .pw-tooltip{display:block;}"
-        ".pw-query-line{width:100%;max-width:760px;margin:0 auto 44px;text-align:left;font-size:15px;color:#1a3d6b;font-weight:500;}"
+        ".pw-query-line{width:100%;max-width:760px;margin:0 auto 44px;text-align:left;font-size:15px;color:#1a3d6b;font-weight:500;min-height:18px;}"
         ".pw-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;align-items:start;width:100%;max-width:1190px;margin:0 auto;justify-items:center;}"
         ".pw-card{position:relative;background:#fff;border:1px solid #dbe8fb;border-radius:18px;box-shadow:none;text-shadow:none;filter:none;padding:14px 14px 12px;display:flex;flex-direction:column;min-height:472px;width:100%;max-width:284px;}"
         ".pw-card-recommended{border:2px solid #2f78ff;box-shadow:none;text-shadow:none;filter:none;}"
@@ -183,29 +206,28 @@ def render_picwise_reference_surface() -> str:
         ".pw-badge-budget,.pw-badge-premium{background:#eaf2ff;color:#3f72c4;}"
         ".pw-badge-value{background:#e8f8ec;color:#2f9b57;}"
         ".pw-badge-best{background:#f0ecff;color:#6e57cc;}"
-        ".pw-card-title{margin:0;font-size:30px;line-height:1.03;color:#112649;letter-spacing:-.03em;height:62px;}"
-        ".pw-card-description{margin:4px 0 8px;font-size:12px;color:#5c7397;line-height:1.35;height:32px;}"
-        ".pw-rating-row{margin:0 0 10px;display:flex;align-items:center;gap:5px;font-size:12px;color:#112649;height:14px;}"
-        ".pw-stars{font-size:11px;color:#f5b435;letter-spacing:1px;}"
-        ".pw-reviews{color:#6f88ac;}"
+        ".pw-card-title{margin:0;font-size:24px;line-height:1.08;color:#112649;letter-spacing:-.03em;min-height:58px;}"
+        ".pw-card-description{margin:4px 0 8px;font-size:12px;color:#5c7397;line-height:1.35;min-height:32px;}"
         ".pw-product-image-wrap{height:84px;margin:0 0 10px;display:flex;align-items:center;justify-content:center;}"
         ".pw-product-image{display:block;width:252px;height:84px;border-radius:12px;border:1px solid #dbe6f6;object-fit:cover;background:#eef3fb;}"
-        ".pw-price{margin:0;font-size:26px;line-height:1;font-weight:800;color:#2a70e6;letter-spacing:-.03em;height:30px;}"
-        ".pw-meta{margin:3px 0 8px;font-size:12px;color:#6f88ac;height:16px;}"
+        ".pw-price{margin:0;font-size:20px;line-height:1.1;font-weight:800;color:#2a70e6;letter-spacing:-.02em;min-height:26px;}"
+        ".pw-meta{margin:3px 0 8px;font-size:12px;color:#6f88ac;min-height:16px;}"
         ".pw-feature-list{margin:0;padding:0;list-style:none;display:grid;gap:4px;min-height:56px;}"
         ".pw-feature-item{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:#304b70;line-height:1.35;}"
         ".pw-feature-dot{width:8px;height:8px;border-radius:999px;background:#5b8ce5;flex:0 0 auto;margin-top:4px;}"
         ".pw-warning{margin:7px 0 0;font-size:11px;color:#5a7498;line-height:1.3;display:flex;gap:6px;min-height:29px;}"
         ".pw-warning-icon{font-size:10px;color:#6f86ad;line-height:1.2;margin-top:1px;}"
         ".pw-rec-note{margin:8px 0 0;font-size:11px;line-height:1.35;color:#2e4c7d;background:#eef4ff;border-radius:8px;padding:6px 8px;min-height:42px;}"
-        ".pw-card-cta{margin-top:auto;width:100%;height:40px;border-radius:11px;border:1px solid #2e75ee;color:#2e75ee;background:#fff;font-size:16px;font-weight:700;}"
+        ".pw-card-cta{margin-top:auto;width:100%;height:40px;border-radius:11px;border:1px solid #2e75ee;color:#2e75ee;background:#fff;font-size:16px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;}"
         ".pw-card-recommended .pw-card-cta{background:#1f6dff;color:#fff;border-color:#1f6dff;}"
+        ".pw-empty-state{max-width:760px;margin:0 auto;background:#fff;border:1px solid #dbe8fb;border-radius:14px;padding:14px 16px;color:#2d4f7c;font-size:14px;line-height:1.6;text-align:left;}"
         ".pw-demo-note{text-align:center;font-size:12px;color:#7389ac;margin:16px 0 10px;}"
         ".pw-reference-disclaimer{margin:0 auto 16px;max-width:900px;padding:10px 12px;border:1px solid #dbe8fb;border-radius:12px;background:#f6f9ff;color:#284a76;font-size:14px;line-height:1.6;text-align:center;}"
         ".pw-footer{text-align:center;padding:6px 0 10px;font-size:12px;color:#6e83a3;}"
         ".pw-footer a{color:#6e83a3;text-decoration:none;margin-left:22px;}"
         "@media (min-width:1100px){.pw-reference-viewport{padding:8px;}.pw-reference-frame{padding:12px 20px 16px;}.pw-topbar{height:46px;margin-bottom:16px;}.pw-brand-wrap{margin:0 0 24px;}.pw-search-wrap{height:52px;margin:0 auto 20px;}.pw-query-line{margin:0 auto 40px;}.pw-card{padding:12px 12px 10px;min-height:444px;}.pw-product-image-wrap{height:74px;margin:0 0 8px;}.pw-product-image{width:228px;height:74px;}}"
         "@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:760px;}.pw-topbar{height:auto;gap:10px;}}"
+        "@media (max-width:640px){.pw-grid{grid-template-columns:1fr;max-width:420px;}}"
         "@media (max-width:699px){.pw-reference-frame{padding:14px 12px 20px;}.pw-topbar{flex-direction:column;align-items:center;margin-bottom:20px;}.pw-actions{width:100%;justify-content:center;gap:8px;}.pw-brand-wrap{margin:0 0 24px;}.pw-brand-name{font-size:33px;}.pw-search-wrap{height:auto;}.pw-search-shell{height:52px;padding:0 8px 0 14px;}.pw-search-input{height:50px;font-size:16px;}.pw-query-line{font-size:14px;margin:0 auto 36px;}.pw-grid{grid-template-columns:1fr;max-width:360px;}.pw-card{max-width:360px;}.pw-tooltip{width:min(430px,calc(100% - 8px));}}"
         ".pw-reference-viewport *,.pw-reference-viewport *::before,.pw-reference-viewport *::after{box-shadow:none!important;text-shadow:none!important;filter:none!important;}"
         "</style></head><body>"
@@ -222,18 +244,19 @@ def render_picwise_reference_surface() -> str:
         "</a>"
         "</section>"
         '<section class="pw-search-wrap" aria-label="Search">'
-        '<div class="pw-search-shell">'
+        '<form class="pw-search-shell" action="/search" method="get">'
         '<span class="pw-search-icon" aria-hidden="true"></span>'
-        '<input class="pw-search-input" type="search" placeholder="See the 4 best products before you buy" aria-label="See the 4 best products before you buy" autocomplete="off">'
-        '<button class="pw-search-button" type="button" aria-label="Search">'
+        f'<input class="pw-search-input" type="search" name="q" value="{escape(display_query, quote=True)}" placeholder="See the 4 best products before you buy" aria-label="See the 4 best products before you buy" autocomplete="off">'
+        '<button class="pw-search-button" type="submit" aria-label="Search">'
         '<span class="pw-search-button-icon" aria-hidden="true"></span>'
-        "</button></div></section>"
-        '<p class="pw-query-line">Showing 4 options for: power bank 20000mah for iphone</p>'
-        '<p class="pw-reference-disclaimer">Demo preview only — not live Amazon, Linkwise, SaaS, finance, insurance, or provider offers. Product cards, prices, ratings, and store actions shown here are for visual demonstration only.</p>'
-        '<section class="pw-grid" data-card-count="4">'
+        "</button></form></section>"
+        f'<p class="pw-query-line">{escape(query_line)}</p>'
+        f'<p class="pw-reference-disclaimer">{escape(disclaimer_line)}</p>'
+        f"{safe_note_html}"
+        f'<section class="pw-grid" data-card-count="{len(card_html)}">'
         f"{''.join(card_html)}"
         "</section>"
-        '<p class="pw-demo-note">&#9432; Demo data source: local_test_fixture (not_production_data).</p>'
+        f"{note_or_empty_html}"
         f"{render_public_footer()}"
         "</div>"
         "</div>"

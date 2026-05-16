@@ -38,6 +38,14 @@ class LocalNLUCategoryDetectorTests(unittest.TestCase):
         result = detect_category("powerbank 10000 mah")
         self.assertEqual(result["category"], "power_banks")
 
+    def test_battery_pack_detects_power_banks(self) -> None:
+        result = detect_category("battery pack")
+        self.assertEqual(result["category"], "power_banks")
+
+    def test_portable_charger_detects_power_banks(self) -> None:
+        result = detect_category("portable charger")
+        self.assertEqual(result["category"], "power_banks")
+
     def test_unknown_query_returns_none_with_low_confidence(self) -> None:
         result = detect_category("best thing for home")
         self.assertIsNone(result["category"])
