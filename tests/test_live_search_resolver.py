@@ -173,6 +173,24 @@ class LiveSearchResolverTests(unittest.TestCase):
                 self.assertFalse(resolution.result_allowed)
                 self.assertEqual(resolution.resolver_state, "not_understood")
 
+    def test_probe_typo_examples_are_not_left_not_understood(self) -> None:
+        expected = {
+            "caible": "phones_mobile_accessories",
+            "usb caible": "phones_mobile_accessories",
+            "charging caible": "phones_mobile_accessories",
+            "breake pads": "car_parts_service_maintenance",
+            "car tire": "tyres_wheels_car_accessories",
+            "car tyre": "tyres_wheels_car_accessories",
+            "office chiar": "furniture_living_storage_smart_home",
+            "blood presure monitor": "health_wellness_safety_devices",
+        }
+        for query, mega_category in expected.items():
+            with self.subTest(query=query):
+                resolution = resolve_live_search(query)
+                self.assertEqual(resolution.mega_category_id, mega_category)
+                self.assertNotEqual(resolution.resolver_state, "not_understood")
+                self.assertEqual(resolution.resolver_state, "understood_provider_not_connected")
+
 
 if __name__ == "__main__":
     unittest.main()

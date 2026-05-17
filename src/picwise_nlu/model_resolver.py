@@ -10,6 +10,7 @@ _MODEL_PHRASES = [
     ("efficientgrip", "EfficientGrip"),
     ("primacy 4", "Primacy 4"),
     ("turanza", "Turanza"),
+    ("turan", "Turanza"),
     ("primacy", "Primacy"),
 ]
 
@@ -25,7 +26,7 @@ def _contains_term(text: str, term: str) -> bool:
 
 
 def _extract_fx_model(text: str) -> str | None:
-    match = re.search(r"(?<!\w)fx[\s\-]?((991)(ex|es)?|570)(?!\w)", text)
+    match = re.search(r"(?<!\w)f[xxz][\s\-]?((991)(ex|es)?|570)(?!\w)", text)
     if not match:
         return None
     suffix = match.group(1).lower()

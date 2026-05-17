@@ -151,6 +151,22 @@ class LocalNLUCategoryDetectorTests(unittest.TestCase):
         self.assertNotIn("offers", result)
         self.assertNotIn("products", result)
 
+    def test_probe_typo_examples_resolve_with_generic_token_scoring(self) -> None:
+        expected_mega = {
+            "caible": "phones_mobile_accessories",
+            "usb caible": "phones_mobile_accessories",
+            "charging caible": "phones_mobile_accessories",
+            "breake pads": "car_parts_service_maintenance",
+            "car tire": "tyres_wheels_car_accessories",
+            "car tyre": "tyres_wheels_car_accessories",
+            "office chiar": "furniture_living_storage_smart_home",
+            "blood presure monitor": "health_wellness_safety_devices",
+        }
+        for query, mega_category_id in expected_mega.items():
+            with self.subTest(query=query):
+                result = detect_category(query)
+                self.assertEqual(result["mega_category_id"], mega_category_id)
+
 
 if __name__ == "__main__":
     unittest.main()
