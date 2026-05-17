@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, defaultdict
 import hashlib
 import re
 
@@ -71,6 +71,61 @@ def _build_entry(
         schema_version=_INDEX_SCHEMA_VERSION,
         token_count=len(normalized_variant.split()),
         quality_flags=quality_flags,
+    )
+
+
+def _derive_collision_flags(
+    entries: list[SearchIndexEntry],
+) -> tuple[
+    dict[str, tuple[str, ...]],
+    dict[str, int],
+    dict[str, int],
+    dict[str, int],
+    int,
+    int,
+]:
+    by_variant: dict[str, list[SearchIndexEntry]] = defaultdict(list)
+    for entry in entries:
+        by_variant[entry.normalized_variant].append(entry)
+
+    collision_flags_by_key: dict[str, tuple[str, ...]] = {}
+    collision_keys_by_variant_type: Counter[str] = Counter()
+    collision_entries_by_variant_type: Counter[str] = Counter()
+    collision_entries_by_category: Counter[str] = Counter()
+    total_collision_keys = 0
+    collision_entries_count = 0
+
+    for variant, bucket in by_variant.items():
+        if len(bucket) <= 1:
+            continue
+        canonical_ids = {entry.canonical_id for entry in bucket}
+        category_ids = {entry.mega_category_id for entry in bucket}
+        has_canonical_collision = len(canonical_ids) > 1
+        has_cross_category_collision = len(category_ids) > 1
+        if not has_canonical_collision and not has_cross_category_collision:
+            continue
+
+        total_collision_keys += 1
+        collision_entries_count += len(bucket)
+        for entry in bucket:
+            flags = {"ambiguous_normalized_variant"}
+            if has_canonical_collision:
+                flags.add("exact_variant_collision")
+            if has_cross_category_collision:
+                flags.add("cross_category_collision")
+            collision_flags_by_key[entry.index_key] = tuple(sorted(flags))
+            collision_entries_by_variant_type[entry.variant_type] += 1
+            collision_entries_by_category[entry.mega_category_id] += 1
+        for variant_type in {entry.variant_type for entry in bucket}:
+            collision_keys_by_variant_type[variant_type] += 1
+
+    return (
+        collision_flags_by_key,
+        dict(sorted(collision_keys_by_variant_type.items())),
+        dict(sorted(collision_entries_by_variant_type.items())),
+        dict(sorted(collision_entries_by_category.items())),
+        total_collision_keys,
+        collision_entries_count,
     )
 
 
@@ -182,9 +237,43 @@ def build_offline_search_index(
         counts_by_category[entry.mega_category_id] += 1
         counts_by_variant_type[entry.variant_type] += 1
 
+    (
+        collision_flags_by_key,
+        collision_keys_by_variant_type,
+        collision_entries_by_variant_type,
+        collision_entries_by_category,
+        total_collision_keys,
+        collision_entries_count,
+    ) = _derive_collision_flags(entries)
+
+    enriched_entries: list[SearchIndexEntry] = []
+    for entry in entries:
+        extra_flags = collision_flags_by_key.get(entry.index_key, ())
+        if not extra_flags:
+            enriched_entries.append(entry)
+            continue
+        merged_flags = tuple(sorted(set(entry.quality_flags + extra_flags)))
+        enriched_entries.append(
+            SearchIndexEntry(
+                index_key=entry.index_key,
+                variant=entry.variant,
+                normalized_variant=entry.normalized_variant,
+                canonical_id=entry.canonical_id,
+                canonical_term=entry.canonical_term,
+                normalized_term=entry.normalized_term,
+                mega_category_id=entry.mega_category_id,
+                variant_type=entry.variant_type,
+                source=entry.source,
+                generator_version=entry.generator_version,
+                schema_version=entry.schema_version,
+                token_count=entry.token_count,
+                quality_flags=merged_flags,
+            )
+        )
+
     ordered_entries = tuple(
         sorted(
-            entries,
+            enriched_entries,
             key=lambda entry: (
                 entry.mega_category_id,
                 entry.canonical_id,
@@ -202,6 +291,11 @@ def build_offline_search_index(
         rejected_count=rejected_count,
         counts_by_mega_category_id=dict(sorted(counts_by_category.items())),
         counts_by_variant_type=dict(sorted(counts_by_variant_type.items())),
+        total_collision_keys=total_collision_keys,
+        collision_entries_count=collision_entries_count,
+        collision_keys_by_variant_type=collision_keys_by_variant_type,
+        collision_entries_by_variant_type=collision_entries_by_variant_type,
+        collision_entries_by_mega_category_id=collision_entries_by_category,
         schema_version=_INDEX_SCHEMA_VERSION,
         source=_INDEX_SOURCE,
     )

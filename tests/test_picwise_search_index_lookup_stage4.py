@@ -105,6 +105,74 @@ class PicWiseSearchIndexLookupStage4Tests(unittest.TestCase):
                 self.assertEqual(result.status, "no_match")
                 self.assertIsNone(result.matched_entry)
 
+    def test_collided_exact_match_does_not_blindly_choose_first(self) -> None:
+        from picwise_search_memory.contracts import CanonicalVocabularyBuildReport, CanonicalVocabularyRecord, CanonicalVocabularyRegistry
+
+        records = (
+            CanonicalVocabularyRecord(
+                canonical_id="id_cat_a",
+                canonical_term="apple",
+                normalized_term="apple",
+                mega_category_id="electronics_audio_video",
+                source="taxonomy_clean_vocabulary",
+                source_file="vocabulary_source.py",
+                language="english",
+                status="active",
+                schema_version="1.0.0",
+                token_count=1,
+                quality_flags=("offline_registry",),
+            ),
+            CanonicalVocabularyRecord(
+                canonical_id="id_cat_b",
+                canonical_term="apple",
+                normalized_term="apple",
+                mega_category_id="office_supplies_school",
+                source="taxonomy_clean_vocabulary",
+                source_file="vocabulary_source.py",
+                language="english",
+                status="active",
+                schema_version="1.0.0",
+                token_count=1,
+                quality_flags=("offline_registry",),
+            ),
+        )
+        registry = CanonicalVocabularyRegistry(
+            records=records,
+            report=CanonicalVocabularyBuildReport(
+                total_input_terms=2,
+                total_records=2,
+                rejected_terms=0,
+                duplicate_terms=0,
+                rejected_by_reason={},
+                counts_by_mega_category={"electronics_audio_video": 1, "office_supplies_school": 1},
+                source="taxonomy_clean_vocabulary",
+                schema_version="1.0.0",
+                language="english",
+                status="active",
+            ),
+            source="taxonomy_clean_vocabulary",
+            schema_version="1.0.0",
+        )
+        index = build_offline_search_index(registry=registry, generated_variants=[])
+        result = lookup_offline_search_index("apple", index)
+        self.assertEqual(result.status, "no_match")
+        self.assertTrue(
+            "cross_category_exact_collision" in result.reason_codes or "broad_or_ambiguous_query" in result.reason_codes
+        )
+
+    def test_contextual_specific_query_still_matches_when_safe(self) -> None:
+        result = lookup_offline_search_index("gaming mouse", self.index)
+        self.assertEqual(result.status, "match")
+        self.assertIsNotNone(result.matched_entry)
+        self.assertEqual(result.matched_entry.canonical_term, "gaming mouse")
+
+    def test_broad_terms_extended_guard_remain_safe(self) -> None:
+        for query in ("bank", "charger", "apple", "nike", "bosch", "insurance", "loan", "erp", "crm", "accounting software"):
+            with self.subTest(query=query):
+                result = lookup_offline_search_index(query, self.index)
+                self.assertEqual(result.status, "no_match")
+                self.assertIsNone(result.matched_entry)
+
 
 if __name__ == "__main__":
     unittest.main()

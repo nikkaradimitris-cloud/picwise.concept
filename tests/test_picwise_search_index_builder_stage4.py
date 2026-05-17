@@ -102,6 +102,124 @@ class PicWiseSearchIndexBuilderStage4Tests(unittest.TestCase):
         for entry in self.index.entries[:500]:
             self.assertTrue(_FORBIDDEN_FIELDS.isdisjoint(set(entry.to_dict().keys())))
 
+    def test_detects_canonical_id_collision_on_same_normalized_variant(self) -> None:
+        from picwise_search_memory.contracts import CanonicalVocabularyBuildReport, CanonicalVocabularyRecord, CanonicalVocabularyRegistry
+
+        records = (
+            CanonicalVocabularyRecord(
+                canonical_id="id_1",
+                canonical_term="laser printer",
+                normalized_term="laser printer",
+                mega_category_id="office_supplies_school",
+                source="taxonomy_clean_vocabulary",
+                source_file="vocabulary_source.py",
+                language="english",
+                status="active",
+                schema_version="1.0.0",
+                token_count=2,
+                quality_flags=("offline_registry",),
+            ),
+            CanonicalVocabularyRecord(
+                canonical_id="id_2",
+                canonical_term="laser printer",
+                normalized_term="laser printer",
+                mega_category_id="office_supplies_school",
+                source="taxonomy_clean_vocabulary",
+                source_file="vocabulary_source.py",
+                language="english",
+                status="active",
+                schema_version="1.0.0",
+                token_count=2,
+                quality_flags=("offline_registry",),
+            ),
+        )
+        registry = CanonicalVocabularyRegistry(
+            records=records,
+            report=CanonicalVocabularyBuildReport(
+                total_input_terms=2,
+                total_records=2,
+                rejected_terms=0,
+                duplicate_terms=0,
+                rejected_by_reason={},
+                counts_by_mega_category={"office_supplies_school": 2},
+                source="taxonomy_clean_vocabulary",
+                schema_version="1.0.0",
+                language="english",
+                status="active",
+            ),
+            source="taxonomy_clean_vocabulary",
+            schema_version="1.0.0",
+        )
+        index = build_offline_search_index(registry=registry, generated_variants=[])
+        self.assertEqual(index.report.total_collision_keys, 1)
+        self.assertEqual(index.report.collision_entries_count, 2)
+        collided = [entry for entry in index.entries if entry.normalized_variant == "laser printer"]
+        self.assertEqual(len(collided), 2)
+        for entry in collided:
+            self.assertIn("exact_variant_collision", entry.quality_flags)
+            self.assertIn("ambiguous_normalized_variant", entry.quality_flags)
+
+    def test_detects_cross_category_collision_on_same_normalized_variant(self) -> None:
+        from picwise_search_memory.contracts import CanonicalVocabularyBuildReport, CanonicalVocabularyRecord, CanonicalVocabularyRegistry
+
+        records = (
+            CanonicalVocabularyRecord(
+                canonical_id="id_a",
+                canonical_term="smart watch",
+                normalized_term="smart watch",
+                mega_category_id="phones_mobile_accessories",
+                source="taxonomy_clean_vocabulary",
+                source_file="vocabulary_source.py",
+                language="english",
+                status="active",
+                schema_version="1.0.0",
+                token_count=2,
+                quality_flags=("offline_registry",),
+            ),
+            CanonicalVocabularyRecord(
+                canonical_id="id_b",
+                canonical_term="smart watch",
+                normalized_term="smart watch",
+                mega_category_id="fashion_clothing_accessories",
+                source="taxonomy_clean_vocabulary",
+                source_file="vocabulary_source.py",
+                language="english",
+                status="active",
+                schema_version="1.0.0",
+                token_count=2,
+                quality_flags=("offline_registry",),
+            ),
+        )
+        registry = CanonicalVocabularyRegistry(
+            records=records,
+            report=CanonicalVocabularyBuildReport(
+                total_input_terms=2,
+                total_records=2,
+                rejected_terms=0,
+                duplicate_terms=0,
+                rejected_by_reason={},
+                counts_by_mega_category={
+                    "phones_mobile_accessories": 1,
+                    "fashion_clothing_accessories": 1,
+                },
+                source="taxonomy_clean_vocabulary",
+                schema_version="1.0.0",
+                language="english",
+                status="active",
+            ),
+            source="taxonomy_clean_vocabulary",
+            schema_version="1.0.0",
+        )
+        index = build_offline_search_index(registry=registry, generated_variants=[])
+        self.assertEqual(index.report.total_collision_keys, 1)
+        self.assertEqual(index.report.collision_entries_count, 2)
+        self.assertGreaterEqual(index.report.collision_entries_by_mega_category_id["phones_mobile_accessories"], 1)
+        self.assertGreaterEqual(index.report.collision_entries_by_mega_category_id["fashion_clothing_accessories"], 1)
+        for entry in index.entries:
+            self.assertIn("cross_category_collision", entry.quality_flags)
+            self.assertIn("exact_variant_collision", entry.quality_flags)
+            self.assertIn("ambiguous_normalized_variant", entry.quality_flags)
+
 
 if __name__ == "__main__":
     unittest.main()

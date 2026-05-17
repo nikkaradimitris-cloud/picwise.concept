@@ -48,6 +48,11 @@ class SearchIndexBuildReport:
     counts_by_variant_type: dict[str, int]
     schema_version: str
     source: str
+    total_collision_keys: int = 0
+    collision_entries_count: int = 0
+    collision_keys_by_variant_type: dict[str, int] = field(default_factory=dict)
+    collision_entries_by_variant_type: dict[str, int] = field(default_factory=dict)
+    collision_entries_by_mega_category_id: dict[str, int] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
@@ -58,6 +63,11 @@ class SearchIndexBuildReport:
             "rejected_count": self.rejected_count,
             "counts_by_mega_category_id": dict(sorted(self.counts_by_mega_category_id.items())),
             "counts_by_variant_type": dict(sorted(self.counts_by_variant_type.items())),
+            "total_collision_keys": self.total_collision_keys,
+            "collision_entries_count": self.collision_entries_count,
+            "collision_keys_by_variant_type": dict(sorted(self.collision_keys_by_variant_type.items())),
+            "collision_entries_by_variant_type": dict(sorted(self.collision_entries_by_variant_type.items())),
+            "collision_entries_by_mega_category_id": dict(sorted(self.collision_entries_by_mega_category_id.items())),
             "schema_version": self.schema_version,
             "source": self.source,
         }

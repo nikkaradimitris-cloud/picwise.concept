@@ -11,7 +11,18 @@ _MEDIUM_CONFIDENCE_THRESHOLD = 0.84
 _HIGH_CONFIDENCE_THRESHOLD = 0.93
 _MAX_CANDIDATE_DISTANCE = 3
 _PER_TOKEN_DISTANCE_CAP = 2
-_BROAD_AMBIGUOUS_TERMS = {"bank", "charger", "apple", "nike", "bosch", "insurance", "loan"}
+_BROAD_AMBIGUOUS_TERMS = {"bank", "charger", "apple", "nike", "bosch", "insurance", "loan", "erp", "crm", "accounting software"}
+_VARIANT_TYPE_PRIORITY = {
+    "exact_canonical": 0,
+    "joined_words": 1,
+    "missing_letter": 2,
+    "swapped_adjacent_letters": 3,
+    "repeated_letter": 4,
+    "vowel_drop": 5,
+    "extra_letter": 6,
+    "us_uk_spelling": 7,
+    "generated": 8,
+}
 
 
 @dataclass(frozen=True)
@@ -116,6 +127,60 @@ def _canonical_term_similarity(normalized_query: str, entry: SearchIndexEntry) -
     return 1.0 - (distance / max_len)
 
 
+def _collision_severity(entry: SearchIndexEntry) -> int:
+    score = 0
+    if "cross_category_collision" in entry.quality_flags:
+        score += 2
+    if "exact_variant_collision" in entry.quality_flags:
+        score += 1
+    return score
+
+
+def _specificity_score(entry: SearchIndexEntry) -> float:
+    # Prefer entries that have richer lexical signal and match canonical form.
+    token_specificity = min(entry.token_count, 5) / 5.0
+    canonical_alignment = _canonical_term_similarity(entry.normalized_variant, entry)
+    return 0.55 * token_specificity + 0.45 * canonical_alignment
+
+
+def _variant_priority(variant_type: str) -> int:
+    return _VARIANT_TYPE_PRIORITY.get(variant_type, 99)
+
+
+def _prefer_deterministic_exact(entries: list[SearchIndexEntry], normalized_query: str) -> SearchIndexEntry | None:
+    best = sorted(
+        entries,
+        key=lambda row: (
+            _collision_severity(row),
+            _variant_priority(row.variant_type),
+            -_specificity_score(row),
+            row.mega_category_id,
+            row.canonical_id,
+            row.index_key,
+        ),
+    )[0]
+    tied = [
+        row
+        for row in entries
+        if (
+            _collision_severity(row),
+            _variant_priority(row.variant_type),
+            round(_specificity_score(row), 5),
+        )
+        == (
+            _collision_severity(best),
+            _variant_priority(best.variant_type),
+            round(_specificity_score(best), 5),
+        )
+    ]
+    if len(tied) > 1:
+        return None
+    # Guard broad single token terms when collided.
+    if normalized_query in _BROAD_AMBIGUOUS_TERMS and _collision_severity(best) > 0:
+        return None
+    return best
+
+
 def _no_match(query: str, normalized_query: str, reason_codes: tuple[str, ...]) -> SearchIndexLookupResult:
     return SearchIndexLookupResult(
         query=query,
@@ -138,15 +203,24 @@ def lookup_offline_search_index(query: str, index: SearchIndex) -> SearchIndexLo
 
     by_exact = [entry for entry in index.entries if entry.normalized_variant == normalized_query]
     if by_exact:
-        best = sorted(
-            by_exact,
-            key=lambda row: (
-                0 if row.variant_type == "exact_canonical" else 1,
-                row.mega_category_id,
-                row.canonical_id,
-                row.index_key,
-            ),
-        )[0]
+        canonical_ids = {entry.canonical_id for entry in by_exact}
+        category_ids = {entry.mega_category_id for entry in by_exact}
+        has_collision = len(canonical_ids) > 1 or len(category_ids) > 1
+        if has_collision:
+            deterministic = _prefer_deterministic_exact(by_exact, normalized_query)
+            if deterministic is None:
+                reason = "cross_category_exact_collision" if len(category_ids) > 1 else "ambiguous_exact_collision"
+                return _no_match(query, normalized_query, (reason,))
+            return SearchIndexLookupResult(
+                query=query,
+                normalized_query=normalized_query,
+                status="match",
+                score=0.96,
+                confidence="high",
+                matched_entry=deterministic,
+                reason_codes=("exact_collision_disambiguated",),
+            )
+        best = _prefer_deterministic_exact(by_exact, normalized_query) or by_exact[0]
         return SearchIndexLookupResult(
             query=query,
             normalized_query=normalized_query,
