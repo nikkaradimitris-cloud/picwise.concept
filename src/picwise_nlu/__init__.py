@@ -20,6 +20,8 @@ from .integration_adapter import (
 )
 from .dataset_generator import generate_default_stage_11_dataset, generate_query_variants
 from .query_variant_generator import (
+    generate_generic_english_noisy_variants,
+    generate_noisy_variants_for_term,
     generate_variants_for_seed,
     generate_variants_for_training_pack,
     get_default_training_seeds,
@@ -68,6 +70,8 @@ __all__ = [
     "build_safe_router_metadata",
     "generate_query_variants",
     "generate_default_stage_11_dataset",
+    "generate_generic_english_noisy_variants",
+    "generate_noisy_variants_for_term",
     "generate_variants_for_seed",
     "generate_variants_for_training_pack",
     "get_default_training_seeds",

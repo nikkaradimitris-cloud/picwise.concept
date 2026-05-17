@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import json
 from typing import Any
+import re
+
+from .vocabulary_source import load_clean_vocab_by_mega_category
 
 _PARTIAL_EXPECTED_KEYS = {
     "category",
@@ -420,3 +423,247 @@ def generate_variants_for_training_pack(
     for seed in normalized_seeds:
         pack.extend(generate_variants_for_seed(seed, max_variants=max_variants_per_seed))
     return json.loads(json.dumps(pack, ensure_ascii=True, sort_keys=True))
+
+
+_GENERATOR_VERSION = "stage3_generic_en_v1"
+_MIN_SAFE_TERM_LENGTH = 3
+_ALPHA_RE = re.compile(r"[a-z]")
+_TOKEN_RE = re.compile(r"[a-z]+")
+_VOWELS = set("aeiou")
+_US_UK_WORDS: dict[str, str] = {
+    "tyre": "tire",
+    "tire": "tyre",
+    "colour": "color",
+    "color": "colour",
+    "favourite": "favorite",
+    "favorite": "favourite",
+    "centre": "center",
+    "center": "centre",
+}
+_BROAD_SINGLE_TOKENS = {
+    "car",
+    "bike",
+    "baby",
+    "winter",
+    "garden",
+    "gaming",
+}
+
+
+def _canonicalize_english_term(value: Any) -> str:
+    text = " ".join(str(value or "").split()).strip().lower()
+    if not text:
+        return ""
+    tokens = _TOKEN_RE.findall(text)
+    return " ".join(tokens)
+
+
+def _is_safe_variant_text(value: str, min_length: int) -> bool:
+    if len(value) < min_length:
+        return False
+    if not _ALPHA_RE.search(value):
+        return False
+    tokens = value.split()
+    if not tokens:
+        return False
+    if any(len(token) < 2 for token in tokens):
+        return False
+    return True
+
+
+def _replace_char_at(value: str, index: int, char: str) -> str:
+    return f"{value[:index]}{char}{value[index + 1:]}"
+
+
+def _single_missing_letter_variant(term: str) -> str:
+    tokens = term.split()
+    for idx, token in enumerate(tokens):
+        if len(token) < 4:
+            continue
+        remove_at = max(1, len(token) // 2 - 1)
+        reduced = f"{token[:remove_at]}{token[remove_at + 1:]}"
+        if len(reduced) >= 3:
+            candidate_tokens = list(tokens)
+            candidate_tokens[idx] = reduced
+            return " ".join(candidate_tokens)
+    return ""
+
+
+def _single_extra_letter_variant(term: str) -> str:
+    tokens = term.split()
+    for idx, token in enumerate(tokens):
+        if len(token) < 3:
+            continue
+        insert_at = min(len(token) - 1, len(token) // 2)
+        extra_char = token[insert_at]
+        expanded = f"{token[:insert_at]}{extra_char}{token[insert_at:]}"
+        candidate_tokens = list(tokens)
+        candidate_tokens[idx] = expanded
+        return " ".join(candidate_tokens)
+    return ""
+
+
+def _single_swapped_letter_variant(term: str) -> str:
+    tokens = term.split()
+    for idx, token in enumerate(tokens):
+        if len(token) < 4:
+            continue
+        preferred_start = max(1, len(token) // 2 - 1)
+        positions = list(range(preferred_start, len(token) - 1)) + list(range(0, preferred_start))
+        for swap_at in positions:
+            if token[swap_at] == token[swap_at + 1]:
+                continue
+            swapped = list(token)
+            swapped[swap_at], swapped[swap_at + 1] = swapped[swap_at + 1], swapped[swap_at]
+            candidate_tokens = list(tokens)
+            candidate_tokens[idx] = "".join(swapped)
+            return " ".join(candidate_tokens)
+    return ""
+
+
+def _single_repeated_letter_variant(term: str) -> str:
+    tokens = term.split()
+    for idx, token in enumerate(tokens):
+        if len(token) < 3:
+            continue
+        repeat_at = 1 if len(token) > 3 else 0
+        repeated = f"{token[:repeat_at + 1]}{token[repeat_at]}{token[repeat_at + 1:]}"
+        candidate_tokens = list(tokens)
+        candidate_tokens[idx] = repeated
+        return " ".join(candidate_tokens)
+    return ""
+
+
+def _single_joined_word_variant(term: str) -> str:
+    tokens = term.split()
+    if len(tokens) < 2:
+        return ""
+    return "".join(tokens)
+
+
+def _single_vowel_drop_variant(term: str) -> str:
+    tokens = term.split()
+    for idx, token in enumerate(tokens):
+        if len(token) < 5:
+            continue
+        drop_at = -1
+        for pos in range(1, len(token) - 1):
+            if token[pos] in _VOWELS:
+                drop_at = pos
+                break
+        if drop_at == -1:
+            continue
+        shrunk = f"{token[:drop_at]}{token[drop_at + 1:]}"
+        if len(shrunk) < 3:
+            continue
+        candidate_tokens = list(tokens)
+        candidate_tokens[idx] = shrunk
+        return " ".join(candidate_tokens)
+    return ""
+
+
+def _single_us_uk_variant(term: str) -> str:
+    tokens = term.split()
+    changed = False
+    swapped_tokens: list[str] = []
+    for token in tokens:
+        replacement = _US_UK_WORDS.get(token, token)
+        if replacement != token:
+            changed = True
+        swapped_tokens.append(replacement)
+    if not changed:
+        return ""
+    return " ".join(swapped_tokens)
+
+
+def generate_noisy_variants_for_term(
+    canonical_term: str,
+    mega_category_id: str,
+    *,
+    source: str = "taxonomy_clean_vocabulary",
+    generator_version: str = _GENERATOR_VERSION,
+    min_variant_length: int = _MIN_SAFE_TERM_LENGTH,
+) -> list[dict[str, str]]:
+    term = _canonicalize_english_term(canonical_term)
+    category = _compact_text(mega_category_id)
+    if not term or not category:
+        return []
+    if len(term) < max(3, int(min_variant_length)):
+        return []
+
+    term_tokens = term.split()
+    if len(term_tokens) == 1 and term_tokens[0] in _BROAD_SINGLE_TOKENS:
+        return []
+
+    builders: list[tuple[str, str]] = [
+        ("missing_letter", _single_missing_letter_variant(term)),
+        ("extra_letter", _single_extra_letter_variant(term)),
+        ("swapped_adjacent_letters", _single_swapped_letter_variant(term)),
+        ("repeated_letter", _single_repeated_letter_variant(term)),
+        ("joined_words", _single_joined_word_variant(term)),
+        ("vowel_drop", _single_vowel_drop_variant(term)),
+        ("us_uk_spelling", _single_us_uk_variant(term)),
+    ]
+
+    output: list[dict[str, str]] = []
+    seen: set[str] = set()
+    safe_min_length = max(3, int(min_variant_length))
+    for variant_type, variant in builders:
+        if not variant:
+            continue
+        candidate = _canonicalize_english_term(variant)
+        if candidate == term:
+            continue
+        if not _is_safe_variant_text(candidate, safe_min_length):
+            continue
+        signature = candidate.lower()
+        if signature in seen:
+            continue
+        seen.add(signature)
+        output.append(
+            {
+                "canonical_term": term,
+                "variant": candidate,
+                "mega_category_id": category,
+                "variant_type": variant_type,
+                "source": source,
+                "generator_version": generator_version,
+            }
+        )
+    return json.loads(json.dumps(output, ensure_ascii=True, sort_keys=True))
+
+
+def generate_generic_english_noisy_variants(
+    vocab_by_mega_category: dict[str, set[str]] | dict[str, list[str]] | None = None,
+    *,
+    source: str = "taxonomy_clean_vocabulary",
+    generator_version: str = _GENERATOR_VERSION,
+    min_variant_length: int = _MIN_SAFE_TERM_LENGTH,
+) -> list[dict[str, str]]:
+    vocab = vocab_by_mega_category if isinstance(vocab_by_mega_category, dict) else load_clean_vocab_by_mega_category()
+    records: list[dict[str, str]] = []
+    seen_signatures: set[tuple[str, str, str]] = set()
+
+    for mega_category_id in sorted(vocab.keys()):
+        terms = vocab.get(mega_category_id, [])
+        iterable = terms if isinstance(terms, (set, list, tuple)) else []
+        normalized_terms = sorted({_canonicalize_english_term(term) for term in iterable if _canonicalize_english_term(term)})
+        for canonical_term in normalized_terms:
+            term_records = generate_noisy_variants_for_term(
+                canonical_term,
+                mega_category_id,
+                source=source,
+                generator_version=generator_version,
+                min_variant_length=min_variant_length,
+            )
+            for row in term_records:
+                signature = (
+                    row["canonical_term"].lower(),
+                    row["variant"].lower(),
+                    row["mega_category_id"].lower(),
+                )
+                if signature in seen_signatures:
+                    continue
+                seen_signatures.add(signature)
+                records.append(row)
+    return json.loads(json.dumps(records, ensure_ascii=True, sort_keys=True))
