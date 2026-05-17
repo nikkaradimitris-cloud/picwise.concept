@@ -41,6 +41,40 @@ _PREFERRED_VARIANT_TYPES: tuple[str, ...] = (
 )
 
 
+def _is_shared_taxonomy_or_meta_term(term: str) -> bool:
+    normalized = normalize_term(term)
+    if not normalized:
+        return False
+    tokens = tuple(token for token in normalized.split() if token)
+    if not tokens:
+        return False
+    meta_tokens = {
+        "taxonomy",
+        "families",
+        "family",
+        "source",
+        "entry",
+        "entries",
+        "valid",
+        "daily",
+        "compatibility",
+        "sets",
+    }
+    shared_marker_count = sum(1 for token in tokens if token in meta_tokens)
+    if shared_marker_count >= 1 and len(tokens) <= 2:
+        return True
+    if len(tokens) == 1 and len(tokens[0]) <= 7:
+        return True
+    return False
+
+
+def _shared_term_categories(registry: CanonicalVocabularyRegistry) -> dict[str, set[str]]:
+    categories_by_term: dict[str, set[str]] = {}
+    for record in registry.records:
+        categories_by_term.setdefault(record.normalized_term, set()).add(record.mega_category_id)
+    return categories_by_term
+
+
 def _build_case(
     *,
     case_id: str,
@@ -93,22 +127,31 @@ def generate_blind_evaluation_cases(
 ) -> tuple[BlindEvaluationCase, ...]:
     cases: list[BlindEvaluationCase] = []
     case_index = 1
+    categories_by_term = _shared_term_categories(registry)
 
     for record in sorted(registry.records, key=lambda row: (row.mega_category_id, row.normalized_term, row.canonical_id)):
         variants = _generate_case_variants(record)
+        shared_category_count = len(categories_by_term.get(record.normalized_term, {record.mega_category_id}))
+        shared_term_negative = shared_category_count >= 3 and _is_shared_taxonomy_or_meta_term(record.normalized_term)
         for query, variant_type in variants:
+            should_match = not shared_term_negative
+            expected_normalized_term = record.normalized_term if should_match else ""
+            expected_mega_category_id = record.mega_category_id if should_match else ""
+            expected_canonical_id = record.canonical_id if should_match else ""
+            case_variant_type = "shared_term_negative" if shared_term_negative else variant_type
+            source = "shared_taxonomy_term_safety_set" if shared_term_negative else "canonical_registry+stage3_variant_generator"
             cases.append(
                 _build_case(
                     case_id=f"blind_{case_index:06d}",
-                    canonical_id=record.canonical_id,
+                    canonical_id=expected_canonical_id,
                     canonical_term=record.canonical_term,
                     mega_category_id=record.mega_category_id,
                     query=query,
-                    expected_normalized_term=record.normalized_term,
-                    expected_mega_category_id=record.mega_category_id,
-                    variant_type=variant_type,
-                    source="canonical_registry+stage3_variant_generator",
-                    should_match=True,
+                    expected_normalized_term=expected_normalized_term,
+                    expected_mega_category_id=expected_mega_category_id,
+                    variant_type=case_variant_type,
+                    source=source,
+                    should_match=should_match,
                 )
             )
             case_index += 1

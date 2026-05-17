@@ -29,10 +29,13 @@ class PicWiseSearchIndexBlindEvaluationStage6ATests(unittest.TestCase):
     def test_cases_are_generated_from_registry_not_fixed_probe_source(self) -> None:
         self.assertGreater(len(self.registry.records), 0)
         positive_cases = [row for row in self.cases if row.should_match]
-        self.assertGreater(len(positive_cases), len(self.registry.records))
+        negative_shared_cases = [row for row in self.cases if row.variant_type == "shared_term_negative"]
+        self.assertGreater(len(negative_shared_cases), 0)
+        self.assertGreater(len(positive_cases), len(self.registry.records) * 0.60)
         canonical_ids_from_cases = {row.canonical_id for row in positive_cases}
         canonical_ids_from_registry = {row.canonical_id for row in self.registry.records}
-        self.assertEqual(canonical_ids_from_cases, canonical_ids_from_registry)
+        self.assertTrue(canonical_ids_from_cases.issubset(canonical_ids_from_registry))
+        self.assertGreater(len(canonical_ids_from_cases), int(len(canonical_ids_from_registry) * 0.90))
 
     def test_all_available_mega_categories_are_represented(self) -> None:
         categories_in_registry = {row.mega_category_id for row in self.registry.records}
@@ -54,6 +57,13 @@ class PicWiseSearchIndexBlindEvaluationStage6ATests(unittest.TestCase):
         broad_cases = [row for row in self.cases if row.variant_type == "broad_term_negative"]
         self.assertEqual({row.query for row in broad_cases}, broad_terms)
         self.assertTrue(all(not row.should_match for row in broad_cases))
+
+    def test_cross_category_shared_terms_are_marked_as_negative_cases(self) -> None:
+        shared_cases = [row for row in self.cases if row.variant_type == "shared_term_negative"]
+        self.assertGreater(len(shared_cases), 0)
+        self.assertTrue(all(not row.should_match for row in shared_cases))
+        self.assertTrue(all(not row.expected_mega_category_id for row in shared_cases))
+        self.assertTrue(all(not row.canonical_id for row in shared_cases))
 
     def test_failed_cases_are_reported_honestly(self) -> None:
         failed_results = [row for row in self.results if not row.passed]

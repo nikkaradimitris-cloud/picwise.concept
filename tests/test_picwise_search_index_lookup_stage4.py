@@ -160,6 +160,204 @@ class PicWiseSearchIndexLookupStage4Tests(unittest.TestCase):
             "cross_category_exact_collision" in result.reason_codes or "broad_or_ambiguous_query" in result.reason_codes
         )
 
+    def test_shared_cross_category_taxonomy_terms_remain_safe_no_match(self) -> None:
+        from picwise_search_memory.contracts import CanonicalVocabularyBuildReport, CanonicalVocabularyRecord, CanonicalVocabularyRegistry
+
+        records = (
+            CanonicalVocabularyRecord(
+                canonical_id="id_cat_a",
+                canonical_term="taxonomy families",
+                normalized_term="taxonomy families",
+                mega_category_id="audio_video_gaming_cameras",
+                source="taxonomy_clean_vocabulary",
+                source_file="vocabulary_source.py",
+                language="english",
+                status="active",
+                schema_version="1.0.0",
+                token_count=2,
+                quality_flags=("offline_registry",),
+            ),
+            CanonicalVocabularyRecord(
+                canonical_id="id_cat_b",
+                canonical_term="taxonomy families",
+                normalized_term="taxonomy families",
+                mega_category_id="kitchen_cooking_household",
+                source="taxonomy_clean_vocabulary",
+                source_file="vocabulary_source.py",
+                language="english",
+                status="active",
+                schema_version="1.0.0",
+                token_count=2,
+                quality_flags=("offline_registry",),
+            ),
+            CanonicalVocabularyRecord(
+                canonical_id="id_cat_c",
+                canonical_term="taxonomy families",
+                normalized_term="taxonomy families",
+                mega_category_id="phones_mobile_accessories",
+                source="taxonomy_clean_vocabulary",
+                source_file="vocabulary_source.py",
+                language="english",
+                status="active",
+                schema_version="1.0.0",
+                token_count=2,
+                quality_flags=("offline_registry",),
+            ),
+        )
+        registry = CanonicalVocabularyRegistry(
+            records=records,
+            report=CanonicalVocabularyBuildReport(
+                total_input_terms=3,
+                total_records=3,
+                rejected_terms=0,
+                duplicate_terms=0,
+                rejected_by_reason={},
+                counts_by_mega_category={
+                    "audio_video_gaming_cameras": 1,
+                    "kitchen_cooking_household": 1,
+                    "phones_mobile_accessories": 1,
+                },
+                source="taxonomy_clean_vocabulary",
+                schema_version="1.0.0",
+                language="english",
+                status="active",
+            ),
+            source="taxonomy_clean_vocabulary",
+            schema_version="1.0.0",
+        )
+        index = build_offline_search_index(registry=registry, generated_variants=[])
+        result = lookup_offline_search_index("taxonomy families", index)
+        self.assertEqual(result.status, "no_match")
+        self.assertIsNone(result.matched_entry)
+        self.assertIn("shared_taxonomy_or_meta_term", result.reason_codes)
+
+    def test_specific_cross_category_collision_recovers_when_clear_specificity_winner_exists(self) -> None:
+        from picwise_search_memory.contracts import CanonicalVocabularyBuildReport, CanonicalVocabularyRecord, CanonicalVocabularyRegistry
+
+        records = (
+            CanonicalVocabularyRecord(
+                canonical_id="id_generic",
+                canonical_term="headphone",
+                normalized_term="headphone",
+                mega_category_id="audio_video_gaming_cameras",
+                source="taxonomy_clean_vocabulary",
+                source_file="vocabulary_source.py",
+                language="english",
+                status="active",
+                schema_version="1.0.0",
+                token_count=1,
+                quality_flags=("offline_registry",),
+            ),
+            CanonicalVocabularyRecord(
+                canonical_id="id_specific",
+                canonical_term="wireless noise cancelling headphone",
+                normalized_term="wireless noise cancelling headphone",
+                mega_category_id="phones_mobile_accessories",
+                source="taxonomy_clean_vocabulary",
+                source_file="vocabulary_source.py",
+                language="english",
+                status="active",
+                schema_version="1.0.0",
+                token_count=4,
+                quality_flags=("offline_registry",),
+            ),
+        )
+        registry = CanonicalVocabularyRegistry(
+            records=records,
+            report=CanonicalVocabularyBuildReport(
+                total_input_terms=2,
+                total_records=2,
+                rejected_terms=0,
+                duplicate_terms=0,
+                rejected_by_reason={},
+                counts_by_mega_category={
+                    "audio_video_gaming_cameras": 1,
+                    "phones_mobile_accessories": 1,
+                },
+                source="taxonomy_clean_vocabulary",
+                schema_version="1.0.0",
+                language="english",
+                status="active",
+            ),
+            source="taxonomy_clean_vocabulary",
+            schema_version="1.0.0",
+        )
+        generated = [
+            {
+                "canonical_term": "headphone",
+                "variant": "wireless noise cancelling headphone",
+                "mega_category_id": "audio_video_gaming_cameras",
+                "variant_type": "generated",
+                "source": "taxonomy_clean_vocabulary",
+                "generator_version": "stage3_generic",
+            }
+        ]
+        index = build_offline_search_index(registry=registry, generated_variants=generated)
+        result = lookup_offline_search_index("wireless noise cancelling headphone", index)
+        self.assertEqual(result.status, "match")
+        self.assertIsNotNone(result.matched_entry)
+        self.assertEqual(result.matched_entry.canonical_id, "id_specific")
+        self.assertTrue(
+            "exact_collision_specificity_recovery" in result.reason_codes
+            or "exact_collision_disambiguated" in result.reason_codes
+        )
+
+    def test_broad_negative_terms_stay_no_match_even_when_present_as_exact_collision(self) -> None:
+        from picwise_search_memory.contracts import CanonicalVocabularyBuildReport, CanonicalVocabularyRecord, CanonicalVocabularyRegistry
+
+        records = (
+            CanonicalVocabularyRecord(
+                canonical_id="id_cat_a",
+                canonical_term="bank",
+                normalized_term="bank",
+                mega_category_id="audio_video_gaming_cameras",
+                source="taxonomy_clean_vocabulary",
+                source_file="vocabulary_source.py",
+                language="english",
+                status="active",
+                schema_version="1.0.0",
+                token_count=1,
+                quality_flags=("offline_registry",),
+            ),
+            CanonicalVocabularyRecord(
+                canonical_id="id_cat_b",
+                canonical_term="bank",
+                normalized_term="bank",
+                mega_category_id="kitchen_cooking_household",
+                source="taxonomy_clean_vocabulary",
+                source_file="vocabulary_source.py",
+                language="english",
+                status="active",
+                schema_version="1.0.0",
+                token_count=1,
+                quality_flags=("offline_registry",),
+            ),
+        )
+        registry = CanonicalVocabularyRegistry(
+            records=records,
+            report=CanonicalVocabularyBuildReport(
+                total_input_terms=2,
+                total_records=2,
+                rejected_terms=0,
+                duplicate_terms=0,
+                rejected_by_reason={},
+                counts_by_mega_category={
+                    "audio_video_gaming_cameras": 1,
+                    "kitchen_cooking_household": 1,
+                },
+                source="taxonomy_clean_vocabulary",
+                schema_version="1.0.0",
+                language="english",
+                status="active",
+            ),
+            source="taxonomy_clean_vocabulary",
+            schema_version="1.0.0",
+        )
+        index = build_offline_search_index(registry=registry, generated_variants=[])
+        result = lookup_offline_search_index("bank", index)
+        self.assertEqual(result.status, "no_match")
+        self.assertIn("broad_or_ambiguous_query", result.reason_codes)
+
     def test_contextual_specific_query_still_matches_when_safe(self) -> None:
         result = lookup_offline_search_index("gaming mouse", self.index)
         self.assertEqual(result.status, "match")

@@ -11,6 +11,8 @@ _MEDIUM_CONFIDENCE_THRESHOLD = 0.84
 _HIGH_CONFIDENCE_THRESHOLD = 0.93
 _MAX_CANDIDATE_DISTANCE = 3
 _PER_TOKEN_DISTANCE_CAP = 2
+_EXACT_COLLISION_RECOVERY_MIN_SCORE = 0.82
+_EXACT_COLLISION_RECOVERY_MARGIN = 0.12
 _BROAD_AMBIGUOUS_TERMS = {"bank", "charger", "apple", "nike", "bosch", "insurance", "loan", "erp", "crm", "accounting software"}
 _VARIANT_TYPE_PRIORITY = {
     "exact_canonical": 0,
@@ -147,6 +149,109 @@ def _variant_priority(variant_type: str) -> int:
     return _VARIANT_TYPE_PRIORITY.get(variant_type, 99)
 
 
+def _query_specificity(query: str) -> float:
+    tokens = [token for token in query.split() if token]
+    if not tokens:
+        return 0.0
+    token_count_signal = min(len(tokens), 4) / 4.0
+    avg_token_length = sum(len(token) for token in tokens) / len(tokens)
+    token_length_signal = min(avg_token_length, 10.0) / 10.0
+    long_token_signal = min(sum(1 for token in tokens if len(token) >= 6), 2) / 2.0
+    return 0.45 * token_count_signal + 0.35 * token_length_signal + 0.20 * long_token_signal
+
+
+def _canonical_specificity(entry: SearchIndexEntry) -> float:
+    canonical_tokens = [token for token in entry.normalized_term.split() if token]
+    if not canonical_tokens:
+        return 0.0
+    token_count_signal = min(len(canonical_tokens), 4) / 4.0
+    avg_token_length = sum(len(token) for token in canonical_tokens) / len(canonical_tokens)
+    token_length_signal = min(avg_token_length, 10.0) / 10.0
+    overlap_signal = _token_overlap(entry.normalized_variant, entry.normalized_term)
+    return 0.40 * token_count_signal + 0.30 * token_length_signal + 0.30 * overlap_signal
+
+
+def _is_overly_generic_collision(normalized_query: str, entries: list[SearchIndexEntry]) -> bool:
+    categories = {entry.mega_category_id for entry in entries}
+    canonical_terms = {entry.normalized_term for entry in entries}
+    query_tokens = [token for token in normalized_query.split() if token]
+    query_specificity = _query_specificity(normalized_query)
+
+    # Shared taxonomy/source/meta-like terms are too ambiguous to recover safely.
+    if len(categories) >= 3 and len(canonical_terms) == 1:
+        return True
+    if len(categories) >= 4 and len(query_tokens) <= 2:
+        return True
+    if len(categories) >= 2 and len(query_tokens) <= 1 and len(normalized_query) <= 7:
+        return True
+    if len(categories) >= 2 and query_specificity < 0.42:
+        return True
+    return False
+
+
+def _exact_collision_candidate_score(normalized_query: str, entry: SearchIndexEntry) -> float:
+    query_to_variant_overlap = _token_overlap(normalized_query, entry.normalized_variant)
+    query_to_canonical_overlap = _token_overlap(normalized_query, entry.normalized_term)
+    canonical_similarity = _canonical_term_similarity(normalized_query, entry)
+    canonical_specificity = _canonical_specificity(entry)
+    variant_quality = max(0.0, 1.0 - (_variant_priority(entry.variant_type) / 10.0))
+    collision_penalty = min(_collision_severity(entry) * 0.18, 0.45)
+    category_consistency = 1.0 if entry.mega_category_id else 0.0
+    exact_phrase_quality = 1.0 if entry.normalized_term == normalized_query else 0.0
+    normalized_quality = _query_specificity(normalized_query)
+
+    score = (
+        0.22 * query_to_variant_overlap
+        + 0.22 * query_to_canonical_overlap
+        + 0.16 * canonical_similarity
+        + 0.16 * canonical_specificity
+        + 0.10 * variant_quality
+        + 0.07 * category_consistency
+        + 0.05 * exact_phrase_quality
+        + 0.02 * normalized_quality
+        - collision_penalty
+    )
+    return max(0.0, min(score, 1.0))
+
+
+def _recover_exact_collision(entries: list[SearchIndexEntry], normalized_query: str) -> _ScoredCandidate | None:
+    if _is_overly_generic_collision(normalized_query, entries):
+        return None
+
+    scored = sorted(
+        [
+            _ScoredCandidate(
+                entry=entry,
+                score=_exact_collision_candidate_score(normalized_query, entry),
+                reason_codes=("exact_collision_specificity_scored",),
+            )
+            for entry in entries
+        ],
+        key=lambda row: (
+            -row.score,
+            _collision_severity(row.entry),
+            _variant_priority(row.entry.variant_type),
+            -_specificity_score(row.entry),
+            row.entry.mega_category_id,
+            row.entry.canonical_id,
+            row.entry.index_key,
+        ),
+    )
+    if not scored:
+        return None
+    best = scored[0]
+    second = scored[1] if len(scored) > 1 else None
+    if best.score < _EXACT_COLLISION_RECOVERY_MIN_SCORE:
+        return None
+    if second and (best.score - second.score) < _EXACT_COLLISION_RECOVERY_MARGIN:
+        return None
+    return _ScoredCandidate(
+        entry=best.entry,
+        score=best.score,
+        reason_codes=("exact_collision_specificity_recovery",),
+    )
+
+
 def _prefer_deterministic_exact(entries: list[SearchIndexEntry], normalized_query: str) -> SearchIndexEntry | None:
     best = sorted(
         entries,
@@ -208,17 +313,31 @@ def lookup_offline_search_index(query: str, index: SearchIndex) -> SearchIndexLo
         has_collision = len(canonical_ids) > 1 or len(category_ids) > 1
         if has_collision:
             deterministic = _prefer_deterministic_exact(by_exact, normalized_query)
-            if deterministic is None:
+            if deterministic is not None:
+                return SearchIndexLookupResult(
+                    query=query,
+                    normalized_query=normalized_query,
+                    status="match",
+                    score=0.96,
+                    confidence="high",
+                    matched_entry=deterministic,
+                    reason_codes=("exact_collision_disambiguated",),
+                )
+
+            recovered = _recover_exact_collision(by_exact, normalized_query)
+            if recovered is None:
+                if _is_overly_generic_collision(normalized_query, by_exact):
+                    return _no_match(query, normalized_query, ("shared_taxonomy_or_meta_term", "cross_category_exact_collision"))
                 reason = "cross_category_exact_collision" if len(category_ids) > 1 else "ambiguous_exact_collision"
                 return _no_match(query, normalized_query, (reason,))
             return SearchIndexLookupResult(
                 query=query,
                 normalized_query=normalized_query,
                 status="match",
-                score=0.96,
-                confidence="high",
-                matched_entry=deterministic,
-                reason_codes=("exact_collision_disambiguated",),
+                score=round(max(recovered.score, 0.84), 4),
+                confidence=_to_confidence(max(recovered.score, _LOW_CONFIDENCE_THRESHOLD)),
+                matched_entry=recovered.entry,
+                reason_codes=recovered.reason_codes,
             )
         best = _prefer_deterministic_exact(by_exact, normalized_query) or by_exact[0]
         return SearchIndexLookupResult(
