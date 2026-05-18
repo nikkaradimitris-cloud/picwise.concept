@@ -104,7 +104,11 @@ class PicWiseCanonicalVocabularyRegistryStage2Tests(unittest.TestCase):
         # Repository-level immutability checks are handled by git status assertions.
         # This test guards that stage output remains pure registry data.
         registry = build_canonical_vocabulary_registry()
-        self.assertTrue(all(record.source_path == "src/picwise_nlu/vocabulary_source.py" for record in registry.records))
+        allowed_source_paths = {
+            "src/picwise_nlu/vocabulary_source.py",
+            "src/picwise_search_memory/canonical_vocabulary_coverage.py",
+        }
+        self.assertTrue(all(record.source_path in allowed_source_paths for record in registry.records))
 
 
 if __name__ == "__main__":

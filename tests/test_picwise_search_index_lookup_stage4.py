@@ -10,8 +10,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from picwise_nlu.query_variant_generator import generate_noisy_variants_for_term  # noqa: E402
-from picwise_search_memory.index_builder import build_offline_search_index  # noqa: E402
-from picwise_search_memory.index_lookup import lookup_offline_search_index  # noqa: E402
+from picwise_search_memory import build_canonical_vocabulary_registry, build_offline_search_index, lookup_offline_search_index  # noqa: E402
 
 
 class PicWiseSearchIndexLookupStage4Tests(unittest.TestCase):
@@ -370,6 +369,63 @@ class PicWiseSearchIndexLookupStage4Tests(unittest.TestCase):
                 result = lookup_offline_search_index(query, self.index)
                 self.assertEqual(result.status, "no_match")
                 self.assertIsNone(result.matched_entry)
+
+
+class PicWiseSearchIndexLookupIntegrationStage43Tests(unittest.TestCase):
+    """Acceptance probes against the full offline registry + Stage 3 generated index."""
+
+    def setUp(self) -> None:
+        self.registry = build_canonical_vocabulary_registry()
+        self.index = build_offline_search_index(self.registry)
+
+    def test_realistic_noisy_queries_resolve_to_expected_mega_category(self) -> None:
+        probes = {
+            "coffe grindr": "kitchen_cooking_household",
+            "vaccum cleaner": "home_appliances_laundry_climate",
+            "bluethoth speker": "audio_video_gaming_cameras",
+            "gming mouse": "computers_office_peripherals",
+            "car batery": "car_parts_service_maintenance",
+            "bike helmt": "moto_bicycle_mobility_gear",
+            "winter jakcet": "clothing_apparel_workwear",
+            "baby car seet": "baby_kids_pets_sports_outdoor",
+            "usb caible": "phones_mobile_accessories",
+        }
+        for query, expected_category in probes.items():
+            with self.subTest(query=query):
+                result = lookup_offline_search_index(query, self.index)
+                self.assertEqual(result.status, "match")
+                self.assertIsNotNone(result.matched_entry)
+                self.assertEqual(result.matched_entry.mega_category_id, expected_category)
+                self.assertIn(result.confidence, {"low", "medium", "high"})
+
+    def test_broad_and_contextual_negatives_remain_safe_on_full_index(self) -> None:
+        negatives = (
+            "bank",
+            "charger",
+            "apple",
+            "nike",
+            "bosch",
+            "insurance",
+            "loan",
+            "erp",
+            "crm",
+            "accounting software",
+            "river bank",
+            "bank account",
+            "car insurance",
+        )
+        for query in negatives:
+            with self.subTest(query=query):
+                result = lookup_offline_search_index(query, self.index)
+                self.assertEqual(result.status, "no_match")
+                self.assertIsNone(result.matched_entry)
+
+    def test_lookup_output_has_no_commercial_fields(self) -> None:
+        forbidden = {"product", "products", "offer", "offers", "price", "prices", "affiliate", "provider"}
+        result = lookup_offline_search_index("coffe grindr", self.index)
+        self.assertIsNotNone(result.matched_entry)
+        keys = set(result.matched_entry.to_dict().keys())
+        self.assertTrue(forbidden.isdisjoint(keys))
 
 
 if __name__ == "__main__":

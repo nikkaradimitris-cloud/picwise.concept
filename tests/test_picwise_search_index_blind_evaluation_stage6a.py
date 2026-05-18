@@ -77,6 +77,34 @@ class PicWiseSearchIndexBlindEvaluationStage6ATests(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertNotIn(f"'{key}'", report_dump)
 
+    def test_stage6a_thresholds_pass_honestly_on_full_offline_index(self) -> None:
+        from picwise_search_memory.blind_evaluation import run_offline_blind_index_evaluation
+
+        report = run_offline_blind_index_evaluation()
+        self.assertTrue(report.can_proceed_to_stage5)
+        self.assertGreaterEqual(report.mega_category_accuracy, 0.90)
+        self.assertGreaterEqual(report.canonical_accuracy, 0.70)
+        self.assertLessEqual(report.wrong_category_rate, 0.05)
+        self.assertLessEqual(report.false_positive_rate, 0.02)
+        self.assertGreaterEqual(report.broad_term_safety_rate, 0.95)
+        self.assertTrue(all(report.threshold_status.values()))
+
+    def test_generated_blind_cases_include_terms_beyond_fixed_acceptance_probes(self) -> None:
+        fixed_probe_queries = {
+            "coffe grindr",
+            "vaccum cleaner",
+            "bluethoth speker",
+            "gming mouse",
+            "car batery",
+            "bike helmt",
+            "winter jakcet",
+            "baby car seet",
+            "usb caible",
+        }
+        positive_queries = {row.query for row in self.cases if row.should_match}
+        non_probe_queries = positive_queries - fixed_probe_queries
+        self.assertGreater(len(non_probe_queries), len(fixed_probe_queries) * 10)
+
 
 def categories_in_categories_sorted(values: set[str]) -> list[str]:
     return sorted(value for value in values if value)
