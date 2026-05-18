@@ -53,6 +53,21 @@ from .stage31_rollback import Stage31RollbackResult, rollback_stage31_runtime_re
 from .stage31_runtime_controller import Stage31RuntimeController, build_default_stage31_runtime_controller
 from .stage31_summary import build_stage31_activation_summary
 from .stage31_validation import validate_stage31_activation_candidate
+from .stage7b_contracts import (
+    SEARCH_LEARNING_APPROVAL_STATUSES,
+    SEARCH_LEARNING_CLASSIFICATIONS,
+    SearchLearningApprovalStatus,
+    SearchLearningCase,
+    SearchLearningReport,
+    SearchLearningResult,
+    SearchLearningSuggestion,
+)
+from .stage7b_learning_review import (
+    classify_search_learning_case,
+    collect_search_learning_signals,
+    generate_search_learning_suggestions,
+    run_controlled_search_learning_review,
+)
 
 __all__ = [
     "STAGE29_ID",
@@ -111,4 +126,15 @@ __all__ = [
     "validate_stage31_activation_candidate",
     "Stage31RuntimeController",
     "build_default_stage31_runtime_controller",
+    "SEARCH_LEARNING_APPROVAL_STATUSES",
+    "SEARCH_LEARNING_CLASSIFICATIONS",
+    "SearchLearningApprovalStatus",
+    "SearchLearningCase",
+    "SearchLearningResult",
+    "SearchLearningSuggestion",
+    "SearchLearningReport",
+    "classify_search_learning_case",
+    "collect_search_learning_signals",
+    "generate_search_learning_suggestions",
+    "run_controlled_search_learning_review",
 ]
