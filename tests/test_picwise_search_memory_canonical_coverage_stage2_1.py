@@ -63,7 +63,7 @@ class PicWiseSearchMemoryCanonicalCoverageStage21Tests(unittest.TestCase):
         self.assertEqual(set(self.coverage.keys()), expected_ids)
         for mega_category_id in sorted(expected_ids):
             with self.subTest(mega_category_id=mega_category_id):
-                self.assertGreaterEqual(len(self.coverage[mega_category_id]), 10)
+                self.assertGreaterEqual(len(self.coverage[mega_category_id]), 30)
 
     def test_required_clean_anchor_concepts_present(self) -> None:
         for term, mega_category_id in required_anchor_terms():
@@ -120,7 +120,7 @@ class PicWiseSearchMemoryCanonicalCoverageStage21Tests(unittest.TestCase):
         self.assertEqual(registry_ids, expected_ids)
         for mega_category_id in expected_ids:
             count = sum(1 for record in self.registry.records if record.mega_category_id == mega_category_id)
-            self.assertGreaterEqual(count, 10)
+            self.assertGreaterEqual(count, 30)
 
     def test_required_anchors_are_clean_canonical_terms(self) -> None:
         for term in _REQUIRED_ANCHORS:

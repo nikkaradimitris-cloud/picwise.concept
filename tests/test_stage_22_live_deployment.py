@@ -264,6 +264,60 @@ class DeploymentEntrypointTests(unittest.TestCase):
                 self.assertNotIn(">View on Amazon<", body)
                 self.assertNotIn('class="pw-card"', body)
 
+    def test_stage7a_search_route_noisy_queries_cover_all_18_categories_without_cards(self) -> None:
+        noisy_queries = (
+            "vaccum cleaner",
+            "washing machne",
+            "coffe grindr",
+            "air frier",
+            "office chiar",
+            "storage cabnet",
+            "usb caible",
+            "screen protecter",
+            "gming mouse",
+            "laptop chrger",
+            "bluethoth speker",
+            "wirless headphones",
+            "car batery",
+            "breake pads",
+            "car tyre",
+            "tyre 195 65 r15",
+            "bike helmt",
+            "motorbike glovs",
+            "cordless dril",
+            "hammer dril",
+            "screwdrivr set",
+            "digital calper",
+            "gardn shears",
+            "leaf blwer",
+            "blood presure monitor",
+            "pulse oxymeter",
+            "beard trimr",
+            "hair dryier",
+            "baby car seet",
+            "dog leesh",
+            "winter jakcet",
+            "workwear trousres",
+            "runing shoes",
+            "hikng boots",
+            "wrist watc",
+            "handbg",
+        )
+        for query in noisy_queries:
+            with self.subTest(query=query):
+                status, headers, body = _call_wsgi("/search", f"q={quote(query)}")
+                self.assertEqual(status, "200 OK")
+                self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+                self.assertIn("PicWise understood this search, but no safe provider is connected yet.", body)
+                self.assertNotIn("Showing 4 options for:", body)
+                self.assertNotIn("Safe connected provider mode", body)
+                self.assertNotIn("ASIN: B0GR1257LT", body)
+                self.assertNotIn("ASIN: B0GH75LWKN", body)
+                self.assertNotIn("ASIN: B0GV9RDLM4", body)
+                self.assertNotIn("ASIN: B0BJMQBNZP", body)
+                self.assertNotIn(">View on Amazon<", body)
+                self.assertNotIn('class="pw-card"', body)
+
     def test_results_route_noisy_queries_show_provider_not_connected_and_no_cards(self) -> None:
         noisy_queries = (
             "coffe grindr",
@@ -280,6 +334,59 @@ class DeploymentEntrypointTests(unittest.TestCase):
                 self.assertIn("PicWise understood this search, but no safe provider is connected yet.", body)
                 self.assertNotIn("Showing 4 options for:", body)
                 self.assertNotIn("ASIN: B0GR1257LT", body)
+                self.assertNotIn(">View on Amazon<", body)
+                self.assertNotIn('class="pw-card"', body)
+
+    def test_stage7a_results_route_noisy_queries_cover_all_18_categories_without_cards(self) -> None:
+        noisy_queries = (
+            "vaccum cleaner",
+            "washing machne",
+            "coffe grindr",
+            "air frier",
+            "office chiar",
+            "storage cabnet",
+            "usb caible",
+            "screen protecter",
+            "gming mouse",
+            "laptop chrger",
+            "bluethoth speker",
+            "wirless headphones",
+            "car batery",
+            "breake pads",
+            "car tyre",
+            "tyre 195 65 r15",
+            "bike helmt",
+            "motorbike glovs",
+            "cordless dril",
+            "hammer dril",
+            "screwdrivr set",
+            "digital calper",
+            "gardn shears",
+            "leaf blwer",
+            "blood presure monitor",
+            "pulse oxymeter",
+            "beard trimr",
+            "hair dryier",
+            "baby car seet",
+            "dog leesh",
+            "winter jakcet",
+            "workwear trousres",
+            "runing shoes",
+            "hikng boots",
+            "wrist watc",
+            "handbg",
+        )
+        for query in noisy_queries:
+            with self.subTest(query=query):
+                status, headers, body = _call_wsgi("/results", f"q={quote(query)}")
+                self.assertEqual(status, "200 OK")
+                self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+                self.assertIn("PicWise understood this search, but no safe provider is connected yet.", body)
+                self.assertNotIn("Showing 4 options for:", body)
+                self.assertNotIn("ASIN: B0GR1257LT", body)
+                self.assertNotIn("ASIN: B0GH75LWKN", body)
+                self.assertNotIn("ASIN: B0GV9RDLM4", body)
+                self.assertNotIn("ASIN: B0BJMQBNZP", body)
                 self.assertNotIn(">View on Amazon<", body)
                 self.assertNotIn('class="pw-card"', body)
 

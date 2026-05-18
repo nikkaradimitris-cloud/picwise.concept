@@ -17,6 +17,39 @@ from picwise_search_memory.blind_evaluation import (  # noqa: E402
 from picwise_search_memory.canonical_registry import build_canonical_vocabulary_registry  # noqa: E402
 from picwise_search_memory.index_builder import build_offline_search_index  # noqa: E402
 
+_FIXED_PROBE_QUERIES = {
+    "coffe grindr",
+    "vaccum cleaner",
+    "bluethoth speker",
+    "gming mouse",
+    "car batery",
+    "bike helmt",
+    "winter jakcet",
+    "baby car seet",
+    "usb caible",
+}
+
+_STAGE7A_REQUIRED_CATEGORIES = {
+    "home_appliances_laundry_climate",
+    "kitchen_cooking_household",
+    "furniture_living_storage_smart_home",
+    "phones_mobile_accessories",
+    "computers_office_peripherals",
+    "audio_video_gaming_cameras",
+    "car_parts_service_maintenance",
+    "tyres_wheels_car_accessories",
+    "moto_bicycle_mobility_gear",
+    "power_tools_workshop",
+    "hand_tools_consumables_measuring",
+    "garden_outdoor_repair_building",
+    "health_wellness_safety_devices",
+    "beauty_grooming_personal_care",
+    "baby_kids_pets_sports_outdoor",
+    "clothing_apparel_workwear",
+    "footwear_shoes_sneakers_boots",
+    "jewelry_watches_bags_fashion_accessories",
+}
+
 
 class PicWiseSearchIndexBlindEvaluationStage6ATests(unittest.TestCase):
     def setUp(self) -> None:
@@ -40,6 +73,7 @@ class PicWiseSearchIndexBlindEvaluationStage6ATests(unittest.TestCase):
     def test_all_available_mega_categories_are_represented(self) -> None:
         categories_in_registry = {row.mega_category_id for row in self.registry.records}
         categories_in_cases = {row.expected_mega_category_id for row in self.cases if row.should_match}
+        self.assertEqual(categories_in_registry, _STAGE7A_REQUIRED_CATEGORIES)
         self.assertEqual(categories_in_categories_sorted(categories_in_cases), categories_in_categories_sorted(categories_in_registry))
 
     def test_generated_variants_and_exact_canonical_cases_are_included(self) -> None:
@@ -90,20 +124,15 @@ class PicWiseSearchIndexBlindEvaluationStage6ATests(unittest.TestCase):
         self.assertTrue(all(report.threshold_status.values()))
 
     def test_generated_blind_cases_include_terms_beyond_fixed_acceptance_probes(self) -> None:
-        fixed_probe_queries = {
-            "coffe grindr",
-            "vaccum cleaner",
-            "bluethoth speker",
-            "gming mouse",
-            "car batery",
-            "bike helmt",
-            "winter jakcet",
-            "baby car seet",
-            "usb caible",
-        }
         positive_queries = {row.query for row in self.cases if row.should_match}
-        non_probe_queries = positive_queries - fixed_probe_queries
-        self.assertGreater(len(non_probe_queries), len(fixed_probe_queries) * 10)
+        non_probe_queries = positive_queries - _FIXED_PROBE_QUERIES
+        self.assertGreater(len(non_probe_queries), len(_FIXED_PROBE_QUERIES) * 10)
+
+    def test_generated_blind_cases_include_unknown_terms_not_fixed_probes_for_all_categories(self) -> None:
+        non_probe_positive_cases = [row for row in self.cases if row.should_match and row.query not in _FIXED_PROBE_QUERIES]
+        self.assertGreater(len(non_probe_positive_cases), 0)
+        categories_with_non_probe = {row.expected_mega_category_id for row in non_probe_positive_cases}
+        self.assertEqual(categories_with_non_probe, _STAGE7A_REQUIRED_CATEGORIES)
 
 
 def categories_in_categories_sorted(values: set[str]) -> list[str]:

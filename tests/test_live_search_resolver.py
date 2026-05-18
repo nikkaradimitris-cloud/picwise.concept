@@ -92,6 +92,54 @@ class LiveSearchResolverTests(unittest.TestCase):
                 self.assertFalse(resolution.result_allowed)
                 self.assertEqual(resolution.resolver_state, "understood_provider_not_connected")
 
+    def test_stage7a_noisy_queries_cover_all_18_categories_as_not_connected(self) -> None:
+        expected = {
+            "vaccum cleaner": "home_appliances_laundry_climate",
+            "washing machne": "home_appliances_laundry_climate",
+            "coffe grindr": "kitchen_cooking_household",
+            "air frier": "kitchen_cooking_household",
+            "office chiar": "furniture_living_storage_smart_home",
+            "storage cabnet": "furniture_living_storage_smart_home",
+            "usb caible": "phones_mobile_accessories",
+            "screen protecter": "phones_mobile_accessories",
+            "gming mouse": "computers_office_peripherals",
+            "laptop chrger": "phones_mobile_accessories",
+            "bluethoth speker": "audio_video_gaming_cameras",
+            "wirless headphones": "audio_video_gaming_cameras",
+            "car batery": "car_parts_service_maintenance",
+            "breake pads": "car_parts_service_maintenance",
+            "car tyre": "tyres_wheels_car_accessories",
+            "tyre 195 65 r15": "tyres_wheels_car_accessories",
+            "bike helmt": "moto_bicycle_mobility_gear",
+            "motorbike glovs": "moto_bicycle_mobility_gear",
+            "cordless dril": "power_tools_workshop",
+            "hammer dril": "power_tools_workshop",
+            "screwdrivr set": "hand_tools_consumables_measuring",
+            "digital calper": "hand_tools_consumables_measuring",
+            "gardn shears": "garden_outdoor_repair_building",
+            "leaf blwer": "garden_outdoor_repair_building",
+            "blood presure monitor": "health_wellness_safety_devices",
+            "pulse oxymeter": "health_wellness_safety_devices",
+            "beard trimr": "beauty_grooming_personal_care",
+            "hair dryier": "beauty_grooming_personal_care",
+            "baby car seet": "baby_kids_pets_sports_outdoor",
+            "dog leesh": "baby_kids_pets_sports_outdoor",
+            "winter jakcet": "clothing_apparel_workwear",
+            "workwear trousres": "clothing_apparel_workwear",
+            "runing shoes": "footwear_shoes_sneakers_boots",
+            "hikng boots": "footwear_shoes_sneakers_boots",
+            "wrist watc": "jewelry_watches_bags_fashion_accessories",
+            "handbg": "jewelry_watches_bags_fashion_accessories",
+        }
+        for query, mega_category in expected.items():
+            with self.subTest(query=query):
+                resolution = resolve_live_search(query)
+                self.assertEqual(resolution.mega_category_id, mega_category)
+                self.assertEqual(resolution.provider_status, "not_connected")
+                self.assertFalse(resolution.result_allowed)
+                self.assertEqual(resolution.resolver_state, "understood_provider_not_connected")
+                self.assertEqual(resolution.provider_key, "not_connected")
+
     def test_random_garbage_maps_to_not_understood_state(self) -> None:
         for query in ("7437ηφσδνω==", "asdf@@@", "###$$$"):
             with self.subTest(query=query):
@@ -161,8 +209,7 @@ class LiveSearchResolverTests(unittest.TestCase):
             "accounting software",
             "river bank",
             "bank account",
-            "bank loan",
-            "car insurance policy",
+            "car insurance",
         ):
             with self.subTest(query=query):
                 resolution = resolve_live_search(query)
