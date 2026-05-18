@@ -427,6 +427,139 @@ class PicWiseSearchIndexLookupIntegrationStage43Tests(unittest.TestCase):
         keys = set(result.matched_entry.to_dict().keys())
         self.assertTrue(forbidden.isdisjoint(keys))
 
+    def test_stage7d_single_token_probes_resolve_through_generic_policy(self) -> None:
+        expected = {
+            "watch": "jewelry_watches_bags_fashion_accessories",
+            "wach": "jewelry_watches_bags_fashion_accessories",
+            "mixer": "kitchen_cooking_household",
+            "mixr": "kitchen_cooking_household",
+        }
+        for query, category in expected.items():
+            with self.subTest(query=query):
+                result = lookup_offline_search_index(query, self.index)
+                self.assertEqual(result.status, "match")
+                self.assertIsNotNone(result.matched_entry)
+                self.assertEqual(result.matched_entry.mega_category_id, category)
+                self.assertIn(result.confidence, {"medium", "high"})
+                self.assertGreaterEqual(result.score, 0.84)
+                self.assertIn(result.matched_entry.canonical_source, {"offline_canonical_vocabulary_coverage", "taxonomy_bridge", "taxonomy_clean_vocabulary"})
+
+    def test_stage7d_single_token_generated_variants_have_generic_coverage(self) -> None:
+        generated_variant_queries = (
+            "wach",
+            "mixr",
+            "vacum",
+            "bookshef",
+            "powerbnk",
+            "keyboad",
+            "headphnes",
+            "alternaotr",
+            "helment",
+            "driil",
+            "wrnch",
+            "thremometer",
+        )
+        for query in generated_variant_queries:
+            with self.subTest(query=query):
+                result = lookup_offline_search_index(query, self.index)
+                self.assertEqual(result.status, "match")
+                self.assertIsNotNone(result.matched_entry)
+                self.assertIn(result.matched_entry.canonical_source, {"offline_canonical_vocabulary_coverage", "taxonomy_bridge", "taxonomy_clean_vocabulary"})
+                self.assertGreaterEqual(result.score, 0.84)
+
+    def test_stage7d_minimum_single_token_products_across_categories(self) -> None:
+        terms = (
+            ("watch", "jewelry_watches_bags_fashion_accessories"),
+            ("mixer", "kitchen_cooking_household"),
+            ("vacuum", "home_appliances_laundry_climate"),
+            ("bookshelf", "furniture_living_storage_smart_home"),
+            ("powerbank", "phones_mobile_accessories"),
+            ("keyboard", "computers_office_peripherals"),
+            ("headphones", "audio_video_gaming_cameras"),
+            ("alternator", "car_parts_service_maintenance"),
+            ("tyre", "tyres_wheels_car_accessories"),
+            ("helmet", "moto_bicycle_mobility_gear"),
+            ("drill", "power_tools_workshop"),
+            ("wrench", "hand_tools_consumables_measuring"),
+            ("chainsaw", "garden_outdoor_repair_building"),
+            ("thermometer", "health_wellness_safety_devices"),
+            ("trimmer", "beauty_grooming_personal_care"),
+            ("stroller", "baby_kids_pets_sports_outdoor"),
+            ("hoodie", "clothing_apparel_workwear"),
+            ("boots", "footwear_shoes_sneakers_boots"),
+            ("earrings", "jewelry_watches_bags_fashion_accessories"),
+            ("jigsaw", "power_tools_workshop"),
+        )
+        for query, category in terms:
+            with self.subTest(query=query):
+                result = lookup_offline_search_index(query, self.index)
+                self.assertEqual(result.status, "match")
+                self.assertIsNotNone(result.matched_entry)
+                self.assertEqual(result.matched_entry.mega_category_id, category)
+
+    def test_stage7d_single_token_broad_negatives_remain_safe(self) -> None:
+        for query in ("bank", "charger", "apple", "nike", "bosch", "insurance", "loan", "erp", "crm"):
+            with self.subTest(query=query):
+                result = lookup_offline_search_index(query, self.index)
+                self.assertEqual(result.status, "no_match")
+                self.assertIsNone(result.matched_entry)
+                self.assertTrue(
+                    ("broad_or_ambiguous_query" in result.reason_codes)
+                    or ("single_token_broad_or_unsafe" in result.reason_codes)
+                )
+
+    def test_stage7d_single_token_collision_does_not_blindly_match(self) -> None:
+        from picwise_search_memory.contracts import CanonicalVocabularyBuildReport, CanonicalVocabularyRecord, CanonicalVocabularyRegistry
+
+        records = (
+            CanonicalVocabularyRecord(
+                canonical_id="id_cat_a",
+                canonical_term="monitor",
+                normalized_term="monitor",
+                mega_category_id="computers_office_peripherals",
+                source="offline_canonical_vocabulary_coverage",
+                source_file="canonical_vocabulary_coverage.py",
+                language="english",
+                status="offline_source_only",
+                schema_version="1.0.0",
+                token_count=1,
+                quality_flags=("offline_registry",),
+            ),
+            CanonicalVocabularyRecord(
+                canonical_id="id_cat_b",
+                canonical_term="monitor",
+                normalized_term="monitor",
+                mega_category_id="health_wellness_safety_devices",
+                source="offline_canonical_vocabulary_coverage",
+                source_file="canonical_vocabulary_coverage.py",
+                language="english",
+                status="offline_source_only",
+                schema_version="1.0.0",
+                token_count=1,
+                quality_flags=("offline_registry",),
+            ),
+        )
+        registry = CanonicalVocabularyRegistry(
+            records=records,
+            report=CanonicalVocabularyBuildReport(
+                total_input_terms=2,
+                total_records=2,
+                rejected_terms=0,
+                duplicate_terms=0,
+                rejected_by_reason={},
+                counts_by_mega_category={"computers_office_peripherals": 1, "health_wellness_safety_devices": 1},
+                source="taxonomy_clean_vocabulary",
+                schema_version="1.0.0",
+                language="english",
+                status="active",
+            ),
+            source="taxonomy_clean_vocabulary",
+            schema_version="1.0.0",
+        )
+        index = build_offline_search_index(registry=registry, generated_variants=[])
+        result = lookup_offline_search_index("monitor", index)
+        self.assertEqual(result.status, "no_match")
+
 
 if __name__ == "__main__":
     unittest.main()

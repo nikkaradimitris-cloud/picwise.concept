@@ -140,6 +140,35 @@ class PicWiseSearchIndexBlindEvaluationStage6ATests(unittest.TestCase):
         categories = {row.expected_mega_category_id for row in bridge_cases}
         self.assertEqual(categories, _STAGE7A_REQUIRED_CATEGORIES)
 
+    def test_stage7d_single_token_blind_coverage_minimums(self) -> None:
+        single_positive = [row for row in self.cases if row.should_match and len(row.query.split()) == 1]
+        single_generated = [row for row in single_positive if row.variant_type != "exact_canonical"]
+        self.assertGreaterEqual(len(single_positive), 20)
+        self.assertGreaterEqual(len(single_generated), 10)
+
+    def test_stage7d_single_token_acceptance_probes_and_safety(self) -> None:
+        expected = {
+            "watch": "jewelry_watches_bags_fashion_accessories",
+            "wach": "jewelry_watches_bags_fashion_accessories",
+            "mixer": "kitchen_cooking_household",
+            "mixr": "kitchen_cooking_household",
+        }
+        from picwise_search_memory.index_lookup import lookup_offline_search_index
+
+        for query, category in expected.items():
+            with self.subTest(query=query):
+                result = lookup_offline_search_index(query, self.index)
+                self.assertEqual(result.status, "match")
+                self.assertIsNotNone(result.matched_entry)
+                self.assertEqual(result.matched_entry.mega_category_id, category)
+                self.assertGreaterEqual(result.score, 0.84)
+
+        for query in ("bank", "charger", "apple", "nike", "bosch", "insurance", "loan", "erp", "crm", "accounting software"):
+            with self.subTest(query=query):
+                result = lookup_offline_search_index(query, self.index)
+                self.assertEqual(result.status, "no_match")
+                self.assertIsNone(result.matched_entry)
+
 
 def categories_in_categories_sorted(values: set[str]) -> list[str]:
     return sorted(value for value in values if value)

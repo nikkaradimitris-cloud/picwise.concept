@@ -219,6 +219,22 @@ class LiveSearchResolverTests(unittest.TestCase):
                 self.assertEqual(resolution.resolver_state, "not_understood")
                 self.assertEqual(resolution.provider_status, "not_connected")
 
+    def test_stage7d_single_token_product_queries_become_understood_provider_not_connected(self) -> None:
+        expected = {
+            "watch": "jewelry_watches_bags_fashion_accessories",
+            "wach": "jewelry_watches_bags_fashion_accessories",
+            "mixer": "kitchen_cooking_household",
+            "mixr": "kitchen_cooking_household",
+        }
+        for query, mega_category in expected.items():
+            with self.subTest(query=query):
+                resolution = resolve_live_search(query)
+                self.assertEqual(resolution.mega_category_id, mega_category)
+                self.assertEqual(resolution.provider_status, "not_connected")
+                self.assertFalse(resolution.result_allowed)
+                self.assertEqual(resolution.resolver_state, "understood_provider_not_connected")
+                self.assertEqual(resolution.provider_key, "not_connected")
+
     def test_no_connected_provider_except_power_banks(self) -> None:
         queries = (
             "coffe grindr",

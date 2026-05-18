@@ -390,6 +390,38 @@ class DeploymentEntrypointTests(unittest.TestCase):
                 self.assertNotIn(">View on Amazon<", body)
                 self.assertNotIn('class="pw-card"', body)
 
+    def test_stage7d_search_route_single_token_products_show_provider_not_connected_and_no_cards(self) -> None:
+        single_token_queries = ("watch", "wach", "mixer", "mixr")
+        for query in single_token_queries:
+            with self.subTest(query=query):
+                status, headers, body = _call_wsgi("/search", f"q={quote(query)}")
+                self.assertEqual(status, "200 OK")
+                self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+                self.assertIn("PicWise understood this search, but no safe provider is connected yet.", body)
+                self.assertNotIn("Showing 4 options for:", body)
+                self.assertNotIn("ASIN: B0GR1257LT", body)
+                self.assertNotIn("ASIN: B0GH75LWKN", body)
+                self.assertNotIn("ASIN: B0GV9RDLM4", body)
+                self.assertNotIn("ASIN: B0BJMQBNZP", body)
+                self.assertNotIn(">View on Amazon<", body)
+                self.assertNotIn('class="pw-card"', body)
+
+    def test_stage7d_results_route_single_token_products_show_provider_not_connected_and_no_cards(self) -> None:
+        single_token_queries = ("watch", "wach", "mixer", "mixr")
+        for query in single_token_queries:
+            with self.subTest(query=query):
+                status, headers, body = _call_wsgi("/results", f"q={quote(query)}")
+                self.assertEqual(status, "200 OK")
+                self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
+                self.assertIn("PicWise understood this search, but no safe provider is connected yet.", body)
+                self.assertNotIn("Showing 4 options for:", body)
+                self.assertNotIn("ASIN: B0GR1257LT", body)
+                self.assertNotIn("ASIN: B0GH75LWKN", body)
+                self.assertNotIn("ASIN: B0GV9RDLM4", body)
+                self.assertNotIn("ASIN: B0BJMQBNZP", body)
+                self.assertNotIn(">View on Amazon<", body)
+                self.assertNotIn('class="pw-card"', body)
+
     def test_results_route_renders_main_shell_with_live_manual_result_for_power_bank_query(self) -> None:
         status, headers, body = _call_wsgi("/results", "q=power%20bank")
         self.assertEqual(status, "200 OK")

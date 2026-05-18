@@ -44,6 +44,7 @@ _TYPO_PROBE_STRINGS = frozenset(
         "usb caible",
     }
 )
+_FORBIDDEN_CANONICAL_TYPOS = frozenset({"wach", "mixr"})
 
 _REQUIRED_ANCHORS = {term for term, _category in required_anchor_terms()}
 
@@ -81,6 +82,24 @@ class PicWiseSearchMemoryCanonicalCoverageStage21Tests(unittest.TestCase):
             for term in terms:
                 with self.subTest(term=term):
                     self.assertNotIn(term, _TYPO_PROBE_STRINGS)
+                    self.assertNotIn(term, _FORBIDDEN_CANONICAL_TYPOS)
+
+    def test_single_token_product_families_exist_with_source_provenance(self) -> None:
+        expected = {
+            "watch": "jewelry_watches_bags_fashion_accessories",
+            "mixer": "kitchen_cooking_household",
+            "boots": "footwear_shoes_sneakers_boots",
+            "drill": "power_tools_workshop",
+            "keyboard": "computers_office_peripherals",
+        }
+        by_term = {(row.normalized_term, row.mega_category_id): row for row in self.registry.records}
+        for term, category in expected.items():
+            with self.subTest(term=term):
+                key = (term, category)
+                self.assertIn(key, by_term)
+                record = by_term[key]
+                self.assertIn(record.source, {"offline_canonical_vocabulary_coverage", "taxonomy_bridge", "taxonomy_clean_vocabulary"})
+                self.assertIn(record.status, {"active", "offline_source_only"})
 
     def test_forbidden_commercial_fields_absent_from_records(self) -> None:
         for record in self.registry.records:

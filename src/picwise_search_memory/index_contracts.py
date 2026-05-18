@@ -18,6 +18,8 @@ class SearchIndexEntry:
     schema_version: str
     token_count: int
     quality_flags: tuple[str, ...] = field(default_factory=tuple)
+    canonical_source: str = ""
+    canonical_status: str = ""
 
     def to_dict(self) -> dict:
         return {
@@ -34,6 +36,8 @@ class SearchIndexEntry:
             "schema_version": self.schema_version,
             "token_count": self.token_count,
             "quality_flags": list(self.quality_flags),
+            "canonical_source": self.canonical_source,
+            "canonical_status": self.canonical_status,
         }
 
 

@@ -9,11 +9,35 @@ from .validation import normalize_term
 _LOW_CONFIDENCE_THRESHOLD = 0.72
 _MEDIUM_CONFIDENCE_THRESHOLD = 0.84
 _HIGH_CONFIDENCE_THRESHOLD = 0.93
+_SINGLE_TOKEN_CANONICAL_ACCEPT_THRESHOLD = 0.90
+_SINGLE_TOKEN_GENERATED_ACCEPT_THRESHOLD = 0.84
 _MAX_CANDIDATE_DISTANCE = 3
 _PER_TOKEN_DISTANCE_CAP = 2
 _EXACT_COLLISION_RECOVERY_MIN_SCORE = 0.82
 _EXACT_COLLISION_RECOVERY_MARGIN = 0.12
 _BROAD_AMBIGUOUS_TERMS = {"bank", "charger", "apple", "nike", "bosch", "insurance", "loan", "erp", "crm", "accounting software"}
+_SINGLE_TOKEN_REJECT_TERMS = {
+    "bank",
+    "charger",
+    "apple",
+    "nike",
+    "bosch",
+    "insurance",
+    "loan",
+    "erp",
+    "crm",
+    "accounting",
+    "software",
+}
+_SINGLE_TOKEN_ACCEPTABLE_CANONICAL_SOURCES = {
+    "taxonomy_bridge",
+    "offline_canonical_vocabulary_coverage",
+    "taxonomy_clean_vocabulary",
+}
+_SINGLE_TOKEN_ACCEPTABLE_CANONICAL_STATUSES = {
+    "active",
+    "offline_source_only",
+}
 _VARIANT_TYPE_PRIORITY = {
     "exact_canonical": 0,
     "joined_words": 1,
@@ -171,6 +195,98 @@ def _canonical_specificity(entry: SearchIndexEntry) -> float:
     return 0.40 * token_count_signal + 0.30 * token_length_signal + 0.30 * overlap_signal
 
 
+def _single_token_query_gate(normalized_query: str) -> tuple[bool, str]:
+    tokens = [token for token in normalized_query.split() if token]
+    if len(tokens) != 1:
+        return False, ""
+    token = tokens[0]
+    if token in _SINGLE_TOKEN_REJECT_TERMS:
+        return True, "single_token_broad_or_unsafe"
+    if len(token) < 3:
+        return True, "single_token_too_short"
+    return False, ""
+
+
+def _single_token_candidate_score(normalized_query: str, candidate: _ScoredCandidate) -> float:
+    entry = candidate.entry
+    lexical_score = candidate.score
+    canonical_overlap = _token_overlap(normalized_query, entry.normalized_term)
+    canonical_similarity = _canonical_term_similarity(normalized_query, entry)
+    source_strength = 1.0 if entry.canonical_source in _SINGLE_TOKEN_ACCEPTABLE_CANONICAL_SOURCES else 0.0
+    status_strength = 1.0 if entry.canonical_status in _SINGLE_TOKEN_ACCEPTABLE_CANONICAL_STATUSES else 0.0
+    canonical_variant_bonus = 0.03 if entry.variant_type == "exact_canonical" else 0.0
+    generated_variant_penalty = 0.0
+    collision_penalty = min(_collision_severity(entry) * 0.16, 0.35)
+    score = (
+        0.55 * lexical_score
+        + 0.20 * canonical_overlap
+        + 0.15 * canonical_similarity
+        + 0.10 * source_strength
+        + 0.05 * status_strength
+        + canonical_variant_bonus
+        - generated_variant_penalty
+        - collision_penalty
+    )
+    return max(0.0, min(score, 1.0))
+
+
+def _resolve_single_token_fuzzy(
+    query: str, normalized_query: str, candidates: list[_ScoredCandidate]
+) -> SearchIndexLookupResult | None:
+    scored = sorted(
+        [
+            (
+                _single_token_candidate_score(normalized_query, row),
+                row,
+            )
+            for row in candidates
+            if row.entry.canonical_source in _SINGLE_TOKEN_ACCEPTABLE_CANONICAL_SOURCES
+            and row.entry.canonical_status in _SINGLE_TOKEN_ACCEPTABLE_CANONICAL_STATUSES
+        ],
+        key=lambda row: (
+            -row[0],
+            _collision_severity(row[1].entry),
+            _variant_priority(row[1].entry.variant_type),
+            row[1].entry.mega_category_id,
+            row[1].entry.canonical_id,
+            row[1].entry.index_key,
+        ),
+    )
+    if not scored:
+        return _no_match(query, normalized_query, ("single_token_no_provenance_backed_candidate",))
+
+    best_score, best_candidate = scored[0]
+    second_score = scored[1][0] if len(scored) > 1 else None
+    threshold = (
+        _SINGLE_TOKEN_CANONICAL_ACCEPT_THRESHOLD
+        if best_candidate.entry.variant_type == "exact_canonical"
+        else _SINGLE_TOKEN_GENERATED_ACCEPT_THRESHOLD
+    )
+    if best_score < threshold:
+        return _no_match(query, normalized_query, ("single_token_low_confidence",))
+    if second_score is not None and abs(best_score - second_score) < 0.05:
+        if scored[1][1].entry.mega_category_id != best_candidate.entry.mega_category_id:
+            return _no_match(query, normalized_query, ("single_token_cross_category_collision",))
+        if scored[1][1].entry.canonical_id != best_candidate.entry.canonical_id:
+            return _no_match(query, normalized_query, ("single_token_ambiguous_canonical_collision",))
+
+    reason = (
+        "single_token_exact_canonical_safe_match"
+        if best_candidate.entry.variant_type == "exact_canonical"
+        else "single_token_generated_variant_safe_match"
+    )
+    reason_codes = tuple(sorted(set(best_candidate.reason_codes + (reason,))))
+    return SearchIndexLookupResult(
+        query=query,
+        normalized_query=normalized_query,
+        status="match",
+        score=round(best_score, 4),
+        confidence=_to_confidence(max(best_score, _LOW_CONFIDENCE_THRESHOLD)),
+        matched_entry=best_candidate.entry,
+        reason_codes=reason_codes,
+    )
+
+
 def _is_overly_generic_collision(normalized_query: str, entries: list[SearchIndexEntry]) -> bool:
     categories = {entry.mega_category_id for entry in entries}
     canonical_terms = {entry.normalized_term for entry in entries}
@@ -306,6 +422,10 @@ def lookup_offline_search_index(query: str, index: SearchIndex) -> SearchIndexLo
     if normalized_query in _BROAD_AMBIGUOUS_TERMS:
         return _no_match(query, normalized_query, ("broad_or_ambiguous_query",))
 
+    single_token_guarded, single_token_guard_reason = _single_token_query_gate(normalized_query)
+    if single_token_guarded:
+        return _no_match(query, normalized_query, (single_token_guard_reason,))
+
     by_exact = [entry for entry in index.entries if entry.normalized_variant == normalized_query]
     if by_exact:
         canonical_ids = {entry.canonical_id for entry in by_exact}
@@ -371,6 +491,9 @@ def lookup_offline_search_index(query: str, index: SearchIndex) -> SearchIndexLo
     )
     best = ranked[0]
     second = ranked[1] if len(ranked) > 1 else None
+
+    if len(normalized_query.split()) == 1:
+        return _resolve_single_token_fuzzy(query, normalized_query, ranked)
 
     if best.score < _LOW_CONFIDENCE_THRESHOLD:
         return _no_match(query, normalized_query, ("low_confidence_match",))

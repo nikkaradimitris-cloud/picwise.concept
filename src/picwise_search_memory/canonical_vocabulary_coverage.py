@@ -46,6 +46,8 @@ _COVERAGE_BY_MEGA_CATEGORY: dict[str, tuple[str, ...]] = {
         "garment steamer",
         "lint remover",
         "clothes drying rack",
+        "vacuum",
+        "dishwasher",
     ),
     "kitchen_cooking_household": (
         "coffee grinder",
@@ -79,6 +81,9 @@ _COVERAGE_BY_MEGA_CATEGORY: dict[str, tuple[str, ...]] = {
         "stock pot",
         "food storage containers",
         "glass meal prep containers",
+        "mixer",
+        "blender",
+        "toaster",
     ),
     "furniture_living_storage_smart_home": (
         "office chair",
@@ -113,6 +118,8 @@ _COVERAGE_BY_MEGA_CATEGORY: dict[str, tuple[str, ...]] = {
         "smart door sensor",
         "smart home hub",
         "floor lamp",
+        "bookshelf",
+        "recliner",
     ),
     "phones_mobile_accessories": (
         "usb cable",
@@ -145,6 +152,8 @@ _COVERAGE_BY_MEGA_CATEGORY: dict[str, tuple[str, ...]] = {
         "phone armband",
         "privacy screen protector",
         "tablet stylus pen",
+        "powerbank",
+        "tripod",
     ),
     "computers_office_peripherals": (
         "gaming mouse",
@@ -177,6 +186,8 @@ _COVERAGE_BY_MEGA_CATEGORY: dict[str, tuple[str, ...]] = {
         "laser printer toner",
         "document scanner",
         "ergonomic keyboard wrist rest",
+        "keyboard",
+        "webcam",
     ),
     "audio_video_gaming_cameras": (
         "bluetooth speaker",
@@ -210,6 +221,8 @@ _COVERAGE_BY_MEGA_CATEGORY: dict[str, tuple[str, ...]] = {
         "camera lens filter",
         "portable audio recorder",
         "dslr camera bag",
+        "headphones",
+        "soundbar",
     ),
     "car_parts_service_maintenance": (
         "car battery",
@@ -243,6 +256,8 @@ _COVERAGE_BY_MEGA_CATEGORY: dict[str, tuple[str, ...]] = {
         "oxygen sensor",
         "battery terminal clamp",
         "car diagnostic scanner",
+        "alternator",
+        "radiator",
     ),
     "tyres_wheels_car_accessories": (
         "car tyre",
@@ -277,6 +292,8 @@ _COVERAGE_BY_MEGA_CATEGORY: dict[str, tuple[str, ...]] = {
         "car cleaning kit",
         "car phone charger",
         "roof rack cross bars",
+        "tyre",
+        "wellies",
     ),
     "moto_bicycle_mobility_gear": (
         "bike helmet",
@@ -310,6 +327,8 @@ _COVERAGE_BY_MEGA_CATEGORY: dict[str, tuple[str, ...]] = {
         "bicycle multitool",
         "bike bell",
         "knee guards",
+        "helmet",
+        "multitool",
     ),
     "power_tools_workshop": (
         "cordless drill",
@@ -343,6 +362,8 @@ _COVERAGE_BY_MEGA_CATEGORY: dict[str, tuple[str, ...]] = {
         "work light",
         "tool chest",
         "battery charger for drill",
+        "drill",
+        "jigsaw",
     ),
     "hand_tools_consumables_measuring": (
         "screwdriver set",
@@ -376,6 +397,8 @@ _COVERAGE_BY_MEGA_CATEGORY: dict[str, tuple[str, ...]] = {
         "nuts and bolts kit",
         "abrasive discs",
         "cutting wheels",
+        "wrench",
+        "caliper",
     ),
     "garden_outdoor_repair_building": (
         "lawn mower",
@@ -409,6 +432,8 @@ _COVERAGE_BY_MEGA_CATEGORY: dict[str, tuple[str, ...]] = {
         "outdoor flood light",
         "deck screws",
         "brick trowel",
+        "chainsaw",
+        "shovel",
     ),
     "health_wellness_safety_devices": (
         "blood pressure monitor",
@@ -441,6 +466,8 @@ _COVERAGE_BY_MEGA_CATEGORY: dict[str, tuple[str, ...]] = {
         "respirator mask",
         "ear protection muffs",
         "medical alert bracelet",
+        "thermometer",
+        "nebulizer",
     ),
     "beauty_grooming_personal_care": (
         "electric toothbrush",
@@ -473,6 +500,8 @@ _COVERAGE_BY_MEGA_CATEGORY: dict[str, tuple[str, ...]] = {
         "bath sponge",
         "razor blades",
         "shaving foam",
+        "trimmer",
+        "epilator",
     ),
     "baby_kids_pets_sports_outdoor": (
         "baby car seat",
@@ -506,6 +535,8 @@ _COVERAGE_BY_MEGA_CATEGORY: dict[str, tuple[str, ...]] = {
         "exercise resistance bands",
         "dumbbell set",
         "soccer shin guards",
+        "stroller",
+        "backpack",
     ),
     "clothing_apparel_workwear": (
         "winter jacket",
@@ -538,6 +569,8 @@ _COVERAGE_BY_MEGA_CATEGORY: dict[str, tuple[str, ...]] = {
         "ski jacket",
         "thermal socks",
         "cotton hoodie",
+        "hoodie",
+        "jeans",
     ),
     "footwear_shoes_sneakers_boots": (
         "running shoes",
@@ -571,6 +604,8 @@ _COVERAGE_BY_MEGA_CATEGORY: dict[str, tuple[str, ...]] = {
         "safety shoes",
         "non slip shoes",
         "walking sandals",
+        "sneakers",
+        "boots",
     ),
     "jewelry_watches_bags_fashion_accessories": (
         "wrist watch",
@@ -604,6 +639,8 @@ _COVERAGE_BY_MEGA_CATEGORY: dict[str, tuple[str, ...]] = {
         "travel wallet",
         "passport holder",
         "watch box",
+        "watch",
+        "earrings",
     ),
 }
 

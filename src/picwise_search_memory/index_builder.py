@@ -53,6 +53,8 @@ def _build_entry(
     variant: str,
     variant_type: str,
     source: str,
+    canonical_source: str,
+    canonical_status: str,
     generator_version: str,
     quality_flags: tuple[str, ...],
 ) -> SearchIndexEntry:
@@ -67,6 +69,8 @@ def _build_entry(
         mega_category_id=mega_category_id,
         variant_type=variant_type,
         source=source,
+        canonical_source=canonical_source,
+        canonical_status=canonical_status,
         generator_version=generator_version,
         schema_version=_INDEX_SCHEMA_VERSION,
         token_count=len(normalized_variant.split()),
@@ -142,6 +146,9 @@ def build_offline_search_index(
             "canonical_term": record.canonical_term,
             "normalized_term": record.normalized_term,
             "mega_category_id": record.mega_category_id,
+            "canonical_source": record.source,
+            "canonical_status": record.status,
+            "canonical_flags": tuple(record.quality_flags),
         }
 
     variants = generated_variants
@@ -181,6 +188,8 @@ def build_offline_search_index(
             variant=record.canonical_term,
             variant_type="exact_canonical",
             source=record.source,
+            canonical_source=record.source,
+            canonical_status=record.status,
             generator_version="stage4_exact_seed",
             quality_flags=tuple(sorted(set(record.quality_flags + ("offline_search_index", "exact_variant")))),
         )
@@ -230,8 +239,20 @@ def build_offline_search_index(
             variant=row.get("variant", ""),
             variant_type=variant_type,
             source=source,
+            canonical_source=match["canonical_source"],
+            canonical_status=match["canonical_status"],
             generator_version=generator_version,
-            quality_flags=("offline_search_index", "generated_variant"),
+            quality_flags=tuple(
+                sorted(
+                    set(
+                        (
+                            "offline_search_index",
+                            "generated_variant",
+                            *match["canonical_flags"],
+                        )
+                    )
+                )
+            ),
         )
         entries.append(entry)
         counts_by_category[entry.mega_category_id] += 1
@@ -264,6 +285,8 @@ def build_offline_search_index(
                 mega_category_id=entry.mega_category_id,
                 variant_type=entry.variant_type,
                 source=entry.source,
+                canonical_source=entry.canonical_source,
+                canonical_status=entry.canonical_status,
                 generator_version=entry.generator_version,
                 schema_version=entry.schema_version,
                 token_count=entry.token_count,

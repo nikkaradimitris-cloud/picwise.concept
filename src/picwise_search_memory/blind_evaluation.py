@@ -129,6 +129,8 @@ def generate_blind_evaluation_cases(
     case_index = 1
     categories_by_term = _shared_term_categories(registry)
 
+    single_token_positive_cases = 0
+    single_token_generated_cases = 0
     for record in sorted(registry.records, key=lambda row: (row.mega_category_id, row.normalized_term, row.canonical_id)):
         variants = _generate_case_variants(record)
         shared_category_count = len(categories_by_term.get(record.normalized_term, {record.mega_category_id}))
@@ -159,6 +161,10 @@ def generate_blind_evaluation_cases(
                 )
             )
             case_index += 1
+            if should_match and len(normalize_term(query).split()) == 1:
+                single_token_positive_cases += 1
+                if variant_type != "exact_canonical":
+                    single_token_generated_cases += 1
 
     if include_negative_terms:
         for broad_term in _NEGATIVE_BROAD_TERMS:
@@ -178,6 +184,11 @@ def generate_blind_evaluation_cases(
                 )
             )
             case_index += 1
+
+    if single_token_positive_cases < 20:
+        raise ValueError("Blind evaluation must include at least 20 single-token positive cases")
+    if single_token_generated_cases < 10:
+        raise ValueError("Blind evaluation must include at least 10 single-token generated variant cases")
 
     return tuple(cases)
 
