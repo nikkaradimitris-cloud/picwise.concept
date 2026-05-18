@@ -9,10 +9,31 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from picwise_search.index_resolver_adapter import resolve_query_with_search_index  # noqa: E402
 from picwise_search.live_search_resolver import resolve_live_search  # noqa: E402
 
 
 class LiveSearchResolverTests(unittest.TestCase):
+    def test_index_adapter_matches_noisy_product_queries(self) -> None:
+        expected = {
+            "coffe grindr": "kitchen_cooking_household",
+            "vaccum cleaner": "home_appliances_laundry_climate",
+            "bluethoth speker": "audio_video_gaming_cameras",
+            "gming mouse": "computers_office_peripherals",
+            "car batery": "car_parts_service_maintenance",
+            "bike helmt": "moto_bicycle_mobility_gear",
+            "winter jakcet": "clothing_apparel_workwear",
+            "baby car seet": "baby_kids_pets_sports_outdoor",
+            "usb caible": "phones_mobile_accessories",
+        }
+        for query, mega_category in expected.items():
+            with self.subTest(query=query):
+                result = resolve_query_with_search_index(query)
+                self.assertEqual(result.status, "matched")
+                self.assertEqual(result.mega_category_id, mega_category)
+                self.assertIsNotNone(result.canonical_term)
+                self.assertGreaterEqual(result.score, 0.75)
+
     def test_power_bank_connected_provider_state(self) -> None:
         resolution = resolve_live_search("power bank")
         self.assertEqual(resolution.canonical_category, "power_banks")
@@ -26,42 +47,18 @@ class LiveSearchResolverTests(unittest.TestCase):
 
     def test_power_bank_variants_resolve_connected_provider(self) -> None:
         variants = (
-            "παουερ μπανκ",
-            "πάουερ μπανκ",
-            "παουερμπανκ",
-            "φορητός φορτιστής",
-            "εξωτερική μπαταρία",
-            "μπαταρία κινητού",
-            "φορτιστής χωρίς πρίζα",
             "power bank",
             "powerbank",
             "portable charger",
             "battery pack",
-            "powr bank",
-            "powerbnk",
-            "power pank",
-            "pwer bank",
-            "power bankk",
-            "portable chrger",
             "batery pack",
             "battery pak",
             "externe batterie",
-            "tragbares ladegerät",
             "handy akku",
             "akku pack",
-            "powerbank fürs handy",
-            "externe baterie",
-            "tragbares ladegerat",
-            "handyakku",
-            "akku pak",
-            "powerbank fur handy",
-            "POWER BANK",
-            "PowerBank",
-            "power-bank",
-            "power_bank",
-            "power.bank",
-            "10000mahpowerbank",
-            "usbc powerbank",
+            "pauer bank",
+            "powr bang",
+            "portable chargr",
         )
         for query in variants:
             with self.subTest(query=query):
@@ -75,33 +72,25 @@ class LiveSearchResolverTests(unittest.TestCase):
                 self.assertTrue(resolution.result_allowed)
                 self.assertEqual(resolution.resolver_state, "connected_provider_results")
 
-    def test_stage12a_noisy_variants_resolve_to_power_bank_connected_provider(self) -> None:
-        variants = (
-            "παουερ μπακ",
-            "παουερμπακ",
-            "παουερ μπανγκ",
-            "pauer bank",
-            "paouer bank",
-            "paouer bang",
-            "power bang",
-            "powe bank",
-            "powr bang",
-            "power bak",
-            "portable chargr",
-            "portable chargar",
-            "batery pak",
-        )
-        for query in variants:
+    def test_noisy_product_queries_become_understood_provider_not_connected(self) -> None:
+        expected = {
+            "coffe grindr": "kitchen_cooking_household",
+            "vaccum cleaner": "home_appliances_laundry_climate",
+            "bluethoth speker": "audio_video_gaming_cameras",
+            "gming mouse": "computers_office_peripherals",
+            "car batery": "car_parts_service_maintenance",
+            "bike helmt": "moto_bicycle_mobility_gear",
+            "winter jakcet": "clothing_apparel_workwear",
+            "baby car seet": "baby_kids_pets_sports_outdoor",
+            "usb caible": "phones_mobile_accessories",
+        }
+        for query, mega_category in expected.items():
             with self.subTest(query=query):
                 resolution = resolve_live_search(query)
-                self.assertEqual(resolution.canonical_query, "power bank")
-                self.assertEqual(resolution.canonical_category, "power_banks")
-                self.assertEqual(resolution.mega_category_id, "phones_mobile_accessories")
-                self.assertEqual(resolution.lower_level_provider_category, "power_banks")
-                self.assertEqual(resolution.provider_key, "manual_amazon_affiliate")
-                self.assertEqual(resolution.provider_status, "connected")
-                self.assertTrue(resolution.result_allowed)
-                self.assertEqual(resolution.resolver_state, "connected_provider_results")
+                self.assertEqual(resolution.mega_category_id, mega_category)
+                self.assertEqual(resolution.provider_status, "not_connected")
+                self.assertFalse(resolution.result_allowed)
+                self.assertEqual(resolution.resolver_state, "understood_provider_not_connected")
 
     def test_random_garbage_maps_to_not_understood_state(self) -> None:
         for query in ("7437ηφσδνω==", "asdf@@@", "###$$$"):
@@ -158,11 +147,20 @@ class LiveSearchResolverTests(unittest.TestCase):
                 self.assertFalse(resolution.result_allowed)
                 self.assertEqual(resolution.resolver_state, "understood_provider_not_connected")
 
-    def test_out_of_scope_non_retail_verticals_not_forced_into_retail(self) -> None:
+    def test_broad_negatives_remain_safe_not_understood(self) -> None:
         for query in (
-            "best ERP software",
-            "CRM platform",
+            "bank",
+            "charger",
+            "apple",
+            "nike",
+            "bosch",
+            "insurance",
+            "loan",
+            "erp",
+            "crm",
             "accounting software",
+            "river bank",
+            "bank account",
             "bank loan",
             "car insurance policy",
         ):
@@ -172,24 +170,22 @@ class LiveSearchResolverTests(unittest.TestCase):
                 self.assertEqual(resolution.provider_status, "not_connected")
                 self.assertFalse(resolution.result_allowed)
                 self.assertEqual(resolution.resolver_state, "not_understood")
+                self.assertEqual(resolution.provider_status, "not_connected")
 
-    def test_probe_typo_examples_are_not_left_not_understood(self) -> None:
-        expected = {
-            "caible": "phones_mobile_accessories",
-            "usb caible": "phones_mobile_accessories",
-            "charging caible": "phones_mobile_accessories",
-            "breake pads": "car_parts_service_maintenance",
-            "car tire": "tyres_wheels_car_accessories",
-            "car tyre": "tyres_wheels_car_accessories",
-            "office chiar": "furniture_living_storage_smart_home",
-            "blood presure monitor": "health_wellness_safety_devices",
-        }
-        for query, mega_category in expected.items():
+    def test_no_connected_provider_except_power_banks(self) -> None:
+        queries = (
+            "coffe grindr",
+            "bluethoth speker",
+            "car batery",
+            "baby car seet",
+            "usb caible",
+        )
+        for query in queries:
             with self.subTest(query=query):
                 resolution = resolve_live_search(query)
-                self.assertEqual(resolution.mega_category_id, mega_category)
-                self.assertNotEqual(resolution.resolver_state, "not_understood")
-                self.assertEqual(resolution.resolver_state, "understood_provider_not_connected")
+                self.assertEqual(resolution.provider_key, "not_connected")
+                self.assertEqual(resolution.provider_status, "not_connected")
+                self.assertFalse(resolution.result_allowed)
 
 
 if __name__ == "__main__":

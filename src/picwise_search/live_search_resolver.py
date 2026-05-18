@@ -10,6 +10,7 @@ from picwise_nlu import (
     normalize_greeklish_and_typos,
     normalize_query,
 )
+from .index_resolver_adapter import resolve_query_with_search_index
 
 
 _CONNECTED_PROVIDER_BY_CATEGORY = {
@@ -92,11 +93,15 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     intent = build_local_nlu_intent(raw_query)
     adapter = adapt_local_nlu_intent_for_router(intent)
     category_probe = detect_category(canonicalized_query)
+    index_result = resolve_query_with_search_index(canonicalized_query)
 
     canonical_category = intent.get("category") or category_probe.get("category")
+    if not canonical_category and index_result.status == "matched" and index_result.canonical_term:
+        canonical_category = str(index_result.canonical_term)
     mega_category_id = (
         intent.get("mega_category_id")
         or category_probe.get("mega_category_id")
+        or (index_result.mega_category_id if index_result.status == "matched" else None)
         or (
             canonical_category
             if canonical_category and canonical_category != "power_banks"
@@ -107,13 +112,24 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     if canonical_category in _CONNECTED_PROVIDER_BY_CATEGORY:
         lower_level_provider_category = canonical_category
     query_type = str(intent.get("query_type") or "unknown")
-    confidence = max(_safe_confidence(intent.get("confidence")), _safe_confidence(category_probe.get("confidence")))
+    confidence = max(
+        _safe_confidence(intent.get("confidence")),
+        _safe_confidence(category_probe.get("confidence")),
+        _safe_confidence(index_result.confidence),
+    )
     status = str(intent.get("status") or "manual_review_required")
     needs_review = bool(intent.get("needs_review", True))
     is_ambiguous_or_invalid = status in {"ambiguous_needs_review", "invalid_intent"} or query_type == "ambiguous_query"
+    if (
+        status not in _CONNECTED_STATUSES
+        and index_result.status == "matched"
+        and canonical_category not in _CONNECTED_PROVIDER_BY_CATEGORY
+    ):
+        status = "general_intent_resolved"
+        needs_review = False
 
     canonical_query = "power bank" if canonical_category == "power_banks" else (
-        canonicalized_query or normalized_query or _normalized_text(raw_query).lower()
+        (index_result.canonical_term or canonicalized_query or normalized_query or _normalized_text(raw_query).lower())
     )
 
     provider_lookup_key = str(lower_level_provider_category or canonical_category or "")
@@ -159,6 +175,8 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
         resolver_state = "not_understood"
 
     reason_codes: list[str] = [str(code) for code in intent.get("reason_codes", []) if str(code).strip()]
+    reason_codes.extend(f"index_{code}" for code in index_result.reason_codes)
+    reason_codes.append(f"index_status_{index_result.status}")
     if not _normalized_text(raw_query):
         reason_codes.append("empty_query")
     if not mega_category_id and not canonical_category:
