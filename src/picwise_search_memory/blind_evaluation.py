@@ -139,7 +139,11 @@ def generate_blind_evaluation_cases(
             expected_mega_category_id = record.mega_category_id if should_match else ""
             expected_canonical_id = record.canonical_id if should_match else ""
             case_variant_type = "shared_term_negative" if shared_term_negative else variant_type
-            source = "shared_taxonomy_term_safety_set" if shared_term_negative else "canonical_registry+stage3_variant_generator"
+            source = (
+                "shared_taxonomy_term_safety_set"
+                if shared_term_negative
+                else f"{record.source}+stage3_variant_generator"
+            )
             cases.append(
                 _build_case(
                     case_id=f"blind_{case_index:06d}",

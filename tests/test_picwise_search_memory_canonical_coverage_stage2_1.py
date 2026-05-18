@@ -109,6 +109,7 @@ class PicWiseSearchMemoryCanonicalCoverageStage21Tests(unittest.TestCase):
         sources = {record.source for record in self.registry.records}
         self.assertIn("taxonomy_clean_vocabulary", sources)
         self.assertIn("offline_canonical_vocabulary_coverage", sources)
+        self.assertIn("taxonomy_bridge", sources)
 
     def test_all_mega_categories_represented_in_registry(self) -> None:
         expected_ids = {

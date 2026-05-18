@@ -134,6 +134,12 @@ class PicWiseSearchIndexBlindEvaluationStage6ATests(unittest.TestCase):
         categories_with_non_probe = {row.expected_mega_category_id for row in non_probe_positive_cases}
         self.assertEqual(categories_with_non_probe, _STAGE7A_REQUIRED_CATEGORIES)
 
+    def test_bridge_sourced_blind_cases_are_included(self) -> None:
+        bridge_cases = [row for row in self.cases if row.should_match and row.source.startswith("taxonomy_bridge+")]
+        self.assertGreater(len(bridge_cases), 0)
+        categories = {row.expected_mega_category_id for row in bridge_cases}
+        self.assertEqual(categories, _STAGE7A_REQUIRED_CATEGORIES)
+
 
 def categories_in_categories_sorted(values: set[str]) -> list[str]:
     return sorted(value for value in values if value)

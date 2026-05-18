@@ -20,6 +20,17 @@ from .evaluation_contracts import (
     BlindEvaluationResult,
     BlindEvaluationThresholds,
 )
+from .taxonomy_bridge_contracts import (
+    TaxonomySearchMemoryBridgeReport,
+    TaxonomySearchMemoryConnectionStatus,
+    TaxonomySearchMemoryGap,
+    TaxonomySearchMemorySource,
+    TaxonomySearchMemoryTerm,
+)
+from .taxonomy_search_memory_bridge import (
+    build_taxonomy_search_memory_bridge_report,
+    export_taxonomy_search_memory_terms,
+)
 
 __all__ = [
     "CanonicalVocabularyRecord",
@@ -40,6 +51,13 @@ __all__ = [
     "evaluate_blind_cases",
     "build_blind_evaluation_report",
     "run_offline_blind_index_evaluation",
+    "TaxonomySearchMemoryConnectionStatus",
+    "TaxonomySearchMemorySource",
+    "TaxonomySearchMemoryTerm",
+    "TaxonomySearchMemoryGap",
+    "TaxonomySearchMemoryBridgeReport",
+    "export_taxonomy_search_memory_terms",
+    "build_taxonomy_search_memory_bridge_report",
     "known_mega_category_ids",
     "normalize_term",
     "stable_canonical_id",

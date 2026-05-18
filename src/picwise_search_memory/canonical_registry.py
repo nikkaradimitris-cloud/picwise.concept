@@ -10,11 +10,13 @@ from .canonical_vocabulary_coverage import (
     load_offline_canonical_coverage_by_mega_category,
 )
 from .contracts import CanonicalVocabularyBuildReport, CanonicalVocabularyRecord, CanonicalVocabularyRegistry
+from .taxonomy_search_memory_bridge import export_taxonomy_search_memory_terms
 from .validation import known_mega_category_ids, normalize_term, stable_canonical_id, validate_registry
 
 _SCHEMA_VERSION = "1.0.0"
 _DEEP_PACK_SOURCE = "taxonomy_clean_vocabulary"
 _COVERAGE_SOURCE = "offline_canonical_vocabulary_coverage"
+_BRIDGE_SOURCE = "taxonomy_bridge"
 _REGISTRY_SOURCE = "taxonomy_clean_vocabulary"
 _LANGUAGE = "english"
 _STATUS_ACTIVE = "active"
@@ -64,6 +66,8 @@ def _build_record(
     source_path: str,
     status: str,
     quality_flags: tuple[str, ...],
+    aliases: tuple[str, ...] = (),
+    product_family: str = "",
 ) -> CanonicalVocabularyRecord:
     token_count = len(normalized_term.split())
     return CanonicalVocabularyRecord(
@@ -78,8 +82,8 @@ def _build_record(
         schema_version=_SCHEMA_VERSION,
         token_count=token_count,
         quality_flags=quality_flags,
-        aliases=(),
-        product_family="",
+        aliases=aliases,
+        product_family=product_family,
         source_path=source_path,
         confidence_weight=1.0,
     )
@@ -146,6 +150,35 @@ def build_canonical_vocabulary_registry() -> CanonicalVocabularyRegistry:
                     )
                 )
                 counts_by_mega_category[mega_category_id] += 1
+
+    for bridge_term in export_taxonomy_search_memory_terms():
+        total_input_terms += 1
+        reason = _reject_reason(bridge_term.canonical_term, bridge_term.mega_category_id, known_categories)
+        if reason:
+            rejected_by_reason[reason] += 1
+            continue
+        normalized = normalize_term(bridge_term.canonical_term)
+        signature = (bridge_term.mega_category_id, normalized)
+        if signature in dedupe_signatures:
+            duplicate_terms += 1
+            rejected_by_reason["duplicate"] += 1
+            continue
+        dedupe_signatures.add(signature)
+        bridge_flags = tuple(sorted(set(bridge_term.quality_flags + ("taxonomy_bridge", bridge_term.source_stage))))
+        records.append(
+            _build_record(
+                mega_category_id=bridge_term.mega_category_id,
+                normalized_term=normalized,
+                source=_BRIDGE_SOURCE,
+                source_file=f"{bridge_term.source_file}:{bridge_term.source_path_or_key}",
+                source_path="src/picwise_search_memory/canonical_vocabulary_coverage.py",
+                status=bridge_term.status,
+                quality_flags=bridge_flags,
+                aliases=bridge_term.aliases,
+                product_family=bridge_term.product_family,
+            )
+        )
+        counts_by_mega_category[bridge_term.mega_category_id] += 1
 
     ordered_records = tuple(sorted(records, key=lambda row: (row.mega_category_id, row.normalized_term)))
     report = CanonicalVocabularyBuildReport(
