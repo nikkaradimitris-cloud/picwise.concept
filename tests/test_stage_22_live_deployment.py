@@ -654,7 +654,6 @@ class DeploymentEntrypointTests(unittest.TestCase):
     def test_broad_negatives_show_safe_no_result_without_cards(self) -> None:
         blocked = (
             "bank",
-            "charger",
             "apple",
             "nike",
             "bosch",
@@ -683,7 +682,6 @@ class DeploymentEntrypointTests(unittest.TestCase):
         blocked = (
             "bank",
             "apple",
-            "charger",
             "galaxy",
             "bosch",
             "nike",

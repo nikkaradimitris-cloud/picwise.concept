@@ -14,6 +14,11 @@ from .evaluation_contracts import (
 )
 from .index_builder import build_offline_search_index
 from .index_contracts import SearchIndex, SearchIndexLookupResult
+from .broad_query_suggestions import (
+    build_broad_query_suggestions,
+    build_definite_single_token_match_tokens,
+    is_unsafe_broad_query,
+)
 from .index_lookup import lookup_offline_search_index
 from .lookup_safety import (
     build_exact_canonical_term_index,
@@ -25,7 +30,6 @@ from .validation import normalize_term
 
 _NEGATIVE_BROAD_TERMS: tuple[str, ...] = (
     "bank",
-    "charger",
     "apple",
     "nike",
     "bosch",
@@ -264,6 +268,102 @@ def generate_blind_evaluation_cases(
         raise ValueError("Blind evaluation must include at least 10 spelling-family or skeleton cases")
     if collision_negative_cases < 5:
         raise ValueError("Blind evaluation must include at least 5 collision homograph negative cases")
+
+    broad_product_cases = 0
+    broad_unsafe_cases = 0
+    seen_broad_queries: set[str] = set()
+    evaluation_index = index if index is not None else build_offline_search_index(registry)
+    definite_single_token_matches = build_definite_single_token_match_tokens(evaluation_index)
+    for record in registry.records:
+        if record.source not in {
+            "taxonomy_bridge",
+            "offline_canonical_vocabulary_coverage",
+            "taxonomy_clean_vocabulary",
+        }:
+            continue
+        tokens = tuple(record.normalized_term.split())
+        if len(tokens) < 2:
+            continue
+        for root_token in {tokens[0], tokens[-1]}:
+            if len(root_token) < 4 or root_token in seen_broad_queries:
+                continue
+            if is_unsafe_broad_query(root_token):
+                continue
+            if root_token in definite_single_token_matches:
+                continue
+            suggestions = build_broad_query_suggestions(registry, root_token)
+            if len(suggestions) < 2:
+                continue
+            seen_broad_queries.add(root_token)
+            cases.append(
+                _build_case(
+                    case_id=f"blind_{case_index:06d}",
+                    canonical_id="",
+                    canonical_term="",
+                    mega_category_id="",
+                    query=root_token,
+                    expected_normalized_term="",
+                    expected_mega_category_id="",
+                    variant_type="broad_product_root_generated",
+                    source="broad_query_suggestion_generated_set",
+                    should_match=False,
+                )
+            )
+            case_index += 1
+            broad_product_cases += 1
+
+    for unsafe_term in _NEGATIVE_BROAD_TERMS:
+        normalized = normalize_term(unsafe_term)
+        if normalized in seen_broad_queries:
+            continue
+        seen_broad_queries.add(normalized)
+        cases.append(
+            _build_case(
+                case_id=f"blind_{case_index:06d}",
+                canonical_id="",
+                canonical_term="",
+                mega_category_id="",
+                query=normalized,
+                expected_normalized_term="",
+                expected_mega_category_id="",
+                variant_type="broad_unsafe_generated",
+                source="broad_query_unsafe_generated_set",
+                should_match=False,
+            )
+        )
+        case_index += 1
+        broad_unsafe_cases += 1
+
+    for record in registry.records:
+        normalized = normalize_term(record.normalized_term)
+        if not normalized or normalized in seen_broad_queries:
+            continue
+        if len(normalized.split()) > 2:
+            continue
+        if not is_unsafe_broad_query(normalized):
+            continue
+        seen_broad_queries.add(normalized)
+        cases.append(
+            _build_case(
+                case_id=f"blind_{case_index:06d}",
+                canonical_id="",
+                canonical_term="",
+                mega_category_id="",
+                query=normalized,
+                expected_normalized_term="",
+                expected_mega_category_id="",
+                variant_type="broad_unsafe_generated",
+                source="broad_query_unsafe_registry_scan",
+                should_match=False,
+            )
+        )
+        case_index += 1
+        broad_unsafe_cases += 1
+
+    if broad_product_cases < 20:
+        raise ValueError("Blind evaluation must include at least 20 generated broad product-root cases")
+    if broad_unsafe_cases < 20:
+        raise ValueError("Blind evaluation must include at least 20 generated broad unsafe cases")
 
     return tuple(cases)
 

@@ -8,6 +8,12 @@ from .index_builder import build_offline_search_index
 from .index_contracts import SearchIndex, SearchIndexBuildReport, SearchIndexEntry, SearchIndexLookupResult
 from .index_lookup import lookup_offline_search_index
 from .validation import known_mega_category_ids, normalize_term, stable_canonical_id, validate_record, validate_registry
+from .broad_query_suggestions import (
+    BroadQuerySuggestion,
+    build_broad_query_suggestions,
+    is_unsafe_broad_query,
+    should_offer_broad_query_suggestions,
+)
 from .blind_evaluation import (
     build_blind_evaluation_report,
     evaluate_blind_cases,
@@ -44,6 +50,10 @@ __all__ = [
     "BlindEvaluationResult",
     "BlindEvaluationReport",
     "BlindEvaluationThresholds",
+    "BroadQuerySuggestion",
+    "build_broad_query_suggestions",
+    "is_unsafe_broad_query",
+    "should_offer_broad_query_suggestions",
     "build_canonical_vocabulary_registry",
     "build_offline_search_index",
     "lookup_offline_search_index",

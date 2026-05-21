@@ -157,7 +157,6 @@ class PicWiseSearchIndexLookupStage7EBTests(unittest.TestCase):
     def test_broad_negatives_remain_safe(self) -> None:
         for query in (
             "bank",
-            "charger",
             "apple",
             "nike",
             "bosch",

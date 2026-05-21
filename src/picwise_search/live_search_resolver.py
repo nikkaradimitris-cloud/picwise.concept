@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from picwise_nlu import (
@@ -10,7 +10,15 @@ from picwise_nlu import (
     normalize_greeklish_and_typos,
     normalize_query,
 )
-from .index_resolver_adapter import resolve_query_with_search_index
+from picwise_search_memory import build_canonical_vocabulary_registry
+from picwise_search_memory.broad_query_suggestions import (
+    BroadQuerySuggestion,
+    build_broad_query_suggestions,
+    should_offer_broad_query_suggestions,
+)
+from picwise_search_memory.index_lookup import lookup_offline_search_index
+
+from .index_resolver_adapter import get_cached_offline_search_index, resolve_query_with_search_index
 
 
 _CONNECTED_PROVIDER_BY_CATEGORY = {
@@ -25,6 +33,15 @@ _CONNECTED_STATUSES = {
 
 _INDEX_CATEGORY_OVERRIDE_MIN_CONFIDENCE = 0.84
 _INDEX_CATEGORY_OVERRIDE_MIN_SCORE = 0.84
+
+_CACHED_VOCABULARY_REGISTRY = None
+
+
+def _vocabulary_registry():
+    global _CACHED_VOCABULARY_REGISTRY
+    if _CACHED_VOCABULARY_REGISTRY is None:
+        _CACHED_VOCABULARY_REGISTRY = build_canonical_vocabulary_registry()
+    return _CACHED_VOCABULARY_REGISTRY
 
 
 @dataclass(frozen=True)
@@ -47,6 +64,7 @@ class LiveSearchResolution:
     result_allowed: bool
     resolver_state: str
     reason_codes: tuple[str, ...]
+    suggestions: tuple[BroadQuerySuggestion, ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -68,6 +86,7 @@ class LiveSearchResolution:
             "result_allowed": self.result_allowed,
             "resolver_state": self.resolver_state,
             "reason_codes": list(self.reason_codes),
+            "suggestions": [row.to_dict() for row in self.suggestions],
         }
 
 
@@ -97,6 +116,13 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     adapter = adapt_local_nlu_intent_for_router(intent)
     category_probe = detect_category(canonicalized_query)
     index_result = resolve_query_with_search_index(canonicalized_query)
+    raw_index_lookup = lookup_offline_search_index(canonicalized_query, get_cached_offline_search_index())
+    broad_suggestions = build_broad_query_suggestions(_vocabulary_registry(), canonicalized_query)
+    offer_broad_suggestions = should_offer_broad_query_suggestions(
+        normalized_query=canonicalized_query,
+        lookup_result=raw_index_lookup,
+        suggestions=broad_suggestions,
+    )
 
     canonical_category = intent.get("category") or category_probe.get("category")
     if not canonical_category and index_result.status == "matched" and index_result.canonical_term:
@@ -181,6 +207,12 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     )
     if result_allowed:
         resolver_state = "connected_provider_results"
+    elif offer_broad_suggestions:
+        resolver_state = "broad_query_suggestions"
+        mega_category_id = None
+        canonical_category = None
+        needs_review = False
+        status = "general_intent_resolved"
     elif blocked_or_unsafe:
         resolver_state = "blocked_or_unsafe"
     elif mega_category_id and provider_status != "connected":
@@ -206,6 +238,8 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
         reason_codes.append("manual_review_required")
     if provider_status == "connected":
         reason_codes.append("provider_connected")
+    if offer_broad_suggestions:
+        reason_codes.append("broad_query_suggestions")
     reason_codes.append(f"resolver_state_{resolver_state}")
     reason_codes.append(f"adapter_{adapter.get('adapter_decision', 'safe_review_only')}")
 
@@ -228,4 +262,5 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
         result_allowed=result_allowed,
         resolver_state=resolver_state,
         reason_codes=tuple(sorted(set(reason_codes))),
+        suggestions=broad_suggestions if offer_broad_suggestions else (),
     )

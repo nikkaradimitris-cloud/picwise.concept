@@ -221,7 +221,6 @@ class LiveSearchResolverTests(unittest.TestCase):
     def test_broad_negatives_remain_safe_not_understood(self) -> None:
         for query in (
             "bank",
-            "charger",
             "apple",
             "nike",
             "bosch",
@@ -277,6 +276,22 @@ class LiveSearchResolverTests(unittest.TestCase):
                 self.assertEqual(resolution.provider_status, "not_connected")
                 self.assertFalse(resolution.result_allowed)
                 self.assertEqual(resolution.resolver_state, "understood_provider_not_connected")
+
+    def test_stage7f_broad_queries_return_suggestions_without_cards(self) -> None:
+        for query in ("power", "charger"):
+            with self.subTest(query=query):
+                resolution = resolve_live_search(query)
+                self.assertEqual(resolution.resolver_state, "broad_query_suggestions")
+                self.assertFalse(resolution.result_allowed)
+                self.assertGreaterEqual(len(resolution.suggestions), 2)
+
+    def test_stage7f_unsafe_broad_queries_stay_not_understood_without_suggestions(self) -> None:
+        for query in ("bank", "insurance", "apple"):
+            with self.subTest(query=query):
+                resolution = resolve_live_search(query)
+                self.assertEqual(resolution.resolver_state, "not_understood")
+                self.assertFalse(resolution.result_allowed)
+                self.assertEqual(len(resolution.suggestions), 0)
 
     def test_collision_homograph_token_stays_not_understood(self) -> None:
         resolution = resolve_live_search("bots")

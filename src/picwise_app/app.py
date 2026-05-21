@@ -9,7 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import socket
 from typing import Any
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, quote, urlparse
 
 from picwise_contracts import DecisionDepth, DecisionOutput, MissingDataState, ProductBrain
 from picwise_engine import PicwiseDecisionEngine
@@ -102,7 +102,10 @@ class PicwiseLocalApp:
 
     def picwise_reference_html(self, query: str = "", *, source_page: str = "search") -> str:
         resolution = resolve_live_search(query)
-        return render_picwise_reference_surface(query=query, resolution=resolution, source_page=source_page)
+        html = render_picwise_reference_surface(query=query, resolution=resolution, source_page=source_page)
+        if resolution.resolver_state == "broad_query_suggestions":
+            html = _inject_broad_query_suggestions(html, resolution)
+        return html
 
     def amazon_affiliate_proof_html(self) -> str:
         return render_amazon_affiliate_proof_page()
@@ -655,6 +658,31 @@ class PicwiseLocalApp:
             '<p class="pw-note">No fallback products are shown. Manual review or query refinement is required.</p>'
             "</section></main></body></html>"
         )
+
+
+def _inject_broad_query_suggestions(html: str, resolution: Any) -> str:
+    suggestions = tuple(getattr(resolution, "suggestions", ()) or ())
+    if not suggestions:
+        return html
+    links: list[str] = []
+    for row in suggestions:
+        term = escape(str(row.canonical_term))
+        href = f"/search?q={quote(str(row.canonical_term), safe='')}"
+        links.append(f'<a href="{href}">{term}</a>')
+    suggestion_text = "This search is too broad. Try: " + ", ".join(links)
+    replacement = f'<p class="pw-reference-disclaimer">{suggestion_text}</p>'
+    marker = '<p class="pw-reference-disclaimer">'
+    start = html.find(marker)
+    if start == -1:
+        return html.replace(
+            '<section class="pw-empty-state">',
+            f'{replacement}<section class="pw-empty-state">',
+            1,
+        )
+    end = html.find("</p>", start)
+    if end == -1:
+        return html
+    return html[:start] + replacement + html[end + 4 :]
 
 
 class PicwiseRequestHandler(BaseHTTPRequestHandler):

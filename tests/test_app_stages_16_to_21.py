@@ -74,6 +74,11 @@ class AppHttpEndpointTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        from picwise_search.index_resolver_adapter import get_cached_offline_search_index
+        from picwise_search.live_search_resolver import resolve_live_search
+
+        get_cached_offline_search_index()
+        resolve_live_search("power")
         cls.port = _pick_open_port()
         cls.server = run_local_server(host="127.0.0.1", port=cls.port)
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
@@ -221,6 +226,13 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertNotIn('<img src="https://', lowered)
         self.assertNotIn("amazon.com/images", lowered)
         self.assertNotIn("class=\"pw-rating-row\"", lowered)
+
+    def test_search_route_renders_broad_query_suggestions_without_product_cards(self) -> None:
+        body = self._fetch("/search?q=power")
+        self.assertIn("This search is too broad", body)
+        self.assertIn('href="/search?q=', body)
+        self.assertNotIn("ASIN:", body)
+        self.assertEqual(body.count('<article class="pw-card'), 0)
 
     def test_search_route_renders_main_shell_and_live_manual_results_for_power_bank_query(self) -> None:
         body = self._fetch("/search?q=power%20bank")

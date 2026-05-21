@@ -54,6 +54,8 @@ class IndexResolverResult:
     confidence: float
     score: float
     reason_codes: tuple[str, ...]
+    variant_type: str | None = None
+    normalized_variant: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -65,6 +67,8 @@ class IndexResolverResult:
             "confidence": self.confidence,
             "score": self.score,
             "reason_codes": list(self.reason_codes),
+            "variant_type": self.variant_type,
+            "normalized_variant": self.normalized_variant,
         }
 
 
@@ -74,6 +78,10 @@ def _cached_offline_index() -> SearchIndex:
         registry = build_canonical_vocabulary_registry()
         _CACHED_OFFLINE_INDEX = build_offline_search_index(registry=registry)
     return _CACHED_OFFLINE_INDEX
+
+
+def get_cached_offline_search_index() -> SearchIndex:
+    return _cached_offline_index()
 
 
 def _is_ambiguous_lookup_reason_codes(reason_codes: tuple[str, ...]) -> bool:
@@ -132,4 +140,6 @@ def resolve_query_with_search_index(query: str) -> IndexResolverResult:
         confidence=_confidence_to_float(str(lookup.confidence), score),
         score=score,
         reason_codes=reason_codes,
+        variant_type=matched_entry.variant_type if matched_entry else None,
+        normalized_variant=matched_entry.normalized_variant if matched_entry else None,
     )

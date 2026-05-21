@@ -91,7 +91,19 @@ class PicWiseSearchIndexBlindEvaluationStage6ATests(unittest.TestCase):
         )
 
     def test_negative_broad_terms_are_included(self) -> None:
-        broad_terms = {"bank", "charger", "apple", "nike", "bosch", "insurance", "loan", "erp", "crm", "accounting software"}
+        broad_terms = {
+            "bank",
+            "apple",
+            "nike",
+            "bosch",
+            "insurance",
+            "loan",
+            "erp",
+            "crm",
+            "accounting software",
+            "amazon",
+            "galaxy",
+        }
         broad_cases = [row for row in self.cases if row.variant_type == "broad_term_negative"]
         self.assertEqual({row.query for row in broad_cases}, broad_terms)
         self.assertTrue(all(not row.should_match for row in broad_cases))
@@ -167,7 +179,7 @@ class PicWiseSearchIndexBlindEvaluationStage6ATests(unittest.TestCase):
                 self.assertEqual(result.matched_entry.mega_category_id, category)
                 self.assertGreaterEqual(result.score, 0.84)
 
-        for query in ("bank", "charger", "apple", "nike", "bosch", "insurance", "loan", "erp", "crm", "accounting software"):
+        for query in ("bank", "apple", "nike", "bosch", "insurance", "loan", "erp", "crm", "accounting software"):
             with self.subTest(query=query):
                 result = lookup_offline_search_index(query, self.index)
                 self.assertEqual(result.status, "no_match")
