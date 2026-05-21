@@ -15,6 +15,12 @@ from .evaluation_contracts import (
 from .index_builder import build_offline_search_index
 from .index_contracts import SearchIndex, SearchIndexLookupResult
 from .index_lookup import lookup_offline_search_index
+from .lookup_safety import (
+    build_exact_canonical_term_index,
+    has_cross_canonical_neighborhood_collision,
+    has_dense_cross_category_neighborhood,
+    is_generated_variant_exact_match_risky,
+)
 from .validation import normalize_term
 
 _NEGATIVE_BROAD_TERMS: tuple[str, ...] = (
@@ -38,6 +44,10 @@ _PREFERRED_VARIANT_TYPES: tuple[str, ...] = (
     "repeated_letter",
     "vowel_drop",
     "us_uk_spelling",
+    "spelling_family",
+    "consonant_skeleton",
+    "source_alias",
+    "product_head_token",
 )
 
 
@@ -120,31 +130,86 @@ def _generate_case_variants(record) -> list[tuple[str, str]]:
     return output
 
 
+def _should_treat_variant_as_collision_negative(
+    *,
+    query: str,
+    record,
+    variant_type: str,
+    canonical_term_index: tuple[tuple[str, str], ...],
+) -> bool:
+    if variant_type == "shared_term_negative":
+        return True
+    pseudo_entry = type(
+        "PseudoEntry",
+        (),
+        {
+            "normalized_variant": query,
+            "normalized_term": record.normalized_term,
+            "variant_type": variant_type,
+            "mega_category_id": record.mega_category_id,
+        },
+    )()
+    if has_dense_cross_category_neighborhood(query, canonical_term_index=canonical_term_index):
+        return True
+    if not is_generated_variant_exact_match_risky(pseudo_entry, query):
+        return False
+    return has_cross_canonical_neighborhood_collision(
+        query,
+        matched_canonical_term=record.normalized_term,
+        matched_mega_category_id=record.mega_category_id,
+        canonical_term_index=canonical_term_index,
+    )
+
+
 def generate_blind_evaluation_cases(
     registry: CanonicalVocabularyRegistry,
     *,
     include_negative_terms: bool = True,
+    index: SearchIndex | None = None,
 ) -> tuple[BlindEvaluationCase, ...]:
     cases: list[BlindEvaluationCase] = []
     case_index = 1
     categories_by_term = _shared_term_categories(registry)
+    canonical_term_index = (
+        build_exact_canonical_term_index(index)
+        if index is not None
+        else build_exact_canonical_term_index(build_offline_search_index(registry))
+    )
 
     single_token_positive_cases = 0
     single_token_generated_cases = 0
+    spelling_family_cases = 0
+    collision_negative_cases = 0
+    product_head_cases = 0
     for record in sorted(registry.records, key=lambda row: (row.mega_category_id, row.normalized_term, row.canonical_id)):
         variants = _generate_case_variants(record)
         shared_category_count = len(categories_by_term.get(record.normalized_term, {record.mega_category_id}))
         shared_term_negative = shared_category_count >= 3 and _is_shared_taxonomy_or_meta_term(record.normalized_term)
         for query, variant_type in variants:
-            should_match = not shared_term_negative
+            collision_negative = _should_treat_variant_as_collision_negative(
+                query=query,
+                record=record,
+                variant_type=variant_type,
+                canonical_term_index=canonical_term_index,
+            )
+            should_match = not shared_term_negative and not collision_negative
             expected_normalized_term = record.normalized_term if should_match else ""
             expected_mega_category_id = record.mega_category_id if should_match else ""
             expected_canonical_id = record.canonical_id if should_match else ""
-            case_variant_type = "shared_term_negative" if shared_term_negative else variant_type
+            if collision_negative:
+                case_variant_type = "collision_homograph_negative"
+            elif shared_term_negative:
+                case_variant_type = "shared_term_negative"
+            else:
+                case_variant_type = variant_type
             source = (
                 "shared_taxonomy_term_safety_set"
                 if shared_term_negative
-                else f"{record.source}+stage3_variant_generator"
+                else (
+                    "collision_homograph_safety_set"
+                    if collision_negative
+                    else f"{record.source}+stage3_variant_generator"
+                )
             )
             cases.append(
                 _build_case(
@@ -165,6 +230,12 @@ def generate_blind_evaluation_cases(
                 single_token_positive_cases += 1
                 if variant_type != "exact_canonical":
                     single_token_generated_cases += 1
+            if should_match and variant_type in {"spelling_family", "consonant_skeleton", "us_uk_spelling"}:
+                spelling_family_cases += 1
+            if should_match and variant_type == "product_head_token":
+                product_head_cases += 1
+            if collision_negative:
+                collision_negative_cases += 1
 
     if include_negative_terms:
         for broad_term in _NEGATIVE_BROAD_TERMS:
@@ -189,6 +260,10 @@ def generate_blind_evaluation_cases(
         raise ValueError("Blind evaluation must include at least 20 single-token positive cases")
     if single_token_generated_cases < 10:
         raise ValueError("Blind evaluation must include at least 10 single-token generated variant cases")
+    if spelling_family_cases < 10:
+        raise ValueError("Blind evaluation must include at least 10 spelling-family or skeleton cases")
+    if collision_negative_cases < 5:
+        raise ValueError("Blind evaluation must include at least 5 collision homograph negative cases")
 
     return tuple(cases)
 
@@ -326,6 +401,10 @@ def run_offline_blind_index_evaluation(
 ) -> BlindEvaluationReport:
     registry = build_canonical_vocabulary_registry()
     index = build_offline_search_index(registry=registry)
-    cases = generate_blind_evaluation_cases(registry, include_negative_terms=include_negative_terms)
+    cases = generate_blind_evaluation_cases(
+        registry,
+        include_negative_terms=include_negative_terms,
+        index=index,
+    )
     results = evaluate_blind_cases(cases, index)
     return build_blind_evaluation_report(cases, results, thresholds=thresholds)

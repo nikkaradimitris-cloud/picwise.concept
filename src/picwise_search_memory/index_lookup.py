@@ -4,6 +4,15 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from .index_contracts import SearchIndex, SearchIndexEntry, SearchIndexLookupResult
+from .lookup_safety import (
+    build_exact_canonical_term_index,
+    consonant_skeleton,
+    has_ambiguous_closest_canonical_neighborhood,
+    has_cross_canonical_neighborhood_collision,
+    has_dense_cross_category_neighborhood,
+    is_generated_variant_exact_match_risky,
+    is_meta_only_query,
+)
 from .validation import normalize_term
 
 _LOW_CONFIDENCE_THRESHOLD = 0.72
@@ -40,14 +49,18 @@ _SINGLE_TOKEN_ACCEPTABLE_CANONICAL_STATUSES = {
 }
 _VARIANT_TYPE_PRIORITY = {
     "exact_canonical": 0,
-    "joined_words": 1,
-    "missing_letter": 2,
-    "swapped_adjacent_letters": 3,
-    "repeated_letter": 4,
-    "vowel_drop": 5,
-    "extra_letter": 6,
-    "us_uk_spelling": 7,
-    "generated": 8,
+    "source_alias": 1,
+    "product_head_token": 2,
+    "spelling_family": 3,
+    "joined_words": 4,
+    "missing_letter": 5,
+    "swapped_adjacent_letters": 6,
+    "repeated_letter": 7,
+    "vowel_drop": 8,
+    "extra_letter": 9,
+    "us_uk_spelling": 10,
+    "consonant_skeleton": 11,
+    "generated": 12,
 }
 
 
@@ -133,12 +146,19 @@ def _score_candidate(query: str, entry: SearchIndexEntry) -> _ScoredCandidate | 
     if query_joined == variant_joined and query != normalized_variant:
         reasons.append("joined_words_match")
         score = min(1.0, score + 0.03)
-    if "tyre" in query and "tire" in normalized_variant:
-        reasons.append("us_uk_spelling_match")
-        score = min(1.0, score + 0.02)
-    if "tire" in query and "tyre" in normalized_variant:
-        reasons.append("us_uk_spelling_match")
-        score = min(1.0, score + 0.02)
+    if entry.variant_type in {"us_uk_spelling", "spelling_family"}:
+        reasons.append("spelling_family_match")
+        score = min(1.0, score + 0.04)
+
+    query_skeleton = consonant_skeleton(query_joined)
+    variant_skeleton = consonant_skeleton(variant_joined)
+    canonical_skeleton = consonant_skeleton(entry.normalized_term.replace(" ", ""))
+    if query_skeleton and query_skeleton == variant_skeleton:
+        reasons.append("consonant_skeleton_match")
+        score = min(1.0, score + 0.06)
+    elif query_skeleton and query_skeleton == canonical_skeleton:
+        reasons.append("canonical_consonant_skeleton_match")
+        score = min(1.0, score + 0.05)
 
     return _ScoredCandidate(entry=entry, score=score, reason_codes=tuple(sorted(set(reasons))))
 
@@ -215,7 +235,16 @@ def _single_token_candidate_score(normalized_query: str, candidate: _ScoredCandi
     source_strength = 1.0 if entry.canonical_source in _SINGLE_TOKEN_ACCEPTABLE_CANONICAL_SOURCES else 0.0
     status_strength = 1.0 if entry.canonical_status in _SINGLE_TOKEN_ACCEPTABLE_CANONICAL_STATUSES else 0.0
     canonical_variant_bonus = 0.03 if entry.variant_type == "exact_canonical" else 0.0
-    generated_variant_penalty = 0.0
+    spelling_family_bonus = 0.04 if entry.variant_type in {"spelling_family", "source_alias"} else 0.0
+    product_head_bonus = 0.03 if entry.variant_type == "product_head_token" else 0.0
+    skeleton_bonus = 0.0
+    query_skeleton = consonant_skeleton(normalized_query)
+    if query_skeleton:
+        if query_skeleton == consonant_skeleton(entry.normalized_variant):
+            skeleton_bonus = 0.14
+        elif query_skeleton == consonant_skeleton(entry.normalized_term):
+            skeleton_bonus = 0.11
+    generated_variant_penalty = 0.02 if entry.variant_type == "consonant_skeleton" else 0.0
     collision_penalty = min(_collision_severity(entry) * 0.16, 0.35)
     score = (
         0.55 * lexical_score
@@ -224,10 +253,30 @@ def _single_token_candidate_score(normalized_query: str, candidate: _ScoredCandi
         + 0.10 * source_strength
         + 0.05 * status_strength
         + canonical_variant_bonus
+        + spelling_family_bonus
+        + product_head_bonus
+        + skeleton_bonus
         - generated_variant_penalty
         - collision_penalty
     )
     return max(0.0, min(score, 1.0))
+
+
+def _reject_risky_generated_exact_match(
+    entry: SearchIndexEntry,
+    normalized_query: str,
+    canonical_term_index: tuple[tuple[str, str], ...],
+) -> tuple[bool, str]:
+    if not is_generated_variant_exact_match_risky(entry, normalized_query):
+        return False, ""
+    if has_cross_canonical_neighborhood_collision(
+        normalized_query,
+        matched_canonical_term=entry.normalized_term,
+        matched_mega_category_id=entry.mega_category_id,
+        canonical_term_index=canonical_term_index,
+    ):
+        return True, "homograph_neighborhood_collision"
+    return False, ""
 
 
 def _resolve_single_token_fuzzy(
@@ -422,12 +471,37 @@ def lookup_offline_search_index(query: str, index: SearchIndex) -> SearchIndexLo
     if normalized_query in _BROAD_AMBIGUOUS_TERMS:
         return _no_match(query, normalized_query, ("broad_or_ambiguous_query",))
 
+    if is_meta_only_query(normalized_query):
+        return _no_match(query, normalized_query, ("meta_or_taxonomy_query",))
+
+    canonical_term_index = build_exact_canonical_term_index(index)
+
     single_token_guarded, single_token_guard_reason = _single_token_query_gate(normalized_query)
     if single_token_guarded:
         return _no_match(query, normalized_query, (single_token_guard_reason,))
 
     by_exact = [entry for entry in index.entries if entry.normalized_variant == normalized_query]
+    if by_exact and has_dense_cross_category_neighborhood(
+        normalized_query,
+        canonical_term_index=canonical_term_index,
+    ):
+        return _no_match(query, normalized_query, ("homograph_neighborhood_collision",))
+
     if by_exact:
+        safe_exact: list[SearchIndexEntry] = []
+        homograph_rejections = 0
+        for entry in by_exact:
+            rejected, _reason = _reject_risky_generated_exact_match(entry, normalized_query, canonical_term_index)
+            if rejected:
+                homograph_rejections += 1
+                continue
+            safe_exact.append(entry)
+        if not safe_exact and homograph_rejections:
+            return _no_match(query, normalized_query, ("homograph_neighborhood_collision",))
+        by_exact = safe_exact
+        if not by_exact:
+            return _no_match(query, normalized_query, ("homograph_neighborhood_collision",))
+
         canonical_ids = {entry.canonical_id for entry in by_exact}
         category_ids = {entry.mega_category_id for entry in by_exact}
         has_collision = len(canonical_ids) > 1 or len(category_ids) > 1
@@ -493,6 +567,16 @@ def lookup_offline_search_index(query: str, index: SearchIndex) -> SearchIndexLo
     second = ranked[1] if len(ranked) > 1 else None
 
     if len(normalized_query.split()) == 1:
+        if has_dense_cross_category_neighborhood(
+            normalized_query,
+            canonical_term_index=canonical_term_index,
+        ):
+            return _no_match(query, normalized_query, ("homograph_neighborhood_collision",))
+        if has_ambiguous_closest_canonical_neighborhood(
+            normalized_query,
+            canonical_term_index=canonical_term_index,
+        ):
+            return _no_match(query, normalized_query, ("homograph_neighborhood_collision",))
         return _resolve_single_token_fuzzy(query, normalized_query, ranked)
 
     if best.score < _LOW_CONFIDENCE_THRESHOLD:

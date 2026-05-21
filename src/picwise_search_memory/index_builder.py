@@ -10,6 +10,12 @@ from picwise_nlu.query_variant_generator import generate_generic_english_noisy_v
 from .canonical_registry import build_canonical_vocabulary_registry
 from .contracts import CanonicalVocabularyRegistry
 from .index_contracts import SearchIndex, SearchIndexBuildReport, SearchIndexEntry
+from .lookup_safety import (
+    build_canonical_term_index_from_registry,
+    derive_product_head_variants,
+    derive_source_alias_variants,
+    should_reject_generated_variant_for_index,
+)
 from .validation import normalize_term
 
 _INDEX_SCHEMA_VERSION = "1.0.0"
@@ -151,6 +157,8 @@ def build_offline_search_index(
             "canonical_flags": tuple(record.quality_flags),
         }
 
+    canonical_term_index = build_canonical_term_index_from_registry(canonical_registry)
+
     variants = generated_variants
     if variants is None:
         vocab_by_category: dict[str, set[str]] = {}
@@ -161,6 +169,11 @@ def build_offline_search_index(
             source="taxonomy_clean_vocabulary",
             generator_version=STAGE3_GENERATOR_VERSION,
         )
+        variants = [
+            *variants,
+            *derive_source_alias_variants(canonical_registry),
+            *derive_product_head_variants(canonical_registry),
+        ]
 
     entries: list[SearchIndexEntry] = []
     seen_signatures: set[tuple[str, str, str]] = set()
@@ -222,6 +235,16 @@ def build_offline_search_index(
 
         match = record_by_signature.get((mega_category_id, canonical_term))
         if not match:
+            rejected_count += 1
+            continue
+
+        if should_reject_generated_variant_for_index(
+            canonical_term=canonical_term,
+            variant=normalized_variant,
+            variant_type=variant_type,
+            mega_category_id=mega_category_id,
+            canonical_term_index=canonical_term_index,
+        ):
             rejected_count += 1
             continue
 

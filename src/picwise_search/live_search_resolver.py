@@ -23,6 +23,9 @@ _CONNECTED_STATUSES = {
     "general_intent_resolved",
 }
 
+_INDEX_CATEGORY_OVERRIDE_MIN_CONFIDENCE = 0.84
+_INDEX_CATEGORY_OVERRIDE_MIN_SCORE = 0.84
+
 
 @dataclass(frozen=True)
 class LiveSearchResolution:
@@ -98,16 +101,28 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     canonical_category = intent.get("category") or category_probe.get("category")
     if not canonical_category and index_result.status == "matched" and index_result.canonical_term:
         canonical_category = str(index_result.canonical_term)
-    mega_category_id = (
-        intent.get("mega_category_id")
-        or category_probe.get("mega_category_id")
-        or (index_result.mega_category_id if index_result.status == "matched" else None)
-        or (
-            canonical_category
-            if canonical_category and canonical_category != "power_banks"
-            else None
-        )
+
+    index_high_confidence_category = (
+        index_result.status == "matched"
+        and bool(index_result.mega_category_id)
+        and index_result.confidence >= _INDEX_CATEGORY_OVERRIDE_MIN_CONFIDENCE
+        and index_result.score >= _INDEX_CATEGORY_OVERRIDE_MIN_SCORE
     )
+    if index_high_confidence_category:
+        mega_category_id = index_result.mega_category_id
+        if index_result.canonical_term:
+            canonical_category = str(index_result.canonical_term)
+    else:
+        mega_category_id = (
+            intent.get("mega_category_id")
+            or category_probe.get("mega_category_id")
+            or (index_result.mega_category_id if index_result.status == "matched" else None)
+            or (
+                canonical_category
+                if canonical_category and canonical_category != "power_banks"
+                else None
+            )
+        )
     lower_level_provider_category = category_probe.get("lower_level_provider_category")
     if canonical_category in _CONNECTED_PROVIDER_BY_CATEGORY:
         lower_level_provider_category = canonical_category

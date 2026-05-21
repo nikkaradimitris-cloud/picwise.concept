@@ -55,7 +55,11 @@ class PicWiseSearchIndexBlindEvaluationStage6ATests(unittest.TestCase):
     def setUp(self) -> None:
         self.registry = build_canonical_vocabulary_registry()
         self.index = build_offline_search_index(self.registry)
-        self.cases = generate_blind_evaluation_cases(self.registry, include_negative_terms=True)
+        self.cases = generate_blind_evaluation_cases(
+            self.registry,
+            include_negative_terms=True,
+            index=self.index,
+        )
         self.results = evaluate_blind_cases(self.cases, self.index)
         self.report = build_blind_evaluation_report(self.cases, self.results)
 

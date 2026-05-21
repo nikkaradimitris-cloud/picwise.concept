@@ -17,6 +17,23 @@ _LOW_CONFIDENCE_REASON_MARKERS = ("low_confidence",)
 _CACHED_OFFLINE_INDEX: SearchIndex | None = None
 
 
+def _is_empty_lookup_query(query: str) -> bool:
+    return not " ".join(str(query or "").split()).strip()
+
+
+def _empty_index_resolver_result() -> IndexResolverResult:
+    return IndexResolverResult(
+        status="no_match",
+        canonical_id=None,
+        canonical_term=None,
+        normalized_term=None,
+        mega_category_id=None,
+        confidence=0.0,
+        score=0.0,
+        reason_codes=("empty_query",),
+    )
+
+
 @dataclass(frozen=True)
 class IndexResolverResult:
     status: str
@@ -75,6 +92,9 @@ def _confidence_to_float(confidence: str, score: float) -> float:
 
 
 def resolve_query_with_search_index(query: str) -> IndexResolverResult:
+    if _is_empty_lookup_query(query):
+        return _empty_index_resolver_result()
+
     lookup = lookup_offline_search_index(query, _cached_offline_index())
     reason_codes = tuple(sorted({str(code).strip() for code in lookup.reason_codes if str(code).strip()}))
     score = round(float(lookup.score), 4)

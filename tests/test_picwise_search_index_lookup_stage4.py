@@ -228,7 +228,10 @@ class PicWiseSearchIndexLookupStage4Tests(unittest.TestCase):
         result = lookup_offline_search_index("taxonomy families", index)
         self.assertEqual(result.status, "no_match")
         self.assertIsNone(result.matched_entry)
-        self.assertIn("shared_taxonomy_or_meta_term", result.reason_codes)
+        self.assertTrue(
+            {"shared_taxonomy_or_meta_term", "meta_or_taxonomy_query"}.intersection(result.reason_codes),
+            result.reason_codes,
+        )
 
     def test_specific_cross_category_collision_recovers_when_clear_specificity_winner_exists(self) -> None:
         from picwise_search_memory.contracts import CanonicalVocabularyBuildReport, CanonicalVocabularyRecord, CanonicalVocabularyRegistry

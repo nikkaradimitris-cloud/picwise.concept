@@ -14,6 +14,29 @@ from picwise_search.live_search_resolver import resolve_live_search  # noqa: E40
 
 
 class LiveSearchResolverTests(unittest.TestCase):
+    def test_empty_query_skips_offline_index_build(self) -> None:
+        import time
+
+        import picwise_search.index_resolver_adapter as adapter
+
+        adapter._CACHED_OFFLINE_INDEX = None
+        started = time.time()
+        result = resolve_query_with_search_index("")
+        elapsed = time.time() - started
+
+        self.assertLess(elapsed, 2.0)
+        self.assertEqual(result.status, "no_match")
+        self.assertIn("empty_query", result.reason_codes)
+        self.assertIsNone(adapter._CACHED_OFFLINE_INDEX)
+
+        resolution = resolve_live_search("")
+        self.assertIn(
+            resolution.resolver_state,
+            {"not_understood", "blocked_or_unsafe"},
+        )
+        self.assertIn("empty_query", resolution.reason_codes)
+        self.assertFalse(resolution.result_allowed)
+
     def test_index_adapter_matches_noisy_product_queries(self) -> None:
         expected = {
             "coffe grindr": "kitchen_cooking_household",

@@ -425,7 +425,7 @@ def generate_variants_for_training_pack(
     return json.loads(json.dumps(pack, ensure_ascii=True, sort_keys=True))
 
 
-_GENERATOR_VERSION = "stage3_generic_en_v1"
+_GENERATOR_VERSION = "stage3_generic_en_v2"
 _MIN_SAFE_TERM_LENGTH = 3
 _ALPHA_RE = re.compile(r"[a-z]")
 _TOKEN_RE = re.compile(r"[a-z]+")
@@ -576,6 +576,43 @@ def _single_us_uk_variant(term: str) -> str:
     return " ".join(swapped_tokens)
 
 
+def _single_elery_spelling_family_variant(term: str) -> str:
+    tokens = term.split()
+    if len(tokens) != 1:
+        return ""
+    token = tokens[0]
+    if token.endswith("elry") and len(token) >= 6:
+        return token[:-2] + "ellery"
+    if token.endswith("ellery") and len(token) >= 7:
+        return token[:-3] + "ry"
+    return ""
+
+
+def _single_or_our_spelling_family_variant(term: str) -> str:
+    tokens = term.split()
+    if len(tokens) != 1:
+        return ""
+    token = tokens[0]
+    if token.endswith("or") and len(token) >= 5:
+        return token[:-2] + "our"
+    if token.endswith("our") and len(token) >= 6:
+        return token[:-3] + "or"
+    return ""
+
+
+def _single_consonant_skeleton_variant(term: str) -> str:
+    tokens = term.split()
+    if len(tokens) != 1:
+        return ""
+    token = tokens[0]
+    if len(token) < 6:
+        return ""
+    skeleton = "".join(char for char in token if char not in _VOWELS)
+    if len(skeleton) < 4 or skeleton == token:
+        return ""
+    return skeleton
+
+
 def generate_noisy_variants_for_term(
     canonical_term: str,
     mega_category_id: str,
@@ -603,6 +640,9 @@ def generate_noisy_variants_for_term(
         ("joined_words", _single_joined_word_variant(term)),
         ("vowel_drop", _single_vowel_drop_variant(term)),
         ("us_uk_spelling", _single_us_uk_variant(term)),
+        ("spelling_family", _single_elery_spelling_family_variant(term)),
+        ("spelling_family", _single_or_our_spelling_family_variant(term)),
+        ("consonant_skeleton", _single_consonant_skeleton_variant(term)),
     ]
 
     output: list[dict[str, str]] = []
