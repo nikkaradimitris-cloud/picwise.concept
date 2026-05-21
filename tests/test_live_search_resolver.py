@@ -258,6 +258,31 @@ class LiveSearchResolverTests(unittest.TestCase):
                 self.assertEqual(resolution.resolver_state, "understood_provider_not_connected")
                 self.assertEqual(resolution.provider_key, "not_connected")
 
+    def test_exact_canonical_and_product_head_tokens_understood_provider_not_connected(self) -> None:
+        expected = {
+            "jewelry": "jewelry_watches_bags_fashion_accessories",
+            "jewellery": "jewelry_watches_bags_fashion_accessories",
+            "bluetooth": "audio_video_gaming_cameras",
+            "bluetooth speaker": "audio_video_gaming_cameras",
+        }
+        for query, mega_category in expected.items():
+            with self.subTest(query=query):
+                index_result = resolve_query_with_search_index(query)
+                self.assertEqual(index_result.status, "matched", index_result.reason_codes)
+                self.assertEqual(index_result.mega_category_id, mega_category)
+                self.assertGreaterEqual(index_result.score, 0.84)
+
+                resolution = resolve_live_search(query)
+                self.assertEqual(resolution.mega_category_id, mega_category)
+                self.assertEqual(resolution.provider_status, "not_connected")
+                self.assertFalse(resolution.result_allowed)
+                self.assertEqual(resolution.resolver_state, "understood_provider_not_connected")
+
+    def test_collision_homograph_token_stays_not_understood(self) -> None:
+        resolution = resolve_live_search("bots")
+        self.assertEqual(resolution.resolver_state, "not_understood")
+        self.assertFalse(resolution.result_allowed)
+
     def test_no_connected_provider_except_power_banks(self) -> None:
         queries = (
             "coffe grindr",

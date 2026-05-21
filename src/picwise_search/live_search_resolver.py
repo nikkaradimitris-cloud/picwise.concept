@@ -103,7 +103,7 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
         canonical_category = str(index_result.canonical_term)
 
     index_high_confidence_category = (
-        index_result.status == "matched"
+        index_result.status in {"matched", "low_confidence"}
         and bool(index_result.mega_category_id)
         and index_result.confidence >= _INDEX_CATEGORY_OVERRIDE_MIN_CONFIDENCE
         and index_result.score >= _INDEX_CATEGORY_OVERRIDE_MIN_SCORE
@@ -111,7 +111,11 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     if index_high_confidence_category:
         mega_category_id = index_result.mega_category_id
         if index_result.canonical_term:
-            canonical_category = str(index_result.canonical_term)
+            provider_category = category_probe.get("category") or intent.get("category")
+            if provider_category in _CONNECTED_PROVIDER_BY_CATEGORY:
+                canonical_category = str(provider_category)
+            else:
+                canonical_category = str(index_result.canonical_term)
     else:
         mega_category_id = (
             intent.get("mega_category_id")
@@ -137,7 +141,7 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     is_ambiguous_or_invalid = status in {"ambiguous_needs_review", "invalid_intent"} or query_type == "ambiguous_query"
     if (
         status not in _CONNECTED_STATUSES
-        and index_result.status == "matched"
+        and index_high_confidence_category
         and canonical_category not in _CONNECTED_PROVIDER_BY_CATEGORY
     ):
         status = "general_intent_resolved"

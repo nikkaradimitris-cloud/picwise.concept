@@ -11,8 +11,18 @@ from picwise_search_memory import (
 from picwise_search_memory.index_contracts import SearchIndex
 
 _LOW_CONFIDENCE_SCORE = 0.75
-_AMBIGUOUS_REASON_MARKERS = ("ambiguous", "collision", "shared_taxonomy")
 _LOW_CONFIDENCE_REASON_MARKERS = ("low_confidence",)
+_AMBIGUOUS_FAILURE_REASON_CODES = frozenset(
+    {
+        "ambiguous_exact_collision",
+        "ambiguous_top_candidates",
+        "cross_category_exact_collision",
+        "homograph_neighborhood_collision",
+        "shared_taxonomy_or_meta_term",
+        "single_token_ambiguous_canonical_collision",
+        "single_token_cross_category_collision",
+    }
+)
 
 _CACHED_OFFLINE_INDEX: SearchIndex | None = None
 
@@ -66,18 +76,27 @@ def _cached_offline_index() -> SearchIndex:
     return _CACHED_OFFLINE_INDEX
 
 
+def _is_ambiguous_lookup_reason_codes(reason_codes: tuple[str, ...]) -> bool:
+    for code in reason_codes:
+        lowered = code.lower()
+        if lowered in _AMBIGUOUS_FAILURE_REASON_CODES:
+            return True
+        if lowered.startswith("ambiguous_"):
+            return True
+    return False
+
+
 def _map_lookup_status(*, lookup_status: str, score: float, reason_codes: tuple[str, ...]) -> str:
-    lowered_reasons = tuple(code.lower() for code in reason_codes)
     if lookup_status != "match":
-        if any(marker in code for marker in _AMBIGUOUS_REASON_MARKERS for code in lowered_reasons):
+        if _is_ambiguous_lookup_reason_codes(reason_codes):
             return "ambiguous"
-        if any(marker in code for marker in _LOW_CONFIDENCE_REASON_MARKERS for code in lowered_reasons):
+        if any(marker in code for code in reason_codes for marker in _LOW_CONFIDENCE_REASON_MARKERS):
             return "low_confidence"
         return "no_match"
+    if _is_ambiguous_lookup_reason_codes(reason_codes):
+        return "ambiguous"
     if score < _LOW_CONFIDENCE_SCORE:
         return "low_confidence"
-    if any(marker in code for marker in _AMBIGUOUS_REASON_MARKERS for code in lowered_reasons):
-        return "ambiguous"
     return "matched"
 
 
