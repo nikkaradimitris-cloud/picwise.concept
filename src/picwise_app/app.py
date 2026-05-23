@@ -20,6 +20,7 @@ from picwise_mvp import build_mvp_private_beta_readiness_report
 from picwise_nlu import adapt_local_nlu_intent_for_router, build_local_nlu_intent
 from picwise_search import resolve_live_search, route_search_query
 from picwise_search.live_search_resolver import empty_landing_search_resolution, is_empty_search_query
+from picwise_search.search_warmup import schedule_search_warmup_if_needed
 from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
 from picwise_offers import (
     AMAZON_ASSOCIATES_TRACKING_ID,
@@ -109,6 +110,8 @@ class PicwiseLocalApp:
         html = render_picwise_reference_surface(query=query, resolution=resolution, source_page=source_page)
         if resolution.resolver_state == "broad_query_suggestions":
             html = _inject_broad_query_suggestions(html, resolution)
+        if is_empty_search_query(query):
+            schedule_search_warmup_if_needed()
         return html
 
     def amazon_affiliate_proof_html(self) -> str:
