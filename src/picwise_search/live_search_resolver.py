@@ -10,7 +10,7 @@ from picwise_nlu import (
     normalize_greeklish_and_typos,
     normalize_query,
 )
-from picwise_search_memory import build_canonical_vocabulary_registry
+from picwise_search_memory.canonical_registry import get_cached_canonical_vocabulary_registry
 from picwise_search_memory.broad_query_suggestions import (
     BroadQuerySuggestion,
     build_broad_query_suggestions,
@@ -34,14 +34,9 @@ _CONNECTED_STATUSES = {
 _INDEX_CATEGORY_OVERRIDE_MIN_CONFIDENCE = 0.84
 _INDEX_CATEGORY_OVERRIDE_MIN_SCORE = 0.84
 
-_CACHED_VOCABULARY_REGISTRY = None
-
 
 def _vocabulary_registry():
-    global _CACHED_VOCABULARY_REGISTRY
-    if _CACHED_VOCABULARY_REGISTRY is None:
-        _CACHED_VOCABULARY_REGISTRY = build_canonical_vocabulary_registry()
-    return _CACHED_VOCABULARY_REGISTRY
+    return get_cached_canonical_vocabulary_registry()
 
 
 @dataclass(frozen=True)
@@ -92,6 +87,34 @@ class LiveSearchResolution:
 
 def _normalized_text(value: Any) -> str:
     return " ".join(str(value or "").split()).strip()
+
+
+def is_empty_search_query(query: str) -> bool:
+    return not _normalized_text(query)
+
+
+def empty_landing_search_resolution(query: str = "") -> LiveSearchResolution:
+    raw_query = str(query or "")
+    return LiveSearchResolution(
+        raw_query=raw_query,
+        display_query=raw_query,
+        normalized_query="",
+        canonical_query="",
+        canonical_category=None,
+        mega_category_id=None,
+        display_name=None,
+        lower_level_provider_category=None,
+        intent="unknown",
+        query_type="unknown",
+        confidence=0.0,
+        status="invalid_intent",
+        needs_review=True,
+        provider_key="not_connected",
+        provider_status="not_connected",
+        result_allowed=False,
+        resolver_state="blocked_or_unsafe",
+        reason_codes=("empty_query",),
+    )
 
 
 def _safe_confidence(value: Any) -> float:

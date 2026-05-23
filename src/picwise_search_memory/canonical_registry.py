@@ -204,3 +204,13 @@ def build_canonical_vocabulary_registry() -> CanonicalVocabularyRegistry:
         reasons = ", ".join(validation_result["reasons"])  # type: ignore[arg-type]
         raise ValueError(f"Canonical vocabulary registry validation failed: {reasons}")
     return registry
+
+
+_CACHED_REGISTRY: CanonicalVocabularyRegistry | None = None
+
+
+def get_cached_canonical_vocabulary_registry() -> CanonicalVocabularyRegistry:
+    global _CACHED_REGISTRY
+    if _CACHED_REGISTRY is None:
+        _CACHED_REGISTRY = build_canonical_vocabulary_registry()
+    return _CACHED_REGISTRY

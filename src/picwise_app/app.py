@@ -19,6 +19,7 @@ from picwise_learning.stage31_runtime_controller import build_default_stage31_ru
 from picwise_mvp import build_mvp_private_beta_readiness_report
 from picwise_nlu import adapt_local_nlu_intent_for_router, build_local_nlu_intent
 from picwise_search import resolve_live_search, route_search_query
+from picwise_search.live_search_resolver import empty_landing_search_resolution, is_empty_search_query
 from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
 from picwise_offers import (
     AMAZON_ASSOCIATES_TRACKING_ID,
@@ -101,7 +102,10 @@ class PicwiseLocalApp:
         return self.picwise_reference_html("")
 
     def picwise_reference_html(self, query: str = "", *, source_page: str = "search") -> str:
-        resolution = resolve_live_search(query)
+        if is_empty_search_query(query):
+            resolution = empty_landing_search_resolution(query)
+        else:
+            resolution = resolve_live_search(query)
         html = render_picwise_reference_surface(query=query, resolution=resolution, source_page=source_page)
         if resolution.resolver_state == "broad_query_suggestions":
             html = _inject_broad_query_suggestions(html, resolution)

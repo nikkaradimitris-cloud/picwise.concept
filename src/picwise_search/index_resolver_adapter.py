@@ -3,11 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from picwise_search_memory import (
-    build_canonical_vocabulary_registry,
-    build_offline_search_index,
-    lookup_offline_search_index,
-)
+from picwise_search_memory import build_offline_search_index, lookup_offline_search_index
+from picwise_search_memory.canonical_registry import get_cached_canonical_vocabulary_registry
 from picwise_search_memory.index_contracts import SearchIndex
 
 _LOW_CONFIDENCE_SCORE = 0.75
@@ -75,7 +72,7 @@ class IndexResolverResult:
 def _cached_offline_index() -> SearchIndex:
     global _CACHED_OFFLINE_INDEX
     if _CACHED_OFFLINE_INDEX is None:
-        registry = build_canonical_vocabulary_registry()
+        registry = get_cached_canonical_vocabulary_registry()
         _CACHED_OFFLINE_INDEX = build_offline_search_index(registry=registry)
     return _CACHED_OFFLINE_INDEX
 
