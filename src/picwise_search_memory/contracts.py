@@ -40,6 +40,26 @@ class CanonicalVocabularyRecord:
             "confidence_weight": self.confidence_weight,
         }
 
+    @classmethod
+    def from_dict(cls, data: dict) -> CanonicalVocabularyRecord:
+        return cls(
+            canonical_id=str(data["canonical_id"]),
+            canonical_term=str(data["canonical_term"]),
+            normalized_term=str(data["normalized_term"]),
+            mega_category_id=str(data["mega_category_id"]),
+            source=str(data["source"]),
+            source_file=str(data["source_file"]),
+            language=str(data["language"]),
+            status=str(data["status"]),
+            schema_version=str(data["schema_version"]),
+            token_count=int(data["token_count"]),
+            quality_flags=tuple(str(flag) for flag in data.get("quality_flags") or ()),
+            aliases=tuple(str(alias) for alias in data.get("aliases") or ()),
+            product_family=str(data.get("product_family") or ""),
+            source_path=str(data.get("source_path") or ""),
+            confidence_weight=float(data.get("confidence_weight") or 1.0),
+        )
+
 
 @dataclass(frozen=True)
 class CanonicalVocabularyBuildReport:
@@ -68,6 +88,23 @@ class CanonicalVocabularyBuildReport:
             "status": self.status,
         }
 
+    @classmethod
+    def from_dict(cls, data: dict) -> CanonicalVocabularyBuildReport:
+        return cls(
+            total_input_terms=int(data["total_input_terms"]),
+            total_records=int(data["total_records"]),
+            rejected_terms=int(data["rejected_terms"]),
+            duplicate_terms=int(data["duplicate_terms"]),
+            rejected_by_reason={str(key): int(value) for key, value in (data.get("rejected_by_reason") or {}).items()},
+            counts_by_mega_category={
+                str(key): int(value) for key, value in (data.get("counts_by_mega_category") or {}).items()
+            },
+            source=str(data["source"]),
+            schema_version=str(data["schema_version"]),
+            language=str(data["language"]),
+            status=str(data["status"]),
+        )
+
 
 @dataclass(frozen=True)
 class CanonicalVocabularyRegistry:
@@ -83,3 +120,12 @@ class CanonicalVocabularyRegistry:
             "source": self.source,
             "schema_version": self.schema_version,
         }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> CanonicalVocabularyRegistry:
+        return cls(
+            records=tuple(CanonicalVocabularyRecord.from_dict(record) for record in data.get("records") or ()),
+            report=CanonicalVocabularyBuildReport.from_dict(data["report"]),
+            source=str(data["source"]),
+            schema_version=str(data["schema_version"]),
+        )

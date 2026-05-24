@@ -212,5 +212,11 @@ _CACHED_REGISTRY: CanonicalVocabularyRegistry | None = None
 def get_cached_canonical_vocabulary_registry() -> CanonicalVocabularyRegistry:
     global _CACHED_REGISTRY
     if _CACHED_REGISTRY is None:
-        _CACHED_REGISTRY = build_canonical_vocabulary_registry()
+        from .search_runtime_artifact import try_hydrate_runtime_from_artifact
+
+        bundle = try_hydrate_runtime_from_artifact()
+        if bundle is not None:
+            _CACHED_REGISTRY = bundle[0]
+        else:
+            _CACHED_REGISTRY = build_canonical_vocabulary_registry()
     return _CACHED_REGISTRY

@@ -40,6 +40,26 @@ class SearchIndexEntry:
             "canonical_status": self.canonical_status,
         }
 
+    @classmethod
+    def from_dict(cls, data: dict) -> SearchIndexEntry:
+        return cls(
+            index_key=str(data["index_key"]),
+            variant=str(data["variant"]),
+            normalized_variant=str(data["normalized_variant"]),
+            canonical_id=str(data["canonical_id"]),
+            canonical_term=str(data["canonical_term"]),
+            normalized_term=str(data["normalized_term"]),
+            mega_category_id=str(data["mega_category_id"]),
+            variant_type=str(data["variant_type"]),
+            source=str(data["source"]),
+            generator_version=str(data["generator_version"]),
+            schema_version=str(data["schema_version"]),
+            token_count=int(data["token_count"]),
+            quality_flags=tuple(str(flag) for flag in data.get("quality_flags") or ()),
+            canonical_source=str(data.get("canonical_source") or ""),
+            canonical_status=str(data.get("canonical_status") or ""),
+        )
+
 
 @dataclass(frozen=True)
 class SearchIndexBuildReport:
@@ -76,6 +96,35 @@ class SearchIndexBuildReport:
             "source": self.source,
         }
 
+    @classmethod
+    def from_dict(cls, data: dict) -> SearchIndexBuildReport:
+        return cls(
+            total_canonical_records=int(data["total_canonical_records"]),
+            total_generated_variants=int(data["total_generated_variants"]),
+            total_index_entries=int(data["total_index_entries"]),
+            duplicates_removed=int(data["duplicates_removed"]),
+            rejected_count=int(data["rejected_count"]),
+            counts_by_mega_category_id={
+                str(key): int(value) for key, value in (data.get("counts_by_mega_category_id") or {}).items()
+            },
+            counts_by_variant_type={
+                str(key): int(value) for key, value in (data.get("counts_by_variant_type") or {}).items()
+            },
+            schema_version=str(data["schema_version"]),
+            source=str(data["source"]),
+            total_collision_keys=int(data.get("total_collision_keys") or 0),
+            collision_entries_count=int(data.get("collision_entries_count") or 0),
+            collision_keys_by_variant_type={
+                str(key): int(value) for key, value in (data.get("collision_keys_by_variant_type") or {}).items()
+            },
+            collision_entries_by_variant_type={
+                str(key): int(value) for key, value in (data.get("collision_entries_by_variant_type") or {}).items()
+            },
+            collision_entries_by_mega_category_id={
+                str(key): int(value) for key, value in (data.get("collision_entries_by_mega_category_id") or {}).items()
+            },
+        )
+
 
 @dataclass(frozen=True)
 class SearchIndex:
@@ -91,6 +140,15 @@ class SearchIndex:
             "schema_version": self.schema_version,
             "source": self.source,
         }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> SearchIndex:
+        return cls(
+            entries=tuple(SearchIndexEntry.from_dict(entry) for entry in data.get("entries") or ()),
+            report=SearchIndexBuildReport.from_dict(data["report"]),
+            schema_version=str(data["schema_version"]),
+            source=str(data["source"]),
+        )
 
 
 @dataclass(frozen=True)

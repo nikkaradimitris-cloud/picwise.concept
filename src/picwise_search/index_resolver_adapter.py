@@ -72,8 +72,14 @@ class IndexResolverResult:
 def _cached_offline_index() -> SearchIndex:
     global _CACHED_OFFLINE_INDEX
     if _CACHED_OFFLINE_INDEX is None:
-        registry = get_cached_canonical_vocabulary_registry()
-        _CACHED_OFFLINE_INDEX = build_offline_search_index(registry=registry)
+        from picwise_search_memory.search_runtime_artifact import try_hydrate_runtime_from_artifact
+
+        bundle = try_hydrate_runtime_from_artifact()
+        if bundle is not None:
+            _CACHED_OFFLINE_INDEX = bundle[1]
+        else:
+            registry = get_cached_canonical_vocabulary_registry()
+            _CACHED_OFFLINE_INDEX = build_offline_search_index(registry=registry)
     return _CACHED_OFFLINE_INDEX
 
 

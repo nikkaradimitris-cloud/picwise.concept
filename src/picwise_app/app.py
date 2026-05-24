@@ -88,11 +88,14 @@ class PicwiseLocalApp:
         self._amazon_outbound_click_events: list[dict[str, str]] = []
 
     def health_payload(self) -> dict[str, Any]:
+        from picwise_search_memory.search_runtime_artifact import get_search_runtime_artifact_status
+
         return {
             "status": "ok",
             "app": "picwise_local_app",
             "mode": "local_non_live",
             "domain_plan_primary": "picwise.subby.cloud",
+            "search_runtime_artifact": get_search_runtime_artifact_status(),
         }
 
     def demo_html(self, query: str) -> str:

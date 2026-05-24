@@ -67,9 +67,11 @@ class PicwisePerformanceStage1ATests(unittest.TestCase):
     def test_shared_registry_cache_returns_equivalent_data(self) -> None:
         import picwise_search.index_resolver_adapter as index_adapter
         import picwise_search_memory.canonical_registry as canonical_registry
+        from picwise_search_memory.search_runtime_artifact import _reset_search_runtime_artifact_for_tests
 
         index_adapter._CACHED_OFFLINE_INDEX = None
         canonical_registry._CACHED_REGISTRY = None
+        _reset_search_runtime_artifact_for_tests()
 
         build_calls: list[str] = []
 
@@ -78,12 +80,16 @@ class PicwisePerformanceStage1ATests(unittest.TestCase):
             return build_canonical_vocabulary_registry()
 
         with patch(
-            "picwise_search_memory.canonical_registry.build_canonical_vocabulary_registry",
-            side_effect=_counting_build,
+            "picwise_search_memory.search_runtime_artifact.try_hydrate_runtime_from_artifact",
+            return_value=None,
         ):
-            get_cached_offline_search_index()
-            adapter_registry = get_cached_canonical_vocabulary_registry()
-            live_registry = _vocabulary_registry()
+            with patch(
+                "picwise_search_memory.canonical_registry.build_canonical_vocabulary_registry",
+                side_effect=_counting_build,
+            ):
+                get_cached_offline_search_index()
+                adapter_registry = get_cached_canonical_vocabulary_registry()
+                live_registry = _vocabulary_registry()
 
         self.assertEqual(len(build_calls), 1)
         self.assertIs(adapter_registry, live_registry)
