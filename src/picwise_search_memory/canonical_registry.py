@@ -17,6 +17,7 @@ _SCHEMA_VERSION = "1.0.0"
 _DEEP_PACK_SOURCE = "taxonomy_clean_vocabulary"
 _COVERAGE_SOURCE = "offline_canonical_vocabulary_coverage"
 _BRIDGE_SOURCE = "taxonomy_bridge"
+_GRAPH_SOURCE = "search_entity_graph"
 _REGISTRY_SOURCE = "taxonomy_clean_vocabulary"
 _LANGUAGE = "english"
 _STATUS_ACTIVE = "active"
@@ -109,6 +110,12 @@ def _iter_merged_vocab_layers() -> Iterator[tuple[str, dict[str, set[str]], str,
     )
 
 
+def _export_graph_search_memory_terms():
+    from picwise_search_graph.taxonomy_source import export_graph_search_memory_terms_from_taxonomy
+
+    return export_graph_search_memory_terms_from_taxonomy()
+
+
 def build_canonical_vocabulary_registry() -> CanonicalVocabularyRegistry:
     known_categories = known_mega_category_ids()
 
@@ -179,6 +186,42 @@ def build_canonical_vocabulary_registry() -> CanonicalVocabularyRegistry:
             )
         )
         counts_by_mega_category[bridge_term.mega_category_id] += 1
+
+    for graph_term in _export_graph_search_memory_terms():
+        total_input_terms += 1
+        reason = _reject_reason(graph_term.canonical_term, graph_term.mega_category_id, known_categories)
+        if reason:
+            rejected_by_reason[reason] += 1
+            continue
+        normalized = normalize_term(graph_term.canonical_term)
+        signature = (graph_term.mega_category_id, normalized)
+        if signature in dedupe_signatures:
+            duplicate_terms += 1
+            rejected_by_reason["duplicate"] += 1
+            continue
+        dedupe_signatures.add(signature)
+        graph_flags = tuple(
+            sorted(
+                set(
+                    graph_term.quality_flags
+                    + ("graph_derived", "validated_english_retail", "offline_registry")
+                )
+            )
+        )
+        records.append(
+            _build_record(
+                mega_category_id=graph_term.mega_category_id,
+                normalized_term=normalized,
+                source=_GRAPH_SOURCE,
+                source_file=graph_term.source_file,
+                source_path=graph_term.source_path,
+                status="active",
+                quality_flags=graph_flags,
+                aliases=graph_term.aliases,
+                product_family=graph_term.product_family or normalized,
+            )
+        )
+        counts_by_mega_category[graph_term.mega_category_id] += 1
 
     ordered_records = tuple(sorted(records, key=lambda row: (row.mega_category_id, row.normalized_term)))
     report = CanonicalVocabularyBuildReport(

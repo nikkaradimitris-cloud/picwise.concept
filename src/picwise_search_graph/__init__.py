@@ -1,4 +1,4 @@
-"""Stage 1D-B1 Search Entity Graph contract package."""
+"""Stage 1D-B1/B2 Search Entity Graph package."""
 
 from .contracts import (
     ALIAS_TYPES,
@@ -19,7 +19,12 @@ from .contracts import (
     SUGGESTION_TYPES,
     SuggestionCandidate,
 )
+from .export import GraphSearchMemoryTerm, export_graph_search_memory_terms
 from .manifest import get_search_entity_graph_manifest, validate_search_entity_graph_manifest
+from .taxonomy_source import (
+    build_search_entity_graph_from_taxonomy,
+    export_graph_search_memory_terms_from_taxonomy,
+)
 from .validation import (
     product_offer_implies_ui_eligibility,
     validate_brand_entity,
@@ -41,6 +46,7 @@ __all__ = [
     "EDGE_TYPES",
     "ELIGIBILITY_STATUSES",
     "EntityEdge",
+    "GraphSearchMemoryTerm",
     "GRAPH_SCHEMA_VERSION",
     "MegaCategoryEntity",
     "ProductFamilyEntity",
@@ -53,6 +59,9 @@ __all__ = [
     "SubcategoryEntity",
     "SUGGESTION_TYPES",
     "SuggestionCandidate",
+    "build_search_entity_graph_from_taxonomy",
+    "export_graph_search_memory_terms",
+    "export_graph_search_memory_terms_from_taxonomy",
     "get_search_entity_graph_manifest",
     "product_offer_implies_ui_eligibility",
     "validate_brand_entity",

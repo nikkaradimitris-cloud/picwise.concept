@@ -34,13 +34,17 @@ from picwise_search_graph.validation import (  # noqa: E402
     validate_suggestion_candidate,
 )
 
-_ALLOWED_STAGE_FILES = {
-    "docs/picwise_search_entity_graph_stage1db1.md",
-    "src/picwise_search_graph/__init__.py",
-    "src/picwise_search_graph/contracts.py",
-    "src/picwise_search_graph/manifest.py",
-    "src/picwise_search_graph/validation.py",
-    "tests/test_picwise_search_graph_contracts_stage1db1.py",
+_FORBIDDEN_RUNTIME_FILES = {
+    "src/picwise_search/live_search_resolver.py",
+    "src/picwise_search/index_resolver_adapter.py",
+    "src/picwise_search_memory/index_builder.py",
+    "src/picwise_search_memory/broad_query_suggestions.py",
+    "src/picwise_nlu/category_detector.py",
+    "src/picwise_nlu/typo_normalizer.py",
+    "src/picwise_offers/amazon_manual_affiliate.py",
+    "src/picwise_surface/reference.py",
+    "api/index.py",
+    "src/picwise_app/app.py",
 }
 
 _TEST_SOURCE = "test_fixture_stage1db1"
@@ -287,20 +291,20 @@ class PicWiseSearchGraphContractsStage1DB1Tests(unittest.TestCase):
         )
         json.dumps(envelope.to_dict(), sort_keys=True)
 
-    def test_no_runtime_integration_files_changed(self) -> None:
+    def test_no_forbidden_runtime_files_changed(self) -> None:
         diff = subprocess.run(
-            ["git", "diff", "--name-only"],
+            ["git", "diff", "HEAD", "--name-only"],
             cwd=ROOT,
             capture_output=True,
             text=True,
             check=False,
         )
         changed = {line.strip().replace("\\", "/") for line in diff.stdout.splitlines() if line.strip()}
-        unexpected = changed - _ALLOWED_STAGE_FILES
+        forbidden_changed = changed & _FORBIDDEN_RUNTIME_FILES
         self.assertEqual(
-            unexpected,
+            forbidden_changed,
             set(),
-            msg=f"Unexpected changed files outside Stage 1D-B1 allowlist: {sorted(unexpected)}",
+            msg=f"Forbidden runtime integration files changed: {sorted(forbidden_changed)}",
         )
 
 

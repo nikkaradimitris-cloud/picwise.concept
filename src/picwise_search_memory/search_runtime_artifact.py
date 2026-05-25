@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from picwise_nlu.query_variant_generator import _GENERATOR_VERSION as STAGE3_GENERATOR_VERSION
+from picwise_search_graph.contracts import GRAPH_SCHEMA_VERSION
 
 from .contracts import CanonicalVocabularyRegistry
 from .index_contracts import SearchIndex
@@ -77,6 +78,12 @@ def get_fingerprint_source_paths() -> tuple[str, ...]:
         "src/picwise_search_memory/index_builder.py",
         "src/picwise_search_memory/lookup_safety.py",
         "src/picwise_nlu/query_variant_generator.py",
+        "src/picwise_search_graph/__init__.py",
+        "src/picwise_search_graph/contracts.py",
+        "src/picwise_search_graph/export.py",
+        "src/picwise_search_graph/manifest.py",
+        "src/picwise_search_graph/taxonomy_source.py",
+        "src/picwise_search_graph/validation.py",
     ]
     return tuple(sorted(set(paths)))
 
@@ -96,6 +103,7 @@ def compute_source_fingerprint(*, repo_root: Path | None = None) -> str:
             f"registry_schema_version:{_REGISTRY_SCHEMA_VERSION}",
             f"index_schema_version:{_INDEX_SCHEMA_VERSION}",
             f"generator_version:{STAGE3_GENERATOR_VERSION}",
+            f"graph_schema_version:{GRAPH_SCHEMA_VERSION}",
         ]
     )
     payload = "\n".join(parts)
