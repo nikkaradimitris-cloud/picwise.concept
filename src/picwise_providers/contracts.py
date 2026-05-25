@@ -67,6 +67,20 @@ class ProviderFeedStatus:
 
 
 @dataclass(frozen=True)
+class SearchProviderFeedMetadata:
+    provider_feed_status: str
+    provider_feed_reason_codes: tuple[str, ...] = field(default_factory=tuple)
+    provider_feed_eligible_count: int = 0
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "provider_feed_status": self.provider_feed_status,
+            "provider_feed_reason_codes": list(self.provider_feed_reason_codes),
+            "provider_feed_eligible_count": self.provider_feed_eligible_count,
+        }
+
+
+@dataclass(frozen=True)
 class ProviderParseResult:
     status: str
     products: tuple[ProviderProduct, ...] = field(default_factory=tuple)

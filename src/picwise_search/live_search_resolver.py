@@ -18,6 +18,8 @@ from picwise_search_memory.broad_query_suggestions import (
 )
 from picwise_search_memory.index_lookup import lookup_offline_search_index
 
+from picwise_providers.state import resolve_search_provider_feed_metadata
+
 from .index_resolver_adapter import get_cached_offline_search_index, resolve_query_with_search_index
 
 
@@ -60,9 +62,12 @@ class LiveSearchResolution:
     resolver_state: str
     reason_codes: tuple[str, ...]
     suggestions: tuple[BroadQuerySuggestion, ...] = field(default_factory=tuple)
+    provider_feed_status: str | None = None
+    provider_feed_reason_codes: tuple[str, ...] = field(default_factory=tuple)
+    provider_feed_eligible_count: int = 0
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload = {
             "raw_query": self.raw_query,
             "display_query": self.display_query,
             "normalized_query": self.normalized_query,
@@ -83,6 +88,11 @@ class LiveSearchResolution:
             "reason_codes": list(self.reason_codes),
             "suggestions": [row.to_dict() for row in self.suggestions],
         }
+        if self.provider_feed_status is not None:
+            payload["provider_feed_status"] = self.provider_feed_status
+            payload["provider_feed_reason_codes"] = list(self.provider_feed_reason_codes)
+            payload["provider_feed_eligible_count"] = self.provider_feed_eligible_count
+        return payload
 
 
 def _normalized_text(value: Any) -> str:
@@ -266,6 +276,26 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     reason_codes.append(f"resolver_state_{resolver_state}")
     reason_codes.append(f"adapter_{adapter.get('adapter_decision', 'safe_review_only')}")
 
+    provider_feed_status: str | None = None
+    provider_feed_reason_codes: tuple[str, ...] = ()
+    provider_feed_eligible_count = 0
+    should_check_provider_feed = bool(
+        mega_category_id
+        and provider_lookup_key not in _CONNECTED_PROVIDER_BY_CATEGORY
+        and not offer_broad_suggestions
+        and resolver_state != "blocked_or_unsafe"
+    )
+    if should_check_provider_feed:
+        feed_metadata = resolve_search_provider_feed_metadata(
+            mega_category_id=str(mega_category_id),
+            manual_provider_connected=provider_status == "connected",
+        )
+        if feed_metadata is not None:
+            provider_feed_status = feed_metadata.provider_feed_status
+            provider_feed_reason_codes = feed_metadata.provider_feed_reason_codes
+            provider_feed_eligible_count = feed_metadata.provider_feed_eligible_count
+            reason_codes.append(f"provider_feed_status_{provider_feed_status}")
+
     return LiveSearchResolution(
         raw_query=raw_query,
         display_query=display_query,
@@ -286,4 +316,7 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
         resolver_state=resolver_state,
         reason_codes=tuple(sorted(set(reason_codes))),
         suggestions=broad_suggestions if offer_broad_suggestions else (),
+        provider_feed_status=provider_feed_status,
+        provider_feed_reason_codes=provider_feed_reason_codes,
+        provider_feed_eligible_count=provider_feed_eligible_count,
     )

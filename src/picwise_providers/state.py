@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from .awin_adapter import load_awin_provider_feed
+from .awin_adapter import awin_feed_config_from_env, load_awin_provider_feed
 from .contracts import (
     PROVIDER_FEED_STATUSES,
     ProviderEligibilityResult,
@@ -11,6 +11,7 @@ from .contracts import (
     ProviderFeedStatus,
     ProviderGraphProjectionResult,
     ProviderParseResult,
+    SearchProviderFeedMetadata,
 )
 from .eligibility import evaluate_provider_product_eligibility
 from .graph_projection import project_provider_products_to_graph
@@ -138,3 +139,29 @@ def resolve_provider_feed_pipeline(
 
 def is_safe_no_card_feed_status(status: str) -> bool:
     return status in PROVIDER_FEED_STATUSES and status != "provider_feed_ready"
+
+
+def resolve_search_provider_feed_metadata(
+    *,
+    mega_category_id: str | None,
+    manual_provider_connected: bool,
+    feed_config: ProviderFeedConfig | None = None,
+) -> SearchProviderFeedMetadata | None:
+    if manual_provider_connected or not _normalized_mega_category_id(mega_category_id):
+        return None
+
+    config = feed_config or awin_feed_config_from_env()
+    pipeline = resolve_provider_feed_pipeline(
+        config,
+        mega_category_id=str(mega_category_id),
+    )
+    feed_status = pipeline.feed_status
+    return SearchProviderFeedMetadata(
+        provider_feed_status=feed_status.status,
+        provider_feed_reason_codes=feed_status.reason_codes,
+        provider_feed_eligible_count=feed_status.eligible_count,
+    )
+
+
+def _normalized_mega_category_id(value: str | None) -> str:
+    return " ".join(str(value or "").split()).strip()
