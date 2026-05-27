@@ -16,7 +16,11 @@ from .contracts import (
 )
 from .eligibility import evaluate_provider_product_eligibility
 from .graph_projection import project_provider_products_to_graph
-from .search_selection import ProviderProductSelectionResult, select_provider_products_for_query
+from .search_selection import (
+    ProviderProductSelectionResult,
+    is_strong_feed_opportunity_selection,
+    select_provider_products_for_query,
+)
 
 
 @dataclass(frozen=True)
@@ -174,14 +178,18 @@ def resolve_search_provider_feed_metadata(
     mega_category_id: str | None,
     manual_provider_connected: bool,
     feed_config: ProviderFeedConfig | None = None,
+    allow_without_mega_category: bool = False,
 ) -> SearchProviderFeedMetadata | None:
-    if manual_provider_connected or not _normalized_mega_category_id(mega_category_id):
+    if manual_provider_connected:
         return None
 
     config = feed_config or awin_feed_config_from_env()
+    if not _normalized_mega_category_id(mega_category_id) and not allow_without_mega_category:
+        return None
+
     pipeline = resolve_provider_feed_pipeline(
         config,
-        mega_category_id=str(mega_category_id),
+        mega_category_id=str(mega_category_id or ""),
     )
     feed_status = pipeline.feed_status
     return SearchProviderFeedMetadata(

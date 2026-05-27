@@ -14,11 +14,15 @@ from picwise_search_memory.canonical_registry import get_cached_canonical_vocabu
 from picwise_search_memory.broad_query_suggestions import (
     BroadQuerySuggestion,
     build_broad_query_suggestions,
+    is_unsafe_broad_query,
     should_offer_broad_query_suggestions,
 )
 from picwise_search_memory.index_lookup import lookup_offline_search_index
 
-from picwise_providers.search_selection import provider_product_to_backend_dict
+from picwise_providers.search_selection import (
+    is_strong_feed_opportunity_selection,
+    provider_product_to_backend_dict,
+)
 from picwise_providers.state import (
     resolve_search_provider_feed_metadata,
     resolve_search_provider_feed_product_selection,
@@ -39,6 +43,7 @@ _CONNECTED_STATUSES = {
 
 _INDEX_CATEGORY_OVERRIDE_MIN_CONFIDENCE = 0.84
 _INDEX_CATEGORY_OVERRIDE_MIN_SCORE = 0.84
+_HIGHLY_AMBIGUOUS_BROAD_SUGGESTION_COUNT = 5
 
 
 def _vocabulary_registry():
@@ -154,6 +159,34 @@ def _safe_confidence(value: Any) -> float:
     if score > 1.0:
         return 1.0
     return round(score, 2)
+
+
+def _index_reason_codes_block_feed_opportunity(reason_codes: tuple[str, ...]) -> bool:
+    blocked_markers = ("homograph", "unsafe", "blocked")
+    for code in reason_codes:
+        lowered = str(code).lower()
+        if any(marker in lowered for marker in blocked_markers):
+            return True
+    return False
+
+
+def _query_eligible_for_feed_opportunity_attempt(
+    *,
+    canonicalized_query: str,
+    offer_broad_suggestions: bool,
+    broad_suggestions: tuple[BroadQuerySuggestion, ...],
+    blocked_or_unsafe: bool,
+    index_reason_codes: tuple[str, ...],
+) -> bool:
+    if blocked_or_unsafe:
+        return False
+    if is_unsafe_broad_query(canonicalized_query):
+        return False
+    if _index_reason_codes_block_feed_opportunity(index_reason_codes):
+        return False
+    if offer_broad_suggestions and len(broad_suggestions) >= _HIGHLY_AMBIGUOUS_BROAD_SUGGESTION_COUNT:
+        return False
+    return True
 
 
 def resolve_live_search(query: str) -> LiveSearchResolution:
@@ -301,16 +334,30 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     provider_feed_matched_count = 0
     provider_feed_selected_count = 0
     provider_feed_selected_products: tuple[dict[str, Any], ...] = ()
-    should_check_provider_feed = bool(
+    selection_query = canonicalized_query or normalized_query or raw_query
+    standard_provider_feed_path = bool(
         mega_category_id
         and provider_lookup_key not in _CONNECTED_PROVIDER_BY_CATEGORY
         and not offer_broad_suggestions
         and resolver_state != "blocked_or_unsafe"
     )
+    feed_opportunity_attempt = _query_eligible_for_feed_opportunity_attempt(
+        canonicalized_query=canonicalized_query,
+        offer_broad_suggestions=offer_broad_suggestions,
+        broad_suggestions=broad_suggestions,
+        blocked_or_unsafe=blocked_or_unsafe,
+        index_reason_codes=index_result.reason_codes,
+    )
+    should_check_provider_feed = bool(
+        provider_lookup_key not in _CONNECTED_PROVIDER_BY_CATEGORY
+        and resolver_state != "blocked_or_unsafe"
+        and (standard_provider_feed_path or feed_opportunity_attempt)
+    )
     if should_check_provider_feed:
         feed_metadata = resolve_search_provider_feed_metadata(
-            mega_category_id=str(mega_category_id),
+            mega_category_id=str(mega_category_id) if mega_category_id else None,
             manual_provider_connected=provider_status == "connected",
+            allow_without_mega_category=feed_opportunity_attempt,
         )
         if feed_metadata is not None:
             provider_feed_status = feed_metadata.provider_feed_status
@@ -323,23 +370,43 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
                 and status in _CONNECTED_STATUSES
                 and not is_ambiguous_or_invalid
             )
-            if recognized_product_search and provider_feed_status == "provider_feed_ready":
+            feed_opportunity_search = bool(
+                feed_opportunity_attempt
+                and not recognized_product_search
+                and provider_feed_status == "provider_feed_ready"
+            )
+            if (
+                provider_feed_status == "provider_feed_ready"
+                and (recognized_product_search or feed_opportunity_search)
+            ):
                 selection = resolve_search_provider_feed_product_selection(
-                    query=canonicalized_query or normalized_query or raw_query,
+                    query=selection_query,
                 )
-                provider_feed_selection_status = selection.status
-                provider_feed_selection_reason_codes = selection.reason_codes
-                provider_feed_matched_count = selection.matched_count
-                provider_feed_selected_count = len(selection.selected_products)
-                if selection.status == "selected":
-                    provider_feed_selected_products = tuple(
-                        provider_product_to_backend_dict(product)
-                        for product in selection.selected_products
+                expose_selection = recognized_product_search or is_strong_feed_opportunity_selection(
+                    selection
+                )
+                report_feed_opportunity_selection = bool(
+                    feed_opportunity_search
+                    and selection.status in {"selected", "insufficient_relevant_products"}
+                )
+                if expose_selection or report_feed_opportunity_selection:
+                    provider_feed_selection_status = selection.status
+                    provider_feed_selection_reason_codes = selection.reason_codes
+                    provider_feed_matched_count = selection.matched_count
+                    provider_feed_selected_count = len(selection.selected_products)
+                    if expose_selection and selection.status == "selected":
+                        provider_feed_selected_products = tuple(
+                            provider_product_to_backend_dict(product)
+                            for product in selection.selected_products
+                        )
+                    reason_codes.append(
+                        f"provider_feed_selection_status_{provider_feed_selection_status}"
                     )
-                reason_codes.append(f"provider_feed_selection_status_{provider_feed_selection_status}")
-                reason_codes.extend(
-                    f"provider_feed_selection_{code}" for code in selection.reason_codes
-                )
+                    reason_codes.extend(
+                        f"provider_feed_selection_{code}" for code in selection.reason_codes
+                    )
+                    if feed_opportunity_search and expose_selection:
+                        reason_codes.append("provider_feed_opportunity_gate")
 
     return LiveSearchResolution(
         raw_query=raw_query,

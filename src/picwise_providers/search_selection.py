@@ -13,8 +13,50 @@ _TITLE_WEIGHT = 100
 _CATEGORY_WEIGHT = 40
 _KEYWORD_WEIGHT = 20
 _DESCRIPTION_WEIGHT = 5
+_PHRASE_IN_TITLE_BONUS = 150
+_ALL_TOKENS_IN_TITLE_BONUS = 80
+_PRODUCT_TYPE_IN_TITLE_BONUS = 60
+_COMPLETE_PRODUCT_BONUS = 25
+_NOT_ACCESSORY_BONUS = 40
+_ACCESSORY_PENALTY = 220
+_STRONG_MATCH_MIN_SCORE = 280
 _DESCRIPTION_MAX_LEN = 500
 _MIN_TOKEN_LEN = 2
+
+_ACCESSORY_TERMS = frozenset(
+    {
+        "accessories",
+        "accessory",
+        "bag",
+        "bags",
+        "filter",
+        "filters",
+        "cloth",
+        "mop",
+        "replacement",
+        "spare",
+        "parts",
+        "kit",
+        "tool kit",
+        "nozzle",
+        "filament",
+        "adapter",
+        "docking station",
+        "lens",
+        "cable",
+        "battery",
+        "sensor",
+        "cover",
+        "case",
+        "stand",
+        "bracket",
+        "brush",
+        "brushes",
+        "mount",
+    }
+)
+_ACCESSORY_FOR_PRODUCT_PENALTY = 260
+_ACCESSORY_PACK_PREFIX_RE = re.compile(r"^\d+\s*(?:pcs|pc|pack|pieces?)\b", flags=re.IGNORECASE)
 
 _DEDUPE_PUNCT_RE = re.compile(r"[^\w\s]+", flags=re.UNICODE)
 
@@ -23,6 +65,7 @@ _DEDUPE_PUNCT_RE = re.compile(r"[^\w\s]+", flags=re.UNICODE)
 class ProviderProductSelectionResult:
     status: str
     matched_count: int = 0
+    strong_matched_count: int = 0
     selected_products: tuple[ProviderProduct, ...] = field(default_factory=tuple)
     reason_codes: tuple[str, ...] = field(default_factory=tuple)
 
@@ -30,6 +73,7 @@ class ProviderProductSelectionResult:
         return {
             "status": self.status,
             "matched_count": self.matched_count,
+            "strong_matched_count": self.strong_matched_count,
             "selected_count": len(self.selected_products),
             "reason_codes": list(self.reason_codes),
             "selected_products": [
@@ -103,21 +147,77 @@ def _token_matches_field(token: str, field_text: str) -> bool:
     return token in field_text
 
 
+def _word_in_text(word: str, text: str) -> bool:
+    if not word or not text:
+        return False
+    pattern = rf"\b{re.escape(word)}\b"
+    return re.search(pattern, text, flags=re.IGNORECASE) is not None
+
+
+def _query_seeks_accessory(tokens: tuple[str, ...], normalized_query: str) -> bool:
+    if any(token in _ACCESSORY_TERMS for token in tokens):
+        return True
+    normalized = str(normalized_query or "").strip().lower()
+    return any(term in normalized for term in _ACCESSORY_TERMS)
+
+
+def _title_accessory_penalty(
+    title: str,
+    *,
+    normalized_query: str,
+    query_seeks_accessory: bool,
+) -> int:
+    if query_seeks_accessory or not title:
+        return 0
+    penalty = 0
+    for term in _ACCESSORY_TERMS:
+        if term in title:
+            penalty += _ACCESSORY_PENALTY
+    if _ACCESSORY_PACK_PREFIX_RE.search(title):
+        penalty += _ACCESSORY_PENALTY
+    if normalized_query and normalized_query in title and " for " in title:
+        for_index = title.find(" for ")
+        phrase_index = title.find(normalized_query)
+        if phrase_index > for_index:
+            penalty += _ACCESSORY_FOR_PRODUCT_PENALTY
+    return penalty
+
+
+def _product_completeness_bonus(product: ProviderProduct) -> int:
+    bonus = 0
+    if str(product.image_url or "").strip():
+        bonus += 8
+    if str(product.product_url or "").strip():
+        bonus += 6
+    if str(product.price_text or "").strip():
+        bonus += 6
+    if str(product.availability_text or "").strip():
+        bonus += 5
+    return bonus if bonus == 25 else 0
+
+
 def _score_product_for_tokens(
     product: ProviderProduct,
     tokens: tuple[str, ...],
-) -> tuple[int, int, str, str] | None:
+    *,
+    normalized_query: str,
+    query_seeks_accessory: bool,
+) -> tuple[int, int, int, str, str] | None:
     fields = _product_search_fields(product)
     matched_tokens = 0
     score = 0
+    title_matches = 0
+    category_matches = 0
 
     for token in tokens:
         token_matched = False
         if _token_matches_field(token, fields["title"]):
             score += _TITLE_WEIGHT
+            title_matches += 1
             token_matched = True
         if _token_matches_field(token, fields["category"]):
             score += _CATEGORY_WEIGHT
+            category_matches += 1
             token_matched = True
         if _token_matches_field(token, fields["keywords"]):
             score += _KEYWORD_WEIGHT
@@ -131,16 +231,37 @@ def _score_product_for_tokens(
     if matched_tokens < len(tokens):
         return None
 
+    normalized = str(normalized_query or "").strip().lower()
+    if normalized and normalized in fields["title"]:
+        score += _PHRASE_IN_TITLE_BONUS
+    if title_matches == len(tokens):
+        score += _ALL_TOKENS_IN_TITLE_BONUS
+    if category_matches > 0:
+        score += _CATEGORY_WEIGHT // 2
+    if tokens and _word_in_text(tokens[-1], fields["title"]):
+        score += _PRODUCT_TYPE_IN_TITLE_BONUS
+
+    accessory_penalty = _title_accessory_penalty(
+        fields["title"],
+        normalized_query=normalized,
+        query_seeks_accessory=query_seeks_accessory,
+    )
+    score -= accessory_penalty
+    if accessory_penalty == 0 and not query_seeks_accessory:
+        score += _NOT_ACCESSORY_BONUS
+    score += _product_completeness_bonus(product)
+
     return (
         matched_tokens,
         score,
+        title_matches,
         str(product.title or "").strip().lower(),
         str(product.provider_product_id or "").strip(),
     )
 
 
 def _dedupe_selected_products(
-    ranked_products: list[tuple[tuple[int, int, str, str], ProviderProduct]],
+    ranked_products: list[tuple[tuple[int, int, int, str, str], ProviderProduct]],
 ) -> list[ProviderProduct]:
     seen_ids: set[str] = set()
     seen_titles: set[str] = set()
@@ -162,6 +283,32 @@ def _dedupe_selected_products(
     return selected
 
 
+def _count_strong_matches(
+    ranked_products: list[tuple[tuple[int, int, int, str, str], ProviderProduct]],
+    *,
+    token_count: int,
+) -> int:
+    strong_count = 0
+    for ranking, _product in ranked_products:
+        _matched_tokens, score, title_matches, _title_key, _product_id = ranking
+        if score >= _STRONG_MATCH_MIN_SCORE and title_matches >= token_count:
+            strong_count += 1
+    return strong_count
+
+
+def is_strong_feed_opportunity_selection(
+    selection: ProviderProductSelectionResult,
+    *,
+    max_products: int = 4,
+) -> bool:
+    safe_max = max(1, int(max_products))
+    if selection.status != "selected":
+        return False
+    if len(selection.selected_products) < safe_max:
+        return False
+    return selection.strong_matched_count >= safe_max
+
+
 def select_provider_products_for_query(
     query: str,
     products: tuple[ProviderProduct, ...],
@@ -169,22 +316,31 @@ def select_provider_products_for_query(
     max_products: int = 4,
 ) -> ProviderProductSelectionResult:
     safe_max = max(1, int(max_products))
+    normalized_query = normalize_query(str(query or ""))
     tokens = _tokenize_query(query)
     if not tokens:
         return ProviderProductSelectionResult(
             status="no_query_tokens",
             matched_count=0,
+            strong_matched_count=0,
             selected_products=tuple(),
             reason_codes=("empty_query",),
         )
 
-    ranked: list[tuple[tuple[int, int, str, str], ProviderProduct]] = []
+    query_seeks_accessory = _query_seeks_accessory(tokens, normalized_query)
+    ranked: list[tuple[tuple[int, int, int, str, str], ProviderProduct]] = []
     for product in products:
-        ranking = _score_product_for_tokens(product, tokens)
+        ranking = _score_product_for_tokens(
+            product,
+            tokens,
+            normalized_query=normalized_query,
+            query_seeks_accessory=query_seeks_accessory,
+        )
         if ranking is not None:
             ranked.append((ranking, product))
 
-    ranked.sort(key=lambda row: (-row[0][0], -row[0][1], row[0][2], row[0][3]))
+    ranked.sort(key=lambda row: (-row[0][1], -row[0][2], -row[0][0], row[0][3], row[0][4]))
+    strong_matched_count = _count_strong_matches(ranked, token_count=len(tokens))
     deduped = _dedupe_selected_products(ranked)
     matched_count = len(deduped)
 
@@ -192,6 +348,7 @@ def select_provider_products_for_query(
         return ProviderProductSelectionResult(
             status="insufficient_relevant_products",
             matched_count=matched_count,
+            strong_matched_count=strong_matched_count,
             selected_products=tuple(),
             reason_codes=("insufficient_relevant_products",),
         )
@@ -199,6 +356,7 @@ def select_provider_products_for_query(
     return ProviderProductSelectionResult(
         status="selected",
         matched_count=matched_count,
+        strong_matched_count=strong_matched_count,
         selected_products=tuple(deduped[:safe_max]),
         reason_codes=("provider_feed_products_selected",),
     )
