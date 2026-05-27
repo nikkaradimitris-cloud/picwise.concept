@@ -11,10 +11,12 @@ from .contracts import (
     ProviderFeedStatus,
     ProviderGraphProjectionResult,
     ProviderParseResult,
+    ProviderProduct,
     SearchProviderFeedMetadata,
 )
 from .eligibility import evaluate_provider_product_eligibility
 from .graph_projection import project_provider_products_to_graph
+from .search_selection import ProviderProductSelectionResult, select_provider_products_for_query
 
 
 @dataclass(frozen=True)
@@ -139,6 +141,32 @@ def resolve_provider_feed_pipeline(
 
 def is_safe_no_card_feed_status(status: str) -> bool:
     return status in PROVIDER_FEED_STATUSES and status != "provider_feed_ready"
+
+
+def load_eligible_provider_feed_products(
+    feed_config: ProviderFeedConfig | None = None,
+) -> tuple[ProviderProduct, ...]:
+    config = feed_config or awin_feed_config_from_env()
+    pipeline = resolve_provider_feed_pipeline(config)
+    if pipeline.feed_status.status != "provider_feed_ready":
+        return tuple()
+    return tuple(
+        row.product for row in pipeline.eligibility_results if row.status == "eligible"
+    )
+
+
+def resolve_search_provider_feed_product_selection(
+    *,
+    query: str,
+    feed_config: ProviderFeedConfig | None = None,
+    max_products: int = 4,
+) -> ProviderProductSelectionResult:
+    products = load_eligible_provider_feed_products(feed_config=feed_config)
+    return select_provider_products_for_query(
+        query,
+        products,
+        max_products=max_products,
+    )
 
 
 def resolve_search_provider_feed_metadata(

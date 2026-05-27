@@ -18,7 +18,11 @@ from picwise_search_memory.broad_query_suggestions import (
 )
 from picwise_search_memory.index_lookup import lookup_offline_search_index
 
-from picwise_providers.state import resolve_search_provider_feed_metadata
+from picwise_providers.search_selection import provider_product_to_backend_dict
+from picwise_providers.state import (
+    resolve_search_provider_feed_metadata,
+    resolve_search_provider_feed_product_selection,
+)
 
 from .index_resolver_adapter import get_cached_offline_search_index, resolve_query_with_search_index
 
@@ -65,6 +69,11 @@ class LiveSearchResolution:
     provider_feed_status: str | None = None
     provider_feed_reason_codes: tuple[str, ...] = field(default_factory=tuple)
     provider_feed_eligible_count: int = 0
+    provider_feed_selection_status: str | None = None
+    provider_feed_selection_reason_codes: tuple[str, ...] = field(default_factory=tuple)
+    provider_feed_matched_count: int = 0
+    provider_feed_selected_count: int = 0
+    provider_feed_selected_products: tuple[dict[str, Any], ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -92,6 +101,14 @@ class LiveSearchResolution:
             payload["provider_feed_status"] = self.provider_feed_status
             payload["provider_feed_reason_codes"] = list(self.provider_feed_reason_codes)
             payload["provider_feed_eligible_count"] = self.provider_feed_eligible_count
+        if self.provider_feed_selection_status is not None:
+            payload["provider_feed_selection_status"] = self.provider_feed_selection_status
+            payload["provider_feed_selection_reason_codes"] = list(
+                self.provider_feed_selection_reason_codes
+            )
+            payload["provider_feed_matched_count"] = self.provider_feed_matched_count
+            payload["provider_feed_selected_count"] = self.provider_feed_selected_count
+            payload["provider_feed_selected_products"] = list(self.provider_feed_selected_products)
         return payload
 
 
@@ -279,6 +296,11 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     provider_feed_status: str | None = None
     provider_feed_reason_codes: tuple[str, ...] = ()
     provider_feed_eligible_count = 0
+    provider_feed_selection_status: str | None = None
+    provider_feed_selection_reason_codes: tuple[str, ...] = ()
+    provider_feed_matched_count = 0
+    provider_feed_selected_count = 0
+    provider_feed_selected_products: tuple[dict[str, Any], ...] = ()
     should_check_provider_feed = bool(
         mega_category_id
         and provider_lookup_key not in _CONNECTED_PROVIDER_BY_CATEGORY
@@ -295,6 +317,29 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
             provider_feed_reason_codes = feed_metadata.provider_feed_reason_codes
             provider_feed_eligible_count = feed_metadata.provider_feed_eligible_count
             reason_codes.append(f"provider_feed_status_{provider_feed_status}")
+
+            recognized_product_search = bool(
+                mega_category_id
+                and status in _CONNECTED_STATUSES
+                and not is_ambiguous_or_invalid
+            )
+            if recognized_product_search and provider_feed_status == "provider_feed_ready":
+                selection = resolve_search_provider_feed_product_selection(
+                    query=canonicalized_query or normalized_query or raw_query,
+                )
+                provider_feed_selection_status = selection.status
+                provider_feed_selection_reason_codes = selection.reason_codes
+                provider_feed_matched_count = selection.matched_count
+                provider_feed_selected_count = len(selection.selected_products)
+                if selection.status == "selected":
+                    provider_feed_selected_products = tuple(
+                        provider_product_to_backend_dict(product)
+                        for product in selection.selected_products
+                    )
+                reason_codes.append(f"provider_feed_selection_status_{provider_feed_selection_status}")
+                reason_codes.extend(
+                    f"provider_feed_selection_{code}" for code in selection.reason_codes
+                )
 
     return LiveSearchResolution(
         raw_query=raw_query,
@@ -319,4 +364,9 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
         provider_feed_status=provider_feed_status,
         provider_feed_reason_codes=provider_feed_reason_codes,
         provider_feed_eligible_count=provider_feed_eligible_count,
+        provider_feed_selection_status=provider_feed_selection_status,
+        provider_feed_selection_reason_codes=provider_feed_selection_reason_codes,
+        provider_feed_matched_count=provider_feed_matched_count,
+        provider_feed_selected_count=provider_feed_selected_count,
+        provider_feed_selected_products=provider_feed_selected_products,
     )
