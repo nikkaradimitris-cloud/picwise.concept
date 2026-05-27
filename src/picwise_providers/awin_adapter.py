@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import gzip
 import io
 import json
 import os
@@ -14,6 +15,7 @@ from .normalization import normalize_feed_row_to_provider_product
 _AWIN_PROVIDER_KEY = "awin"
 _AWIN_FEED_FILE_ENV = "AWIN_FEED_FILE"
 _AWIN_FEED_URL_ENV = "AWIN_FEED_URL"
+_GZIP_MAGIC = b"\x1f\x8b"
 
 
 def awin_feed_config_from_env() -> ProviderFeedConfig:
@@ -47,6 +49,26 @@ def _load_feed_bytes(*, feed_file: str | None, feed_url: str | None) -> tuple[by
     return None, tuple(errors)
 
 
+def _is_gzip_payload(payload: bytes, *, feed_file: str | None = None) -> bool:
+    file_path = str(feed_file or "").strip().lower()
+    if file_path.endswith(".gz"):
+        return True
+    return len(payload) >= 2 and payload[:2] == _GZIP_MAGIC
+
+
+def _decompress_gzip_payload(
+    payload: bytes,
+    *,
+    feed_file: str | None = None,
+) -> tuple[bytes | None, tuple[str, ...]]:
+    if not _is_gzip_payload(payload, feed_file=feed_file):
+        return payload, tuple()
+    try:
+        return gzip.decompress(payload), tuple()
+    except OSError as exc:
+        return None, (f"gzip_decompress_failed:{exc.__class__.__name__}",)
+
+
 def _decode_feed_payload(payload: bytes) -> tuple[str | None, tuple[str, ...]]:
     for encoding in ("utf-8-sig", "utf-8", "latin-1"):
         try:
@@ -57,13 +79,16 @@ def _decode_feed_payload(payload: bytes) -> tuple[str | None, tuple[str, ...]]:
 
 
 def _parse_csv_rows(text: str) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
-    reader = csv.DictReader(io.StringIO(text))
-    if reader.fieldnames is None:
-        return [], ("csv_missing_header",)
-    rows: list[dict[str, Any]] = []
-    for row in reader:
-        rows.append({str(key): value for key, value in row.items() if key is not None})
-    return rows, tuple()
+    try:
+        reader = csv.DictReader(io.StringIO(text))
+        if reader.fieldnames is None:
+            return [], ("csv_missing_header",)
+        rows: list[dict[str, Any]] = []
+        for row in reader:
+            rows.append({str(key): value for key, value in row.items() if key is not None})
+        return rows, tuple()
+    except csv.Error as exc:
+        return [], (f"csv_parse_failed:{exc.__class__.__name__}",)
 
 
 def _parse_json_rows(text: str) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
@@ -90,12 +115,15 @@ def _parse_json_rows(text: str) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
 
 
 def _parse_feed_text(text: str) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
-    stripped = text.lstrip()
-    if not stripped:
-        return [], ("feed_empty",)
-    if stripped.startswith("{") or stripped.startswith("["):
-        return _parse_json_rows(text)
-    return _parse_csv_rows(text)
+    try:
+        stripped = text.lstrip()
+        if not stripped:
+            return [], ("feed_empty",)
+        if stripped.startswith("{") or stripped.startswith("["):
+            return _parse_json_rows(text)
+        return _parse_csv_rows(text)
+    except Exception as exc:
+        return [], (f"feed_parse_failed:{exc.__class__.__name__}",)
 
 
 def load_awin_provider_feed(
@@ -117,6 +145,17 @@ def load_awin_provider_feed(
             status="provider_feed_parse_failed",
             reason_codes=tuple(load_errors or ("feed_load_failed",)),
             parse_errors=tuple(load_errors or ("feed_load_failed",)),
+        )
+
+    payload, decompress_errors = _decompress_gzip_payload(
+        payload,
+        feed_file=resolved.feed_file,
+    )
+    if payload is None:
+        return ProviderParseResult(
+            status="provider_feed_parse_failed",
+            reason_codes=decompress_errors,
+            parse_errors=decompress_errors,
         )
 
     text, decode_errors = _decode_feed_payload(payload)

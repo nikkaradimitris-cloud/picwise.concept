@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gzip
 import json
 import os
 import sys
@@ -141,6 +142,71 @@ class ProviderFeedParseTests(unittest.TestCase):
         result = load_awin_provider_feed(config)
         self.assertEqual(result.status, "provider_feed_parse_failed")
         self.assertTrue(any(code.startswith("feed_file_read_failed") for code in result.parse_errors))
+
+    def test_gzip_csv_fixture_parses_successfully(self) -> None:
+        csv_text = (
+            "product_id,product_name,brand,category_name,deeplink,image_url,current_price,in_stock,currency\n"
+            "SKU-GZ-100,Portable Charger 10000mAh,AcmeBrand,Power Banks,"
+            "https://merchant.example/products/sku-gz-100,https://cdn.example/img.jpg,29.99,in stock,USD\n"
+        )
+        with tempfile.NamedTemporaryFile("wb", suffix=".csv.gz", delete=False) as handle:
+            handle.write(gzip.compress(csv_text.encode("utf-8")))
+            feed_path = handle.name
+
+        try:
+            config = ProviderFeedConfig(provider_key="awin", feed_file=feed_path)
+            result = load_awin_provider_feed(config)
+            self.assertEqual(result.status, "provider_feed_loaded")
+            self.assertEqual(len(result.products), 1)
+            self.assertEqual(result.products[0].provider_product_id, "SKU-GZ-100")
+        finally:
+            os.unlink(feed_path)
+
+    def test_invalid_gzip_returns_parse_failed(self) -> None:
+        with tempfile.NamedTemporaryFile("wb", suffix=".csv.gz", delete=False) as handle:
+            handle.write(b"\x1f\x8bnot-valid-gzip-payload")
+            feed_path = handle.name
+
+        try:
+            config = ProviderFeedConfig(provider_key="awin", feed_file=feed_path)
+            result = load_awin_provider_feed(config)
+            self.assertEqual(result.status, "provider_feed_parse_failed")
+            self.assertTrue(any(code.startswith("gzip_decompress_failed") for code in result.parse_errors))
+        finally:
+            os.unlink(feed_path)
+
+    def test_gzip_magic_bytes_without_gz_extension_parses(self) -> None:
+        csv_text = "product_id,title,url\nG-1,Sample,https://merchant.example/g-1\n"
+        with tempfile.NamedTemporaryFile("wb", suffix=".csv", delete=False) as handle:
+            handle.write(gzip.compress(csv_text.encode("utf-8")))
+            feed_path = handle.name
+
+        try:
+            config = ProviderFeedConfig(provider_key="awin", feed_file=feed_path)
+            result = load_awin_provider_feed(config)
+            self.assertEqual(result.status, "provider_feed_loaded")
+            self.assertEqual(result.products[0].title, "Sample")
+        finally:
+            os.unlink(feed_path)
+
+    def test_gzip_csv_with_missing_fields_does_not_fake_values(self) -> None:
+        csv_text = "product_id,title,url\nG-2,USB Cable,https://merchant.example/g-2\n"
+        with tempfile.NamedTemporaryFile("wb", suffix=".csv.gz", delete=False) as handle:
+            handle.write(gzip.compress(csv_text.encode("utf-8")))
+            feed_path = handle.name
+
+        try:
+            config = ProviderFeedConfig(provider_key="awin", feed_file=feed_path)
+            result = load_awin_provider_feed(config)
+            self.assertEqual(result.status, "provider_feed_loaded")
+            product = result.products[0]
+            self.assertEqual(product.brand, "")
+            self.assertEqual(product.image_url, "")
+            self.assertEqual(product.price_text, "")
+            self.assertEqual(product.availability_text, "")
+            self.assertEqual(product.currency, "")
+        finally:
+            os.unlink(feed_path)
 
 
 class ProviderEligibilityTests(unittest.TestCase):
