@@ -17,7 +17,9 @@ from .contracts import (
 from .eligibility import evaluate_provider_product_eligibility
 from .graph_projection import project_provider_products_to_graph
 from .search_selection import (
+    ProviderFeedRecommendationDecision,
     ProviderProductSelectionResult,
+    decide_recommended_provider_product,
     is_strong_feed_opportunity_selection,
     select_provider_products_for_query,
 )
@@ -171,6 +173,42 @@ def resolve_search_provider_feed_product_selection(
         products,
         max_products=max_products,
     )
+
+
+def resolve_search_provider_feed_recommendation_decision(
+    *,
+    query: str,
+    selection: ProviderProductSelectionResult,
+) -> ProviderFeedRecommendationDecision:
+    if selection.status == "insufficient_relevant_products":
+        return ProviderFeedRecommendationDecision(
+            decision_status="insufficient_selected_products",
+            recommendation_reason_codes=("insufficient_selected_products",),
+        )
+    if selection.status != "selected" or len(selection.selected_products) != 4:
+        return ProviderFeedRecommendationDecision(
+            decision_status="no_selection",
+            recommendation_reason_codes=("no_feed_selection",),
+        )
+    return decide_recommended_provider_product(query, selection.selected_products)
+
+
+def resolve_search_provider_feed_selection_with_recommendation(
+    *,
+    query: str,
+    feed_config: ProviderFeedConfig | None = None,
+    max_products: int = 4,
+) -> tuple[ProviderProductSelectionResult, ProviderFeedRecommendationDecision]:
+    selection = resolve_search_provider_feed_product_selection(
+        query=query,
+        feed_config=feed_config,
+        max_products=max_products,
+    )
+    decision = resolve_search_provider_feed_recommendation_decision(
+        query=query,
+        selection=selection,
+    )
+    return selection, decision
 
 
 def resolve_search_provider_feed_metadata(

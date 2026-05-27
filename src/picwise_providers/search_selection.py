@@ -360,3 +360,157 @@ def select_provider_products_for_query(
         selected_products=tuple(deduped[:safe_max]),
         reason_codes=("provider_feed_products_selected",),
     )
+
+
+@dataclass(frozen=True)
+class ProviderFeedRecommendationDecision:
+    decision_status: str
+    recommended_product_id: str | None = None
+    recommendation_reason_codes: tuple[str, ...] = field(default_factory=tuple)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "decision_status": self.decision_status,
+            "recommended_product_id": self.recommended_product_id,
+            "recommendation_reason_codes": list(self.recommendation_reason_codes),
+        }
+
+
+def _parse_price_for_tie_breaker(price_text: str) -> float | None:
+    cleaned = str(price_text or "").strip().replace(",", "")
+    if not cleaned:
+        return None
+    try:
+        return float(cleaned)
+    except ValueError:
+        return None
+
+
+def _recommendation_reason_codes_for_product(
+    product: ProviderProduct,
+    tokens: tuple[str, ...],
+    *,
+    normalized_query: str,
+    query_seeks_accessory: bool,
+    score: int,
+    title_matches: int,
+    price_used_as_tie_breaker: bool,
+) -> tuple[str, ...]:
+    fields = _product_search_fields(product)
+    reasons: list[str] = []
+
+    if score >= _STRONG_MATCH_MIN_SCORE:
+        reasons.append("strong_query_title_fit")
+    if tokens and title_matches == len(tokens):
+        reasons.append("all_query_tokens_in_title")
+    normalized = str(normalized_query or "").strip().lower()
+    if normalized and normalized in fields["title"]:
+        reasons.append("query_phrase_in_title")
+    if tokens and _word_in_text(tokens[-1], fields["title"]):
+        reasons.append("product_type_phrase_in_title")
+    if any(_token_matches_field(token, fields["category"]) for token in tokens):
+        reasons.append("category_alignment")
+    accessory_penalty = _title_accessory_penalty(
+        fields["title"],
+        normalized_query=normalized,
+        query_seeks_accessory=query_seeks_accessory,
+    )
+    if accessory_penalty == 0 and not query_seeks_accessory:
+        reasons.append("main_product_not_accessory")
+    if _product_completeness_bonus(product) == _COMPLETE_PRODUCT_BONUS:
+        reasons.append("complete_product_fields")
+    if price_used_as_tie_breaker:
+        reasons.append("price_tie_breaker")
+
+    return tuple(dict.fromkeys(reasons))
+
+
+def decide_recommended_provider_product(
+    query: str,
+    selected_products: tuple[ProviderProduct, ...],
+) -> ProviderFeedRecommendationDecision:
+    if not selected_products:
+        return ProviderFeedRecommendationDecision(
+            decision_status="no_selection",
+            recommendation_reason_codes=("no_feed_selection",),
+        )
+    if len(selected_products) != 4:
+        return ProviderFeedRecommendationDecision(
+            decision_status="insufficient_selected_products",
+            recommendation_reason_codes=("insufficient_selected_products",),
+        )
+
+    normalized_query = normalize_query(str(query or ""))
+    tokens = _tokenize_query(query)
+    if not tokens:
+        return ProviderFeedRecommendationDecision(
+            decision_status="no_selection",
+            recommendation_reason_codes=("empty_query",),
+        )
+
+    query_seeks_accessory = _query_seeks_accessory(tokens, normalized_query)
+    candidates: list[tuple[tuple[Any, ...], ProviderProduct]] = []
+
+    for product in selected_products:
+        ranking = _score_product_for_tokens(
+            product,
+            tokens,
+            normalized_query=normalized_query,
+            query_seeks_accessory=query_seeks_accessory,
+        )
+        if ranking is None:
+            continue
+        _matched_tokens, score, title_matches, title_key, product_id = ranking
+        price_value = _parse_price_for_tie_breaker(product.price_text)
+        has_price = 1 if price_value is not None else 0
+        sort_key = (
+            -score,
+            -title_matches,
+            -has_price,
+            price_value if price_value is not None else float("inf"),
+            title_key,
+            product_id,
+        )
+        candidates.append((sort_key, product))
+
+    if not candidates:
+        return ProviderFeedRecommendationDecision(
+            decision_status="insufficient_selected_products",
+            recommendation_reason_codes=("insufficient_selected_products",),
+        )
+
+    candidates.sort(key=lambda row: row[0])
+    winner_key, winner_product = candidates[0]
+    winner_id = str(winner_product.provider_product_id or "").strip()
+    winner_score = -winner_key[0]
+    winner_title_matches = -winner_key[1]
+
+    top_primary = [
+        row
+        for row in candidates
+        if row[0][0] == winner_key[0] and row[0][1] == winner_key[1]
+    ]
+    price_used_as_tie_breaker = False
+    if len(top_primary) > 1:
+        has_price_flags = {row[0][2] for row in top_primary}
+        price_values = {row[0][3] for row in top_primary if row[0][2] == 1}
+        if len(has_price_flags) > 1 or len(price_values) > 1:
+            price_used_as_tie_breaker = True
+
+    reason_codes = _recommendation_reason_codes_for_product(
+        winner_product,
+        tokens,
+        normalized_query=normalized_query,
+        query_seeks_accessory=query_seeks_accessory,
+        score=winner_score,
+        title_matches=winner_title_matches,
+        price_used_as_tie_breaker=price_used_as_tie_breaker,
+    )
+    if not reason_codes:
+        reason_codes = ("provider_feed_recommendation_selected",)
+
+    return ProviderFeedRecommendationDecision(
+        decision_status="recommended",
+        recommended_product_id=winner_id or None,
+        recommendation_reason_codes=reason_codes,
+    )
