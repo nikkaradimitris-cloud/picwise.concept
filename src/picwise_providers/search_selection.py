@@ -100,6 +100,8 @@ def provider_product_to_backend_dict(product: ProviderProduct) -> dict[str, Any]
         "title": str(product.title or "").strip(),
         "price_text": str(product.price_text or "").strip(),
         "availability_text": str(product.availability_text or "").strip(),
+        "image_url": str(product.image_url or "").strip(),
+        "product_url": str(product.product_url or "").strip(),
         "product_url_masked": mask_provider_product_url(product.product_url),
     }
 
