@@ -9,7 +9,7 @@ from .contracts import ProviderProduct
 _HTTP_URL_RE = re.compile(r"^https?://[a-z0-9.-]+\.[a-z]{2,}(?:[/?#].*)?$", flags=re.IGNORECASE)
 
 _TITLE_KEYS = ("title", "product_name", "name", "product_title")
-_BRAND_KEYS = ("brand", "manufacturer", "merchant_brand")
+_BRAND_KEYS = ("brand", "manufacturer", "merchant_brand", "brand_name")
 _CATEGORY_KEYS = ("category", "category_name", "product_category", "merchant_category")
 _URL_KEYS = ("product_url", "url", "deeplink", "aw_deep_link", "merchant_deep_link", "link")
 _IMAGE_KEYS = ("image_url", "image", "aw_image_url", "merchant_image_url", "image_link")

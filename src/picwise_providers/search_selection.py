@@ -10,7 +10,9 @@ from picwise_nlu import normalize_query
 from .contracts import ProviderProduct
 
 _TITLE_WEIGHT = 100
+_PRODUCT_TYPE_WEIGHT = 55
 _CATEGORY_WEIGHT = 40
+_BRAND_WEIGHT = 35
 _KEYWORD_WEIGHT = 20
 _DESCRIPTION_WEIGHT = 5
 _PHRASE_IN_TITLE_BONUS = 150
@@ -20,6 +22,8 @@ _COMPLETE_PRODUCT_BONUS = 25
 _NOT_ACCESSORY_BONUS = 40
 _ACCESSORY_PENALTY = 220
 _STRONG_MATCH_MIN_SCORE = 280
+_PRODUCT_TYPE_ALIGN_BONUS = 130
+_PRODUCT_TYPE_CONFLICT_PENALTY = 320
 _DESCRIPTION_MAX_LEN = 500
 _MIN_TOKEN_LEN = 2
 
@@ -59,6 +63,81 @@ _ACCESSORY_FOR_PRODUCT_PENALTY = 260
 _ACCESSORY_PACK_PREFIX_RE = re.compile(r"^\d+\s*(?:pcs|pc|pack|pieces?)\b", flags=re.IGNORECASE)
 
 _DEDUPE_PUNCT_RE = re.compile(r"[^\w\s]+", flags=re.UNICODE)
+
+_WEAK_PRODUCT_TYPE_VALUES = frozenset(
+    {
+        "not categorized",
+        "uncategorized",
+        "other",
+        "general",
+        "misc",
+        "miscellaneous",
+    }
+)
+
+_GENERIC_CATEGORY_VALUES = frozenset(
+    {
+        "computers",
+        "computer",
+        "electronics",
+        "electronic",
+        "general",
+        "other",
+        "misc",
+        "miscellaneous",
+        "default",
+        "uncategorized",
+        "not categorized",
+    }
+)
+
+_QUERY_INTENT_ALLOWED_PRODUCT_TYPES: dict[str, tuple[str, ...]] = {
+    "laptop": ("laptops",),
+    "mouse": ("mice",),
+    "monitor": ("computer monitors",),
+    "headphones": ("headphones & headsets",),
+    "headset": ("headphones & headsets",),
+    "webcam": ("webcams",),
+    "webcams": ("webcams",),
+    "keyboard": ("keyboards",),
+    "keyboards": ("keyboards",),
+    "printer": (
+        "multifunction printers",
+        "laser printers",
+        "inkjet printers",
+        "label printers",
+        "large format printers",
+        "photo printers",
+        "dot matrix printers",
+        "plastic card printers",
+        "3d printers",
+    ),
+    "printers": (
+        "multifunction printers",
+        "laser printers",
+        "inkjet printers",
+        "label printers",
+        "large format printers",
+        "photo printers",
+        "dot matrix printers",
+        "plastic card printers",
+        "3d printers",
+    ),
+    "toner": ("toner cartridges",),
+    "hub": ("hubs", "usb hubs", "docking stations"),
+    "docking": ("laptop docks & port replicators",),
+}
+
+_QUERY_PHRASE_ALLOWED_PRODUCT_TYPES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("docking station", ("laptop docks & port replicators",)),
+    ("ink cartridge", ("ink cartridges",)),
+    ("toner cartridge", ("toner cartridges",)),
+    ("hp toner", ("toner cartridges",)),
+    ("computer monitor", ("computer monitors",)),
+    ("wireless keyboard", ("keyboards",)),
+    ("27 inch monitor", ("computer monitors",)),
+    ("office chair", ("office & computer chairs",)),
+)
 
 
 @dataclass(frozen=True)
@@ -124,20 +203,96 @@ def _normalize_dedupe_title(title: str) -> str:
     return _DEDUPE_PUNCT_RE.sub(" ", collapsed)
 
 
+def _is_generic_category(value: str) -> bool:
+    collapsed = " ".join(str(value or "").split()).strip().lower()
+    return collapsed in _GENERIC_CATEGORY_VALUES
+
+
+def _is_weak_product_type(value: str) -> bool:
+    collapsed = " ".join(str(value or "").split()).strip().lower()
+    return not collapsed or collapsed in _WEAK_PRODUCT_TYPE_VALUES
+
+
+def _resolve_allowed_product_types(
+    normalized_query: str,
+    tokens: tuple[str, ...],
+) -> tuple[str, ...]:
+    allowed: list[str] = []
+    normalized = str(normalized_query or "").strip().lower()
+    for phrase, product_types in _QUERY_PHRASE_ALLOWED_PRODUCT_TYPES:
+        if phrase in normalized:
+            allowed.extend(product_types)
+    for token in tokens:
+        mapped = _QUERY_INTENT_ALLOWED_PRODUCT_TYPES.get(token)
+        if mapped:
+            allowed.extend(mapped)
+    return tuple(dict.fromkeys(product_type.lower() for product_type in allowed))
+
+
+def _product_type_matches_allowed(
+    normalized_type: str,
+    allowed_product_types: tuple[str, ...],
+) -> bool:
+    if not normalized_type:
+        return False
+    if normalized_type in allowed_product_types:
+        return True
+    return any(allowed == normalized_type for allowed in allowed_product_types)
+
+
+def _product_type_alignment_adjustment(
+    product_type: str,
+    *,
+    allowed_product_types: tuple[str, ...],
+    query_seeks_accessory: bool,
+) -> int:
+    normalized_type = " ".join(str(product_type or "").split()).strip().lower()
+    if _is_weak_product_type(normalized_type):
+        return 0
+    if not allowed_product_types:
+        return 0
+    if _product_type_matches_allowed(normalized_type, allowed_product_types):
+        return _PRODUCT_TYPE_ALIGN_BONUS
+    if query_seeks_accessory:
+        return 0
+    return -_PRODUCT_TYPE_CONFLICT_PENALTY
+
+
+def _build_secondary_category_text(raw: dict[str, Any], product: ProviderProduct) -> str:
+    parts: list[str] = []
+    for key in (
+        "merchant_product_category_path",
+        "merchant_product_second_category",
+        "merchant_product_third_category",
+    ):
+        value = str(raw.get(key) or "").strip()
+        if value:
+            parts.append(value)
+
+    for key in ("merchant_category", "category_name"):
+        value = str(raw.get(key) or "").strip()
+        if value and not _is_generic_category(value):
+            parts.append(value)
+
+    category_text = str(product.category_text or "").strip()
+    if category_text and not _is_generic_category(category_text):
+        parts.append(category_text)
+
+    return " ".join(part.strip().lower() for part in parts if part.strip())
+
+
 def _product_search_fields(product: ProviderProduct) -> dict[str, str]:
     raw = product.raw if isinstance(product.raw, dict) else {}
-    category_parts = [
-        product.category_text,
-        str(raw.get("category_name") or ""),
-        str(raw.get("merchant_category") or ""),
-    ]
+    product_type = str(raw.get("product_type") or "").strip()
     description = str(raw.get("description") or "").strip()
     if len(description) > _DESCRIPTION_MAX_LEN:
         description = ""
 
     return {
         "title": str(product.title or "").strip().lower(),
-        "category": " ".join(part.strip().lower() for part in category_parts if str(part).strip()),
+        "product_type": product_type.lower(),
+        "category": _build_secondary_category_text(raw, product),
+        "brand": str(product.brand or "").strip().lower(),
         "keywords": str(raw.get("keywords") or "").strip().lower(),
         "description": description.lower(),
     }
@@ -206,6 +361,7 @@ def _score_product_for_tokens(
     query_seeks_accessory: bool,
 ) -> tuple[int, int, int, str, str] | None:
     fields = _product_search_fields(product)
+    allowed_product_types = _resolve_allowed_product_types(normalized_query, tokens)
     matched_tokens = 0
     score = 0
     title_matches = 0
@@ -217,9 +373,16 @@ def _score_product_for_tokens(
             score += _TITLE_WEIGHT
             title_matches += 1
             token_matched = True
+        if fields["product_type"] and _token_matches_field(token, fields["product_type"]):
+            score += _PRODUCT_TYPE_WEIGHT
+            category_matches += 1
+            token_matched = True
         if _token_matches_field(token, fields["category"]):
             score += _CATEGORY_WEIGHT
             category_matches += 1
+            token_matched = True
+        if fields["brand"] and _token_matches_field(token, fields["brand"]):
+            score += _BRAND_WEIGHT
             token_matched = True
         if _token_matches_field(token, fields["keywords"]):
             score += _KEYWORD_WEIGHT
@@ -242,6 +405,22 @@ def _score_product_for_tokens(
         score += _CATEGORY_WEIGHT // 2
     if tokens and _word_in_text(tokens[-1], fields["title"]):
         score += _PRODUCT_TYPE_IN_TITLE_BONUS
+
+    raw = product.raw if isinstance(product.raw, dict) else {}
+    product_type = str(raw.get("product_type") or "").strip()
+    type_alignment = _product_type_alignment_adjustment(
+        product_type,
+        allowed_product_types=allowed_product_types,
+        query_seeks_accessory=query_seeks_accessory,
+    )
+    if (
+        allowed_product_types
+        and product_type
+        and not _is_weak_product_type(product_type)
+        and type_alignment < 0
+    ):
+        return None
+    score += type_alignment
 
     accessory_penalty = _title_accessory_penalty(
         fields["title"],
@@ -410,7 +589,9 @@ def _recommendation_reason_codes_for_product(
         reasons.append("query_phrase_in_title")
     if tokens and _word_in_text(tokens[-1], fields["title"]):
         reasons.append("product_type_phrase_in_title")
-    if any(_token_matches_field(token, fields["category"]) for token in tokens):
+    if any(_token_matches_field(token, fields["product_type"]) for token in tokens):
+        reasons.append("product_type_alignment")
+    elif any(_token_matches_field(token, fields["category"]) for token in tokens):
         reasons.append("category_alignment")
     accessory_penalty = _title_accessory_penalty(
         fields["title"],
