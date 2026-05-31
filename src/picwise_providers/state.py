@@ -179,8 +179,6 @@ def load_eligible_provider_feed_products(
         row.product
         for row in pipeline.eligibility_results
         if row.status == "eligible"
-        and row.product_eligibility is not None
-        and row.product_eligibility.card_eligible
     )
 
 
