@@ -8,6 +8,11 @@ from urllib.parse import urlparse
 from picwise_nlu import normalize_query
 
 from .contracts import ProviderProduct
+from .offer_health import (
+    build_feed_availability_context,
+    evaluate_product_eligibility,
+    evaluate_recommendation_confidence,
+)
 
 _TITLE_WEIGHT = 100
 _PRODUCT_TYPE_WEIGHT = 55
@@ -173,7 +178,10 @@ def mask_provider_product_url(url: str) -> str:
 
 
 def provider_product_to_backend_dict(product: ProviderProduct) -> dict[str, Any]:
-    return {
+    feed_ctx = build_feed_availability_context((product,))
+    product_eligibility = evaluate_product_eligibility(product, feed_ctx=feed_ctx)
+    offer_health = product_eligibility.offer_health
+    payload: dict[str, Any] = {
         "provider_key": str(product.provider_key or "").strip(),
         "provider_product_id": str(product.provider_product_id or "").strip(),
         "title": str(product.title or "").strip(),
@@ -182,7 +190,13 @@ def provider_product_to_backend_dict(product: ProviderProduct) -> dict[str, Any]
         "image_url": str(product.image_url or "").strip(),
         "product_url": str(product.product_url or "").strip(),
         "product_url_masked": mask_provider_product_url(product.product_url),
+        "card_eligible": product_eligibility.card_eligible,
+        "card_eligibility_reason_codes": list(product_eligibility.reason_codes),
+        "recommendation_confidence_ceiling": product_eligibility.recommendation_confidence_ceiling,
     }
+    if offer_health is not None:
+        payload.update(offer_health.to_dict())
+    return payload
 
 
 def _tokenize_query(query: str) -> tuple[str, ...]:
@@ -509,8 +523,15 @@ def select_provider_products_for_query(
         )
 
     query_seeks_accessory = _query_seeks_accessory(tokens, normalized_query)
+    feed_ctx = build_feed_availability_context(products)
     ranked: list[tuple[tuple[int, int, int, str, str], ProviderProduct]] = []
     for product in products:
+        card_eligibility = evaluate_product_eligibility(
+            product,
+            feed_ctx=feed_ctx,
+        )
+        if not card_eligibility.card_eligible:
+            continue
         ranking = _score_product_for_tokens(
             product,
             tokens,
@@ -548,12 +569,14 @@ class ProviderFeedRecommendationDecision:
     decision_status: str
     recommended_product_id: str | None = None
     recommendation_reason_codes: tuple[str, ...] = field(default_factory=tuple)
+    recommendation_confidence: str = "unknown"
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "decision_status": self.decision_status,
             "recommended_product_id": self.recommended_product_id,
             "recommendation_reason_codes": list(self.recommendation_reason_codes),
+            "recommendation_confidence": self.recommendation_confidence,
         }
 
 
@@ -692,8 +715,30 @@ def decide_recommended_provider_product(
     if not reason_codes:
         reason_codes = ("provider_feed_recommendation_selected",)
 
+    feed_ctx = build_feed_availability_context(selected_products)
+    winner_eligibility = evaluate_product_eligibility(
+        winner_product,
+        feed_ctx=feed_ctx,
+    )
+    if winner_eligibility.offer_health is None:
+        recommendation_confidence = "unknown"
+    else:
+        recommendation_confidence = evaluate_recommendation_confidence(
+            card_eligible=winner_eligibility.card_eligible,
+            offer_health=winner_eligibility.offer_health,
+            has_strong_feed_evidence=winner_eligibility.recommendation_confidence_ceiling
+            in {"strong", "limited"},
+        )
+        if (
+            winner_eligibility.offer_health.purchasability.purchasability_state
+            == "purchasability_unknown"
+            and recommendation_confidence == "strong"
+        ):
+            recommendation_confidence = "limited"
+
     return ProviderFeedRecommendationDecision(
         decision_status="recommended",
         recommended_product_id=winner_id or None,
         recommendation_reason_codes=reason_codes,
+        recommendation_confidence=recommendation_confidence,
     )

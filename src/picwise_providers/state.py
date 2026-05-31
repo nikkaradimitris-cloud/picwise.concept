@@ -16,6 +16,7 @@ from .contracts import (
 )
 from .eligibility import evaluate_provider_product_eligibility
 from .graph_projection import project_provider_products_to_graph
+from .offer_health import build_feed_availability_context, evaluate_product_eligibility
 from .search_selection import (
     ProviderFeedRecommendationDecision,
     ProviderProductSelectionResult,
@@ -40,6 +41,22 @@ class ProviderFeedPipelineResult:
             "graph_offer_count": len(self.graph_projection.product_offers) if self.graph_projection else 0,
         }
         return payload
+
+
+def _enrich_provider_eligibility_result(
+    product: ProviderProduct,
+    *,
+    feed_ctx: Any,
+) -> ProviderEligibilityResult:
+    base = evaluate_provider_product_eligibility(product)
+    product_eligibility = evaluate_product_eligibility(product, feed_ctx=feed_ctx)
+    return ProviderEligibilityResult(
+        product=base.product,
+        status=base.status,
+        reason_codes=base.reason_codes,
+        derived_provider_product_id=base.derived_provider_product_id,
+        product_eligibility=product_eligibility,
+    )
 
 
 def _aggregate_feed_status(
@@ -125,8 +142,10 @@ def resolve_provider_feed_pipeline(
             parse_result=parse_result,
         )
 
+    feed_availability_context = build_feed_availability_context(parse_result.products)
     eligibility_results = tuple(
-        evaluate_provider_product_eligibility(product) for product in parse_result.products
+        _enrich_provider_eligibility_result(product, feed_ctx=feed_availability_context)
+        for product in parse_result.products
     )
     graph_projection = project_provider_products_to_graph(
         eligibility_results,
@@ -157,7 +176,11 @@ def load_eligible_provider_feed_products(
     if pipeline.feed_status.status != "provider_feed_ready":
         return tuple()
     return tuple(
-        row.product for row in pipeline.eligibility_results if row.status == "eligible"
+        row.product
+        for row in pipeline.eligibility_results
+        if row.status == "eligible"
+        and row.product_eligibility is not None
+        and row.product_eligibility.card_eligible
     )
 
 
