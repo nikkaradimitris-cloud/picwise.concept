@@ -54,6 +54,8 @@ class RuntimeTruthBackendFieldsAuditTests(unittest.TestCase):
             "recommendation_confidence",
             "recommendation_confidence_ceiling",
             "verified_purchasable",
+            "verification_source",
+            "verification_confidence",
             "card_eligibility_reason_codes",
             "feed_availability_signal",
         ):

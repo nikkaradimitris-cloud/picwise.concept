@@ -29,6 +29,10 @@ from .offer_health import (
     extract_purchasability_verification,
     interpret_availability_state,
 )
+from .purchasability_verifier import (
+    analyze_product_page_content,
+    verify_product_page_purchasability,
+)
 from .state import resolve_provider_feed_pipeline
 
 __all__ = (
@@ -54,6 +58,8 @@ __all__ = (
     "evaluate_recommendation_confidence",
     "extract_purchasability_verification",
     "interpret_availability_state",
+    "analyze_product_page_content",
+    "verify_product_page_purchasability",
     "load_awin_provider_feed",
     "normalize_feed_row_to_provider_product",
     "project_provider_products_to_graph",

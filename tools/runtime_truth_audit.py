@@ -1,9 +1,11 @@
 """Audit-only helper: capture runtime truth fields from resolve_live_search.
 
 Does not modify runtime behavior. Read-only inspection for stage closure audits.
+Optional --verify-pages runs background page verification on a limited sample only.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import sys
@@ -14,6 +16,16 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from picwise_providers.offer_health import (  # noqa: E402
+    build_feed_availability_context,
+    evaluate_product_eligibility,
+)
+from picwise_providers.purchasability_verifier import (  # noqa: E402
+    merge_verification_into_product_raw,
+    verify_product_page_purchasability,
+)
+from picwise_providers.search_selection import provider_product_to_backend_dict  # noqa: E402
+from picwise_providers.state import resolve_search_provider_feed_product_selection  # noqa: E402
 from picwise_search.live_search_resolver import resolve_live_search  # noqa: E402
 
 _DEFAULT_FEED = Path(
@@ -37,6 +49,8 @@ AUDIT_QUERIES = (
 
 def _truth_row(product: dict) -> dict:
     raw = product.get("raw") if isinstance(product.get("raw"), dict) else {}
+    verification_source = product.get("verification_source") or raw.get("verification_source")
+    verifier_run = verification_source == "page_verifier"
     return {
         "title": product.get("title"),
         "product_url": product.get("product_url"),
@@ -56,10 +70,17 @@ def _truth_row(product: dict) -> dict:
         "verified_purchasable": product.get("verified_purchasable"),
         "recommendation_confidence": product.get("recommendation_confidence"),
         "recommendation_confidence_ceiling": product.get("recommendation_confidence_ceiling"),
-        "verification_source": product.get("verification_source"),
-        "verification_confidence": product.get("verification_confidence"),
-        "buy_button_seen": product.get("buy_button_seen"),
-        "out_of_stock_seen": product.get("out_of_stock_seen"),
+        "verifier_run": verifier_run,
+        "verification_source": verification_source,
+        "verification_confidence": product.get("verification_confidence")
+        or raw.get("verification_confidence"),
+        "http_status": product.get("http_status") or raw.get("http_status"),
+        "final_url": product.get("final_url") or raw.get("final_url"),
+        "buy_button_seen": product.get("buy_button_seen") if "buy_button_seen" in product else raw.get("buy_button_seen"),
+        "out_of_stock_seen": product.get("out_of_stock_seen")
+        if "out_of_stock_seen" in product
+        else raw.get("out_of_stock_seen"),
+        "last_checked_at": product.get("last_checked_at") or raw.get("last_checked_at"),
         "card_eligibility_reason_codes": product.get("card_eligibility_reason_codes"),
     }
 
@@ -86,9 +107,61 @@ def audit_query(query: str) -> dict:
     }
 
 
+def audit_query_with_page_verification(query: str, *, limit: int) -> dict:
+    selection = resolve_search_provider_feed_product_selection(query=query)
+    verified_products: list[dict] = []
+    for product in selection.selected_products[: max(0, limit)]:
+        verification = verify_product_page_purchasability(product.product_url)
+        raw = product.raw if isinstance(product.raw, dict) else {}
+        merged_raw = merge_verification_into_product_raw(raw, verification)
+        enriched = type(product)(
+            provider_key=product.provider_key,
+            provider_product_id=product.provider_product_id,
+            title=product.title,
+            brand=product.brand,
+            category_text=product.category_text,
+            product_url=product.product_url,
+            image_url=product.image_url,
+            price_text=product.price_text,
+            availability_text=product.availability_text,
+            currency=product.currency,
+            raw=merged_raw,
+        )
+        feed_ctx = build_feed_availability_context((enriched,))
+        eligibility = evaluate_product_eligibility(enriched, feed_ctx=feed_ctx)
+        payload = provider_product_to_backend_dict(enriched)
+        payload["card_eligible"] = eligibility.card_eligible
+        payload["card_eligibility_reason_codes"] = list(eligibility.reason_codes)
+        verified_products.append(_truth_row(payload))
+
+    return {
+        "query": query,
+        "selection_status": selection.status,
+        "page_verification_limit": limit,
+        "verified_products": verified_products,
+    }
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Runtime truth audit (read-only)")
+    parser.add_argument(
+        "--verify-pages",
+        action="store_true",
+        help="Run background page verifier on a small feed sample (audit only)",
+    )
+    parser.add_argument("--query", default="laptop", help="Query when --verify-pages is set")
+    parser.add_argument("--limit", type=int, default=4, help="Max URLs to verify with --verify-pages")
+    args = parser.parse_args()
+
     if not os.environ.get("AWIN_FEED_FILE") and _DEFAULT_FEED.is_file():
         os.environ["AWIN_FEED_FILE"] = str(_DEFAULT_FEED)
+
+    if args.verify_pages:
+        safe_limit = max(0, min(int(args.limit), 20))
+        result = audit_query_with_page_verification(str(args.query), limit=safe_limit)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return
+
     results = [audit_query(q) for q in AUDIT_QUERIES]
     print(json.dumps(results, indent=2, ensure_ascii=False))
 
