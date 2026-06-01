@@ -92,8 +92,8 @@ def _extract_prices(body: str) -> list[str]:
     return re.findall(r'<p class="pw-price">([^<]+)</p>', body)
 
 
-def _extract_availability_lines(body: str) -> list[str]:
-    return re.findall(r"Availability: ([^<]+)  ·  Provider:", body)
+def _extract_availability_meta_lines(body: str) -> list[str]:
+    return re.findall(r'<p class="pw-meta">([^<]+)</p>', body)
 
 
 def _extract_image_urls(body: str) -> list[str]:
@@ -174,7 +174,7 @@ class ProviderRealFeedUiExposureStage8ETests(unittest.TestCase):
         resolution = resolve_live_search("smartphone")
         html = render_picwise_reference_surface(query="smartphone", resolution=resolution)
         prices = _extract_prices(html)
-        availability = _extract_availability_lines(html)
+        availability = _extract_availability_meta_lines(html)
         images = _extract_image_urls(html)
         hrefs = _extract_product_hrefs(html)
         self.assertEqual(len(prices), 4)
@@ -186,6 +186,8 @@ class ProviderRealFeedUiExposureStage8ETests(unittest.TestCase):
             self.assertNotEqual(price.strip().lower(), "see amazon details")
         for line in availability:
             self.assertTrue(line.strip())
+            self.assertNotRegex(line, r"Availability:\s*\d+\b")
+            self.assertIn("Availability not verified", line)
         for image in images:
             self.assertTrue(image.lower().startswith("http"))
         for href in hrefs:

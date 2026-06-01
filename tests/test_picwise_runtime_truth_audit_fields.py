@@ -44,14 +44,21 @@ class RuntimeTruthBackendFieldsAuditTests(unittest.TestCase):
         self.assertGreater(len(products), 0, "BTO feed required for audit")
         payload = provider_product_to_backend_dict(products[0])
         for field in (
+            "brand",
+            "currency",
+            "product_type",
+            "category_evidence",
             "card_eligible",
             "availability_state",
             "purchasability_state",
+            "recommendation_confidence",
             "recommendation_confidence_ceiling",
+            "verified_purchasable",
             "card_eligibility_reason_codes",
             "feed_availability_signal",
         ):
             self.assertIn(field, payload, f"missing truth field: {field}")
+        self.assertFalse(payload["verified_purchasable"])
 
     def test_selected_products_are_purchasability_unknown_not_verified(self) -> None:
         selection = resolve_search_provider_feed_product_selection(query="laptop")

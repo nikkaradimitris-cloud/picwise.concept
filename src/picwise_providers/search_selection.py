@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 
 from picwise_nlu import normalize_query
 
-from .contracts import ProviderProduct
+from .contracts import OfferHealth, ProviderProduct
 from .offer_health import (
     build_feed_availability_context,
     evaluate_product_eligibility,
@@ -177,10 +177,41 @@ def mask_provider_product_url(url: str) -> str:
     return f"{parsed.scheme}://{parsed.netloc}{path}"
 
 
+def _category_evidence_for_product(product: ProviderProduct) -> dict[str, str]:
+    raw = product.raw if isinstance(product.raw, dict) else {}
+    evidence: dict[str, str] = {}
+    for key in (
+        "merchant_product_category_path",
+        "merchant_category",
+        "category_name",
+        "merchant_product_second_category",
+        "merchant_product_third_category",
+    ):
+        value = str(raw.get(key) or "").strip()
+        if value:
+            evidence[key] = value
+    category_text = str(product.category_text or "").strip()
+    if category_text:
+        evidence["category_text"] = category_text
+    return evidence
+
+
+def _verified_purchasable_from_offer_health(offer_health: OfferHealth) -> bool:
+    purch = offer_health.purchasability
+    return (
+        purch.purchasability_state == "purchasable"
+        and purch.verification_confidence in {"high", "strong", "verified"}
+    )
+
+
 def provider_product_to_backend_dict(product: ProviderProduct) -> dict[str, Any]:
     feed_ctx = build_feed_availability_context((product,))
     product_eligibility = evaluate_product_eligibility(product, feed_ctx=feed_ctx)
     offer_health = product_eligibility.offer_health
+    raw = product.raw if isinstance(product.raw, dict) else {}
+    brand = str(product.brand or "").strip()
+    currency = str(product.currency or "").strip()
+    product_type = str(raw.get("product_type") or "").strip()
     payload: dict[str, Any] = {
         "provider_key": str(product.provider_key or "").strip(),
         "provider_product_id": str(product.provider_product_id or "").strip(),
@@ -193,9 +224,22 @@ def provider_product_to_backend_dict(product: ProviderProduct) -> dict[str, Any]
         "card_eligible": product_eligibility.card_eligible,
         "card_eligibility_reason_codes": list(product_eligibility.reason_codes),
         "recommendation_confidence_ceiling": product_eligibility.recommendation_confidence_ceiling,
+        "recommendation_confidence": product_eligibility.recommendation_confidence_ceiling,
+        "brand": brand or None,
+        "currency": currency or None,
+        "verified_purchasable": False,
     }
+    if product_type:
+        payload["product_type"] = product_type
+        payload["product_type_evidence"] = product_type
+    category_evidence = _category_evidence_for_product(product)
+    if category_evidence:
+        payload["category_evidence"] = category_evidence
     if offer_health is not None:
         payload.update(offer_health.to_dict())
+        payload["verified_purchasable"] = _verified_purchasable_from_offer_health(offer_health)
+        if offer_health.purchasability.purchasability_state == "purchasability_unknown":
+            payload["verified_purchasable"] = False
     return payload
 
 

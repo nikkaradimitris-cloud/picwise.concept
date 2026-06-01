@@ -32,7 +32,29 @@ _FEED_RECOMMENDATION_REASON_LABELS = {
     "product_type_phrase_in_title": "Matches the product type",
     "category_alignment": "Fits the product category",
     "main_product_not_accessory": "Main product, not an accessory",
-    "complete_product_fields": "Has price, image and availability",
+    "complete_product_fields": "Has price, image and required feed fields",
+}
+_UI_BLOCKING_PURCHASABILITY_STATES = frozenset(
+    {
+        "out_of_stock",
+        "discontinued",
+        "missing_buy_button",
+        "invalid_page",
+        "redirect_suspect",
+    }
+)
+_UI_BLOCKING_AVAILABILITY_STATES = frozenset({"out_of_stock", "discontinued"})
+_RECOMMENDATION_CONFIDENCE_REC_NOTE = {
+    "strong": "Recommended from these 4.",
+    "limited": "Suggested pick from these 4 (limited confidence).",
+    "weak": "Suggested from these 4 (low confidence).",
+    "unknown": "Suggested from these 4 (purchase availability not verified).",
+}
+_RECOMMENDATION_CONFIDENCE_BADGE = {
+    "strong": "&#9733; Recommended by PicWise",
+    "limited": "Suggested by PicWise",
+    "weak": "Suggested by PicWise",
+    "unknown": "Suggested by PicWise",
 }
 _PROVIDER_STORE_LABELS = {
     "awin": "Geekbuying via Awin",
@@ -66,6 +88,32 @@ def _feed_product_dict_complete(product: dict[str, object]) -> bool:
     return True
 
 
+def _provider_feed_product_blocks_ui(product: dict[str, object]) -> bool:
+    purch_state = str(product.get("purchasability_state") or "").strip().lower()
+    if purch_state in _UI_BLOCKING_PURCHASABILITY_STATES:
+        return True
+    availability_state = str(product.get("availability_state") or "").strip().lower()
+    if availability_state in _UI_BLOCKING_AVAILABILITY_STATES:
+        return True
+    if product.get("card_eligible") is False:
+        return True
+    return False
+
+
+def _provider_feed_card_meta(product: dict[str, object], *, store_label: str) -> str:
+    meta_parts: list[str] = []
+    availability_state = str(product.get("availability_state") or "").strip().lower()
+    purch_state = str(product.get("purchasability_state") or "").strip().lower()
+    if availability_state not in _UI_BLOCKING_AVAILABILITY_STATES:
+        meta_parts.append("Availability not verified")
+    if purch_state == "purchasability_unknown":
+        meta_parts.append("Purchase availability not verified")
+    elif purch_state == "purchasable" and not product.get("verified_purchasable"):
+        meta_parts.append("Purchase availability not verified")
+    meta_parts.append(f"Provider: {store_label}")
+    return "  ·  ".join(meta_parts)
+
+
 def _provider_feed_ui_display_allowed(resolution: LiveSearchResolution) -> bool:
     if resolution.provider_feed_selection_status != "selected":
         return False
@@ -84,6 +132,19 @@ def _provider_feed_ui_display_allowed(resolution: LiveSearchResolution) -> bool:
     if resolution.provider_feed_recommended_product_id not in selected_ids:
         return False
     if not all(_feed_product_dict_complete(product) for product in products):
+        return False
+    if any(_provider_feed_product_blocks_ui(product) for product in products):
+        return False
+    recommended = next(
+        (
+            product
+            for product in products
+            if str(product.get("provider_product_id") or "").strip()
+            == str(resolution.provider_feed_recommended_product_id or "").strip()
+        ),
+        None,
+    )
+    if recommended is None or _provider_feed_product_blocks_ui(recommended):
         return False
     return True
 
@@ -110,32 +171,47 @@ def _build_provider_feed_result_cards(
         return ([], False, "", "")
 
     recommended_id = str(resolution.provider_feed_recommended_product_id or "").strip()
+    recommendation_confidence = str(
+        getattr(resolution, "provider_feed_recommendation_confidence", None) or "limited"
+    ).strip().lower()
+    if recommendation_confidence not in _RECOMMENDATION_CONFIDENCE_REC_NOTE:
+        recommendation_confidence = "limited"
     reason_bullets = _feed_recommendation_reason_bullets(
         resolution.provider_feed_recommendation_reason_codes
     )
     cards: list[dict[str, object]] = []
     for product in resolution.provider_feed_selected_products:
+        if _provider_feed_product_blocks_ui(product):
+            return ([], False, "", "")
         product_id = str(product.get("provider_product_id") or "").strip()
         provider_key = str(product.get("provider_key") or "").strip()
         is_recommended = product_id == recommended_id
         store_label = _provider_store_label(provider_key)
-        availability_text = str(product.get("availability_text") or "").strip()
         cards.append(
             {
                 "badge": "REAL FEED",
                 "badge_class": "pw-badge-value",
                 "name": str(product.get("title") or "").strip(),
-                "description": "Selected real product",
+                "description": "Selected real product (purchase not verified)",
                 "rating": "",
                 "reviews": "",
                 "price": str(product.get("price_text") or "").strip(),
-                "meta": f"Availability: {availability_text}  ·  Provider: {store_label}",
+                "meta": _provider_feed_card_meta(product, store_label=store_label),
                 "bullets": reason_bullets if is_recommended else [],
                 "warning": "",
                 "cta": "View product",
                 "image": str(product.get("image_url") or "").strip(),
                 "recommended": is_recommended,
-                "rec_note": "Recommended from these 4." if is_recommended else "",
+                "rec_note": (
+                    _RECOMMENDATION_CONFIDENCE_REC_NOTE[recommendation_confidence]
+                    if is_recommended
+                    else ""
+                ),
+                "rec_badge_html": (
+                    _RECOMMENDATION_CONFIDENCE_BADGE[recommendation_confidence]
+                    if is_recommended
+                    else ""
+                ),
                 "href": str(product.get("product_url") or "").strip(),
             }
         )
@@ -145,7 +221,11 @@ def _build_provider_feed_result_cards(
     if sum(1 for card in cards if bool(card["recommended"])) != 1:
         return ([], False, "", "")
 
-    return cards, True, _FEED_DISCLOSURE, _FEED_SAFE_NOTE
+    safe_note = _RECOMMENDATION_CONFIDENCE_REC_NOTE.get(
+        recommendation_confidence,
+        _FEED_SAFE_NOTE,
+    )
+    return cards, True, _FEED_DISCLOSURE, safe_note
 
 
 def _build_result_cards(
@@ -267,7 +347,7 @@ def render_picwise_reference_surface(
     for idx, card in enumerate(card_specs, start=1):
         rec_class = " pw-card-recommended" if bool(card["recommended"]) else ""
         rec_header = (
-            '<div class="pw-rec-badge">&#9733; Recommended by PicWise</div>'
+            f'<div class="pw-rec-badge">{card.get("rec_badge_html") or "Suggested by PicWise"}</div>'
             if bool(card["recommended"])
             else ""
         )

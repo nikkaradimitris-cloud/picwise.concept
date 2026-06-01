@@ -200,6 +200,8 @@ def extract_purchasability_verification(raw: Mapping[str, Any]) -> Purchasabilit
         "missing_buy_button",
         "out_of_stock",
         "discontinued",
+        "invalid_page",
+        "redirect_suspect",
     }:
         state = "purchasability_unknown"
 
@@ -344,7 +346,13 @@ def evaluate_recommendation_confidence(
         return "unknown"
 
     purch_state = offer_health.purchasability.purchasability_state
-    if purch_state in {"missing_buy_button", "out_of_stock", "discontinued"}:
+    if purch_state in {
+        "missing_buy_button",
+        "out_of_stock",
+        "discontinued",
+        "invalid_page",
+        "redirect_suspect",
+    }:
         return "unknown"
 
     confidence = "weak"
@@ -403,6 +411,10 @@ def evaluate_product_eligibility(
         reason_codes.append("purchasability_out_of_stock")
     elif purch_state == "discontinued":
         reason_codes.append("purchasability_discontinued")
+    elif purch_state == "invalid_page":
+        reason_codes.append("purchasability_invalid_page")
+    elif purch_state == "redirect_suspect":
+        reason_codes.append("purchasability_redirect_suspect")
 
     has_strong_feed_evidence = not any(
         code
@@ -418,6 +430,8 @@ def evaluate_product_eligibility(
             "purchasability_missing_buy_button",
             "purchasability_out_of_stock",
             "purchasability_discontinued",
+            "purchasability_invalid_page",
+            "purchasability_redirect_suspect",
         }
         for code in reason_codes
     )
@@ -442,6 +456,12 @@ def offer_health_blocks_card_eligibility(offer_health: OfferHealth) -> tuple[str
     if offer_health.availability_state in {"out_of_stock", "discontinued"}:
         blocked.append(f"availability_{offer_health.availability_state}")
     purch_state = offer_health.purchasability.purchasability_state
-    if purch_state in {"missing_buy_button", "out_of_stock", "discontinued"}:
+    if purch_state in {
+        "missing_buy_button",
+        "out_of_stock",
+        "discontinued",
+        "invalid_page",
+        "redirect_suspect",
+    }:
         blocked.append(f"purchasability_{purch_state}")
     return tuple(blocked)

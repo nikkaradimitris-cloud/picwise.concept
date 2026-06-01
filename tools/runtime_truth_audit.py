@@ -43,19 +43,24 @@ def _truth_row(product: dict) -> dict:
         "provider_key": product.get("provider_key"),
         "price_text": product.get("price_text"),
         "brand": product.get("brand") or raw.get("brand"),
-        "product_type": raw.get("product_type"),
+        "currency": product.get("currency"),
+        "product_type": product.get("product_type") or raw.get("product_type"),
+        "product_type_evidence": product.get("product_type_evidence"),
+        "category_evidence": product.get("category_evidence"),
         "category_text": product.get("category_text") or raw.get("category_text"),
         "card_eligible": product.get("card_eligible"),
         "availability_state": product.get("availability_state"),
-        "purchasability_state": product.get("purchasability_state"),
-        "recommendation_confidence_ceiling": product.get("recommendation_confidence_ceiling"),
-        "card_eligibility_reason_codes": product.get("card_eligibility_reason_codes"),
+        "availability_source_field": product.get("availability_source_field"),
         "feed_availability_signal": product.get("feed_availability_signal"),
-        "verification_confidence": (
-            (product.get("purchasability") or {}).get("verification_confidence")
-            if isinstance(product.get("purchasability"), dict)
-            else product.get("verification_confidence")
-        ),
+        "purchasability_state": product.get("purchasability_state"),
+        "verified_purchasable": product.get("verified_purchasable"),
+        "recommendation_confidence": product.get("recommendation_confidence"),
+        "recommendation_confidence_ceiling": product.get("recommendation_confidence_ceiling"),
+        "verification_source": product.get("verification_source"),
+        "verification_confidence": product.get("verification_confidence"),
+        "buy_button_seen": product.get("buy_button_seen"),
+        "out_of_stock_seen": product.get("out_of_stock_seen"),
+        "card_eligibility_reason_codes": product.get("card_eligibility_reason_codes"),
     }
 
 
@@ -73,6 +78,7 @@ def audit_query(query: str) -> dict:
         "selected_count": resolution.provider_feed_selected_count,
         "recommended_product_id": resolution.provider_feed_recommended_product_id,
         "recommendation_reason_codes": list(resolution.provider_feed_recommendation_reason_codes),
+        "recommendation_confidence": resolution.provider_feed_recommendation_confidence,
         "resolver_reason_codes": list(resolution.reason_codes),
         "selected_products": products,
         "result_allowed": resolution.result_allowed,

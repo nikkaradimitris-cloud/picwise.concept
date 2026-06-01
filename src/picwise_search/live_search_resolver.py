@@ -83,6 +83,7 @@ class LiveSearchResolution:
     provider_feed_decision_status: str | None = None
     provider_feed_recommended_product_id: str | None = None
     provider_feed_recommendation_reason_codes: tuple[str, ...] = field(default_factory=tuple)
+    provider_feed_recommendation_confidence: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -124,6 +125,10 @@ class LiveSearchResolution:
                 payload["provider_feed_recommendation_reason_codes"] = list(
                     self.provider_feed_recommendation_reason_codes
                 )
+                if self.provider_feed_recommendation_confidence is not None:
+                    payload["provider_feed_recommendation_confidence"] = (
+                        self.provider_feed_recommendation_confidence
+                    )
         return payload
 
 
@@ -347,6 +352,7 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     provider_feed_decision_status: str | None = None
     provider_feed_recommended_product_id: str | None = None
     provider_feed_recommendation_reason_codes: tuple[str, ...] = ()
+    provider_feed_recommendation_confidence: str | None = None
     selection_query = canonicalized_query or normalized_query or raw_query
     standard_provider_feed_path = bool(
         mega_category_id
@@ -413,6 +419,7 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
                     )
                     provider_feed_decision_status = recommendation.decision_status
                     provider_feed_recommendation_reason_codes = recommendation.recommendation_reason_codes
+                    provider_feed_recommendation_confidence = recommendation.recommendation_confidence
                     if recommendation.decision_status == "recommended":
                         provider_feed_recommended_product_id = recommendation.recommended_product_id
                     if expose_selection and selection.status == "selected":
@@ -467,4 +474,5 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
         provider_feed_decision_status=provider_feed_decision_status,
         provider_feed_recommended_product_id=provider_feed_recommended_product_id,
         provider_feed_recommendation_reason_codes=provider_feed_recommendation_reason_codes,
+        provider_feed_recommendation_confidence=provider_feed_recommendation_confidence,
     )
