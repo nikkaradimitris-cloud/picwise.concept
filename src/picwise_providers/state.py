@@ -17,6 +17,7 @@ from .contracts import (
 from .eligibility import evaluate_provider_product_eligibility
 from .graph_projection import project_provider_products_to_graph
 from .offer_health import build_feed_availability_context, evaluate_product_eligibility
+from .purchasability_cache import enrich_provider_products_with_cache
 from .search_selection import (
     ProviderFeedRecommendationDecision,
     ProviderProductSelectionResult,
@@ -175,11 +176,12 @@ def load_eligible_provider_feed_products(
     pipeline = resolve_provider_feed_pipeline(config)
     if pipeline.feed_status.status != "provider_feed_ready":
         return tuple()
-    return tuple(
+    products = tuple(
         row.product
         for row in pipeline.eligibility_results
         if row.status == "eligible"
     )
+    return enrich_provider_products_with_cache(products)
 
 
 def resolve_search_provider_feed_product_selection(

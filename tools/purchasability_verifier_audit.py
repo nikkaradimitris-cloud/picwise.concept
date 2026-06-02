@@ -1,6 +1,7 @@
 """Audit-only: verify a small sample of provider product pages after feed selection.
 
-Does not modify live search. Safe to run manually from PowerShell.
+Writes results to a local JSON cache when --cache-file is set. Does not modify live search.
+Safe to run manually from PowerShell.
 """
 from __future__ import annotations
 
@@ -19,6 +20,11 @@ from picwise_providers.offer_health import (  # noqa: E402
     build_feed_availability_context,
     evaluate_product_eligibility,
 )
+from picwise_providers.purchasability_cache import (  # noqa: E402
+    PurchasabilityCache,
+    blocked_reason_from_eligibility,
+    cache_entry_from_verification,
+)
 from picwise_providers.purchasability_verifier import (  # noqa: E402
     merge_verification_into_product_raw,
     verify_product_page_purchasability,
@@ -36,23 +42,24 @@ _DEFAULT_FEED = Path(
 _DEFAULT_LIMIT = 4
 
 
-def _truth_row_from_verified(product_dict: dict) -> dict:
-    return {
-        "title": product_dict.get("title"),
-        "product_url": product_dict.get("product_url"),
-        "verifier_run": product_dict.get("verification_source") == "page_verifier",
-        "verification_source": product_dict.get("verification_source"),
-        "verification_confidence": product_dict.get("verification_confidence"),
-        "http_status": product_dict.get("http_status"),
-        "final_url": product_dict.get("final_url"),
-        "buy_button_seen": product_dict.get("buy_button_seen"),
-        "out_of_stock_seen": product_dict.get("out_of_stock_seen"),
-        "purchasability_state": product_dict.get("purchasability_state"),
-        "last_checked_at": product_dict.get("last_checked_at"),
-        "verified_purchasable": product_dict.get("verified_purchasable"),
-        "card_eligible": product_dict.get("card_eligible"),
-        "card_eligibility_reason_codes": product_dict.get("card_eligibility_reason_codes"),
-    }
+def _print_verification_row(row: dict) -> None:
+    for key in (
+        "query",
+        "title",
+        "product_url",
+        "final_url",
+        "http_status",
+        "purchasability_state",
+        "verification_confidence",
+        "buy_button_seen",
+        "out_of_stock_seen",
+        "missing_buy_button",
+        "discontinued_seen",
+        "redirect_suspect",
+        "last_checked_at",
+        "cache_written",
+    ):
+        print(f"{key}: {row.get(key)}")
 
 
 def audit_query_with_verification(
@@ -60,6 +67,8 @@ def audit_query_with_verification(
     *,
     limit: int,
     timeout_seconds: float,
+    cache: PurchasabilityCache | None = None,
+    cache_path: str | None = None,
 ) -> dict:
     selection = resolve_search_provider_feed_product_selection(query=query)
     verified_rows: list[dict] = []
@@ -70,6 +79,11 @@ def audit_query_with_verification(
             product.product_url,
             timeout_seconds=timeout_seconds,
         )
+        cache_written = False
+        if cache is not None and cache_path:
+            cache.set(product.product_url, verification)
+            cache_written = True
+
         raw = product.raw if isinstance(product.raw, dict) else {}
         merged_raw = merge_verification_into_product_raw(raw, verification)
         enriched = type(product)(
@@ -90,13 +104,37 @@ def audit_query_with_verification(
         payload = provider_product_to_backend_dict(enriched)
         payload["card_eligible"] = eligibility.card_eligible
         payload["card_eligibility_reason_codes"] = list(eligibility.reason_codes)
-        verified_rows.append(_truth_row_from_verified(payload))
+        entry = cache_entry_from_verification(verification, product_url=product.product_url)
+        row = {
+            "query": query,
+            "title": payload.get("title"),
+            "product_url": payload.get("product_url"),
+            "final_url": payload.get("final_url"),
+            "http_status": payload.get("http_status"),
+            "purchasability_state": payload.get("purchasability_state"),
+            "verification_confidence": payload.get("verification_confidence"),
+            "buy_button_seen": payload.get("buy_button_seen"),
+            "out_of_stock_seen": payload.get("out_of_stock_seen"),
+            "missing_buy_button": entry.get("missing_buy_button"),
+            "discontinued_seen": entry.get("discontinued_seen"),
+            "redirect_suspect": entry.get("redirect_suspect"),
+            "last_checked_at": payload.get("last_checked_at"),
+            "cache_written": cache_written,
+            "blocked_reason": blocked_reason_from_eligibility(eligibility.reason_codes),
+            "verified_purchasable": payload.get("verified_purchasable"),
+            "card_eligible": payload.get("card_eligible"),
+        }
+        verified_rows.append(row)
+
+    if cache is not None and cache_path:
+        cache.save(cache_path)
 
     return {
         "query": query,
         "selection_status": selection.status,
         "selected_count": len(selection.selected_products),
         "verified_count": len(verified_rows),
+        "cache_file": cache_path,
         "verified_products": verified_rows,
     }
 
@@ -106,17 +144,31 @@ def main() -> None:
     parser.add_argument("--query", default="laptop", help="Search query for feed selection sample")
     parser.add_argument("--limit", type=int, default=_DEFAULT_LIMIT, help="Max product URLs to verify")
     parser.add_argument("--timeout", type=float, default=12.0, help="HTTP timeout per page")
+    parser.add_argument(
+        "--cache-file",
+        default="",
+        help="Write verification results to this JSON cache file",
+    )
     args = parser.parse_args()
 
     if not os.environ.get("AWIN_FEED_FILE") and _DEFAULT_FEED.is_file():
         os.environ["AWIN_FEED_FILE"] = str(_DEFAULT_FEED)
 
     safe_limit = max(0, min(int(args.limit), 20))
+    cache_path = str(args.cache_file or "").strip()
+    cache = PurchasabilityCache.load(cache_path) if cache_path else None
+
     result = audit_query_with_verification(
         str(args.query),
         limit=safe_limit,
         timeout_seconds=float(args.timeout),
+        cache=cache,
+        cache_path=cache_path or None,
     )
+    for row in result.get("verified_products", []):
+        print("---")
+        _print_verification_row(row)
+    print("---")
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
 

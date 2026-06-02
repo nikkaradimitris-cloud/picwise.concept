@@ -1,6 +1,7 @@
 """Audit-only helper: capture runtime truth fields from resolve_live_search.
 
 Does not modify runtime behavior. Read-only inspection for stage closure audits.
+Optional --cache-file applies persisted purchasability verification to search (no page fetch).
 Optional --verify-pages runs background page verification on a limited sample only.
 """
 from __future__ import annotations
@@ -19,6 +20,13 @@ if str(SRC) not in sys.path:
 from picwise_providers.offer_health import (  # noqa: E402
     build_feed_availability_context,
     evaluate_product_eligibility,
+)
+from picwise_providers.purchasability_cache import (  # noqa: E402
+    CACHE_ENV_VAR,
+    blocked_reason_from_eligibility,
+    clear_purchasability_cache_configuration,
+    configure_purchasability_cache,
+    resolve_purchasability_cache,
 )
 from picwise_providers.purchasability_verifier import (  # noqa: E402
     merge_verification_into_product_raw,
@@ -47,10 +55,24 @@ AUDIT_QUERIES = (
 )
 
 
-def _truth_row(product: dict) -> dict:
+def _cache_hit_for_product(product: dict, *, cache_used: bool) -> bool:
+    if not cache_used:
+        return False
+    cache = resolve_purchasability_cache()
+    if cache is None:
+        return False
+    url = str(product.get("product_url") or "").strip()
+    return cache.has(url) if url else False
+
+
+def _truth_row(product: dict, *, cache_used: bool) -> dict:
     raw = product.get("raw") if isinstance(product.get("raw"), dict) else {}
     verification_source = product.get("verification_source") or raw.get("verification_source")
     verifier_run = verification_source == "page_verifier"
+    reason_codes = tuple(product.get("card_eligibility_reason_codes") or ())
+    blocked_reason = product.get("blocked_reason")
+    if blocked_reason is None and not product.get("card_eligible", True):
+        blocked_reason = blocked_reason_from_eligibility(reason_codes)
     return {
         "title": product.get("title"),
         "product_url": product.get("product_url"),
@@ -76,22 +98,33 @@ def _truth_row(product: dict) -> dict:
         or raw.get("verification_confidence"),
         "http_status": product.get("http_status") or raw.get("http_status"),
         "final_url": product.get("final_url") or raw.get("final_url"),
-        "buy_button_seen": product.get("buy_button_seen") if "buy_button_seen" in product else raw.get("buy_button_seen"),
+        "buy_button_seen": product.get("buy_button_seen")
+        if "buy_button_seen" in product
+        else raw.get("buy_button_seen"),
         "out_of_stock_seen": product.get("out_of_stock_seen")
         if "out_of_stock_seen" in product
         else raw.get("out_of_stock_seen"),
         "last_checked_at": product.get("last_checked_at") or raw.get("last_checked_at"),
-        "card_eligibility_reason_codes": product.get("card_eligibility_reason_codes"),
+        "card_eligibility_reason_codes": list(reason_codes),
+        "cache_used": cache_used,
+        "cache_hit": _cache_hit_for_product(product, cache_used=cache_used),
+        "blocked_reason": blocked_reason,
     }
 
 
-def audit_query(query: str) -> dict:
+def audit_query(query: str, *, cache_used: bool) -> dict:
     resolution = resolve_live_search(query)
-    products = [
-        _truth_row(dict(p)) for p in resolution.provider_feed_selected_products
-    ]
+    products = []
+    for product in resolution.provider_feed_selected_products:
+        row = dict(product)
+        if not row.get("card_eligible", True):
+            row["blocked_reason"] = blocked_reason_from_eligibility(
+                tuple(row.get("card_eligibility_reason_codes") or ())
+            )
+        products.append(_truth_row(row, cache_used=cache_used))
     return {
         "query": query,
+        "cache_used": cache_used,
         "decision_status": resolution.provider_feed_decision_status,
         "selection_status": resolution.provider_feed_selection_status,
         "resolver_state": resolution.resolver_state,
@@ -132,7 +165,7 @@ def audit_query_with_page_verification(query: str, *, limit: int) -> dict:
         payload = provider_product_to_backend_dict(enriched)
         payload["card_eligible"] = eligibility.card_eligible
         payload["card_eligibility_reason_codes"] = list(eligibility.reason_codes)
-        verified_products.append(_truth_row(payload))
+        verified_products.append(_truth_row(payload, cache_used=False))
 
     return {
         "query": query,
@@ -151,19 +184,44 @@ def main() -> None:
     )
     parser.add_argument("--query", default="laptop", help="Query when --verify-pages is set")
     parser.add_argument("--limit", type=int, default=4, help="Max URLs to verify with --verify-pages")
+    parser.add_argument(
+        "--cache-file",
+        default="",
+        help="Apply persisted purchasability cache during live search audit (no page fetch)",
+    )
     args = parser.parse_args()
 
     if not os.environ.get("AWIN_FEED_FILE") and _DEFAULT_FEED.is_file():
         os.environ["AWIN_FEED_FILE"] = str(_DEFAULT_FEED)
 
-    if args.verify_pages:
-        safe_limit = max(0, min(int(args.limit), 20))
-        result = audit_query_with_page_verification(str(args.query), limit=safe_limit)
-        print(json.dumps(result, indent=2, ensure_ascii=False))
-        return
+    cache_path = str(args.cache_file or "").strip()
+    cache_used = bool(cache_path)
+    try:
+        if cache_path:
+            configure_purchasability_cache(cache_path)
+            os.environ[CACHE_ENV_VAR] = cache_path
+        else:
+            clear_purchasability_cache_configuration()
+            os.environ.pop(CACHE_ENV_VAR, None)
 
-    results = [audit_query(q) for q in AUDIT_QUERIES]
-    print(json.dumps(results, indent=2, ensure_ascii=False))
+        if args.verify_pages:
+            safe_limit = max(0, min(int(args.limit), 20))
+            result = audit_query_with_page_verification(str(args.query), limit=safe_limit)
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+            return
+
+        results = [audit_query(q, cache_used=cache_used) for q in AUDIT_QUERIES]
+        summary = {
+            "cache_used": cache_used,
+            "cache_file": cache_path or None,
+            "cache_entry_count": len(resolve_purchasability_cache().entries)
+            if cache_used and resolve_purchasability_cache()
+            else 0,
+            "queries": results,
+        }
+        print(json.dumps(summary, indent=2, ensure_ascii=False))
+    finally:
+        clear_purchasability_cache_configuration()
 
 
 if __name__ == "__main__":
