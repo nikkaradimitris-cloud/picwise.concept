@@ -13,10 +13,6 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from picwise_offers.amazon_manual_affiliate import (  # noqa: E402
-    AmazonManualMatchStatus,
-    match_manual_amazon_affiliates,
-)
 from picwise_providers.awin_adapter import (  # noqa: E402
     awin_feed_config_from_env,
     load_awin_provider_feed,
@@ -315,14 +311,6 @@ class ProviderGraphProjectionTests(unittest.TestCase):
         terms = export_graph_search_memory_terms(envelope)
         exported = {term.canonical_term for term in terms}
         self.assertNotIn("unique offer title for export guard", exported)
-
-
-class ProviderRegressionTests(unittest.TestCase):
-    def test_manual_amazon_power_banks_still_works(self) -> None:
-        result = match_manual_amazon_affiliates("power bank")
-        self.assertEqual(result.match_status, AmazonManualMatchStatus.ELIGIBLE)
-        self.assertEqual(result.matched_category, "power_banks")
-        self.assertGreater(len(result.results), 0)
 
 
 if __name__ == "__main__":

@@ -43,10 +43,6 @@ class AppHttpEndpointTests(unittest.TestCase):
         https_response = http_response
 
     @staticmethod
-    def _extract_amazon_hrefs(body: str) -> list[str]:
-        return re.findall(r'href="([^"]+)"[^>]*>View on Amazon<', body)
-
-    @staticmethod
     def _assert_common_footer_links(body: str) -> None:
         expected_links = (
             ("/", "Home"),
@@ -94,9 +90,6 @@ class AppHttpEndpointTests(unittest.TestCase):
         with urlopen(f"http://127.0.0.1:{self.port}{path}", timeout=5) as response:
             self.assertEqual(response.status, 200)
             return response.read().decode("utf-8")
-
-    def _reset_amazon_click_log(self) -> None:
-        self.server.RequestHandlerClass.app.clear_amazon_outbound_click_events()
 
     def test_health_responds_successfully(self) -> None:
         body = self._fetch("/health")
@@ -202,31 +195,6 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertNotIn("&middot;", body)
         self.assertIn("PicWise safely shows no product cards", body)
 
-    def test_amazon_affiliate_proof_route_renders_controlled_manual_result(self) -> None:
-        body = self._fetch("/amazon-affiliate-proof")
-        self.assertIn("Manual Amazon affiliate proof", body)
-        self.assertIn("Matched query: power bank", body)
-        self.assertIn("Approved Amazon result", body)
-        self.assertNotIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)
-        self.assertNotIn("Portable Charger 5000mAh Compact Power Bank", body)
-        self.assertIn("Power bank / portable charger category", body)
-        self.assertIn("ASIN: B0GR1257LT", body)
-        self.assertIn(">View on Amazon<", body)
-        self.assertIn("tag=picwise-20", body)
-        self.assertIn("As an Amazon Associate I earn from qualifying purchases.", body)
-        self.assertIn(
-            "Prices, availability, ratings, reviews, delivery, and seller terms are shown on Amazon and may change. PicWise does not sell products directly.",
-            body,
-        )
-        lowered = body.lower()
-        self.assertNotIn("eur ", lowered)
-        self.assertNotIn("in stock", lowered)
-        self.assertNotIn("prime", lowered)
-        self.assertNotIn("discount", lowered)
-        self.assertNotIn('<img src="https://', lowered)
-        self.assertNotIn("amazon.com/images", lowered)
-        self.assertNotIn("class=\"pw-rating-row\"", lowered)
-
     def test_search_route_renders_broad_query_suggestions_without_product_cards(self) -> None:
         body = self._fetch("/search?q=power")
         self.assertIn("This search is too broad", body)
@@ -268,193 +236,6 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertNotIn("/out/amazon", body)
         self.assertNotIn("ASIN:", body)
         self._assert_common_footer_links(body)
-
-    def test_outbound_amazon_redirect_returns_expected_location(self) -> None:
-        from urllib.error import HTTPError
-        from urllib.request import build_opener
-
-        opener = build_opener(self._NoRedirect)
-        response = opener.open(
-            f"http://127.0.0.1:{self.port}/out/amazon?asin=B0GR1257LT&q=power%20bank&src=search",
-            timeout=5,
-        )
-        self.assertEqual(response.status, 302)
-        location = response.headers.get("Location", "")
-        self.assertIn("amazon.com", location)
-        self.assertIn("tag=picwise-20", location)
-        self.assertIn("B0GR1257LT", location)
-
-        response = opener.open(
-            f"http://127.0.0.1:{self.port}/out/amazon?asin=B0GV9RDLM4&q=power%20bank&src=search",
-            timeout=5,
-        )
-        self.assertEqual(response.status, 302)
-        location = response.headers.get("Location", "")
-        self.assertIn("amazon.com", location)
-        self.assertIn("tag=picwise-20", location)
-        self.assertIn("B0GV9RDLM4", location)
-
-        response = opener.open(
-            f"http://127.0.0.1:{self.port}/out/amazon?asin=B0BJMQBNZP&q=power%20bank&src=search",
-            timeout=5,
-        )
-        self.assertEqual(response.status, 302)
-        location = response.headers.get("Location", "")
-        self.assertIn("amazon.com", location)
-        self.assertIn("tag=picwise-20", location)
-        self.assertIn("B0BJMQBNZP", location)
-
-        response = opener.open(
-            f"http://127.0.0.1:{self.port}/out/amazon?asin=B0FQJH2XSY&q=power%20bank&src=search",
-            timeout=5,
-        )
-        self.assertEqual(response.status, 200)
-        disabled_compact_body = response.read().decode("utf-8")
-        self.assertIn("Amazon option disabled", disabled_compact_body)
-        self.assertIn("This Amazon option is not currently available through PicWise.", disabled_compact_body)
-        self.assertIn("This option has been disabled after manual review.", disabled_compact_body)
-        self.assertIn("Please return to search results.", disabled_compact_body)
-
-        disabled_body = self._fetch("/out/amazon?asin=B08K7GHZ3V&q=power%20bank&src=search")
-        self.assertIn("Amazon option disabled", disabled_body)
-        self.assertIn("This Amazon option is not currently available through PicWise.", disabled_body)
-        self.assertIn("This option has been disabled after manual review.", disabled_body)
-        self.assertIn("Please return to search results.", disabled_body)
-
-        unknown_body = self._fetch("/out/amazon?asin=BADASIN&q=power%20bank&src=search")
-        self.assertIn("Amazon option disabled", unknown_body)
-        self.assertIn("This Amazon option is not currently available through PicWise.", unknown_body)
-
-    def test_outbound_amazon_redirect_rejects_arbitrary_external_url(self) -> None:
-        body = self._fetch(
-            "/out/amazon?asin=https%3A%2F%2Fevil.example%2Fbad&url=https%3A%2F%2Fevil.example%2Foverride&q=power%20bank"
-        )
-        self.assertIn("Amazon option disabled", body)
-        self.assertIn("This Amazon option is not currently available through PicWise.", body)
-
-    def test_amazon_launch_check_route_is_exposed(self) -> None:
-        body = self._fetch("/amazon-launch-check")
-        self.assertIn("Tracking ID configured: <code>picwise-20</code>", body)
-        self.assertIn("Approved manual links: 6", body)
-        self.assertIn("Active public links: 4", body)
-        self.assertIn("Disabled/manual review links: 2", body)
-        self.assertIn("/search?q=power%20bank", body)
-        self.assertIn("/results?q=power%20bank", body)
-        self.assertIn("Outbound redirect validation: enabled", body)
-        self.assertIn("API access: not available yet", body)
-        self.assertIn("Amazon images/live prices: not used", body)
-        self.assertIn("Disclosure: present", body)
-
-    def test_amazon_click_proof_route_initial_state_is_safe(self) -> None:
-        self._reset_amazon_click_log()
-        body = self._fetch("/amazon-click-proof")
-        self.assertIn("Amazon click proof", body)
-        self.assertIn("Tracking ID configured: <code>picwise-20</code>", body)
-        self.assertIn("Recorded outbound clicks: 0", body)
-        self.assertIn("Last click ASIN: none", body)
-        self.assertIn("Last click query: none", body)
-        self.assertIn("Last click source: none", body)
-        self.assertIn("Last event type: none", body)
-        self.assertIn("Active public links: 4", body)
-        self.assertIn("Disabled/manual review links: 2", body)
-        self.assertIn("Sales verification: check Amazon Associates", body)
-        self.assertIn("Amazon sales are not verified here. Check Amazon Associates for actual sales.", body)
-        self.assertNotIn("https://www.amazon.com/", body)
-
-    def test_amazon_traffic_protocol_route_is_exposed_with_manual_check_instructions(self) -> None:
-        body = self._fetch("/amazon-traffic-protocol")
-        self.assertIn("First live traffic protocol", body)
-        self.assertIn("Tracking ID: picwise-20", body)
-        self.assertIn("https://picwise.subby.cloud/search?q=power%20bank", body)
-        self.assertIn("/amazon-click-proof", body)
-        self.assertIn("/amazon-launch-check", body)
-        self.assertIn("Reports", body)
-        self.assertIn("Summary / Full Report", body)
-        self.assertIn("Clicks", body)
-        self.assertIn("Ordered items", body)
-        self.assertIn("Shipped items", body)
-        self.assertIn("Earnings", body)
-
-    def test_amazon_traffic_protocol_readiness_checklist_and_no_fake_claims(self) -> None:
-        body = self._fetch("/amazon-traffic-protocol")
-        self.assertIn("Search page active: ready", body)
-        self.assertIn("Active Amazon links: 4", body)
-        self.assertIn("Disabled links blocked: ready", body)
-        self.assertIn("Click proof: ready", body)
-        self.assertIn("Amazon sales proof: manual Amazon Associates only", body)
-        self.assertIn("Ads: not ready", body)
-        self.assertIn("API reporting: not available yet", body)
-        lowered = body.lower()
-        self.assertNotIn("orders verified", lowered)
-        self.assertNotIn("sales verified", lowered)
-        self.assertNotIn("earnings verified", lowered)
-        self.assertNotIn("conversion rate verified", lowered)
-        self.assertNotIn("ads are ready", lowered)
-
-    def test_outbound_click_recording_for_active_and_disabled_asins(self) -> None:
-        from urllib.request import build_opener
-
-        self._reset_amazon_click_log()
-        opener = build_opener(self._NoRedirect)
-
-        active_search = opener.open(
-            f"http://127.0.0.1:{self.port}/out/amazon?asin=B0GV9RDLM4&q=power%20bank&src=search",
-            timeout=5,
-        )
-        self.assertEqual(active_search.status, 302)
-        active_search_location = active_search.headers.get("Location", "")
-        self.assertIn("tag=picwise-20", active_search_location)
-        self.assertIn("B0GV9RDLM4", active_search_location)
-
-        proof_body = self._fetch("/amazon-click-proof")
-        self.assertIn("Recorded outbound clicks: 1", proof_body)
-        self.assertIn("Last click ASIN: B0GV9RDLM4", proof_body)
-        self.assertIn("Last click query: power bank", proof_body)
-        self.assertIn("Last click source: search", proof_body)
-        self.assertIn("Last event type: amazon_outbound_click", proof_body)
-
-        active_results = opener.open(
-            f"http://127.0.0.1:{self.port}/out/amazon?asin=B0BJMQBNZP&q=power%20bank&src=results",
-            timeout=5,
-        )
-        self.assertEqual(active_results.status, 302)
-        active_results_location = active_results.headers.get("Location", "")
-        self.assertIn("tag=picwise-20", active_results_location)
-        self.assertIn("B0BJMQBNZP", active_results_location)
-
-        proof_body = self._fetch("/amazon-click-proof")
-        self.assertIn("Recorded outbound clicks: 2", proof_body)
-        self.assertIn("Last click ASIN: B0BJMQBNZP", proof_body)
-        self.assertIn("Last click query: power bank", proof_body)
-        self.assertIn("Last click source: results", proof_body)
-        self.assertIn("Last event type: amazon_outbound_click", proof_body)
-
-        disabled_before = self.server.RequestHandlerClass.app.get_amazon_outbound_click_count()
-        disabled_response = opener.open(
-            f"http://127.0.0.1:{self.port}/out/amazon?asin=B08K7GHZ3V&q=power%20bank&src=search",
-            timeout=5,
-        )
-        self.assertEqual(disabled_response.status, 200)
-        disabled_after = self.server.RequestHandlerClass.app.get_amazon_outbound_click_count()
-        self.assertEqual(disabled_before, disabled_after)
-
-        disabled_compact_before = self.server.RequestHandlerClass.app.get_amazon_outbound_click_count()
-        disabled_compact_response = opener.open(
-            f"http://127.0.0.1:{self.port}/out/amazon?asin=B0FQJH2XSY&q=power%20bank&src=search",
-            timeout=5,
-        )
-        self.assertEqual(disabled_compact_response.status, 200)
-        disabled_compact_after = self.server.RequestHandlerClass.app.get_amazon_outbound_click_count()
-        self.assertEqual(disabled_compact_before, disabled_compact_after)
-
-        unknown_before = self.server.RequestHandlerClass.app.get_amazon_outbound_click_count()
-        unknown_response = opener.open(
-            f"http://127.0.0.1:{self.port}/out/amazon?asin=BADASIN&q=power%20bank&src=search",
-            timeout=5,
-        )
-        self.assertEqual(unknown_response.status, 200)
-        unknown_after = self.server.RequestHandlerClass.app.get_amazon_outbound_click_count()
-        self.assertEqual(unknown_before, unknown_after)
 
     def test_search_route_renders_safe_no_result_for_unapproved_query(self) -> None:
         body = self._fetch("/search?q=laptop")
@@ -592,14 +373,14 @@ class AppHttpEndpointTests(unittest.TestCase):
     def test_demo_includes_fixture_not_production_markers(self) -> None:
         body = self._fetch("/demo")
         self.assertIn("informational only", body)
-        self.assertIn("No live Amazon offers are currently claimed", body)
+        self.assertIn("No live provider offers are currently claimed", body)
 
     def test_legal_routes_and_404_are_exposed_on_local_server(self) -> None:
         for path, token in (
             ("/terms", "Terms of Use"),
             ("/privacy", "Privacy Policy"),
             ("/cookies", "Cookie Policy"),
-            ("/affiliate-disclosure", "As an Amazon Associate I earn from qualifying purchases."),
+            ("/affiliate-disclosure", "PicWise works with the Awin affiliate network"),
             ("/contact", "contact.picwise@subby.cloud"),
         ):
             body = self._fetch(path)

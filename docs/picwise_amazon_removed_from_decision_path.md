@@ -50,16 +50,54 @@ every other product type.
   same as any other query without inventory. They are no longer a special case that
   always had results.
 
-## What was left in place
+## Full removal
 
-The Amazon code is dormant, not deleted: the manual registry, the matching functions, the
-`/out/amazon` redirect and the Amazon proof routes still exist and their unit tests still
-pass. Nothing in the decision path can reach them, because no category maps to
-`manual_amazon_affiliate`.
+The first pass left the Amazon code dormant. The operator then confirmed Amazon is out of
+the project and that no integration with it is wanted, so the layer has now been deleted.
 
-Removing that layer entirely — registry, routes, proof pages and their tests — is a
-separate cleanup. It is deliberately not bundled here: this change is closed and testable
-on its own, and keeping the code dormant makes the decision reversible.
+Deleted outright:
+
+| File | What it was |
+|---|---|
+| `src/picwise_offers/amazon_manual_affiliate.py` | the manual ASIN registry, matching and URL validation |
+| `src/picwise_surface/amazon_affiliate_proof.py` | the Amazon affiliate proof page |
+| `src/picwise_surface/search_results.py` | an Amazon-only results page that nothing called |
+| `tests/test_amazon_affiliate_link_stage1.py` | its unit tests |
+
+Routes removed from **both** route tables (`src/picwise_app/app.py` and `api/index.py`):
+`/out/amazon`, `/amazon-affiliate-proof`, `/amazon-launch-check`, `/amazon-click-proof`,
+`/amazon-traffic-protocol`. All now return 404.
+
+App methods removed: `amazon_affiliate_proof_html`, `amazon_launch_check_html`,
+`amazon_click_proof_html`, `amazon_traffic_protocol_html`,
+`resolve_outbound_amazon_redirect`, `outbound_asin_manual_status_message`,
+`record_amazon_outbound_click`, `get_amazon_outbound_click_count`,
+`clear_amazon_outbound_click_events`, and the click-event store behind them. The
+`AMAZON_ASSOCIATES_TRACKING_ID` affiliate tag is no longer in the repository.
+
+`_build_result_cards`, the manual Amazon card builder in `reference.py`, is gone. The
+provider feed is now the only source of choice cards, which also made the "approved manual
+Amazon records only" note unreachable; it was removed rather than left as dead code.
+
+`src/picwise_surface/search_results.py` turned out to be dead already: it was imported in
+three places and called from none.
+
+### The legal copy was making a false claim
+
+This is the part that mattered most. The affiliate disclosure page stated:
+
+> "As an Amazon Associate I earn from qualifying purchases."
+
+With Amazon not a partner, that asserted a commercial relationship that does not exist —
+a fake claim under PROJECT_RULES section 4, on a legal page. It now reads that PicWise
+works with the Awin affiliate network. Terms, privacy and cookies listed Amazon among the
+providers users might be sent to or tracked by; those lists no longer name it.
+
+### What stayed
+
+`"amazon"` remains in `src/picwise_search_memory/broad_query_suggestions.py`. That is a
+list of **query terms too broad to act on** — a user typing "amazon" gets broad-query
+suggestions. It is not an integration and removing it would make that query behave worse.
 
 ## Tests updated
 

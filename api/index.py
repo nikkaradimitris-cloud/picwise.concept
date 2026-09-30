@@ -20,11 +20,9 @@ from picwise_integrations import (  # noqa: E402
     send_subby_live_proof_event,
 )
 from picwise_surface import (  # noqa: E402
-    render_amazon_affiliate_proof_page,
     render_affiliate_disclosure_page,
     render_branded_not_found_page,
     render_contact_page,
-    render_controlled_search_results_page,
     render_cookies_page,
     render_picwise_reference_surface,
     render_privacy_page,
@@ -134,67 +132,6 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         html = _APP.picwise_reference_html(query, source_page="search")
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
-
-    if path == "/amazon-affiliate-proof":
-        html = render_amazon_affiliate_proof_page()
-        body = html.encode("utf-8")
-        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
-
-    if path == "/amazon-launch-check":
-        html = _APP.amazon_launch_check_html()
-        body = html.encode("utf-8")
-        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
-
-    if path == "/amazon-click-proof":
-        html = _APP.amazon_click_proof_html()
-        body = html.encode("utf-8")
-        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
-
-    if path == "/amazon-traffic-protocol":
-        html = _APP.amazon_traffic_protocol_html()
-        body = html.encode("utf-8")
-        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
-
-    if path == "/out/amazon":
-        query_string = str(environ.get("QUERY_STRING", ""))
-        query_params = parse_qs(query_string)
-        asin = (query_params.get("asin") or [""])[0]
-        query = (query_params.get("q") or [""])[0]
-        source_page = (query_params.get("src") or ["unknown"])[0]
-        target_url = _APP.resolve_outbound_amazon_redirect(asin)
-        if target_url is None:
-            safe_asin = str(asin or "").strip().upper() or "UNKNOWN"
-            message = _APP.outbound_asin_manual_status_message(asin)
-            html = (
-                "<!doctype html>"
-                '<html lang="en"><head><meta charset="utf-8">'
-                '<meta name="viewport" content="width=device-width, initial-scale=1">'
-                "<title>PicWise Amazon Option Disabled</title>"
-                "<style>"
-                "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f9ff;color:#102744;}"
-                ".pw-wrap{max-width:860px;margin:0 auto;padding:30px 20px;}"
-                ".pw-card{background:#fff;border:1px solid #dbe8fb;border-radius:14px;padding:18px 20px;box-shadow:0 8px 24px rgba(17,44,91,.08);}"
-                ".pw-note{margin:10px 0 0;line-height:1.6;color:#355174;}"
-                ".pw-btn{display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 18px;border-radius:999px;background:#1f6dff;border:1px solid #1f6dff;color:#fff;font-size:14px;font-weight:700;text-decoration:none;margin-top:16px;}"
-                "</style></head><body><main class=\"pw-wrap\"><section class=\"pw-card\">"
-                "<h1>Amazon option disabled</h1>"
-                f"<p class=\"pw-note\">ASIN: {safe_asin}</p>"
-                f"<p class=\"pw-note\">{message}</p>"
-                "<a class=\"pw-btn\" href=\"/search?q=power%20bank\">Return to search results</a>"
-                "</section></main></body></html>"
-            )
-            body = html.encode("utf-8")
-            return _response("200 OK", "text/html; charset=utf-8", body, start_response)
-        _APP.record_amazon_outbound_click(asin=asin, query=query, source_page=source_page)
-        start_response(
-            "302 Found",
-            [
-                ("Content-Type", "text/plain; charset=utf-8"),
-                ("Content-Length", "0"),
-                ("Location", target_url),
-            ],
-        )
-        return [b""]
 
     if path == "/out/feed":
         query_string = str(environ.get("QUERY_STRING", ""))

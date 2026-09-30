@@ -48,10 +48,6 @@ def _call_wsgi(path: str, query_string: str = "") -> tuple[str, dict[str, str], 
 
 class DeploymentEntrypointTests(unittest.TestCase):
     @staticmethod
-    def _extract_amazon_hrefs(body: str) -> list[str]:
-        return re.findall(r'href="([^"]+)"[^>]*>View on Amazon<', body)
-
-    @staticmethod
     def _extract_location(headers: dict[str, str]) -> str:
         for key, value in headers.items():
             if key.lower() == "location":
@@ -167,33 +163,6 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(body.count('<article class="pw-card'), 0)
         self.assertNotIn("&middot;", body)
         self.assertIn("PicWise safely shows no product cards", body)
-
-    def test_amazon_affiliate_proof_route_renders_controlled_manual_result(self) -> None:
-        status, headers, body = _call_wsgi("/amazon-affiliate-proof")
-        self.assertEqual(status, "200 OK")
-        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
-        self.assertIn("Manual Amazon affiliate proof", body)
-        self.assertIn("Matched query: power bank", body)
-        self.assertIn("Approved Amazon result", body)
-        self.assertNotIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)
-        self.assertNotIn("Portable Charger 5000mAh Compact Power Bank", body)
-        self.assertIn("Power bank / portable charger category", body)
-        self.assertIn("ASIN: B0GR1257LT", body)
-        self.assertIn(">View on Amazon<", body)
-        self.assertIn("tag=picwise-20", body)
-        self.assertIn("As an Amazon Associate I earn from qualifying purchases.", body)
-        self.assertIn(
-            "Prices, availability, ratings, reviews, delivery, and seller terms are shown on Amazon and may change. PicWise does not sell products directly.",
-            body,
-        )
-        lowered = body.lower()
-        self.assertNotIn("eur ", lowered)
-        self.assertNotIn("in stock", lowered)
-        self.assertNotIn("prime", lowered)
-        self.assertNotIn("discount", lowered)
-        self.assertNotIn('<img src="https://', lowered)
-        self.assertNotIn("amazon.com/images", lowered)
-        self.assertNotIn("class=\"pw-rating-row\"", lowered)
 
     def test_search_route_renders_main_shell_without_amazon_for_power_bank_query(self) -> None:
         # Amazon has been removed from the product: power banks resolve through the same
@@ -412,139 +381,6 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertNotIn("/out/amazon", body)
         self.assertNotIn("ASIN:", body)
 
-    def test_outbound_amazon_redirect_returns_302_with_safe_affiliate_location(self) -> None:
-        status, headers, _body = _call_wsgi("/out/amazon", "asin=B0GR1257LT&q=power%20bank")
-        self.assertEqual(status, "302 Found")
-        location = self._extract_location(headers)
-        self.assertIn("amazon.com", location)
-        self.assertIn("tag=picwise-20", location)
-        self.assertIn("B0GR1257LT", location)
-
-        status, headers, _body = _call_wsgi("/out/amazon", "asin=B0GV9RDLM4&q=power%20bank&src=search")
-        self.assertEqual(status, "302 Found")
-        location = self._extract_location(headers)
-        self.assertIn("amazon.com", location)
-        self.assertIn("tag=picwise-20", location)
-        self.assertIn("B0GV9RDLM4", location)
-
-        status, headers, _body = _call_wsgi("/out/amazon", "asin=B0BJMQBNZP&q=power%20bank&src=search")
-        self.assertEqual(status, "302 Found")
-        location = self._extract_location(headers)
-        self.assertIn("amazon.com", location)
-        self.assertIn("tag=picwise-20", location)
-        self.assertIn("B0BJMQBNZP", location)
-
-    def test_outbound_amazon_redirect_disabled_compact_asin_returns_safe_manual_review_page(self) -> None:
-        status, headers, body = _call_wsgi("/out/amazon", "asin=B0FQJH2XSY&q=power%20bank&src=search")
-        self.assertEqual(status, "200 OK")
-        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
-        self.assertIn("Amazon option disabled", body)
-        self.assertIn("This Amazon option is not currently available through PicWise.", body)
-        self.assertIn("This option has been disabled after manual review.", body)
-        self.assertIn("Please return to search results.", body)
-
-    def test_outbound_amazon_redirect_unknown_asin_returns_not_found(self) -> None:
-        status, headers, body = _call_wsgi("/out/amazon", "asin=B000000000&q=power%20bank")
-        self.assertEqual(status, "200 OK")
-        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
-        self.assertIn("Amazon option disabled", body)
-        self.assertIn("This Amazon option is not currently available through PicWise.", body)
-
-    def test_outbound_amazon_redirect_does_not_accept_arbitrary_url(self) -> None:
-        query = (
-            "asin=https%3A%2F%2Fevil.example%2Fbad"
-            "&url=https%3A%2F%2Fevil.example%2Foverride"
-            "&q=power%20bank"
-        )
-        status, headers, body = _call_wsgi("/out/amazon", query)
-        self.assertEqual(status, "200 OK")
-        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
-        self.assertIn("Amazon option disabled", body)
-
-    def test_outbound_amazon_redirect_disabled_asin_returns_safe_manual_review_page(self) -> None:
-        status, headers, body = _call_wsgi("/out/amazon", "asin=B08K7GHZ3V&q=power%20bank&src=search")
-        self.assertEqual(status, "200 OK")
-        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
-        self.assertIn("Amazon option disabled", body)
-        self.assertIn("This Amazon option is not currently available through PicWise.", body)
-        self.assertIn("This option has been disabled after manual review.", body)
-        self.assertIn("Please return to search results.", body)
-
-    def test_amazon_launch_check_route_reports_launch_safety_state(self) -> None:
-        status, headers, body = _call_wsgi("/amazon-launch-check")
-        self.assertEqual(status, "200 OK")
-        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
-        self.assertIn("Tracking ID configured: <code>picwise-20</code>", body)
-        self.assertIn("Approved manual links: 6", body)
-        self.assertIn("Active public links: 4", body)
-        self.assertIn("Disabled/manual review links: 2", body)
-        self.assertIn("/search?q=power%20bank", body)
-        self.assertIn("/results?q=power%20bank", body)
-        self.assertIn("Outbound redirect validation: enabled", body)
-        self.assertIn("API access: not available yet", body)
-        self.assertIn("Amazon images/live prices: not used", body)
-        self.assertIn("Disclosure: present", body)
-
-    def test_amazon_click_proof_route_initial_state_is_safe(self) -> None:
-        status, headers, body = _call_wsgi("/amazon-click-proof")
-        self.assertEqual(status, "200 OK")
-        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
-        self.assertIn("Amazon click proof", body)
-        self.assertIn("Tracking ID configured: <code>picwise-20</code>", body)
-        self.assertIn("Recorded outbound clicks:", body)
-        self.assertIn("Active public links: 4", body)
-        self.assertIn("Disabled/manual review links: 2", body)
-        self.assertIn("Sales verification: check Amazon Associates", body)
-        self.assertIn("Amazon sales are not verified here. Check Amazon Associates for actual sales.", body)
-        self.assertNotIn("https://www.amazon.com/", body)
-
-    def test_amazon_click_proof_updates_after_outbound_click(self) -> None:
-        status, headers, _body = _call_wsgi(
-            "/out/amazon",
-            "asin=B0GV9RDLM4&q=power%20bank&src=search",
-        )
-        self.assertEqual(status, "302 Found")
-        location = self._extract_location(headers)
-        self.assertIn("tag=picwise-20", location)
-        self.assertIn("B0GV9RDLM4", location)
-
-        status, headers, body = _call_wsgi("/amazon-click-proof")
-        self.assertEqual(status, "200 OK")
-        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
-        self.assertIn("Last click ASIN: B0GV9RDLM4", body)
-        self.assertIn("Last click query: power bank", body)
-        self.assertIn("Last click source: search", body)
-        self.assertIn("Last event type: amazon_outbound_click", body)
-
-    def test_amazon_traffic_protocol_route_documents_manual_first_live_traffic_checks(self) -> None:
-        status, headers, body = _call_wsgi("/amazon-traffic-protocol")
-        self.assertEqual(status, "200 OK")
-        self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
-        self.assertIn("First live traffic protocol", body)
-        self.assertIn("Tracking ID: picwise-20", body)
-        self.assertIn("https://picwise.subby.cloud/search?q=power%20bank", body)
-        self.assertIn("/amazon-click-proof", body)
-        self.assertIn("/amazon-launch-check", body)
-
-    def test_amazon_traffic_protocol_readiness_checklist_is_explicit(self) -> None:
-        _status, _headers, body = _call_wsgi("/amazon-traffic-protocol")
-        self.assertIn("Search page active: ready", body)
-        self.assertIn("Active Amazon links: 4", body)
-        self.assertIn("Disabled links blocked: ready", body)
-        self.assertIn("Click proof: ready", body)
-        self.assertIn("Amazon sales proof: manual Amazon Associates only", body)
-        self.assertIn("Ads: not ready", body)
-        self.assertIn("API reporting: not available yet", body)
-
-    def test_amazon_traffic_protocol_has_no_fake_sales_earnings_or_conversion_claims(self) -> None:
-        _status, _headers, body = _call_wsgi("/amazon-traffic-protocol")
-        lowered = body.lower()
-        self.assertNotIn("orders verified", lowered)
-        self.assertNotIn("sales verified", lowered)
-        self.assertNotIn("earnings verified", lowered)
-        self.assertNotIn("conversion rate verified", lowered)
-        self.assertNotIn("ads are ready", lowered)
-
     def test_search_route_renders_safe_no_result_for_unapproved_query(self) -> None:
         status, _headers, body = _call_wsgi("/search", "q=laptop")
         self.assertEqual(status, "200 OK")
@@ -688,12 +524,11 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertNotIn("images-na.ssl-images-amazon.com", lowered)
         self.assertNotIn("product image hotlinks", lowered)
         self.assertNotIn("class=\"pw-rating-row\"", lowered)
-        body_without_safe_note = body.replace(
-            "Prices, availability, ratings, reviews, delivery, and seller terms are shown on Amazon and may change. PicWise does not sell products directly.",
-            "",
-        ).lower()
-        self.assertNotIn("rating", body_without_safe_note)
-        self.assertNotIn("reviews", body_without_safe_note)
+        # The Amazon safe note used to be stripped here before scanning for rating and
+        # review words. Amazon has been removed from the project, so that note is gone
+        # and the whole body can be scanned directly.
+        self.assertNotIn("rating", lowered)
+        self.assertNotIn("reviews", lowered)
 
     def test_reference_route_and_required_core_routes_are_registered(self) -> None:
         health_status, _health_headers, _health_body = _call_wsgi("/health")
@@ -752,7 +587,8 @@ class DeploymentEntrypointTests(unittest.TestCase):
 
     def test_affiliate_disclosure_contains_required_terms(self) -> None:
         _status, _headers, body = _call_wsgi("/affiliate-disclosure")
-        self.assertIn("As an Amazon Associate I earn from qualifying purchases.", body)
+        self.assertIn("PicWise works with the Awin affiliate network", body)
+        self.assertNotIn("Amazon", body)
         self.assertIn("Linkwise", body)
         self.assertIn("SaaS", body)
         self.assertIn("finance", body.lower())

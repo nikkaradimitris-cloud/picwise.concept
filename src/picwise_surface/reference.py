@@ -3,7 +3,6 @@ from __future__ import annotations
 from html import escape
 from urllib.parse import quote
 
-from picwise_offers import AmazonManualMatchStatus, match_manual_amazon_affiliates
 from picwise_providers.decision_labels import build_fact_based_choice_labels
 from picwise_search import LiveSearchResolution
 from .legal import render_public_footer
@@ -294,54 +293,6 @@ def _build_provider_feed_result_cards(
     return cards, True, _FEED_DISCLOSURE, safe_note
 
 
-def _build_result_cards(
-    *,
-    resolution: LiveSearchResolution,
-    source_page: str,
-) -> tuple[list[dict[str, object]], bool, str, str]:
-    if not resolution.result_allowed:
-        return ([], False, "", "")
-    if resolution.provider_key != "manual_amazon_affiliate":
-        return ([], False, "", "")
-
-    match_result = match_manual_amazon_affiliates(resolution.canonical_query)
-    if match_result.match_status != AmazonManualMatchStatus.ELIGIBLE:
-        return ([], False, "", "")
-    if not match_result.results:
-        return ([], False, "", "")
-
-    cards: list[dict[str, object]] = []
-    for result in match_result.results:
-        cards.append(
-            {
-                "badge": "LIVE OPTION",
-                "badge_class": "pw-badge-value",
-                "name": result.title,
-                "description": f"Manual reviewed match for {result.category.replace('_', ' ')}",
-                "rating": "",
-                "reviews": "",
-                "price": "See Amazon details",
-                "meta": f"ASIN: {result.asin}  ·  Provider: {resolution.provider_key}",
-                "bullets": [
-                    "Approved manual affiliate option",
-                    "No fake commerce metrics shown",
-                    "Redirect validated through /out/amazon",
-                ],
-                "warning": "",
-                "cta": "View on Amazon",
-                "image": "/assets/picwise/product-3.svg",
-                "recommended": False,
-                "rec_note": "",
-                "href": (
-                    f"/out/amazon?asin={escape(result.asin, quote=True)}"
-                    f"&q={quote(resolution.display_query, safe='')}"
-                    f"&src={escape(source_page, quote=True)}"
-                ),
-            }
-        )
-    return cards, True, match_result.results[0].disclosure, match_result.results[0].safe_note
-
-
 def render_picwise_reference_surface(
     query: str = "",
     *,
@@ -351,7 +302,7 @@ def render_picwise_reference_surface(
     display_query = str(query or "")
     query_line = ""
     disclaimer_line = (
-        "Live safe mode — no Amazon API, no scraping, and no fake live commerce claims."
+        "Live safe mode — no marketplace API, no scraping, and no fake live commerce claims."
     )
     safe_note_line = ""
     show_demo_note = False
@@ -360,21 +311,22 @@ def render_picwise_reference_surface(
     if resolution is None:
         card_specs: list[dict[str, object]] = []
     else:
-        card_specs, has_live_results, disclosure, safe_note = _build_result_cards(
+        # Amazon has been removed from the project, so the provider feed is the only
+        # source of choice cards.
+        card_specs = []
+        has_live_results = False
+        disclosure = ""
+        safe_note = ""
+        feed_cards, feed_live, feed_disclosure, feed_safe_note = _build_provider_feed_result_cards(
             resolution=resolution,
             source_page=source_page,
         )
-        if not has_live_results:
-            feed_cards, feed_live, feed_disclosure, feed_safe_note = _build_provider_feed_result_cards(
-                resolution=resolution,
-                source_page=source_page,
-            )
-            if feed_live:
-                card_specs = feed_cards
-                has_live_results = True
-                feed_results = True
-                disclosure = feed_disclosure
-                safe_note = feed_safe_note
+        if feed_live:
+            card_specs = feed_cards
+            has_live_results = True
+            feed_results = True
+            disclosure = feed_disclosure
+            safe_note = feed_safe_note
         if display_query.strip():
             if has_live_results and feed_results:
                 query_line = f"Showing 4 selected real products for: {display_query}"
@@ -460,15 +412,12 @@ def render_picwise_reference_surface(
         )
 
     if show_demo_note:
-        if feed_results:
-            note_or_empty_html = (
-                '<p class="pw-demo-note">&#9432; Selected real products from connected provider feed. '
-                "Recommended from these 4.</p>"
-            )
-        else:
-            note_or_empty_html = (
-                '<p class="pw-demo-note">&#9432; Safe connected provider mode: approved manual Amazon records only.</p>'
-            )
+        # The provider feed is the only source of cards, so has_live_results implies
+        # feed_results.
+        note_or_empty_html = (
+            '<p class="pw-demo-note">&#9432; Selected real products from connected provider feed. '
+            "Recommended from these 4.</p>"
+        )
     else:
         note_or_empty_html = (
             '<section class="pw-empty-state">PicWise safely shows no product cards until intent confidence '
