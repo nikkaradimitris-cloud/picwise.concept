@@ -1,5 +1,11 @@
 # Finding: One Unmatched Qualifier Word Empties The Result Set
 
+> **CLOSED.** Fixed in `docs/picwise_query_understanding.md`. The operator's answer was
+> "whatever is needed so the service understands what the user is asking". Selection now
+> looks for the largest set of the buyer's words that four products satisfy, keeps the
+> product family fixed, refuses genuinely ambiguous queries, and states whatever it could
+> not match. The original finding is kept below for the record.
+
 Open finding, not a change. Surfaced while routing power banks through the provider-feed
 engine. It needs a product decision before any code moves, because it is the relevance
 formula the Decision Contract leaves as TODO.

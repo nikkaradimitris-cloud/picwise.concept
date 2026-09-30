@@ -146,6 +146,216 @@ _QUERY_PHRASE_ALLOWED_PRODUCT_TYPES: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 
+# Grammatical connectives carry no product signal. They are dropped from the required
+# token set so a phrase like "power bank for iphone" is not held to the word "for".
+_CONNECTIVE_TOKENS = frozenset(
+    {
+        "a",
+        "an",
+        "and",
+        "as",
+        "at",
+        "by",
+        "for",
+        "from",
+        "in",
+        "into",
+        "my",
+        "of",
+        "on",
+        "or",
+        "per",
+        "the",
+        "to",
+        "with",
+        "without",
+        "gia",
+        "kai",
+        "me",
+        "se",
+    }
+)
+
+
+_MAX_RELAXABLE_TOKENS = 8
+
+
+@dataclass(frozen=True)
+class QueryTokenPlan:
+    """The most specific reading of a query that this inventory can actually answer.
+
+    A buyer's words are not all filters. "power bank for iphone" names a product and a
+    need; "comfortable office chair" names a product and a preference. Requiring every
+    word returned nothing whenever one of them did not appear in the feed text, so the
+    buyer who described their need got less than the one who typed a bare noun. That
+    inverts the promise the concept makes.
+
+    Requiring none of them is equally wrong: "power bank" would then be answerable by a
+    power drill. So the plan searches for the LARGEST set of the buyer's words that at
+    least `max_products` products all satisfy, and reports the rest as words PicWise
+    could not act on. The inventory decides which words are filters, not a hand-written
+    list of qualifiers.
+
+    Consequences worth knowing:
+
+    - With enough matching stock nothing is dropped: four 20000mAh power banks means
+      "20000mah" stays a filter.
+    - Where stock cannot satisfy every word, the buyer gets the four closest choices
+      plus an explicit note about the part that could not be matched, instead of a blank
+      page.
+    - `unmatched` is never silently discarded; the surface states it.
+    """
+
+    required: tuple[str, ...]
+    unmatchable: tuple[str, ...]
+    connectives: tuple[str, ...]
+    ambiguous_product_families: tuple[str, ...] = field(default_factory=tuple)
+
+
+def _product_text_contains_token(product: ProviderProduct, token: str) -> bool:
+    fields = _product_search_fields(product)
+    return any(_token_matches_field(token, value) for value in fields.values())
+
+
+def _query_token_candidates(tokens: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(token for token in tokens if token not in _CONNECTIVE_TOKENS)
+
+
+def resolve_query_token_plan(
+    tokens: tuple[str, ...],
+    products: tuple[ProviderProduct, ...],
+    *,
+    max_products: int = 4,
+    product_fields: tuple[dict[str, str], ...] | None = None,
+) -> QueryTokenPlan:
+    """Pick the largest subset of the query's words that `max_products` products satisfy.
+
+    `product_fields` lets the caller hand over field text it has already built. Deriving
+    it again here would double the per-query string work over the whole feed, which the
+    PROJECT_RULES section 9 render budget cannot absorb on a real feed.
+    """
+    connectives = tuple(token for token in tokens if token in _CONNECTIVE_TOKENS)
+    candidates = _query_token_candidates(tokens)
+    if not candidates:
+        return QueryTokenPlan(required=tuple(), unmatchable=tuple(), connectives=connectives)
+
+    # Words past the cap stay required: the subset search is exponential in the number
+    # of relaxable words, and queries this long are not the case worth relaxing for.
+    relaxable = candidates[:_MAX_RELAXABLE_TOKENS]
+    always_required = candidates[_MAX_RELAXABLE_TOKENS:]
+
+    # One pass over the inventory: which of the relaxable words does each product match?
+    support: dict[int, int] = {}
+    families: dict[int, set[str]] = {}
+    field_rows = product_fields or tuple(
+        _product_search_fields(product) for product in products
+    )
+    support_by_family: dict[tuple[int, str], int] = {}
+    for fields in field_rows:
+        # One joined text per product: this pass only asks whether a word appears at
+        # all, so checking six fields separately multiplies the work over the feed for
+        # no extra information.
+        haystack = " ".join(value for value in fields.values() if value)
+        mask = 0
+        for index, token in enumerate(relaxable):
+            if token and token in haystack:
+                mask |= 1 << index
+        if always_required and not all(
+            token in haystack for token in always_required
+        ):
+            continue
+        support[mask] = support.get(mask, 0) + 1
+        family = fields["product_type"] or fields["category"] or ""
+        if family:
+            families.setdefault(mask, set()).add(family)
+        support_by_family[(mask, family)] = support_by_family.get((mask, family), 0) + 1
+
+    def satisfying(subset_mask: int) -> int:
+        return sum(
+            count
+            for mask, count in support.items()
+            if mask & subset_mask == subset_mask
+        )
+
+    def families_for(subset_mask: int) -> set[str]:
+        return {
+            family
+            for mask, names in families.items()
+            if mask & subset_mask == subset_mask
+            for family in names
+        }
+
+    def satisfying_within(subset_mask: int, allowed_families: set[str]) -> int:
+        return sum(
+            count
+            for (mask, family), count in support_by_family.items()
+            if mask & subset_mask == subset_mask and family in allowed_families
+        )
+
+    safe_max = max(1, int(max_products))
+    full_mask = (1 << len(relaxable)) - 1
+
+    def plan_for(mask: int, *, ambiguous: tuple[str, ...] = tuple()) -> QueryTokenPlan:
+        return QueryTokenPlan(
+            required=tuple(
+                token for index, token in enumerate(relaxable) if mask & (1 << index)
+            )
+            + always_required,
+            unmatchable=tuple(
+                token for index, token in enumerate(relaxable) if not mask & (1 << index)
+            ),
+            connectives=connectives,
+            ambiguous_product_families=ambiguous,
+        )
+
+    if satisfying(full_mask) >= safe_max:
+        return plan_for(full_mask)
+
+    # The fullest reading, even when it matches too few products, names the product
+    # family the buyer asked about. "laptop bag" matches one bag: relaxing to "laptop"
+    # would answer with laptops, which is not what was asked. So when the full reading
+    # matches anything at all, relaxation may only add more of that same family.
+    anchor_families = families_for(full_mask) if satisfying(full_mask) > 0 else set()
+
+    def support_for(subset_mask: int) -> int:
+        if anchor_families:
+            return satisfying_within(subset_mask, anchor_families)
+        return satisfying(subset_mask)
+
+    # Relax to the most specific reading the inventory can answer with a full set.
+    best_size = 0
+    best_masks: list[int] = []
+    for subset_mask in range(full_mask, 0, -1):
+        if subset_mask & full_mask != subset_mask:
+            continue
+        if support_for(subset_mask) < safe_max:
+            continue
+        size = bin(subset_mask).count("1")
+        if size > best_size:
+            best_size, best_masks = size, [subset_mask]
+        elif size == best_size:
+            best_masks.append(subset_mask)
+    if not best_masks:
+        return plan_for(full_mask)
+
+    if len(best_masks) > 1:
+        # Equally specific readings. If they point at different product families the
+        # query is genuinely ambiguous after relaxation -- answering it would mean
+        # guessing which product the buyer meant, and showing car batteries to someone
+        # who asked about a smartphone is worse than showing nothing. Report the
+        # ambiguity instead of picking one.
+        families = [families_for(mask) for mask in best_masks]
+        shared = set.intersection(*families) if families else set()
+        if not shared:
+            ambiguous = tuple(
+                sorted({name for family in families for name in family})
+            )[:8]
+            return plan_for(full_mask, ambiguous=ambiguous)
+
+    best_masks.sort(key=lambda mask: (-support_for(mask), mask))
+    return plan_for(best_masks[0])
+
+
 @dataclass(frozen=True)
 class ProviderProductSelectionResult:
     status: str
@@ -153,6 +363,9 @@ class ProviderProductSelectionResult:
     strong_matched_count: int = 0
     selected_products: tuple[ProviderProduct, ...] = field(default_factory=tuple)
     reason_codes: tuple[str, ...] = field(default_factory=tuple)
+    unmatched_query_terms: tuple[str, ...] = field(default_factory=tuple)
+    ambiguous_product_families: tuple[str, ...] = field(default_factory=tuple)
+    required_query_terms: tuple[str, ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -161,6 +374,9 @@ class ProviderProductSelectionResult:
             "strong_matched_count": self.strong_matched_count,
             "selected_count": len(self.selected_products),
             "reason_codes": list(self.reason_codes),
+            "unmatched_query_terms": list(self.unmatched_query_terms),
+            "ambiguous_product_families": list(self.ambiguous_product_families),
+            "required_query_terms": list(self.required_query_terms),
             "selected_products": [
                 provider_product_to_backend_dict(product)
                 for product in self.selected_products
@@ -448,15 +664,26 @@ def _score_product_for_tokens(
     *,
     normalized_query: str,
     query_seeks_accessory: bool,
+    scoring_tokens: tuple[str, ...] | None = None,
+    fields: dict[str, str] | None = None,
 ) -> tuple[int, int, int, str, str] | None:
-    fields = _product_search_fields(product)
-    allowed_product_types = _resolve_allowed_product_types(normalized_query, tokens)
+    """Rank one product. `tokens` must all match; `scoring_tokens` only add points.
+
+    The two differ when a query carries words this inventory cannot be filtered by:
+    those words no longer exclude a product, but a product that does mention them still
+    scores higher, so the closest answer to the buyer's actual phrasing wins.
+    """
+    if fields is None:
+        fields = _product_search_fields(product)
+    score_tokens = scoring_tokens or tokens
+    allowed_product_types = _resolve_allowed_product_types(normalized_query, score_tokens)
     matched_tokens = 0
+    matched_token_set: set[str] = set()
     score = 0
     title_matches = 0
     category_matches = 0
 
-    for token in tokens:
+    for token in score_tokens:
         token_matched = False
         if _token_matches_field(token, fields["title"]):
             score += _TITLE_WEIGHT
@@ -481,14 +708,17 @@ def _score_product_for_tokens(
             token_matched = True
         if token_matched:
             matched_tokens += 1
+            matched_token_set.add(token)
 
-    if matched_tokens < len(tokens):
+    # Every required word must match. Words this inventory cannot be filtered by are
+    # not in `tokens`, so they add points above but never exclude.
+    if any(token not in matched_token_set for token in tokens):
         return None
 
     normalized = str(normalized_query or "").strip().lower()
     if normalized and normalized in fields["title"]:
         score += _PHRASE_IN_TITLE_BONUS
-    if title_matches == len(tokens):
+    if tokens and title_matches >= len(tokens):
         score += _ALL_TOKENS_IN_TITLE_BONUS
     if category_matches > 0:
         score += _CATEGORY_WEIGHT // 2
@@ -600,25 +830,71 @@ def select_provider_products_for_query(
 
     query_seeks_accessory = _query_seeks_accessory(tokens, normalized_query)
     feed_ctx = build_feed_availability_context(products)
-    ranked: list[tuple[tuple[int, int, int, str, str], ProviderProduct]] = []
-    for product in products:
-        card_eligibility = evaluate_product_eligibility(
-            product,
-            feed_ctx=feed_ctx,
-        )
-        if not card_eligibility.card_eligible:
-            continue
-        ranking = _score_product_for_tokens(
-            product,
+    eligible = tuple(
+        product
+        for product in products
+        if evaluate_product_eligibility(product, feed_ctx=feed_ctx).card_eligible
+    )
+    # Build each product's searchable text once and reuse it for both the reading
+    # decision and the scoring below.
+    eligible_fields = tuple(_product_search_fields(product) for product in eligible)
+
+    def rank_with(required: tuple[str, ...]):
+        rows: list[tuple[tuple[int, int, int, str, str], ProviderProduct]] = []
+        for product, fields in zip(eligible, eligible_fields):
+            ranking = _score_product_for_tokens(
+                product,
+                required,
+                normalized_query=normalized_query,
+                query_seeks_accessory=query_seeks_accessory,
+                scoring_tokens=tokens,
+                fields=fields,
+            )
+            if ranking is not None:
+                rows.append((ranking, product))
+        return rows
+
+    # Try the buyer's words as given first. When the inventory answers them there is
+    # nothing to relax, and this path costs exactly what it did before relaxation
+    # existed -- which matters, because relaxation is a second pass over the feed.
+    strict_tokens = tuple(_query_token_candidates(tokens)) or tokens
+    ranked = rank_with(strict_tokens)
+    required_tokens = strict_tokens
+    token_plan = QueryTokenPlan(
+        required=strict_tokens,
+        unmatchable=tuple(),
+        connectives=tuple(token for token in tokens if token in _CONNECTIVE_TOKENS),
+    )
+    if len(_dedupe_selected_products(ranked)) < safe_max:
+        token_plan = resolve_query_token_plan(
             tokens,
-            normalized_query=normalized_query,
-            query_seeks_accessory=query_seeks_accessory,
+            eligible,
+            max_products=safe_max,
+            product_fields=eligible_fields,
         )
-        if ranking is not None:
-            ranked.append((ranking, product))
+        if token_plan.ambiguous_product_families:
+            return ProviderProductSelectionResult(
+                status="ambiguous_product_family",
+                matched_count=0,
+                strong_matched_count=0,
+                selected_products=tuple(),
+                reason_codes=("ambiguous_product_family",),
+                unmatched_query_terms=token_plan.unmatchable,
+                ambiguous_product_families=token_plan.ambiguous_product_families,
+            )
+        relaxed_tokens = token_plan.required or strict_tokens
+        if relaxed_tokens != strict_tokens:
+            required_tokens = relaxed_tokens
+            ranked = rank_with(required_tokens)
 
     ranked.sort(key=lambda row: (-row[0][1], -row[0][2], -row[0][0], row[0][3], row[0][4]))
-    strong_matched_count = _count_strong_matches(ranked, token_count=len(tokens))
+    # "Strong" means the product carries the whole reading the selection committed to.
+    # Counting against the original words would make every relaxed query weak by
+    # definition, which would hide results the selection had already judged good.
+    strong_matched_count = _count_strong_matches(
+        ranked,
+        token_count=len(required_tokens),
+    )
     deduped = _dedupe_selected_products(ranked)
     matched_count = len(deduped)
 
@@ -629,6 +905,8 @@ def select_provider_products_for_query(
             strong_matched_count=strong_matched_count,
             selected_products=tuple(),
             reason_codes=("insufficient_relevant_products",),
+            unmatched_query_terms=token_plan.unmatchable,
+            required_query_terms=required_tokens,
         )
 
     return ProviderProductSelectionResult(
@@ -637,6 +915,8 @@ def select_provider_products_for_query(
         strong_matched_count=strong_matched_count,
         selected_products=tuple(deduped[:safe_max]),
         reason_codes=("provider_feed_products_selected",),
+        unmatched_query_terms=token_plan.unmatchable,
+        required_query_terms=required_tokens,
     )
 
 
@@ -710,7 +990,16 @@ def _recommendation_reason_codes_for_product(
 def decide_recommended_provider_product(
     query: str,
     selected_products: tuple[ProviderProduct, ...],
+    *,
+    required_tokens: tuple[str, ...] | None = None,
 ) -> ProviderFeedRecommendationDecision:
+    """Pick the recommended product from the four already selected.
+
+    `required_tokens` is the reading the selection settled on. It must be passed when
+    the query was relaxed, otherwise this re-scores against words the selection already
+    established the inventory cannot be filtered by, finds nothing, and reports no
+    recommendation for four products that are sitting right there.
+    """
     if not selected_products:
         return ProviderFeedRecommendationDecision(
             decision_status="no_selection",
@@ -731,14 +1020,16 @@ def decide_recommended_provider_product(
         )
 
     query_seeks_accessory = _query_seeks_accessory(tokens, normalized_query)
+    filter_tokens = tuple(required_tokens) if required_tokens else tokens
     candidates: list[tuple[tuple[Any, ...], ProviderProduct]] = []
 
     for product in selected_products:
         ranking = _score_product_for_tokens(
             product,
-            tokens,
+            filter_tokens,
             normalized_query=normalized_query,
             query_seeks_accessory=query_seeks_accessory,
+            scoring_tokens=tokens,
         )
         if ranking is None:
             continue

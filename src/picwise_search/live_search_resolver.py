@@ -81,6 +81,8 @@ class LiveSearchResolution:
     provider_feed_eligible_count: int = 0
     provider_feed_selection_status: str | None = None
     provider_feed_selection_reason_codes: tuple[str, ...] = field(default_factory=tuple)
+    provider_feed_unmatched_query_terms: tuple[str, ...] = field(default_factory=tuple)
+    provider_feed_ambiguous_product_families: tuple[str, ...] = field(default_factory=tuple)
     provider_feed_matched_count: int = 0
     provider_feed_selected_count: int = 0
     provider_feed_selected_products: tuple[dict[str, Any], ...] = field(default_factory=tuple)
@@ -119,6 +121,12 @@ class LiveSearchResolution:
             payload["provider_feed_selection_status"] = self.provider_feed_selection_status
             payload["provider_feed_selection_reason_codes"] = list(
                 self.provider_feed_selection_reason_codes
+            )
+            payload["provider_feed_unmatched_query_terms"] = list(
+                self.provider_feed_unmatched_query_terms
+            )
+            payload["provider_feed_ambiguous_product_families"] = list(
+                self.provider_feed_ambiguous_product_families
             )
             payload["provider_feed_matched_count"] = self.provider_feed_matched_count
             payload["provider_feed_selected_count"] = self.provider_feed_selected_count
@@ -356,6 +364,8 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     provider_feed_eligible_count = 0
     provider_feed_selection_status: str | None = None
     provider_feed_selection_reason_codes: tuple[str, ...] = ()
+    provider_feed_unmatched_query_terms: tuple[str, ...] = ()
+    provider_feed_ambiguous_product_families: tuple[str, ...] = ()
     provider_feed_matched_count = 0
     provider_feed_selected_count = 0
     provider_feed_selected_products: tuple[dict[str, Any], ...] = ()
@@ -421,6 +431,10 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
                 if expose_selection or report_feed_opportunity_selection:
                     provider_feed_selection_status = selection.status
                     provider_feed_selection_reason_codes = selection.reason_codes
+                    provider_feed_unmatched_query_terms = selection.unmatched_query_terms
+                    provider_feed_ambiguous_product_families = (
+                        selection.ambiguous_product_families
+                    )
                     provider_feed_matched_count = selection.matched_count
                     provider_feed_selected_count = len(selection.selected_products)
                     recommendation = resolve_search_provider_feed_recommendation_decision(
@@ -494,6 +508,8 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
         provider_feed_eligible_count=provider_feed_eligible_count,
         provider_feed_selection_status=provider_feed_selection_status,
         provider_feed_selection_reason_codes=provider_feed_selection_reason_codes,
+        provider_feed_unmatched_query_terms=provider_feed_unmatched_query_terms,
+        provider_feed_ambiguous_product_families=provider_feed_ambiguous_product_families,
         provider_feed_matched_count=provider_feed_matched_count,
         provider_feed_selected_count=provider_feed_selected_count,
         provider_feed_selected_products=provider_feed_selected_products,

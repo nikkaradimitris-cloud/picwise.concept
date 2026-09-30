@@ -98,7 +98,46 @@ class BroadQuerySuggestion:
         }
 
 
+# Words that carry no product signal, so their presence cannot narrow an ambiguous term.
+_QUERY_CONNECTIVES = frozenset(
+    {
+        "a",
+        "an",
+        "and",
+        "as",
+        "at",
+        "by",
+        "for",
+        "from",
+        "in",
+        "into",
+        "my",
+        "of",
+        "on",
+        "or",
+        "per",
+        "the",
+        "to",
+        "with",
+        "without",
+        "gia",
+        "kai",
+        "me",
+        "se",
+    }
+)
+
+
 def is_unsafe_broad_query(normalized_query: str) -> bool:
+    """Whether a query is too broad or ambiguous to act on.
+
+    The term list holds words that are unsafe **on their own**: brands ("nike",
+    "bosch", "apple", "galaxy") and finance words ("bank", "loan", "insurance").
+    Matching them per token treated "power bank for iphone", "nike running shoes" and
+    "bosch drill" as unsafe broad queries, which blocks some of the most ordinary
+    things a buyer types. A query is only unsafe on this basis when nothing in it
+    names a product: "bank" is ambiguous, "power bank" is not.
+    """
     if not normalized_query:
         return True
     if is_meta_only_query(normalized_query):
@@ -108,11 +147,11 @@ def is_unsafe_broad_query(normalized_query: str) -> bool:
     tokens = tuple(token for token in normalized_query.split() if token)
     if not tokens:
         return True
-    if any(token in _UNSAFE_BROAD_QUERY_TERMS for token in tokens):
+    content_tokens = tuple(token for token in tokens if token not in _QUERY_CONNECTIVES)
+    if not content_tokens:
         return True
-    if any(token in _NON_RETAIL_MARKERS for token in tokens):
-        return True
-    return False
+    ambiguous = _UNSAFE_BROAD_QUERY_TERMS | _NON_RETAIL_MARKERS
+    return all(token in ambiguous for token in content_tokens)
 
 
 def is_retail_product_canonical_term(normalized_term: str) -> bool:

@@ -316,7 +316,11 @@ def resolve_search_provider_feed_recommendation_decision(
             decision_status="no_selection",
             recommendation_reason_codes=("no_feed_selection",),
         )
-    return decide_recommended_provider_product(query, selection.selected_products)
+    return decide_recommended_provider_product(
+        query,
+        selection.selected_products,
+        required_tokens=selection.required_query_terms or None,
+    )
 
 
 def resolve_search_provider_feed_selection_with_recommendation(

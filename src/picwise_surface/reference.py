@@ -327,9 +327,29 @@ def render_picwise_reference_surface(
             feed_results = True
             disclosure = feed_disclosure
             safe_note = feed_safe_note
+        unmatched_terms = tuple(
+            str(term).strip()
+            for term in getattr(resolution, "provider_feed_unmatched_query_terms", ())
+            or ()
+            if str(term).strip()
+        )
+        ambiguous_families = tuple(
+            str(name).strip()
+            for name in getattr(resolution, "provider_feed_ambiguous_product_families", ())
+            or ()
+            if str(name).strip()
+        )
         if display_query.strip():
             if has_live_results and feed_results:
                 query_line = f"Showing 4 selected real products for: {display_query}"
+                if unmatched_terms:
+                    # Say what PicWise could not filter by. Without this the buyer would
+                    # read four products as an answer to their whole request, when part
+                    # of it could not be matched against the connected feed.
+                    query_line += (
+                        "  ·  PicWise could not match: "
+                        + ", ".join(unmatched_terms)
+                    )
             elif has_live_results:
                 query_line = f"Showing {len(card_specs)} options for: {display_query}"
             else:
@@ -337,6 +357,12 @@ def render_picwise_reference_surface(
         if has_live_results and disclosure:
             disclaimer_line = disclosure
             safe_note_line = safe_note
+        elif display_query.strip() and ambiguous_families:
+            disclaimer_line = (
+                "PicWise is not sure which product you mean. This search matches "
+                + " and ".join(ambiguous_families[:3])
+                + ". Add a word that names the product you want."
+            )
         elif display_query.strip():
             base_message = _SAFE_DISCLAIMER_BY_STATE.get(
                 resolution.resolver_state,

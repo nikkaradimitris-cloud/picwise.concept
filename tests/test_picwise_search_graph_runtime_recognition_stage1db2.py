@@ -162,10 +162,14 @@ class PicWiseSearchGraphRuntimeRecognitionStage1DB2Tests(unittest.TestCase):
         self.assertEqual(resolution.resolver_state, "understood_provider_not_connected")
         self.assertFalse(resolution.result_allowed)
 
-    def test_power_bank_still_returns_connected_provider_results(self) -> None:
+    def test_power_bank_resolves_through_the_provider_feed(self) -> None:
+        # Amazon has been removed from the project; no category maps to a connected
+        # manual provider any more.
         resolution = resolve_live_search("power bank")
-        self.assertEqual(resolution.resolver_state, "connected_provider_results")
-        self.assertTrue(resolution.result_allowed)
+        self.assertEqual(
+            resolution.resolver_state, "understood_provider_not_connected"
+        )
+        self.assertFalse(resolution.result_allowed)
 
     def test_brand_only_fixture_does_not_produce_connected_provider_results(self) -> None:
         resolution = resolve_live_search("samplebrand")
