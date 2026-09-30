@@ -300,11 +300,38 @@ def _product_type_matches_allowed(
     return any(allowed == normalized_type for allowed in allowed_product_types)
 
 
+def _product_type_names_the_whole_query(
+    normalized_type: str,
+    tokens: tuple[str, ...],
+) -> bool:
+    """True when the feed's own product type contains every query token.
+
+    The intent map keys on single tokens, so a token can be mapped to the wrong
+    product type when surrounding words change which product is meant: "monitor"
+    maps to computer monitors, which made "blood pressure monitor" and "baby
+    monitor" collide with their own correct feed type and take the conflict
+    penalty. When the feed's own categorisation already names the whole query, the
+    feed is the better authority and the mapped hint must not override it.
+
+    Only multi-token queries qualify. A single token matching a broader type is
+    exactly the accessory case the penalty exists for -- "laptop" must not be
+    satisfied by "Laptop Cases & Bags" -- so single-token queries are left to the
+    existing rules.
+    """
+    if len(tokens) < 2 or not normalized_type:
+        return False
+    # Substring, not whole word: feed product types are plural ("Blood Pressure
+    # Monitors") while queries are singular ("blood pressure monitor"). Requiring
+    # every token keeps this tight enough.
+    return all(_token_matches_field(token, normalized_type) for token in tokens)
+
+
 def _product_type_alignment_adjustment(
     product_type: str,
     *,
     allowed_product_types: tuple[str, ...],
     query_seeks_accessory: bool,
+    tokens: tuple[str, ...] = (),
 ) -> int:
     normalized_type = " ".join(str(product_type or "").split()).strip().lower()
     if _is_weak_product_type(normalized_type):
@@ -312,6 +339,8 @@ def _product_type_alignment_adjustment(
     if not allowed_product_types:
         return 0
     if _product_type_matches_allowed(normalized_type, allowed_product_types):
+        return _PRODUCT_TYPE_ALIGN_BONUS
+    if _product_type_names_the_whole_query(normalized_type, tokens):
         return _PRODUCT_TYPE_ALIGN_BONUS
     if query_seeks_accessory:
         return 0
@@ -472,6 +501,7 @@ def _score_product_for_tokens(
         product_type,
         allowed_product_types=allowed_product_types,
         query_seeks_accessory=query_seeks_accessory,
+        tokens=tokens,
     )
     if (
         allowed_product_types

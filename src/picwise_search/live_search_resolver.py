@@ -417,16 +417,32 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
                         query=selection_query,
                         selection=selection,
                     )
-                    provider_feed_decision_status = recommendation.decision_status
                     provider_feed_recommendation_reason_codes = recommendation.recommendation_reason_codes
                     provider_feed_recommendation_confidence = recommendation.recommendation_confidence
-                    if recommendation.decision_status == "recommended":
-                        provider_feed_recommended_product_id = recommendation.recommended_product_id
-                    if expose_selection and selection.status == "selected":
+                    products_exposed = bool(
+                        expose_selection and selection.status == "selected"
+                    )
+                    if products_exposed:
                         provider_feed_selected_products = tuple(
                             provider_product_to_backend_dict(product)
                             for product in selection.selected_products
                         )
+                    if recommendation.decision_status == "recommended" and not products_exposed:
+                        # A weak feed-opportunity selection is reported but not exposed.
+                        # Claiming "recommended" with zero exposed products contradicts
+                        # itself and breaks the runtime truth rules, which forbid
+                        # overclaiming a recommendation without the evidence behind it.
+                        provider_feed_decision_status = (
+                            "recommendation_withheld_weak_feed_opportunity"
+                        )
+                        provider_feed_recommendation_confidence = "unknown"
+                        reason_codes.append("provider_feed_recommendation_withheld")
+                    else:
+                        provider_feed_decision_status = recommendation.decision_status
+                        if recommendation.decision_status == "recommended":
+                            provider_feed_recommended_product_id = (
+                                recommendation.recommended_product_id
+                            )
                     reason_codes.append(
                         f"provider_feed_selection_status_{provider_feed_selection_status}"
                     )

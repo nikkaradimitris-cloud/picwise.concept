@@ -180,9 +180,13 @@ guarded against.
 ## Still open
 - **Impression events.** `page_impression`, `choices_shown` and `recommended_shown` are
   specified but not emitted on the feed path. Only click and redirect are.
-- **Product-type coverage.** The decision only lands for product types the query-intent
-  map knows (`_QUERY_INTENT_ALLOWED_PRODUCT_TYPES`). Everything else falls to the safe
-  empty state, which is honest but not yet the mission's breadth.
+- ~~**Product-type coverage** limited to the query-intent map.~~ **This was wrong** and is
+  corrected in `docs/picwise_product_type_coverage_matrix.md`: the claim was inferred from
+  a fixture that held no printers or headphones, confusing missing inventory with missing
+  capability. Measured with inventory present, 26 of 27 product types across all 18 mega
+  categories deliver 4+1. What remains open there: `tv` is not recognised as a synonym of
+  `television` (a vocabulary-layer gap), and the manually curated Amazon path renders four
+  choices with no recommendation.
 - **First request on a large feed.** With the search artifact fixed, the remaining cold
   cost is the feed itself: parsing 50,000 rows plus the eligibility sweep measured
   5,534 ms against the 1,500 ms target. Subsequent renders are 993 ms. A serverless

@@ -80,6 +80,16 @@ The real-feed provider pipeline can be run without the operator's private Awin f
 This fixture is local test data (`local_test_fixture`, `.invalid` URLs only). It is not
 real-feed proof and must not be used to close real feed/affiliate stages.
 
+A second fixture, `tests/fixtures/provider_feed_coverage_matrix_fixture.csv`, holds four
+products for each of 27 product types across all 18 mega categories and drives the
+product-type coverage matrix:
+
+```bash
+python -m unittest tests.test_picwise_product_type_coverage_matrix
+```
+
+See `docs/picwise_product_type_coverage_matrix.md`.
+
 ## Live Status Honesty
 
 - Primary domain plan remains `picwise.subby.cloud`.
