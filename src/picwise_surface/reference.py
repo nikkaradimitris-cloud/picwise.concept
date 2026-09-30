@@ -4,6 +4,7 @@ from html import escape
 from urllib.parse import quote
 
 from picwise_offers import AmazonManualMatchStatus, match_manual_amazon_affiliates
+from picwise_providers.decision_labels import build_fact_based_choice_labels
 from picwise_search import LiveSearchResolution
 from .legal import render_public_footer
 
@@ -199,10 +200,18 @@ def _build_provider_feed_result_cards(
     reason_bullets = _feed_recommendation_reason_bullets(
         resolution.provider_feed_recommendation_reason_codes
     )
+    selected_products = list(resolution.provider_feed_selected_products)
+    # Decision Contract items 3 and 4: every choice carries a role label, a decision
+    # label, key reasons and a stated limitation. All are derived from feed and verifier
+    # facts only -- see picwise_providers/decision_labels.
+    choice_labels = build_fact_based_choice_labels(selected_products)
     cards: list[dict[str, object]] = []
-    for product in resolution.provider_feed_selected_products:
+    for card_index, product in enumerate(selected_products):
         if _provider_feed_product_blocks_ui(product):
             return ([], False, "", "")
+        labels = (
+            choice_labels[card_index] if card_index < len(choice_labels) else None
+        )
         product_id = str(product.get("provider_product_id") or "").strip()
         provider_key = str(product.get("provider_key") or "").strip()
         is_recommended = product_id == recommended_id
@@ -215,13 +224,23 @@ def _build_provider_feed_result_cards(
                 "badge": "REAL FEED",
                 "badge_class": "pw-badge-value",
                 "name": str(product.get("title") or "").strip(),
-                "description": "Selected real product (purchase not verified)",
+                "role_label": labels.role_label if labels else "",
+                "choice_id": product_id,
+                "description": (
+                    labels.decision_label
+                    if labels and labels.decision_label
+                    else "Selected real product (purchase not verified)"
+                ),
                 "rating": "",
                 "reviews": "",
                 "price": str(product.get("price_text") or "").strip(),
                 "meta": _provider_feed_card_meta(product, store_label=store_label),
-                "bullets": reason_bullets if is_recommended else [],
-                "warning": "",
+                "bullets": (
+                    list(labels.key_reasons) + (reason_bullets[:3] if is_recommended else [])
+                    if labels
+                    else (reason_bullets if is_recommended else [])
+                ),
+                "warning": labels.risk_or_limitation if labels else "",
                 "cta": "View product",
                 "image": str(product.get("image_url") or "").strip(),
                 "recommended": is_recommended,
@@ -395,6 +414,11 @@ def render_picwise_reference_surface(
         rec_note = (
             f'<p class="pw-rec-note">{escape(str(card["rec_note"]))}</p>' if str(card["rec_note"]) else ""
         )
+        role_label_html = (
+            f'<p class="pw-role-label">{escape(str(card.get("role_label")))}</p>'
+            if str(card.get("role_label") or "")
+            else ""
+        )
         cta = (
             f'<a class="pw-card-cta pw-card-cta-link" href="{escape(str(card["href"]), quote=True)}" rel="nofollow sponsored noopener">{escape(str(card["cta"]))}</a>'
             if card.get("href")
@@ -402,9 +426,10 @@ def render_picwise_reference_surface(
         )
         card_html.append(
             (
-                f'<article class="pw-card{rec_class}" data-choice-id="fixed-{idx}">'
+                f'<article class="pw-card{rec_class}" data-choice-id="{escape(str(card.get("choice_id") or f"fixed-{idx}"), quote=True)}">'
                 f"{rec_header}"
                 f'<span class="pw-badge {escape(str(card["badge_class"]), quote=True)}">{escape(str(card["badge"]))}</span>'
+                f"{role_label_html}"
                 f'<h2 class="pw-card-title">{escape(str(card["name"]))}</h2>'
                 f'<p class="pw-card-description">{escape(str(card["description"]))}</p>'
                 f'<div class="pw-product-image-wrap"><img class="pw-product-image" src="{escape(str(card["image"]), quote=True)}" alt="{escape(str(card["name"]))} product image"></div>'
@@ -485,6 +510,7 @@ def render_picwise_reference_surface(
         ".pw-badge-value{background:#e8f8ec;color:#2f9b57;}"
         ".pw-badge-best{background:#f0ecff;color:#6e57cc;}"
         ".pw-card-title{margin:0;font-size:24px;line-height:1.08;color:#112649;letter-spacing:-.03em;min-height:58px;}"
+        ".pw-role-label{margin:6px 0 0;font-size:12px;font-weight:700;letter-spacing:.01em;color:#1a4fb7;line-height:1.3;}"
         ".pw-card-description{margin:4px 0 8px;font-size:12px;color:#5c7397;line-height:1.35;min-height:32px;}"
         ".pw-product-image-wrap{height:84px;margin:0 0 10px;display:flex;align-items:center;justify-content:center;}"
         ".pw-product-image{display:block;width:252px;height:84px;border-radius:12px;border:1px solid #dbe6f6;object-fit:cover;background:#eef3fb;}"

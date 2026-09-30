@@ -124,16 +124,60 @@ parses the feed, enriches with the purchasability cache and evaluates eligibilit
 that product only. The feed availability context is still built over the whole feed,
 because feed-wide signals decide whether availability counts as weak.
 
-## Still open
+## 6. Per-choice decision labels, from facts only
 
-- **Choice object fields.** `docs/PICWISE_DECISION_CONTRACT.md` requires `role_label`,
-  `decision_label`, `key_reasons` and `risk_or_limitation` on each of the four choices.
-  The feed path still renders a rationale only on the recommended card; the other three
-  carry title, price and truth meta. The contract leaves the ranking formula and label
-  localization as TODO, and PROJECT_RULES section 4 forbids inventing business logic, so
-  the label vocabulary is a product decision that needs to be settled before it is
-  implemented. Price-position labels ("lowest price of these four") would be derivable
-  from feed facts; quality labels would not.
+`docs/PICWISE_DECISION_CONTRACT.md` requires `role_label`, `decision_label`,
+`key_reasons` and `risk_or_limitation` on each of the four choices. Only the recommended
+card carried a rationale; the other three showed title, price and truth meta.
+
+The vocabulary was an open product decision, since the contract leaves the ranking
+formula as TODO and PROJECT_RULES section 4 forbids inventing business logic. The
+decision taken was **fact-derived labels only**: every string restates the feed's own
+numbers or the verifier's own evidence. `src/picwise_providers/decision_labels.py` builds
+them; it is a pure function over the selected products and never reorders them or
+influences which one is recommended.
+
+`role_label` is the product's **price rank within the four**, which is arithmetic over
+the prices and gives four distinct labels rather than two repeated ones:
+
+| Card | Label |
+|---|---|
+| cheapest | `Lowest price of these four` |
+| second | `2nd lowest price of these four` |
+| third | `3rd lowest price of these four` |
+| dearest | `Highest price of these four` |
+
+`key_reasons` states the feed price, the brand (or product type when no brand), and
+whether purchase availability was verified or merely claimed by the feed.
+`risk_or_limitation` states the verification position outright, so an unverified offer
+says so on its own card.
+
+There is deliberately no "best for", "great value" or "premium" wording: PicWise holds no
+reviews, benchmarks or fitness data that could support such a claim, so making one would
+be fake data. A test asserts that no judgement word appears in any label.
+
+A wrong rank would put a false "lowest price" badge on the dearest product, so the
+comparison is parsed rather than guessed, and these cases are covered by tests:
+
+- `1.299,50` and `1,299.50` both mean 1299.50. Whichever separator comes last is the
+  decimal separator. Reading the first convention naively yields `1.299` and inverts the
+  rank.
+- Equal prices across all four report `Same price as the other choices`, never
+  "lowest", which would imply the others are dearer.
+- Tied cheapest products both report `Lowest price of these four`.
+- An unparseable price reports `Price not comparable with the others` rather than a
+  guessed position.
+- **Mixed currencies are never ranked against each other.** 100 USD against 90 GBP would
+  produce a false "lowest price", so when the priced rows disagree on currency every card
+  reports `Price not comparable with the others`.
+- A negative amount is treated as malformed, not as a cheap offer.
+
+Known limitation: the price is read from the feed's price field, and the first number in
+it is used. A price field containing prose such as `was 20.00 now 15.00` would be read as
+20.00. Feed price fields are numeric in practice, so this is recorded rather than
+guarded against.
+
+## Still open
 - **Impression events.** `page_impression`, `choices_shown` and `recommended_shown` are
   specified but not emitted on the feed path. Only click and redirect are.
 - **Product-type coverage.** The decision only lands for product types the query-intent
