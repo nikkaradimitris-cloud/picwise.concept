@@ -52,6 +52,9 @@ COVERAGE_MATRIX: tuple[tuple[str, str, str], ...] = (
     ("computers_office_peripherals", "Ink Cartridges", "ink cartridge"),
     ("computers_office_peripherals", "Multifunction Printers", "printer"),
     ("audio_video_gaming_cameras", "Headphones & Headsets", "headphones"),
+    # Was a known vocabulary gap: "tv" was not recognised as "television". The product
+    # concept lexicon names it, so it now delivers like every other row.
+    ("audio_video_gaming_cameras", "Televisions", "tv"),
     ("car_parts_service_maintenance", "Car Batteries", "car battery"),
     ("tyres_wheels_car_accessories", "Tyres", "tyres"),
     ("moto_bicycle_mobility_gear", "Bicycle Helmets", "bicycle helmet"),
@@ -72,9 +75,9 @@ COVERAGE_MATRIX: tuple[tuple[str, str, str], ...] = (
 # reaches a weak match. The fix belongs in the taxonomy/vocabulary layer, whose deep packs
 # feed the search artifact fingerprint; it must not be patched into the feed scorer,
 # because the runtime truth rules forbid building a second vocabulary system.
-KNOWN_VOCABULARY_GAPS: tuple[tuple[str, str], ...] = (
-    ("audio_video_gaming_cameras", "tv"),
-)
+# Queries the vocabulary does not yet cover. Empty since "tv" was closed; kept so a
+# newly found gap has a place to be recorded and held safe.
+KNOWN_VOCABULARY_GAPS: tuple[tuple[str, str], ...] = ()
 
 
 
@@ -181,7 +184,27 @@ class WithheldRecommendationTests(_CoverageFixtureTestCase):
     """A recommendation is never reported without the products behind it."""
 
     def test_weak_feed_opportunity_withholds_the_recommendation(self) -> None:
-        resolution = resolve_live_search("tv")
+        # A word no product concept names, found in four products' descriptions but in
+        # none of their titles: the selection is a weak feed opportunity.
+        import csv
+        import tempfile
+
+        with FIXTURE_CSV.open(encoding="utf-8") as source:
+            rows = list(csv.DictReader(source))[:4]
+        for row in rows:
+            row["product_type"] = row["merchant_category"] = "Gadgets"
+            row["description"] = "Local fixture row mentioning zorblax only here."
+        handle = tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False, encoding="utf-8", newline="")
+        with handle:
+            writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+            writer.writeheader()
+            writer.writerows(rows)
+        self.addCleanup(os.unlink, handle.name)
+        os.environ[_FEED_ENV] = handle.name
+        clear_awin_feed_parse_cache()
+        clear_provider_feed_pipeline_cache()
+
+        resolution = resolve_live_search("zorblax")
         self.assertEqual(len(resolution.provider_feed_selected_products), 0)
         self.assertEqual(
             resolution.provider_feed_decision_status,

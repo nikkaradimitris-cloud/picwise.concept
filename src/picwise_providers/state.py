@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
+from picwise_nlu.concept_understanding import ConceptReading
 
 from .awin_adapter import (
     awin_feed_config_from_env,
@@ -292,12 +293,14 @@ def resolve_search_provider_feed_product_selection(
     query: str,
     feed_config: ProviderFeedConfig | None = None,
     max_products: int = 4,
+    reading: ConceptReading | None = None,
 ) -> ProviderProductSelectionResult:
     products = load_eligible_provider_feed_products(feed_config=feed_config)
     return select_provider_products_for_query(
         query,
         products,
         max_products=max_products,
+        reading=reading,
     )
 
 
@@ -315,6 +318,13 @@ def resolve_search_provider_feed_recommendation_decision(
         return ProviderFeedRecommendationDecision(
             decision_status="no_selection",
             recommendation_reason_codes=("no_feed_selection",),
+        )
+    if selection.understood_concept:
+        return decide_recommended_provider_product(
+            selection.effective_query or query,
+            selection.selected_products,
+            required_tokens=selection.required_filter_terms,
+            concept_verified=True,
         )
     return decide_recommended_provider_product(
         query,

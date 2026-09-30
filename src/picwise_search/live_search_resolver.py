@@ -10,6 +10,8 @@ from picwise_nlu import (
     normalize_greeklish_and_typos,
     normalize_query,
 )
+from picwise_nlu.concept_understanding import understand_product_query
+from picwise_nlu.product_concepts import get_product_concepts_by_id
 from picwise_search_memory.canonical_registry import get_cached_canonical_vocabulary_registry
 from picwise_search_memory.broad_query_suggestions import (
     BroadQuerySuggestion,
@@ -76,6 +78,13 @@ class LiveSearchResolution:
     resolver_state: str
     reason_codes: tuple[str, ...]
     suggestions: tuple[BroadQuerySuggestion, ...] = field(default_factory=tuple)
+    # The product concept understood from the query, when there was one.
+    understood_concept_id: str | None = None
+    understood_concept_name: str | None = None
+    # True when understanding needed a typo correction rather than an exact (or
+    # exact-by-sound) match. The page then states what it understood.
+    understood_by_correction: bool = False
+    understood_specs: tuple[dict[str, Any], ...] = field(default_factory=tuple)
     provider_feed_status: str | None = None
     provider_feed_reason_codes: tuple[str, ...] = field(default_factory=tuple)
     provider_feed_eligible_count: int = 0
@@ -93,6 +102,10 @@ class LiveSearchResolution:
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
+            "understood_concept_id": self.understood_concept_id,
+            "understood_concept_name": self.understood_concept_name,
+            "understood_by_correction": self.understood_by_correction,
+            "understood_specs": list(self.understood_specs),
             "raw_query": self.raw_query,
             "display_query": self.display_query,
             "normalized_query": self.normalized_query,
@@ -223,6 +236,9 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     canonicalized_query = normalize_greeklish_and_typos(normalized_query)
 
     intent = build_local_nlu_intent(raw_query)
+    # Which product the buyer means, however it was spelled: Greek, greeklish, the
+    # wrong keyboard layout, or English with typos.
+    concept_reading = understand_product_query(raw_query)
     adapter = adapt_local_nlu_intent_for_router(intent)
     category_probe = detect_category(canonicalized_query)
     index_result = resolve_query_with_search_index(canonicalized_query)
@@ -282,6 +298,27 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     ):
         status = "general_intent_resolved"
         needs_review = False
+
+    intent_blocked = status == "invalid_intent" or any(
+        marker in str(code).lower()
+        for code in intent.get("reason_codes", [])
+        for marker in ("unsafe", "blocked")
+    )
+    concept_understood = concept_reading.understood and not intent_blocked
+    if concept_understood:
+        # The product concept is understood even where the word-level NLU and the
+        # English search index are not ("ψιγείο", "plintirio", "cygeio"). Its mega
+        # category is the taxonomy category whose product rules apply.
+        if not mega_category_id:
+            mega_category_id = concept_reading.mega_category_id
+        if not canonical_category:
+            canonical_category = concept_reading.concept_id
+        if status not in _CONNECTED_STATUSES:
+            status = "general_intent_resolved"
+        needs_review = False
+        is_ambiguous_or_invalid = False
+        # A query the index judges too broad ("charger": phone, laptop or car?) keeps
+        # its suggestions. Understanding the word does not settle which product.
 
     # No per-category query rewriting: collapsing "power bank 20000mah for iphone" to
     # "power bank" existed only so the manual Amazon matcher would hit, and it threw away
@@ -420,6 +457,7 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
             ):
                 selection = resolve_search_provider_feed_product_selection(
                     query=selection_query,
+                    reading=concept_reading,
                 )
                 expose_selection = recognized_product_search or is_strong_feed_opportunity_selection(
                     selection
@@ -483,7 +521,27 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
                     if feed_opportunity_search and expose_selection:
                         reason_codes.append("provider_feed_opportunity_gate")
 
+    understood_concept_name = None
+    if concept_understood:
+        concept = get_product_concepts_by_id().get(str(concept_reading.concept_id))
+        if concept is not None:
+            greek_query = concept_reading.head_language == "el"
+            understood_concept_name = (
+                concept.greek[0] if greek_query and concept.greek else concept.primary_english
+            )
     return LiveSearchResolution(
+        understood_concept_id=concept_reading.concept_id if concept_understood else None,
+        understood_concept_name=understood_concept_name,
+        understood_by_correction=bool(concept_understood and not concept_reading.exact),
+        understood_specs=tuple(
+            {
+                "value": spec.token,
+                "unit": spec.unit,
+                "spec_field": spec.spec_field or "not_applicable",
+                "typed": spec.source,
+            }
+            for spec in (concept_reading.specs if concept_understood else ())
+        ),
         raw_query=raw_query,
         display_query=display_query,
         normalized_query=normalized_query,

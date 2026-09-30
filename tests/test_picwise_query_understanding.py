@@ -151,12 +151,21 @@ class PrecisionIsPreservedTests(_FeedTestCase):
                 self.assertNotEqual(self._select(query).status, "selected")
 
     def test_a_query_whose_words_point_at_two_families_is_refused(self) -> None:
-        # "battery" matches car batteries and "smartphone" matches mobile phones.
-        # Answering either would mean guessing which product was meant.
-        selection = self._select("smartphone with good battery")
+        # "machine" names no product on its own: it matches coffee machines and
+        # washing machines. Answering with either, or a mix, would be a guess.
+        selection = self._select("machine")
         self.assertEqual(selection.status, "ambiguous_product_family")
         self.assertEqual(selection.selected_products, tuple())
         self.assertTrue(selection.ambiguous_product_families)
+
+    def test_the_product_named_before_with_is_the_one_bought(self) -> None:
+        # "smartphone with good battery" names one product and a wish about it. The
+        # wish cannot be confirmed from feed text, so it is reported, not guessed at,
+        # and "battery" never pulls in car batteries.
+        selection = self._select("smartphone with good battery")
+        self.assertEqual(selection.status, "selected")
+        self.assertEqual(self._families(selection), {"Mobile Phones"})
+        self.assertEqual(set(selection.unmatched_query_terms), {"good", "battery"})
 
 
 class AccessoryProtectionTests(_FeedTestCase):
@@ -279,9 +288,14 @@ class SurfaceStatesWhatItCouldNotMatchTests(_FeedTestCase):
         self.assertNotIn("could not match", query_line)
 
     def test_an_ambiguous_query_asks_for_the_product_name(self) -> None:
-        cards, _query_line, notice = self._page("smartphone with good battery")
+        # "machine" names no product: the page shows no cards and asks for more,
+        # either as the ambiguity notice or as suggestions for a narrower search.
+        cards, _query_line, notice = self._page("machine")
         self.assertEqual(cards, 0)
-        self.assertIn("not sure which product you mean", notice)
+        self.assertTrue(
+            "not sure which product you mean" in notice or "too broad" in notice,
+            notice,
+        )
 
     def test_the_flagship_concept_example_returns_a_decision(self) -> None:
         # The concept's own example and the README's documented demo query.

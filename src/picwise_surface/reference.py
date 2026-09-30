@@ -342,6 +342,11 @@ def render_picwise_reference_surface(
         if display_query.strip():
             if has_live_results and feed_results:
                 query_line = f"Showing 4 selected real products for: {display_query}"
+                understood_name = str(getattr(resolution, "understood_concept_name", "") or "")
+                if understood_name and getattr(resolution, "understood_by_correction", False):
+                    # The query was read through a typo correction. Say what it was
+                    # read as, so a wrong correction is visible instead of silent.
+                    query_line += f"  ·  Understood as: {understood_name}"
                 if unmatched_terms:
                     # Say what PicWise could not filter by. Without this the buyer would
                     # read four products as an answer to their whole request, when part

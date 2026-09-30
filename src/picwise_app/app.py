@@ -178,10 +178,26 @@ class PicwiseLocalApp:
             "revenue_value": MissingDataState.NOT_APPLICABLE.value,
         }
         events: list[dict[str, str]] = [dict(base, event_name="page_impression")]
-        if safe_query:
-            events.append(dict(base, event_name="query_served"))
-
         cards_rendered = provider_feed_cards_will_render(resolution)
+        if safe_query:
+            # What the NLU understood, so queries it could not read -- or read only
+            # through a typo correction -- can be reviewed and taught to the lexicon.
+            # This is the NLU's training signal; see tools/nlu_mistake_report.py.
+            events.append(
+                dict(
+                    base,
+                    event_name="query_served",
+                    understood_concept=str(
+                        getattr(resolution, "understood_concept_id", "") or ""
+                    )
+                    or MissingDataState.UNKNOWN.value,
+                    understood_by_correction=(
+                        "true" if getattr(resolution, "understood_by_correction", False) else "false"
+                    ),
+                    choices_rendered="true" if cards_rendered else "false",
+                )
+            )
+
         if cards_rendered:
             selected = list(getattr(resolution, "provider_feed_selected_products", ()) or ())
             events.append(

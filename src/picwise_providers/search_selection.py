@@ -6,6 +6,13 @@ from typing import Any
 from urllib.parse import urlparse
 
 from picwise_nlu import normalize_query
+from picwise_nlu.concept_understanding import (
+    ConceptReading,
+    annotate_product_concepts,
+    normalize_spec_text,
+    strip_accents_if_needed,
+    understand_product_query,
+)
 
 from .contracts import OfferHealth, ProviderProduct
 from .normalization import extract_merchant_name
@@ -366,9 +373,22 @@ class ProviderProductSelectionResult:
     unmatched_query_terms: tuple[str, ...] = field(default_factory=tuple)
     ambiguous_product_families: tuple[str, ...] = field(default_factory=tuple)
     required_query_terms: tuple[str, ...] = field(default_factory=tuple)
+    # Set when the product the buyer means was understood as a concept. Every selected
+    # product is then an instance of that concept, whatever words the feed uses for it.
+    understood_concept: str = ""
+    # What the buyer asked for, restated in the feed's words: "πλυντηριο 8 κιλα" is
+    # "washing machine 8kg". Recommendation scoring reads this, not the raw query.
+    effective_query: str = ""
+    # The filters (specs, preferences, brands) the selection required every product to
+    # carry. Unlike `required_query_terms` it excludes the product name itself, which
+    # concept membership already guarantees.
+    required_filter_terms: tuple[str, ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "understood_concept": self.understood_concept,
+            "effective_query": self.effective_query,
+            "required_filter_terms": list(self.required_filter_terms),
             "status": self.status,
             "matched_count": self.matched_count,
             "strong_matched_count": self.strong_matched_count,
@@ -593,13 +613,15 @@ def _product_search_fields(product: ProviderProduct) -> dict[str, str]:
     if len(description) > _DESCRIPTION_MAX_LEN:
         description = ""
 
+    # Accents are stripped and "<number> <unit>" is fused ("8 kg" -> "8kg") so feed
+    # text meets the query in the same form the query normalisation produces.
     return {
-        "title": str(product.title or "").strip().lower(),
-        "product_type": product_type.lower(),
-        "category": _build_secondary_category_text(raw, product),
-        "brand": str(product.brand or "").strip().lower(),
-        "keywords": str(raw.get("keywords") or "").strip().lower(),
-        "description": description.lower(),
+        "title": normalize_spec_text(strip_accents_if_needed(str(product.title or "").strip().lower())),
+        "product_type": strip_accents_if_needed(product_type.lower()),
+        "category": strip_accents_if_needed(_build_secondary_category_text(raw, product)),
+        "brand": strip_accents_if_needed(str(product.brand or "").strip().lower()),
+        "keywords": normalize_spec_text(strip_accents_if_needed(str(raw.get("keywords") or "").strip().lower())),
+        "description": strip_accents_if_needed(description.lower()),
     }
 
 
@@ -666,6 +688,7 @@ def _score_product_for_tokens(
     query_seeks_accessory: bool,
     scoring_tokens: tuple[str, ...] | None = None,
     fields: dict[str, str] | None = None,
+    concept_verified: bool = False,
 ) -> tuple[int, int, int, str, str] | None:
     """Rank one product. `tokens` must all match; `scoring_tokens` only add points.
 
@@ -733,7 +756,12 @@ def _score_product_for_tokens(
         query_seeks_accessory=query_seeks_accessory,
         tokens=tokens,
     )
-    if (
+    if concept_verified:
+        # The product is already known to be the kind the buyer asked for. The
+        # word-level type hints exist to establish exactly that, and on a feed that
+        # names its types in Greek they would reject every correct product.
+        type_alignment = max(type_alignment, 0)
+    elif (
         allowed_product_types
         and product_type
         and not _is_weak_product_type(product_type)
@@ -810,16 +838,161 @@ def is_strong_feed_opportunity_selection(
     return selection.strong_matched_count >= safe_max
 
 
+def _product_concepts(product: ProviderProduct, fields: dict[str, str]) -> frozenset[str]:
+    raw = product.raw if isinstance(product.raw, dict) else {}
+    return annotate_product_concepts(
+        str(raw.get("product_type") or ""),
+        fields["category"],
+        str(product.title or ""),
+    )
+
+
+def _unannotated_product_names_concept(fields: dict[str, str], feed_terms: tuple[str, ...]) -> bool:
+    # A product whose feed text names no known concept at all can still be the thing
+    # asked for; it qualifies only if its own text carries the concept's English name.
+    if not feed_terms:
+        return False
+    text = " ".join((fields["title"], fields["product_type"], fields["category"]))
+    return all(term in text for term in feed_terms)
+
+
+def _distinct_product_count(rows: list[tuple[ProviderProduct, dict[str, str]]]) -> int:
+    seen: set[str] = set()
+    for product, _fields in rows:
+        seen.add(
+            str(product.provider_product_id or "").strip()
+            or _normalize_dedupe_title(product.title)
+        )
+    return len(seen)
+
+
+def _select_products_for_concept(
+    reading: ConceptReading,
+    eligible: tuple[ProviderProduct, ...],
+    eligible_fields: tuple[dict[str, str], ...],
+    *,
+    safe_max: int,
+) -> ProviderProductSelectionResult:
+    """Select four instances of the concept the buyer means, then apply their filters.
+
+    The product name is not a text filter here: every candidate is already an instance
+    of the concept, established from its feed type by `annotate_product_concepts`. That
+    is what lets "πλυντηριο", "plintirio" and "washing machine" reach the same products,
+    and what stops a relaxed filter from ever changing the kind of product answered.
+    """
+
+    def members_for(concept_id: str) -> list[tuple[ProviderProduct, dict[str, str]]]:
+        rows = []
+        for product, fields in zip(eligible, eligible_fields):
+            concepts = _product_concepts(product, fields)
+            if concept_id in concepts or (
+                not concepts and _unannotated_product_names_concept(fields, reading.feed_terms)
+            ):
+                rows.append((product, fields))
+        return rows
+
+    concept_id = str(reading.concept_id)
+    unmatched_name_words: tuple[str, ...] = tuple()
+    members = members_for(concept_id)
+    if _distinct_product_count(members) < safe_max and reading.fallback_concept_id:
+        # Too few of the narrower kind ("σκούπα ρομπότ"): answer with the broader kind
+        # it belongs to and say which word of the name could not be honoured.
+        broader_members = members_for(reading.fallback_concept_id)
+        if _distinct_product_count(broader_members) >= safe_max:
+            members = broader_members
+            concept_id = reading.fallback_concept_id
+            unmatched_name_words = reading.fallback_unmatched
+
+    filters = tuple(term for term in reading.filters if term not in _CONNECTIVE_TOKENS)
+    feed_terms = tuple(reading.feed_terms)
+    scoring_tokens = tuple(dict.fromkeys(feed_terms + filters))
+    effective_query = " ".join(scoring_tokens)
+    query_seeks_accessory = _query_seeks_accessory(scoring_tokens, effective_query)
+
+    def display(terms: tuple[str, ...]) -> tuple[str, ...]:
+        # Quote the buyer's own words, not the feed-language filter they became.
+        return tuple(dict.fromkeys(reading.filter_sources.get(term, term) for term in terms))
+
+    def rank_with(required: tuple[str, ...]):
+        rows: list[tuple[tuple[int, int, int, str, str], ProviderProduct]] = []
+        for product, fields in members:
+            ranking = _score_product_for_tokens(
+                product,
+                required,
+                normalized_query=effective_query,
+                query_seeks_accessory=query_seeks_accessory,
+                scoring_tokens=scoring_tokens,
+                fields=fields,
+                concept_verified=True,
+            )
+            if ranking is not None:
+                rows.append((ranking, product))
+        return rows
+
+    required = filters
+    unmatchable: tuple[str, ...] = tuple()
+    ranked = rank_with(required)
+    # How many products carry the whole request, reported when four cannot be shown.
+    strict_count = len(_dedupe_selected_products(ranked))
+    if filters and len(_dedupe_selected_products(ranked)) < safe_max:
+        plan = resolve_query_token_plan(
+            filters,
+            tuple(product for product, _ in members),
+            max_products=safe_max,
+            product_fields=tuple(fields for _, fields in members),
+        )
+        required, unmatchable = plan.required, plan.unmatchable
+        ranked = rank_with(required)
+        if len(_dedupe_selected_products(ranked)) < safe_max:
+            # No filter can be honoured with a full set; the concept alone still can.
+            required, unmatchable = tuple(), filters
+            ranked = rank_with(required)
+
+    unmatched = display(unmatchable) + tuple(reading.judgements) + unmatched_name_words
+    unmatched = tuple(dict.fromkeys(unmatched))
+    ranked.sort(key=lambda row: (-row[0][1], -row[0][2], -row[0][0], row[0][3], row[0][4]))
+    deduped = _dedupe_selected_products(ranked)
+    common = dict(
+        understood_concept=concept_id,
+        effective_query=effective_query,
+        required_filter_terms=required,
+        required_query_terms=feed_terms + required,
+        unmatched_query_terms=unmatched,
+    )
+    if len(deduped) < safe_max:
+        return ProviderProductSelectionResult(
+            status="insufficient_relevant_products",
+            matched_count=strict_count,
+            strong_matched_count=strict_count,
+            selected_products=tuple(),
+            reason_codes=("insufficient_relevant_products", "product_concept_understood"),
+            **common,
+        )
+    return ProviderProductSelectionResult(
+        status="selected",
+        matched_count=len(deduped),
+        # Every one is an instance of the concept and carries every required filter,
+        # which is what "strong" means for a token match.
+        strong_matched_count=len(deduped),
+        selected_products=tuple(deduped[:safe_max]),
+        reason_codes=("provider_feed_products_selected", "product_concept_understood"),
+        **common,
+    )
+
+
 def select_provider_products_for_query(
     query: str,
     products: tuple[ProviderProduct, ...],
     *,
     max_products: int = 4,
+    reading: ConceptReading | None = None,
 ) -> ProviderProductSelectionResult:
     safe_max = max(1, int(max_products))
     normalized_query = normalize_query(str(query or ""))
     tokens = _tokenize_query(query)
-    if not tokens:
+    if reading is None:
+        reading = understand_product_query(str(query or ""))
+    if not tokens and not reading.understood:
         return ProviderProductSelectionResult(
             status="no_query_tokens",
             matched_count=0,
@@ -838,6 +1011,11 @@ def select_provider_products_for_query(
     # Build each product's searchable text once and reuse it for both the reading
     # decision and the scoring below.
     eligible_fields = tuple(_product_search_fields(product) for product in eligible)
+
+    if reading.understood:
+        return _select_products_for_concept(
+            reading, eligible, eligible_fields, safe_max=safe_max
+        )
 
     def rank_with(required: tuple[str, ...]):
         rows: list[tuple[tuple[int, int, int, str, str], ProviderProduct]] = []
@@ -909,15 +1087,36 @@ def select_provider_products_for_query(
             required_query_terms=required_tokens,
         )
 
+    chosen = tuple(deduped[:safe_max])
+    chosen_families = {_product_family(product) for product in chosen}
+    if len(chosen_families) > 1 and "" not in chosen_families:
+        # Without an understood product the words matched several kinds of product
+        # ("machine": coffee machines and washing machines). Four choices of different
+        # kinds are not a decision between alternatives, so ask instead of guessing.
+        return ProviderProductSelectionResult(
+            status="ambiguous_product_family",
+            matched_count=0,
+            strong_matched_count=0,
+            selected_products=tuple(),
+            reason_codes=("ambiguous_product_family",),
+            unmatched_query_terms=token_plan.unmatchable,
+            ambiguous_product_families=tuple(sorted(chosen_families))[:8],
+        )
+
     return ProviderProductSelectionResult(
         status="selected",
         matched_count=matched_count,
         strong_matched_count=strong_matched_count,
-        selected_products=tuple(deduped[:safe_max]),
+        selected_products=chosen,
         reason_codes=("provider_feed_products_selected",),
         unmatched_query_terms=token_plan.unmatchable,
         required_query_terms=required_tokens,
     )
+
+
+def _product_family(product: ProviderProduct) -> str:
+    raw = product.raw if isinstance(product.raw, dict) else {}
+    return " ".join(str(raw.get("product_type") or product.category_text or "").lower().split())
 
 
 @dataclass(frozen=True)
@@ -992,6 +1191,7 @@ def decide_recommended_provider_product(
     selected_products: tuple[ProviderProduct, ...],
     *,
     required_tokens: tuple[str, ...] | None = None,
+    concept_verified: bool = False,
 ) -> ProviderFeedRecommendationDecision:
     """Pick the recommended product from the four already selected.
 
@@ -1020,7 +1220,12 @@ def decide_recommended_provider_product(
         )
 
     query_seeks_accessory = _query_seeks_accessory(tokens, normalized_query)
-    filter_tokens = tuple(required_tokens) if required_tokens else tokens
+    if concept_verified:
+        # The selection already established the kind of product; only its filters,
+        # possibly none, are required here.
+        filter_tokens = tuple(required_tokens or ())
+    else:
+        filter_tokens = tuple(required_tokens) if required_tokens else tokens
     candidates: list[tuple[tuple[Any, ...], ProviderProduct]] = []
 
     for product in selected_products:
@@ -1030,6 +1235,7 @@ def decide_recommended_provider_product(
             normalized_query=normalized_query,
             query_seeks_accessory=query_seeks_accessory,
             scoring_tokens=tokens,
+            concept_verified=concept_verified,
         )
         if ranking is None:
             continue
@@ -1079,6 +1285,8 @@ def decide_recommended_provider_product(
         title_matches=winner_title_matches,
         price_used_as_tie_breaker=price_used_as_tie_breaker,
     )
+    if concept_verified:
+        reason_codes = ("product_concept_match",) + tuple(reason_codes)
     if not reason_codes:
         reason_codes = ("provider_feed_recommendation_selected",)
 
