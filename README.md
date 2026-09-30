@@ -55,6 +55,19 @@ Current status: **local implementation + partial live proof (stage 22 only)**.
 
 - Command: `python -m unittest discover -s tests`
 
+### Search runtime artifact
+
+`src/picwise_search_memory/artifacts/search_runtime_v1.json.gz` is committed and must
+match its fingerprint sources. When it does not, the app silently falls back to building
+the search index live and the first request misses the render target. Rebuild after
+changing vocabulary or taxonomy deep packs:
+
+```bash
+python tools/build_picwise_search_artifact.py
+```
+
+`tests/test_picwise_mission_decision_delivery.py` fails when the artifact is stale.
+
 ### Local provider feed fixture
 
 The real-feed provider pipeline can be run without the operator's private Awin feed:

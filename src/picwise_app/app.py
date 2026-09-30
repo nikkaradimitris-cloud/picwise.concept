@@ -22,6 +22,8 @@ from picwise_search import resolve_live_search, route_search_query
 from picwise_search.live_search_resolver import empty_landing_search_resolution, is_empty_search_query
 from picwise_search.search_warmup import schedule_search_warmup_if_needed
 from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
+from picwise_providers import resolve_card_eligible_provider_feed_product_by_id
+from picwise_providers.normalization import extract_merchant_name, is_valid_http_url
 from picwise_offers import (
     AMAZON_ASSOCIATES_TRACKING_ID,
     MANUAL_AMAZON_AFFILIATE_REGISTRY,
@@ -61,6 +63,7 @@ LOCAL_AVAILABLE_ROUTES = (
     "/picwise-reference",
     "/amazon-affiliate-proof",
     "/out/amazon",
+    "/out/feed",
     "/amazon-launch-check",
     "/amazon-click-proof",
     "/amazon-traffic-protocol",
@@ -86,6 +89,7 @@ class PicwiseLocalApp:
             stage31_controller if stage31_controller is not None else build_default_stage31_runtime_controller()
         )
         self._amazon_outbound_click_events: list[dict[str, str]] = []
+        self._feed_outbound_click_events: list[dict[str, str]] = []
 
     def health_payload(self) -> dict[str, Any]:
         from picwise_search_memory.search_runtime_artifact import get_search_runtime_artifact_status
@@ -102,8 +106,15 @@ class PicwiseLocalApp:
         _ = query
         return render_demo_info_page()
 
-    def root_landing_html(self) -> str:
-        return self.picwise_reference_html("")
+    def root_landing_html(self, query: str = "") -> str:
+        """Render the landing surface, honouring an inbound purchase-intent query.
+
+        The mission requires that a visitor arriving from Google on
+        `/?q=<purchase intent>` sees the decision result immediately instead of an
+        empty search page, so the query is resolved here exactly as on /search.
+        With no query this stays the plain landing page.
+        """
+        return self.picwise_reference_html(query, source_page="search")
 
     def picwise_reference_html(self, query: str = "", *, source_page: str = "search") -> str:
         if is_empty_search_query(query):
@@ -350,6 +361,82 @@ class PicwiseLocalApp:
             "This Amazon option is not currently available through PicWise. "
             "Please return to search results."
         )
+
+    def resolve_outbound_feed_redirect(self, product_id: str) -> dict[str, str] | None:
+        """Resolve a provider-feed product id to a validated redirect target.
+
+        Returns None when the id is unknown or the product is no longer
+        card-eligible, so a stale link cannot send a buyer to an offer PicWise
+        would refuse to show now.
+        """
+        product = resolve_card_eligible_provider_feed_product_by_id(product_id)
+        if product is None:
+            return None
+        target_url = str(product.product_url or "").strip()
+        if not is_valid_http_url(target_url):
+            return None
+        raw = product.raw if isinstance(product.raw, dict) else {}
+        return {
+            "redirect_url": target_url,
+            "provider_key": str(product.provider_key or "").strip() or "unknown",
+            "merchant_name": extract_merchant_name(raw) or "unknown",
+        }
+
+    def record_feed_outbound_click(
+        self,
+        *,
+        product_id: str,
+        query: str,
+        source_page: str,
+        is_recommended: bool | None,
+        provider_key: str,
+        merchant_name: str,
+        redirect_url: str,
+        event_name: str,
+    ) -> dict[str, str]:
+        """Record one real outbound click on a provider-feed card.
+
+        Event names follow docs/TRACKING_EVENTS_SPEC.md. Fields PicWise does not
+        genuinely have are written with the missing-data enum instead of invented
+        values: there is no session or brain/depth context on this route, and no
+        conversion or revenue is ever recorded here.
+        """
+        if is_recommended is None:
+            recommended_field = MissingDataState.UNKNOWN.value
+        else:
+            recommended_field = "true" if is_recommended else "false"
+        event = {
+            "timestamp": datetime.now(timezone.utc)
+            .replace(microsecond=0)
+            .isoformat()
+            .replace("+00:00", "Z"),
+            "event_name": event_name,
+            "choice_id": str(product_id or "").strip() or MissingDataState.UNKNOWN.value,
+            "query": " ".join(str(query or "").split()) or MissingDataState.UNKNOWN.value,
+            "source_page": source_page
+            if source_page in {"search", "results", "landing", "unknown"}
+            else "unknown",
+            "is_recommended": recommended_field,
+            "provider_id": str(provider_key or "").strip() or MissingDataState.UNKNOWN.value,
+            "merchant_name": str(merchant_name or "").strip() or MissingDataState.UNKNOWN.value,
+            "redirect_url": str(redirect_url or "").strip() or MissingDataState.UNKNOWN.value,
+            "session_id": MissingDataState.NOT_CONNECTED.value,
+            "conversion_value": MissingDataState.NOT_APPLICABLE.value,
+            "revenue_value": MissingDataState.NOT_APPLICABLE.value,
+        }
+        self._feed_outbound_click_events.append(event)
+        if len(self._feed_outbound_click_events) > 200:
+            self._feed_outbound_click_events = self._feed_outbound_click_events[-200:]
+        return event
+
+    def get_feed_outbound_click_events(self) -> list[dict[str, str]]:
+        return list(self._feed_outbound_click_events)
+
+    def get_feed_outbound_click_count(self) -> int:
+        return len(self._feed_outbound_click_events)
+
+    def clear_feed_outbound_click_events(self) -> None:
+        self._feed_outbound_click_events = []
 
     def record_amazon_outbound_click(self, *, asin: str, query: str, source_page: str) -> dict[str, str]:
         event = {
@@ -708,7 +795,8 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.OK, self.app.health_payload())
             return
         if parsed.path == "/":
-            html = self.app.root_landing_html()
+            query = parse_qs(parsed.query).get("q", [""])[0]
+            html = self.app.root_landing_html(query)
             self._send_html(HTTPStatus.OK, html)
             return
         if parsed.path == "/demo":
@@ -795,6 +883,75 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             self.app.record_amazon_outbound_click(asin=asin, query=query, source_page=source_page)
             self.send_response(HTTPStatus.FOUND)
             self.send_header("Location", target_url)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        if parsed.path == "/out/feed":
+            params = parse_qs(parsed.query or "")
+            product_id = (params.get("pid") or [""])[0]
+            query = (params.get("q") or [""])[0]
+            source_page = (params.get("src") or ["unknown"])[0]
+            rec_param = (params.get("rec") or [""])[0].strip().lower()
+            is_recommended = (
+                True if rec_param == "1" else False if rec_param == "0" else None
+            )
+            resolved = self.app.resolve_outbound_feed_redirect(product_id)
+            if resolved is None:
+                self.app.record_feed_outbound_click(
+                    product_id=product_id,
+                    query=query,
+                    source_page=source_page,
+                    is_recommended=is_recommended,
+                    provider_key="unknown",
+                    merchant_name="unknown",
+                    redirect_url="",
+                    event_name="redirect_failure",
+                )
+                safe_query = quote(str(query or "").strip(), safe="")
+                back_href = f"/search?q={safe_query}" if safe_query else "/"
+                html = (
+                    "<!doctype html>"
+                    '<html lang="en"><head><meta charset="utf-8">'
+                    '<meta name="viewport" content="width=device-width, initial-scale=1">'
+                    "<title>PicWise Option Unavailable</title>"
+                    "<style>"
+                    "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f9ff;color:#102744;}"
+                    ".pw-wrap{max-width:860px;margin:0 auto;padding:30px 20px;}"
+                    ".pw-card{background:#fff;border:1px solid #dbe8fb;border-radius:14px;padding:18px 20px;box-shadow:0 8px 24px rgba(17,44,91,.08);}"
+                    ".pw-note{margin:10px 0 0;line-height:1.6;color:#355174;}"
+                    ".pw-btn{display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 18px;border-radius:999px;background:#1f6dff;border:1px solid #1f6dff;color:#fff;font-size:14px;font-weight:700;text-decoration:none;margin-top:16px;}"
+                    "</style></head><body><main class=\"pw-wrap\"><section class=\"pw-card\">"
+                    "<h1>This option is no longer available</h1>"
+                    "<p class=\"pw-note\">PicWise could not confirm this offer is still "
+                    "showable, so it will not send you to it. This happens when an offer "
+                    "leaves the provider feed or is no longer in stock.</p>"
+                    f"<a class=\"pw-btn\" href=\"{escape(back_href, quote=True)}\">Back to results</a>"
+                    "</section></main></body></html>"
+                )
+                self._send_html(HTTPStatus.OK, html)
+                return
+            self.app.record_feed_outbound_click(
+                product_id=product_id,
+                query=query,
+                source_page=source_page,
+                is_recommended=is_recommended,
+                provider_key=resolved["provider_key"],
+                merchant_name=resolved["merchant_name"],
+                redirect_url=resolved["redirect_url"],
+                event_name="recommended_click" if is_recommended else "non_recommended_click",
+            )
+            self.app.record_feed_outbound_click(
+                product_id=product_id,
+                query=query,
+                source_page=source_page,
+                is_recommended=is_recommended,
+                provider_key=resolved["provider_key"],
+                merchant_name=resolved["merchant_name"],
+                redirect_url=resolved["redirect_url"],
+                event_name="redirect_success",
+            )
+            self.send_response(HTTPStatus.FOUND)
+            self.send_header("Location", resolved["redirect_url"])
             self.send_header("Content-Length", "0")
             self.end_headers()
             return

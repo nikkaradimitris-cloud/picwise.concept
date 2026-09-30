@@ -13,6 +13,15 @@ from .contracts import PROVIDER_FEED_STATUSES, ProviderFeedConfig, ProviderParse
 from .normalization import normalize_feed_row_to_provider_product
 
 _AWIN_PROVIDER_KEY = "awin"
+# Parsed-feed cache. PROJECT_RULES section 9 caps click-to-redirect at 300ms, but a
+# real provider feed costs hundreds of milliseconds to read, decompress and
+# normalize, and the outbound redirect route has to resolve one product from it on
+# every click. Cache the parse against the file's identity (path, mtime, size) so
+# only a changed file is re-read. Feed URLs are never cached: remote content can
+# change with no local signal. This caches parsing only and changes no decision,
+# eligibility or truth logic.
+_PARSE_CACHE: dict[tuple[str, int, int], ProviderParseResult] = {}
+_PARSE_CACHE_MAX_ENTRIES = 4
 _AWIN_FEED_FILE_ENV = "AWIN_FEED_FILE"
 _AWIN_FEED_URL_ENV = "AWIN_FEED_URL"
 _GZIP_MAGIC = b"\x1f\x8b"
@@ -126,10 +135,40 @@ def _parse_feed_text(text: str) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
         return [], (f"feed_parse_failed:{exc.__class__.__name__}",)
 
 
+def feed_file_cache_key(feed_file: str | None) -> tuple[str, int, int] | None:
+    path = str(feed_file or "").strip()
+    if not path:
+        return None
+    try:
+        stat = os.stat(path)
+    except OSError:
+        return None
+    return (os.path.abspath(path), stat.st_mtime_ns, stat.st_size)
+
+
+def clear_awin_feed_parse_cache() -> None:
+    """Drop the parsed-feed cache. For tests and for forcing a re-read."""
+    _PARSE_CACHE.clear()
+
+
 def load_awin_provider_feed(
     config: ProviderFeedConfig | None = None,
 ) -> ProviderParseResult:
     resolved = config or awin_feed_config_from_env()
+    cache_key = feed_file_cache_key(resolved.feed_file)
+    if cache_key is not None:
+        cached = _PARSE_CACHE.get(cache_key)
+        if cached is not None:
+            return cached
+    parsed = _load_awin_provider_feed_uncached(resolved)
+    if cache_key is not None and parsed.status == "provider_feed_loaded":
+        if len(_PARSE_CACHE) >= _PARSE_CACHE_MAX_ENTRIES:
+            _PARSE_CACHE.clear()
+        _PARSE_CACHE[cache_key] = parsed
+    return parsed
+
+
+def _load_awin_provider_feed_uncached(resolved: ProviderFeedConfig) -> ProviderParseResult:
     if not resolved.is_configured():
         return ProviderParseResult(
             status="provider_feed_not_configured",

@@ -56,8 +56,11 @@ _RECOMMENDATION_CONFIDENCE_BADGE = {
     "weak": "Suggested by PicWise",
     "unknown": "Suggested by PicWise",
 }
-_PROVIDER_STORE_LABELS = {
-    "awin": "Geekbuying via Awin",
+# Affiliate network display names. A provider key names the NETWORK, never the
+# shop: one Awin feed carries many merchants, so the merchant must come from the
+# feed row. Never map a provider key to a single merchant name here.
+_PROVIDER_NETWORK_LABELS = {
+    "awin": "Awin",
 }
 _FEED_DISCLOSURE = (
     "Selected real products from a connected provider feed. "
@@ -158,14 +161,31 @@ def _feed_recommendation_reason_bullets(reason_codes: tuple[str, ...]) -> list[s
     return bullets
 
 
-def _provider_store_label(provider_key: str) -> str:
+def _provider_network_label(provider_key: str) -> str:
     normalized = str(provider_key or "").strip().lower()
-    return _PROVIDER_STORE_LABELS.get(normalized, normalized.replace("_", " ").title() or "Provider feed")
+    return _PROVIDER_NETWORK_LABELS.get(
+        normalized,
+        normalized.replace("_", " ").title() or "Provider feed",
+    )
+
+
+def _provider_store_label(provider_key: str, merchant_name: str = "") -> str:
+    """Build the store line from what the feed actually says.
+
+    With a merchant in the row: "<merchant> via <network>". Without one, name the
+    network alone — inventing a merchant would misattribute the sale.
+    """
+    network = _provider_network_label(provider_key)
+    merchant = " ".join(str(merchant_name or "").split()).strip()
+    if merchant:
+        return f"{merchant} via {network}"
+    return f"{network} provider feed (merchant not named in feed)"
 
 
 def _build_provider_feed_result_cards(
     *,
     resolution: LiveSearchResolution,
+    source_page: str = "search",
 ) -> tuple[list[dict[str, object]], bool, str, str]:
     if not _provider_feed_ui_display_allowed(resolution):
         return ([], False, "", "")
@@ -186,7 +206,10 @@ def _build_provider_feed_result_cards(
         product_id = str(product.get("provider_product_id") or "").strip()
         provider_key = str(product.get("provider_key") or "").strip()
         is_recommended = product_id == recommended_id
-        store_label = _provider_store_label(provider_key)
+        store_label = _provider_store_label(
+            provider_key,
+            str(product.get("merchant_name") or ""),
+        )
         cards.append(
             {
                 "badge": "REAL FEED",
@@ -212,7 +235,15 @@ def _build_provider_feed_result_cards(
                     if is_recommended
                     else ""
                 ),
-                "href": str(product.get("product_url") or "").strip(),
+                # Route the CTA through /out/feed so the click is recorded and the
+                # target is re-validated at click time, instead of linking the raw
+                # product URL and losing the tracking event the contract requires.
+                "href": (
+                    f"/out/feed?pid={quote(product_id, safe='')}"
+                    f"&q={quote(str(resolution.display_query or ''), safe='')}"
+                    f"&src={quote(source_page, safe='')}"
+                    f"&rec={'1' if is_recommended else '0'}"
+                ),
             }
         )
 
@@ -301,6 +332,7 @@ def render_picwise_reference_surface(
         if not has_live_results:
             feed_cards, feed_live, feed_disclosure, feed_safe_note = _build_provider_feed_result_cards(
                 resolution=resolution,
+                source_page=source_page,
             )
             if feed_live:
                 card_specs = feed_cards

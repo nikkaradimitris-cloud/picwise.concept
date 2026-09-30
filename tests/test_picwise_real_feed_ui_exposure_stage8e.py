@@ -305,7 +305,15 @@ class ProviderRealFeedUiExposureRuntimeStage8ETests(unittest.TestCase):
                 if expect_feed_cards:
                     self.assertEqual(card_count, 4, body)
                     self.assertEqual(len(_recommended_titles(body)), 1)
-                    self.assertIn("Geekbuying via Awin", body)
+                    # The store line names the merchant from the feed row plus
+                    # the network. The merchant therefore depends on feed
+                    # content, so assert the network attribution rather than one
+                    # hardcoded shop name.
+                    self.assertIn("Awin", body)
+                    self.assertRegex(
+                        body,
+                        r"(via Awin|Awin provider feed \(merchant not named in feed\))",
+                    )
                 elif query == "power bank":
                     self.assertGreater(card_count, 0)
                     self.assertIn("View on Amazon", body)

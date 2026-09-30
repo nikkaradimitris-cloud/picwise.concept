@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from picwise_nlu import normalize_query
 
 from .contracts import OfferHealth, ProviderProduct
+from .normalization import extract_merchant_name
 from .offer_health import (
     build_feed_availability_context,
     evaluate_product_eligibility,
@@ -227,6 +228,7 @@ def provider_product_to_backend_dict(product: ProviderProduct) -> dict[str, Any]
         "recommendation_confidence": product_eligibility.recommendation_confidence_ceiling,
         "brand": brand or None,
         "currency": currency or None,
+        "merchant_name": extract_merchant_name(raw) or None,
         "verified_purchasable": False,
     }
     if product_type:

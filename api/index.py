@@ -5,7 +5,8 @@ import mimetypes
 import sys
 from pathlib import Path
 from typing import Callable
-from urllib.parse import parse_qs
+from html import escape
+from urllib.parse import parse_qs, quote
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
@@ -79,7 +80,11 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
             return _response("200 OK", content_type, body, start_response)
 
     if path == "/":
-        html = _APP.picwise_reference_html("")
+        # Honour an inbound purchase-intent query: a visitor arriving from Google
+        # on /?q=<intent> must see the decision result, not an empty landing.
+        query_string = str(environ.get("QUERY_STRING", ""))
+        query = parse_qs(query_string).get("q", [""])[0]
+        html = _APP.root_landing_html(query)
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
@@ -187,6 +192,79 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
                 ("Content-Type", "text/plain; charset=utf-8"),
                 ("Content-Length", "0"),
                 ("Location", target_url),
+            ],
+        )
+        return [b""]
+
+    if path == "/out/feed":
+        query_string = str(environ.get("QUERY_STRING", ""))
+        query_params = parse_qs(query_string)
+        product_id = (query_params.get("pid") or [""])[0]
+        query = (query_params.get("q") or [""])[0]
+        source_page = (query_params.get("src") or ["unknown"])[0]
+        rec_param = (query_params.get("rec") or [""])[0].strip().lower()
+        is_recommended = True if rec_param == "1" else False if rec_param == "0" else None
+        resolved = _APP.resolve_outbound_feed_redirect(product_id)
+        if resolved is None:
+            _APP.record_feed_outbound_click(
+                product_id=product_id,
+                query=query,
+                source_page=source_page,
+                is_recommended=is_recommended,
+                provider_key="unknown",
+                merchant_name="unknown",
+                redirect_url="",
+                event_name="redirect_failure",
+            )
+            safe_query = quote(str(query or "").strip(), safe="")
+            back_href = f"/search?q={safe_query}" if safe_query else "/"
+            html = (
+                "<!doctype html>"
+                '<html lang="en"><head><meta charset="utf-8">'
+                '<meta name="viewport" content="width=device-width, initial-scale=1">'
+                "<title>PicWise Option Unavailable</title>"
+                "<style>"
+                "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f9ff;color:#102744;}"
+                ".pw-wrap{max-width:860px;margin:0 auto;padding:30px 20px;}"
+                ".pw-card{background:#fff;border:1px solid #dbe8fb;border-radius:14px;padding:18px 20px;box-shadow:0 8px 24px rgba(17,44,91,.08);}"
+                ".pw-note{margin:10px 0 0;line-height:1.6;color:#355174;}"
+                ".pw-btn{display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 18px;border-radius:999px;background:#1f6dff;border:1px solid #1f6dff;color:#fff;font-size:14px;font-weight:700;text-decoration:none;margin-top:16px;}"
+                "</style></head><body><main class=\"pw-wrap\"><section class=\"pw-card\">"
+                "<h1>This option is no longer available</h1>"
+                "<p class=\"pw-note\">PicWise could not confirm this offer is still "
+                "showable, so it will not send you to it. This happens when an offer "
+                "leaves the provider feed or is no longer in stock.</p>"
+                f"<a class=\"pw-btn\" href=\"{escape(back_href, quote=True)}\">Back to results</a>"
+                "</section></main></body></html>"
+            )
+            body = html.encode("utf-8")
+            return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+        _APP.record_feed_outbound_click(
+            product_id=product_id,
+            query=query,
+            source_page=source_page,
+            is_recommended=is_recommended,
+            provider_key=resolved["provider_key"],
+            merchant_name=resolved["merchant_name"],
+            redirect_url=resolved["redirect_url"],
+            event_name="recommended_click" if is_recommended else "non_recommended_click",
+        )
+        _APP.record_feed_outbound_click(
+            product_id=product_id,
+            query=query,
+            source_page=source_page,
+            is_recommended=is_recommended,
+            provider_key=resolved["provider_key"],
+            merchant_name=resolved["merchant_name"],
+            redirect_url=resolved["redirect_url"],
+            event_name="redirect_success",
+        )
+        start_response(
+            "302 Found",
+            [
+                ("Content-Type", "text/plain; charset=utf-8"),
+                ("Content-Length", "0"),
+                ("Location", resolved["redirect_url"]),
             ],
         )
         return [b""]
