@@ -106,7 +106,10 @@ class PicwisePerformanceStage1BTests(unittest.TestCase):
                 html = self.app.picwise_reference_html("power bank")
         schedule_mock.assert_not_called()
         resolve_mock.assert_called_once_with("power bank")
-        self.assertIn("View on Amazon", html)
+        # Amazon has been removed from the decision path; assert the query was
+        # resolved rather than the CTA that used to prove it.
+        self.assertIn("Detected category:", html)
+        self.assertNotIn("View on Amazon", html)
 
     def test_warmup_failure_does_not_break_search_path(self) -> None:
         with patch(
@@ -123,7 +126,10 @@ class PicwisePerformanceStage1BTests(unittest.TestCase):
         with patch("picwise_app.app.resolve_live_search", wraps=resolve_live_search) as resolve_mock:
             html = self.app.picwise_reference_html("power bank")
         resolve_mock.assert_called_once_with("power bank")
-        self.assertIn("View on Amazon", html)
+        # Amazon has been removed from the decision path; assert the query was
+        # resolved rather than the CTA that used to prove it.
+        self.assertIn("Detected category:", html)
+        self.assertNotIn("View on Amazon", html)
 
 
 if __name__ == "__main__":

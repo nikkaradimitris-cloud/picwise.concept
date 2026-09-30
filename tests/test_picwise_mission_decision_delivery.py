@@ -209,6 +209,82 @@ class TrackedRedirectTests(_FixtureFeedTestCase):
         self.assertIsNone(headers.get("Location"))
 
 
+class ImpressionTrackingTests(_FixtureFeedTestCase):
+    """Decision Contract item 7 covers impression events, not only click and redirect."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        _APP.clear_decision_impression_events()
+        self.addCleanup(_APP.clear_decision_impression_events)
+
+    def _events(self, path: str, query_string: str = "") -> list[dict[str, str]]:
+        _APP.clear_decision_impression_events()
+        _call(path, query_string)
+        return _APP.get_decision_impression_events()
+
+    def _names(self, path: str, query_string: str = "") -> list[str]:
+        return [event["event_name"] for event in self._events(path, query_string)]
+
+    def test_rendered_decision_emits_the_full_impression_set(self) -> None:
+        names = self._names("/search", "q=laptop")
+        for expected in (
+            "page_impression",
+            "query_served",
+            "choices_shown",
+            "recommended_shown",
+        ):
+            self.assertIn(expected, names)
+
+    def test_choices_shown_reports_the_rendered_count_and_provider(self) -> None:
+        events = self._events("/search", "q=laptop")
+        shown = next(e for e in events if e["event_name"] == "choices_shown")
+        self.assertEqual(shown["choice_count"], "4")
+        self.assertEqual(shown["provider_id"], "awin")
+
+    def test_recommended_shown_names_the_rendered_recommendation(self) -> None:
+        events = self._events("/search", "q=laptop")
+        recommended = next(e for e in events if e["event_name"] == "recommended_shown")
+        self.assertTrue(recommended["choice_id"].startswith("fx-"))
+        self.assertTrue(recommended["recommendation_confidence"])
+
+    def test_safe_empty_page_never_claims_choices_were_shown(self) -> None:
+        events = self._events("/search", "q=office+chair")
+        names = [event["event_name"] for event in events]
+        self.assertIn("page_impression", names)
+        self.assertNotIn("recommended_shown", names)
+        shown = next(e for e in events if e["event_name"] == "choices_shown")
+        self.assertEqual(shown["choice_count"], "0")
+
+    def test_landing_without_a_query_emits_no_query_served(self) -> None:
+        names = self._names("/")
+        self.assertIn("page_impression", names)
+        self.assertNotIn("query_served", names)
+        self.assertNotIn("recommended_shown", names)
+
+    def test_impression_events_never_carry_invented_values(self) -> None:
+        for path, query_string in (("/search", "q=laptop"), ("/", "")):
+            with self.subTest(path=path):
+                for event in self._events(path, query_string):
+                    self.assertEqual(event["session_id"], "not_connected")
+                    self.assertEqual(event["conversion_value"], "not_applicable")
+                    self.assertEqual(event["revenue_value"], "not_applicable")
+
+    def test_choices_shown_follows_the_renderer_not_the_backend(self) -> None:
+        # "tv" has a backend selection the surface refuses to render. The event must
+        # report what was shown, so it may not claim choices were shown.
+        from picwise_search.live_search_resolver import resolve_live_search
+        from picwise_surface import provider_feed_cards_will_render
+
+        resolution = resolve_live_search("tv")
+        self.assertFalse(provider_feed_cards_will_render(resolution))
+        events = self._events("/search", "q=tv")
+        shown = next(e for e in events if e["event_name"] == "choices_shown")
+        self.assertEqual(shown["choice_count"], "0")
+        self.assertNotIn(
+            "recommended_shown", [event["event_name"] for event in events]
+        )
+
+
 class FeedCacheCorrectnessTests(unittest.TestCase):
     """The latency caches must never serve offers from a superseded feed."""
 

@@ -34,6 +34,7 @@ from picwise_offers import (
     validate_amazon_affiliate_url,
 )
 from picwise_surface import (
+    provider_feed_cards_will_render,
     render_amazon_affiliate_proof_page,
     render_affiliate_disclosure_page,
     render_branded_not_found_page,
@@ -90,6 +91,7 @@ class PicwiseLocalApp:
         )
         self._amazon_outbound_click_events: list[dict[str, str]] = []
         self._feed_outbound_click_events: list[dict[str, str]] = []
+        self._decision_impression_events: list[dict[str, str]] = []
 
     def health_payload(self) -> dict[str, Any]:
         from picwise_search_memory.search_runtime_artifact import get_search_runtime_artifact_status
@@ -122,6 +124,11 @@ class PicwiseLocalApp:
         else:
             resolution = resolve_live_search(query)
         html = render_picwise_reference_surface(query=query, resolution=resolution, source_page=source_page)
+        self.record_decision_impression(
+            query=query,
+            source_page=source_page,
+            resolution=resolution,
+        )
         if resolution.resolver_state == "broad_query_suggestions":
             html = _inject_broad_query_suggestions(html, resolution)
         if is_empty_search_query(query):
@@ -361,6 +368,101 @@ class PicwiseLocalApp:
             "This Amazon option is not currently available through PicWise. "
             "Please return to search results."
         )
+
+    def record_decision_impression(
+        self,
+        *,
+        query: str,
+        source_page: str,
+        resolution: Any,
+    ) -> list[dict[str, str]]:
+        """Record the impression side of the tracking contract for one rendered page.
+
+        Event names follow docs/TRACKING_EVENTS_SPEC.md. `choices_shown` and
+        `recommended_shown` are emitted only when the surface actually renders the
+        cards, read from the renderer's own gate, so an event never claims choices
+        were shown on a page that refused to show them. Fields PicWise does not have
+        use the missing-data enum rather than invented values, and no conversion or
+        revenue is ever recorded here.
+        """
+        timestamp = (
+            datetime.now(timezone.utc)
+            .replace(microsecond=0)
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
+        safe_source = (
+            source_page
+            if source_page in {"search", "results", "landing", "reference", "unknown"}
+            else "unknown"
+        )
+        safe_query = " ".join(str(query or "").split())
+        base = {
+            "timestamp": timestamp,
+            "query": safe_query or MissingDataState.NOT_APPLICABLE.value,
+            "source_page": safe_source,
+            "resolver_state": str(getattr(resolution, "resolver_state", "") or "")
+            or MissingDataState.UNKNOWN.value,
+            "session_id": MissingDataState.NOT_CONNECTED.value,
+            "conversion_value": MissingDataState.NOT_APPLICABLE.value,
+            "revenue_value": MissingDataState.NOT_APPLICABLE.value,
+        }
+        events: list[dict[str, str]] = [dict(base, event_name="page_impression")]
+        if safe_query:
+            events.append(dict(base, event_name="query_served"))
+
+        cards_rendered = provider_feed_cards_will_render(resolution)
+        if cards_rendered:
+            selected = list(getattr(resolution, "provider_feed_selected_products", ()) or ())
+            events.append(
+                dict(
+                    base,
+                    event_name="choices_shown",
+                    choice_count=str(len(selected)),
+                    provider_id=str(
+                        (selected[0].get("provider_key") if selected else "") or ""
+                    )
+                    or MissingDataState.UNKNOWN.value,
+                )
+            )
+            recommended_id = str(
+                getattr(resolution, "provider_feed_recommended_product_id", "") or ""
+            )
+            if recommended_id:
+                events.append(
+                    dict(
+                        base,
+                        event_name="recommended_shown",
+                        choice_id=recommended_id,
+                        recommendation_confidence=str(
+                            getattr(
+                                resolution, "provider_feed_recommendation_confidence", ""
+                            )
+                            or ""
+                        )
+                        or MissingDataState.UNKNOWN.value,
+                    )
+                )
+        else:
+            events.append(
+                dict(
+                    base,
+                    event_name="choices_shown",
+                    choice_count="0",
+                    provider_id=MissingDataState.NOT_CONNECTED.value,
+                )
+            )
+
+        self._decision_impression_events.extend(events)
+        if len(self._decision_impression_events) > 400:
+            self._decision_impression_events = self._decision_impression_events[-400:]
+        return events
+
+    def get_decision_impression_events(self) -> list[dict[str, str]]:
+        return list(self._decision_impression_events)
+
+    def clear_decision_impression_events(self) -> None:
+        self._decision_impression_events = []
 
     def resolve_outbound_feed_redirect(self, product_id: str) -> dict[str, str] | None:
         """Resolve a provider-feed product id to a validated redirect target.

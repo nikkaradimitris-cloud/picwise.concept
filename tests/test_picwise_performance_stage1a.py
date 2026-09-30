@@ -62,7 +62,12 @@ class PicwisePerformanceStage1ATests(unittest.TestCase):
         with patch("picwise_app.app.resolve_live_search", wraps=resolve_live_search) as resolve_mock:
             html = self.app.picwise_reference_html("power bank")
         resolve_mock.assert_called_once_with("power bank")
-        self.assertIn("View on Amazon", html)
+        # The point of this test is that a non-empty query is resolved rather than
+        # short-circuited. It used to assert the Amazon CTA as a proxy for that;
+        # Amazon has been removed from the decision path, so assert the resolved
+        # surface instead.
+        self.assertIn("Detected category:", html)
+        self.assertNotIn("View on Amazon", html)
 
     def test_shared_registry_cache_returns_equivalent_data(self) -> None:
         import picwise_search.index_resolver_adapter as index_adapter

@@ -23,7 +23,10 @@ from .legal import (
     render_public_footer,
     render_terms_page,
 )
-from .reference import render_picwise_reference_surface
+from .reference import (
+    provider_feed_cards_will_render,
+    render_picwise_reference_surface,
+)
 from .mvp_search_results import render_mvp_search_results_surface
 from .search_results import render_controlled_search_results_page
 from .performance import (
@@ -65,6 +68,7 @@ __all__ = [
     "render_privacy_page",
     "render_public_footer",
     "render_review_safe_landing_page",
+    "provider_feed_cards_will_render",
     "render_picwise_reference_surface",
     "render_terms_page",
     "render_mvp_search_results_surface",

@@ -153,6 +153,22 @@ def _provider_feed_ui_display_allowed(resolution: LiveSearchResolution) -> bool:
     return True
 
 
+def provider_feed_cards_will_render(resolution: LiveSearchResolution) -> bool:
+    """Whether the surface will actually render provider-feed choice cards.
+
+    Exposed so impression tracking can report what was shown rather than what the
+    backend merely selected. Reading the same gate the renderer uses keeps the two
+    from drifting: an event claiming choices were shown when the surface refused to
+    render them would be exactly the kind of overclaim the runtime truth rules forbid.
+    """
+    if not _provider_feed_ui_display_allowed(resolution):
+        return False
+    for product in resolution.provider_feed_selected_products:
+        if _provider_feed_product_blocks_ui(product):
+            return False
+    return True
+
+
 def _feed_recommendation_reason_bullets(reason_codes: tuple[str, ...]) -> list[str]:
     bullets: list[str] = []
     for code in reason_codes:

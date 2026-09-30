@@ -178,8 +178,15 @@ it is used. A price field containing prose such as `was 20.00 now 15.00` would b
 guarded against.
 
 ## Still open
-- **Impression events.** `page_impression`, `choices_shown` and `recommended_shown` are
-  specified but not emitted on the feed path. Only click and redirect are.
+- ~~**Impression events** not emitted.~~ **Done.** `page_impression`, `query_served`,
+  `choices_shown` and `recommended_shown` are now recorded on every decision render, via
+  `PicwiseLocalApp.record_decision_impression()`. `choices_shown` and `recommended_shown`
+  read the renderer's own gate (`provider_feed_cards_will_render`) rather than the backend
+  selection, so an event never claims choices were shown on a page that refused to render
+  them: `tv` has a backend selection the surface withholds, and its event reports
+  `choice_count=0`. A page with no query emits no `query_served`. Missing fields use the
+  enum (`session_id=not_connected`, `conversion_value`/`revenue_value=not_applicable`) and
+  no conversion or revenue is ever recorded.
 - ~~**Product-type coverage** limited to the query-intent map.~~ **This was wrong** and is
   corrected in `docs/picwise_product_type_coverage_matrix.md`: the claim was inferred from
   a fixture that held no printers or headphones, confusing missing inventory with missing
