@@ -55,6 +55,18 @@ Current status: **local implementation + partial live proof (stage 22 only)**.
 
 - Command: `python -m unittest discover -s tests`
 
+### Local provider feed fixture
+
+The real-feed provider pipeline can be run without the operator's private Awin feed:
+
+- Feed: `tests/fixtures/provider_feed_local_test_fixture.csv`
+- Coverage: `python -m unittest tests.test_picwise_provider_feed_local_fixture`
+- Runtime capture: `python tools/runtime_truth_audit.py`
+- Details: `docs/picwise_local_provider_feed_fixture.md`
+
+This fixture is local test data (`local_test_fixture`, `.invalid` URLs only). It is not
+real-feed proof and must not be used to close real feed/affiliate stages.
+
 ## Live Status Honesty
 
 - Primary domain plan remains `picwise.subby.cloud`.

@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "entries": {
+    "https://fixture.example.invalid/products/fixturon-vantage-14": {
+      "purchasability_state": "purchasable",
+      "buy_button_seen": true,
+      "out_of_stock_seen": false,
+      "final_url": "https://fixture.example.invalid/products/fixturon-vantage-14",
+      "http_status": 200,
+      "last_checked_at": "2026-09-30T00:00:00+00:00",
+      "verification_source": "local_test_fixture",
+      "verification_confidence": "high",
+      "cache_key": "https://fixture.example.invalid/products/fixturon-vantage-14",
+      "product_url": "https://fixture.example.invalid/products/fixturon-vantage-14",
+      "checked_at": "2026-09-30T00:00:00+00:00",
+      "verified_purchasable": true
+    },
+    "https://fixture.example.invalid/products/fixturon-vantage-pro-16": {
+      "purchasability_state": "out_of_stock",
+      "buy_button_seen": false,
+      "out_of_stock_seen": true,
+      "final_url": "https://fixture.example.invalid/products/fixturon-vantage-pro-16",
+      "http_status": 200,
+      "last_checked_at": "2026-09-30T00:00:00+00:00",
+      "verification_source": "local_test_fixture",
+      "verification_confidence": "high",
+      "cache_key": "https://fixture.example.invalid/products/fixturon-vantage-pro-16",
+      "product_url": "https://fixture.example.invalid/products/fixturon-vantage-pro-16",
+      "checked_at": "2026-09-30T00:00:00+00:00",
+      "verified_purchasable": false
+    },
+    "https://fixture.example.invalid/products/sampleworks-studio-15": {
+      "purchasability_state": "missing_buy_button",
+      "buy_button_seen": false,
+      "out_of_stock_seen": false,
+      "final_url": "https://fixture.example.invalid/products/sampleworks-studio-15",
+      "http_status": 200,
+      "last_checked_at": "2026-09-30T00:00:00+00:00",
+      "verification_source": "local_test_fixture",
+      "verification_confidence": "high",
+      "cache_key": "https://fixture.example.invalid/products/sampleworks-studio-15",
+      "product_url": "https://fixture.example.invalid/products/sampleworks-studio-15",
+      "checked_at": "2026-09-30T00:00:00+00:00",
+      "verified_purchasable": false,
+      "missing_buy_button": true
+    }
+  }
+}
