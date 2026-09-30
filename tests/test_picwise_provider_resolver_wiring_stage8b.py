@@ -105,14 +105,17 @@ class ProviderResolverWiringStage8BTests(unittest.TestCase):
         finally:
             os.unlink(feed_path)
 
-    def test_manual_amazon_power_banks_regression(self) -> None:
+    def test_power_banks_now_use_the_provider_feed_engine(self) -> None:
+        # Amazon has been removed from the product, so power banks are no longer
+        # intercepted by a manual connected provider: they resolve through the same
+        # provider-feed engine as every other product type.
         resolution = resolve_live_search("power bank")
-        self.assertEqual(resolution.provider_key, "manual_amazon_affiliate")
-        self.assertEqual(resolution.provider_status, "connected")
-        self.assertTrue(resolution.result_allowed)
-        self.assertEqual(resolution.resolver_state, "connected_provider_results")
-        self.assertIsNone(resolution.provider_feed_status)
-
+        self.assertNotEqual(resolution.provider_key, "manual_amazon_affiliate")
+        self.assertEqual(resolution.provider_status, "not_connected")
+        self.assertFalse(resolution.result_allowed)
+        self.assertEqual(
+            resolution.resolver_state, "understood_provider_not_connected"
+        )
     def test_broad_negatives_remain_safe_not_understood(self) -> None:
         for query in ("bank", "insurance", "bots"):
             with self.subTest(query=query):

@@ -195,7 +195,10 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertNotIn("amazon.com/images", lowered)
         self.assertNotIn("class=\"pw-rating-row\"", lowered)
 
-    def test_search_route_renders_main_shell_with_live_manual_result_for_power_bank_query(self) -> None:
+    def test_search_route_renders_main_shell_without_amazon_for_power_bank_query(self) -> None:
+        # Amazon has been removed from the product: power banks resolve through the same
+        # provider-feed engine as every other product type. With no feed configured here
+        # the deployed entrypoint serves the shell plus the safe empty state.
         status, headers, body = _call_wsgi("/search", "q=power%20bank")
         self.assertEqual(status, "200 OK")
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
@@ -203,39 +206,14 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn('form class="pw-search-shell" action="/search" method="get"', body)
         self.assertIn('name="q"', body)
         self.assertIn('value="power bank"', body)
-        self.assertIn("Showing 4 options for: power bank", body)
-        self.assertIn("Safe connected provider mode", body)
-        self.assertEqual(body.count('<article class="pw-card'), 4)
         self.assertIn('class="pw-grid"', body)
         self.assertIn("grid-template-columns:repeat(4,minmax(0,1fr));", body)
         self.assertIn("@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));", body)
-        self.assertNotIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)
-        self.assertNotIn("Portable Charger 5000mAh Compact Power Bank", body)
-        self.assertIn("Geavonyg PowerBanks 20000mAh Portable Charger", body)
-        self.assertIn("Portable Charger 40000mAh Fast Charging Power Bank", body)
-        self.assertIn("Anker Powerbank 25000mAh 165W USB-C Portable Charger", body)
-        self.assertIn("BoxWave Rejuva 30000mAh 65W PD High Capacity Power Bank", body)
-        for asin in ("B0GR1257LT", "B0GH75LWKN", "B0GV9RDLM4", "B0BJMQBNZP"):
-            self.assertIn(f"ASIN: {asin}", body)
-        self.assertNotIn("ASIN: B0FQJH2XSY", body)
-        self.assertNotIn("ASIN: B08K7GHZ3V", body)
-        self.assertEqual(body.count(">View on Amazon<"), 4)
-        hrefs = self._extract_amazon_hrefs(body)
-        self.assertEqual(len(hrefs), 4)
-        self.assertTrue(all(href.startswith("/out/amazon?asin=") for href in hrefs))
-        self.assertTrue(all(("&q=power%20bank" in href) or ("&amp;q=power%20bank" in href) for href in hrefs))
-        self.assertTrue(all(("&src=search" in href) or ("&amp;src=search" in href) for href in hrefs))
-        self.assertTrue(all("B08K7GHZ3V" not in href for href in hrefs))
-        self.assertTrue(all("B0FQJH2XSY" not in href for href in hrefs))
-        self.assertTrue(all("B0F518CRGK" not in href for href in hrefs))
-        self.assertFalse(any("amazon.com" in href for href in hrefs))
-        self.assertIn("As an Amazon Associate I earn from qualifying purchases.", body)
-        self.assertIn(
-            "Prices, availability, ratings, reviews, delivery, and seller terms are shown on Amazon and may change. PicWise does not sell products directly.",
-            body,
-        )
-        self._assert_common_footer_links(body)
-        self.assertNotIn("B0F518CRGK", body)
+        self.assertEqual(body.count('<article class="pw-card'), 0)
+        self.assertIn("pw-empty-state", body)
+        self.assertNotIn("View on Amazon", body)
+        self.assertNotIn("/out/amazon", body)
+        self.assertNotIn("ASIN:", body)
 
     def test_search_route_noisy_queries_show_provider_not_connected_and_no_cards(self) -> None:
         noisy_queries = (
@@ -422,33 +400,17 @@ class DeploymentEntrypointTests(unittest.TestCase):
                 self.assertNotIn(">View on Amazon<", body)
                 self.assertNotIn('class="pw-card"', body)
 
-    def test_results_route_renders_main_shell_with_live_manual_result_for_power_bank_query(self) -> None:
+    def test_results_route_renders_main_shell_without_amazon_for_power_bank_query(self) -> None:
         status, headers, body = _call_wsgi("/results", "q=power%20bank")
         self.assertEqual(status, "200 OK")
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
-        self.assertIn('href="/"', body)
-        self.assertIn('form class="pw-search-shell" action="/search" method="get"', body)
-        self.assertIn('name="q"', body)
         self.assertIn('value="power bank"', body)
-        self.assertIn("Showing 4 options for: power bank", body)
-        self.assertEqual(body.count('<article class="pw-card'), 4)
         self.assertIn('class="pw-grid"', body)
-        for asin in ("B0GR1257LT", "B0GH75LWKN", "B0GV9RDLM4", "B0BJMQBNZP"):
-            self.assertIn(f"ASIN: {asin}", body)
-        self.assertNotIn("ASIN: B0FQJH2XSY", body)
-        self.assertNotIn("ASIN: B08K7GHZ3V", body)
-        self.assertEqual(body.count(">View on Amazon<"), 4)
-        hrefs = self._extract_amazon_hrefs(body)
-        self.assertEqual(len(hrefs), 4)
-        self.assertTrue(all(href.startswith("/out/amazon?asin=") for href in hrefs))
-        self.assertTrue(all(("&q=power%20bank" in href) or ("&amp;q=power%20bank" in href) for href in hrefs))
-        self.assertTrue(all(("&src=results" in href) or ("&amp;src=results" in href) for href in hrefs))
-        self.assertTrue(all("B08K7GHZ3V" not in href for href in hrefs))
-        self.assertTrue(all("B0FQJH2XSY" not in href for href in hrefs))
-        self.assertTrue(all("B0F518CRGK" not in href for href in hrefs))
-        self.assertFalse(any("amazon.com" in href for href in hrefs))
-        self._assert_common_footer_links(body)
-        self.assertNotIn("B0F518CRGK", body)
+        self.assertEqual(body.count('<article class="pw-card'), 0)
+        self.assertIn("pw-empty-state", body)
+        self.assertNotIn("View on Amazon", body)
+        self.assertNotIn("/out/amazon", body)
+        self.assertNotIn("ASIN:", body)
 
     def test_outbound_amazon_redirect_returns_302_with_safe_affiliate_location(self) -> None:
         status, headers, _body = _call_wsgi("/out/amazon", "asin=B0GR1257LT&q=power%20bank")

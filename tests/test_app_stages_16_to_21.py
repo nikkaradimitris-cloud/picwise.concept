@@ -234,73 +234,40 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertNotIn("ASIN:", body)
         self.assertEqual(body.count('<article class="pw-card'), 0)
 
-    def test_search_route_renders_main_shell_and_live_manual_results_for_power_bank_query(self) -> None:
+    def test_search_route_renders_main_shell_without_amazon_for_power_bank_query(self) -> None:
+        # Amazon has been removed from the product, so power banks no longer take a
+        # manual connected-provider path. With no provider feed configured for this
+        # server, the route renders the shell plus the safe empty state. The feed's
+        # 4+1 behaviour for power banks is covered by the coverage-matrix tests, which
+        # configure a fixture feed.
         body = self._fetch("/search?q=power%20bank")
         self.assertIn('href="/"', body)
         self.assertIn('form class="pw-search-shell" action="/search" method="get"', body)
         self.assertIn('name="q"', body)
         self.assertIn('value="power bank"', body)
-        self.assertIn("Showing 4 options for: power bank", body)
-        self.assertIn("Safe connected provider mode", body)
-        self.assertEqual(body.count('<article class="pw-card'), 4)
         self.assertIn('class="pw-grid"', body)
         self.assertIn("grid-template-columns:repeat(4,minmax(0,1fr));", body)
         self.assertIn("@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));", body)
         self.assertIn("@media (max-width:640px){", body)
-        self.assertEqual(body.count('<article class="pw-card'), 4)
-        self.assertNotIn("INIU Portable Charger 10500mAh Fast Charging Power Bank", body)
-        self.assertNotIn("Portable Charger 5000mAh Compact Power Bank", body)
-        self.assertIn("Geavonyg PowerBanks 20000mAh Portable Charger", body)
-        self.assertIn("Portable Charger 40000mAh Fast Charging Power Bank", body)
-        self.assertIn("Anker Powerbank 25000mAh 165W USB-C Portable Charger", body)
-        self.assertIn("BoxWave Rejuva 30000mAh 65W PD High Capacity Power Bank", body)
-        for asin in ("B0GR1257LT", "B0GH75LWKN", "B0GV9RDLM4", "B0BJMQBNZP"):
-            self.assertIn(f"ASIN: {asin}", body)
-        self.assertNotIn("ASIN: B0FQJH2XSY", body)
-        self.assertNotIn("ASIN: B08K7GHZ3V", body)
-        self.assertEqual(body.count(">View on Amazon<"), 4)
-        hrefs = self._extract_amazon_hrefs(body)
-        self.assertEqual(len(hrefs), 4)
-        self.assertTrue(all(href.startswith("/out/amazon?asin=") for href in hrefs))
-        self.assertTrue(all(("&q=power%20bank" in href) or ("&amp;q=power%20bank" in href) for href in hrefs))
-        self.assertTrue(all(("&src=search" in href) or ("&amp;src=search" in href) for href in hrefs))
-        self.assertTrue(all("B08K7GHZ3V" not in href for href in hrefs))
-        self.assertTrue(all("B0FQJH2XSY" not in href for href in hrefs))
-        self.assertTrue(all("B0F518CRGK" not in href for href in hrefs))
-        self.assertFalse(any("amazon.com" in href for href in hrefs))
-        self.assertIn("As an Amazon Associate I earn from qualifying purchases.", body)
-        self.assertIn(
-            "Prices, availability, ratings, reviews, delivery, and seller terms are shown on Amazon and may change. PicWise does not sell products directly.",
-            body,
-        )
+        self.assertEqual(body.count('<article class="pw-card'), 0)
+        self.assertIn("pw-empty-state", body)
+        self.assertNotIn("View on Amazon", body)
+        self.assertNotIn("/out/amazon", body)
+        self.assertNotIn("ASIN:", body)
         self._assert_common_footer_links(body)
-        self.assertNotIn("B0F518CRGK", body)
 
-    def test_results_route_renders_main_shell_and_live_manual_results_for_power_bank_query(self) -> None:
+    def test_results_route_renders_main_shell_without_amazon_for_power_bank_query(self) -> None:
         body = self._fetch("/results?q=power%20bank")
         self.assertIn('href="/"', body)
         self.assertIn('form class="pw-search-shell" action="/search" method="get"', body)
-        self.assertIn('name="q"', body)
         self.assertIn('value="power bank"', body)
-        self.assertIn("Showing 4 options for: power bank", body)
-        self.assertEqual(body.count('<article class="pw-card'), 4)
         self.assertIn('class="pw-grid"', body)
-        for asin in ("B0GR1257LT", "B0GH75LWKN", "B0GV9RDLM4", "B0BJMQBNZP"):
-            self.assertIn(f"ASIN: {asin}", body)
-        self.assertNotIn("ASIN: B0FQJH2XSY", body)
-        self.assertNotIn("ASIN: B08K7GHZ3V", body)
-        self.assertEqual(body.count(">View on Amazon<"), 4)
-        hrefs = self._extract_amazon_hrefs(body)
-        self.assertEqual(len(hrefs), 4)
-        self.assertTrue(all(href.startswith("/out/amazon?asin=") for href in hrefs))
-        self.assertTrue(all(("&q=power%20bank" in href) or ("&amp;q=power%20bank" in href) for href in hrefs))
-        self.assertTrue(all(("&src=results" in href) or ("&amp;src=results" in href) for href in hrefs))
-        self.assertTrue(all("B08K7GHZ3V" not in href for href in hrefs))
-        self.assertTrue(all("B0FQJH2XSY" not in href for href in hrefs))
-        self.assertTrue(all("B0F518CRGK" not in href for href in hrefs))
-        self.assertFalse(any("amazon.com" in href for href in hrefs))
+        self.assertEqual(body.count('<article class="pw-card'), 0)
+        self.assertIn("pw-empty-state", body)
+        self.assertNotIn("View on Amazon", body)
+        self.assertNotIn("/out/amazon", body)
+        self.assertNotIn("ASIN:", body)
         self._assert_common_footer_links(body)
-        self.assertNotIn("B0F518CRGK", body)
 
     def test_outbound_amazon_redirect_returns_expected_location(self) -> None:
         from urllib.error import HTTPError

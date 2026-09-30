@@ -32,7 +32,8 @@ This is what `docs/picwise_runtime_truth_audit_rules.md` asks for when it says e
 queries are canaries only and do not prove generic product-type intelligence. It proves
 capability given inventory. It proves nothing about what a real feed contains.
 
-Result: **26 of 27 product types deliver 4+1**, spanning all 18 mega categories.
+Result: **27 of 28 product types deliver 4+1**, spanning all 18 mega categories
+(`power bank` joined the matrix once Amazon stopped intercepting it).
 
 ## What the matrix found
 
@@ -71,7 +72,14 @@ Fix: when products are not exposed, the decision is reported as
 asserts across every matrix query that a reported `recommended` always has products behind
 it.
 
-### 3. The Amazon path renders four choices and no recommendation
+### 3. The Amazon path rendered four choices and no recommendation — now removed
+
+**Resolved by an operator decision: Amazon is no longer part of the product.** The manual
+Amazon layer was a marketplace test; the partnership is with Awin. Power banks now resolve
+through the same provider-feed engine as every other product type, which supplies the
+recommendation the contract requires. The original finding is kept below for the record.
+
+#### Original finding
 
 `power bank` is the one query routed to the manually curated Amazon path rather than the
 provider feed. That path renders four cards with `recommended: False` on every one, so it
@@ -79,19 +87,20 @@ delivers **4 choices and 0 recommended**, breaking Decision Contract item 2 (exa
 recommended choice). It is the flagship demo query, so this is the most visible instance
 of the violation.
 
-It is **not fixed here**, deliberately. The manual records carry a title, a `slot_label`
-and an ASIN — no price, no rating, no verification — so no fact in the data can select one
-of the four, and PROJECT_RULES section 4 forbids inventing the criterion. Picking the
-recommended option among four real products is an editorial decision for the operator.
+The manual records carry a title, a `slot_label` and an ASIN — no price, no rating, no
+verification — so no fact in the data could select one of the four, and PROJECT_RULES
+section 4 forbids inventing the criterion. It was recorded as a gap needing an editorial
+decision.
 
-The mechanism that would close it: an operator-set recommended flag plus a reason on the
-manual registry record, rendered as the single recommendation. The choice itself has to
-come from the operator.
+#### How it was closed
 
-`tests/test_picwise_product_type_coverage_matrix.py` asserts the current
-non-compliant state so it cannot regress silently or be forgotten. When the operator
-supplies the recommended slot, that test should be changed to require exactly one, not
-deleted.
+The operator's answer was to remove Amazon rather than curate a recommendation for it.
+See `docs/picwise_amazon_removed_from_decision_path.md`.
+
+`power bank` is now an ordinary row in the coverage matrix: four cards, one
+recommendation, from the feed. `AmazonRemovedFromDecisionPathTests` asserts that no query
+in the matrix renders an Amazon CTA and that no category maps to a manual Amazon
+provider.
 
 ## Remaining gap: `tv`
 

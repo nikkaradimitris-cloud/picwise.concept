@@ -32,9 +32,13 @@ from picwise_providers.state import (
 from .index_resolver_adapter import get_cached_offline_search_index, resolve_query_with_search_index
 
 
-_CONNECTED_PROVIDER_BY_CATEGORY = {
-    "power_banks": "manual_amazon_affiliate",
-}
+# Categories served by a manually connected provider instead of the provider feed.
+# Amazon is no longer part of the product, so this is empty: every purchase-intent
+# query, power banks included, now resolves through the same provider-feed engine as
+# every other product type. The mapping is kept rather than deleted so a future
+# manually connected provider has a place to register, and so the generic gates below
+# keep their shape.
+_CONNECTED_PROVIDER_BY_CATEGORY: dict[str, str] = {}
 
 _CONNECTED_STATUSES = {
     "intent_resolved",
@@ -271,8 +275,14 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
         status = "general_intent_resolved"
         needs_review = False
 
-    canonical_query = "power bank" if canonical_category == "power_banks" else (
-        (index_result.canonical_term or canonicalized_query or normalized_query or _normalized_text(raw_query).lower())
+    # No per-category query rewriting: collapsing "power bank 20000mah for iphone" to
+    # "power bank" existed only so the manual Amazon matcher would hit, and it threw away
+    # the tokens the feed selection needs to tell the four choices apart.
+    canonical_query = (
+        index_result.canonical_term
+        or canonicalized_query
+        or normalized_query
+        or _normalized_text(raw_query).lower()
     )
 
     provider_lookup_key = str(lower_level_provider_category or canonical_category or "")

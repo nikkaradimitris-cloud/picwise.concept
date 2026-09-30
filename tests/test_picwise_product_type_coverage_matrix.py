@@ -45,6 +45,7 @@ COVERAGE_MATRIX: tuple[tuple[str, str, str], ...] = (
     ("furniture_living_storage_smart_home", "Office & Computer Chairs", "office chair"),
     ("furniture_living_storage_smart_home", "Desks", "desk"),
     ("phones_mobile_accessories", "Mobile Phones", "smartphone"),
+    ("phones_mobile_accessories", "Power Banks", "power bank"),
     ("computers_office_peripherals", "Keyboards", "keyboard"),
     ("computers_office_peripherals", "Webcams", "webcam"),
     ("computers_office_peripherals", "Toner Cartridges", "toner cartridge"),
@@ -75,14 +76,6 @@ KNOWN_VOCABULARY_GAPS: tuple[tuple[str, str], ...] = (
     ("audio_video_gaming_cameras", "tv"),
 )
 
-# "power bank" is the one query routed to the manually curated Amazon path instead of the
-# provider feed, and that path renders four choices with NO recommendation, which breaks
-# Decision Contract item 2 (exactly one recommended choice). The manual records carry a
-# title, a slot label and an ASIN but no price, rating or verification, so no fact in the
-# data can select one of the four. Choosing one is an editorial decision for the operator,
-# and PROJECT_RULES section 4 forbids inventing the criterion, so the gap is asserted here
-# to keep it visible instead of being silently wrong.
-AMAZON_PATH_QUERY_WITHOUT_RECOMMENDATION = "power bank"
 
 
 def _render(query: str) -> str:
@@ -221,30 +214,35 @@ class WithheldRecommendationTests(_CoverageFixtureTestCase):
                     )
 
 
-class AmazonPathRecommendationGapTests(_CoverageFixtureTestCase):
-    """Records the Amazon path's missing recommendation so it cannot be forgotten."""
+class AmazonRemovedFromDecisionPathTests(_CoverageFixtureTestCase):
+    """Amazon has been removed from the product.
 
-    def test_amazon_path_renders_four_choices(self) -> None:
-        body = _render(AMAZON_PATH_QUERY_WITHOUT_RECOMMENDATION)
+    The manually curated Amazon path used to intercept power-bank queries and render
+    four choices with no recommendation, breaking Decision Contract item 2. Power banks
+    now resolve through the same provider-feed engine as everything else, which supplies
+    the recommendation the contract requires.
+    """
+
+    def test_power_bank_is_served_by_the_feed_with_one_recommendation(self) -> None:
+        body = _render("power bank")
         self.assertEqual(_card_count(body), 4)
+        self.assertEqual(_recommended_count(body), 1)
 
-    def test_amazon_path_still_has_no_recommendation(self) -> None:
-        body = _render(AMAZON_PATH_QUERY_WITHOUT_RECOMMENDATION)
-        # Decision Contract item 2 requires exactly one. This asserts the known
-        # violation: when the operator supplies the recommended slot, this test should
-        # be changed to require exactly 1, not deleted.
-        self.assertEqual(
-            _recommended_count(body),
-            0,
-            msg=(
-                "the Amazon path now marks a recommendation; update this test to "
-                "require exactly one and close the documented contract gap"
-            ),
+    def test_no_query_in_the_matrix_renders_an_amazon_cta(self) -> None:
+        queries = [query for _m, _t, query in COVERAGE_MATRIX]
+        queries.extend(query for _m, query in KNOWN_VOCABULARY_GAPS)
+        for query in queries:
+            with self.subTest(query=query):
+                body = _render(query)
+                self.assertNotIn("View on Amazon", body)
+                self.assertNotIn("/out/amazon", body)
+
+    def test_no_category_is_routed_to_a_manual_amazon_provider(self) -> None:
+        from picwise_search.live_search_resolver import _CONNECTED_PROVIDER_BY_CATEGORY
+
+        self.assertNotIn(
+            "manual_amazon_affiliate", set(_CONNECTED_PROVIDER_BY_CATEGORY.values())
         )
-
-    def test_amazon_path_never_fakes_a_rating_or_review(self) -> None:
-        body = _render(AMAZON_PATH_QUERY_WITHOUT_RECOMMENDATION)
-        self.assertNotIn('class="pw-rating-row"', body)
 
 
 class IntentMapDoesNotOverrideFeedTypeTests(_CoverageFixtureTestCase):
