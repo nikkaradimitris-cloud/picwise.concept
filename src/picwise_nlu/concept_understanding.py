@@ -532,11 +532,11 @@ def _token_candidates(token: str, *, fuzzy: bool = True) -> dict[tuple[str, str]
     candidates: dict[tuple[str, str], float] = {}
     limit = _max_distance(len(token)) if fuzzy else 0
 
-    def offer(kind: str, key: str, bias: float) -> None:
+    def offer(kind: str, key: str, bias: float, exact_key_cost: float = 0.0) -> None:
         if not key:
             return
         for word, distance in lexicon.fuzzy[kind].lookup(key, limit).items():
-            cost = distance + bias
+            cost = (distance or exact_key_cost) + bias
             identity = (kind, word)
             if cost < candidates.get(identity, 99.0):
                 candidates[identity] = cost
@@ -549,7 +549,12 @@ def _token_candidates(token: str, *, fuzzy: bool = True) -> dict[tuple[str, str]
         offer("en", greek_key(token), 0.2)
     else:
         # Sharing a key without sharing the spelling is a correction, not a match.
-        offer("en", english_key(token), 0.0 if token in lexicon.english_spellings else 0.5)
+        offer(
+            "en",
+            english_key(token),
+            0.0,
+            exact_key_cost=0.0 if token in lexicon.english_spellings else 0.5,
+        )
         offer("el", greeklish_key(token), 0.1)
         # Greeklish letters with two habits: x is χ to most people and ξ to some
         # ("exoteriki"); h is η by shape and χ by sound.
