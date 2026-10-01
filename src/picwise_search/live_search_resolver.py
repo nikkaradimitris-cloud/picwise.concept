@@ -534,10 +534,11 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     if (
         not concept_understood
         and not provider_feed_selected_products
-        and not offer_broad_suggestions
-        and resolver_state != "blocked_or_unsafe"
+        and resolver_state == "not_understood"
         and _normalized_text(raw_query)
     ):
+        # Only when nothing else understood the search either: the index may have
+        # recognised it ("cordless dril") where the concept lexicon did not.
         did_you_mean = suggest_product_names(raw_query)
     understood_concept_name = None
     if concept_understood:

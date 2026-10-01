@@ -177,14 +177,38 @@ python tools/nlu_misspelling_benchmark.py
 products are titled and typed in Greek, because Greek merchants' feeds are. Fictional
 brands, `.invalid` URLs, `data_provenance=local_test_fixture`.
 
+## Follow-up (same week)
+
+- **"Did you mean"**: a search nothing understood gets links to ask about
+  (`dsk` -> desk, `τοερ` -> τόνερ, `ακοσυτικα` -> ακουστικά or αποσμητικό). Suggestions
+  may use corrections too uncertain to act on, because a suggestion is a question, not an
+  answer. None for everyday or non-retail words, and none when the search index already
+  understood the query.
+- **"2 of 4"**: a filter some but not all of the four carry is stated as
+  "Only some of the four match: 8 κιλα (2 of 4)" -- those products rank first -- instead
+  of "could not match".
+- **Accessories**: feed products that belong with a product ("Washing Machine
+  Accessories", "Coffee Machine Filter", "Φίλτρο καφετιέρας") are never annotated as the
+  product itself. The accessory word's position decides: after the product name in
+  English, before it in Greek, so "Filter Coffee Machine" and "Καφετιέρα φίλτρου" stay
+  coffee machines.
+- **Lexicon**: 278 concepts (58 added: tablets, PC components, grills, garden
+  furniture, pools, bed linen, towels, toys, baby feeding, beauty...). `tablet` and
+  `dishwasher tablets` are separate concepts so they never mix.
+- **Awin feed URL**: see `docs/awin_feed_setup_el.md`. Downloaded once and reused for 6
+  hours, previous copy served up to 24 hours if a refresh fails, URL never written out.
+  `tools/check_awin_feed.py` reports what a real feed will do on the site.
+
+Benchmark after the follow-up: 96.0% pass, 0 wrong answers (one case more is refused:
+`ακοσυτικα` is equally close to two products and now gets a "did you mean" instead).
+
 ## Still open
 
-- Short words with a typo are refused rather than guessed. A "did you mean" suggestion
-  would recover them without risking a wrong answer.
-- A filter satisfied by some but not all four products is reported as not matched, even
-  though the products carrying it rank first. The wording could say "2 of 4".
-- The lexicon covers 220 kinds of product. Real traffic will show which are missing;
-  that is what the training loop is for.
-- The word-level NLU (`build_local_nlu_intent`) still reports Greek queries as
-  `insufficient_data`; the resolver now takes the concept reading instead, but the two
-  NLU layers are not yet merged into one.
+- No real feed has been connected yet: everything above is measured on local fixtures.
+  The first run of `tools/check_awin_feed.py` on the real feed will show which feed
+  product types the lexicon does not yet recognise.
+- On a serverless host every cold start downloads the feed once. A large feed makes
+  the first search after a cold start slow; a prebuilt eligible-product artifact would
+  remove that.
+- The word-level NLU (`build_local_nlu_intent`) and the concept reading are still two
+  layers; the resolver takes the concept reading when the word-level one has nothing.

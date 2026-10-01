@@ -855,6 +855,9 @@ def suggest_product_names(query: str, *, limit: int = 3) -> tuple[str, ...]:
     tokens = tuple(normalize_understanding_text(query).split())
     if not tokens or understand_product_query(query).understood:
         return tuple()
+    if any(token in _NON_RETAIL_WORDS for token in tokens):
+        # "car insurance" is not a misspelled car product.
+        return tuple()
     lexicon = _lexicon()
     candidates: list[dict[tuple[str, str], float]] = []
     for token in tokens:

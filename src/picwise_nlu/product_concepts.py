@@ -295,7 +295,7 @@ ups|CO||ups,uninterruptible power supply|ups αδιάλειπτης παροχή
 smart_speaker|AV||smart speaker,smart speakers|έξυπνο ηχείο
 drone|AV||drone,drones|ντρόουν
 vr_headset|AV||vr headset,vr headsets,virtual reality headset|γυαλιά εικονικής πραγματικότητας
-tv_box|AV||tv box,android tv box,streaming device|tv box
+tv_box|AV||tv box,tv boxes,android tv box,android tv boxes,streaming device|tv box
 car_charger|PH|phone_charger|car charger,car chargers|φορτιστής αυτοκινήτου
 selfie_stick|PH||selfie stick,tripod|μπαστούνι selfie,τρίποδο
 car_audio|TY||car stereo,car radio,car speakers|ηχοσύστημα αυτοκινήτου,ράδιο αυτοκινήτου
