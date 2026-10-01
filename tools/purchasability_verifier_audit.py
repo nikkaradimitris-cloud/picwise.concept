@@ -38,7 +38,25 @@ from picwise_providers.state import (  # noqa: E402
 _DEFAULT_FEED = Path(
     r"C:\Users\User\Desktop\picwise-private-feeds\back_to_office_clean_full_columns.csv.gz"
 )
+_LOCAL_FIXTURE_FEED = ROOT / "tests" / "fixtures" / "provider_feed_local_test_fixture.csv"
 _DEFAULT_LIMIT = 4
+
+
+def resolve_feed_source() -> tuple[str, str]:
+    """Return (feed_path, feed_source_kind). See tools/runtime_truth_audit.py."""
+    env_feed = str(os.environ.get("AWIN_FEED_FILE") or "").strip()
+    if env_feed:
+        kind = (
+            "local_test_fixture"
+            if Path(env_feed).resolve() == _LOCAL_FIXTURE_FEED.resolve()
+            else "env_configured_feed"
+        )
+        return env_feed, kind
+    if _DEFAULT_FEED.is_file():
+        return str(_DEFAULT_FEED), "operator_private_feed"
+    if _LOCAL_FIXTURE_FEED.is_file():
+        return str(_LOCAL_FIXTURE_FEED), "local_test_fixture"
+    return "", "no_feed_available"
 
 
 def _truth_row_from_verified(product_dict: dict, *, cache_written: bool = False) -> dict:
@@ -132,8 +150,28 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if not os.environ.get("AWIN_FEED_FILE") and _DEFAULT_FEED.is_file():
-        os.environ["AWIN_FEED_FILE"] = str(_DEFAULT_FEED)
+    feed_path, feed_source_kind = resolve_feed_source()
+    if feed_path:
+        os.environ["AWIN_FEED_FILE"] = feed_path
+
+    if feed_source_kind in {"local_test_fixture", "no_feed_available"}:
+        print(
+            json.dumps(
+                {
+                    "feed_source_kind": feed_source_kind,
+                    "page_verification": "skipped",
+                    "reason": "page_verification_requires_a_real_provider_feed",
+                    "note": (
+                        "Local fixture URLs are unreachable by design, so fetching them "
+                        "would produce meaningless purchasability states. Set "
+                        "AWIN_FEED_FILE to a real provider feed to run this audit."
+                    ),
+                },
+                indent=2,
+                ensure_ascii=False,
+            )
+        )
+        return
 
     safe_limit = max(0, min(int(args.limit), 20))
     cache_path = str(args.cache_file or "").strip()
@@ -146,6 +184,7 @@ def main() -> None:
         cache=cache,
         cache_path=cache_path or None,
     )
+    result["feed_source_kind"] = feed_source_kind
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
 

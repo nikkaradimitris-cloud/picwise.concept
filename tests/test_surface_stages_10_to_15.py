@@ -178,7 +178,7 @@ class LandingUiTests(unittest.TestCase):
             root_html,
         )
         self.assertIn(
-            "Provider and affiliate integrations are being configured. Demo product listings are previews only and are not live Amazon offers.",
+            "Provider and affiliate integrations are being configured. Demo product listings are previews only and are not live provider offers.",
             root_html,
         )
         self.assertIn(
@@ -197,7 +197,7 @@ class LandingUiTests(unittest.TestCase):
         self.assertIn(">Search<", root_html)
         self.assertIn("Try the current demo search:", root_html)
         self.assertIn(
-            "Demo results use approved manual Amazon affiliate links where configured.",
+            "Demo results are previews only and carry no live affiliate links.",
             root_html,
         )
         self.assertNotIn("View demo", root_html)
@@ -343,7 +343,8 @@ class LandingUiTests(unittest.TestCase):
         self.assertIn("consent", cookies.lower())
         self.assertIn("affiliate", cookies.lower())
 
-        self.assertIn("As an Amazon Associate I earn from qualifying purchases.", affiliate)
+        self.assertIn("PicWise works with the Awin affiliate network", affiliate)
+        self.assertNotIn("Amazon", affiliate)
         self.assertIn("Linkwise", affiliate)
         self.assertIn("SaaS", affiliate)
         self.assertIn("finance", affiliate.lower())

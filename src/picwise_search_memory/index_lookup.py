@@ -84,7 +84,7 @@ def _token_overlap(a: str, b: str) -> float:
     for token in a_tokens:
         best = 0.0
         for candidate in b_tokens:
-            distance = _levenshtein_distance(token, candidate)
+            distance = _bounded_levenshtein_distance(token, candidate, _PER_TOKEN_DISTANCE_CAP)
             if distance > _PER_TOKEN_DISTANCE_CAP:
                 continue
             max_len = max(len(token), len(candidate), 1)
@@ -117,6 +117,40 @@ def _levenshtein_distance(a: str, b: str) -> int:
     return previous[-1]
 
 
+@lru_cache(maxsize=200000)
+def _bounded_levenshtein_distance(a: str, b: str, limit: int) -> int:
+    """`_levenshtein_distance`, but stops once the distance is known to exceed `limit`.
+
+    Every caller only acts on distances up to a cap, so any value above it can be
+    reported as `limit + 1` without changing a result. Stopping early is what keeps the
+    index scan inside the PROJECT_RULES section 9 render budget: the full distance
+    matrix over tens of thousands of index entries cost seconds per multi-word query.
+    """
+    if a == b:
+        return 0
+    if abs(len(a) - len(b)) > limit:
+        return limit + 1
+    if not a or not b:
+        return max(len(a), len(b))
+    previous = list(range(len(b) + 1))
+    for i, ca in enumerate(a, start=1):
+        current = [i]
+        row_min = i
+        for j, cb in enumerate(b, start=1):
+            value = min(
+                current[j - 1] + 1,
+                previous[j] + 1,
+                previous[j - 1] + (0 if ca == cb else 1),
+            )
+            current.append(value)
+            if value < row_min:
+                row_min = value
+        if row_min > limit:
+            return limit + 1
+        previous = current
+    return previous[-1] if previous[-1] <= limit else limit + 1
+
+
 def _to_confidence(score: float) -> str:
     if score >= _HIGH_CONFIDENCE_THRESHOLD:
         return "high"
@@ -131,10 +165,10 @@ def _score_candidate(query: str, entry: SearchIndexEntry) -> _ScoredCandidate | 
     normalized_variant = entry.normalized_variant
     query_joined = query.replace(" ", "")
     variant_joined = normalized_variant.replace(" ", "")
-    distance = _levenshtein_distance(query_joined, variant_joined)
     allowed_distance = _MAX_CANDIDATE_DISTANCE
     if len(query_joined) >= 10 and len(variant_joined) >= 10:
         allowed_distance = 4
+    distance = _bounded_levenshtein_distance(query_joined, variant_joined, allowed_distance)
     if distance > allowed_distance and query_joined != variant_joined:
         return None
 
@@ -167,7 +201,7 @@ def _canonical_term_similarity(normalized_query: str, entry: SearchIndexEntry) -
     query_joined = normalized_query.replace(" ", "")
     canonical_joined = entry.normalized_term.replace(" ", "")
     max_len = max(len(query_joined), len(canonical_joined), 1)
-    distance = _levenshtein_distance(query_joined, canonical_joined)
+    distance = _bounded_levenshtein_distance(query_joined, canonical_joined, 4)
     if distance > 4:
         return 0.0
     return 1.0 - (distance / max_len)

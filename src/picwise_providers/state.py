@@ -2,8 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
+from picwise_nlu.concept_understanding import ConceptReading
 
-from .awin_adapter import awin_feed_config_from_env, load_awin_provider_feed
+from .awin_adapter import (
+    awin_feed_config_from_env,
+    feed_file_cache_key,
+    load_awin_provider_feed,
+)
 from .contracts import (
     PROVIDER_FEED_STATUSES,
     ProviderEligibilityResult,
@@ -120,10 +125,63 @@ def _aggregate_feed_status(
     )
 
 
+# Resolved-pipeline cache. One search render resolves the pipeline twice (once for
+# feed metadata, once to load eligible products) and each pass sweeps every feed row,
+# which on a real feed costs seconds against the PROJECT_RULES section 9 render
+# budget. The pipeline result is a pure function of feed file content, mega category
+# and whether the graph projection was built -- purchasability-cache enrichment is
+# applied by callers afterwards, so it is not part of this key and cannot go stale
+# here. Keyed on file identity (path, mtime, size); URL-configured feeds are not
+# cached.
+_PIPELINE_CACHE: dict[tuple[tuple[str, int, int], str, bool], ProviderFeedPipelineResult] = {}
+_PIPELINE_CACHE_MAX_ENTRIES = 8
+
+
+def clear_provider_feed_pipeline_cache() -> None:
+    """Drop the resolved-pipeline cache. For tests and for forcing a re-resolve."""
+    _PIPELINE_CACHE.clear()
+
+
 def resolve_provider_feed_pipeline(
     config: ProviderFeedConfig,
     *,
     mega_category_id: str = "",
+    include_graph_projection: bool = True,
+) -> ProviderFeedPipelineResult:
+    """Resolve the provider feed pipeline.
+
+    `include_graph_projection` exists for the request path: nothing in search,
+    selection or redirect reads the graph projection, and building it over a real
+    feed costs about a second, which the PROJECT_RULES section 9 render budget
+    cannot absorb. The default stays True so external callers are unaffected.
+    """
+    file_key = feed_file_cache_key(config.feed_file)
+    cache_key = (
+        (file_key, str(mega_category_id or ""), bool(include_graph_projection))
+        if file_key is not None
+        else None
+    )
+    if cache_key is not None:
+        cached = _PIPELINE_CACHE.get(cache_key)
+        if cached is not None:
+            return cached
+    result = _resolve_provider_feed_pipeline_uncached(
+        config,
+        mega_category_id=mega_category_id,
+        include_graph_projection=include_graph_projection,
+    )
+    if cache_key is not None and result.feed_status.status == "provider_feed_ready":
+        if len(_PIPELINE_CACHE) >= _PIPELINE_CACHE_MAX_ENTRIES:
+            _PIPELINE_CACHE.clear()
+        _PIPELINE_CACHE[cache_key] = result
+    return result
+
+
+def _resolve_provider_feed_pipeline_uncached(
+    config: ProviderFeedConfig,
+    *,
+    mega_category_id: str = "",
+    include_graph_projection: bool = True,
 ) -> ProviderFeedPipelineResult:
     provider_key = str(config.provider_key or "").strip() or "unknown_provider"
     parse_result = load_awin_provider_feed(config)
@@ -148,9 +206,13 @@ def resolve_provider_feed_pipeline(
         _enrich_provider_eligibility_result(product, feed_ctx=feed_availability_context)
         for product in parse_result.products
     )
-    graph_projection = project_provider_products_to_graph(
-        eligibility_results,
-        mega_category_id=mega_category_id,
+    graph_projection = (
+        project_provider_products_to_graph(
+            eligibility_results,
+            mega_category_id=mega_category_id,
+        )
+        if include_graph_projection
+        else None
     )
     feed_status = _aggregate_feed_status(
         provider_key=provider_key,
@@ -173,7 +235,7 @@ def load_eligible_provider_feed_products(
     feed_config: ProviderFeedConfig | None = None,
 ) -> tuple[ProviderProduct, ...]:
     config = feed_config or awin_feed_config_from_env()
-    pipeline = resolve_provider_feed_pipeline(config)
+    pipeline = resolve_provider_feed_pipeline(config, include_graph_projection=False)
     if pipeline.feed_status.status != "provider_feed_ready":
         return tuple()
     products = tuple(
@@ -184,17 +246,61 @@ def load_eligible_provider_feed_products(
     return enrich_provider_products_with_cache(products)
 
 
+def resolve_card_eligible_provider_feed_product_by_id(
+    provider_product_id: str,
+    *,
+    feed_config: ProviderFeedConfig | None = None,
+) -> ProviderProduct | None:
+    """Find one card-eligible feed product by id, for outbound redirect resolution.
+
+    Card eligibility is re-checked here rather than trusted from the rendered page:
+    a product that became out of stock, discontinued or verified unbuyable since
+    render must not be redirected to. Returns None when the id is unknown or the
+    product is no longer eligible.
+    """
+    wanted = str(provider_product_id or "").strip()
+    if not wanted:
+        return None
+    config = feed_config or awin_feed_config_from_env()
+    # Resolve straight off the parsed feed rather than the full pipeline: this runs
+    # on every outbound click, and the pipeline's per-product eligibility sweep and
+    # graph projection would blow the PROJECT_RULES section 9 300ms budget. The
+    # availability context is still built over the whole feed, because feed-wide
+    # signals decide whether availability counts as weak.
+    parse_result = load_awin_provider_feed(config)
+    if parse_result.status != "provider_feed_loaded":
+        return None
+    products = enrich_provider_products_with_cache(parse_result.products)
+    if not products:
+        return None
+    match = None
+    for product in products:
+        if str(product.provider_product_id or "").strip() == wanted:
+            match = product
+            break
+    if match is None:
+        return None
+    if evaluate_provider_product_eligibility(match).status != "eligible":
+        return None
+    feed_ctx = build_feed_availability_context(products)
+    if not evaluate_product_eligibility(match, feed_ctx=feed_ctx).card_eligible:
+        return None
+    return match
+
+
 def resolve_search_provider_feed_product_selection(
     *,
     query: str,
     feed_config: ProviderFeedConfig | None = None,
     max_products: int = 4,
+    reading: ConceptReading | None = None,
 ) -> ProviderProductSelectionResult:
     products = load_eligible_provider_feed_products(feed_config=feed_config)
     return select_provider_products_for_query(
         query,
         products,
         max_products=max_products,
+        reading=reading,
     )
 
 
@@ -213,7 +319,18 @@ def resolve_search_provider_feed_recommendation_decision(
             decision_status="no_selection",
             recommendation_reason_codes=("no_feed_selection",),
         )
-    return decide_recommended_provider_product(query, selection.selected_products)
+    if selection.understood_concept:
+        return decide_recommended_provider_product(
+            selection.effective_query or query,
+            selection.selected_products,
+            required_tokens=selection.required_filter_terms,
+            concept_verified=True,
+        )
+    return decide_recommended_provider_product(
+        query,
+        selection.selected_products,
+        required_tokens=selection.required_query_terms or None,
+    )
 
 
 def resolve_search_provider_feed_selection_with_recommendation(
@@ -248,9 +365,11 @@ def resolve_search_provider_feed_metadata(
     if not _normalized_mega_category_id(mega_category_id) and not allow_without_mega_category:
         return None
 
+    # Only feed_status is read below, so skip the graph projection.
     pipeline = resolve_provider_feed_pipeline(
         config,
         mega_category_id=str(mega_category_id or ""),
+        include_graph_projection=False,
     )
     feed_status = pipeline.feed_status
     return SearchProviderFeedMetadata(

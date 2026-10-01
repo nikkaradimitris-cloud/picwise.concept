@@ -51,10 +51,13 @@ class Stage12BRetail18EnglishNLUActivationTests(unittest.TestCase):
             with self.subTest(query=query):
                 resolution = resolve_live_search(query)
                 self.assertEqual(resolution.mega_category_id, "phones_mobile_accessories")
-                self.assertEqual(resolution.lower_level_provider_category, "power_banks")
-                self.assertEqual(resolution.provider_status, "connected")
-                self.assertEqual(resolution.resolver_state, "connected_provider_results")
-                self.assertTrue(resolution.result_allowed)
+                # Amazon removed: power banks are no longer a connected manual provider
+                # category. What matters here is that the NLU still recognises them.
+                self.assertEqual(resolution.provider_status, "not_connected")
+                self.assertEqual(
+                    resolution.resolver_state, "understood_provider_not_connected"
+                )
+                self.assertFalse(resolution.result_allowed)
 
     def test_out_of_scope_non_retail_verticals_not_forced_into_retail_categories(self) -> None:
         for query in ("ERP", "CRM", "accounting software", "loan", "insurance"):

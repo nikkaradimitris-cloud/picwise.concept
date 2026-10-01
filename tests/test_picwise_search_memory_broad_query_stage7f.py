@@ -62,9 +62,13 @@ class PicWiseBroadQuerySuggestionsStage7FTests(unittest.TestCase):
                 self.assertFalse(resolution.result_allowed)
 
     def test_power_bank_and_bots_regressions(self) -> None:
+        # Amazon has been removed, so power banks resolve through the provider feed
+        # like every other product type instead of a connected manual provider.
         power_bank = resolve_live_search("power bank")
-        self.assertEqual(power_bank.resolver_state, "connected_provider_results")
-        self.assertTrue(power_bank.result_allowed)
+        self.assertEqual(
+            power_bank.resolver_state, "understood_provider_not_connected"
+        )
+        self.assertFalse(power_bank.result_allowed)
 
         bots = resolve_live_search("bots")
         self.assertEqual(bots.resolver_state, "not_understood")

@@ -46,10 +46,14 @@ class PickWiseStage35PublicSearchResultPageTests(unittest.TestCase):
         self.assertEqual(status, "200 OK")
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
         self.assertIn("picwise", body.lower())
-        self.assertIn("Showing 4 options for: power bank for iphone", body)
-        self.assertIn("Safe connected provider mode", body)
-        self.assertIn("manual_amazon_affiliate", body)
-        self.assertIn("View on Amazon", body)
+        # Amazon has been removed from the product, so this query no longer takes a
+        # manual connected-provider path. With no provider feed configured here the
+        # public surface must stay honestly empty rather than render anything.
+        self.assertNotIn("Safe connected provider mode", body)
+        self.assertNotIn("manual_amazon_affiliate", body)
+        self.assertNotIn("View on Amazon", body)
+        self.assertIn("PicWise safely shows no product cards", body)
+        self.assertIn('data-card-count="0"', body)
         self.assertNotIn("fake product", body.lower())
         self.assertNotIn("checkout", body.lower())
 

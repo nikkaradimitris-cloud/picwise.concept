@@ -156,8 +156,9 @@ class PickWiseStage3236RuntimeGuardrailsTests(unittest.TestCase):
 
         search_status, _search_headers, search_body = _call_wsgi("/search", "q=power+bank")
         self.assertEqual(search_status, "200 OK")
-        self.assertIn("Safe connected provider mode", search_body)
-        self.assertIn("manual_amazon_affiliate", search_body)
+        # Amazon removed from the product: no manual connected-provider copy remains.
+        self.assertNotIn("Safe connected provider mode", search_body)
+        self.assertNotIn("manual_amazon_affiliate", search_body)
         self.assertNotIn("fake product", search_body.lower())
 
     def test_buying_page_and_missing_route_responses_remain_safe(self) -> None:

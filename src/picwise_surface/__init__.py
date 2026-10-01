@@ -4,7 +4,6 @@ from .dashboard import (
 )
 from .buying_page import render_buying_page_surface
 from .buying_page_seo_surface import render_buying_page_seo_surface
-from .amazon_affiliate_proof import render_amazon_affiliate_proof_page
 from .final_audit import (
     LOCKED_ROADMAP_TITLES,
     FinalV1AuditEvidence,
@@ -23,9 +22,11 @@ from .legal import (
     render_public_footer,
     render_terms_page,
 )
-from .reference import render_picwise_reference_surface
+from .reference import (
+    provider_feed_cards_will_render,
+    render_picwise_reference_surface,
+)
 from .mvp_search_results import render_mvp_search_results_surface
-from .search_results import render_controlled_search_results_page
 from .performance import (
     PerformanceAuditResult,
     audit_surface_performance,
@@ -57,7 +58,6 @@ __all__ = [
     "render_branded_not_found_page",
     "render_buying_page_surface",
     "render_buying_page_seo_surface",
-    "render_amazon_affiliate_proof_page",
     "render_contact_page",
     "render_cookies_page",
     "render_demo_info_page",
@@ -65,9 +65,9 @@ __all__ = [
     "render_privacy_page",
     "render_public_footer",
     "render_review_safe_landing_page",
+    "provider_feed_cards_will_render",
     "render_picwise_reference_surface",
     "render_terms_page",
     "render_mvp_search_results_surface",
-    "render_controlled_search_results_page",
     "run_final_v1_audit_closure",
 ]

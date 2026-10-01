@@ -57,18 +57,29 @@ class LiveSearchResolverTests(unittest.TestCase):
                 self.assertIsNotNone(result.canonical_term)
                 self.assertGreaterEqual(result.score, 0.75)
 
-    def test_power_bank_connected_provider_state(self) -> None:
+    def test_power_bank_resolves_through_the_general_engine(self) -> None:
+        # Amazon is no longer part of the product, so power banks are no longer a
+        # special connected-provider category: they resolve through the same
+        # provider-feed engine as every other product type.
         resolution = resolve_live_search("power bank")
-        self.assertEqual(resolution.canonical_category, "power_banks")
+        # The canonical category is now the index phrase, the same shape every other
+        # category returns ("office chair", "drill", "webcam"). The old "power_banks"
+        # id came from the connected-provider branch that no longer applies.
+        self.assertEqual(resolution.canonical_category, "power bank")
         self.assertEqual(resolution.mega_category_id, "phones_mobile_accessories")
-        self.assertEqual(resolution.lower_level_provider_category, "power_banks")
-        self.assertEqual(resolution.canonical_query, "power bank")
-        self.assertEqual(resolution.provider_key, "manual_amazon_affiliate")
-        self.assertEqual(resolution.provider_status, "connected")
-        self.assertTrue(resolution.result_allowed)
-        self.assertEqual(resolution.resolver_state, "connected_provider_results")
+        self.assertEqual(resolution.provider_key, "not_connected")
+        self.assertEqual(resolution.provider_status, "not_connected")
+        self.assertFalse(resolution.result_allowed)
+        self.assertEqual(resolution.resolver_state, "understood_provider_not_connected")
 
-    def test_power_bank_variants_resolve_connected_provider(self) -> None:
+    def test_power_bank_query_is_not_rewritten_away(self) -> None:
+        # The old path collapsed every power-bank query to the bare phrase so the
+        # manual Amazon matcher would hit. That discarded the tokens the feed
+        # selection needs, so specific queries must now keep their own terms.
+        resolution = resolve_live_search("power bank 20000mah for iphone")
+        self.assertIn("20000mah", resolution.canonical_query)
+
+    def test_power_bank_variants_resolve_to_the_feed_engine(self) -> None:
         variants = (
             "power bank",
             "powerbank",
@@ -86,14 +97,13 @@ class LiveSearchResolverTests(unittest.TestCase):
         for query in variants:
             with self.subTest(query=query):
                 resolution = resolve_live_search(query)
-                self.assertEqual(resolution.canonical_category, "power_banks")
+                self.assertTrue(resolution.canonical_category)
                 self.assertEqual(resolution.mega_category_id, "phones_mobile_accessories")
-                self.assertEqual(resolution.lower_level_provider_category, "power_banks")
-                self.assertEqual(resolution.canonical_query, "power bank")
-                self.assertEqual(resolution.provider_key, "manual_amazon_affiliate")
-                self.assertEqual(resolution.provider_status, "connected")
-                self.assertTrue(resolution.result_allowed)
-                self.assertEqual(resolution.resolver_state, "connected_provider_results")
+                self.assertEqual(resolution.provider_key, "not_connected")
+                self.assertEqual(resolution.provider_status, "not_connected")
+                self.assertEqual(
+                    resolution.resolver_state, "understood_provider_not_connected"
+                )
 
     def test_noisy_product_queries_become_understood_provider_not_connected(self) -> None:
         expected = {

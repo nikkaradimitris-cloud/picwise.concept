@@ -39,6 +39,29 @@ from picwise_search.live_search_resolver import resolve_live_search  # noqa: E40
 _DEFAULT_FEED = Path(
     r"C:\Users\User\Desktop\picwise-private-feeds\back_to_office_clean_full_columns.csv.gz"
 )
+_LOCAL_FIXTURE_FEED = ROOT / "tests" / "fixtures" / "provider_feed_local_test_fixture.csv"
+
+
+def resolve_feed_source() -> tuple[str, str]:
+    """Return (feed_path, feed_source_kind) without claiming real-feed proof.
+
+    Order: explicit AWIN_FEED_FILE env, then the operator's private feed, then
+    the in-repo local test fixture. Only "operator_private_feed" and an explicit
+    env feed can support real-feed stage closure; "local_test_fixture" cannot.
+    """
+    env_feed = str(os.environ.get("AWIN_FEED_FILE") or "").strip()
+    if env_feed:
+        kind = (
+            "local_test_fixture"
+            if Path(env_feed).resolve() == _LOCAL_FIXTURE_FEED.resolve()
+            else "env_configured_feed"
+        )
+        return env_feed, kind
+    if _DEFAULT_FEED.is_file():
+        return str(_DEFAULT_FEED), "operator_private_feed"
+    if _LOCAL_FIXTURE_FEED.is_file():
+        return str(_LOCAL_FIXTURE_FEED), "local_test_fixture"
+    return "", "no_feed_available"
 
 AUDIT_QUERIES = (
     "laptop",
@@ -74,6 +97,7 @@ def _truth_row(product: dict, *, cache_used: bool) -> dict:
     if blocked_reason is None and not product.get("card_eligible", True):
         blocked_reason = blocked_reason_from_eligibility(reason_codes)
     return {
+        "provider_product_id": product.get("provider_product_id"),
         "title": product.get("title"),
         "product_url": product.get("product_url"),
         "provider_key": product.get("provider_key"),
@@ -191,8 +215,9 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if not os.environ.get("AWIN_FEED_FILE") and _DEFAULT_FEED.is_file():
-        os.environ["AWIN_FEED_FILE"] = str(_DEFAULT_FEED)
+    feed_path, feed_source_kind = resolve_feed_source()
+    if feed_path:
+        os.environ["AWIN_FEED_FILE"] = feed_path
 
     cache_path = str(args.cache_file or "").strip()
     cache_used = bool(cache_path)
@@ -207,11 +232,15 @@ def main() -> None:
         if args.verify_pages:
             safe_limit = max(0, min(int(args.limit), 20))
             result = audit_query_with_page_verification(str(args.query), limit=safe_limit)
+            result["feed_source_kind"] = feed_source_kind
             print(json.dumps(result, indent=2, ensure_ascii=False))
             return
 
         results = [audit_query(q, cache_used=cache_used) for q in AUDIT_QUERIES]
         summary = {
+            "feed_source_kind": feed_source_kind,
+            "feed_source_is_real_feed_proof": feed_source_kind
+            in {"operator_private_feed", "env_configured_feed"},
             "cache_used": cache_used,
             "cache_file": cache_path or None,
             "cache_entry_count": len(resolve_purchasability_cache().entries)
