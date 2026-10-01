@@ -74,3 +74,27 @@ python tools/check_awin_feed.py --url "<ο σύνδεσμος>"
 - **Είδη που δεν αναγνωρίζει το σύστημα.** Το `check_awin_feed.py` τα δείχνει. Κάθε ένα
   είναι υποψήφιο για προσθήκη στο λεξικό εννοιών
   (`src/picwise_nlu/product_concepts.py`).
+
+# Καταγραφή αναζητήσεων (για την «εκπαίδευση» του NLU)
+
+Για να βλέπουμε τι ψάχνουν πραγματικά οι χρήστες και τι δεν καταλαβαίνει το σύστημα, το
+site μπορεί να γράφει κάθε αναζήτηση σε έναν πίνακα της Supabase. Χωρίς ρύθμιση δεν
+γράφει τίποτα.
+
+Τι αποθηκεύεται: το κείμενο της αναζήτησης, τι κατάλαβε το σύστημα, αν χρειάστηκε
+διόρθωση ορθογραφίας, αν εμφανίστηκαν προϊόντα. **Τίποτα προσωπικό** (ούτε IP, ούτε
+στοιχεία συσκευής).
+
+1. Στη Supabase, στο project του PicWise: **SQL Editor** → επικόλληση του
+   `deployment/supabase_query_log.sql` → Run.
+2. Στη Vercel, Environment Variables:
+   - `PICWISE_QUERY_LOG_SUPABASE_URL` = `https://<project>.supabase.co`
+   - `PICWISE_QUERY_LOG_SUPABASE_KEY` = το **service_role** key
+     (Supabase → Project Settings → API). Μόνο στη Vercel, ποτέ στον κώδικα.
+3. Redeploy.
+
+Ανάλυση των αποθηκευμένων αναζητήσεων:
+
+```bash
+python tools/nlu_mistake_report.py --from-query-log
+```

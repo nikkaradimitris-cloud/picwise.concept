@@ -16,6 +16,10 @@ is taught by adding the names buyers actually use, not by retraining a model:
 
     python tools/nlu_mistake_report.py queries.txt
     python tools/nlu_mistake_report.py queries.txt --csv review.csv
+    python tools/nlu_mistake_report.py --from-query-log     # the site's stored queries
+
+`--from-query-log` reads the table `src/picwise_app/query_log_sink.py` writes to, using
+the same PICWISE_QUERY_LOG_SUPABASE_URL / _KEY environment variables.
 
 Only correctly spelled names belong in the lexicon. Misspellings are handled by the
 matcher; adding them as names would teach it one mistake at a time.
@@ -24,6 +28,8 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
+import os
 import sys
 from collections import Counter
 from pathlib import Path
@@ -45,14 +51,38 @@ def classify(query: str) -> tuple[str, str]:
     return ("exact" if reading.exact else "corrected"), str(reading.concept_id)
 
 
+def _query_log_lines(limit: int) -> list[str]:
+    from urllib.request import Request, urlopen
+
+    base = str(os.environ.get("PICWISE_QUERY_LOG_SUPABASE_URL") or "").strip().rstrip("/")
+    key = str(os.environ.get("PICWISE_QUERY_LOG_SUPABASE_KEY") or "").strip()
+    table = str(os.environ.get("PICWISE_QUERY_LOG_TABLE") or "").strip() or "picwise_query_log"
+    if not base or not key:
+        sys.exit("Set PICWISE_QUERY_LOG_SUPABASE_URL and PICWISE_QUERY_LOG_SUPABASE_KEY.")
+    request = Request(
+        f"{base}/rest/v1/{table}?select=query&order=created_at.desc&limit={int(limit)}",
+        headers={"apikey": key, "Authorization": f"Bearer {key}"},
+    )
+    with urlopen(request, timeout=30) as response:
+        rows = json.loads(response.read() or b"[]")
+    return [str(row.get("query") or "") for row in rows]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="PicWise NLU mistake report")
-    parser.add_argument("queries", help="Text file, one query per line")
+    parser.add_argument("queries", nargs="?", default="", help="Text file, one query per line")
+    parser.add_argument("--from-query-log", action="store_true", help="Read the site's stored queries")
+    parser.add_argument("--log-limit", type=int, default=50000)
     parser.add_argument("--csv", default="", help="Write every row to this CSV for review")
     parser.add_argument("--limit", type=int, default=40)
     args = parser.parse_args()
 
-    lines = Path(args.queries).read_text(encoding="utf-8").splitlines()
+    if args.from_query_log:
+        lines = _query_log_lines(args.log_limit)
+    elif args.queries:
+        lines = Path(args.queries).read_text(encoding="utf-8").splitlines()
+    else:
+        sys.exit("Give a queries file or --from-query-log.")
     counts = Counter(" ".join(line.split()).lower() for line in lines if line.strip())
     rows = []
     for query, frequency in counts.most_common():

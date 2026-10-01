@@ -37,6 +37,7 @@ from picwise_surface import (
     render_terms_page,
 )
 from .buying_routes import render_best_slug_html, render_buying_sitemap_xml
+from .query_log_sink import QUERY_LOG_SINK
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 LOCAL_AVAILABLE_ROUTES = (
@@ -185,20 +186,21 @@ class PicwiseLocalApp:
             # What the NLU understood, so queries it could not read -- or read only
             # through a typo correction -- can be reviewed and taught to the lexicon.
             # This is the NLU's training signal; see tools/nlu_mistake_report.py.
-            events.append(
-                dict(
-                    base,
-                    event_name="query_served",
-                    understood_concept=str(
-                        getattr(resolution, "understood_concept_id", "") or ""
-                    )
-                    or MissingDataState.UNKNOWN.value,
-                    understood_by_correction=(
-                        "true" if getattr(resolution, "understood_by_correction", False) else "false"
-                    ),
-                    choices_rendered="true" if cards_rendered else "false",
+            served = dict(
+                base,
+                event_name="query_served",
+                understood_concept=str(
+                    getattr(resolution, "understood_concept_id", "") or ""
                 )
+                or MissingDataState.UNKNOWN.value,
+                understood_by_correction=(
+                    "true" if getattr(resolution, "understood_by_correction", False) else "false"
+                ),
+                choices_rendered="true" if cards_rendered else "false",
             )
+            events.append(served)
+            # Kept beyond this process only when a query log store is configured.
+            QUERY_LOG_SINK.record(served)
 
         if cards_rendered:
             selected = list(getattr(resolution, "provider_feed_selected_products", ()) or ())
