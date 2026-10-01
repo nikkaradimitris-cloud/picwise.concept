@@ -114,6 +114,8 @@ class PicwiseLocalApp:
         )
         if resolution.resolver_state == "broad_query_suggestions":
             html = _inject_broad_query_suggestions(html, resolution)
+        elif getattr(resolution, "did_you_mean", ()) and not provider_feed_cards_will_render(resolution):
+            html = _inject_did_you_mean(html, resolution)
         if is_empty_search_query(query):
             schedule_search_warmup_if_needed()
         return html
@@ -623,6 +625,37 @@ class PicwiseLocalApp:
             '<p class="pw-note">No fallback products are shown. Manual review or query refinement is required.</p>'
             "</section></main></body></html>"
         )
+
+
+def _replace_disclaimer(html: str, replacement: str) -> str:
+    marker = '<p class="pw-reference-disclaimer">'
+    start = html.find(marker)
+    if start == -1:
+        return html.replace(
+            '<section class="pw-empty-state">',
+            f'{replacement}<section class="pw-empty-state">',
+            1,
+        )
+    end = html.find("</p>", start)
+    if end == -1:
+        return html
+    return html[:start] + replacement + html[end + 4 :]
+
+
+def _inject_did_you_mean(html: str, resolution: Any) -> str:
+    """Ask which product was meant when a search was not understood.
+
+    The suggestions are links to a new search, never results: a correction too
+    uncertain to act on may still be worth asking about.
+    """
+    links = [
+        f'<a href="/search?q={quote(str(name), safe="")}">{escape(str(name))}</a>'
+        for name in getattr(resolution, "did_you_mean", ())
+    ]
+    if not links:
+        return html
+    text = "PicWise did not recognise this search. Did you mean: " + ", ".join(links) + "?"
+    return _replace_disclaimer(html, f'<p class="pw-reference-disclaimer">{text}</p>')
 
 
 def _inject_broad_query_suggestions(html: str, resolution: Any) -> str:

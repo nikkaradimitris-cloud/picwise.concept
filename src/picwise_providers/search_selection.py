@@ -383,9 +383,13 @@ class ProviderProductSelectionResult:
     # carry. Unlike `required_query_terms` it excludes the product name itself, which
     # concept membership already guarantees.
     required_filter_terms: tuple[str, ...] = field(default_factory=tuple)
+    # Filters some but not all of the selected products carry, as (buyer's words,
+    # how many of the selected carry it). Stated as "2 of 4" rather than "not matched".
+    partially_matched_terms: tuple[tuple[str, int], ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "partially_matched_terms": [list(row) for row in self.partially_matched_terms],
             "understood_concept": self.understood_concept,
             "effective_query": self.effective_query,
             "required_filter_terms": list(self.required_filter_terms),
@@ -948,16 +952,34 @@ def _select_products_for_concept(
             required, unmatchable = tuple(), filters
             ranked = rank_with(required)
 
-    unmatched = display(unmatchable) + tuple(reading.judgements) + unmatched_name_words
-    unmatched = tuple(dict.fromkeys(unmatched))
     ranked.sort(key=lambda row: (-row[0][1], -row[0][2], -row[0][0], row[0][3], row[0][4]))
     deduped = _dedupe_selected_products(ranked)
+
+    # A filter that could not hold for all four may still hold for some of them; those
+    # rank first. Say how many rather than calling it unmatched.
+    fields_by_id = {id(product): fields for product, fields in members}
+    shown = deduped[:safe_max]
+    fully_unmatched: list[str] = []
+    partial: list[tuple[str, int]] = []
+    for term in unmatchable:
+        carrying = sum(
+            1
+            for product in shown
+            if term in " ".join(value for value in fields_by_id.get(id(product), {}).values() if value)
+        )
+        if 0 < carrying < len(shown):
+            partial.append((reading.filter_sources.get(term, term), carrying))
+        else:
+            fully_unmatched.append(term)
+    unmatched = display(tuple(fully_unmatched)) + tuple(reading.judgements) + unmatched_name_words
+    unmatched = tuple(dict.fromkeys(unmatched))
     common = dict(
         understood_concept=concept_id,
         effective_query=effective_query,
         required_filter_terms=required,
         required_query_terms=feed_terms + required,
         unmatched_query_terms=unmatched,
+        partially_matched_terms=tuple(partial) if len(deduped) >= safe_max else tuple(),
     )
     if len(deduped) < safe_max:
         return ProviderProductSelectionResult(

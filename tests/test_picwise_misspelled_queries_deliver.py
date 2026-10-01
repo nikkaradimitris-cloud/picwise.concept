@@ -102,7 +102,8 @@ class GreekAndGreeklishQueriesOnAnEnglishFeedTests(_FeedCase):
     def test_a_spec_filters_the_four(self) -> None:
         # "70ah" matches one battery: it is reported, and all four are still batteries.
         resolution = resolve_live_search("μπαταρια αυτοκινητου 70ah")
-        self.assertIn("70ah", resolution.provider_feed_unmatched_query_terms)
+        self.assertEqual(resolution.provider_feed_partially_matched_terms, (("70ah", 1),))
+        self.assertIn("70Ah", resolution.provider_feed_selected_products[0].get("title", ""))
         resolution = resolve_live_search("πλυντηριο 8 κιλα")
         titles = [p.get("title", "") for p in resolution.provider_feed_selected_products]
         self.assertTrue(titles and all("Washing Machine" in t for t in titles), titles)
@@ -113,11 +114,23 @@ class GreekAndGreeklishQueriesOnAnEnglishFeedTests(_FeedCase):
         # typed, not as the feed-language filter "wireless" they were read as.
         cards, line = self.page("ποντικι ασυρματο φθηνο")
         self.assertEqual(cards, 4)
-        self.assertIn("could not match: ασυρματο, φθηνο", line)
+        self.assertIn("Only some of the four match: ασυρματο (2 of 4)", line)
+        self.assertIn("could not match: φθηνο", line)
         self.assertNotIn("wireless", line)
         resolution = resolve_live_search("ποντικι ασυρματο")
         top_two = [p.get("title", "") for p in resolution.provider_feed_selected_products[:2]]
         self.assertTrue(all("Wireless" in title for title in top_two), top_two)
+
+    def test_an_unrecognised_short_typo_asks_did_you_mean(self) -> None:
+        cards, _line = self.page("dsk")
+        self.assertEqual(cards, 0)
+        resolution = resolve_live_search("dsk")
+        self.assertEqual(resolution.did_you_mean, ("desk",))
+
+    def test_everyday_words_get_no_suggestion(self) -> None:
+        for query in ("κρασι", "δανειο", "asdfgh"):
+            with self.subTest(query=query):
+                self.assertEqual(resolve_live_search(query).did_you_mean, ())
 
     def test_a_corrected_reading_is_stated_on_the_page(self) -> None:
         cards, line = self.page("lapotp")
@@ -168,7 +181,7 @@ class GreekTitledFeedTests(_FeedCase):
         # rank first, and the page says the spec could not be met by all four.
         ranked = [p.get("provider_product_id") for p in resolution.provider_feed_selected_products]
         self.assertEqual(set(ranked[:2]), {"gr-wm-1", "gr-wm-4"}, ranked)
-        self.assertIn("8 κιλα", resolution.provider_feed_unmatched_query_terms)
+        self.assertEqual(resolution.provider_feed_partially_matched_terms, (("8 κιλα", 2),))
 
 
 if __name__ == "__main__":

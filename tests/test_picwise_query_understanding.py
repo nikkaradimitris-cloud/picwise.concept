@@ -108,12 +108,22 @@ class QualifiedQueriesStillDeliverTests(_FeedTestCase):
                 self.assertEqual(self._families(self._select(query)), {family})
 
     def test_the_unmatched_words_are_reported(self) -> None:
+        # Each word is reported either as not matched at all, or as matched by only
+        # some of the four ("20000mah": 1 of 4) -- never silently dropped.
         for query, _family, unmatched in self.QUALIFIED:
             with self.subTest(query=query):
                 selection = self._select(query)
-                self.assertEqual(
-                    set(selection.unmatched_query_terms), set(unmatched), query
-                )
+                reported = set(selection.unmatched_query_terms) | {
+                    term for term, _count in selection.partially_matched_terms
+                }
+                self.assertEqual(reported, set(unmatched), query)
+
+    def test_a_filter_some_of_the_four_carry_is_counted_not_called_unmatched(self) -> None:
+        selection = self._select("power bank 20000mah for iphone")
+        self.assertEqual(selection.partially_matched_terms, (("20000mah", 1),))
+        self.assertEqual(selection.unmatched_query_terms, ("iphone",))
+        # The one product that carries it is ranked first.
+        self.assertIn("20000mAh", selection.selected_products[0].title)
 
     def test_a_qualified_query_still_gets_a_recommendation(self) -> None:
         for query, _family, _unmatched in self.QUALIFIED:

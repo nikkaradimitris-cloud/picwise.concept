@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import csv
 import gzip
+import hashlib
 import io
 import json
 import os
+import tempfile
+import time
 from typing import Any, Mapping
 from urllib.error import URLError
 from urllib.request import urlopen
@@ -26,12 +29,117 @@ _AWIN_FEED_FILE_ENV = "AWIN_FEED_FILE"
 _AWIN_FEED_URL_ENV = "AWIN_FEED_URL"
 _GZIP_MAGIC = b"\x1f\x8b"
 
+# A feed URL (Awin's Create-a-Feed download link) is downloaded to a local file and
+# reused, instead of being fetched on every search: a real feed is tens of megabytes
+# and the PROJECT_RULES section 9 render budget is 1.5 seconds. Awin regenerates feeds
+# daily, so a few hours of reuse loses nothing.
+_FEED_CACHE_TTL_ENV = "AWIN_FEED_CACHE_TTL_SECONDS"
+_FEED_MAX_STALE_ENV = "AWIN_FEED_MAX_STALE_SECONDS"
+_FEED_CACHE_DIR_ENV = "AWIN_FEED_CACHE_DIR"
+_FEED_MAX_BYTES_ENV = "AWIN_FEED_MAX_BYTES"
+_DEFAULT_FEED_CACHE_TTL_SECONDS = 6 * 3600
+# When a refresh fails, the last good copy is served for at most this long. Past it
+# the feed is reported unavailable: prices and stock a day old are acceptable, older
+# ones risk showing offers that no longer exist.
+_DEFAULT_FEED_MAX_STALE_SECONDS = 24 * 3600
+_DEFAULT_FEED_MAX_BYTES = 300 * 1024 * 1024
+_FAILED_FETCH_RETRY_SECONDS = 60
+_FAILED_FETCHES: dict[str, float] = {}
+
+
+def _int_env(name: str, default: int) -> int:
+    try:
+        return max(0, int(str(os.environ.get(name) or "").strip()))
+    except ValueError:
+        return default
+
+
+def _feed_cache_path(feed_url: str) -> str:
+    # The URL carries the account's API key, so it is hashed, never written out.
+    digest = hashlib.sha256(feed_url.encode("utf-8")).hexdigest()[:20]
+    directory = str(os.environ.get(_FEED_CACHE_DIR_ENV) or "").strip() or tempfile.gettempdir()
+    return os.path.join(directory, f"picwise_awin_feed_{digest}.bin")
+
+
+def _download_feed(feed_url: str, destination: str) -> tuple[bool, tuple[str, ...]]:
+    limit = _int_env(_FEED_MAX_BYTES_ENV, _DEFAULT_FEED_MAX_BYTES) or _DEFAULT_FEED_MAX_BYTES
+    partial = f"{destination}.part{os.getpid()}"
+    try:
+        os.makedirs(os.path.dirname(destination) or ".", exist_ok=True)
+        written = 0
+        with urlopen(feed_url, timeout=60) as response, open(partial, "wb") as handle:
+            while True:
+                chunk = response.read(1024 * 1024)
+                if not chunk:
+                    break
+                written += len(chunk)
+                if written > limit:
+                    raise ValueError("feed_too_large")
+                handle.write(chunk)
+        if written == 0:
+            raise ValueError("feed_download_empty")
+        os.replace(partial, destination)
+        return True, tuple()
+    except (URLError, OSError, ValueError) as exc:
+        detail = str(exc) if isinstance(exc, ValueError) and str(exc).startswith("feed_") else exc.__class__.__name__
+        return False, (f"feed_url_fetch_failed:{detail}",)
+    finally:
+        if os.path.exists(partial):
+            try:
+                os.remove(partial)
+            except OSError:
+                pass
+
+
+def materialize_feed_url(feed_url: str, *, now: float | None = None) -> tuple[str | None, tuple[str, ...]]:
+    """Return a local file holding the feed at `feed_url`, downloading when stale.
+
+    Fresh copy (younger than the TTL): used as is. Older: re-downloaded. If the
+    download fails, the previous copy keeps serving until it is older than the
+    maximum staleness, and a failed URL is not retried for a minute so a broken feed
+    does not cost every request a timeout.
+    """
+    url = str(feed_url or "").strip()
+    if not url:
+        return None, ("no_feed_url",)
+    current = time.time() if now is None else now
+    path = _feed_cache_path(url)
+    ttl = _int_env(_FEED_CACHE_TTL_ENV, _DEFAULT_FEED_CACHE_TTL_SECONDS)
+    max_stale = _int_env(_FEED_MAX_STALE_ENV, _DEFAULT_FEED_MAX_STALE_SECONDS)
+    try:
+        age: float | None = current - os.stat(path).st_mtime
+    except OSError:
+        age = None
+    if age is not None and age < ttl:
+        return path, tuple()
+
+    last_failure = _FAILED_FETCHES.get(path)
+    if last_failure is not None and current - last_failure < _FAILED_FETCH_RETRY_SECONDS:
+        errors: tuple[str, ...] = ("feed_url_fetch_failed:recently",)
+    else:
+        ok, errors = _download_feed(url, path)
+        if ok:
+            _FAILED_FETCHES.pop(path, None)
+            return path, tuple()
+        _FAILED_FETCHES[path] = current
+    if age is not None and age < max_stale:
+        return path, errors + ("serving_previous_feed_copy",)
+    return None, errors
+
 
 def awin_feed_config_from_env() -> ProviderFeedConfig:
+    feed_file = str(os.environ.get(_AWIN_FEED_FILE_ENV) or "").strip() or None
+    feed_url = str(os.environ.get(_AWIN_FEED_URL_ENV) or "").strip() or None
+    if feed_file is None and feed_url is not None:
+        # Hand the rest of the pipeline a file, so the parse, pipeline and redirect
+        # caches -- all keyed on file identity -- work for URL feeds too.
+        cached, _errors = materialize_feed_url(feed_url)
+        if cached is not None:
+            return ProviderFeedConfig(provider_key=_AWIN_PROVIDER_KEY, feed_file=cached)
     return ProviderFeedConfig(
         provider_key=_AWIN_PROVIDER_KEY,
-        feed_file=os.environ.get(_AWIN_FEED_FILE_ENV),
-        feed_url=os.environ.get(_AWIN_FEED_URL_ENV),
+        feed_file=feed_file,
+        feed_url=feed_url,
     )
 
 
@@ -48,12 +156,14 @@ def _load_feed_bytes(*, feed_file: str | None, feed_url: str | None) -> tuple[by
 
     url = str(feed_url or "").strip()
     if url:
+        cached, fetch_errors = materialize_feed_url(url)
+        if cached is None:
+            return None, tuple(fetch_errors or ("feed_url_fetch_failed",))
         try:
-            with urlopen(url, timeout=30) as response:
-                return response.read(), tuple()
-        except (URLError, OSError, ValueError) as exc:
-            errors.append(f"feed_url_fetch_failed:{exc.__class__.__name__}")
-            return None, tuple(errors)
+            with open(cached, "rb") as handle:
+                return handle.read(), tuple()
+        except OSError as exc:
+            return None, (f"feed_file_read_failed:{exc.__class__.__name__}",)
 
     return None, tuple(errors)
 

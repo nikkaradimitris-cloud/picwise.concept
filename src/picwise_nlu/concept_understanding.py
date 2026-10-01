@@ -582,7 +582,12 @@ def _fuzzy_span_is_safe(words: tuple[str, ...], exact_words: int) -> bool:
     return len(words[0]) >= (6 if is_greek_word(words[0]) else 5)
 
 
-def _find_spans(tokens: tuple[str, ...], candidates: list[dict[tuple[str, str], float]]) -> list[_Span]:
+def _find_spans(
+    tokens: tuple[str, ...],
+    candidates: list[dict[tuple[str, str], float]],
+    *,
+    safe_only: bool = True,
+) -> list[_Span]:
     lexicon = _lexicon()
     spans: list[_Span] = []
     for start in range(len(tokens)):
@@ -600,7 +605,7 @@ def _find_spans(tokens: tuple[str, ...], candidates: list[dict[tuple[str, str], 
                     cost += word_cost
                     exact_words += int(word_cost < 0.5)
                 else:
-                    if cost >= 0.5 and not _fuzzy_span_is_safe(tokens[start:end], exact_words):
+                    if safe_only and cost >= 0.5 and not _fuzzy_span_is_safe(tokens[start:end], exact_words):
                         continue
                     spans.append(_Span(start, end, form.concept_id, cost, identity[0]))
     return spans
@@ -838,6 +843,57 @@ def understand_product_query(query: str) -> ConceptReading:
     )
 
 
+def suggest_product_names(query: str, *, limit: int = 3) -> tuple[str, ...]:
+    """Product names a query PicWise could not act on might have meant, to ask about.
+
+    Used only to offer "Did you mean ...?" links when nothing was understood. A
+    suggestion is a question to the buyer, never an answer, so it may use corrections
+    too uncertain to act on -- a short word with a letter missing ("dsk"), or a word
+    equally close to two products, in which case both are offered. Everyday and
+    non-retail words are never turned into suggestions.
+    """
+    tokens = tuple(normalize_understanding_text(query).split())
+    if not tokens or understand_product_query(query).understood:
+        return tuple()
+    lexicon = _lexicon()
+    candidates: list[dict[tuple[str, str], float]] = []
+    for token in tokens:
+        if (
+            token in CONNECTIVE_WORDS
+            or token in _COMMON_WORDS
+            or token in _NON_RETAIL_WORDS
+            or not any(ch.isalpha() for ch in token)
+        ):
+            candidates.append({})
+            continue
+        found: dict[tuple[str, str], float] = {}
+        limit_for_token = max(1, _max_distance(len(token)))
+        readings = (
+            [("el", greek_key(token))]
+            if is_greek_word(token)
+            else [("en", english_key(token)), ("el", greeklish_key(token))]
+        )
+        for kind, key in readings:
+            for word, distance in lexicon.fuzzy[kind].lookup(key, limit_for_token).items():
+                identity = (kind, word)
+                found[identity] = min(found.get(identity, 99.0), float(distance))
+        candidates.append(found)
+    spans = sorted(
+        _find_spans(tokens, candidates, safe_only=False),
+        key=lambda span: (span.cost, -(span.end - span.start), span.concept_id),
+    )
+    by_id = get_product_concepts_by_id()
+    names: list[str] = []
+    for span in spans:
+        concept = by_id[span.concept_id]
+        name = concept.greek[0] if span.kind == "el" and concept.greek else concept.primary_english
+        if name not in names:
+            names.append(name)
+        if len(names) >= limit:
+            break
+    return tuple(names)
+
+
 # --------------------------------------------------------------------------------------
 # Annotating product text
 # --------------------------------------------------------------------------------------
@@ -873,18 +929,21 @@ def annotate_product_concepts(product_type: str, category: str, title: str) -> f
     for text in (product_type, category):
         # A feed type can list several kinds: "Fans & Heaters", "Cases, Covers".
         for part in _TYPE_LIST_SPLIT_RE.split(str(text or "")):
-            spans = _concepts_in_text(part)
-            if spans:
-                head = _pick_head(spans, tuple(normalize_understanding_text(part).split()))
-                if head is not None:
-                    bases.append(head.concept_id)
+            head = _head_of_text(part)
+            if head is ACCESSORY_MARKER:
+                return frozenset({ACCESSORY_MARKER})
+            if head is not None:
+                bases.append(head)
         if bases:
             break
     title_spans = _concepts_in_text(title)
     if not bases:
         if not title_spans:
             return frozenset()
-        bases = [title_spans[0].concept_id]
+        head = _head_of_text(title, first=True)
+        if head is ACCESSORY_MARKER or head is None:
+            return frozenset({ACCESSORY_MARKER}) if head is ACCESSORY_MARKER else frozenset()
+        bases = [head]
     concepts: set[str] = set()
     for base in bases:
         concepts.update(broader_concepts(base))
@@ -893,6 +952,48 @@ def annotate_product_concepts(product_type: str, category: str, title: str) -> f
         if any(base in chain[1:] for base in bases):
             concepts.update(chain)
     return frozenset(concepts)
+
+
+# Products that belong with another product rather than being it: "Washing Machine
+# Accessories", "Ανταλλακτικά για πλυντήριο", "Coffee Machine Descaler". Annotating them
+# as the main product would answer "πλυντήριο" with hoses and filters.
+ACCESSORY_MARKER = "__accessory__"
+_ACCESSORY_WORDS = frozenset(
+    """
+    accessories accessory parts part spare spares replacement replacements refill refills
+    filter filters cover covers stand stands mount mounts holder holders strap straps
+    remote descaler descalers cleaner cleaners hose hoses belt belts blade blades
+    nozzle nozzles brush brushes adapter adapters kit kits pads attachment attachments
+    αξεσουαρ ανταλλακτικα ανταλλακτικο εξαρτηματα εξαρτημα φιλτρο φιλτρα σακουλες σακουλα
+    καλυμμα καλυμματα βαση βασεις τηλεχειριστηριο λουρακι καθαριστικο αφαλατικο λαστιχο
+    """.split()
+)
+
+
+def _head_of_text(text: str, *, first: bool = False) -> str | None:
+    """The concept a piece of feed text names, or ACCESSORY_MARKER for an accessory of it.
+
+    The accessory word's position decides: English puts the main product first and the
+    accessory after it ("coffee machine filter"), while a word before it is a type
+    ("filter coffee machine"). Greek is the other way round: "φίλτρο καφετιέρας" is a
+    filter, "καφετιέρα φίλτρου" a coffee machine.
+    """
+    tokens = tuple(normalize_understanding_text(text).split())
+    spans = _concepts_in_text(text)
+    if not spans:
+        return None
+    head = spans[0] if first else _pick_head(spans, tokens)
+    if head is None:
+        return None
+    covered = {i for span in spans for i in range(span.start, span.end)}
+    for index, token in enumerate(tokens):
+        if index in covered or token not in _ACCESSORY_WORDS:
+            continue
+        if head.kind == "en" and index >= head.end:
+            return ACCESSORY_MARKER
+        if head.kind == "el" and index < head.start:
+            return ACCESSORY_MARKER
+    return head.concept_id
 
 
 _TYPE_LIST_SPLIT_RE = re.compile(r"\s*(?:&|,|/|\band\b|\bκαι\b)\s*", flags=re.IGNORECASE)

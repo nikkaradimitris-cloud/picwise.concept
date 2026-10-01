@@ -282,6 +282,64 @@ wallet|JW||wallet,wallets,purse|πορτοφόλι,πορτοφόλια
 belt|JW||belt,belts|ζώνη,ζώνες
 hat|JW||hat,hats,cap,caps,beanie|καπέλο,καπέλα,σκούφος
 gloves|JW||gloves|γάντια
+tablet|CO||tablet,tablets,android tablet,ipad|τάμπλετ,ταμπλέτα υπολογιστή
+e_reader|CO||e reader,ebook reader,kindle|ηλεκτρονικός αναγνώστης βιβλίων
+graphics_card|CO||graphics card,graphics cards,video card,gpu|κάρτα γραφικών,κάρτες γραφικών
+processor|CO||processor,processors,cpu|επεξεργαστής,επεξεργαστές
+ram_memory|CO||ram memory,ram module,memory module,ddr4 ram,ddr5 ram|μνήμη ram,μνήμες ram
+motherboard|CO||motherboard,motherboards|μητρική,μητρική κάρτα,μητρικές
+power_supply|CO||power supply unit,psu,pc power supply|τροφοδοτικό,τροφοδοτικά
+pc_case|CO||pc case,computer case,tower case|κουτί υπολογιστή
+printer_paper|CO||printer paper,copy paper,a4 paper|χαρτί εκτυπωτή,χαρτί φωτοτυπικού,χαρτί a4
+ups|CO||ups,uninterruptible power supply|ups αδιάλειπτης παροχής
+smart_speaker|AV||smart speaker,smart speakers|έξυπνο ηχείο
+drone|AV||drone,drones|ντρόουν
+vr_headset|AV||vr headset,vr headsets,virtual reality headset|γυαλιά εικονικής πραγματικότητας
+tv_box|AV||tv box,android tv box,streaming device|tv box
+car_charger|PH|phone_charger|car charger,car chargers|φορτιστής αυτοκινήτου
+selfie_stick|PH||selfie stick,tripod|μπαστούνι selfie,τρίποδο
+car_audio|TY||car stereo,car radio,car speakers|ηχοσύστημα αυτοκινήτου,ράδιο αυτοκινήτου
+gps_navigator|TY||gps navigator,sat nav,gps|πλοηγός gps,πλοηγός
+dishwasher_tablets|KI||dishwasher tablets,dishwasher pods|ταμπλέτες πλυντηρίου πιάτων,κάψουλες πλυντηρίου πιάτων
+laundry_detergent|KI||laundry detergent,washing powder,washing liquid|απορρυπαντικό ρούχων,σκόνη πλυντηρίου,απορρυπαντικό
+knife_set|KI||knife set,kitchen knives,chef knife|σετ μαχαιριών,μαχαίρια κουζίνας,μαχαίρι κουζίνας
+cutlery|KI||cutlery,cutlery set|μαχαιροπίρουνα,σετ μαχαιροπίρουνα
+dinnerware|KI||dinner set,plates,dinnerware|σερβίτσιο,πιάτα
+glassware|KI||glasses set,drinking glasses,wine glasses|ποτήρια,σετ ποτηριών
+water_filter_jug|KI||water filter jug,filter jug|κανάτα φίλτρου νερού
+food_storage|KI||food containers,lunch box,food storage containers|δοχεία φαγητού,φαγητοδοχείο,τάπερ
+grill|GA||bbq,barbecue,grill,grills,gas grill,charcoal grill|ψησταριά,ψησταριές,μπάρμπεκιου,ψησταριά υγραερίου
+garden_furniture|GA||garden furniture,patio furniture,outdoor furniture,garden chairs|έπιπλα κήπου,καρέκλες κήπου,τραπέζι κήπου
+parasol|GA||parasol,patio umbrella,sun umbrella|ομπρέλα βεράντας,ομπρέλα κήπου,ομπρέλα παραλίας
+pool|GA||swimming pool,above ground pool,paddling pool|πισίνα,φουσκωτή πισίνα
+flower_pot|GA||flower pot,plant pot,planter|γλάστρα,γλάστρες,ζαρντινιέρα
+towels|FU||towel,towels,bath towel,beach towel|πετσέτα,πετσέτες,πετσέτα μπάνιου,πετσέτα θαλάσσης
+bed_linen|FU||bed sheets,bed linen,duvet cover,sheets|σεντόνια,σετ σεντόνια,παπλωματοθήκη
+pillow|FU||pillow,pillows|μαξιλάρι,μαξιλάρια
+duvet|FU||duvet,duvets,quilt,comforter|πάπλωμα,παπλώματα,κουβέρτα
+curtains|FU||curtains,curtain,blinds|κουρτίνες,κουρτίνα,στόρια
+rug|FU||rug,rugs,carpet|χαλί,χαλιά
+mirror|FU||mirror,mirrors,wall mirror|καθρέφτης,καθρέφτες
+wall_clock|FU||wall clock,alarm clock|ρολόι τοίχου,ξυπνητήρι
+baby_bottle|BK||baby bottle,baby bottles,feeding bottle|μπιμπερό
+breast_pump|BK||breast pump|θήλαστρο
+pet_carrier|BK||pet carrier,dog carrier,cat carrier|τσάντα μεταφοράς κατοικιδίου,κλουβί μεταφοράς
+cat_litter|BK||cat litter,litter box|άμμος γάτας,τουαλέτα γάτας
+aquarium|BK||aquarium,fish tank|ενυδρείο
+lego|BK||lego,building blocks|τουβλάκια
+board_game|BK||board game,board games|επιτραπέζιο,επιτραπέζια,επιτραπέζιο παιχνίδι
+doll|BK||doll,dolls|κούκλα,κούκλες
+kettlebell|BK||kettlebell,kettlebells|kettlebell
+weight_bench|BK||weight bench,gym bench|πάγκος γυμναστικής
+football|BK||football,soccer ball,basketball,ball|μπάλα,μπάλες,μπάλα ποδοσφαίρου,μπάλα μπάσκετ
+makeup|BE||makeup,foundation,mascara,lipstick|μακιγιάζ,μέικαπ,κραγιόν,μάσκαρα
+nail_polish|BE||nail polish|βερνίκι νυχιών,μανό
+hair_brush|BE||hair brush,hairbrush,comb|βούρτσα μαλλιών,χτένα
+razor_blades|BE||razor blades,razor cartridges|ξυραφάκια,λεπίδες ξυρίσματος
+deodorant|BE||deodorant,antiperspirant|αποσμητικό,αποσμητικά
+hearing_aid|HE||hearing aid,hearing amplifier|ακουστικό βαρηκοΐας,ακουστικά βαρηκοΐας
+wheelchair|HE||wheelchair,rollator,walking frame|αναπηρικό αμαξίδιο,περιπατητήρας
+face_mask|HE||face mask,face masks|μάσκα προσώπου,μάσκες προσώπου
 """
 
 

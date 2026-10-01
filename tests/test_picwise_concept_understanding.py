@@ -205,6 +205,67 @@ class ProductAnnotationTests(unittest.TestCase):
         self.assertEqual(annotate_product_concepts("", "", "Ψυγειοκαταψύκτης Samsung 350L"), {"refrigerator"})
 
 
+class AccessoryGuardTests(unittest.TestCase):
+    """An accessory of a product is never annotated as the product itself."""
+
+    def test_english_accessory_word_after_the_product(self) -> None:
+        self.assertEqual(
+            annotate_product_concepts("Washing Machine Accessories", "", "Fixturon washing machine hose"),
+            {"__accessory__"},
+        )
+        self.assertEqual(
+            annotate_product_concepts("", "", "Fixturon Coffee Machine Filter 4 pack"),
+            {"__accessory__"},
+        )
+
+    def test_a_word_before_the_product_is_a_type_not_an_accessory(self) -> None:
+        self.assertEqual(annotate_product_concepts("", "", "Filter Coffee Machine"), {"coffee_machine"})
+
+    def test_greek_order_is_the_other_way_round(self) -> None:
+        self.assertEqual(annotate_product_concepts("", "", "Καφετιέρα φίλτρου Fixturon"), {"coffee_machine"})
+        self.assertNotIn("coffee_machine", annotate_product_concepts("", "", "Φίλτρο καφετιέρας"))
+
+
+class ExpandedLexiconTests(unittest.TestCase):
+    def test_common_greek_shop_categories(self) -> None:
+        for query, concept in (
+            ("ταμπλετ", "tablet"),
+            ("tablet samsung", "tablet"),
+            ("ταμπλέτες πλυντηρίου πιάτων", "dishwasher_tablets"),
+            ("ψησταρια υγραεριου", "grill"),
+            ("καρτα γραφικων", "graphics_card"),
+            ("σεντονια διπλα", "bed_linen"),
+            ("μπαλα ποδοσφαιρου", "football"),
+        ):
+            with self.subTest(query=query):
+                self.assertEqual(concept_of(query), concept)
+
+    def test_a_tablet_and_dishwasher_tablets_never_mix(self) -> None:
+        self.assertEqual(annotate_product_concepts("Dishwasher Tablets", "", ""), {"dishwasher_tablets"})
+        self.assertEqual(annotate_product_concepts("Tablets", "", ""), {"tablet"})
+
+
+class DidYouMeanTests(unittest.TestCase):
+    def test_a_short_typo_is_asked_about_not_answered(self) -> None:
+        from picwise_nlu.concept_understanding import suggest_product_names
+
+        self.assertIsNone(concept_of("dsk"))
+        self.assertEqual(suggest_product_names("dsk"), ("desk",))
+        self.assertEqual(suggest_product_names("τοερ"), ("τόνερ",))
+
+    def test_an_equally_close_pair_is_offered_both_ways(self) -> None:
+        from picwise_nlu.concept_understanding import suggest_product_names
+
+        self.assertEqual(set(suggest_product_names("ακοσυτικα")), {"ακουστικά", "αποσμητικό"})
+
+    def test_no_suggestion_for_understood_or_everyday_words(self) -> None:
+        from picwise_nlu.concept_understanding import suggest_product_names
+
+        for query in ("πλυντηριο", "κρασι", "δανειο", "asdfgh"):
+            with self.subTest(query=query):
+                self.assertEqual(suggest_product_names(query), ())
+
+
 class LexiconIntegrityTests(unittest.TestCase):
     def test_every_concept_has_english_and_greek_names_and_a_mega_category(self) -> None:
         for concept in get_product_concepts():

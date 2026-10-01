@@ -10,7 +10,7 @@ from picwise_nlu import (
     normalize_greeklish_and_typos,
     normalize_query,
 )
-from picwise_nlu.concept_understanding import understand_product_query
+from picwise_nlu.concept_understanding import suggest_product_names, understand_product_query
 from picwise_nlu.product_concepts import get_product_concepts_by_id
 from picwise_search_memory.canonical_registry import get_cached_canonical_vocabulary_registry
 from picwise_search_memory.broad_query_suggestions import (
@@ -85,12 +85,15 @@ class LiveSearchResolution:
     # exact-by-sound) match. The page then states what it understood.
     understood_by_correction: bool = False
     understood_specs: tuple[dict[str, Any], ...] = field(default_factory=tuple)
+    # Product names to ask about when nothing was understood ("dsk" -> desk).
+    did_you_mean: tuple[str, ...] = field(default_factory=tuple)
     provider_feed_status: str | None = None
     provider_feed_reason_codes: tuple[str, ...] = field(default_factory=tuple)
     provider_feed_eligible_count: int = 0
     provider_feed_selection_status: str | None = None
     provider_feed_selection_reason_codes: tuple[str, ...] = field(default_factory=tuple)
     provider_feed_unmatched_query_terms: tuple[str, ...] = field(default_factory=tuple)
+    provider_feed_partially_matched_terms: tuple[tuple[str, int], ...] = field(default_factory=tuple)
     provider_feed_ambiguous_product_families: tuple[str, ...] = field(default_factory=tuple)
     provider_feed_matched_count: int = 0
     provider_feed_selected_count: int = 0
@@ -106,6 +109,7 @@ class LiveSearchResolution:
             "understood_concept_name": self.understood_concept_name,
             "understood_by_correction": self.understood_by_correction,
             "understood_specs": list(self.understood_specs),
+            "did_you_mean": list(self.did_you_mean),
             "raw_query": self.raw_query,
             "display_query": self.display_query,
             "normalized_query": self.normalized_query,
@@ -138,6 +142,9 @@ class LiveSearchResolution:
             payload["provider_feed_unmatched_query_terms"] = list(
                 self.provider_feed_unmatched_query_terms
             )
+            payload["provider_feed_partially_matched_terms"] = [
+                list(row) for row in self.provider_feed_partially_matched_terms
+            ]
             payload["provider_feed_ambiguous_product_families"] = list(
                 self.provider_feed_ambiguous_product_families
             )
@@ -402,6 +409,7 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     provider_feed_selection_status: str | None = None
     provider_feed_selection_reason_codes: tuple[str, ...] = ()
     provider_feed_unmatched_query_terms: tuple[str, ...] = ()
+    provider_feed_partially_matched_terms: tuple[tuple[str, int], ...] = ()
     provider_feed_ambiguous_product_families: tuple[str, ...] = ()
     provider_feed_matched_count = 0
     provider_feed_selected_count = 0
@@ -470,6 +478,7 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
                     provider_feed_selection_status = selection.status
                     provider_feed_selection_reason_codes = selection.reason_codes
                     provider_feed_unmatched_query_terms = selection.unmatched_query_terms
+                    provider_feed_partially_matched_terms = selection.partially_matched_terms
                     provider_feed_ambiguous_product_families = (
                         selection.ambiguous_product_families
                     )
@@ -521,6 +530,15 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
                     if feed_opportunity_search and expose_selection:
                         reason_codes.append("provider_feed_opportunity_gate")
 
+    did_you_mean: tuple[str, ...] = ()
+    if (
+        not concept_understood
+        and not provider_feed_selected_products
+        and not offer_broad_suggestions
+        and resolver_state != "blocked_or_unsafe"
+        and _normalized_text(raw_query)
+    ):
+        did_you_mean = suggest_product_names(raw_query)
     understood_concept_name = None
     if concept_understood:
         concept = get_product_concepts_by_id().get(str(concept_reading.concept_id))
@@ -530,6 +548,7 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
                 concept.greek[0] if greek_query and concept.greek else concept.primary_english
             )
     return LiveSearchResolution(
+        did_you_mean=did_you_mean,
         understood_concept_id=concept_reading.concept_id if concept_understood else None,
         understood_concept_name=understood_concept_name,
         understood_by_correction=bool(concept_understood and not concept_reading.exact),
@@ -567,6 +586,7 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
         provider_feed_selection_status=provider_feed_selection_status,
         provider_feed_selection_reason_codes=provider_feed_selection_reason_codes,
         provider_feed_unmatched_query_terms=provider_feed_unmatched_query_terms,
+        provider_feed_partially_matched_terms=provider_feed_partially_matched_terms,
         provider_feed_ambiguous_product_families=provider_feed_ambiguous_product_families,
         provider_feed_matched_count=provider_feed_matched_count,
         provider_feed_selected_count=provider_feed_selected_count,

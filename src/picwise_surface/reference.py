@@ -347,6 +347,14 @@ def render_picwise_reference_surface(
                     # The query was read through a typo correction. Say what it was
                     # read as, so a wrong correction is visible instead of silent.
                     query_line += f"  ·  Understood as: {understood_name}"
+                partial_terms = tuple(
+                    getattr(resolution, "provider_feed_partially_matched_terms", ()) or ()
+                )
+                if partial_terms:
+                    # Some, not all, of the four carry these; they are ranked first.
+                    query_line += "  ·  Only some of the four match: " + ", ".join(
+                        f"{term} ({count} of 4)" for term, count in partial_terms
+                    )
                 if unmatched_terms:
                     # Say what PicWise could not filter by. Without this the buyer would
                     # read four products as an answer to their whole request, when part
