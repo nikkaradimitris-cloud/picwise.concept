@@ -208,7 +208,7 @@ Mission Lock was not changed.
 
 | Finding | Status | Where it was fixed | Pinned by |
 |---|---|---|---|
-| D1 fabricated `/best` pages | **Fixed** — public repository empty, sitemap lists nothing, every seed slug 404 | `picwise_app/buying_routes.py` | `test_picwise_no_fabricated_public_pages` (+30 route guards rewritten to the truthful baseline) |
+| D1 fabricated `/best` pages | **Fixed** — public repository empty, sitemap lists nothing, every seed slug 404. **Verified live** by the owner on 2026-10-08 after the merge: `/best/power-bank-20000mah-for-iphone` returns 404 on `picwise.subby.cloud` | `picwise_app/buying_routes.py` | `test_picwise_no_fabricated_public_pages` (+30 route guards rewritten to the truthful baseline) |
 | D2 / E1 out-of-stock shown and recommended | **Fixed** — every availability column read; stock words decide anywhere; bare flags decide where their column varies; schema.org forms read | `offer_health.interpret_availability_state` | `test_picwise_stock_and_offer_truth` |
 | E3 not-for-sale, pre-order, expired, not-yet-valid offers | **Fixed** (needs the columns in the feed) | `offer_health.offer_flag_reason_codes` | same |
 | H3 four availability populations | **Fixed** — one context over the whole feed for selection, card fields, recommendation and redirect | `state.py`, `search_selection.py`, resolver | same |
