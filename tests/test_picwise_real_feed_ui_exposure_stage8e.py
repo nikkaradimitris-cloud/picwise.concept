@@ -102,7 +102,7 @@ def _extract_image_urls(body: str) -> list[str]:
 
 def _extract_product_hrefs(body: str) -> list[str]:
     return re.findall(
-        r'<a class="pw-card-cta pw-card-cta-link" href="([^"]+)" rel="nofollow sponsored noopener">View product</a>',
+        r'<a class="pw-card-cta pw-card-cta-link" href="([^"]+)" rel="nofollow sponsored noopener">View in Store</a>',
         body,
     )
 

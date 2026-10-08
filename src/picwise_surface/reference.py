@@ -271,7 +271,7 @@ def _build_provider_feed_result_cards(
                     else (reason_bullets if is_recommended else [])
                 ),
                 "warning": labels.risk_or_limitation if labels else "",
-                "cta": "View product",
+                "cta": "View in Store",
                 "image": str(product.get("image_url") or "").strip(),
                 "recommended": is_recommended,
                 "rec_note": (

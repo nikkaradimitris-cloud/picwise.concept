@@ -253,6 +253,8 @@ class DeployedSurfaceStockTruthTests(unittest.TestCase):
         for card in cards:
             self.assertIn("Listed as available by the provider feed", card["text"])
             self.assertTrue(str(card["price"]).endswith("GBP"), card["price"])
+            # The CTA says where it goes (CTA_AND_REDIRECT_SPEC: do not mask destination).
+            self.assertIn("View in Store", card["text"])
         status, _headers, _body = self._get("/out/feed", {"pid": "k1", "q": "kettle", "rec": "0"})
         self.assertEqual(status, "200 OK")  # the "no longer available" page, not a redirect
 
