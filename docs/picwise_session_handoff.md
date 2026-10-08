@@ -22,7 +22,21 @@ overclaim.
 
 ## Rules that do not change
 
-`PROJECT_RULES.md` comes first. In short:
+Read in this order before touching anything, every session:
+
+1. `PROJECT_RULES.md` — the operating rulebook, first in the source-of-truth order
+2. `docs/MISSION.md` — the mission lock: what every purchase-intent query owes the
+   buyer, the product promise ("Enter confused. Leave decided."), the identity PicWise
+   must never drift into, and the trust/neutrality commitments. **Every piece of work
+   is measured against this file.** Its "First Phase Boundary" section is stale (it
+   predates the live app) — see "Known doc conflict" below.
+3. `concept.picwise.txt` — the product concept source of truth
+4. `docs/` contracts and specs — implementation contracts
+5. this file, then the last entries of `PROGRESS.md`
+
+If these layers conflict, do not guess: stop and raise it (PROJECT_RULES section 1.4).
+
+In short:
 
 - every purchase-intent query: exactly 4 choices + 1 recommended, decision labels, CTA,
   direct redirect, tracking event
@@ -94,6 +108,21 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 4. Merge the word-level NLU (`build_local_nlu_intent`, still `insufficient_data` for
    Greek) and the concept reading into one layer.
 5. Investigate the two pre-existing registry failures.
+
+## Known doc conflict (unresolved, owner's call)
+
+Three files still describe the project as being in the documentation-only phase:
+
+- `docs/MISSION.md` → "First Phase Boundary": no frontend, no backend implementation
+- `PROJECT_RULES.md` section 12 → "Do not build live product UI until mission docs and
+  contracts are created and reviewed"
+- `docs/IMPLEMENTATION_ROADMAP.md` → "Current Phase: mission/spec/contracts foundation"
+
+Reality: the app is built and deployed (`PROGRESS.md` stages 16-26, stage 22 live on
+`picwise.subby.cloud`). So this text is out of date, not a live instruction to stop.
+Every other part of `MISSION.md` — the 4+1 contract, the identity rules, the trust and
+neutrality commitments — is current and binding. Nothing was changed in these three
+files: correcting the phase wording is the owner's decision, not the engineer's.
 
 ## Working gotchas
 
