@@ -695,11 +695,32 @@ def _word_in_text(word: str, text: str) -> bool:
     return re.search(pattern, text, flags=re.IGNORECASE) is not None
 
 
+def _accessory_term_pattern(term: str) -> re.Pattern[str]:
+    # Whole words, with the plural: "cable" and "cables", "battery" and "batteries" --
+    # but not "stand" inside "standard" or "kit" inside "kitchen", which put a real
+    # power bank or stand mixer in the accessory penalty.
+    stem = re.escape(term)
+    plural = f"{re.escape(term[:-1])}ies|" if term.endswith("y") else ""
+    return re.compile(rf"\b(?:{plural}{stem}(?:s|es)?)\b")
+
+
+_ACCESSORY_TERM_PATTERNS = tuple(
+    _accessory_term_pattern(term) for term in sorted(_ACCESSORY_TERMS)
+)
+# What follows these in a title is what comes in the box: "Power Bank with USB-C Cable"
+# is a power bank, not a cable.
+_INCLUDED_ITEMS_RE = re.compile(r"\s(?:with|incl\.?|including|plus|\+)\s")
+
+
+def _accessory_terms_in(text: str) -> int:
+    return sum(1 for pattern in _ACCESSORY_TERM_PATTERNS if pattern.search(text))
+
+
 def _query_seeks_accessory(tokens: tuple[str, ...], normalized_query: str) -> bool:
     if any(token in _ACCESSORY_TERMS for token in tokens):
         return True
     normalized = str(normalized_query or "").strip().lower()
-    return any(term in normalized for term in _ACCESSORY_TERMS)
+    return _accessory_terms_in(normalized) > 0
 
 
 def _title_accessory_penalty(
@@ -710,10 +731,8 @@ def _title_accessory_penalty(
 ) -> int:
     if query_seeks_accessory or not title:
         return 0
-    penalty = 0
-    for term in _ACCESSORY_TERMS:
-        if term in title:
-            penalty += _ACCESSORY_PENALTY
+    main_product_text = _INCLUDED_ITEMS_RE.split(title, maxsplit=1)[0]
+    penalty = _ACCESSORY_PENALTY * _accessory_terms_in(main_product_text)
     if _ACCESSORY_PACK_PREFIX_RE.search(title):
         penalty += _ACCESSORY_PENALTY
     if normalized_query and normalized_query in title and " for " in title:

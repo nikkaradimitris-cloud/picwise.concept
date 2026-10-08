@@ -30,7 +30,11 @@ for path in (ROOT, SRC):
 from api.index import app as wsgi_app  # noqa: E402
 from picwise_providers.awin_adapter import clear_awin_feed_parse_cache  # noqa: E402
 from picwise_providers.contracts import ProviderProduct  # noqa: E402
-from picwise_providers.search_selection import decide_recommended_provider_product  # noqa: E402
+from picwise_providers.search_selection import (  # noqa: E402
+    _query_seeks_accessory,
+    _title_accessory_penalty,
+    decide_recommended_provider_product,
+)
 from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
 
 _PRICE_DECIDED = "Lowest price among the choices that match your search equally"
@@ -107,6 +111,40 @@ class DecidingReasonTests(unittest.TestCase):
         )
         self.assertEqual(decision.recommended_product_id, "m2")
         self.assertEqual(decision.recommendation_reason_codes[0], "closer_search_match")
+
+
+class AccessoryWordTests(unittest.TestCase):
+    """Audit finding F3: the accessory penalty matched fragments of words."""
+
+    def _penalty(self, title: str, query: str) -> int:
+        return _title_accessory_penalty(
+            title.lower(),
+            normalized_query=query,
+            query_seeks_accessory=_query_seeks_accessory(tuple(query.split()), query),
+        )
+
+    def test_words_that_merely_contain_an_accessory_word_are_not_penalised(self) -> None:
+        for title in (
+            "Fixturon Standard 20000mAh Power Bank",  # "stand"
+            "Fixturon KitchenPro Food Processor",  # "kit"
+            "Testline Discover Smart Speaker",  # "cover"
+            "Sampleworks Mountain Bike",  # "mount"
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(self._penalty(title, "anything"), 0)
+
+    def test_what_comes_in_the_box_is_not_the_product(self) -> None:
+        self.assertEqual(self._penalty("Testline 20000mAh Power Bank with USB-C Cable", "power bank"), 0)
+        self.assertGreater(self._penalty("Testline USB-C Cable for Power Bank", "power bank"), 0)
+
+    def test_real_accessories_and_plurals_are_still_penalised(self) -> None:
+        self.assertGreater(self._penalty("Fixturon Laptop Bags 15.6 inch", "laptop"), 0)
+        self.assertGreater(self._penalty("Fixturon Replacement Batteries x4", "torch"), 0)
+        self.assertGreater(self._penalty("Fixturon Docking Station USB-C", "laptop"), 0)
+
+    def test_a_query_naming_an_accessory_is_read_by_whole_words(self) -> None:
+        self.assertTrue(_query_seeks_accessory(("laptop", "bag"), "laptop bag"))
+        self.assertFalse(_query_seeks_accessory(("standard", "power", "bank"), "standard power bank"))
 
 
 class RenderedRecommendationReasonTests(unittest.TestCase):
