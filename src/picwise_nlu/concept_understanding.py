@@ -999,6 +999,44 @@ def _head_of_text(text: str, *, first: bool = False) -> str | None:
     return head.concept_id
 
 
+# Words that make text a part of a product wherever they stand: "replacement coffee
+# machine jug" is a jug.
+_PART_WORDS = frozenset(
+    """
+    accessories accessory parts part spare spares replacement replacements refill refills
+    αξεσουαρ ανταλλακτικα ανταλλακτικο εξαρτηματα εξαρτημα
+    """.split()
+)
+
+
+@lru_cache(maxsize=65536)
+def words_after_product_name(text: str, concept_id: str) -> str | None:
+    """The words English product text puts after naming a `concept_id` product, or None.
+
+    English puts a product's type before its name and an accessory after it: "filter
+    coffee machine" and "battery lawn mower" are the products, "coffee machine filter"
+    is a filter. None when the text does not name the product itself: only words before
+    the first purpose word can name it ("battery for laptop" names no laptop), and an
+    accessory word after the name or a part word anywhere makes it a part of one. Greek
+    orders these the other way and is not read here. The words returned are normalised
+    and stop at the purpose word.
+    """
+    tokens = tuple(normalize_understanding_text(text).split())
+    if any(token in _PART_WORDS for token in tokens):
+        return None
+    cut = next((i for i, token in enumerate(tokens) if token in _PURPOSE_WORDS), len(tokens))
+    named = tokens[:cut]
+    spans = _choose_spans(_find_spans(named, [_exact_candidates(token) for token in named]))
+    for span in spans:
+        if concept_id not in broader_concepts(span.concept_id):
+            continue
+        after = named[span.end:]
+        if span.kind != "en" or any(token in _ACCESSORY_WORDS for token in after):
+            return None
+        return " ".join(after)
+    return None
+
+
 _TYPE_LIST_SPLIT_RE = re.compile(r"\s*(?:&|,|/|\band\b|\bκαι\b)\s*", flags=re.IGNORECASE)
 
 

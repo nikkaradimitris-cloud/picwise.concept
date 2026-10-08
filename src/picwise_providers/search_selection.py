@@ -12,6 +12,7 @@ from picwise_nlu.concept_understanding import (
     normalize_spec_text,
     strip_accents_if_needed,
     understand_product_query,
+    words_after_product_name,
 )
 
 from .contracts import FeedAvailabilityContext, OfferHealth, ProviderProduct
@@ -728,11 +729,25 @@ def _title_accessory_penalty(
     *,
     normalized_query: str,
     query_seeks_accessory: bool,
+    concept_id: str = "",
 ) -> int:
+    """How far a title reads as an accessory rather than the product searched for.
+
+    `concept_id` is the kind of product the candidate is already verified to be. When
+    the title names that kind with no accessory or part word after the name, an
+    accessory word before the name is its type ("Filter Coffee Machine", "Battery Lawn
+    Mower") and is not counted.
+    """
     if query_seeks_accessory or not title:
         return 0
     main_product_text = _INCLUDED_ITEMS_RE.split(title, maxsplit=1)[0]
-    penalty = _ACCESSORY_PENALTY * _accessory_terms_in(main_product_text)
+    accessory_terms = _accessory_terms_in(main_product_text)
+    if accessory_terms and concept_id:
+        after_name = words_after_product_name(main_product_text, concept_id)
+        if after_name is not None and not _accessory_terms_in(after_name):
+            # Every accessory word stands before the name or inside it: it is the type.
+            accessory_terms = 0
+    penalty = _ACCESSORY_PENALTY * accessory_terms
     if _ACCESSORY_PACK_PREFIX_RE.search(title):
         penalty += _ACCESSORY_PENALTY
     if normalized_query and normalized_query in title and " for " in title:
@@ -765,12 +780,14 @@ def _score_product_for_tokens(
     scoring_tokens: tuple[str, ...] | None = None,
     fields: dict[str, str] | None = None,
     concept_verified: bool = False,
+    concept_id: str = "",
 ) -> tuple[int, int, int, str, str] | None:
     """Rank one product. `tokens` must all match; `scoring_tokens` only add points.
 
     The two differ when a query carries words this inventory cannot be filtered by:
     those words no longer exclude a product, but a product that does mention them still
     scores higher, so the closest answer to the buyer's actual phrasing wins.
+    `concept_id` names the kind a concept-verified product was verified as.
     """
     if fields is None:
         fields = _product_search_fields(product)
@@ -850,6 +867,7 @@ def _score_product_for_tokens(
         fields["title"],
         normalized_query=normalized,
         query_seeks_accessory=query_seeks_accessory,
+        concept_id=concept_id if concept_verified else "",
     )
     score -= accessory_penalty
     if accessory_penalty == 0 and not query_seeks_accessory:
@@ -1187,6 +1205,7 @@ def _select_products_for_concept(
                 scoring_tokens=scoring_tokens,
                 fields=fields,
                 concept_verified=True,
+                concept_id=concept_id,
             )
             if ranking is not None:
                 rows.append((ranking, product))
@@ -1484,6 +1503,7 @@ def _recommendation_reason_codes_for_product(
     score: int,
     title_matches: int,
     price_used_as_tie_breaker: bool,
+    concept_id: str = "",
 ) -> tuple[str, ...]:
     fields = _product_search_fields(product)
     reasons: list[str] = []
@@ -1505,6 +1525,7 @@ def _recommendation_reason_codes_for_product(
         fields["title"],
         normalized_query=normalized,
         query_seeks_accessory=query_seeks_accessory,
+        concept_id=concept_id,
     )
     if accessory_penalty == 0 and not query_seeks_accessory:
         reasons.append("main_product_not_accessory")
@@ -1522,6 +1543,7 @@ def decide_recommended_provider_product(
     *,
     required_tokens: tuple[str, ...] | None = None,
     concept_verified: bool = False,
+    concept_id: str = "",
     feed_ctx: FeedAvailabilityContext | None = None,
 ) -> ProviderFeedRecommendationDecision:
     """Pick the recommended product from the four already selected.
@@ -1529,7 +1551,8 @@ def decide_recommended_provider_product(
     `required_tokens` is the reading the selection settled on. It must be passed when
     the query was relaxed, otherwise this re-scores against words the selection already
     established the inventory cannot be filtered by, finds nothing, and reports no
-    recommendation for four products that are sitting right there.
+    recommendation for four products that are sitting right there. `concept_id` is the
+    kind the selection verified the four as, so they are scored as they were chosen.
     """
     if not selected_products:
         return ProviderFeedRecommendationDecision(
@@ -1569,6 +1592,7 @@ def decide_recommended_provider_product(
             query_seeks_accessory=query_seeks_accessory,
             scoring_tokens=tokens,
             concept_verified=concept_verified,
+            concept_id=concept_id,
         )
         if ranking is None:
             continue
@@ -1615,6 +1639,7 @@ def decide_recommended_provider_product(
         score=winner_score,
         title_matches=winner_title_matches,
         price_used_as_tie_breaker=deciding_reason == "price_tie_breaker",
+        concept_id=concept_id if concept_verified else "",
     )
     if concept_verified:
         reason_codes = ("product_concept_match",) + tuple(reason_codes)

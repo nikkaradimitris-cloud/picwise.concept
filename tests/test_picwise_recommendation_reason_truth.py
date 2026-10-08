@@ -116,11 +116,12 @@ class DecidingReasonTests(unittest.TestCase):
 class AccessoryWordTests(unittest.TestCase):
     """Audit finding F3: the accessory penalty matched fragments of words."""
 
-    def _penalty(self, title: str, query: str) -> int:
+    def _penalty(self, title: str, query: str, concept_id: str = "") -> int:
         return _title_accessory_penalty(
             title.lower(),
             normalized_query=query,
             query_seeks_accessory=_query_seeks_accessory(tuple(query.split()), query),
+            concept_id=concept_id,
         )
 
     def test_words_that_merely_contain_an_accessory_word_are_not_penalised(self) -> None:
@@ -145,6 +146,104 @@ class AccessoryWordTests(unittest.TestCase):
     def test_a_query_naming_an_accessory_is_read_by_whole_words(self) -> None:
         self.assertTrue(_query_seeks_accessory(("laptop", "bag"), "laptop bag"))
         self.assertFalse(_query_seeks_accessory(("standard", "power", "bank"), "standard power bank"))
+
+    def test_a_type_word_before_the_name_is_not_an_accessory(self) -> None:
+        # For a product already verified as the kind searched for, an accessory word
+        # before the name is its type, not what it is.
+        for title, concept_id, query in (
+            ("Sampleworks Filter Coffee Machine", "coffee_machine", "coffee machine"),
+            ("Fixturon Cordless Battery Lawn Mower 40V", "lawn_mower", "lawn mower"),
+            ("Testline HEPA Filter Air Purifier", "air_purifier", "air purifier"),
+            ("Fixturon Compact Stand Mixer 3.5L", "mixer", "mixer"),
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(self._penalty(title, query, concept_id), 0)
+                # Without a verified kind the word list alone still decides.
+                self.assertGreater(self._penalty(title, query), 0)
+
+    def test_an_accessory_of_the_kind_keeps_its_penalty(self) -> None:
+        for title, concept_id, query in (
+            ("Fixturon Coffee Machine Filter 4 Pack", "coffee_machine", "coffee machine"),
+            ("Replacement Coffee Machine Jug", "coffee_machine", "coffee machine"),
+            ("Filter for Coffee Machine", "coffee_machine", "coffee machine"),
+            ("Testline Battery Lawn Mower Blade", "lawn_mower", "lawn mower"),
+            ("Replacement Battery for Dell Laptop", "laptop", "laptop"),
+            ("Fixturon Laptop Stand Aluminium", "laptop", "laptop"),
+            ("Sampleworks Vacuum Cleaner Bags 10 Pack", "vacuum_cleaner", "vacuum cleaner"),
+        ):
+            with self.subTest(title=title):
+                self.assertGreater(self._penalty(title, query, concept_id), 0)
+
+
+class TypeWordThroughDeployedAppTests(unittest.TestCase):
+    """Through api/index.py: "Filter Coffee Machine" competes as a coffee machine."""
+
+    def setUp(self) -> None:
+        directory = tempfile.mkdtemp()
+        path = Path(directory) / "feed.csv"
+        rows = [
+            ("c10", "Sampleworks Filter Coffee Machine", "10.00"),
+            ("c20", "Testline Bean Coffee Machine", "20.00"),
+            ("c30", "Fixturon Pod Coffee Machine", "30.00"),
+            ("c40", "Sampleworks Espresso Coffee Machine", "40.00"),
+            ("c50", "Testline Drip Coffee Machine", "50.00"),
+            # An accessory filed under the machines by its merchant.
+            ("a05", "Fixturon Coffee Machine Filter 4 Pack", "5.00"),
+        ]
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(
+                ["aw_product_id", "product_name", "brand_name", "product_type", "merchant_category",
+                 "aw_deep_link", "aw_image_url", "search_price", "currency", "in_stock",
+                 "merchant_name", "data_provenance"]
+            )
+            for pid, title, price in rows:
+                writer.writerow(
+                    [pid, title, title.split()[0], "Coffee Machines", "Coffee Machines",
+                     f"https://fixture.example.invalid/out/{pid}",
+                     f"https://fixture.example.invalid/img/{pid}.jpg", price, "GBP", "1",
+                     "Fixture Store One", "local_test_fixture"]
+                )
+        previous = os.environ.get("AWIN_FEED_FILE")
+        os.environ["AWIN_FEED_FILE"] = str(path)
+        clear_awin_feed_parse_cache()
+        clear_provider_feed_pipeline_cache()
+
+        def restore() -> None:
+            if previous is None:
+                os.environ.pop("AWIN_FEED_FILE", None)
+            else:
+                os.environ["AWIN_FEED_FILE"] = previous
+            clear_awin_feed_parse_cache()
+            clear_provider_feed_pipeline_cache()
+
+        self.addCleanup(restore)
+
+    def test_the_filter_coffee_machine_is_equivalent_and_the_filter_pack_is_not(self) -> None:
+        def start_response(_status: str, _headers: list[tuple[str, str]]) -> None:
+            return None
+
+        body = b"".join(
+            wsgi_app(
+                {
+                    "REQUEST_METHOD": "GET",
+                    "PATH_INFO": "/search",
+                    "QUERY_STRING": urlencode({"q": "coffee machine"}),
+                    "wsgi.input": io.BytesIO(b""),
+                    "wsgi.url_scheme": "https",
+                },
+                start_response,
+            )
+        ).decode("utf-8")
+        cards = re.findall(r'<article class="pw-card([^"]*)" data-choice-id="([^"]+)"', body)
+        shown = [pid for _classes, pid in cards]
+        recommended = [pid for classes, pid in cards if "recommended" in classes]
+        # Five equivalent machines spread over their range (cheapest, two between,
+        # dearest); the filter pack is never one of them. The penalty for the word
+        # "filter" used to leave c10 out of the four altogether.
+        self.assertEqual(shown, ["c10", "c20", "c40", "c50"])
+        self.assertEqual(recommended, ["c10"])
+        self.assertIn(_PRICE_DECIDED, body)
 
 
 class RenderedRecommendationReasonTests(unittest.TestCase):

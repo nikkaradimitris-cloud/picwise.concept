@@ -346,6 +346,7 @@ def resolve_search_provider_feed_recommendation_decision(
             selection.selected_products,
             required_tokens=selection.required_filter_terms,
             concept_verified=True,
+            concept_id=selection.understood_concept,
             feed_ctx=selection.feed_availability_context,
         )
     return decide_recommended_provider_product(
