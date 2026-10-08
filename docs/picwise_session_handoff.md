@@ -8,7 +8,8 @@ Current state for whoever picks the project up next. Updated 2026-10-08.
 - Repository: `nikkaradimitris-cloud/picwise.concept`
 - **Newest work: branch `ccr-a96ce6ac-g06rcj`.** It holds everything in PR #1 plus the
   mission truth audit of 2026-10-08 and its fixes
-  (`docs/picwise_mission_truth_audit_2026-10-08.md`). No pull request is open for it yet.
+  (`docs/picwise_mission_truth_audit_2026-10-08.md`). **PR #2** (`ccr-a96ce6ac-g06rcj` →
+  `main`) carries it; it includes all of PR #1 and supersedes it.
 - PR #1 (`ccr-cbcc1974-i8vmk2` → `main`) is still open. Merging PR #1 alone does **not**
   bring the audit fixes; `ccr-a96ce6ac-g06rcj` → `main` brings both.
 - **`main` has neither until merged.** Start new work from `ccr-a96ce6ac-g06rcj` (merge
@@ -93,25 +94,19 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 
 ## Waiting on the owner
 
-1. **Merge `ccr-a96ce6ac-g06rcj` into `main`** (it contains PR #1). Until then
+1. **Merge PR #2** (`ccr-a96ce6ac-g06rcj` → `main`; it contains PR #1). Until then
    production keeps serving the fabricated `/best` pages (audit D1) and can recommend
    an out-of-stock product (audit D2).
-2. **Which four, when many products match equally (audit D4).** Today it is the
-   alphabetical order of the title. The Decision Contract leaves the ranking formula as
-   `TODO`, so this is a product decision. Recommended option put to the owner: spread
-   the four across the price range of the matching products (cheapest, dearest, two
-   between) — the concept's own Budget → Premium idea, using only feed facts, and it
-   matches the price-rank labels already on the cards. Do not implement without an answer.
-3. **Awin**: create the feed link (Toolbox → Create-a-Feed), set it in Vercel as
+2. **Awin**: create the feed link (Toolbox → Create-a-Feed), set it in Vercel as
    `AWIN_FEED_URL`, redeploy. Guide: `docs/awin_feed_setup_el.md` (now also asks for
    `ean, product_GTIN, mpn, condition, is_for_sale, pre_order, valid_from, valid_to`).
-4. **Supabase project for the query log — and for click/decision events.** Click and
+3. **Supabase project for the query log — and for click/decision events.** Click and
    impression events live only in a per-process list today (audit D5), so production
    records no click durably. None of the account's three projects is PicWise's (one
    inactive, `taxi-chat` belongs to another app, `mysubby.cloud@gmail.com`). Do not
    create tables in them without the owner saying which; a new project may cost money,
    so ask first.
-5. Optional: allow `productdata.awin.com` in the cloud environment's network settings so
+4. Optional: allow `productdata.awin.com` in the cloud environment's network settings so
    a session can check the real feed.
 
 ## Next engineering steps, in order
@@ -175,6 +170,11 @@ files: correcting the phase wording is the owner's decision, not the engineer's.
   (`feed_ctx`) rather than building a new one from a subset.
 - Product identity is GTIN, else brand + MPN (`_product_identity_key`); count products,
   not offers, anywhere a "four" is decided.
+- Which four are shown (owner decision, 2026-10-08, recorded in the Decision Contract):
+  groups of substantially equivalent products in relevance order; a group too big for
+  the free slots is spread across its price range (cheapest, two between, dearest).
+  Merchant free text (keywords, description) never makes a product "more relevant" —
+  not for the four, not for the recommendation. `test_picwise_price_range_diversity`.
 - A test that renders an empty query schedules a 0.75 s background warm-up; reset it
   (`search_warmup._reset_search_warmup_for_tests`) or it can land in a later test.
 - Probe the real path with the deployed entrypoint (`api.index.app`) in-process; the

@@ -214,7 +214,7 @@ Mission Lock was not changed.
 | E6 readiness endpoint claiming "connected" | **Fixed** — reports the production feed status | `launch_readiness.py`, `app.py` | same |
 | H1 cold start | **Fixed** — first request 1,019–1,081 ms → 677–724 ms; import + first request 1,360–1,462 ms → 1,045–1,078 ms (19-row fixture) | `validation.py` (+ artifact rebuilt) | `test_picwise_performance_stage1a` (race fixed) |
 | I1 CTA hid the destination | **Fixed** — "View in Store" | `reference.py` | `test_picwise_stock_and_offer_truth` |
-| D4 alphabetical choice of the four | **Open — owner decision** (ranking formula is `TODO` in the Decision Contract) | — | — |
+| D4 alphabetical choice of the four | **Fixed by owner decision** — more than four substantially equivalent products are spread across the price range (cheapest, two between, dearest), hard filters first; recorded in the Decision Contract | `search_selection._choose_shown_products` | `test_picwise_price_range_diversity` |
 | D5 click and decision events not stored | **Open — owner decision** (Supabase project) | — | — |
 | F1, F2, G4, H2, H4, H5, I2, I4, E7–E9 | **Open**, recorded above; none is a fabricated claim on the live path | — | — |
 
