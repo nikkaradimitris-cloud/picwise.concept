@@ -913,13 +913,21 @@ def _is_cheaper_offer(candidate: ProviderProduct, current: ProviderProduct) -> b
 def _dedupe_selected_products(
     ranked_products: list[tuple[tuple[int, int, int, str, str], ProviderProduct]],
 ) -> list[ProviderProduct]:
-    """Distinct products in rank order, one offer each.
+    """Distinct products in rank order, one offer each (see `_dedupe_ranked_products`)."""
+    return [shown for _ranking, _ranked, shown in _dedupe_ranked_products(ranked_products)]
+
+
+def _dedupe_ranked_products(
+    ranked_products: list[tuple[tuple[int, int, int, str, str], ProviderProduct]],
+) -> list[tuple[tuple[int, int, int, str, str], ProviderProduct, ProviderProduct]]:
+    """Distinct products in rank order, one offer each, as (ranking, ranked offer, shown offer).
 
     Offers of the same product (same GTIN, or brand and part number) collapse into one
     choice: four merchants selling one phone were shown as four "different" choices,
     ranked lowest to highest price, while different phones were pushed out. The offer
     kept is the lowest price in the same currency, placed where the product first
-    ranks; a tie keeps the better-ranked offer.
+    ranks; a tie keeps the better-ranked offer. The product keeps the ranking of that
+    best-ranked offer.
     """
     identities = {id(product): _product_identity_key(product) for _, product in ranked_products}
     best_offer: dict[str, ProviderProduct] = {}
@@ -934,9 +942,9 @@ def _dedupe_selected_products(
     seen_ids: set[str] = set()
     seen_titles: set[str] = set()
     seen_identities: set[str] = set()
-    selected: list[ProviderProduct] = []
+    selected: list[tuple[tuple[int, int, int, str, str], ProviderProduct, ProviderProduct]] = []
 
-    for _, ranked_product in ranked_products:
+    for ranking, ranked_product in ranked_products:
         product = ranked_product
         identity = identities[id(ranked_product)]
         if identity:
@@ -954,9 +962,116 @@ def _dedupe_selected_products(
             seen_ids.add(product_id)
         if dedupe_title:
             seen_titles.add(dedupe_title)
-        selected.append(product)
+        selected.append((ranking, ranked_product, product))
 
     return selected
+
+
+def _token_in_substantive_fields(token: str, fields: dict[str, str]) -> bool:
+    return bool(
+        _token_matches_field(token, fields["title"])
+        or (fields["product_type"] and _token_matches_field(token, fields["product_type"]))
+        or _token_matches_field(token, fields["category"])
+        or (fields["brand"] and _token_matches_field(token, fields["brand"]))
+    )
+
+
+def _merchant_text_evidence(fields: dict[str, str], tokens: tuple[str, ...]) -> tuple[int, int]:
+    """Score points, and matched words, that come only from merchant free text.
+
+    The keywords and description fields are marketing text each merchant fills in its
+    own way. A word found there makes no difference to what the product is, so two
+    products that differ only by it are substantially equivalent. Mirrors the keyword
+    and description weights of `_score_product_for_tokens`.
+    """
+    points = 0
+    free_text_only = 0
+    for token in tokens:
+        in_keywords = _token_matches_field(token, fields["keywords"])
+        in_description = bool(fields["description"]) and _token_matches_field(
+            token, fields["description"]
+        )
+        if in_keywords:
+            points += _KEYWORD_WEIGHT
+        if in_description:
+            points += _DESCRIPTION_WEIGHT
+        if (in_keywords or in_description) and not _token_in_substantive_fields(token, fields):
+            free_text_only += 1
+    return points, free_text_only
+
+
+def _substantive_relevance(
+    ranking: tuple[int, int, int, str, str],
+    fields: dict[str, str],
+    tokens: tuple[str, ...],
+) -> tuple[int, int, int]:
+    """(score, title matches, matched words) without the merchant free-text evidence."""
+    matched_tokens, score, title_matches, _title_key, _product_id = ranking
+    points, free_text_only = _merchant_text_evidence(fields, tokens)
+    return (score - points, title_matches, matched_tokens - free_text_only)
+
+
+def _spread_across_price(group: list[ProviderProduct], slots: int) -> list[ProviderProduct]:
+    """Pick `slots` products from equivalent ones, spread across their price range.
+
+    Owner decision (2026-10-08): when the ranking leaves more than four substantially
+    equivalent products, the four shown are the cheapest, the dearest and two in
+    between. In general the picks are evenly spaced positions of the price-sorted
+    group, endpoints included: two slots are the cheapest and the dearest, three add
+    the middle one, one slot is the middle one; a position halfway between two
+    products rounds up. Returned cheapest first. Prices that cannot be compared
+    (missing, or in different currencies) give no range to spread across, so the group
+    keeps its rank order.
+    """
+    if slots <= 0 or not group:
+        return []
+    prices = [parse_price_amount(product.price_text) for product in group]
+    currencies = {str(product.currency or "").strip().upper() for product in group}
+    if any(price is None for price in prices) or len(currencies) > 1:
+        return group[:slots]
+    order = sorted(range(len(group)), key=lambda index: (prices[index], index))
+    if len(order) <= slots:
+        return [group[index] for index in order]
+    last = len(order) - 1
+    if slots == 1:
+        # The middle position, rounded the same way as every other pick.
+        return [group[order[int(last / 2 + 0.5)]]]
+    picks = [order[int(step * last / (slots - 1) + 0.5)] for step in range(slots)]
+    return [group[index] for index in picks]
+
+
+def _choose_shown_products(
+    ranked: list[tuple[tuple[int, int, int, str, str], ProviderProduct]],
+    *,
+    safe_max: int,
+    fields_by_id: dict[int, dict[str, str]],
+    scoring_tokens: tuple[str, ...],
+) -> list[ProviderProduct]:
+    """The products to show, from candidates that already passed every hard filter.
+
+    Groups of substantially equivalent products are taken in relevance order; a group
+    that fits in the free slots is shown whole, and the group that does not is reduced
+    by `_spread_across_price`. Nothing here adds a candidate: the alphabetical order of
+    titles, which used to decide among equivalents, no longer decides anything.
+    """
+    rows = []
+    for position, (ranking, ranked_product, shown_product) in enumerate(
+        _dedupe_ranked_products(ranked)
+    ):
+        fields = fields_by_id.get(id(ranked_product)) or _product_search_fields(ranked_product)
+        rows.append((_substantive_relevance(ranking, fields, scoring_tokens), position, shown_product))
+    rows.sort(key=lambda row: (-row[0][0], -row[0][1], -row[0][2], row[1]))
+
+    chosen: list[ProviderProduct] = []
+    start = 0
+    while start < len(rows) and len(chosen) < safe_max:
+        end = start
+        while end < len(rows) and rows[end][0] == rows[start][0]:
+            end += 1
+        group = [product for _relevance, _position, product in rows[start:end]]
+        chosen.extend(_spread_across_price(group, safe_max - len(chosen)))
+        start = end
+    return chosen
 
 
 def _count_strong_matches(
@@ -1102,7 +1217,12 @@ def _select_products_for_concept(
     # A filter that could not hold for all four may still hold for some of them; those
     # rank first. Say how many rather than calling it unmatched.
     fields_by_id = {id(product): fields for product, fields in members}
-    shown = deduped[:safe_max]
+    shown = _choose_shown_products(
+        ranked,
+        safe_max=safe_max,
+        fields_by_id=fields_by_id,
+        scoring_tokens=scoring_tokens,
+    )
     fully_unmatched: list[str] = []
     partial: list[tuple[str, int]] = []
     for term in unmatchable:
@@ -1140,7 +1260,7 @@ def _select_products_for_concept(
         # Every one is an instance of the concept and carries every required filter,
         # which is what "strong" means for a token match.
         strong_matched_count=len(deduped),
-        selected_products=tuple(deduped[:safe_max]),
+        selected_products=tuple(shown),
         reason_codes=("provider_feed_products_selected", "product_concept_understood"),
         **common,
     )
@@ -1255,7 +1375,14 @@ def select_provider_products_for_query(
             required_query_terms=required_tokens,
         )
 
-    chosen = tuple(deduped[:safe_max])
+    chosen = tuple(
+        _choose_shown_products(
+            ranked,
+            safe_max=safe_max,
+            fields_by_id={id(product): fields for product, fields in zip(eligible, eligible_fields)},
+            scoring_tokens=tokens,
+        )
+    )
     chosen_families = {_product_family(product) for product in chosen}
     if len(chosen_families) > 1 and "" not in chosen_families:
         # Without an understood product the words matched several kinds of product
@@ -1431,6 +1558,7 @@ def decide_recommended_provider_product(
     else:
         filter_tokens = tuple(required_tokens) if required_tokens else tokens
     candidates: list[tuple[tuple[Any, ...], ProviderProduct]] = []
+    full_scores: dict[int, int] = {}
     tie_break_prices = _comparable_tie_break_prices(selected_products)
 
     for product in selected_products:
@@ -1445,10 +1573,16 @@ def decide_recommended_provider_product(
         if ranking is None:
             continue
         _matched_tokens, score, title_matches, title_key, product_id = ranking
+        full_scores[id(product)] = score
+        # The same equivalence the four were chosen by: a word that appears only in
+        # merchant free text does not make one choice match the search more closely.
+        substantive_score, _titles, _matched = _substantive_relevance(
+            ranking, _product_search_fields(product), tokens
+        )
         price_value = tie_break_prices.get(str(product.provider_product_id or ""))
         has_price = 1 if price_value is not None else 0
         sort_key = (
-            -score,
+            -substantive_score,
             -title_matches,
             -has_price,
             price_value if price_value is not None else float("inf"),
@@ -1466,7 +1600,7 @@ def decide_recommended_provider_product(
     candidates.sort(key=lambda row: row[0])
     winner_key, winner_product = candidates[0]
     winner_id = str(winner_product.provider_product_id or "").strip()
-    winner_score = -winner_key[0]
+    winner_score = full_scores[id(winner_product)]
     winner_title_matches = -winner_key[1]
 
     deciding_reason = _deciding_reason_code(
