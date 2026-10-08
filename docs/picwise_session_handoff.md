@@ -81,8 +81,8 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 
 - Misspelling benchmark: **96.0% pass, 0 wrong kind of product shown** (was 25.2% / 19);
   unchanged after the audit fixes.
-- Test suite, last full run 2026-10-08 after the audit fixes (222 modules, every module
-  except the two hour-long ones, one process per module): **1,794 tests, 2 failures,
+- Test suite, last full run 2026-10-08 after the F3/F4 fixes (224 modules, every module
+  except the two hour-long ones, one process per module): **1,810 tests, 2 failures,
   48 skipped** (skips need the operator's private feeds). The two failures predate all
   of this work and fail identically on `4475192` (checked in a clean worktree):
   `test_picwise_canonical_vocabulary_registry_stage2`,
