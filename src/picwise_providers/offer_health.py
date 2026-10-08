@@ -60,11 +60,14 @@ _UNAVAILABLE_PHRASES = (
     "not available",
     "not in stock",
     "no stock",
+    # schema.org InStoreOnly: the buyer cannot complete it through the store link.
+    "in store only",
 )
 # Not in stock now: ordering it means waiting for stock, which is not what a card that
 # reads "available" tells the buyer.
 _NOT_YET_PHRASES = (
     "pre order",
+    "pre sale",
     "back order",
     "coming soon",
     "available soon",
@@ -72,8 +75,10 @@ _NOT_YET_PHRASES = (
 _AVAILABLE_PHRASES = (
     "in stock",
     "available",
+    "limited availability",
     "limited stock",
     "low stock",
+    "online only",
 )
 # Bare flags carry meaning only through the column they sit in, and a column holding
 # the same flag on every row is unpopulated rather than a statement about each offer.

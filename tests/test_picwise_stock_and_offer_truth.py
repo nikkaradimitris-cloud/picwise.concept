@@ -110,7 +110,11 @@ class AvailabilityReadingTests(unittest.TestCase):
             ("PreOrder", "out_of_stock"),
             ("backorder", "out_of_stock"),
             ("Discontinued", "discontinued"),
+            ("InStoreOnly", "out_of_stock"),
+            ("PreSale", "out_of_stock"),
             ("InStock", "trusted"),
+            ("LimitedAvailability", "trusted"),
+            ("OnlineOnly", "trusted"),
         ):
             with self.subTest(value=value):
                 self.assertEqual(self._state(_product("a", stock_status=value), other), expected)
