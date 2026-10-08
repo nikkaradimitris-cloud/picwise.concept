@@ -174,8 +174,9 @@ class PickWiseRoadmapStep2RealFeedSampleValidationTests(unittest.TestCase):
 
     def test_public_routes_sitemap_naming_and_gates_remain_unchanged(self) -> None:
         status, body = render_best_slug_html("power-bank-20000mah-for-iphone")
-        self.assertEqual(status, 200)
-        self.assertIn("Recommended by PickWise", body)
+        # Fixture buying pages are never published: they are fabricated products and ratings.
+        self.assertEqual(status, 404)
+        self.assertNotIn("Recommended by PickWise", body)
         candidate_status, _candidate_body = render_best_slug_html("power-bank-20000mah-for-iphone-roadmap-step2-sample")
         self.assertEqual(candidate_status, 404)
         repository = get_buying_pages_repository()

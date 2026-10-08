@@ -162,8 +162,9 @@ class PickWiseStep11ReleaseGovernanceTests(unittest.TestCase):
 
     def test_no_route_sitemap_or_naming_changes(self) -> None:
         status_best_ok, _headers_best_ok, body_best_ok = _call_wsgi("/best/power-bank-20000mah-for-iphone")
-        self.assertEqual(status_best_ok, "200 OK")
-        self.assertIn("PickWise", body_best_ok)
+        # Fixture buying pages are never published: they are fabricated products and ratings.
+        self.assertEqual(status_best_ok, "404 Not Found")
+        self.assertNotIn("Recommended by PickWise", body_best_ok)
         self.assertNotIn("Pic Wise", body_best_ok)
 
         status_new_best, _headers_new_best, _body_new_best = _call_wsgi("/best/best-power-banks-for-travel-usa")

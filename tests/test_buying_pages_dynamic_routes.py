@@ -70,13 +70,16 @@ class BuyingPagesDynamicRoutesTests(unittest.TestCase):
         with urlopen(f"http://127.0.0.1:{self.port}{path}", timeout=5) as response:
             return response.status, response.read().decode("utf-8")
 
-    def test_best_route_known_slugs_return_200(self) -> None:
-        status_a, body_a = self._fetch_local("/best/power-bank-20000mah-for-iphone")
-        status_b, body_b = self._fetch_local("/best/kompiouteraki-casio-gia-panellinies")
-        self.assertEqual(status_a, 200)
-        self.assertEqual(status_b, 200)
-        self.assertIn("Showing 4 options for:", body_a)
-        self.assertIn("Showing 4 options for:", body_b)
+    def test_fixture_seed_slugs_are_not_published(self) -> None:
+        # The seed pages are fabricated products, prices and ratings; no route serves them.
+        for path in (
+            "/best/power-bank-20000mah-for-iphone",
+            "/best/kompiouteraki-casio-gia-panellinies",
+        ):
+            with self.subTest(path=path):
+                with self.assertRaises(HTTPError) as ctx:
+                    urlopen(f"http://127.0.0.1:{self.port}{path}", timeout=5)
+                self.assertEqual(ctx.exception.code, 404)
 
     def test_best_route_unknown_slug_returns_404(self) -> None:
         with self.assertRaises(HTTPError) as ctx:
@@ -88,11 +91,12 @@ class BuyingPagesDynamicRoutesTests(unittest.TestCase):
             status, _body = self._fetch_local(path)
             self.assertEqual(status, 200)
 
-    def test_deployment_entrypoint_serves_best_route(self) -> None:
+    def test_deployment_entrypoint_does_not_serve_fixture_pages(self) -> None:
         status, headers, body = _call_wsgi("/best/power-bank-20000mah-for-iphone")
-        self.assertEqual(status, "200 OK")
+        self.assertEqual(status, "404 Not Found")
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
-        self.assertIn("Recommended by PickWise", body)
+        self.assertNotIn("Recommended by PickWise", body)
+        self.assertNotIn("Rating:", body)
 
 
 if __name__ == "__main__":

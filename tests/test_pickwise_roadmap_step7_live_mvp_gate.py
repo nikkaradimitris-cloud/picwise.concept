@@ -16,7 +16,8 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from api.index import app as deployment_app  # noqa: E402
-from picwise_buying_pages import LiveMVPGatePolicy, build_live_mvp_batch  # noqa: E402
+from picwise_buying_pages import LiveMVPGatePolicy, build_live_mvp_batch, load_seed_buying_pages  # noqa: E402
+from picwise_surface.buying_page import render_buying_page_surface  # noqa: E402
 
 
 def _load_step7_fixture() -> dict[str, object]:
@@ -120,8 +121,9 @@ class PickWiseRoadmapStep7LiveMVPGateTests(unittest.TestCase):
 
     def test_existing_best_behavior_unchanged_and_no_public_route_replacement(self) -> None:
         status_ok, _headers_ok, body_ok = _call_wsgi("/best/power-bank-20000mah-for-iphone")
-        self.assertEqual(status_ok, "200 OK")
-        self.assertIn("Recommended by PickWise", body_ok)
+        # Fixture buying pages are never published: they are fabricated products and ratings.
+        self.assertEqual(status_ok, "404 Not Found")
+        self.assertNotIn("Recommended by PickWise", body_ok)
 
         status_missing, _headers_missing, _body_missing = _call_wsgi("/best/step7-clean-us-power-banks")
         self.assertEqual(status_missing, "404 Not Found")
@@ -130,7 +132,9 @@ class PickWiseRoadmapStep7LiveMVPGateTests(unittest.TestCase):
         self.assertEqual(status_preview, "404 Not Found")
 
     def test_no_naming_changes(self) -> None:
-        _status, _headers, body = _call_wsgi("/best/power-bank-20000mah-for-iphone")
+        # Fixture buying pages are never published, so the naming is checked on the
+        # page template, offline.
+        body = render_buying_page_surface(load_seed_buying_pages()[0])
         self.assertIn("PickWise", body)
         self.assertNotIn("Pic Wise", body)
 

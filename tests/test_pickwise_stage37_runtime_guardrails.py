@@ -100,9 +100,12 @@ class PickWiseStage37RuntimeGuardrailsTests(unittest.TestCase):
         self.assertEqual([page.slug for page in selected], [ready.slug])
 
     def test_existing_routes_remain_working(self) -> None:
-        for path in ("/search", "/results", "/private-beta-readiness", "/sitemap-buying-pages.xml", "/best/power-bank-20000mah-for-iphone"):
+        for path in ("/search", "/results", "/private-beta-readiness", "/sitemap-buying-pages.xml"):
             status, _headers, _body = _call_wsgi(path, "q=power+bank")
             self.assertEqual(status, "200 OK")
+        # Fixture buying pages are never published: they are fabricated products and ratings.
+        status, _headers, _body = _call_wsgi("/best/power-bank-20000mah-for-iphone", "q=power+bank")
+        self.assertEqual(status, "404 Not Found")
 
     def test_stage37_does_not_implement_cart_checkout_or_inventory(self) -> None:
         source = "\n".join(

@@ -262,8 +262,9 @@ class BuyingPagesPublishGateTests(unittest.TestCase):
 
     def test_best_route_behavior_for_existing_fixtures_remains_unchanged(self) -> None:
         status, body = render_best_slug_html("power-bank-20000mah-for-iphone")
-        self.assertEqual(status, 200)
-        self.assertIn("Recommended by PickWise", body)
+        # Fixture buying pages are never published: they are fabricated products and ratings.
+        self.assertEqual(status, 404)
+        self.assertNotIn("Recommended by PickWise", body)
         missing_status, _missing_body = render_best_slug_html("does-not-exist")
         self.assertEqual(missing_status, 404)
 

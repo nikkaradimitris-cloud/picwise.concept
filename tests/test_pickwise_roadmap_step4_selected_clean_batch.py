@@ -112,8 +112,9 @@ class PickWiseRoadmapStep4SelectedCleanBatchTests(unittest.TestCase):
 
     def test_no_public_route_sitemap_or_naming_changes(self) -> None:
         status, body = render_best_slug_html("power-bank-20000mah-for-iphone")
-        self.assertEqual(status, 200)
-        self.assertIn("Recommended by PickWise", body)
+        # Fixture buying pages are never published: they are fabricated products and ratings.
+        self.assertEqual(status, 404)
+        self.assertNotIn("Recommended by PickWise", body)
         candidate_status, _candidate_body = render_best_slug_html("roadmap-step4-selected-clean-candidate")
         self.assertEqual(candidate_status, 404)
         repository = get_buying_pages_repository()
