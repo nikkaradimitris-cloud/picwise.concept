@@ -495,7 +495,9 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
                     )
                     if products_exposed:
                         provider_feed_selected_products = tuple(
-                            provider_product_to_backend_dict(product)
+                            provider_product_to_backend_dict(
+                                product, feed_ctx=selection.feed_availability_context
+                            )
                             for product in selection.selected_products
                         )
                     if recommendation.decision_status == "recommended" and not products_exposed:

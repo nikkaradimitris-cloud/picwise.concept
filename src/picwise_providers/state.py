@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 from picwise_nlu.concept_understanding import ConceptReading
 
@@ -11,6 +11,7 @@ from .awin_adapter import (
 )
 from .contracts import (
     PROVIDER_FEED_STATUSES,
+    FeedAvailabilityContext,
     ProviderEligibilityResult,
     ProviderFeedConfig,
     ProviderFeedStatus,
@@ -38,6 +39,10 @@ class ProviderFeedPipelineResult:
     parse_result: ProviderParseResult | None = None
     eligibility_results: tuple[ProviderEligibilityResult, ...] = field(default_factory=tuple)
     graph_projection: ProviderGraphProjectionResult | None = None
+    # Availability context over every row of the feed. Selection, the exported card
+    # fields, the recommendation and the outbound redirect all judge availability
+    # against this one population, so they cannot disagree about the same offer.
+    availability_context: FeedAvailabilityContext | None = None
 
     def to_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -224,6 +229,7 @@ def _resolve_provider_feed_pipeline_uncached(
         parse_result=parse_result,
         eligibility_results=eligibility_results,
         graph_projection=graph_projection,
+        availability_context=feed_availability_context,
     )
 
 
@@ -234,16 +240,25 @@ def is_safe_no_card_feed_status(status: str) -> bool:
 def load_eligible_provider_feed_products(
     feed_config: ProviderFeedConfig | None = None,
 ) -> tuple[ProviderProduct, ...]:
+    products, _availability_context = _load_eligible_products_with_availability_context(
+        feed_config
+    )
+    return products
+
+
+def _load_eligible_products_with_availability_context(
+    feed_config: ProviderFeedConfig | None = None,
+) -> tuple[tuple[ProviderProduct, ...], FeedAvailabilityContext | None]:
     config = feed_config or awin_feed_config_from_env()
     pipeline = resolve_provider_feed_pipeline(config, include_graph_projection=False)
     if pipeline.feed_status.status != "provider_feed_ready":
-        return tuple()
+        return tuple(), None
     products = tuple(
         row.product
         for row in pipeline.eligibility_results
         if row.status == "eligible"
     )
-    return enrich_provider_products_with_cache(products)
+    return enrich_provider_products_with_cache(products), pipeline.availability_context
 
 
 def resolve_card_eligible_provider_feed_product_by_id(
@@ -295,13 +310,19 @@ def resolve_search_provider_feed_product_selection(
     max_products: int = 4,
     reading: ConceptReading | None = None,
 ) -> ProviderProductSelectionResult:
-    products = load_eligible_provider_feed_products(feed_config=feed_config)
-    return select_provider_products_for_query(
+    products, availability_context = _load_eligible_products_with_availability_context(
+        feed_config
+    )
+    selection = select_provider_products_for_query(
         query,
         products,
         max_products=max_products,
         reading=reading,
+        feed_ctx=availability_context,
     )
+    if availability_context is None:
+        return selection
+    return replace(selection, feed_availability_context=availability_context)
 
 
 def resolve_search_provider_feed_recommendation_decision(
@@ -325,11 +346,13 @@ def resolve_search_provider_feed_recommendation_decision(
             selection.selected_products,
             required_tokens=selection.required_filter_terms,
             concept_verified=True,
+            feed_ctx=selection.feed_availability_context,
         )
     return decide_recommended_provider_product(
         query,
         selection.selected_products,
         required_tokens=selection.required_query_terms or None,
+        feed_ctx=selection.feed_availability_context,
     )
 
 

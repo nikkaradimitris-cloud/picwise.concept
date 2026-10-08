@@ -101,7 +101,8 @@ def parse_price_amount(price_text: str) -> float | None:
     return value
 
 
-def _price_display(product: Mapping[str, Any]) -> str:
+def format_price_display(product: Mapping[str, Any]) -> str:
+    """The feed price with its currency, as every price PicWise shows must read."""
     price_text = str(product.get("price_text") or "").strip()
     currency = str(product.get("currency") or "").strip()
     if not price_text:
@@ -109,6 +110,22 @@ def _price_display(product: Mapping[str, Any]) -> str:
     if currency and currency.lower() not in price_text.lower():
         return f"{price_text} {currency}"
     return price_text
+
+
+# Feed condition values that mean a new item. Anything else the feed states ("used",
+# "refurbished", "like new", "open box") is shown as the feed wrote it.
+_NEW_CONDITION_VALUES = frozenset({"new", "brand new", "new with tags", "new with box"})
+_FEED_LISTS_AS_AVAILABLE_STATES = frozenset({"trusted", "weak"})
+
+
+def non_new_condition(product: Mapping[str, Any]) -> str:
+    """The feed's own condition text when it is not "new", else ""."""
+    condition = " ".join(str(product.get("condition") or "").split())
+    if not condition:
+        return ""
+    if condition.lower().replace("-", " ").replace("_", " ") in _NEW_CONDITION_VALUES:
+        return ""
+    return condition
 
 
 def _is_verified_purchasable(product: Mapping[str, Any]) -> bool:
@@ -164,12 +181,18 @@ def _role_label_for_rank(
     return f"Price rank {rank} of {scope}"
 
 
-def _decision_label(role_label: str, price_display: str) -> str:
+def _decision_label(role_label: str, price_display: str, condition: str = "") -> str:
     if not price_display:
-        return role_label
-    if role_label in {UNCOMPARABLE_PRICE_ROLE_LABEL, SAME_PRICE_ROLE_LABEL}:
-        return f"{role_label} (listed at {price_display})"
-    return f"{role_label}, at {price_display}"
+        label = role_label
+    elif role_label in {UNCOMPARABLE_PRICE_ROLE_LABEL, SAME_PRICE_ROLE_LABEL}:
+        label = f"{role_label} (listed at {price_display})"
+    else:
+        label = f"{role_label}, at {price_display}"
+    # A price rank between a refurbished item and new ones compares different things;
+    # say so next to the rank, where the buyer reads it.
+    if condition:
+        label = f"{label} · condition: {condition}"
+    return label
 
 
 def _key_reasons(product: Mapping[str, Any], price_display: str) -> tuple[str, ...]:
@@ -184,8 +207,14 @@ def _key_reasons(product: Mapping[str, Any], price_display: str) -> tuple[str, .
         reasons.append(f"Feed product type: {product_type}")
     if _is_verified_purchasable(product):
         reasons.append("Purchase availability verified on the merchant page")
-    else:
+    elif str(product.get("availability_state") or "").strip().lower() in (
+        _FEED_LISTS_AS_AVAILABLE_STATES
+    ):
         reasons.append("Listed as available by the provider feed, not verified")
+    else:
+        # The feed's stock value is absent, unreadable, or a flag that is the same on
+        # every row; "listed as available" would claim more than it says.
+        reasons.append("Stock status not confirmed by the provider feed")
     return tuple(reasons[:3])
 
 
@@ -216,7 +245,7 @@ def build_fact_based_choice_labels(
     all_prices_equal = comparable_count > 1 and len(distinct_amounts) == 1
     labels: list[ChoiceDecisionLabels] = []
     for position, row in enumerate(rows):
-        price_display = _price_display(row)
+        price_display = format_price_display(row)
         role_label = (
             SAME_PRICE_ROLE_LABEL
             if all_prices_equal and ranks.get(position) is not None
@@ -226,15 +255,17 @@ def build_fact_based_choice_labels(
                 choice_count=len(rows),
             )
         )
+        condition = non_new_condition(row)
+        risk = VERIFIED_RISK if _is_verified_purchasable(row) else UNVERIFIED_RISK
+        if condition:
+            risk = f"Listed by the feed as {condition}, not new. {risk}"
         labels.append(
             ChoiceDecisionLabels(
                 choice_id=str(row.get("provider_product_id") or "").strip(),
                 role_label=role_label,
-                decision_label=_decision_label(role_label, price_display),
+                decision_label=_decision_label(role_label, price_display, condition),
                 key_reasons=_key_reasons(row, price_display),
-                risk_or_limitation=(
-                    VERIFIED_RISK if _is_verified_purchasable(row) else UNVERIFIED_RISK
-                ),
+                risk_or_limitation=risk,
             )
         )
     return tuple(labels)

@@ -14,7 +14,7 @@ from picwise_nlu.concept_understanding import (
     understand_product_query,
 )
 
-from .contracts import OfferHealth, ProviderProduct
+from .contracts import FeedAvailabilityContext, OfferHealth, ProviderProduct
 from .normalization import extract_merchant_name
 from .offer_health import (
     build_feed_availability_context,
@@ -386,6 +386,9 @@ class ProviderProductSelectionResult:
     # Filters some but not all of the selected products carry, as (buyer's words,
     # how many of the selected carry it). Stated as "2 of 4" rather than "not matched".
     partially_matched_terms: tuple[tuple[str, int], ...] = field(default_factory=tuple)
+    # The feed availability context the selection judged card eligibility against. The
+    # exported card fields and the recommendation must read the same one.
+    feed_availability_context: FeedAvailabilityContext | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -402,7 +405,9 @@ class ProviderProductSelectionResult:
             "ambiguous_product_families": list(self.ambiguous_product_families),
             "required_query_terms": list(self.required_query_terms),
             "selected_products": [
-                provider_product_to_backend_dict(product)
+                provider_product_to_backend_dict(
+                    product, feed_ctx=self.feed_availability_context
+                )
                 for product in self.selected_products
             ],
         }
@@ -437,6 +442,18 @@ def _category_evidence_for_product(product: ProviderProduct) -> dict[str, str]:
     return evidence
 
 
+_CONDITION_KEYS = ("condition", "product_condition", "item_condition")
+
+
+def _feed_condition(raw: dict[str, Any]) -> str:
+    """The item condition as the feed row states it ("new", "refurbished"), or ""."""
+    for key in _CONDITION_KEYS:
+        value = " ".join(str(raw.get(key) or "").split())
+        if value:
+            return value
+    return ""
+
+
 def _verified_purchasable_from_offer_health(offer_health: OfferHealth) -> bool:
     purch = offer_health.purchasability
     return (
@@ -445,8 +462,19 @@ def _verified_purchasable_from_offer_health(offer_health: OfferHealth) -> bool:
     )
 
 
-def provider_product_to_backend_dict(product: ProviderProduct) -> dict[str, Any]:
-    feed_ctx = build_feed_availability_context((product,))
+def provider_product_to_backend_dict(
+    product: ProviderProduct,
+    *,
+    feed_ctx: FeedAvailabilityContext | None = None,
+) -> dict[str, Any]:
+    """Export one product's card fields.
+
+    `feed_ctx` must be the context the selection used. Without it the product is judged
+    against itself alone, where no column can vary, so availability reads as `weak` even
+    for a feed whose stock column is informative.
+    """
+    if feed_ctx is None:
+        feed_ctx = build_feed_availability_context((product,))
     product_eligibility = evaluate_product_eligibility(product, feed_ctx=feed_ctx)
     offer_health = product_eligibility.offer_health
     raw = product.raw if isinstance(product.raw, dict) else {}
@@ -469,6 +497,7 @@ def provider_product_to_backend_dict(product: ProviderProduct) -> dict[str, Any]
         "brand": brand or None,
         "currency": currency or None,
         "merchant_name": extract_merchant_name(raw) or None,
+        "condition": _feed_condition(raw) or None,
         "verified_purchasable": False,
     }
     if product_type:
@@ -1008,6 +1037,7 @@ def select_provider_products_for_query(
     *,
     max_products: int = 4,
     reading: ConceptReading | None = None,
+    feed_ctx: FeedAvailabilityContext | None = None,
 ) -> ProviderProductSelectionResult:
     safe_max = max(1, int(max_products))
     normalized_query = normalize_query(str(query or ""))
@@ -1024,7 +1054,8 @@ def select_provider_products_for_query(
         )
 
     query_seeks_accessory = _query_seeks_accessory(tokens, normalized_query)
-    feed_ctx = build_feed_availability_context(products)
+    if feed_ctx is None:
+        feed_ctx = build_feed_availability_context(products)
     eligible = tuple(
         product
         for product in products
@@ -1214,6 +1245,7 @@ def decide_recommended_provider_product(
     *,
     required_tokens: tuple[str, ...] | None = None,
     concept_verified: bool = False,
+    feed_ctx: FeedAvailabilityContext | None = None,
 ) -> ProviderFeedRecommendationDecision:
     """Pick the recommended product from the four already selected.
 
@@ -1312,7 +1344,8 @@ def decide_recommended_provider_product(
     if not reason_codes:
         reason_codes = ("provider_feed_recommendation_selected",)
 
-    feed_ctx = build_feed_availability_context(selected_products)
+    if feed_ctx is None:
+        feed_ctx = build_feed_availability_context(selected_products)
     winner_eligibility = evaluate_product_eligibility(
         winner_product,
         feed_ctx=feed_ctx,

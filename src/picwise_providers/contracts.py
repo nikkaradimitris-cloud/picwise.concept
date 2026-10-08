@@ -181,12 +181,16 @@ class FeedAvailabilityContext:
     has_meaningful_variation: bool
     distinct_normalized_values: tuple[str, ...] = field(default_factory=tuple)
     product_count_with_signal: int = 0
+    # Availability and offer-flag columns whose value differs between rows of the feed.
+    # A column that holds the same value on every row says nothing about any one offer.
+    informative_fields: tuple[str, ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "has_meaningful_variation": self.has_meaningful_variation,
             "distinct_normalized_values": list(self.distinct_normalized_values),
             "product_count_with_signal": self.product_count_with_signal,
+            "informative_fields": list(self.informative_fields),
         }
 
 

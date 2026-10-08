@@ -306,4 +306,7 @@ def blocked_reason_from_eligibility(reason_codes: tuple[str, ...]) -> str | None
     for code in reason_codes:
         if code.startswith("availability_"):
             return code
+    for code in reason_codes:
+        if code.startswith("offer_"):
+            return code
     return None

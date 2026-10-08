@@ -32,6 +32,7 @@ from picwise_providers.decision_labels import (  # noqa: E402
     SAME_PRICE_ROLE_LABEL,
     UNCOMPARABLE_PRICE_ROLE_LABEL,
     build_fact_based_choice_labels,
+    format_price_display,
     parse_price_amount,
 )
 from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
@@ -157,6 +158,7 @@ class ContractFieldTests(unittest.TestCase):
                     "currency": "GBP",
                     "brand": "Fixturon",
                     "product_type": "Laptops",
+                    "availability_state": "weak",
                 },
             ]
         )
@@ -181,6 +183,43 @@ class ContractFieldTests(unittest.TestCase):
             unverified.key_reasons,
         )
         self.assertIn("has not verified", unverified.risk_or_limitation)
+
+    def test_stock_line_never_claims_more_than_the_feed_said(self) -> None:
+        # "unknown" covers an absent, unreadable or every-row-identical stock value.
+        for state in ("unknown", "", None):
+            with self.subTest(state=state):
+                (label,) = build_fact_based_choice_labels(
+                    [
+                        {
+                            "provider_product_id": "p",
+                            "price_text": "10.00",
+                            "currency": "GBP",
+                            "availability_state": state,
+                        }
+                    ]
+                )
+                self.assertIn("Stock status not confirmed by the provider feed", label.key_reasons)
+                self.assertFalse(
+                    any("Listed as available" in reason for reason in label.key_reasons)
+                )
+
+    def test_non_new_condition_is_stated_next_to_the_price_rank(self) -> None:
+        refurbished, new_item = build_fact_based_choice_labels(
+            [
+                {"provider_product_id": "r", "price_text": "24.00", "currency": "GBP", "condition": "Refurbished"},
+                {"provider_product_id": "n", "price_text": "59.00", "currency": "GBP", "condition": "new"},
+            ]
+        )
+        self.assertEqual(refurbished.role_label, "Lowest price of these 2")
+        self.assertIn("condition: Refurbished", refurbished.decision_label)
+        self.assertTrue(refurbished.risk_or_limitation.startswith("Listed by the feed as Refurbished, not new."))
+        self.assertNotIn("condition", new_item.decision_label)
+        self.assertNotIn("not new", new_item.risk_or_limitation)
+
+    def test_price_display_always_carries_the_currency(self) -> None:
+        self.assertEqual(format_price_display({"price_text": "749.00", "currency": "GBP"}), "749.00 GBP")
+        self.assertEqual(format_price_display({"price_text": "GBP 749.00", "currency": "GBP"}), "GBP 749.00")
+        self.assertEqual(format_price_display({"price_text": "", "currency": "GBP"}), "")
 
     def test_labels_never_assert_a_quality_judgement(self) -> None:
         for label in self._labels():

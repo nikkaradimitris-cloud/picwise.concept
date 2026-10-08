@@ -3,7 +3,7 @@ from __future__ import annotations
 from html import escape
 from urllib.parse import quote
 
-from picwise_providers.decision_labels import build_fact_based_choice_labels
+from picwise_providers.decision_labels import build_fact_based_choice_labels, format_price_display
 from picwise_search import LiveSearchResolution
 from .legal import render_public_footer
 
@@ -248,7 +248,9 @@ def _build_provider_feed_result_cards(
                 ),
                 "rating": "",
                 "reviews": "",
-                "price": str(product.get("price_text") or "").strip(),
+                # The currency belongs with the number: "749.00" alone reads as euros
+                # to a Greek buyer whatever the feed's currency is.
+                "price": format_price_display(product),
                 "meta": _provider_feed_card_meta(product, store_label=store_label),
                 "bullets": (
                     list(labels.key_reasons) + (reason_bullets[:3] if is_recommended else [])
