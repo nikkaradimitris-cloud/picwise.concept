@@ -191,3 +191,33 @@ per-process list of 200–400 entries, lost on every serverless restart. Only
 Probe scripts used for this audit drive `api/index.py` exactly as Vercel does; the
 adversarial feeds are generated, never committed. The regression tests added with the
 fixes (see the commits that follow this document) pin each finding.
+
+## Status after fixes (2026-10-08)
+
+Fixed at the layer that caused each, one commit per root cause, each with tests. The
+Mission Lock was not changed.
+
+| Finding | Status | Where it was fixed | Pinned by |
+|---|---|---|---|
+| D1 fabricated `/best` pages | **Fixed** — public repository empty, sitemap lists nothing, every seed slug 404 | `picwise_app/buying_routes.py` | `test_picwise_no_fabricated_public_pages` (+30 route guards rewritten to the truthful baseline) |
+| D2 / E1 out-of-stock shown and recommended | **Fixed** — every availability column read; stock words decide anywhere; bare flags decide where their column varies; schema.org forms read | `offer_health.interpret_availability_state` | `test_picwise_stock_and_offer_truth` |
+| E3 not-for-sale, pre-order, expired, not-yet-valid offers | **Fixed** (needs the columns in the feed) | `offer_health.offer_flag_reason_codes` | same |
+| H3 four availability populations | **Fixed** — one context over the whole feed for selection, card fields, recommendation and redirect | `state.py`, `search_selection.py`, resolver | same |
+| E2 hidden refurbished / used condition | **Fixed** — disclosed next to the price rank and in the limitation | `decision_labels.py` | `test_picwise_fact_based_decision_labels`, `test_picwise_stock_and_offer_truth` |
+| E4 price without currency | **Fixed** | `reference.py` via `format_price_display` | same |
+| G1 hidden deciding reason | **Fixed** — `closer_search_match` / `price_tie_breaker` / `tie_on_search_match_and_price`, shown first | `decide_recommended_provider_product` | `test_picwise_recommendation_reason_truth` |
+| G2 tie-break parser and cross-currency compare | **Fixed** — labels' parser, never across currencies | same | same |
+| G3 arbitrary full tie presented as a judgement | **Disclosed**, not changed: the card says nothing separates them | same | same |
+| D3 one product as four choices | **Fixed** — GTIN / brand+MPN identity, cheapest offer kept, planner counts products | `search_selection.py` | `test_picwise_product_offer_identity` |
+| F3 accessory substrings | **Fixed** — whole words, plurals, "with …" is in the box | `search_selection.py` | `test_picwise_recommendation_reason_truth` |
+| E5 "no provider connected" with a connected feed | **Fixed** | `reference.py` | `test_picwise_public_status_truth` |
+| E6 readiness endpoint claiming "connected" | **Fixed** — reports the production feed status | `launch_readiness.py`, `app.py` | same |
+| H1 cold start | **Fixed** — first request 1,019–1,081 ms → 677–724 ms; import + first request 1,360–1,462 ms → 1,045–1,078 ms (19-row fixture) | `validation.py` (+ artifact rebuilt) | `test_picwise_performance_stage1a` (race fixed) |
+| I1 CTA hid the destination | **Fixed** — "View in Store" | `reference.py` | `test_picwise_stock_and_offer_truth` |
+| D4 alphabetical choice of the four | **Open — owner decision** (ranking formula is `TODO` in the Decision Contract) | — | — |
+| D5 click and decision events not stored | **Open — owner decision** (Supabase project) | — | — |
+| F1, F2, G4, H2, H4, H5, I2, I4, E7–E9 | **Open**, recorded above; none is a fabricated claim on the live path | — | — |
+
+Misspelling benchmark after all fixes: **96.0% pass, 0 wrong kind of product** (unchanged).
+`docs/awin_feed_setup_el.md` now asks for the columns the new gates read (`ean`,
+`product_GTIN`, `mpn`, `condition`, `is_for_sale`, `pre_order`, `valid_from`, `valid_to`).
