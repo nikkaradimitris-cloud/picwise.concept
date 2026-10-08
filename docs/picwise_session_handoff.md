@@ -180,9 +180,11 @@ files: correcting the phase wording is the owner's decision, not the engineer's.
   kind asked for, accessory words before or inside its name are its type ("Filter Coffee
   Machine", "Battery Lawn Mower", "Stand Mixer"); a part word anywhere, an accessory word
   after the name, a name only after "for", or a Greek name keep the full penalty.
-- Which four are shown (owner decision, 2026-10-08, recorded in the Decision Contract):
-  groups of substantially equivalent products in relevance order; a group too big for
-  the free slots is spread across its price range (cheapest, two between, dearest).
+- Which four are shown (owner decision, 2026-10-08, confirmed with its details and
+  recorded in the Decision Contract): groups of substantially equivalent products in
+  relevance order; a group too big for the free slots is spread across its price range
+  (four slots: cheapest, two between, dearest; two: cheapest and dearest; one: the
+  middle). All equivalent: the cheapest is recommended and the card says why.
   Merchant free text (keywords, description) never makes a product "more relevant" —
   not for the four, not for the recommendation. `test_picwise_price_range_diversity`.
 - A test that renders an empty query schedules a 0.75 s background warm-up; reset it
