@@ -135,6 +135,15 @@ per-process list of 200–400 entries, lost on every serverless restart. Only
   `kit`, `… with USB-C Cable` as an accessory. For `power bank` the recommendation went to
   the dearest of four equally relevant power banks only because the others' titles
   contained those strings.
+- F4 (found while fixing F3). The kind gate read feed text past "for" and "with". A shop
+  category `Accessories for Laptops` or `Spare Parts for Washing Machines`, or a title
+  `Replacement Battery for Dell Laptop`, was read as the product it is for: with three
+  laptops in a feed, `laptop` showed a neoprene sleeve as the fourth laptop. The other
+  way, `Robot Vacuum Cleaner with HEPA Filter` was read as an accessory (a word that only
+  lists what comes in the box) and never shown. Separately, for a product already known
+  to be the kind asked for, an accessory word used as its type (`Filter Coffee Machine`,
+  `Battery Lawn Mower`, `Stand Mixer`) still cost it the accessory penalty, so a cheaper
+  real coffee machine was left out of the four.
 
 ## G. Ranking / recommendation problems
 
@@ -210,6 +219,7 @@ Mission Lock was not changed.
 | G3 arbitrary full tie presented as a judgement | **Disclosed**, not changed: the card says nothing separates them | same | same |
 | D3 one product as four choices | **Fixed** — GTIN / brand+MPN identity, cheapest offer kept, planner counts products | `search_selection.py` | `test_picwise_product_offer_identity` |
 | F3 accessory substrings | **Fixed** — whole words, plurals, "with …" is in the box | `search_selection.py` | `test_picwise_recommendation_reason_truth` |
+| F4 kind read past "for" / "with"; type word penalised as accessory | **Fixed** — only words before the first purpose word name the product; text naming a product only after one is an accessory of it; for a verified product, accessory words before or inside its name are its type (not when a part word, an accessory word after the name, or Greek order is involved) | `concept_understanding._head_of_text`, `words_after_product_name`; `search_selection._title_accessory_penalty` | `test_picwise_product_kind_reading`, `test_picwise_concept_understanding`, `test_picwise_recommendation_reason_truth` |
 | E5 "no provider connected" with a connected feed | **Fixed** | `reference.py` | `test_picwise_public_status_truth` |
 | E6 readiness endpoint claiming "connected" | **Fixed** — reports the production feed status | `launch_readiness.py`, `app.py` | same |
 | H1 cold start | **Fixed** — first request 1,019–1,081 ms → 677–724 ms; import + first request 1,360–1,462 ms → 1,045–1,078 ms (19-row fixture) | `validation.py` (+ artifact rebuilt) | `test_picwise_performance_stage1a` (race fixed) |
@@ -217,6 +227,7 @@ Mission Lock was not changed.
 | D4 alphabetical choice of the four | **Fixed by owner decision** — more than four substantially equivalent products are spread across the price range (cheapest, two between, dearest), hard filters first; recorded in the Decision Contract | `search_selection._choose_shown_products` | `test_picwise_price_range_diversity` |
 | D5 click and decision events not stored | **Open — owner decision** (Supabase project) | — | — |
 | F1, F2, G4, H2, H4, H5, I2, I4, E7–E9 | **Open**, recorded above; none is a fabricated claim on the live path | — | — |
+| F4 residuals | **Open** — word-list gaps, each also present before: an accessory whose own noun is in neither accessory list (`Stand Mixer Bowl` filed under mixers) is not penalised (it used to be, only by the accident of `stand`); `Vacuum Cleaner Bags` filed under vacuum cleaners still passes the kind gate (the title penalty demotes it); `Portable Battery Pack` is not known as a power bank, so its `battery` is still penalised; `Bag for Vacuum Cleaner` with no category is now a bag, as `Bag for Laptop` always was | — | — |
 
 Misspelling benchmark after all fixes: **96.0% pass, 0 wrong kind of product** (unchanged).
 `docs/awin_feed_setup_el.md` now asks for the columns the new gates read (`ean`,

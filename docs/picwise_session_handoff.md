@@ -170,6 +170,16 @@ files: correcting the phase wording is the owner's decision, not the engineer's.
   (`feed_ctx`) rather than building a new one from a subset.
 - Product identity is GTIN, else brand + MPN (`_product_identity_key`); count products,
   not offers, anywhere a "four" is decided.
+- Kind of product (`annotate_product_concepts`): only the words before the first purpose
+  word ("for", "with", "για", "με") name the product. Text that names a product only after
+  one ("Accessories for Laptops", "Filter for Coffee Machine") is an accessory of it and
+  is marked `__accessory__` — never left unread, because a row naming no kind can still
+  join a concept by its own words. Accessory words after "with" are what comes in the
+  box. Audit finding F4, `test_picwise_product_kind_reading`.
+- Accessory penalty (`_title_accessory_penalty`): for a product already verified as the
+  kind asked for, accessory words before or inside its name are its type ("Filter Coffee
+  Machine", "Battery Lawn Mower", "Stand Mixer"); a part word anywhere, an accessory word
+  after the name, a name only after "for", or a Greek name keep the full penalty.
 - Which four are shown (owner decision, 2026-10-08, recorded in the Decision Contract):
   groups of substantially equivalent products in relevance order; a group too big for
   the free slots is spread across its price range (cheapest, two between, dearest).
