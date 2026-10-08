@@ -1,0 +1,327 @@
+"""The recommended card must say what actually decided it.
+
+Pins audit findings G1-G3 in docs/picwise_mission_truth_audit_2026-10-08.md. Every
+canary query had four choices tied on search match, so the cheapest won; the code meant
+to say so never did (a sign error made `price_tie_breaker` unreachable), and the card
+listed reasons equally true of all four. The tie-break also parsed "1.099,00" as 1.099
+and compared prices across currencies.
+
+All rows are local test data: fictional brands, `.invalid` URLs.
+"""
+from __future__ import annotations
+
+import csv
+import html
+import io
+import os
+import re
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from urllib.parse import urlencode
+
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+for path in (ROOT, SRC):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
+
+from api.index import app as wsgi_app  # noqa: E402
+from picwise_providers.awin_adapter import clear_awin_feed_parse_cache  # noqa: E402
+from picwise_providers.contracts import ProviderProduct  # noqa: E402
+from picwise_providers.search_selection import (  # noqa: E402
+    _query_seeks_accessory,
+    _title_accessory_penalty,
+    decide_recommended_provider_product,
+)
+from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
+
+_PRICE_DECIDED = "Lowest price among the choices that match your search equally"
+
+
+def _product(pid: str, title: str, price: str, currency: str = "GBP") -> ProviderProduct:
+    return ProviderProduct(
+        provider_key="awin",
+        provider_product_id=pid,
+        title=title,
+        brand=title.split()[0],
+        category_text="Refrigerators",
+        product_url=f"https://fixture.example.invalid/out/{pid}",
+        image_url=f"https://fixture.example.invalid/img/{pid}.jpg",
+        price_text=price,
+        availability_text="in stock",
+        currency=currency,
+        raw={"product_type": "Refrigerators", "in_stock": "in stock"},
+    )
+
+
+def _decide(*products: ProviderProduct, query: str = "refrigerator"):
+    return decide_recommended_provider_product(query, tuple(products))
+
+
+class DecidingReasonTests(unittest.TestCase):
+    def test_equal_match_is_decided_by_price_and_says_so_first(self) -> None:
+        decision = _decide(
+            _product("a", "Fixturon Frost Refrigerator 300L", "749.00"),
+            _product("b", "Testline Frost Refrigerator 250L", "399.00"),
+            _product("c", "Sampleworks Frost Refrigerator 350L", "1249.00"),
+            _product("d", "Fixturon Cool Refrigerator 200L", "1099.00"),
+        )
+        self.assertEqual(decision.recommended_product_id, "b")
+        self.assertEqual(decision.recommendation_reason_codes[0], "price_tie_breaker")
+
+    def test_comma_decimal_prices_are_compared_as_the_labels_read_them(self) -> None:
+        decision = _decide(
+            _product("eu1", "Fixturon Frost Refrigerator 300L", "1.299,00", "EUR"),
+            _product("eu2", "Testline Frost Refrigerator 250L", "899,00", "EUR"),
+            _product("eu3", "Sampleworks Frost Refrigerator 350L", "1.099,00", "EUR"),
+            _product("eu4", "Fixturon Cool Refrigerator 200L", "649,00", "EUR"),
+        )
+        # 649,00 is the lowest. The old parser read 1.099,00 as 1.099 and picked eu3.
+        self.assertEqual(decision.recommended_product_id, "eu4")
+        self.assertEqual(decision.recommendation_reason_codes[0], "price_tie_breaker")
+
+    def test_prices_in_different_currencies_are_never_compared(self) -> None:
+        decision = _decide(
+            _product("x1", "Fixturon Frost Refrigerator 300L", "100.00", "EUR"),
+            _product("x2", "Testline Frost Refrigerator 250L", "95.00", "GBP"),
+            _product("x3", "Sampleworks Frost Refrigerator 350L", "120.00", "USD"),
+            _product("x4", "Fixturon Cool Refrigerator 200L", "150.00", "EUR"),
+        )
+        self.assertEqual(decision.recommendation_reason_codes[0], "tie_on_search_match_and_price")
+        self.assertNotIn("price_tie_breaker", decision.recommendation_reason_codes)
+
+    def test_a_full_tie_is_reported_as_a_tie(self) -> None:
+        decision = _decide(
+            _product("t1", "Fixturon Frost Refrigerator 300L", "500.00"),
+            _product("t2", "Testline Frost Refrigerator 250L", "500.00"),
+            _product("t3", "Sampleworks Frost Refrigerator 350L", "500.00"),
+            _product("t4", "Fixturon Cool Refrigerator 200L", "500.00"),
+        )
+        self.assertEqual(decision.recommendation_reason_codes[0], "tie_on_search_match_and_price")
+
+    def test_a_closer_match_is_decided_by_the_match(self) -> None:
+        decision = _decide(
+            _product("m1", "Fixturon Frost Refrigerator 300L", "900.00"),
+            _product("m2", "Testline Frost Fridge Freezer Refrigerator 250L", "999.00"),
+            _product("m3", "Sampleworks Frost Refrigerator 350L", "400.00"),
+            _product("m4", "Fixturon Cool Refrigerator 200L", "500.00"),
+            query="fridge freezer refrigerator",
+        )
+        self.assertEqual(decision.recommended_product_id, "m2")
+        self.assertEqual(decision.recommendation_reason_codes[0], "closer_search_match")
+
+
+class AccessoryWordTests(unittest.TestCase):
+    """Audit finding F3: the accessory penalty matched fragments of words."""
+
+    def _penalty(self, title: str, query: str, concept_id: str = "") -> int:
+        return _title_accessory_penalty(
+            title.lower(),
+            normalized_query=query,
+            query_seeks_accessory=_query_seeks_accessory(tuple(query.split()), query),
+            concept_id=concept_id,
+        )
+
+    def test_words_that_merely_contain_an_accessory_word_are_not_penalised(self) -> None:
+        for title in (
+            "Fixturon Standard 20000mAh Power Bank",  # "stand"
+            "Fixturon KitchenPro Food Processor",  # "kit"
+            "Testline Discover Smart Speaker",  # "cover"
+            "Sampleworks Mountain Bike",  # "mount"
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(self._penalty(title, "anything"), 0)
+
+    def test_what_comes_in_the_box_is_not_the_product(self) -> None:
+        self.assertEqual(self._penalty("Testline 20000mAh Power Bank with USB-C Cable", "power bank"), 0)
+        self.assertGreater(self._penalty("Testline USB-C Cable for Power Bank", "power bank"), 0)
+
+    def test_real_accessories_and_plurals_are_still_penalised(self) -> None:
+        self.assertGreater(self._penalty("Fixturon Laptop Bags 15.6 inch", "laptop"), 0)
+        self.assertGreater(self._penalty("Fixturon Replacement Batteries x4", "torch"), 0)
+        self.assertGreater(self._penalty("Fixturon Docking Station USB-C", "laptop"), 0)
+
+    def test_a_query_naming_an_accessory_is_read_by_whole_words(self) -> None:
+        self.assertTrue(_query_seeks_accessory(("laptop", "bag"), "laptop bag"))
+        self.assertFalse(_query_seeks_accessory(("standard", "power", "bank"), "standard power bank"))
+
+    def test_a_type_word_before_the_name_is_not_an_accessory(self) -> None:
+        # For a product already verified as the kind searched for, an accessory word
+        # before the name is its type, not what it is.
+        for title, concept_id, query in (
+            ("Sampleworks Filter Coffee Machine", "coffee_machine", "coffee machine"),
+            ("Fixturon Cordless Battery Lawn Mower 40V", "lawn_mower", "lawn mower"),
+            ("Testline HEPA Filter Air Purifier", "air_purifier", "air purifier"),
+            ("Fixturon Compact Stand Mixer 3.5L", "mixer", "mixer"),
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(self._penalty(title, query, concept_id), 0)
+                # Without a verified kind the word list alone still decides.
+                self.assertGreater(self._penalty(title, query), 0)
+
+    def test_an_accessory_of_the_kind_keeps_its_penalty(self) -> None:
+        for title, concept_id, query in (
+            ("Fixturon Coffee Machine Filter 4 Pack", "coffee_machine", "coffee machine"),
+            ("Replacement Coffee Machine Jug", "coffee_machine", "coffee machine"),
+            ("Filter for Coffee Machine", "coffee_machine", "coffee machine"),
+            ("Testline Battery Lawn Mower Blade", "lawn_mower", "lawn mower"),
+            ("Replacement Battery for Dell Laptop", "laptop", "laptop"),
+            ("Fixturon Laptop Stand Aluminium", "laptop", "laptop"),
+            ("Sampleworks Vacuum Cleaner Bags 10 Pack", "vacuum_cleaner", "vacuum cleaner"),
+        ):
+            with self.subTest(title=title):
+                self.assertGreater(self._penalty(title, query, concept_id), 0)
+
+
+class TypeWordThroughDeployedAppTests(unittest.TestCase):
+    """Through api/index.py: "Filter Coffee Machine" competes as a coffee machine."""
+
+    def setUp(self) -> None:
+        directory = tempfile.mkdtemp()
+        path = Path(directory) / "feed.csv"
+        rows = [
+            ("c10", "Sampleworks Filter Coffee Machine", "10.00"),
+            ("c20", "Testline Bean Coffee Machine", "20.00"),
+            ("c30", "Fixturon Pod Coffee Machine", "30.00"),
+            ("c40", "Sampleworks Espresso Coffee Machine", "40.00"),
+            ("c50", "Testline Drip Coffee Machine", "50.00"),
+            # An accessory filed under the machines by its merchant.
+            ("a05", "Fixturon Coffee Machine Filter 4 Pack", "5.00"),
+        ]
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(
+                ["aw_product_id", "product_name", "brand_name", "product_type", "merchant_category",
+                 "aw_deep_link", "aw_image_url", "search_price", "currency", "in_stock",
+                 "merchant_name", "data_provenance"]
+            )
+            for pid, title, price in rows:
+                writer.writerow(
+                    [pid, title, title.split()[0], "Coffee Machines", "Coffee Machines",
+                     f"https://fixture.example.invalid/out/{pid}",
+                     f"https://fixture.example.invalid/img/{pid}.jpg", price, "GBP", "1",
+                     "Fixture Store One", "local_test_fixture"]
+                )
+        previous = os.environ.get("AWIN_FEED_FILE")
+        os.environ["AWIN_FEED_FILE"] = str(path)
+        clear_awin_feed_parse_cache()
+        clear_provider_feed_pipeline_cache()
+
+        def restore() -> None:
+            if previous is None:
+                os.environ.pop("AWIN_FEED_FILE", None)
+            else:
+                os.environ["AWIN_FEED_FILE"] = previous
+            clear_awin_feed_parse_cache()
+            clear_provider_feed_pipeline_cache()
+
+        self.addCleanup(restore)
+
+    def test_the_filter_coffee_machine_is_equivalent_and_the_filter_pack_is_not(self) -> None:
+        def start_response(_status: str, _headers: list[tuple[str, str]]) -> None:
+            return None
+
+        body = b"".join(
+            wsgi_app(
+                {
+                    "REQUEST_METHOD": "GET",
+                    "PATH_INFO": "/search",
+                    "QUERY_STRING": urlencode({"q": "coffee machine"}),
+                    "wsgi.input": io.BytesIO(b""),
+                    "wsgi.url_scheme": "https",
+                },
+                start_response,
+            )
+        ).decode("utf-8")
+        cards = re.findall(r'<article class="pw-card([^"]*)" data-choice-id="([^"]+)"', body)
+        shown = [pid for _classes, pid in cards]
+        recommended = [pid for classes, pid in cards if "recommended" in classes]
+        # Five equivalent machines spread over their range (cheapest, two between,
+        # dearest); the filter pack is never one of them. The penalty for the word
+        # "filter" used to leave c10 out of the four altogether.
+        self.assertEqual(shown, ["c10", "c20", "c40", "c50"])
+        self.assertEqual(recommended, ["c10"])
+        self.assertIn(_PRICE_DECIDED, body)
+
+
+class RenderedRecommendationReasonTests(unittest.TestCase):
+    """Through api/index.py: the deciding reason is the first line on the card."""
+
+    def setUp(self) -> None:
+        directory = tempfile.mkdtemp()
+        path = Path(directory) / "feed.csv"
+        rows = [
+            ("eu1", "Fixturon Frost Refrigerator 300L", "1.299,00"),
+            ("eu2", "Testline Frost Refrigerator 250L", "899,00"),
+            ("eu3", "Sampleworks Frost Refrigerator 350L", "1.099,00"),
+            ("eu4", "Fixturon Cool Refrigerator 200L", "649,00"),
+        ]
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(
+                ["aw_product_id", "product_name", "brand_name", "product_type", "merchant_category",
+                 "aw_deep_link", "aw_image_url", "search_price", "currency", "in_stock",
+                 "merchant_name", "data_provenance"]
+            )
+            for pid, title, price in rows:
+                writer.writerow(
+                    [pid, title, title.split()[0], "Refrigerators", "Refrigerators",
+                     f"https://fixture.example.invalid/out/{pid}",
+                     f"https://fixture.example.invalid/img/{pid}.jpg", price, "EUR", "1",
+                     "Fixture Store One", "local_test_fixture"]
+                )
+        previous = os.environ.get("AWIN_FEED_FILE")
+        os.environ["AWIN_FEED_FILE"] = str(path)
+        clear_awin_feed_parse_cache()
+        clear_provider_feed_pipeline_cache()
+
+        def restore() -> None:
+            if previous is None:
+                os.environ.pop("AWIN_FEED_FILE", None)
+            else:
+                os.environ["AWIN_FEED_FILE"] = previous
+            clear_awin_feed_parse_cache()
+            clear_provider_feed_pipeline_cache()
+
+        self.addCleanup(restore)
+
+    def test_recommended_card_leads_with_the_price_decision_and_its_rank_agrees(self) -> None:
+        def start_response(_status: str, _headers: list[tuple[str, str]]) -> None:
+            return None
+
+        body = b"".join(
+            wsgi_app(
+                {
+                    "REQUEST_METHOD": "GET",
+                    "PATH_INFO": "/search",
+                    "QUERY_STRING": urlencode({"q": "refrigerator"}),
+                    "wsgi.input": io.BytesIO(b""),
+                    "wsgi.url_scheme": "https",
+                },
+                start_response,
+            )
+        ).decode("utf-8")
+        recommended = re.search(
+            r'<article class="pw-card pw-card-recommended" data-choice-id="([^"]+)">(.*?)</article>',
+            body,
+            re.S,
+        )
+        self.assertIsNotNone(recommended)
+        choice_id, inner = recommended.groups()
+        self.assertEqual(choice_id, "eu4")
+        role = html.unescape(re.search(r'<p class="pw-role-label">(.*?)</p>', inner, re.S).group(1))
+        self.assertEqual(role, "Lowest price of these four")
+        bullets = [
+            html.unescape(re.sub(r"<[^>]+>", "", item)).strip()
+            for item in re.findall(r'<li class="pw-feature-item">(.*?)</li>', inner, re.S)
+        ]
+        # The fact-derived key reasons come first, then the recommendation's own reasons.
+        recommendation_reasons = bullets[3:]
+        self.assertEqual(recommendation_reasons[0], _PRICE_DECIDED)
+        self.assertIn("then by price when they match equally", html.unescape(body))
+
+
+if __name__ == "__main__":
+    unittest.main()

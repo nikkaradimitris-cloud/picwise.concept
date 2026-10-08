@@ -3,7 +3,7 @@ from __future__ import annotations
 from html import escape
 from urllib.parse import quote
 
-from picwise_offers import AmazonManualMatchStatus, match_manual_amazon_affiliates
+from picwise_providers.decision_labels import build_fact_based_choice_labels, format_price_display
 from picwise_search import LiveSearchResolution
 from .legal import render_public_footer
 
@@ -14,6 +14,11 @@ _SAFE_DISCLAIMER_BY_STATE = {
     "low_confidence_manual_review": "PicWise found weak product signals, but confidence is too low.",
     "blocked_or_unsafe": "PicWise cannot safely process this search.",
 }
+
+_FEED_CONNECTED_NO_FOUR_MESSAGE = (
+    "PicWise understood this search, but the connected product feed has no four "
+    "products it can show for it."
+)
 
 _REAL_FEED_PROVIDER_KEYS = frozenset({"awin"})
 _FAKE_FEED_PROVIDER_KEYS = frozenset({"demo", "fake", "sample", "test"})
@@ -26,6 +31,13 @@ _REQUIRED_FEED_PRODUCT_FIELDS = (
     "provider_product_id",
 )
 _FEED_RECOMMENDATION_REASON_LABELS = {
+    # What separated the recommended choice from the rest; always listed first.
+    "closer_search_match": "Matches your search more closely than the other choices",
+    "price_tie_breaker": "Lowest price among the choices that match your search equally",
+    "tie_on_search_match_and_price": (
+        "Matches your search as closely as another choice, at the same price; "
+        "PicWise has no further fact to separate them"
+    ),
     "strong_query_title_fit": "Strong match to your search",
     "all_query_tokens_in_title": "Contains the key search terms",
     "query_phrase_in_title": "Search phrase appears in the product title",
@@ -56,12 +68,16 @@ _RECOMMENDATION_CONFIDENCE_BADGE = {
     "weak": "Suggested by PicWise",
     "unknown": "Suggested by PicWise",
 }
-_PROVIDER_STORE_LABELS = {
-    "awin": "Geekbuying via Awin",
+# Affiliate network display names. A provider key names the NETWORK, never the
+# shop: one Awin feed carries many merchants, so the merchant must come from the
+# feed row. Never map a provider key to a single merchant name here.
+_PROVIDER_NETWORK_LABELS = {
+    "awin": "Awin",
 }
 _FEED_DISCLOSURE = (
     "Selected real products from a connected provider feed. "
-    "PicWise recommends one option from these four based on search fit — "
+    "PicWise recommends one option from these four by how closely it matches your "
+    "search, then by price when they match equally — "
     "not independent review or market-wide ranking."
 )
 _FEED_SAFE_NOTE = "Recommended from these 4. Prices and availability come directly from the feed."
@@ -149,6 +165,22 @@ def _provider_feed_ui_display_allowed(resolution: LiveSearchResolution) -> bool:
     return True
 
 
+def provider_feed_cards_will_render(resolution: LiveSearchResolution) -> bool:
+    """Whether the surface will actually render provider-feed choice cards.
+
+    Exposed so impression tracking can report what was shown rather than what the
+    backend merely selected. Reading the same gate the renderer uses keeps the two
+    from drifting: an event claiming choices were shown when the surface refused to
+    render them would be exactly the kind of overclaim the runtime truth rules forbid.
+    """
+    if not _provider_feed_ui_display_allowed(resolution):
+        return False
+    for product in resolution.provider_feed_selected_products:
+        if _provider_feed_product_blocks_ui(product):
+            return False
+    return True
+
+
 def _feed_recommendation_reason_bullets(reason_codes: tuple[str, ...]) -> list[str]:
     bullets: list[str] = []
     for code in reason_codes:
@@ -158,14 +190,31 @@ def _feed_recommendation_reason_bullets(reason_codes: tuple[str, ...]) -> list[s
     return bullets
 
 
-def _provider_store_label(provider_key: str) -> str:
+def _provider_network_label(provider_key: str) -> str:
     normalized = str(provider_key or "").strip().lower()
-    return _PROVIDER_STORE_LABELS.get(normalized, normalized.replace("_", " ").title() or "Provider feed")
+    return _PROVIDER_NETWORK_LABELS.get(
+        normalized,
+        normalized.replace("_", " ").title() or "Provider feed",
+    )
+
+
+def _provider_store_label(provider_key: str, merchant_name: str = "") -> str:
+    """Build the store line from what the feed actually says.
+
+    With a merchant in the row: "<merchant> via <network>". Without one, name the
+    network alone — inventing a merchant would misattribute the sale.
+    """
+    network = _provider_network_label(provider_key)
+    merchant = " ".join(str(merchant_name or "").split()).strip()
+    if merchant:
+        return f"{merchant} via {network}"
+    return f"{network} provider feed (merchant not named in feed)"
 
 
 def _build_provider_feed_result_cards(
     *,
     resolution: LiveSearchResolution,
+    source_page: str = "search",
 ) -> tuple[list[dict[str, object]], bool, str, str]:
     if not _provider_feed_ui_display_allowed(resolution):
         return ([], False, "", "")
@@ -179,27 +228,50 @@ def _build_provider_feed_result_cards(
     reason_bullets = _feed_recommendation_reason_bullets(
         resolution.provider_feed_recommendation_reason_codes
     )
+    selected_products = list(resolution.provider_feed_selected_products)
+    # Decision Contract items 3 and 4: every choice carries a role label, a decision
+    # label, key reasons and a stated limitation. All are derived from feed and verifier
+    # facts only -- see picwise_providers/decision_labels.
+    choice_labels = build_fact_based_choice_labels(selected_products)
     cards: list[dict[str, object]] = []
-    for product in resolution.provider_feed_selected_products:
+    for card_index, product in enumerate(selected_products):
         if _provider_feed_product_blocks_ui(product):
             return ([], False, "", "")
+        labels = (
+            choice_labels[card_index] if card_index < len(choice_labels) else None
+        )
         product_id = str(product.get("provider_product_id") or "").strip()
         provider_key = str(product.get("provider_key") or "").strip()
         is_recommended = product_id == recommended_id
-        store_label = _provider_store_label(provider_key)
+        store_label = _provider_store_label(
+            provider_key,
+            str(product.get("merchant_name") or ""),
+        )
         cards.append(
             {
                 "badge": "REAL FEED",
                 "badge_class": "pw-badge-value",
                 "name": str(product.get("title") or "").strip(),
-                "description": "Selected real product (purchase not verified)",
+                "role_label": labels.role_label if labels else "",
+                "choice_id": product_id,
+                "description": (
+                    labels.decision_label
+                    if labels and labels.decision_label
+                    else "Selected real product (purchase not verified)"
+                ),
                 "rating": "",
                 "reviews": "",
-                "price": str(product.get("price_text") or "").strip(),
+                # The currency belongs with the number: "749.00" alone reads as euros
+                # to a Greek buyer whatever the feed's currency is.
+                "price": format_price_display(product),
                 "meta": _provider_feed_card_meta(product, store_label=store_label),
-                "bullets": reason_bullets if is_recommended else [],
-                "warning": "",
-                "cta": "View product",
+                "bullets": (
+                    list(labels.key_reasons) + (reason_bullets[:3] if is_recommended else [])
+                    if labels
+                    else (reason_bullets if is_recommended else [])
+                ),
+                "warning": labels.risk_or_limitation if labels else "",
+                "cta": "View in Store",
                 "image": str(product.get("image_url") or "").strip(),
                 "recommended": is_recommended,
                 "rec_note": (
@@ -212,7 +284,15 @@ def _build_provider_feed_result_cards(
                     if is_recommended
                     else ""
                 ),
-                "href": str(product.get("product_url") or "").strip(),
+                # Route the CTA through /out/feed so the click is recorded and the
+                # target is re-validated at click time, instead of linking the raw
+                # product URL and losing the tracking event the contract requires.
+                "href": (
+                    f"/out/feed?pid={quote(product_id, safe='')}"
+                    f"&q={quote(str(resolution.display_query or ''), safe='')}"
+                    f"&src={quote(source_page, safe='')}"
+                    f"&rec={'1' if is_recommended else '0'}"
+                ),
             }
         )
 
@@ -228,54 +308,6 @@ def _build_provider_feed_result_cards(
     return cards, True, _FEED_DISCLOSURE, safe_note
 
 
-def _build_result_cards(
-    *,
-    resolution: LiveSearchResolution,
-    source_page: str,
-) -> tuple[list[dict[str, object]], bool, str, str]:
-    if not resolution.result_allowed:
-        return ([], False, "", "")
-    if resolution.provider_key != "manual_amazon_affiliate":
-        return ([], False, "", "")
-
-    match_result = match_manual_amazon_affiliates(resolution.canonical_query)
-    if match_result.match_status != AmazonManualMatchStatus.ELIGIBLE:
-        return ([], False, "", "")
-    if not match_result.results:
-        return ([], False, "", "")
-
-    cards: list[dict[str, object]] = []
-    for result in match_result.results:
-        cards.append(
-            {
-                "badge": "LIVE OPTION",
-                "badge_class": "pw-badge-value",
-                "name": result.title,
-                "description": f"Manual reviewed match for {result.category.replace('_', ' ')}",
-                "rating": "",
-                "reviews": "",
-                "price": "See Amazon details",
-                "meta": f"ASIN: {result.asin}  ·  Provider: {resolution.provider_key}",
-                "bullets": [
-                    "Approved manual affiliate option",
-                    "No fake commerce metrics shown",
-                    "Redirect validated through /out/amazon",
-                ],
-                "warning": "",
-                "cta": "View on Amazon",
-                "image": "/assets/picwise/product-3.svg",
-                "recommended": False,
-                "rec_note": "",
-                "href": (
-                    f"/out/amazon?asin={escape(result.asin, quote=True)}"
-                    f"&q={quote(resolution.display_query, safe='')}"
-                    f"&src={escape(source_page, quote=True)}"
-                ),
-            }
-        )
-    return cards, True, match_result.results[0].disclosure, match_result.results[0].safe_note
-
-
 def render_picwise_reference_surface(
     query: str = "",
     *,
@@ -285,7 +317,7 @@ def render_picwise_reference_surface(
     display_query = str(query or "")
     query_line = ""
     disclaimer_line = (
-        "Live safe mode — no Amazon API, no scraping, and no fake live commerce claims."
+        "Live safe mode — no marketplace API, no scraping, and no fake live commerce claims."
     )
     safe_note_line = ""
     show_demo_note = False
@@ -294,23 +326,58 @@ def render_picwise_reference_surface(
     if resolution is None:
         card_specs: list[dict[str, object]] = []
     else:
-        card_specs, has_live_results, disclosure, safe_note = _build_result_cards(
+        # Amazon has been removed from the project, so the provider feed is the only
+        # source of choice cards.
+        card_specs = []
+        has_live_results = False
+        disclosure = ""
+        safe_note = ""
+        feed_cards, feed_live, feed_disclosure, feed_safe_note = _build_provider_feed_result_cards(
             resolution=resolution,
             source_page=source_page,
         )
-        if not has_live_results:
-            feed_cards, feed_live, feed_disclosure, feed_safe_note = _build_provider_feed_result_cards(
-                resolution=resolution,
-            )
-            if feed_live:
-                card_specs = feed_cards
-                has_live_results = True
-                feed_results = True
-                disclosure = feed_disclosure
-                safe_note = feed_safe_note
+        if feed_live:
+            card_specs = feed_cards
+            has_live_results = True
+            feed_results = True
+            disclosure = feed_disclosure
+            safe_note = feed_safe_note
+        unmatched_terms = tuple(
+            str(term).strip()
+            for term in getattr(resolution, "provider_feed_unmatched_query_terms", ())
+            or ()
+            if str(term).strip()
+        )
+        ambiguous_families = tuple(
+            str(name).strip()
+            for name in getattr(resolution, "provider_feed_ambiguous_product_families", ())
+            or ()
+            if str(name).strip()
+        )
         if display_query.strip():
             if has_live_results and feed_results:
                 query_line = f"Showing 4 selected real products for: {display_query}"
+                understood_name = str(getattr(resolution, "understood_concept_name", "") or "")
+                if understood_name and getattr(resolution, "understood_by_correction", False):
+                    # The query was read through a typo correction. Say what it was
+                    # read as, so a wrong correction is visible instead of silent.
+                    query_line += f"  ·  Understood as: {understood_name}"
+                partial_terms = tuple(
+                    getattr(resolution, "provider_feed_partially_matched_terms", ()) or ()
+                )
+                if partial_terms:
+                    # Some, not all, of the four carry these; they are ranked first.
+                    query_line += "  ·  Only some of the four match: " + ", ".join(
+                        f"{term} ({count} of 4)" for term, count in partial_terms
+                    )
+                if unmatched_terms:
+                    # Say what PicWise could not filter by. Without this the buyer would
+                    # read four products as an answer to their whole request, when part
+                    # of it could not be matched against the connected feed.
+                    query_line += (
+                        "  ·  PicWise could not match: "
+                        + ", ".join(unmatched_terms)
+                    )
             elif has_live_results:
                 query_line = f"Showing {len(card_specs)} options for: {display_query}"
             else:
@@ -318,11 +385,24 @@ def render_picwise_reference_surface(
         if has_live_results and disclosure:
             disclaimer_line = disclosure
             safe_note_line = safe_note
+        elif display_query.strip() and ambiguous_families:
+            disclaimer_line = (
+                "PicWise is not sure which product you mean. This search matches "
+                + " and ".join(ambiguous_families[:3])
+                + ". Add a word that names the product you want."
+            )
         elif display_query.strip():
             base_message = _SAFE_DISCLAIMER_BY_STATE.get(
                 resolution.resolver_state,
                 "PicWise could not understand this search safely.",
             )
+            if (
+                resolution.resolver_state == "understood_provider_not_connected"
+                and getattr(resolution, "provider_feed_status", None) == "provider_feed_ready"
+            ):
+                # The state name predates the feed: a feed is connected here, it just has
+                # no four products to show. "No provider is connected" would be false.
+                base_message = _FEED_CONNECTED_NO_FOUR_MESSAGE
             detected_category = resolution.display_name or resolution.mega_category_id or resolution.canonical_category
             if resolution.resolver_state == "understood_provider_not_connected" and detected_category:
                 human_category = str(detected_category).replace("_", " ")
@@ -363,6 +443,11 @@ def render_picwise_reference_surface(
         rec_note = (
             f'<p class="pw-rec-note">{escape(str(card["rec_note"]))}</p>' if str(card["rec_note"]) else ""
         )
+        role_label_html = (
+            f'<p class="pw-role-label">{escape(str(card.get("role_label")))}</p>'
+            if str(card.get("role_label") or "")
+            else ""
+        )
         cta = (
             f'<a class="pw-card-cta pw-card-cta-link" href="{escape(str(card["href"]), quote=True)}" rel="nofollow sponsored noopener">{escape(str(card["cta"]))}</a>'
             if card.get("href")
@@ -370,9 +455,10 @@ def render_picwise_reference_surface(
         )
         card_html.append(
             (
-                f'<article class="pw-card{rec_class}" data-choice-id="fixed-{idx}">'
+                f'<article class="pw-card{rec_class}" data-choice-id="{escape(str(card.get("choice_id") or f"fixed-{idx}"), quote=True)}">'
                 f"{rec_header}"
                 f'<span class="pw-badge {escape(str(card["badge_class"]), quote=True)}">{escape(str(card["badge"]))}</span>'
+                f"{role_label_html}"
                 f'<h2 class="pw-card-title">{escape(str(card["name"]))}</h2>'
                 f'<p class="pw-card-description">{escape(str(card["description"]))}</p>'
                 f'<div class="pw-product-image-wrap"><img class="pw-product-image" src="{escape(str(card["image"]), quote=True)}" alt="{escape(str(card["name"]))} product image"></div>'
@@ -387,15 +473,12 @@ def render_picwise_reference_surface(
         )
 
     if show_demo_note:
-        if feed_results:
-            note_or_empty_html = (
-                '<p class="pw-demo-note">&#9432; Selected real products from connected provider feed. '
-                "Recommended from these 4.</p>"
-            )
-        else:
-            note_or_empty_html = (
-                '<p class="pw-demo-note">&#9432; Safe connected provider mode: approved manual Amazon records only.</p>'
-            )
+        # The provider feed is the only source of cards, so has_live_results implies
+        # feed_results.
+        note_or_empty_html = (
+            '<p class="pw-demo-note">&#9432; Selected real products from connected provider feed. '
+            "Recommended from these 4.</p>"
+        )
     else:
         note_or_empty_html = (
             '<section class="pw-empty-state">PicWise safely shows no product cards until intent confidence '
@@ -453,6 +536,7 @@ def render_picwise_reference_surface(
         ".pw-badge-value{background:#e8f8ec;color:#2f9b57;}"
         ".pw-badge-best{background:#f0ecff;color:#6e57cc;}"
         ".pw-card-title{margin:0;font-size:24px;line-height:1.08;color:#112649;letter-spacing:-.03em;min-height:58px;}"
+        ".pw-role-label{margin:6px 0 0;font-size:12px;font-weight:700;letter-spacing:.01em;color:#1a4fb7;line-height:1.3;}"
         ".pw-card-description{margin:4px 0 8px;font-size:12px;color:#5c7397;line-height:1.35;min-height:32px;}"
         ".pw-product-image-wrap{height:84px;margin:0 0 10px;display:flex;align-items:center;justify-content:center;}"
         ".pw-product-image{display:block;width:252px;height:84px;border-radius:12px;border:1px solid #dbe6f6;object-fit:cover;background:#eef3fb;}"

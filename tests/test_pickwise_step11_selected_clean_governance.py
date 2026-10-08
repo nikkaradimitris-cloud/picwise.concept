@@ -112,8 +112,9 @@ class PickWiseStep11SelectedCleanGovernanceTests(unittest.TestCase):
             self.assertNotIn(source["slug"], body_sitemap)
 
         status_best_known, _headers_best_known, body_best_known = _call_wsgi("/best/power-bank-20000mah-for-iphone")
-        self.assertEqual(status_best_known, "200 OK")
-        self.assertIn("Recommended by PickWise", body_best_known)
+        # Fixture buying pages are never published: they are fabricated products and ratings.
+        self.assertEqual(status_best_known, "404 Not Found")
+        self.assertNotIn("Recommended by PickWise", body_best_known)
 
         status_best_new, _headers_best_new, _body_best_new = _call_wsgi("/best/best-power-banks-for-travel-usa")
         self.assertEqual(status_best_new, "404 Not Found")

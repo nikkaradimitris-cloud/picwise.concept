@@ -55,6 +55,41 @@ Current status: **local implementation + partial live proof (stage 22 only)**.
 
 - Command: `python -m unittest discover -s tests`
 
+### Search runtime artifact
+
+`src/picwise_search_memory/artifacts/search_runtime_v1.json.gz` is committed and must
+match its fingerprint sources. When it does not, the app silently falls back to building
+the search index live and the first request misses the render target. Rebuild after
+changing vocabulary or taxonomy deep packs:
+
+```bash
+python tools/build_picwise_search_artifact.py
+```
+
+`tests/test_picwise_mission_decision_delivery.py` fails when the artifact is stale.
+
+### Local provider feed fixture
+
+The real-feed provider pipeline can be run without the operator's private Awin feed:
+
+- Feed: `tests/fixtures/provider_feed_local_test_fixture.csv`
+- Coverage: `python -m unittest tests.test_picwise_provider_feed_local_fixture`
+- Runtime capture: `python tools/runtime_truth_audit.py`
+- Details: `docs/picwise_local_provider_feed_fixture.md`
+
+This fixture is local test data (`local_test_fixture`, `.invalid` URLs only). It is not
+real-feed proof and must not be used to close real feed/affiliate stages.
+
+A second fixture, `tests/fixtures/provider_feed_coverage_matrix_fixture.csv`, holds four
+products for each of 27 product types across all 18 mega categories and drives the
+product-type coverage matrix:
+
+```bash
+python -m unittest tests.test_picwise_product_type_coverage_matrix
+```
+
+See `docs/picwise_product_type_coverage_matrix.md`.
+
 ## Live Status Honesty
 
 - Primary domain plan remains `picwise.subby.cloud`.

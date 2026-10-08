@@ -102,7 +102,7 @@ def _extract_image_urls(body: str) -> list[str]:
 
 def _extract_product_hrefs(body: str) -> list[str]:
     return re.findall(
-        r'<a class="pw-card-cta pw-card-cta-link" href="([^"]+)" rel="nofollow sponsored noopener">View product</a>',
+        r'<a class="pw-card-cta pw-card-cta-link" href="([^"]+)" rel="nofollow sponsored noopener">View in Store</a>',
         body,
     )
 
@@ -196,14 +196,15 @@ class ProviderRealFeedUiExposureStage8ETests(unittest.TestCase):
             self.assertNotIn("product-3.svg", href.lower())
         self._assert_no_fake_commerce_markers(html)
 
-    def test_power_bank_still_uses_manual_amazon_path(self) -> None:
+    def test_power_bank_no_longer_uses_the_manual_amazon_path(self) -> None:
+        # Amazon has been removed from the product; power banks go through the same
+        # provider-feed engine as every other product type.
         resolution = resolve_live_search("power bank")
         html = render_picwise_reference_surface(query="power bank", resolution=resolution)
-        self.assertTrue(resolution.result_allowed)
-        self.assertIn("View on Amazon", html)
-        self.assertIn("/out/amazon?", html)
-        self.assertNotIn("View product", html)
-        self.assertNotIn("REAL FEED", html)
+        self.assertFalse(resolution.result_allowed)
+        self.assertNotEqual(resolution.provider_key, "manual_amazon_affiliate")
+        self.assertNotIn("View on Amazon", html)
+        self.assertNotIn("/out/amazon", html)
 
     def test_unsafe_queries_do_not_render_feed_cards(self) -> None:
         self._require_real_feed()
@@ -293,7 +294,7 @@ class ProviderRealFeedUiExposureRuntimeStage8ETests(unittest.TestCase):
             ("monitor", True),
             ("gaming monitor", True),
             ("smartphone", True),
-            ("power bank", False),
+            ("power bank", True),
             ("bank", False),
             ("insurance", False),
         )
@@ -305,10 +306,18 @@ class ProviderRealFeedUiExposureRuntimeStage8ETests(unittest.TestCase):
                 if expect_feed_cards:
                     self.assertEqual(card_count, 4, body)
                     self.assertEqual(len(_recommended_titles(body)), 1)
-                    self.assertIn("Geekbuying via Awin", body)
+                    # The store line names the merchant from the feed row plus
+                    # the network. The merchant therefore depends on feed
+                    # content, so assert the network attribution rather than one
+                    # hardcoded shop name.
+                    self.assertIn("Awin", body)
+                    self.assertRegex(
+                        body,
+                        r"(via Awin|Awin provider feed \(merchant not named in feed\))",
+                    )
                 elif query == "power bank":
-                    self.assertGreater(card_count, 0)
-                    self.assertIn("View on Amazon", body)
+                    # Served by the feed now, not Amazon.
+                    self.assertNotIn("View on Amazon", body)
                 else:
                     self.assertEqual(card_count, 0)
                     self.assertIn("pw-empty-state", body)

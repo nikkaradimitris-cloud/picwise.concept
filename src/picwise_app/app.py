@@ -22,20 +22,14 @@ from picwise_search import resolve_live_search, route_search_query
 from picwise_search.live_search_resolver import empty_landing_search_resolution, is_empty_search_query
 from picwise_search.search_warmup import schedule_search_warmup_if_needed
 from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
-from picwise_offers import (
-    AMAZON_ASSOCIATES_TRACKING_ID,
-    MANUAL_AMAZON_AFFILIATE_REGISTRY,
-    AmazonManualAffiliateQualityStatus,
-    AmazonManualAffiliateStatus,
-    get_manual_amazon_record_by_asin,
-    get_approved_manual_amazon_record_by_asin,
-    validate_amazon_affiliate_url,
-)
+from picwise_providers import resolve_card_eligible_provider_feed_product_by_id
+from picwise_providers.awin_adapter import awin_feed_config_from_env
+from picwise_providers.state import resolve_provider_feed_pipeline
+from picwise_providers.normalization import extract_merchant_name, is_valid_http_url
 from picwise_surface import (
-    render_amazon_affiliate_proof_page,
+    provider_feed_cards_will_render,
     render_affiliate_disclosure_page,
     render_branded_not_found_page,
-    render_controlled_search_results_page,
     render_contact_page,
     render_cookies_page,
     render_demo_info_page,
@@ -45,6 +39,7 @@ from picwise_surface import (
     render_terms_page,
 )
 from .buying_routes import render_best_slug_html, render_buying_sitemap_xml
+from .query_log_sink import QUERY_LOG_SINK
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 LOCAL_AVAILABLE_ROUTES = (
@@ -59,11 +54,7 @@ LOCAL_AVAILABLE_ROUTES = (
     "/search",
     "/results",
     "/picwise-reference",
-    "/amazon-affiliate-proof",
-    "/out/amazon",
-    "/amazon-launch-check",
-    "/amazon-click-proof",
-    "/amazon-traffic-protocol",
+    "/out/feed",
     "/private-beta-readiness",
     "/best/{slug}",
     "/sitemap-buying-pages.xml",
@@ -85,7 +76,8 @@ class PicwiseLocalApp:
         self._stage31_controller = (
             stage31_controller if stage31_controller is not None else build_default_stage31_runtime_controller()
         )
-        self._amazon_outbound_click_events: list[dict[str, str]] = []
+        self._feed_outbound_click_events: list[dict[str, str]] = []
+        self._decision_impression_events: list[dict[str, str]] = []
 
     def health_payload(self) -> dict[str, Any]:
         from picwise_search_memory.search_runtime_artifact import get_search_runtime_artifact_status
@@ -102,8 +94,15 @@ class PicwiseLocalApp:
         _ = query
         return render_demo_info_page()
 
-    def root_landing_html(self) -> str:
-        return self.picwise_reference_html("")
+    def root_landing_html(self, query: str = "") -> str:
+        """Render the landing surface, honouring an inbound purchase-intent query.
+
+        The mission requires that a visitor arriving from Google on
+        `/?q=<purchase intent>` sees the decision result immediately instead of an
+        empty search page, so the query is resolved here exactly as on /search.
+        With no query this stays the plain landing page.
+        """
+        return self.picwise_reference_html(query, source_page="search")
 
     def picwise_reference_html(self, query: str = "", *, source_page: str = "search") -> str:
         if is_empty_search_query(query):
@@ -111,195 +110,18 @@ class PicwiseLocalApp:
         else:
             resolution = resolve_live_search(query)
         html = render_picwise_reference_surface(query=query, resolution=resolution, source_page=source_page)
+        self.record_decision_impression(
+            query=query,
+            source_page=source_page,
+            resolution=resolution,
+        )
         if resolution.resolver_state == "broad_query_suggestions":
             html = _inject_broad_query_suggestions(html, resolution)
+        elif getattr(resolution, "did_you_mean", ()) and not provider_feed_cards_will_render(resolution):
+            html = _inject_did_you_mean(html, resolution)
         if is_empty_search_query(query):
             schedule_search_warmup_if_needed()
         return html
-
-    def amazon_affiliate_proof_html(self) -> str:
-        return render_amazon_affiliate_proof_page()
-
-    def amazon_launch_check_html(self) -> str:
-        approved_count = len(MANUAL_AMAZON_AFFILIATE_REGISTRY)
-        active_count = sum(
-            1
-            for record in MANUAL_AMAZON_AFFILIATE_REGISTRY
-            if record.status == AmazonManualAffiliateStatus.APPROVED
-            and record.quality_status == AmazonManualAffiliateQualityStatus.ACTIVE
-        )
-        disabled_or_review_count = len(MANUAL_AMAZON_AFFILIATE_REGISTRY) - active_count
-        return (
-            "<!doctype html>"
-            '<html lang="en"><head><meta charset="utf-8">'
-            '<meta name="viewport" content="width=device-width, initial-scale=1">'
-            "<title>PicWise Amazon Launch Check</title>"
-            "<style>"
-            "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f9ff;color:#102744;}"
-            ".pw-wrap{max-width:860px;margin:0 auto;padding:30px 20px;}"
-            ".pw-card{background:#fff;border:1px solid #dbe8fb;border-radius:14px;padding:18px 20px;box-shadow:0 8px 24px rgba(17,44,91,.08);}"
-            ".pw-list{margin:10px 0 0;padding-left:18px;line-height:1.7;color:#355174;}"
-            "code{background:#eef4ff;padding:2px 6px;border-radius:6px;}"
-            "</style></head><body><main class=\"pw-wrap\"><section class=\"pw-card\">"
-            "<h1>Amazon launch check</h1>"
-            "<ul class=\"pw-list\">"
-            f"<li>Tracking ID configured: <code>{escape(AMAZON_ASSOCIATES_TRACKING_ID)}</code></li>"
-            f"<li>Approved manual links: {approved_count}</li>"
-            f"<li>Active public links: {active_count}</li>"
-            f"<li>Disabled/manual review links: {disabled_or_review_count}</li>"
-            "<li>Search route: <code>/search?q=power%20bank</code></li>"
-            "<li>Results route: <code>/results?q=power%20bank</code></li>"
-            "<li>Outbound redirect validation: enabled</li>"
-            "<li>API access: not available yet</li>"
-            "<li>Amazon images/live prices: not used</li>"
-            "<li>Disclosure: present</li>"
-            "</ul></section></main></body></html>"
-        )
-
-    def amazon_click_proof_html(self) -> str:
-        active_count = sum(
-            1
-            for record in MANUAL_AMAZON_AFFILIATE_REGISTRY
-            if record.status == AmazonManualAffiliateStatus.APPROVED
-            and record.quality_status == AmazonManualAffiliateQualityStatus.ACTIVE
-        )
-        disabled_or_review_count = len(MANUAL_AMAZON_AFFILIATE_REGISTRY) - active_count
-        total_clicks = len(self._amazon_outbound_click_events)
-        last_event = self._amazon_outbound_click_events[-1] if self._amazon_outbound_click_events else {}
-        last_asin = escape(last_event.get("asin", "none") or "none")
-        last_query = escape(last_event.get("query", "none") or "none")
-        last_source_page = escape(last_event.get("source_page", "none") or "none")
-        last_event_type = escape(last_event.get("event_type", "none") or "none")
-        return (
-            "<!doctype html>"
-            '<html lang="en"><head><meta charset="utf-8">'
-            '<meta name="viewport" content="width=device-width, initial-scale=1">'
-            "<title>PicWise Amazon Click Proof</title>"
-            "<style>"
-            "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f9ff;color:#102744;}"
-            ".pw-wrap{max-width:860px;margin:0 auto;padding:30px 20px;}"
-            ".pw-card{background:#fff;border:1px solid #dbe8fb;border-radius:14px;padding:18px 20px;box-shadow:0 8px 24px rgba(17,44,91,.08);}"
-            ".pw-list{margin:10px 0 0;padding-left:18px;line-height:1.7;color:#355174;}"
-            "code{background:#eef4ff;padding:2px 6px;border-radius:6px;}"
-            "</style></head><body><main class=\"pw-wrap\"><section class=\"pw-card\">"
-            "<h1>Amazon click proof</h1>"
-            "<ul class=\"pw-list\">"
-            f"<li>Tracking ID configured: <code>{escape(AMAZON_ASSOCIATES_TRACKING_ID)}</code></li>"
-            f"<li>Recorded outbound clicks: {total_clicks}</li>"
-            f"<li>Last click ASIN: {last_asin}</li>"
-            f"<li>Last click query: {last_query}</li>"
-            f"<li>Last click source: {last_source_page}</li>"
-            f"<li>Last event type: {last_event_type}</li>"
-            f"<li>Active public links: {active_count}</li>"
-            f"<li>Disabled/manual review links: {disabled_or_review_count}</li>"
-            "<li>Sales verification: check Amazon Associates</li>"
-            "<li>Amazon sales are not verified here. Check Amazon Associates for actual sales.</li>"
-            "</ul></section></main></body></html>"
-        )
-
-    def amazon_traffic_protocol_html(self) -> str:
-        return (
-            "<!doctype html>"
-            '<html lang="en"><head><meta charset="utf-8">'
-            '<meta name="viewport" content="width=device-width, initial-scale=1">'
-            "<title>PicWise First Live Traffic Protocol</title>"
-            "<style>"
-            "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f9ff;color:#102744;}"
-            ".pw-wrap{max-width:920px;margin:0 auto;padding:30px 20px;}"
-            ".pw-card{background:#fff;border:1px solid #dbe8fb;border-radius:14px;padding:18px 20px;box-shadow:0 8px 24px rgba(17,44,91,.08);margin-bottom:16px;}"
-            ".pw-list{margin:10px 0 0;padding-left:18px;line-height:1.7;color:#355174;}"
-            "code{background:#eef4ff;padding:2px 6px;border-radius:6px;}"
-            "</style></head><body><main class=\"pw-wrap\">"
-            "<section class=\"pw-card\">"
-            "<h1>First live traffic protocol</h1>"
-            "<ul class=\"pw-list\">"
-            "<li>This page documents a manual operator protocol only.</li>"
-            "<li>This stage does not generate traffic automatically.</li>"
-            "<li>Tracking ID: picwise-20</li>"
-            "</ul>"
-            "</section>"
-            "<section class=\"pw-card\">"
-            "<h2>PicWise can verify</h2>"
-            "<ul class=\"pw-list\">"
-            "<li>outbound click route works</li>"
-            "<li>click is recorded locally</li>"
-            "<li>redirect URL includes <code>tag=picwise-20</code></li>"
-            "<li>disabled products do not redirect</li>"
-            "</ul>"
-            "</section>"
-            "<section class=\"pw-card\">"
-            "<h2>PicWise cannot verify yet</h2>"
-            "<ul class=\"pw-list\">"
-            "<li>Amazon orders</li>"
-            "<li>Amazon shipped items</li>"
-            "<li>Amazon commissions</li>"
-            "<li>Amazon conversion rate</li>"
-            "<li>Amazon buyer behavior</li>"
-            "</ul>"
-            "</section>"
-            "<section class=\"pw-card\">"
-            "<h2>Operator manual Amazon Associates check</h2>"
-            "<ul class=\"pw-list\">"
-            "<li>Reports</li>"
-            "<li>Summary / Full Report</li>"
-            "<li>Clicks</li>"
-            "<li>Ordered items</li>"
-            "<li>Shipped items</li>"
-            "<li>Earnings</li>"
-            "<li>Tracking ID: picwise-20</li>"
-            "</ul>"
-            "</section>"
-            "<section class=\"pw-card\">"
-            "<h2>First traffic test protocol</h2>"
-            "<ul class=\"pw-list\">"
-            "<li>Use only a small controlled test.</li>"
-            "<li>Do not run ads yet.</li>"
-            "<li>Do not spam clicks.</li>"
-            "<li>Do not click your own links repeatedly.</li>"
-            "<li>Share the public search URL with 1-3 trusted real users only.</li>"
-            "<li>Ask them to search/open normally if interested.</li>"
-            "<li>Wait for Amazon Associates reporting delay.</li>"
-            "<li>Then check reports manually.</li>"
-            "</ul>"
-            "</section>"
-            "<section class=\"pw-card\">"
-            "<h2>URLs</h2>"
-            "<ul class=\"pw-list\">"
-            "<li>Safe public test URL: <code>https://picwise.subby.cloud/search?q=power%20bank</code></li>"
-            "<li>Internal proof URL: <code>/amazon-click-proof</code></li>"
-            "<li>Internal proof URL: <code>/amazon-launch-check</code></li>"
-            "</ul>"
-            "</section>"
-            "<section class=\"pw-card\">"
-            "<h2>Readiness checklist</h2>"
-            "<ul class=\"pw-list\">"
-            "<li>Search page active: ready</li>"
-            "<li>Active Amazon links: 4</li>"
-            "<li>Disabled links blocked: ready</li>"
-            "<li>Click proof: ready</li>"
-            "<li>Amazon sales proof: manual Amazon Associates only</li>"
-            "<li>Ads: not ready</li>"
-            "<li>API reporting: not available yet</li>"
-            "</ul>"
-            "</section>"
-            "<section class=\"pw-card\">"
-            "<h2>Hard rules</h2>"
-            "<ul class=\"pw-list\">"
-            "<li>no Amazon API</li>"
-            "<li>no scraping</li>"
-            "<li>no live Amazon report fetch</li>"
-            "<li>no fake sales</li>"
-            "<li>no fake earnings</li>"
-            "<li>no fake conversion rate</li>"
-            "<li>no auto-clicking</li>"
-            "<li>no traffic bot</li>"
-            "<li>no tracking pixel</li>"
-            "<li>no cookies</li>"
-            "<li>no external analytics</li>"
-            "</ul>"
-            "</section>"
-            "</main></body></html>"
-        )
 
     def terms_html(self) -> str:
         return render_terms_page()
@@ -322,57 +144,201 @@ class PicwiseLocalApp:
     def mvp_search_html(self, query: str, *, source_page: str = "search") -> str:
         return self.picwise_reference_html(query, source_page=source_page)
 
-    def resolve_outbound_amazon_redirect(self, asin: str) -> str | None:
-        record = get_approved_manual_amazon_record_by_asin(asin)
-        if record is None:
-            return None
-        validation = validate_amazon_affiliate_url(record.affiliate_url, required_tracking_id=AMAZON_ASSOCIATES_TRACKING_ID)
-        if not validation.valid:
-            return None
-        return record.affiliate_url
+    def record_decision_impression(
+        self,
+        *,
+        query: str,
+        source_page: str,
+        resolution: Any,
+    ) -> list[dict[str, str]]:
+        """Record the impression side of the tracking contract for one rendered page.
 
-    def outbound_asin_manual_status_message(self, asin: str) -> str:
-        record = get_manual_amazon_record_by_asin(asin)
-        if record is None:
-            return (
-                "This Amazon option is not currently available through PicWise. "
-                "Please return to search results."
-            )
-        if record.status == AmazonManualAffiliateStatus.DISABLED or (
-            record.quality_status == AmazonManualAffiliateQualityStatus.UNAVAILABLE_MANUAL
-        ):
-            return (
-                "This Amazon option is not currently available through PicWise. "
-                "This option has been disabled after manual review. "
-                "Please return to search results."
-            )
-        return (
-            "This Amazon option is not currently available through PicWise. "
-            "Please return to search results."
+        Event names follow docs/TRACKING_EVENTS_SPEC.md. `choices_shown` and
+        `recommended_shown` are emitted only when the surface actually renders the
+        cards, read from the renderer's own gate, so an event never claims choices
+        were shown on a page that refused to show them. Fields PicWise does not have
+        use the missing-data enum rather than invented values, and no conversion or
+        revenue is ever recorded here.
+        """
+        timestamp = (
+            datetime.now(timezone.utc)
+            .replace(microsecond=0)
+            .isoformat()
+            .replace("+00:00", "Z")
         )
-
-    def record_amazon_outbound_click(self, *, asin: str, query: str, source_page: str) -> dict[str, str]:
-        event = {
-            "timestamp": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
-            "asin": str(asin or "").strip().upper(),
-            "query": " ".join(str(query or "").split()),
-            "source_page": source_page if source_page in {"search", "results", "unknown"} else "unknown",
-            "tracking_id": AMAZON_ASSOCIATES_TRACKING_ID,
-            "event_type": "amazon_outbound_click",
+        safe_source = (
+            source_page
+            if source_page in {"search", "results", "landing", "reference", "unknown"}
+            else "unknown"
+        )
+        safe_query = " ".join(str(query or "").split())
+        base = {
+            "timestamp": timestamp,
+            "query": safe_query or MissingDataState.NOT_APPLICABLE.value,
+            "source_page": safe_source,
+            "resolver_state": str(getattr(resolution, "resolver_state", "") or "")
+            or MissingDataState.UNKNOWN.value,
+            "session_id": MissingDataState.NOT_CONNECTED.value,
+            "conversion_value": MissingDataState.NOT_APPLICABLE.value,
+            "revenue_value": MissingDataState.NOT_APPLICABLE.value,
         }
-        self._amazon_outbound_click_events.append(event)
-        if len(self._amazon_outbound_click_events) > 200:
-            self._amazon_outbound_click_events = self._amazon_outbound_click_events[-200:]
+        events: list[dict[str, str]] = [dict(base, event_name="page_impression")]
+        cards_rendered = provider_feed_cards_will_render(resolution)
+        if safe_query:
+            # What the NLU understood, so queries it could not read -- or read only
+            # through a typo correction -- can be reviewed and taught to the lexicon.
+            # This is the NLU's training signal; see tools/nlu_mistake_report.py.
+            served = dict(
+                base,
+                event_name="query_served",
+                understood_concept=str(
+                    getattr(resolution, "understood_concept_id", "") or ""
+                )
+                or MissingDataState.UNKNOWN.value,
+                understood_by_correction=(
+                    "true" if getattr(resolution, "understood_by_correction", False) else "false"
+                ),
+                choices_rendered="true" if cards_rendered else "false",
+            )
+            events.append(served)
+            # Kept beyond this process only when a query log store is configured.
+            QUERY_LOG_SINK.record(served)
+
+        if cards_rendered:
+            selected = list(getattr(resolution, "provider_feed_selected_products", ()) or ())
+            events.append(
+                dict(
+                    base,
+                    event_name="choices_shown",
+                    choice_count=str(len(selected)),
+                    provider_id=str(
+                        (selected[0].get("provider_key") if selected else "") or ""
+                    )
+                    or MissingDataState.UNKNOWN.value,
+                )
+            )
+            recommended_id = str(
+                getattr(resolution, "provider_feed_recommended_product_id", "") or ""
+            )
+            if recommended_id:
+                events.append(
+                    dict(
+                        base,
+                        event_name="recommended_shown",
+                        choice_id=recommended_id,
+                        recommendation_confidence=str(
+                            getattr(
+                                resolution, "provider_feed_recommendation_confidence", ""
+                            )
+                            or ""
+                        )
+                        or MissingDataState.UNKNOWN.value,
+                    )
+                )
+        else:
+            events.append(
+                dict(
+                    base,
+                    event_name="choices_shown",
+                    choice_count="0",
+                    provider_id=MissingDataState.NOT_CONNECTED.value,
+                )
+            )
+
+        self._decision_impression_events.extend(events)
+        if len(self._decision_impression_events) > 400:
+            self._decision_impression_events = self._decision_impression_events[-400:]
+        return events
+
+    def get_decision_impression_events(self) -> list[dict[str, str]]:
+        return list(self._decision_impression_events)
+
+    def clear_decision_impression_events(self) -> None:
+        self._decision_impression_events = []
+
+    def resolve_outbound_feed_redirect(self, product_id: str) -> dict[str, str] | None:
+        """Resolve a provider-feed product id to a validated redirect target.
+
+        Returns None when the id is unknown or the product is no longer
+        card-eligible, so a stale link cannot send a buyer to an offer PicWise
+        would refuse to show now.
+        """
+        product = resolve_card_eligible_provider_feed_product_by_id(product_id)
+        if product is None:
+            return None
+        target_url = str(product.product_url or "").strip()
+        if not is_valid_http_url(target_url):
+            return None
+        raw = product.raw if isinstance(product.raw, dict) else {}
+        return {
+            "redirect_url": target_url,
+            "provider_key": str(product.provider_key or "").strip() or "unknown",
+            "merchant_name": extract_merchant_name(raw) or "unknown",
+        }
+
+    def record_feed_outbound_click(
+        self,
+        *,
+        product_id: str,
+        query: str,
+        source_page: str,
+        is_recommended: bool | None,
+        provider_key: str,
+        merchant_name: str,
+        redirect_url: str,
+        event_name: str,
+    ) -> dict[str, str]:
+        """Record one real outbound click on a provider-feed card.
+
+        Event names follow docs/TRACKING_EVENTS_SPEC.md. Fields PicWise does not
+        genuinely have are written with the missing-data enum instead of invented
+        values: there is no session or brain/depth context on this route, and no
+        conversion or revenue is ever recorded here.
+        """
+        if is_recommended is None:
+            recommended_field = MissingDataState.UNKNOWN.value
+        else:
+            recommended_field = "true" if is_recommended else "false"
+        event = {
+            "timestamp": datetime.now(timezone.utc)
+            .replace(microsecond=0)
+            .isoformat()
+            .replace("+00:00", "Z"),
+            "event_name": event_name,
+            "choice_id": str(product_id or "").strip() or MissingDataState.UNKNOWN.value,
+            "query": " ".join(str(query or "").split()) or MissingDataState.UNKNOWN.value,
+            "source_page": source_page
+            if source_page in {"search", "results", "landing", "unknown"}
+            else "unknown",
+            "is_recommended": recommended_field,
+            "provider_id": str(provider_key or "").strip() or MissingDataState.UNKNOWN.value,
+            "merchant_name": str(merchant_name or "").strip() or MissingDataState.UNKNOWN.value,
+            "redirect_url": str(redirect_url or "").strip() or MissingDataState.UNKNOWN.value,
+            "session_id": MissingDataState.NOT_CONNECTED.value,
+            "conversion_value": MissingDataState.NOT_APPLICABLE.value,
+            "revenue_value": MissingDataState.NOT_APPLICABLE.value,
+        }
+        self._feed_outbound_click_events.append(event)
+        if len(self._feed_outbound_click_events) > 200:
+            self._feed_outbound_click_events = self._feed_outbound_click_events[-200:]
         return event
 
-    def get_amazon_outbound_click_count(self) -> int:
-        return len(self._amazon_outbound_click_events)
+    def get_feed_outbound_click_events(self) -> list[dict[str, str]]:
+        return list(self._feed_outbound_click_events)
 
-    def clear_amazon_outbound_click_events(self) -> None:
-        self._amazon_outbound_click_events = []
+    def get_feed_outbound_click_count(self) -> int:
+        return len(self._feed_outbound_click_events)
+
+    def clear_feed_outbound_click_events(self) -> None:
+        self._feed_outbound_click_events = []
 
     def private_beta_readiness_payload(self) -> dict[str, Any]:
-        report = build_mvp_private_beta_readiness_report()
+        # Report the feed the site actually serves from, not the MVP flow's local
+        # fixture, which would call the source "connected" with no feed configured.
+        feed_status = resolve_provider_feed_pipeline(
+            awin_feed_config_from_env(), include_graph_projection=False
+        ).feed_status.status
+        report = build_mvp_private_beta_readiness_report(production_feed_status=feed_status)
         return {
             "status": report.status.value,
             "sample_flow_state": report.sample_flow_state,
@@ -670,6 +636,37 @@ class PicwiseLocalApp:
         )
 
 
+def _replace_disclaimer(html: str, replacement: str) -> str:
+    marker = '<p class="pw-reference-disclaimer">'
+    start = html.find(marker)
+    if start == -1:
+        return html.replace(
+            '<section class="pw-empty-state">',
+            f'{replacement}<section class="pw-empty-state">',
+            1,
+        )
+    end = html.find("</p>", start)
+    if end == -1:
+        return html
+    return html[:start] + replacement + html[end + 4 :]
+
+
+def _inject_did_you_mean(html: str, resolution: Any) -> str:
+    """Ask which product was meant when a search was not understood.
+
+    The suggestions are links to a new search, never results: a correction too
+    uncertain to act on may still be worth asking about.
+    """
+    links = [
+        f'<a href="/search?q={quote(str(name), safe="")}">{escape(str(name))}</a>'
+        for name in getattr(resolution, "did_you_mean", ())
+    ]
+    if not links:
+        return html
+    text = "PicWise did not recognise this search. Did you mean: " + ", ".join(links) + "?"
+    return _replace_disclaimer(html, f'<p class="pw-reference-disclaimer">{text}</p>')
+
+
 def _inject_broad_query_suggestions(html: str, resolution: Any) -> str:
     suggestions = tuple(getattr(resolution, "suggestions", ()) or ())
     if not suggestions:
@@ -708,7 +705,8 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.OK, self.app.health_payload())
             return
         if parsed.path == "/":
-            html = self.app.root_landing_html()
+            query = parse_qs(parsed.query).get("q", [""])[0]
+            html = self.app.root_landing_html(query)
             self._send_html(HTTPStatus.OK, html)
             return
         if parsed.path == "/demo":
@@ -747,36 +745,34 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             html = self.app.picwise_reference_html(query, source_page="search")
             self._send_html(HTTPStatus.OK, html)
             return
-        if parsed.path == "/amazon-affiliate-proof":
-            html = self.app.amazon_affiliate_proof_html()
-            self._send_html(HTTPStatus.OK, html)
-            return
-        if parsed.path == "/amazon-launch-check":
-            html = self.app.amazon_launch_check_html()
-            self._send_html(HTTPStatus.OK, html)
-            return
-        if parsed.path == "/amazon-click-proof":
-            html = self.app.amazon_click_proof_html()
-            self._send_html(HTTPStatus.OK, html)
-            return
-        if parsed.path == "/amazon-traffic-protocol":
-            html = self.app.amazon_traffic_protocol_html()
-            self._send_html(HTTPStatus.OK, html)
-            return
-        if parsed.path == "/out/amazon":
+        if parsed.path == "/out/feed":
             params = parse_qs(parsed.query or "")
-            asin = (params.get("asin") or [""])[0]
+            product_id = (params.get("pid") or [""])[0]
             query = (params.get("q") or [""])[0]
             source_page = (params.get("src") or ["unknown"])[0]
-            target_url = self.app.resolve_outbound_amazon_redirect(asin)
-            if target_url is None:
-                safe_asin = escape(str(asin or "").strip().upper() or "UNKNOWN")
-                message = escape(self.app.outbound_asin_manual_status_message(asin))
+            rec_param = (params.get("rec") or [""])[0].strip().lower()
+            is_recommended = (
+                True if rec_param == "1" else False if rec_param == "0" else None
+            )
+            resolved = self.app.resolve_outbound_feed_redirect(product_id)
+            if resolved is None:
+                self.app.record_feed_outbound_click(
+                    product_id=product_id,
+                    query=query,
+                    source_page=source_page,
+                    is_recommended=is_recommended,
+                    provider_key="unknown",
+                    merchant_name="unknown",
+                    redirect_url="",
+                    event_name="redirect_failure",
+                )
+                safe_query = quote(str(query or "").strip(), safe="")
+                back_href = f"/search?q={safe_query}" if safe_query else "/"
                 html = (
                     "<!doctype html>"
                     '<html lang="en"><head><meta charset="utf-8">'
                     '<meta name="viewport" content="width=device-width, initial-scale=1">'
-                    "<title>PicWise Amazon Option Disabled</title>"
+                    "<title>PicWise Option Unavailable</title>"
                     "<style>"
                     "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f9ff;color:#102744;}"
                     ".pw-wrap{max-width:860px;margin:0 auto;padding:30px 20px;}"
@@ -784,17 +780,37 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
                     ".pw-note{margin:10px 0 0;line-height:1.6;color:#355174;}"
                     ".pw-btn{display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 18px;border-radius:999px;background:#1f6dff;border:1px solid #1f6dff;color:#fff;font-size:14px;font-weight:700;text-decoration:none;margin-top:16px;}"
                     "</style></head><body><main class=\"pw-wrap\"><section class=\"pw-card\">"
-                    "<h1>Amazon option disabled</h1>"
-                    f"<p class=\"pw-note\">ASIN: {safe_asin}</p>"
-                    f"<p class=\"pw-note\">{message}</p>"
-                    "<a class=\"pw-btn\" href=\"/search?q=power%20bank\">Return to search results</a>"
+                    "<h1>This option is no longer available</h1>"
+                    "<p class=\"pw-note\">PicWise could not confirm this offer is still "
+                    "showable, so it will not send you to it. This happens when an offer "
+                    "leaves the provider feed or is no longer in stock.</p>"
+                    f"<a class=\"pw-btn\" href=\"{escape(back_href, quote=True)}\">Back to results</a>"
                     "</section></main></body></html>"
                 )
                 self._send_html(HTTPStatus.OK, html)
                 return
-            self.app.record_amazon_outbound_click(asin=asin, query=query, source_page=source_page)
+            self.app.record_feed_outbound_click(
+                product_id=product_id,
+                query=query,
+                source_page=source_page,
+                is_recommended=is_recommended,
+                provider_key=resolved["provider_key"],
+                merchant_name=resolved["merchant_name"],
+                redirect_url=resolved["redirect_url"],
+                event_name="recommended_click" if is_recommended else "non_recommended_click",
+            )
+            self.app.record_feed_outbound_click(
+                product_id=product_id,
+                query=query,
+                source_page=source_page,
+                is_recommended=is_recommended,
+                provider_key=resolved["provider_key"],
+                merchant_name=resolved["merchant_name"],
+                redirect_url=resolved["redirect_url"],
+                event_name="redirect_success",
+            )
             self.send_response(HTTPStatus.FOUND)
-            self.send_header("Location", target_url)
+            self.send_header("Location", resolved["redirect_url"])
             self.send_header("Content-Length", "0")
             self.end_headers()
             return

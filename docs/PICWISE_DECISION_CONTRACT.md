@@ -62,5 +62,16 @@ An output is valid only if all checks pass:
 ## Undefined Details
 
 - Ranking formula weights: TODO
-- Tie-break protocol between close candidates: TODO
+- Tie-break protocol between close candidates: **decided by the owner, 2026-10-08.**
+  When the ranking leaves more than four substantially equivalent products, the four
+  shown spread across their price range: the cheapest, the dearest and two in between,
+  never bypassing a hard filter. "Substantially equivalent" means the same match with
+  the search in what identifies the product (title, product type, category, brand,
+  accessory or not); words found only in merchant free text (keywords, description)
+  do not count. Implemented in `search_selection._choose_shown_products`.
+  Confirmed by the owner the same day, with the rules for fewer free slots: two free
+  slots take the cheapest and the dearest, one takes the middle one. When all four are
+  equivalent the cheapest is recommended and its card says why. (Implementation note:
+  prices in different currencies are never compared, so such a group gives no range
+  and keeps its rank order.)
 - Localization strategy for labels/CTAs: TODO

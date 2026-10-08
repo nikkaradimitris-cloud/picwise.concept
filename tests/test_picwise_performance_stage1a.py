@@ -11,7 +11,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from picwise_app import PicwiseLocalApp  # noqa: E402
-from picwise_search import resolve_live_search  # noqa: E402
+from picwise_search import resolve_live_search, search_warmup  # noqa: E402
 from picwise_search.index_resolver_adapter import get_cached_offline_search_index  # noqa: E402
 from picwise_search.live_search_resolver import _vocabulary_registry  # noqa: E402
 from picwise_search_memory.canonical_registry import (  # noqa: E402
@@ -43,6 +43,12 @@ def _assert_landing_shell(test_case: unittest.TestCase, body: str) -> None:
 
 class PicwisePerformanceStage1ATests(unittest.TestCase):
     def setUp(self) -> None:
+        # An empty-query render schedules a background warm-up 0.75 s later. Left
+        # running, it can fire inside a later test's patched registry build and be
+        # counted as a second build, so every test starts and ends with none pending
+        # (as the stage 1B and 1C performance tests already do).
+        search_warmup._reset_search_warmup_for_tests()
+        self.addCleanup(search_warmup._reset_search_warmup_for_tests)
         self.app = PicwiseLocalApp()
 
     def test_empty_homepage_does_not_call_resolve_live_search(self) -> None:
@@ -62,7 +68,12 @@ class PicwisePerformanceStage1ATests(unittest.TestCase):
         with patch("picwise_app.app.resolve_live_search", wraps=resolve_live_search) as resolve_mock:
             html = self.app.picwise_reference_html("power bank")
         resolve_mock.assert_called_once_with("power bank")
-        self.assertIn("View on Amazon", html)
+        # The point of this test is that a non-empty query is resolved rather than
+        # short-circuited. It used to assert the Amazon CTA as a proxy for that;
+        # Amazon has been removed from the decision path, so assert the resolved
+        # surface instead.
+        self.assertIn("Detected category:", html)
+        self.assertNotIn("View on Amazon", html)
 
     def test_shared_registry_cache_returns_equivalent_data(self) -> None:
         import picwise_search.index_resolver_adapter as index_adapter

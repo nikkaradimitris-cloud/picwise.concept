@@ -74,11 +74,15 @@ class PickWiseStage3236RuntimeGuardrailsTests(unittest.TestCase):
                 "/results?q=power+bank",
                 "/picwise-reference",
                 "/private-beta-readiness",
-                "/best/power-bank-20000mah-for-iphone",
                 "/sitemap-buying-pages.xml",
             ):
                 status, _headers, _body = _call_local_http(base_url, path)
                 self.assertEqual(status, 200)
+            # Fixture buying pages are never published: they are fabricated products and ratings.
+            fixture_status, _fixture_headers, _fixture_body = _call_local_http(
+                base_url, "/best/power-bank-20000mah-for-iphone"
+            )
+            self.assertEqual(fixture_status, 404)
             missing_status, _missing_headers, missing_body = _call_local_http(base_url, "/not-a-route")
             self.assertEqual(missing_status, 404)
             self.assertIn("Page not found", missing_body)
@@ -156,17 +160,18 @@ class PickWiseStage3236RuntimeGuardrailsTests(unittest.TestCase):
 
         search_status, _search_headers, search_body = _call_wsgi("/search", "q=power+bank")
         self.assertEqual(search_status, "200 OK")
-        self.assertIn("Safe connected provider mode", search_body)
-        self.assertIn("manual_amazon_affiliate", search_body)
+        # Amazon removed from the product: no manual connected-provider copy remains.
+        self.assertNotIn("Safe connected provider mode", search_body)
+        self.assertNotIn("manual_amazon_affiliate", search_body)
         self.assertNotIn("fake product", search_body.lower())
 
     def test_buying_page_and_missing_route_responses_remain_safe(self) -> None:
         best_status, best_headers, best_body = _call_wsgi("/best/power-bank-20000mah-for-iphone")
-        self.assertEqual(best_status, "200 OK")
+        # Fixture buying pages are never published: they are fabricated products and ratings.
+        self.assertEqual(best_status, "404 Not Found")
         self.assertEqual(best_headers.get("Content-Type"), "text/html; charset=utf-8")
-        self.assertIn("Best options for", best_body)
-        self.assertIn("View option", best_body)
-        self.assertIn("rel=\"nofollow noopener\"", best_body)
+        self.assertNotIn("View option", best_body)
+        self.assertNotIn("Rating:", best_body)
         self.assertNotIn("fake product", best_body.lower())
 
         missing_status, missing_headers, missing_body = _call_wsgi("/best/not-a-real-slug")

@@ -189,12 +189,17 @@ class CommonProviderFieldPrioritySearchTests(unittest.TestCase):
             self.assertNotIn("review_count", row)
             self.assertNotIn("stars", row)
 
-    def test_manual_amazon_power_banks_regression_unchanged(self) -> None:
+    def test_power_banks_now_use_the_provider_feed_engine(self) -> None:
+        # Amazon has been removed from the product, so power banks are no longer
+        # intercepted by a manual connected provider: they resolve through the same
+        # provider-feed engine as every other product type.
         resolution = resolve_live_search("power bank")
-        self.assertEqual(resolution.provider_key, "manual_amazon_affiliate")
-        self.assertTrue(resolution.result_allowed)
-        self.assertIsNone(resolution.provider_feed_selection_status)
-
+        self.assertNotEqual(resolution.provider_key, "manual_amazon_affiliate")
+        self.assertEqual(resolution.provider_status, "not_connected")
+        self.assertFalse(resolution.result_allowed)
+        self.assertEqual(
+            resolution.resolver_state, "understood_provider_not_connected"
+        )
 
 class CommonProviderIntentResolutionTests(unittest.TestCase):
     def test_monitor_intent_resolves_to_computer_monitors(self) -> None:

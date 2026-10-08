@@ -119,7 +119,7 @@ def render_terms_page() -> str:
         "<h2>No guarantee</h2>"
         "<p>PicWise does not guarantee cheapest price, best product, best service, availability, completeness, accuracy, suitability, approval, rates, coverage, or eligibility.</p>"
         "<h2>External links and third-party websites</h2>"
-        "<p>PicWise may include links to Amazon, Linkwise, SaaS providers, ERP providers, finance/insurance providers, merchants, affiliate networks, and other third-party websites.</p>"
+        "<p>PicWise may include links to affiliate networks such as Awin, Linkwise, SaaS providers, ERP providers, finance/insurance providers, merchants, and other third-party websites.</p>"
         "<h2>Affiliate relationships and monetization</h2>"
         "<p>PicWise may earn commissions, referral fees, lead fees, or other compensation when affiliate/provider integrations are active. Affiliate compensation does not make PicWise the seller, provider, lender, insurer, software vendor, broker, or contracting party.</p>"
         "<h2>Physical products scope</h2>"
@@ -179,7 +179,7 @@ def render_privacy_page() -> str:
         "<h2>Hosting and technical providers</h2>"
         "<p>Hosting and server infrastructure may process technical logs for operation and reliability.</p>"
         "<h2>External provider and affiliate links</h2>"
-        "<p>After leaving PicWise, Amazon, Linkwise, SaaS providers, ERP providers, finance/insurance providers, affiliate networks, merchants, and other external sellers may process data under their own policies.</p>"
+        "<p>After leaving PicWise, affiliate networks, SaaS providers, ERP providers, finance/insurance providers, merchants, and other external sellers may process data under their own policies.</p>"
         "<h2>Cookies and browser storage</h2>"
         "<p>See <a href=\"/cookies\">/cookies</a> for the full Cookie Policy. Cookies, browser storage, and related technologies may be used for essential operation and may expand when integrations are active.</p>"
         "<h2>Pixels and tracking</h2>"
@@ -230,9 +230,9 @@ def render_cookies_page() -> str:
         "<h2>Pixels and tags</h2>"
         "<p>Analytics pixels, affiliate pixels, conversion pixels, provider tracking tags, and remarketing tags may be used later when integrations are active.</p>"
         "<h2>Current state</h2>"
-        "<p>Provider and affiliate tracking is being configured. PicWise does not currently claim that Google Analytics, Meta Pixel, Amazon pixels, Linkwise pixels, finance-provider pixels, SaaS-provider pixels, or a consent manager are active.</p>"
+        "<p>Provider and affiliate tracking is being configured. PicWise does not currently claim that Google Analytics, Meta Pixel, affiliate-network pixels, Linkwise pixels, finance-provider pixels, SaaS-provider pixels, or a consent manager are active.</p>"
         "<h2>Third-party cookies after leaving PicWise</h2>"
-        "<p>Amazon, Linkwise, SaaS providers, finance/insurance providers, merchants, affiliate networks, and other providers may use their own cookies/tracking under their own policies.</p>"
+        "<p>Affiliate networks, Linkwise, SaaS providers, finance/insurance providers, merchants, and other providers may use their own cookies/tracking under their own policies.</p>"
         "<h2>Consent and UK/EU rule</h2>"
         "<p>Non-essential cookies and pixels should only be used with consent where required by UK/EU law.</p>"
         "<h2>Cookie consent trigger rule</h2>"
@@ -260,8 +260,9 @@ def render_affiliate_disclosure_page() -> str:
     sections = (
         "<h2>About affiliate links and referral links</h2>"
         "<p>PicWise may include affiliate links, referral links, or provider links when integrations are active.</p>"
-        "<h2>Amazon Associates</h2>"
-        '<p class="pw-emphasis">"As an Amazon Associate I earn from qualifying purchases."</p>'
+        "<h2>Affiliate networks</h2>"
+        "<p>PicWise works with the Awin affiliate network where provider integrations are "
+        "active.</p>"
         "<h2>Linkwise</h2>"
         "<p>PicWise may participate in Linkwise programs where available.</p>"
         "<h2>Other affiliate/provider networks</h2>"
@@ -275,7 +276,7 @@ def render_affiliate_disclosure_page() -> str:
         "<p>This does not necessarily increase the price paid by the user.</p>"
         "<p>Affiliate relationships may influence monetization, but PicWise should aim to provide useful comparison and decision support.</p>"
         "<h2>Current state</h2>"
-        "<p>Provider/affiliate integrations are being configured. PicWise does not claim live Amazon offers unless actually active.</p>"
+        "<p>Provider/affiliate integrations are being configured. PicWise does not claim live provider offers unless actually active.</p>"
         "<h2>External provider responsibility and user verification</h2>"
         "<p>Pricing, availability, delivery, returns, warranties, subscription terms, finance/insurance eligibility, rates, approval, and legal/provider terms are controlled by external providers/stores.</p>"
         "<p>Users should verify details on the external provider/store before buying, subscribing, applying, or acting.</p>"
@@ -290,7 +291,7 @@ def render_affiliate_disclosure_page() -> str:
     return _render_legal_page(
         title="Affiliate Disclosure — PicWise",
         meta_description=(
-            "Learn how PicWise may earn commissions from Amazon Associates, Linkwise, SaaS, finance, "
+            "Learn how PicWise may earn commissions from Awin, Linkwise, SaaS, finance, "
             "insurance, and other provider programs."
         ),
         heading="Affiliate Disclosure",

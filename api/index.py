@@ -5,7 +5,8 @@ import mimetypes
 import sys
 from pathlib import Path
 from typing import Callable
-from urllib.parse import parse_qs
+from html import escape
+from urllib.parse import parse_qs, quote
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
@@ -19,11 +20,9 @@ from picwise_integrations import (  # noqa: E402
     send_subby_live_proof_event,
 )
 from picwise_surface import (  # noqa: E402
-    render_amazon_affiliate_proof_page,
     render_affiliate_disclosure_page,
     render_branded_not_found_page,
     render_contact_page,
-    render_controlled_search_results_page,
     render_cookies_page,
     render_picwise_reference_surface,
     render_privacy_page,
@@ -79,7 +78,11 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
             return _response("200 OK", content_type, body, start_response)
 
     if path == "/":
-        html = _APP.picwise_reference_html("")
+        # Honour an inbound purchase-intent query: a visitor arriving from Google
+        # on /?q=<intent> must see the decision result, not an empty landing.
+        query_string = str(environ.get("QUERY_STRING", ""))
+        query = parse_qs(query_string).get("q", [""])[0]
+        html = _APP.root_landing_html(query)
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
@@ -130,41 +133,33 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
-    if path == "/amazon-affiliate-proof":
-        html = render_amazon_affiliate_proof_page()
-        body = html.encode("utf-8")
-        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
-
-    if path == "/amazon-launch-check":
-        html = _APP.amazon_launch_check_html()
-        body = html.encode("utf-8")
-        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
-
-    if path == "/amazon-click-proof":
-        html = _APP.amazon_click_proof_html()
-        body = html.encode("utf-8")
-        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
-
-    if path == "/amazon-traffic-protocol":
-        html = _APP.amazon_traffic_protocol_html()
-        body = html.encode("utf-8")
-        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
-
-    if path == "/out/amazon":
+    if path == "/out/feed":
         query_string = str(environ.get("QUERY_STRING", ""))
         query_params = parse_qs(query_string)
-        asin = (query_params.get("asin") or [""])[0]
+        product_id = (query_params.get("pid") or [""])[0]
         query = (query_params.get("q") or [""])[0]
         source_page = (query_params.get("src") or ["unknown"])[0]
-        target_url = _APP.resolve_outbound_amazon_redirect(asin)
-        if target_url is None:
-            safe_asin = str(asin or "").strip().upper() or "UNKNOWN"
-            message = _APP.outbound_asin_manual_status_message(asin)
+        rec_param = (query_params.get("rec") or [""])[0].strip().lower()
+        is_recommended = True if rec_param == "1" else False if rec_param == "0" else None
+        resolved = _APP.resolve_outbound_feed_redirect(product_id)
+        if resolved is None:
+            _APP.record_feed_outbound_click(
+                product_id=product_id,
+                query=query,
+                source_page=source_page,
+                is_recommended=is_recommended,
+                provider_key="unknown",
+                merchant_name="unknown",
+                redirect_url="",
+                event_name="redirect_failure",
+            )
+            safe_query = quote(str(query or "").strip(), safe="")
+            back_href = f"/search?q={safe_query}" if safe_query else "/"
             html = (
                 "<!doctype html>"
                 '<html lang="en"><head><meta charset="utf-8">'
                 '<meta name="viewport" content="width=device-width, initial-scale=1">'
-                "<title>PicWise Amazon Option Disabled</title>"
+                "<title>PicWise Option Unavailable</title>"
                 "<style>"
                 "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f9ff;color:#102744;}"
                 ".pw-wrap{max-width:860px;margin:0 auto;padding:30px 20px;}"
@@ -172,21 +167,41 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
                 ".pw-note{margin:10px 0 0;line-height:1.6;color:#355174;}"
                 ".pw-btn{display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 18px;border-radius:999px;background:#1f6dff;border:1px solid #1f6dff;color:#fff;font-size:14px;font-weight:700;text-decoration:none;margin-top:16px;}"
                 "</style></head><body><main class=\"pw-wrap\"><section class=\"pw-card\">"
-                "<h1>Amazon option disabled</h1>"
-                f"<p class=\"pw-note\">ASIN: {safe_asin}</p>"
-                f"<p class=\"pw-note\">{message}</p>"
-                "<a class=\"pw-btn\" href=\"/search?q=power%20bank\">Return to search results</a>"
+                "<h1>This option is no longer available</h1>"
+                "<p class=\"pw-note\">PicWise could not confirm this offer is still "
+                "showable, so it will not send you to it. This happens when an offer "
+                "leaves the provider feed or is no longer in stock.</p>"
+                f"<a class=\"pw-btn\" href=\"{escape(back_href, quote=True)}\">Back to results</a>"
                 "</section></main></body></html>"
             )
             body = html.encode("utf-8")
             return _response("200 OK", "text/html; charset=utf-8", body, start_response)
-        _APP.record_amazon_outbound_click(asin=asin, query=query, source_page=source_page)
+        _APP.record_feed_outbound_click(
+            product_id=product_id,
+            query=query,
+            source_page=source_page,
+            is_recommended=is_recommended,
+            provider_key=resolved["provider_key"],
+            merchant_name=resolved["merchant_name"],
+            redirect_url=resolved["redirect_url"],
+            event_name="recommended_click" if is_recommended else "non_recommended_click",
+        )
+        _APP.record_feed_outbound_click(
+            product_id=product_id,
+            query=query,
+            source_page=source_page,
+            is_recommended=is_recommended,
+            provider_key=resolved["provider_key"],
+            merchant_name=resolved["merchant_name"],
+            redirect_url=resolved["redirect_url"],
+            event_name="redirect_success",
+        )
         start_response(
             "302 Found",
             [
                 ("Content-Type", "text/plain; charset=utf-8"),
                 ("Content-Length", "0"),
-                ("Location", target_url),
+                ("Location", resolved["redirect_url"]),
             ],
         )
         return [b""]

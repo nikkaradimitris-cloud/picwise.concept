@@ -42,8 +42,33 @@ def _derive_report_status(checks: tuple[ReadinessCheck, ...]) -> ReadinessStatus
     return ReadinessStatus.READY
 
 
-def build_mvp_private_beta_readiness_report(sample_query: str = "power bank for iphone") -> MVPPrivateBetaReadinessReport:
+def build_mvp_private_beta_readiness_report(
+    sample_query: str = "power bank for iphone",
+    *,
+    production_feed_status: str | None = None,
+) -> MVPPrivateBetaReadinessReport:
+    """Readiness of the MVP flow, and of the production feed when its status is given.
+
+    The MVP flow runs on a local fixture adapter, so on its own it always reports its
+    source as connected. A public endpoint must not present that as the production
+    state: pass `production_feed_status` and the product-source check reports the feed
+    the site actually serves from.
+    """
     flow: PickWiseMVPSearchFlow = run_pickwise_mvp_search_flow(sample_query)
+    if production_feed_status is None:
+        source_status = (
+            ReadinessStatus.READY
+            if flow.intake_result.status.value == "connected"
+            else ReadinessStatus.NEEDS_DATA
+        )
+        source_details = f"Source intake status: {flow.intake_result.status.value}."
+    else:
+        source_status = (
+            ReadinessStatus.READY
+            if production_feed_status == "provider_feed_ready"
+            else ReadinessStatus.NEEDS_DATA
+        )
+        source_details = f"Production provider feed status: {production_feed_status}."
     checks = (
         ReadinessCheck(
             key="app_health_ok",
@@ -64,8 +89,8 @@ def build_mvp_private_beta_readiness_report(sample_query: str = "power bank for 
         ),
         ReadinessCheck(
             key="product_source_connected_or_honest_not_connected",
-            status=ReadinessStatus.READY if flow.intake_result.status.value == "connected" else ReadinessStatus.NEEDS_DATA,
-            details=f"Source intake status: {flow.intake_result.status.value}.",
+            status=source_status,
+            details=source_details,
         ),
         ReadinessCheck(
             key="eligibility_gate_active",

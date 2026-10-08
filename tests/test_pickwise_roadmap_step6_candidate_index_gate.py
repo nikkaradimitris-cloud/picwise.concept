@@ -148,8 +148,9 @@ class PickWiseRoadmapStep6CandidateIndexGateTests(unittest.TestCase):
 
     def test_no_naming_changes(self) -> None:
         status_code, body = render_best_slug_html("power-bank-20000mah-for-iphone")
-        self.assertEqual(status_code, 200)
-        self.assertIn("Recommended by PickWise", body)
+        # Fixture buying pages are never published: they are fabricated products and ratings.
+        self.assertEqual(status_code, 404)
+        self.assertNotIn("Recommended by PickWise", body)
 
     def test_no_gates_relaxed_and_no_fake_live_dependencies(self) -> None:
         source_eligibility = inspect.getsource(evaluate_candidate_index_eligibility).lower()

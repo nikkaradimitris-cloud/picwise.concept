@@ -240,8 +240,9 @@ class PickWiseStage40FeedEnrichmentRemediationTests(unittest.TestCase):
 
     def test_existing_gates_naming_routes_sitemap_and_no_live_api_constraints(self) -> None:
         status, body = render_best_slug_html("power-bank-20000mah-for-iphone")
-        self.assertEqual(status, 200)
-        self.assertIn("Recommended by PickWise", body)
+        # Fixture buying pages are never published: they are fabricated products and ratings.
+        self.assertEqual(status, 404)
+        self.assertNotIn("Recommended by PickWise", body)
         candidate_status, _candidate_body = render_best_slug_html("power-bank-20000mah-for-iphone-stage40-candidate")
         self.assertEqual(candidate_status, 404)
         repository = get_buying_pages_repository()

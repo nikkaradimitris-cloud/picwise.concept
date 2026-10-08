@@ -297,14 +297,17 @@ class ProviderRealFeedSearchActivationStage8CTests(unittest.TestCase):
         self.assertEqual(resolution.provider_feed_selected_products, tuple())
         self.assertFalse(resolution.result_allowed)
 
-    def test_manual_amazon_power_banks_regression(self) -> None:
+    def test_power_banks_now_use_the_provider_feed_engine(self) -> None:
+        # Amazon has been removed from the product, so power banks are no longer
+        # intercepted by a manual connected provider: they resolve through the same
+        # provider-feed engine as every other product type.
         resolution = resolve_live_search("power bank")
-        self.assertEqual(resolution.provider_key, "manual_amazon_affiliate")
-        self.assertTrue(resolution.result_allowed)
-        self.assertEqual(resolution.resolver_state, "connected_provider_results")
-        self.assertIsNone(resolution.provider_feed_status)
-        self.assertIsNone(resolution.provider_feed_selection_status)
-
+        self.assertNotEqual(resolution.provider_key, "manual_amazon_affiliate")
+        self.assertEqual(resolution.provider_status, "not_connected")
+        self.assertFalse(resolution.result_allowed)
+        self.assertEqual(
+            resolution.resolver_state, "understood_provider_not_connected"
+        )
     def test_mocked_feed_ready_metadata_still_does_not_allow_cards(self) -> None:
         ready_metadata = SearchProviderFeedMetadata(
             provider_feed_status="provider_feed_ready",

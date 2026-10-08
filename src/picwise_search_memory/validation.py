@@ -93,9 +93,12 @@ def validate_record(record: CanonicalVocabularyRecord, allowed_mega_categories: 
 def validate_registry(registry: CanonicalVocabularyRegistry) -> dict[str, object]:
     reasons: list[str] = []
     by_category_term: set[tuple[str, str]] = set()
+    # Read once: the registry getter deep-copies the whole mega-category registry, and
+    # doing that per record (2,379 times) was about half of every cold start.
+    known_categories = known_mega_category_ids()
 
     for record in registry.records:
-        record_reasons = validate_record(record)
+        record_reasons = validate_record(record, known_categories)
         reasons.extend(record_reasons)
         signature = (record.mega_category_id, record.normalized_term)
         if signature in by_category_term:

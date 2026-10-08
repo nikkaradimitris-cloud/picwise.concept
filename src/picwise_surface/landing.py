@@ -54,7 +54,7 @@ def render_review_safe_landing_page() -> str:
         '<h1 class="pw-title">Welcome to PicWise.</h1>'
         '<p class="pw-body">PicWise is a shopping decision assistant that helps users compare product options, understand trade-offs, and choose more confidently before visiting external providers.</p>'
         '<p class="pw-body">PicWise does not sell products directly, process checkout, handle shipping, returns, warranties, subscriptions, or applications.</p>'
-        '<p class="pw-body">Provider and affiliate integrations are being configured. Demo product listings are previews only and are not live Amazon offers.</p>'
+        '<p class="pw-body">Provider and affiliate integrations are being configured. Demo product listings are previews only and are not live provider offers.</p>'
         '<p class="pw-note">Thank you for visiting PicWise. We are preparing a safer product comparison experience for shoppers.</p>'
         '<p class="pw-note">Try the current demo search:</p>'
         '<form class="pw-home-search" action="/search" method="get" data-main-cta-area="true">'
@@ -62,7 +62,7 @@ def render_review_safe_landing_page() -> str:
         '<input class="pw-home-search-input" id="pw-home-query" type="search" name="q" value="power bank" placeholder="Search for a product, e.g. power bank" autocomplete="off">'
         '<button class="pw-btn pw-btn-primary" type="submit">Search</button>'
         "</form>"
-        '<p class="pw-note">Demo results use approved manual Amazon affiliate links where configured.</p>'
+        '<p class="pw-note">Demo results are previews only and carry no live affiliate links.</p>'
         "</section>"
         f"{render_public_footer()}"
         "</main></body></html>"
@@ -108,12 +108,12 @@ def render_demo_info_page() -> str:
         '<section class="pw-card">'
         '<h1 class="pw-title">How PicWise will help shoppers decide.</h1>'
         '<p class="pw-body">PicWise is being prepared as a buying-decision assistant. Users will be able to search for a product category, compare a small set of relevant options, and follow external store offers once provider integrations are configured.</p>'
-        '<p class="pw-note" id="what-is-picwise"><strong>Important note:</strong> This demo page is informational only. It does not display live Amazon offers, real product availability, affiliate links, prices, or ratings.</p>'
+        '<p class="pw-note" id="what-is-picwise"><strong>Important note:</strong> This demo page is informational only. It does not display live provider offers, real product availability, affiliate links, prices, or ratings.</p>'
         '<section class="pw-list-wrap" aria-label="Informational demo sections">'
         '<article class="pw-item"><h2>Search by product need</h2><p>Users will start from a category or buying need, not from a live offer feed.</p></article>'
         '<article class="pw-item"><h2>Compare focused choices</h2><p>PicWise will present a short comparison view once integrations are fully configured.</p></article>'
         '<article class="pw-item"><h2>Understand trade-offs</h2><p>Guidance will help users evaluate practical pros, limits, and suitability.</p></article>'
-        '<article class="pw-item"><h2>External provider integrations in progress</h2><p>Provider and affiliate integrations are being configured. No live Amazon offers are currently claimed.</p></article>'
+        '<article class="pw-item"><h2>External provider integrations in progress</h2><p>Provider and affiliate integrations are being configured. No live provider offers are currently claimed.</p></article>'
         "</section>"
         '<div class="pw-actions">'
         '<a class="pw-btn pw-btn-primary" href="/">Back to home</a>'

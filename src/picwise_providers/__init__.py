@@ -33,7 +33,10 @@ from .purchasability_verifier import (
     analyze_product_page_content,
     verify_product_page_purchasability,
 )
-from .state import resolve_provider_feed_pipeline
+from .state import (
+    resolve_card_eligible_provider_feed_product_by_id,
+    resolve_provider_feed_pipeline,
+)
 
 __all__ = (
     "AVAILABILITY_STATES",
@@ -63,5 +66,6 @@ __all__ = (
     "load_awin_provider_feed",
     "normalize_feed_row_to_provider_product",
     "project_provider_products_to_graph",
+    "resolve_card_eligible_provider_feed_product_by_id",
     "resolve_provider_feed_pipeline",
 )

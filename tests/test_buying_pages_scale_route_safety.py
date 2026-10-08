@@ -52,12 +52,18 @@ class BuyingPagesScaleRouteSafetyTests(unittest.TestCase):
             "/",
             "/demo",
             "/picwise-reference",
-            "/best/power-bank-20000mah-for-iphone",
-            "/best/kompiouteraki-casio-gia-panellinies",
             "/sitemap-buying-pages.xml",
         ):
             status, _body = self._fetch_local(path)
             self.assertEqual(status, 200)
+        # The seed pages are fabricated products, prices and ratings; no route serves them.
+        for path in (
+            "/best/power-bank-20000mah-for-iphone",
+            "/best/kompiouteraki-casio-gia-panellinies",
+        ):
+            with self.assertRaises(HTTPError) as ctx:
+                urlopen(f"http://127.0.0.1:{self.port}{path}", timeout=5)
+            self.assertEqual(ctx.exception.code, 404)
 
     def test_unknown_slug_and_candidate_slug_return_404(self) -> None:
         for path in ("/best/unknown-test-slug", f"/best/{self.candidate_slug}"):

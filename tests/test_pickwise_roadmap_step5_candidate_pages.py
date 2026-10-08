@@ -111,8 +111,9 @@ class PickWiseRoadmapStep5CandidatePagesTests(unittest.TestCase):
 
     def test_no_best_route_exposure_no_sitemap_expansion_no_naming_changes(self) -> None:
         status, body = render_best_slug_html("power-bank-20000mah-for-iphone")
-        self.assertEqual(status, 200)
-        self.assertIn("Recommended by PickWise", body)
+        # Fixture buying pages are never published: they are fabricated products and ratings.
+        self.assertEqual(status, 404)
+        self.assertNotIn("Recommended by PickWise", body)
 
         candidate_status, _candidate_body = render_best_slug_html("best-power-bank-for-travel")
         self.assertEqual(candidate_status, 404)

@@ -16,6 +16,19 @@ _IMAGE_KEYS = ("image_url", "image", "aw_image_url", "merchant_image_url", "imag
 _PRICE_KEYS = ("price", "current_price", "search_price", "sale_price", "price_text")
 _AVAILABILITY_KEYS = ("availability", "in_stock", "stock_status", "availability_text")
 _CURRENCY_KEYS = ("currency", "currency_code")
+_MERCHANT_KEYS = (
+    "merchant_name",
+    "merchant",
+    "advertiser_name",
+    "advertiser",
+    "retailer_name",
+    "retailer",
+    "store_name",
+    "store",
+    "seller_name",
+    "seller",
+    "vendor",
+)
 _PRODUCT_ID_KEYS = (
     "provider_product_id",
     "product_id",
@@ -49,6 +62,19 @@ def derive_stable_provider_product_id(*, product_url: str, title: str, raw: Mapp
     seed = f"{product_url.strip().lower()}|{title.strip().lower()}"
     digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()[:16]
     return f"derived_{digest}"
+
+
+def extract_merchant_name(raw: Mapping[str, Any]) -> str:
+    """Return the selling merchant named by the feed row, or "" when absent.
+
+    A provider key such as "awin" identifies the affiliate network, not the shop.
+    An Awin feed carries thousands of merchants, so the merchant must come from
+    the row itself. Never substitute a guess: an empty result means the feed did
+    not say, and the surface must present that as unknown.
+    """
+    if not isinstance(raw, Mapping):
+        return ""
+    return _normalize_text(_first_non_empty(dict(raw), _MERCHANT_KEYS))
 
 
 def is_valid_http_url(value: str) -> bool:
