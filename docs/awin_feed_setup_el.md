@@ -19,6 +19,13 @@
      merchant_image_url, search_price, currency, merchant_name, brand_name,
      category_name, merchant_category, product_type, in_stock, stock_status,
      description, keywords, last_updated`
+   - **Και αυτές, αν υπάρχουν στη λίστα:** `ean, product_GTIN, mpn, condition,
+     is_for_sale, pre_order, valid_from, valid_to`. Με αυτές το PicWise:
+     καταλαβαίνει ότι το ίδιο προϊόν από 4 καταστήματα είναι **ένα** προϊόν (EAN/GTIN,
+     mpn), γράφει στην κάρτα όταν κάτι **δεν είναι καινούργιο** (condition), και δεν
+     δείχνει προσφορές που το κατάστημα δηλώνει «όχι προς πώληση», «προπαραγγελία» ή
+     που έχουν **λήξει** (is_for_sale, pre_order, valid_from/valid_to). Χωρίς αυτές οι
+     έλεγχοι αυτοί δεν έχουν δεδομένα να κρίνουν.
 6. Αντιγράψτε τον σύνδεσμο λήψης (ξεκινά με `https://productdata.awin.com/datafeed/download/apikey/...`).
 
 **Προσοχή:** ο σύνδεσμος περιέχει το προσωπικό κλειδί (API key) του λογαριασμού. Μην τον
