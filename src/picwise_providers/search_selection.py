@@ -16,6 +16,7 @@ from picwise_nlu.concept_understanding import (
 
 from .contracts import FeedAvailabilityContext, OfferHealth, ProviderProduct
 from .normalization import extract_merchant_name
+from .decision_labels import parse_price_amount
 from .offer_health import (
     build_feed_availability_context,
     evaluate_product_eligibility,
@@ -1188,14 +1189,49 @@ class ProviderFeedRecommendationDecision:
         }
 
 
-def _parse_price_for_tie_breaker(price_text: str) -> float | None:
-    cleaned = str(price_text or "").strip().replace(",", "")
-    if not cleaned:
-        return None
-    try:
-        return float(cleaned)
-    except ValueError:
-        return None
+def _comparable_tie_break_prices(
+    products: tuple[ProviderProduct, ...],
+) -> dict[str, float | None]:
+    """Prices the tie-break may compare, read exactly as the choice labels read them.
+
+    The tie-break once had its own parser: "1.099,00" became 1.099, so the recommendation
+    went to a fridge its own card called "3rd lowest price". It also compared 95 GBP with
+    100 EUR while the labels on the same page refused to. Prices in different currencies
+    are not comparable, so none are compared.
+    """
+    amounts = {
+        str(product.provider_product_id or ""): parse_price_amount(product.price_text)
+        for product in products
+    }
+    currencies = {
+        str(product.currency or "").strip().upper()
+        for product in products
+        if amounts[str(product.provider_product_id or "")] is not None
+    }
+    if len(currencies) > 1:
+        return {key: None for key in amounts}
+    return amounts
+
+
+def _deciding_reason_code(sorted_keys: list[tuple[Any, ...]], choice_count: int) -> str:
+    """What actually separated the recommended choice from the runner-up.
+
+    Shown first on the recommended card, because it is the answer to "why this one?".
+    The other reasons describe the winner but are usually just as true of the rest.
+    """
+    if len(sorted_keys) == 1 and choice_count > 1:
+        # The other choices did not carry every word the recommendation was scored on.
+        return "closer_search_match"
+    if len(sorted_keys) < 2:
+        return ""
+    winner, runner_up = sorted_keys[0], sorted_keys[1]
+    if winner[:2] != runner_up[:2]:
+        return "closer_search_match"
+    if winner[2] == -1 and winner[2:4] < runner_up[2:4]:
+        return "price_tie_breaker"
+    # Same match, same or incomparable price: only the title order is left, which is
+    # no fact about the products. Say so rather than dress it up.
+    return "tie_on_search_match_and_price"
 
 
 def _recommendation_reason_codes_for_product(
@@ -1281,6 +1317,7 @@ def decide_recommended_provider_product(
     else:
         filter_tokens = tuple(required_tokens) if required_tokens else tokens
     candidates: list[tuple[tuple[Any, ...], ProviderProduct]] = []
+    tie_break_prices = _comparable_tie_break_prices(selected_products)
 
     for product in selected_products:
         ranking = _score_product_for_tokens(
@@ -1294,7 +1331,7 @@ def decide_recommended_provider_product(
         if ranking is None:
             continue
         _matched_tokens, score, title_matches, title_key, product_id = ranking
-        price_value = _parse_price_for_tie_breaker(product.price_text)
+        price_value = tie_break_prices.get(str(product.provider_product_id or ""))
         has_price = 1 if price_value is not None else 0
         sort_key = (
             -score,
@@ -1318,17 +1355,9 @@ def decide_recommended_provider_product(
     winner_score = -winner_key[0]
     winner_title_matches = -winner_key[1]
 
-    top_primary = [
-        row
-        for row in candidates
-        if row[0][0] == winner_key[0] and row[0][1] == winner_key[1]
-    ]
-    price_used_as_tie_breaker = False
-    if len(top_primary) > 1:
-        has_price_flags = {row[0][2] for row in top_primary}
-        price_values = {row[0][3] for row in top_primary if row[0][2] == 1}
-        if len(has_price_flags) > 1 or len(price_values) > 1:
-            price_used_as_tie_breaker = True
+    deciding_reason = _deciding_reason_code(
+        [row[0] for row in candidates], len(selected_products)
+    )
 
     reason_codes = _recommendation_reason_codes_for_product(
         winner_product,
@@ -1337,10 +1366,14 @@ def decide_recommended_provider_product(
         query_seeks_accessory=query_seeks_accessory,
         score=winner_score,
         title_matches=winner_title_matches,
-        price_used_as_tie_breaker=price_used_as_tie_breaker,
+        price_used_as_tie_breaker=deciding_reason == "price_tie_breaker",
     )
     if concept_verified:
         reason_codes = ("product_concept_match",) + tuple(reason_codes)
+    if deciding_reason:
+        reason_codes = (deciding_reason,) + tuple(
+            code for code in reason_codes if code != deciding_reason
+        )
     if not reason_codes:
         reason_codes = ("provider_feed_recommendation_selected",)
 

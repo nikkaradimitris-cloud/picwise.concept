@@ -26,6 +26,13 @@ _REQUIRED_FEED_PRODUCT_FIELDS = (
     "provider_product_id",
 )
 _FEED_RECOMMENDATION_REASON_LABELS = {
+    # What separated the recommended choice from the rest; always listed first.
+    "closer_search_match": "Matches your search more closely than the other choices",
+    "price_tie_breaker": "Lowest price among the choices that match your search equally",
+    "tie_on_search_match_and_price": (
+        "Matches your search as closely as another choice, at the same price; "
+        "PicWise has no further fact to separate them"
+    ),
     "strong_query_title_fit": "Strong match to your search",
     "all_query_tokens_in_title": "Contains the key search terms",
     "query_phrase_in_title": "Search phrase appears in the product title",
@@ -64,7 +71,8 @@ _PROVIDER_NETWORK_LABELS = {
 }
 _FEED_DISCLOSURE = (
     "Selected real products from a connected provider feed. "
-    "PicWise recommends one option from these four based on search fit — "
+    "PicWise recommends one option from these four by how closely it matches your "
+    "search, then by price when they match equally — "
     "not independent review or market-wide ranking."
 )
 _FEED_SAFE_NOTE = "Recommended from these 4. Prices and availability come directly from the feed."
