@@ -11,10 +11,12 @@ Current state for whoever picks the project up next. Updated 2026-10-08.
   PR #1 as merged too; the owner chose this knowing it. `main` holds the 4+1 Awin path,
   the misspelling understanding, the mission truth audit of 2026-10-08 and its fixes
   (`docs/picwise_mission_truth_audit_2026-10-08.md`). Start new work from `main`.
-- **Production deployment of `148a552`: NOT VERIFIED.** The session environment blocks
-  `picwise.subby.cloud` and `*.vercel.app`, and the GitHub tools do not show Vercel's
-  production status. Check: `/sitemap-buying-pages.xml` must list nothing and a former
-  fixture page such as `/best/power-bank-20000mah-for-iphone` must return 404 (audit D1).
+- **Production: the audit fixes are deployed.** On 2026-10-08, after the merge, the owner
+  checked that `/best/power-bank-20000mah-for-iphone` on `picwise.subby.cloud` returns
+  404; it used to show a fabricated page (audit D1). Not checked live: whether
+  `/sitemap-buying-pages.xml` lists nothing, and anything that needs a real feed (none
+  is connected). The session environment blocks `picwise.subby.cloud` and
+  `*.vercel.app`, so a session cannot check the live site itself; ask the owner.
 - Hosting: Vercel project `subbycloud/picwise-concept`; domain `picwise.subby.cloud`.
   Entry point `api/index.py` (see `vercel.json`).
 
