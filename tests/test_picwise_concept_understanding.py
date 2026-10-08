@@ -225,6 +225,34 @@ class AccessoryGuardTests(unittest.TestCase):
         self.assertEqual(annotate_product_concepts("", "", "Καφετιέρα φίλτρου Fixturon"), {"coffee_machine"})
         self.assertNotIn("coffee_machine", annotate_product_concepts("", "", "Φίλτρο καφετιέρας"))
 
+    def test_text_naming_a_product_only_after_for_is_an_accessory_of_it(self) -> None:
+        # These used to be annotated as the product they are for: a shop category of
+        # laptop accessories answered "laptop".
+        for product_type, title in (
+            ("Accessories for Laptops", "Fixturon Sleeve 15"),
+            ("Spare Parts for Washing Machines", "Fixturon Door Seal"),
+            ("", "Replacement Battery for Fixturon Laptop"),
+            ("", "Filter for Coffee Machine"),
+            ("", "Fixturon Sleeve for Laptop"),
+            ("", "Φίλτρο για καφετιέρα"),
+        ):
+            with self.subTest(product_type=product_type, title=title):
+                self.assertEqual(annotate_product_concepts(product_type, "", title), {"__accessory__"})
+
+    def test_what_comes_with_a_product_does_not_make_it_an_accessory(self) -> None:
+        # An accessory word after "with" lists what is in the box; these real products
+        # used to be annotated as accessories and never shown.
+        for title, concept in (
+            ("Fixturon Robot Vacuum Cleaner with HEPA Filter", "robot_vacuum"),
+            ("Testline Espresso Coffee Machine with Milk Frother and Filter", "coffee_machine"),
+            ("Sampleworks Stand Mixer with Splash Guard Cover", "mixer"),
+            ("Καφετιέρα με φίλτρο", "coffee_machine"),
+        ):
+            with self.subTest(title=title):
+                self.assertIn(concept, annotate_product_concepts("", "", title))
+        # The product is still named before "for": a charger for a phone is a charger.
+        self.assertEqual(annotate_product_concepts("", "", "Charger for iPhone"), {"phone_charger"})
+
 
 class ExpandedLexiconTests(unittest.TestCase):
     def test_common_greek_shop_categories(self) -> None:

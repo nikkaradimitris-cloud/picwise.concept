@@ -980,6 +980,11 @@ def _head_of_text(text: str, *, first: bool = False) -> str | None:
     accessory after it ("coffee machine filter"), while a word before it is a type
     ("filter coffee machine"). Greek is the other way round: "φίλτρο καφετιέρας" is a
     filter, "καφετιέρα φίλτρου" a coffee machine.
+
+    Only the words before a purpose word name the product; what follows says what it is
+    for or comes with. "Vacuum cleaner with filter" is a vacuum cleaner, and text that
+    names a product only after a purpose word -- "filter for coffee machine",
+    "accessories for laptops" -- names something for that product, an accessory.
     """
     tokens = tuple(normalize_understanding_text(text).split())
     spans = _concepts_in_text(text)
@@ -989,7 +994,13 @@ def _head_of_text(text: str, *, first: bool = False) -> str | None:
     if head is None:
         return None
     covered = {i for span in spans for i in range(span.start, span.end)}
-    for index, token in enumerate(tokens):
+    cut = next(
+        (i for i, token in enumerate(tokens) if token in _PURPOSE_WORDS and i not in covered),
+        len(tokens),
+    )
+    if head.start > cut:
+        return ACCESSORY_MARKER
+    for index, token in enumerate(tokens[:cut]):
         if index in covered or token not in _ACCESSORY_WORDS:
             continue
         if head.kind == "en" and index >= head.end:
