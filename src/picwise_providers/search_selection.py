@@ -253,13 +253,15 @@ def resolve_query_token_plan(
     always_required = candidates[_MAX_RELAXABLE_TOKENS:]
 
     # One pass over the inventory: which of the relaxable words does each product match?
-    support: dict[int, int] = {}
+    # Support is counted in distinct products, not offers: four merchants selling one
+    # phone are one product, and must not let a reading look like it fills four choices.
+    support: dict[int, set[str]] = {}
     families: dict[int, set[str]] = {}
     field_rows = product_fields or tuple(
         _product_search_fields(product) for product in products
     )
-    support_by_family: dict[tuple[int, str], int] = {}
-    for fields in field_rows:
+    support_by_family: dict[tuple[int, str], set[str]] = {}
+    for row_index, fields in enumerate(field_rows):
         # One joined text per product: this pass only asks whether a word appears at
         # all, so checking six fields separately multiplies the work over the feed for
         # no extra information.
@@ -272,17 +274,36 @@ def resolve_query_token_plan(
             token in haystack for token in always_required
         ):
             continue
-        support[mask] = support.get(mask, 0) + 1
+        if not mask:
+            # A product carrying none of the relaxable words supports no reading; every
+            # count below asks about a non-empty subset of them.
+            continue
+        identity = (
+            _product_identity_key(products[row_index]) if row_index < len(products) else ""
+        ) or f"row:{row_index}"
+        support.setdefault(mask, set()).add(identity)
         family = fields["product_type"] or fields["category"] or ""
         if family:
             families.setdefault(mask, set()).add(family)
-        support_by_family[(mask, family)] = support_by_family.get((mask, family), 0) + 1
+        support_by_family.setdefault((mask, family), set()).add(identity)
 
-    def satisfying(subset_mask: int) -> int:
-        return sum(
-            count
-            for mask, count in support.items()
-            if mask & subset_mask == subset_mask
+    safe_max = max(1, int(max_products))
+
+    def _distinct_up_to(groups: list[set[str]], limit: int) -> int:
+        # Only thresholds are ever asked ("at least four?", "any?"), so stop counting
+        # once the answer is known instead of building the union over a whole feed.
+        seen: set[str] = set()
+        for group in groups:
+            for identity in group:
+                seen.add(identity)
+                if len(seen) >= limit:
+                    return len(seen)
+        return len(seen)
+
+    def satisfying(subset_mask: int, limit: int = safe_max) -> int:
+        return _distinct_up_to(
+            [ids for mask, ids in support.items() if mask & subset_mask == subset_mask],
+            limit,
         )
 
     def families_for(subset_mask: int) -> set[str]:
@@ -294,13 +315,15 @@ def resolve_query_token_plan(
         }
 
     def satisfying_within(subset_mask: int, allowed_families: set[str]) -> int:
-        return sum(
-            count
-            for (mask, family), count in support_by_family.items()
-            if mask & subset_mask == subset_mask and family in allowed_families
+        return _distinct_up_to(
+            [
+                ids
+                for (mask, family), ids in support_by_family.items()
+                if mask & subset_mask == subset_mask and family in allowed_families
+            ],
+            safe_max,
         )
 
-    safe_max = max(1, int(max_products))
     full_mask = (1 << len(relaxable)) - 1
 
     def plan_for(mask: int, *, ambiguous: tuple[str, ...] = tuple()) -> QueryTokenPlan:
@@ -323,7 +346,7 @@ def resolve_query_token_plan(
     # family the buyer asked about. "laptop bag" matches one bag: relaxing to "laptop"
     # would answer with laptops, which is not what was asked. So when the full reading
     # matches anything at all, relaxation may only add more of that same family.
-    anchor_families = families_for(full_mask) if satisfying(full_mask) > 0 else set()
+    anchor_families = families_for(full_mask) if satisfying(full_mask, 1) > 0 else set()
 
     def support_for(subset_mask: int) -> int:
         if anchor_families:
@@ -823,14 +846,85 @@ def _score_product_for_tokens(
     )
 
 
+_GTIN_KEYS = ("gtin", "product_gtin", "ean", "upc", "isbn", "gtin13", "gtin12", "gtin14", "gtin8")
+_MPN_KEYS = ("mpn", "manufacturer_part_number")
+_GTIN_LENGTHS = frozenset({8, 12, 13, 14})
+
+
+def _raw_value_any_case(raw: dict[str, Any], keys: tuple[str, ...]) -> str:
+    # Feed headers vary in case ("product_GTIN", "EAN"); try the spellings directly
+    # rather than lowering every column of every row on the request path.
+    for key in keys:
+        for spelling in (key, key.upper(), key.replace("gtin", "GTIN")):
+            value = " ".join(str(raw.get(spelling) or "").split())
+            if value:
+                return value
+    return ""
+
+
+def _product_identity_key(product: ProviderProduct) -> str:
+    """Which product this offer is for, independent of the merchant selling it.
+
+    A GTIN (EAN, UPC, ISBN) names one product worldwide; brand plus manufacturer part
+    number does when there is no GTIN. Without either the offer has no identity beyond
+    its own id, and "" is returned. GTINs are padded to 14 digits, so the UPC-12 and
+    EAN-13 forms of one code agree.
+    """
+    raw = product.raw if isinstance(product.raw, dict) else {}
+    gtin = re.sub(r"\D", "", _raw_value_any_case(raw, _GTIN_KEYS))
+    if len(gtin) in _GTIN_LENGTHS and gtin.strip("0"):
+        return f"gtin:{gtin.zfill(14)}"
+    mpn = _raw_value_any_case(raw, _MPN_KEYS).lower()
+    brand = " ".join(str(product.brand or "").split()).lower()
+    if mpn and brand:
+        return f"mpn:{brand}|{mpn}"
+    return ""
+
+
+def _is_cheaper_offer(candidate: ProviderProduct, current: ProviderProduct) -> bool:
+    if str(candidate.currency or "").strip().upper() != str(current.currency or "").strip().upper():
+        return False
+    candidate_price = parse_price_amount(candidate.price_text)
+    current_price = parse_price_amount(current.price_text)
+    if candidate_price is None or current_price is None:
+        return False
+    return candidate_price < current_price
+
+
 def _dedupe_selected_products(
     ranked_products: list[tuple[tuple[int, int, int, str, str], ProviderProduct]],
 ) -> list[ProviderProduct]:
+    """Distinct products in rank order, one offer each.
+
+    Offers of the same product (same GTIN, or brand and part number) collapse into one
+    choice: four merchants selling one phone were shown as four "different" choices,
+    ranked lowest to highest price, while different phones were pushed out. The offer
+    kept is the lowest price in the same currency, placed where the product first
+    ranks; a tie keeps the better-ranked offer.
+    """
+    identities = {id(product): _product_identity_key(product) for _, product in ranked_products}
+    best_offer: dict[str, ProviderProduct] = {}
+    for _, product in ranked_products:
+        identity = identities[id(product)]
+        if not identity:
+            continue
+        current = best_offer.get(identity)
+        if current is None or _is_cheaper_offer(product, current):
+            best_offer[identity] = product
+
     seen_ids: set[str] = set()
     seen_titles: set[str] = set()
+    seen_identities: set[str] = set()
     selected: list[ProviderProduct] = []
 
-    for _, product in ranked_products:
+    for _, ranked_product in ranked_products:
+        product = ranked_product
+        identity = identities[id(ranked_product)]
+        if identity:
+            if identity in seen_identities:
+                continue
+            seen_identities.add(identity)
+            product = best_offer[identity]
         product_id = str(product.provider_product_id or "").strip()
         dedupe_title = _normalize_dedupe_title(product.title)
         if product_id and product_id in seen_ids:
@@ -894,7 +988,8 @@ def _distinct_product_count(rows: list[tuple[ProviderProduct, dict[str, str]]]) 
     seen: set[str] = set()
     for product, _fields in rows:
         seen.add(
-            str(product.provider_product_id or "").strip()
+            _product_identity_key(product)
+            or str(product.provider_product_id or "").strip()
             or _normalize_dedupe_title(product.title)
         )
     return len(seen)
