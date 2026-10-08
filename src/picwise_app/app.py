@@ -23,6 +23,8 @@ from picwise_search.live_search_resolver import empty_landing_search_resolution,
 from picwise_search.search_warmup import schedule_search_warmup_if_needed
 from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
 from picwise_providers import resolve_card_eligible_provider_feed_product_by_id
+from picwise_providers.awin_adapter import awin_feed_config_from_env
+from picwise_providers.state import resolve_provider_feed_pipeline
 from picwise_providers.normalization import extract_merchant_name, is_valid_http_url
 from picwise_surface import (
     provider_feed_cards_will_render,
@@ -331,7 +333,12 @@ class PicwiseLocalApp:
         self._feed_outbound_click_events = []
 
     def private_beta_readiness_payload(self) -> dict[str, Any]:
-        report = build_mvp_private_beta_readiness_report()
+        # Report the feed the site actually serves from, not the MVP flow's local
+        # fixture, which would call the source "connected" with no feed configured.
+        feed_status = resolve_provider_feed_pipeline(
+            awin_feed_config_from_env(), include_graph_projection=False
+        ).feed_status.status
+        report = build_mvp_private_beta_readiness_report(production_feed_status=feed_status)
         return {
             "status": report.status.value,
             "sample_flow_state": report.sample_flow_state,

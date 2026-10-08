@@ -15,6 +15,11 @@ _SAFE_DISCLAIMER_BY_STATE = {
     "blocked_or_unsafe": "PicWise cannot safely process this search.",
 }
 
+_FEED_CONNECTED_NO_FOUR_MESSAGE = (
+    "PicWise understood this search, but the connected product feed has no four "
+    "products it can show for it."
+)
+
 _REAL_FEED_PROVIDER_KEYS = frozenset({"awin"})
 _FAKE_FEED_PROVIDER_KEYS = frozenset({"demo", "fake", "sample", "test"})
 _REQUIRED_FEED_PRODUCT_FIELDS = (
@@ -391,6 +396,13 @@ def render_picwise_reference_surface(
                 resolution.resolver_state,
                 "PicWise could not understand this search safely.",
             )
+            if (
+                resolution.resolver_state == "understood_provider_not_connected"
+                and getattr(resolution, "provider_feed_status", None) == "provider_feed_ready"
+            ):
+                # The state name predates the feed: a feed is connected here, it just has
+                # no four products to show. "No provider is connected" would be false.
+                base_message = _FEED_CONNECTED_NO_FOUR_MESSAGE
             detected_category = resolution.display_name or resolution.mega_category_id or resolution.canonical_category
             if resolution.resolver_state == "understood_provider_not_connected" and detected_category:
                 human_category = str(detected_category).replace("_", " ")
