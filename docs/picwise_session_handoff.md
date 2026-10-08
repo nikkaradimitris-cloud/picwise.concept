@@ -6,16 +6,15 @@ Current state for whoever picks the project up next. Updated 2026-10-08.
 ## Where the work is
 
 - Repository: `nikkaradimitris-cloud/picwise.concept`
-- **Newest work: branch `ccr-a96ce6ac-g06rcj`.** It holds everything in PR #1 plus the
-  mission truth audit of 2026-10-08 and its fixes
-  (`docs/picwise_mission_truth_audit_2026-10-08.md`). **PR #2** (`ccr-a96ce6ac-g06rcj` →
-  `main`) carries it; it includes all of PR #1 and supersedes it.
-- PR #1 (`ccr-cbcc1974-i8vmk2` → `main`) is still open. Merging PR #1 alone does **not**
-  bring the audit fixes; `ccr-a96ce6ac-g06rcj` → `main` brings both.
-- **`main` has neither until merged.** Start new work from `ccr-a96ce6ac-g06rcj` (merge
-  it into your branch; never rebase it).
-- **Production on `main` still serves the fabricated `/best` pages** (audit finding D1)
-  until the audit fixes are merged.
+- **Everything is on `main`.** PR #2 was merged on 2026-10-08 (merge commit `148a552`,
+  a normal merge, by the owner's instruction). It carried all of PR #1, so GitHub marked
+  PR #1 as merged too; the owner chose this knowing it. `main` holds the 4+1 Awin path,
+  the misspelling understanding, the mission truth audit of 2026-10-08 and its fixes
+  (`docs/picwise_mission_truth_audit_2026-10-08.md`). Start new work from `main`.
+- **Production deployment of `148a552`: NOT VERIFIED.** The session environment blocks
+  `picwise.subby.cloud` and `*.vercel.app`, and the GitHub tools do not show Vercel's
+  production status. Check: `/sitemap-buying-pages.xml` must list nothing and a former
+  fixture page such as `/best/power-bank-20000mah-for-iphone` must return 404 (audit D1).
 - Hosting: Vercel project `subbycloud/picwise-concept`; domain `picwise.subby.cloud`.
   Entry point `api/index.py` (see `vercel.json`).
 
@@ -94,19 +93,20 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 
 ## Waiting on the owner
 
-1. **Merge PR #2** (`ccr-a96ce6ac-g06rcj` → `main`; it contains PR #1). Until then
-   production keeps serving the fabricated `/best` pages (audit D1) and can recommend
-   an out-of-stock product (audit D2).
-2. **Awin**: create the feed link (Toolbox → Create-a-Feed), set it in Vercel as
+The owner said on 2026-10-08 to make **no change yet** for items 1 and 2; they will
+decide later. Do not set anything in Vercel or Supabase, and create no tables, until
+they do.
+
+1. **Awin**: create the feed link (Toolbox → Create-a-Feed), set it in Vercel as
    `AWIN_FEED_URL`, redeploy. Guide: `docs/awin_feed_setup_el.md` (now also asks for
    `ean, product_GTIN, mpn, condition, is_for_sale, pre_order, valid_from, valid_to`).
-3. **Supabase project for the query log — and for click/decision events.** Click and
+2. **Supabase project for the query log — and for click/decision events.** Click and
    impression events live only in a per-process list today (audit D5), so production
    records no click durably. None of the account's three projects is PicWise's (one
    inactive, `taxi-chat` belongs to another app, `mysubby.cloud@gmail.com`). Do not
    create tables in them without the owner saying which; a new project may cost money,
    so ask first.
-4. Optional: allow `productdata.awin.com` in the cloud environment's network settings so
+3. Optional: allow `productdata.awin.com` in the cloud environment's network settings so
    a session can check the real feed.
 
 ## Next engineering steps, in order
