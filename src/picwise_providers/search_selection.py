@@ -1176,7 +1176,12 @@ def _choose_shown_products_for_condition(
         and _normalize_dedupe_title(row[1].title) not in taken_titles
         and str(row[1].provider_product_id or "").strip() not in taken_ids
     ]
-    return chosen + choose(rest, safe_max - len(chosen))
+    filled = chosen + choose(rest, safe_max - len(chosen))
+    if len(filled) < safe_max <= len(_dedupe_selected_products(ranked)):
+        # The split must never cost a slot: the contract owes four choices, and the
+        # candidates for four are there. Fall back to choosing from all of them.
+        return choose(ranked, safe_max)
+    return filled
 
 
 def _condition_request_report(
