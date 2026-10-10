@@ -21,9 +21,10 @@ Current state for whoever picks the project up next. Updated 2026-10-08.
   since 2026-10-10 its only login is the owner's `mysubby.cloud@gmail.com`, email and
   Google; no Git login is linked to it). Domain `picwise.subby.cloud`. Entry point
   `api/index.py` (see `vercel.json`). Deployments come from pushes to `main` through
-  the Vercel GitHub app. A manual **Redeploy** from the dashboard fails with "Git
-  information retrieval failed" (no Git login on the account); to roll out an
-  environment change, merge a commit to `main` instead.
+  the Vercel GitHub app. A manual **Redeploy** from the dashboard failed once with
+  "Git information retrieval failed" (no Git login on the account) and worked later
+  the same day; if it fails, roll an environment change out by merging a commit to
+  `main`.
 
 ## The owner
 
@@ -100,13 +101,21 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 
 ## Waiting on the owner
 
-1. **Awin: link set, live result NOT VERIFIED.** On 2026-10-10 the owner created a
-   Create-a-Feed link (Legacy format, CSV, comma, gzip, a handful of UK advertisers in
-   "Awin" datafeed format, about 15,000 products, GBP prices) and set it in Vercel as
-   `AWIN_FEED_URL` (Production only, Secret). Next: check
-   `/private-beta-readiness` shows `provider_feed_loaded`, then searches on the live
-   site. Most of those advertisers sell kinds the concept lexicon does not know yet
-   (flowers, wine, perfume, fashion), so many searches will truthfully show no four.
+1. **Awin: live and verified by the owner (2026-10-10).** Create-a-Feed link (Legacy
+   format, CSV, comma, gzip, about ten UK advertisers in "Awin" datafeed format, under
+   15,000 products, GBP prices) in Vercel as `AWIN_FEED_URL` (Production only, Secret).
+   The link was then regenerated with extra columns: `brand_name, product_type,
+   condition, keywords`, the three merchant category columns, `in_stock, stock_status,
+   stock_quantity, is_for_sale, pre_order, valid_from, valid_to`, `reviews, rating,
+   average_rating, number_available`, `warranty, delivery_time`, `ean, upc, isbn, mpn,
+   product_GTIN`. Not included on purpose: `commission_group` and the Prices group
+   (`rrp_price`, savings, old price: unverifiable "discounts").
+   `/private-beta-readiness` shows `provider_feed_ready`. Live searches seen by the
+   owner: "keyboard" (4 AKKO keyboards, 35.99–170.99 GBP, price spread, cheapest
+   recommended) and "perfume" (4 Al Jazeera perfumes) work; "View in Store" reaches the
+   store with Awin's `awc` click reference. "wine", "red wine", "flowers": "could not
+   understand" (kinds not in the lexicon). The rating columns are carried in `raw` but
+   not used by any code yet.
 2. **Supabase project for the query log — and for click/decision events.** Click and
    impression events live only in a per-process list today (audit D5), so production
    records no click durably. None of the account's three projects is PicWise's (one
@@ -117,6 +126,26 @@ guide for the owner), `docs/picwise_query_understanding.md`,
    a session can check the real feed.
 
 ## Next engineering steps, in order
+
+0. **Open items from the owner, 2026-10-10 (do these first):**
+   - **Refurbished / used products appear only when the buyer asks** (owner decision:
+     "refurbished keyboard" shows them; "keyboard" does not). Today a "Refurbished
+     TAC75" keyboard is shown and recommended for "keyboard" with no "not new" note,
+     because condition is read only from the `condition` column and AKKO puts it only
+     in the title. Read refurbished / used / renewed / pre-owned / B-grade from the
+     title too; exclude them unless the query asks for that condition.
+   - **Ranking by ratings, review count, availability, store reliability: formula NOT
+     defined.** The owner recalls an algorithm (e.g. 60 EUR, 4.5 stars, 300 reviews vs
+     65 EUR, 4.4 stars, 13,000 reviews). The rule docs only name the criteria
+     (`REVENUE_NEUTRALITY_RULES.md`, concept brains); weights are `TODO` in the Decision
+     Contract. Ask the owner whether it is written somewhere else; otherwise offer 2–3
+     options (e.g. a Bayesian average so few reviews count less) for the owner to
+     choose. Do not invent the weights. First measure how many feed rows carry real
+     `average_rating` / `reviews`.
+   - Add lexicon concepts for the live feed's kinds (wine, flowers, …), held-out cases,
+     benchmark stays at 0 wrong.
+   - The five "brains" and decision depth (`picwise_engine`) are still not wired into
+     the live path (audit H2).
 
 1. When the real feed is available: run `check_awin_feed.py`, add concepts for the feed
    types it does not recognise (correctly spelled names only), add held-out cases for
