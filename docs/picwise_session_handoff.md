@@ -17,8 +17,13 @@ Current state for whoever picks the project up next. Updated 2026-10-08.
   `/sitemap-buying-pages.xml` lists nothing, and anything that needs a real feed (none
   is connected). The session environment blocks `picwise.subby.cloud` and
   `*.vercel.app`, so a session cannot check the live site itself; ask the owner.
-- Hosting: Vercel project `subbycloud/picwise-concept`; domain `picwise.subby.cloud`.
-  Entry point `api/index.py` (see `vercel.json`).
+- Hosting: Vercel project `subbycloud/picwise-concept` (Hobby account "SUBBY CLOUD";
+  since 2026-10-10 its only login is the owner's `mysubby.cloud@gmail.com`, email and
+  Google; no Git login is linked to it). Domain `picwise.subby.cloud`. Entry point
+  `api/index.py` (see `vercel.json`). Deployments come from pushes to `main` through
+  the Vercel GitHub app. A manual **Redeploy** from the dashboard fails with "Git
+  information retrieval failed" (no Git login on the account); to roll out an
+  environment change, merge a commit to `main` instead.
 
 ## The owner
 
@@ -95,19 +100,19 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 
 ## Waiting on the owner
 
-The owner said on 2026-10-08 to make **no change yet** for items 1 and 2; they will
-decide later. Do not set anything in Vercel or Supabase, and create no tables, until
-they do.
-
-1. **Awin**: create the feed link (Toolbox → Create-a-Feed), set it in Vercel as
-   `AWIN_FEED_URL`, redeploy. Guide: `docs/awin_feed_setup_el.md` (now also asks for
-   `ean, product_GTIN, mpn, condition, is_for_sale, pre_order, valid_from, valid_to`).
+1. **Awin: link set, live result NOT VERIFIED.** On 2026-10-10 the owner created a
+   Create-a-Feed link (Legacy format, CSV, comma, gzip, a handful of UK advertisers in
+   "Awin" datafeed format, about 15,000 products, GBP prices) and set it in Vercel as
+   `AWIN_FEED_URL` (Production only, Secret). Next: check
+   `/private-beta-readiness` shows `provider_feed_loaded`, then searches on the live
+   site. Most of those advertisers sell kinds the concept lexicon does not know yet
+   (flowers, wine, perfume, fashion), so many searches will truthfully show no four.
 2. **Supabase project for the query log — and for click/decision events.** Click and
    impression events live only in a per-process list today (audit D5), so production
    records no click durably. None of the account's three projects is PicWise's (one
    inactive, `taxi-chat` belongs to another app, `mysubby.cloud@gmail.com`). Do not
    create tables in them without the owner saying which; a new project may cost money,
-   so ask first.
+   so ask first. The owner said on 2026-10-08 to decide this later: create nothing.
 3. Optional: allow `productdata.awin.com` in the cloud environment's network settings so
    a session can check the real feed.
 
