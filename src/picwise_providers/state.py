@@ -347,12 +347,14 @@ def resolve_search_provider_feed_recommendation_decision(
             required_tokens=selection.required_filter_terms,
             concept_verified=True,
             concept_id=selection.understood_concept,
+            condition_requested=bool(selection.condition_request),
             feed_ctx=selection.feed_availability_context,
         )
     return decide_recommended_provider_product(
         query,
         selection.selected_products,
         required_tokens=selection.required_query_terms or None,
+        condition_requested=bool(selection.condition_request),
         feed_ctx=selection.feed_availability_context,
     )
 

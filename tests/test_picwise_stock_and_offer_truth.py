@@ -288,6 +288,9 @@ class DeployedSurfaceStockTruthTests(unittest.TestCase):
         self.assertEqual(shown, {"o1", "o5", "o6", "o7"})
 
     def test_a_refurbished_choice_says_so_on_its_card(self) -> None:
+        # A refurbished product reaches a card only when the buyer asked for that
+        # condition (owner decision, 2026-10-10; the gate itself is pinned in
+        # tests/test_picwise_condition_request.py). On that card it must say so.
         self._serve(
             [
                 _row("r1", "Fixturon Aero Kettle 1.7L", "9.00", condition="refurbished"),
@@ -296,7 +299,7 @@ class DeployedSurfaceStockTruthTests(unittest.TestCase):
                 _row("r4", "Fixturon Mini Kettle 0.8L", "24.00"),
             ]
         )
-        cards = {card["choice_id"]: card for card in self._cards("kettle")}
+        cards = {card["choice_id"]: card for card in self._cards("refurbished kettle")}
         self.assertIn("condition: refurbished", cards["r1"]["text"])
         self.assertIn("not new", cards["r1"]["text"])
         self.assertNotIn("not new", cards["r2"]["text"])

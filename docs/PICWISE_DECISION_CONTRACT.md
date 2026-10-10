@@ -75,3 +75,42 @@ An output is valid only if all checks pass:
   prices in different currencies are never compared, so such a group gives no range
   and keeps its rank order.)
 - Localization strategy for labels/CTAs: TODO
+
+## Item Condition (refurbished / used), decided by the owner, 2026-10-10
+
+A product the provider feed says is not new is shown **only when the buyer asks for
+that condition**. Without such a request it is not a candidate at all: not shown, not
+counted towards the four, never the recommendation.
+
+"Not new" is what the feed itself states, in one of two places (one rule for the
+selection gate and for the card disclosure, `picwise_providers.product_condition`):
+
+- a condition column (`condition`, `product_condition`, `item_condition`) whose value
+  is not a "new" value. A value that states nothing ("n/a", "unknown", "-", a bare
+  number) is read as unknown, not as non-new, so an unpopulated column hides nothing.
+- the product's own text (title, product type, category), where many merchants write
+  it instead ("Refurbished Dell Latitude", "Open Box"). Only words that can mean
+  nothing else count there; "used" and "renewed" are read from a condition column but
+  not from marketing copy.
+
+The buyer asks for it in their own words, in Greek, greeklish or English
+("μεταχειρισμένο", "ανακατασκευασμένο", "ανακαινισμένο", "metaxirismeno",
+"refurbished", "refurb", "reconditioned", "used", "second hand", "pre-owned",
+"open box"). The word names a condition, so it is never matched against feed text.
+
+When they do ask:
+
+- the products in the condition asked for come first
+- when the feed has fewer than four of them, the remaining slots are filled with new
+  products and the page says how many of the four are the condition asked for
+  ("Only some of the four match: μεταχειρισμένο (2 of 4)")
+- when the feed has none, the word is reported as unmatched ("PicWise could not
+  match: ..."), exactly as any other filter the inventory cannot answer, and four new
+  products are shown
+- the recommended choice comes from the condition asked for whenever the four are
+  mixed, and its card says that is what separated it
+
+Implemented in `search_selection` (`_non_new_condition`,
+`_choose_shown_products_for_condition`, `_condition_request_report`,
+`decide_recommended_provider_product`) and read in `concept_understanding`
+(`read_condition_request`). Pinned by `tests/test_picwise_condition_request.py`.

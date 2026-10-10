@@ -10,6 +10,7 @@ from picwise_nlu.concept_understanding import (
     ConceptReading,
     annotate_product_concepts,
     normalize_spec_text,
+    read_condition_request,
     strip_accents_if_needed,
     understand_product_query,
     words_after_product_name,
@@ -18,6 +19,11 @@ from picwise_nlu.concept_understanding import (
 from .contracts import FeedAvailabilityContext, OfferHealth, ProviderProduct
 from .normalization import extract_merchant_name
 from .decision_labels import parse_price_amount
+from .product_condition import (
+    non_new_condition,
+    product_text_for_condition,
+    stated_condition,
+)
 from .offer_health import (
     build_feed_availability_context,
     evaluate_product_eligibility,
@@ -411,6 +417,9 @@ class ProviderProductSelectionResult:
     # Filters some but not all of the selected products carry, as (buyer's words,
     # how many of the selected carry it). Stated as "2 of 4" rather than "not matched".
     partially_matched_terms: tuple[tuple[str, int], ...] = field(default_factory=tuple)
+    # The buyer's own words asking for a non-new item, when they asked. Empty means
+    # they did not, and then nothing the feed calls non-new was a candidate at all.
+    condition_request: tuple[str, ...] = field(default_factory=tuple)
     # The feed availability context the selection judged card eligibility against. The
     # exported card fields and the recommendation must read the same one.
     feed_availability_context: FeedAvailabilityContext | None = None
@@ -427,6 +436,7 @@ class ProviderProductSelectionResult:
             "selected_count": len(self.selected_products),
             "reason_codes": list(self.reason_codes),
             "unmatched_query_terms": list(self.unmatched_query_terms),
+            "condition_request": list(self.condition_request),
             "ambiguous_product_families": list(self.ambiguous_product_families),
             "required_query_terms": list(self.required_query_terms),
             "selected_products": [
@@ -467,16 +477,30 @@ def _category_evidence_for_product(product: ProviderProduct) -> dict[str, str]:
     return evidence
 
 
-_CONDITION_KEYS = ("condition", "product_condition", "item_condition")
-
-
 def _feed_condition(raw: dict[str, Any]) -> str:
     """The item condition as the feed row states it ("new", "refurbished"), or ""."""
-    for key in _CONDITION_KEYS:
-        value = " ".join(str(raw.get(key) or "").split())
-        if value:
-            return value
-    return ""
+    return stated_condition(raw)
+
+
+def product_non_new_condition(product: ProviderProduct) -> str:
+    """What the feed said to call this product not new, or "".
+
+    Owner decision (2026-10-10): a refurbished or used product is shown only to a buyer
+    who asked for that condition. This is the gate that decision runs through, and the
+    cards read the same module, so a hidden product and a disclosed one are judged by
+    one rule.
+    """
+    raw = product.raw if isinstance(product.raw, dict) else {}
+    stated = _feed_condition(raw)
+    if stated:
+        # The column spoke; the product's own text is not read, and not even built:
+        # this runs once per product of the feed on every search.
+        return non_new_condition(condition=stated)
+    return non_new_condition(
+        text=product_text_for_condition(
+            (product.title, raw.get("product_type"), product.category_text)
+        )
+    )
 
 
 def _verified_purchasable_from_offer_health(offer_health: OfferHealth) -> bool:
@@ -548,6 +572,18 @@ def _tokenize_query(query: str) -> tuple[str, ...]:
         for token in normalized.split()
         if len(token) >= _MIN_TOKEN_LEN
     )
+
+
+def _is_condition_request_token(token: str, condition_words: set[str]) -> bool:
+    """Was this feed-facing token read as (part of) a request for a non-new item?
+
+    The understanding layer splits on hyphens, the feed-facing normalisation keeps
+    them, so "pre-owned" arrives as one token for two read words.
+    """
+    if not condition_words:
+        return False
+    words = strip_accents_if_needed(token.lower()).replace("-", " ").replace("/", " ").split()
+    return bool(words) and all(word in condition_words for word in words)
 
 
 def _normalize_dedupe_title(title: str) -> str:
@@ -1092,6 +1128,78 @@ def _choose_shown_products(
     return chosen
 
 
+def _choose_shown_products_for_condition(
+    ranked: list[tuple[tuple[int, int, int, str, str], ProviderProduct]],
+    *,
+    safe_max: int,
+    fields_by_id: dict[int, dict[str, str]],
+    scoring_tokens: tuple[str, ...],
+    prefer_non_new: bool,
+) -> list[ProviderProduct]:
+    """The four to show, non-new first when the buyer asked for that condition.
+
+    Owner decision (2026-10-10): a buyer who asks for refurbished or used gets those
+    first, and what the feed does not have in that condition fills up with new products
+    rather than leaving the buyer with nothing. `_condition_request_report` says how
+    many of the four are the condition asked for, so the page never implies all are.
+    Without the request nothing non-new reaches this function: the selection dropped it.
+    """
+    def choose(
+        rows: list[tuple[tuple[int, int, int, str, str], ProviderProduct]], slots: int
+    ) -> list[ProviderProduct]:
+        return _choose_shown_products(
+            rows,
+            safe_max=slots,
+            fields_by_id=fields_by_id,
+            scoring_tokens=scoring_tokens,
+        )
+
+    if not prefer_non_new:
+        return choose(ranked, safe_max)
+    asked_for: list[tuple[tuple[int, int, int, str, str], ProviderProduct]] = []
+    others: list[tuple[tuple[int, int, int, str, str], ProviderProduct]] = []
+    for row in ranked:
+        (asked_for if product_non_new_condition(row[1]) else others).append(row)
+    chosen = choose(asked_for, safe_max)
+    if len(chosen) >= safe_max:
+        return chosen
+    # The same product can be offered both new and refurbished. Dedupe ran inside each
+    # group, so exclude what the first group already took, or one product fills two
+    # of the four slots.
+    taken_identities = {key for key in (_product_identity_key(p) for p in chosen) if key}
+    taken_titles = {key for key in (_normalize_dedupe_title(p.title) for p in chosen) if key}
+    taken_ids = {key for key in (str(p.provider_product_id or "").strip() for p in chosen) if key}
+    rest = [
+        row
+        for row in others
+        if _product_identity_key(row[1]) not in taken_identities
+        and _normalize_dedupe_title(row[1].title) not in taken_titles
+        and str(row[1].provider_product_id or "").strip() not in taken_ids
+    ]
+    return chosen + choose(rest, safe_max - len(chosen))
+
+
+def _condition_request_report(
+    shown: tuple[ProviderProduct, ...] | list[ProviderProduct],
+    condition_request: tuple[str, ...],
+) -> tuple[tuple[str, ...], tuple[tuple[str, int], ...]]:
+    """What to say about a condition request, as (unmatched terms, partial terms).
+
+    A request the feed answered for every one of the four needs no note. Answered for
+    some, the page says how many ("μεταχειρισμένο (2 of 4)"); answered for none, the
+    word is reported unmatched, exactly as any other filter the feed cannot answer.
+    """
+    if not condition_request or not shown:
+        return (), ()
+    word = condition_request[0]
+    matching = sum(1 for product in shown if product_non_new_condition(product))
+    if matching == 0:
+        return (word,), ()
+    if matching < len(shown):
+        return (), ((word, matching),)
+    return (), ()
+
+
 def _count_strong_matches(
     ranked_products: list[tuple[tuple[int, int, int, str, str], ProviderProduct]],
     *,
@@ -1153,6 +1261,7 @@ def _select_products_for_concept(
     eligible_fields: tuple[dict[str, str], ...],
     *,
     safe_max: int,
+    condition_request: tuple[str, ...] = (),
 ) -> ProviderProductSelectionResult:
     """Select four instances of the concept the buyer means, then apply their filters.
 
@@ -1236,11 +1345,12 @@ def _select_products_for_concept(
     # A filter that could not hold for all four may still hold for some of them; those
     # rank first. Say how many rather than calling it unmatched.
     fields_by_id = {id(product): fields for product, fields in members}
-    shown = _choose_shown_products(
+    shown = _choose_shown_products_for_condition(
         ranked,
         safe_max=safe_max,
         fields_by_id=fields_by_id,
         scoring_tokens=scoring_tokens,
+        prefer_non_new=bool(condition_request),
     )
     fully_unmatched: list[str] = []
     partial: list[tuple[str, int]] = []
@@ -1255,14 +1365,19 @@ def _select_products_for_concept(
         else:
             fully_unmatched.append(term)
     unmatched = display(tuple(fully_unmatched)) + tuple(reading.judgements) + unmatched_name_words
-    unmatched = tuple(dict.fromkeys(unmatched))
+    enough = len(deduped) >= safe_max
+    condition_unmatched, condition_partial = (
+        _condition_request_report(shown, condition_request) if enough else ((), ())
+    )
+    unmatched = tuple(dict.fromkeys(unmatched + condition_unmatched))
     common = dict(
         understood_concept=concept_id,
         effective_query=effective_query,
         required_filter_terms=required,
         required_query_terms=feed_terms + required,
         unmatched_query_terms=unmatched,
-        partially_matched_terms=tuple(partial) if len(deduped) >= safe_max else tuple(),
+        partially_matched_terms=(tuple(partial) + condition_partial) if enough else tuple(),
+        condition_request=condition_request,
     )
     if len(deduped) < safe_max:
         return ProviderProductSelectionResult(
@@ -1294,10 +1409,32 @@ def select_provider_products_for_query(
     feed_ctx: FeedAvailabilityContext | None = None,
 ) -> ProviderProductSelectionResult:
     safe_max = max(1, int(max_products))
-    normalized_query = normalize_query(str(query or ""))
-    tokens = _tokenize_query(query)
     if reading is None:
         reading = understand_product_query(str(query or ""))
+    # Words asking for a non-new item are a condition request, not words to match
+    # against feed text: a merchant who sells new goods still writes "new" and "used"
+    # in its copy. They are dropped from the words the inventory is filtered by, and
+    # the condition itself is read from the feed's own column by `_non_new_condition`.
+    # The reading was taken on the raw query and this runs on the canonicalised one,
+    # which typo correction may have rewritten, so both are read and the words of
+    # either count: a request must never end up as a filter because the two spellings
+    # disagree.
+    condition_request = tuple(
+        dict.fromkeys(
+            reading.condition_request + read_condition_request(str(query or "")).words
+        )
+    )
+    condition_words = {word for phrase in condition_request for word in phrase.split()}
+    normalized_query = " ".join(
+        token
+        for token in normalize_query(str(query or "")).split()
+        if not _is_condition_request_token(token, condition_words)
+    )
+    tokens = tuple(
+        token
+        for token in _tokenize_query(query)
+        if not _is_condition_request_token(token, condition_words)
+    )
     if not tokens and not reading.understood:
         return ProviderProductSelectionResult(
             status="no_query_tokens",
@@ -1310,10 +1447,16 @@ def select_provider_products_for_query(
     query_seeks_accessory = _query_seeks_accessory(tokens, normalized_query)
     if feed_ctx is None:
         feed_ctx = build_feed_availability_context(products)
+    # Owner decision (2026-10-10): a product the feed calls refurbished, used or
+    # otherwise not new is not a candidate at all unless the buyer asked for that
+    # condition. Dropped here, before any ranking, so it cannot be shown, counted,
+    # recommended or reported as a match.
+    wants_non_new = bool(condition_request)
     eligible = tuple(
         product
         for product in products
         if evaluate_product_eligibility(product, feed_ctx=feed_ctx).card_eligible
+        and (wants_non_new or not product_non_new_condition(product))
     )
     # Build each product's searchable text once and reuse it for both the reading
     # decision and the scoring below.
@@ -1321,7 +1464,11 @@ def select_provider_products_for_query(
 
     if reading.understood:
         return _select_products_for_concept(
-            reading, eligible, eligible_fields, safe_max=safe_max
+            reading,
+            eligible,
+            eligible_fields,
+            safe_max=safe_max,
+            condition_request=condition_request,
         )
 
     def rank_with(required: tuple[str, ...]):
@@ -1392,14 +1539,16 @@ def select_provider_products_for_query(
             reason_codes=("insufficient_relevant_products",),
             unmatched_query_terms=token_plan.unmatchable,
             required_query_terms=required_tokens,
+            condition_request=condition_request,
         )
 
     chosen = tuple(
-        _choose_shown_products(
+        _choose_shown_products_for_condition(
             ranked,
             safe_max=safe_max,
             fields_by_id={id(product): fields for product, fields in zip(eligible, eligible_fields)},
             scoring_tokens=tokens,
+            prefer_non_new=wants_non_new,
         )
     )
     chosen_families = {_product_family(product) for product in chosen}
@@ -1417,14 +1566,21 @@ def select_provider_products_for_query(
             ambiguous_product_families=tuple(sorted(chosen_families))[:8],
         )
 
+    condition_unmatched, condition_partial = _condition_request_report(
+        chosen, condition_request
+    )
     return ProviderProductSelectionResult(
         status="selected",
         matched_count=matched_count,
         strong_matched_count=strong_matched_count,
         selected_products=chosen,
         reason_codes=("provider_feed_products_selected",),
-        unmatched_query_terms=token_plan.unmatchable,
+        unmatched_query_terms=tuple(
+            dict.fromkeys(token_plan.unmatchable + condition_unmatched)
+        ),
+        partially_matched_terms=condition_partial,
         required_query_terms=required_tokens,
+        condition_request=condition_request,
     )
 
 
@@ -1544,6 +1700,7 @@ def decide_recommended_provider_product(
     required_tokens: tuple[str, ...] | None = None,
     concept_verified: bool = False,
     concept_id: str = "",
+    condition_requested: bool = False,
     feed_ctx: FeedAvailabilityContext | None = None,
 ) -> ProviderFeedRecommendationDecision:
     """Pick the recommended product from the four already selected.
@@ -1553,6 +1710,9 @@ def decide_recommended_provider_product(
     established the inventory cannot be filtered by, finds nothing, and reports no
     recommendation for four products that are sitting right there. `concept_id` is the
     kind the selection verified the four as, so they are scored as they were chosen.
+    `condition_requested` says the buyer asked for a non-new item: where the four are
+    mixed because the feed had too few, the recommendation must come from the ones
+    that are the condition asked for, or PicWise would answer a question nobody asked.
     """
     if not selected_products:
         return ProviderFeedRecommendationDecision(
@@ -1621,6 +1781,13 @@ def decide_recommended_provider_product(
             recommendation_reason_codes=("insufficient_selected_products",),
         )
 
+    narrowed_by_condition = False
+    if condition_requested:
+        asked_for = [row for row in candidates if product_non_new_condition(row[1])]
+        if asked_for and len(asked_for) < len(candidates):
+            candidates = asked_for
+            narrowed_by_condition = True
+
     candidates.sort(key=lambda row: row[0])
     winner_key, winner_product = candidates[0]
     winner_id = str(winner_product.provider_product_id or "").strip()
@@ -1628,7 +1795,10 @@ def decide_recommended_provider_product(
     winner_title_matches = -winner_key[1]
 
     deciding_reason = _deciding_reason_code(
-        [row[0] for row in candidates], len(selected_products)
+        [row[0] for row in candidates],
+        # Among the condition asked for, what separated this one from the others of
+        # that condition. The condition itself is stated as its own reason below.
+        len(candidates) if narrowed_by_condition else len(selected_products),
     )
 
     reason_codes = _recommendation_reason_codes_for_product(
@@ -1646,6 +1816,11 @@ def decide_recommended_provider_product(
     if deciding_reason:
         reason_codes = (deciding_reason,) + tuple(
             code for code in reason_codes if code != deciding_reason
+        )
+    if narrowed_by_condition:
+        # What actually kept the new products out: the condition the buyer asked for.
+        reason_codes = ("requested_condition_match",) + tuple(
+            code for code in reason_codes if code != "requested_condition_match"
         )
     if not reason_codes:
         reason_codes = ("provider_feed_recommendation_selected",)

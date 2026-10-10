@@ -38,6 +38,9 @@ _FEED_RECOMMENDATION_REASON_LABELS = {
         "Matches your search as closely as another choice, at the same price; "
         "PicWise has no further fact to separate them"
     ),
+    "requested_condition_match": (
+        "Listed by the feed in the condition you asked for, unlike other choices here"
+    ),
     "strong_query_title_fit": "Strong match to your search",
     "all_query_tokens_in_title": "Contains the key search terms",
     "query_phrase_in_title": "Search phrase appears in the product title",

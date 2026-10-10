@@ -57,6 +57,7 @@ def main() -> None:
     from picwise_nlu.concept_understanding import annotate_product_concepts
     from picwise_nlu.product_concepts import get_product_concepts_by_id
     from picwise_providers.awin_adapter import awin_feed_config_from_env, load_awin_provider_feed
+    from picwise_providers.search_selection import product_non_new_condition
     from picwise_providers.state import load_eligible_provider_feed_products
     from picwise_search.live_search_resolver import resolve_live_search
     from picwise_surface import provider_feed_cards_will_render
@@ -84,6 +85,21 @@ def main() -> None:
 
     eligible = load_eligible_provider_feed_products(config)
     print(f"Card-eligible products: {len(eligible)} of {len(products)}")
+
+    # Non-new stock, which is hidden unless a buyer asks for that condition (owner
+    # decision, 2026-10-10). Worth knowing how much of the feed that is.
+    non_new = Counter(
+        words for words in (product_non_new_condition(product) for product in eligible) if words
+    )
+    total_non_new = sum(non_new.values())
+    print(
+        f"Not new (shown only when asked for): {total_non_new} of {len(eligible)} eligible"
+    )
+    if total_non_new:
+        print(
+            "  as the feed words it:",
+            ", ".join(f"{words} ({count})" for words, count in non_new.most_common(10)),
+        )
 
     merchants = Counter(str((p.raw or {}).get("merchant_name") or "?") for p in products)
     currencies = Counter(str(p.currency or "?") for p in products)

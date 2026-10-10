@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-08.
+Current state for whoever picks the project up next. Updated 2026-10-10.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
 ## Where the work is
@@ -65,7 +65,8 @@ In short:
 |---|---|
 | Product concept lexicon (278 kinds, EN + GR names, mega category, `broader`, preference words) | `src/picwise_nlu/product_concepts.py` |
 | Understanding: phonetic keys, typo correction with safety fences, specs, product annotation (incl. accessory guard), "did you mean" | `src/picwise_nlu/concept_understanding.py` |
-| Selection of the four (concept path, token path with relaxation, family guard) | `src/picwise_providers/search_selection.py` |
+| Selection of the four (concept path, token path with relaxation, family guard, condition gate) | `src/picwise_providers/search_selection.py` |
+| Whether the feed says a product is not new (one rule for the gate and the cards) | `src/picwise_providers/product_condition.py` |
 | Resolver | `src/picwise_search/live_search_resolver.py` |
 | Page text ("Understood as", "Only some of the four match: X (n of 4)", "could not match") | `src/picwise_surface/reference.py` |
 | Did-you-mean / broad-suggestion injection, impression events, query log hook | `src/picwise_app/app.py` (`api/index.py` delegates to it) |
@@ -107,6 +108,8 @@ guide for the owner), `docs/picwise_query_understanding.md`,
    `/private-beta-readiness` shows `provider_feed_loaded`, then searches on the live
    site. Most of those advertisers sell kinds the concept lexicon does not know yet
    (flowers, wine, perfume, fashion), so many searches will truthfully show no four.
+   `tools/check_awin_feed.py` now also reports how much of the feed is not new ("Not
+   new (shown only when asked for): n of m eligible"), worth reading on the real feed.
 2. **Supabase project for the query log — and for click/decision events.** Click and
    impression events live only in a per-process list today (audit D5), so production
    records no click durably. None of the account's three projects is PicWise's (one
@@ -118,6 +121,15 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 
 ## Next engineering steps, in order
 
+0. ~~Refurbished / used products must appear only when the buyer asks for them.~~
+   **Done, 2026-10-10** (owner decision; recorded in `docs/PICWISE_DECISION_CONTRACT.md`,
+   section "Item Condition"). A product the feed calls not new is no longer a candidate
+   at all unless the query asks for that condition; when it is asked for, those come
+   first, missing slots fill with new products, and the page says how many of the four
+   are the condition asked for. `tests/test_picwise_condition_request.py` (22 tests).
+   Still open from the same list: the ranking formula with scores
+   (`Ranking formula weights: TODO` in the Decision Contract) — the owner decides the
+   weights, do not invent them.
 1. When the real feed is available: run `check_awin_feed.py`, add concepts for the feed
    types it does not recognise (correctly spelled names only), add held-out cases for
    them, rerun the benchmark — wrong answers must stay at 0. Also check, on the real
@@ -187,6 +199,19 @@ files: correcting the phase wording is the owner's decision, not the engineer's.
   kind asked for, accessory words before or inside its name are its type ("Filter Coffee
   Machine", "Battery Lawn Mower", "Stand Mixer"); a part word anywhere, an accessory word
   after the name, a name only after "for", or a Greek name keep the full penalty.
+- Condition (`product_condition.py`, one rule for the gate and the cards): a product
+  the feed calls not new is shown only when the query asks for that condition. "Not
+  new" = a condition column stating anything but a "new" value (a value that states
+  nothing — "n/a", "unknown", "-", a bare number — is unknown, not non-new), or a
+  non-new word in the product's own text ("Refurbished Dell"; "used" and "renewed" are
+  read from the column only, not from marketing copy). The request is read from the
+  query by `read_condition_request` (Greek, greeklish, English, with typo correction)
+  and is never matched against feed text. Asked for: those come first, free slots fill
+  with new ones, the page says "μεταχειρισμενο (2 of 4)" (none at all: "could not
+  match"), and the recommendation comes from the condition asked for. The text scan
+  sits behind a substring pre-filter for speed (38 ms for 15,000 products, worst case);
+  a vocabulary word added without its hint would stop being read, which
+  `test_picwise_condition_request` guards.
 - Which four are shown (owner decision, 2026-10-08, confirmed with its details and
   recorded in the Decision Contract): groups of substantially equivalent products in
   relevance order; a group too big for the free slots is spread across its price range
