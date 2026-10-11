@@ -61,7 +61,17 @@ An output is valid only if all checks pass:
 
 ## Undefined Details
 
-- Ranking formula weights: TODO
+- Ranking formula weights: TODO, **waiting on data, not on a decision** (owner,
+  2026-10-11). The owner's rule: the recommended choice must follow the **rating** of
+  a product, not its price. PicWise has no ratings today. The first real feed carries
+  none — `rating` and `average_rating` are filled on 127 of 11,573 rows and every one
+  of them says `0`, and the `reviews` column holds colours ("Black", "Olive/Camo") —
+  and inventing one is forbidden (ANTI_FAKE_TRUST_RULES). So the search for a feed
+  that carries real ratings comes first; `tools/check_awin_feed.py` reports it
+  ("Products with a real rating: n of m eligible"). Until then the tie-break stays as
+  it is — the closest match to the search, then the lowest price among choices that
+  match equally — and the recommended card says exactly that, so nothing is claimed
+  that is not true.
 - Tie-break protocol between close candidates: **decided by the owner, 2026-10-08.**
   When the ranking leaves more than four substantially equivalent products, the four
   shown spread across their price range: the cheapest, the dearest and two in between,

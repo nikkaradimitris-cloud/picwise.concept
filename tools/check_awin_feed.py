@@ -123,6 +123,32 @@ def main() -> None:
             ", ".join(f"{value} ({count})" for value, count in unread.most_common(10)),
         )
 
+    # Ratings. The owner decided on 2026-10-11 that the recommendation should rest on
+    # real ratings rather than price, which needs a feed that carries them: the first
+    # one did not (127 rows of "0" out of 11,573, and a `reviews` column full of
+    # colours). This is the line that says whether a new feed can carry that decision.
+    rated = Counter()
+    rating_rows = 0
+    for product in eligible:
+        raw = product.raw if isinstance(product.raw, dict) else {}
+        for key in ("rating", "average_rating", "product_rating"):
+            try:
+                value = float(str(raw.get(key) or "").strip().replace(",", "."))
+            except ValueError:
+                continue
+            if value > 0:
+                rating_rows += 1
+                rated[str(raw.get("merchant_name") or "?")] += 1
+                break
+    print(f"Products with a real rating: {rating_rows} of {len(eligible)} eligible")
+    if rated:
+        print(
+            "  merchants that provide ratings:",
+            ", ".join(f"{name} ({count})" for name, count in rated.most_common(10)),
+        )
+    else:
+        print("  no merchant in this feed provides a usable rating (0 and empty do not count)")
+
     merchants = Counter(str((p.raw or {}).get("merchant_name") or "?") for p in products)
     currencies = Counter(str(p.currency or "?") for p in products)
     print("Merchants:", ", ".join(f"{name} ({count})" for name, count in merchants.most_common(10)))

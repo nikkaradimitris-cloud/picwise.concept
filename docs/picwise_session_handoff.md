@@ -118,13 +118,20 @@ guide for the owner), `docs/picwise_query_understanding.md`,
    (flowers, wine, perfume, fashion), so many searches will truthfully show no four.
    `tools/check_awin_feed.py` now also reports how much of the feed is not new ("Not
    new (shown only when asked for): n of m eligible"), worth reading on the real feed.
-2. **Supabase project for the query log — and for click/decision events.** Click and
+2. **A feed that carries real product ratings.** The owner decided on 2026-10-11 that
+   the recommendation must follow a product's rating rather than its price, and the
+   current feed has none at all (`check_awin_feed.py` now reports this as "Products
+   with a real rating"). Nothing changes in the ranking until such a feed exists:
+   inventing a rating is forbidden. The owner is looking for Awin advertisers whose
+   feed fills `rating` / `average_rating`; the way to tell is to build a feed with
+   them and run the tool over it.
+3. **Supabase project for the query log — and for click/decision events.** Click and
    impression events live only in a per-process list today (audit D5), so production
    records no click durably. None of the account's three projects is PicWise's (one
    inactive, `taxi-chat` belongs to another app, `mysubby.cloud@gmail.com`). Do not
    create tables in them without the owner saying which; a new project may cost money,
    so ask first. The owner said on 2026-10-08 to decide this later: create nothing.
-3. Optional: allow `productdata.awin.com` in the cloud environment's network settings so
+4. Optional: allow `productdata.awin.com` in the cloud environment's network settings so
    a session can check the real feed.
 
 ## Next engineering steps, in order
