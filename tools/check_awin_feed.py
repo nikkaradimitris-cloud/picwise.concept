@@ -57,6 +57,7 @@ def main() -> None:
     from picwise_nlu.concept_understanding import annotate_product_concepts
     from picwise_nlu.product_concepts import get_product_concepts_by_id
     from picwise_providers.awin_adapter import awin_feed_config_from_env, load_awin_provider_feed
+    from picwise_providers.product_condition import NEW_CONDITION_VALUES, stated_condition
     from picwise_providers.search_selection import product_non_new_condition
     from picwise_providers.state import load_eligible_provider_feed_products
     from picwise_search.live_search_resolver import resolve_live_search
@@ -99,6 +100,20 @@ def main() -> None:
         print(
             "  as the feed words it:",
             ", ".join(f"{words} ({count})" for words, count in non_new.most_common(10)),
+        )
+    # Condition values PicWise could read as neither "new" nor "not new". These are
+    # shown as if new, so if any of them means used, the word belongs in
+    # `picwise_providers.product_condition`.
+    unread = Counter()
+    for product in eligible:
+        value = stated_condition(product.raw if isinstance(product.raw, dict) else {})
+        comparable = " ".join(value.lower().replace("-", " ").replace("_", " ").split())
+        if value and not product_non_new_condition(product) and comparable not in NEW_CONDITION_VALUES:
+            unread[value] += 1
+    if unread:
+        print(
+            "  condition values PicWise cannot read (shown as if new, report them):",
+            ", ".join(f"{value} ({count})" for value, count in unread.most_common(10)),
         )
 
     merchants = Counter(str((p.raw or {}).get("merchant_name") or "?") for p in products)

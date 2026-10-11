@@ -201,10 +201,13 @@ files: correcting the phase wording is the owner's decision, not the engineer's.
   after the name, a name only after "for", or a Greek name keep the full penalty.
 - Condition (`product_condition.py`, one rule for the gate and the cards): a product
   the feed calls not new is shown only when the query asks for that condition. "Not
-  new" = a condition column stating anything but a "new" value (a value that states
-  nothing — "n/a", "unknown", "-", a bare number — is unknown, not non-new), or a
-  non-new word in the product's own text ("Refurbished Dell"; "used" and "renewed" are
-  read from the column only, not from marketing copy). The request is read from the
+  new" = a condition column carrying a word from the vocabulary ("Used - Very Good",
+  "Refurbished Grade A", "gebraucht"), or such a word in the product's own text
+  ("Refurbished Dell"; "used" and "renewed" are read from the column only, not from
+  marketing copy). Wording the vocabulary does not hold ("A-stock", "Nuovo", "n/a", a
+  bare code) is unknown, not non-new, and stays visible — the reverse would empty a
+  whole feed in silence. `check_awin_feed.py` lists the condition values it could not
+  read; a real one that means "used" belongs in `product_condition.py`. The request is read from the
   query by `read_condition_request` (Greek, greeklish, English, with typo correction)
   and is never matched against feed text. Asked for: those come first, free slots fill
   with new ones, the page says "μεταχειρισμενο (2 of 4)" (none at all: "could not

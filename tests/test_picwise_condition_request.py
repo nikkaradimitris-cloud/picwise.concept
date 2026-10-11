@@ -136,9 +136,13 @@ class ConditionRequestReadingTests(unittest.TestCase):
 class FeedConditionReadingTests(unittest.TestCase):
     """What the feed said, read the one way both the gate and the cards read it."""
 
-    def test_a_stated_condition_other_than_new_is_non_new(self) -> None:
-        for value in ("refurbished", "Refurbished", "used", "Pre-Owned", "open box",
-                      "like new", "grade b", "usato", "μεταχειρισμένο"):
+    def test_a_condition_word_the_column_states_is_read(self) -> None:
+        # Feeds grade these ("Used - Very Good"), so the word is read inside the value
+        # and the whole value is reported back, in the feed's own words.
+        for value in ("refurbished", "Refurbished", "used", "Used - Very Good",
+                      "Refurbished Grade A", "Pre-Owned", "open box", "like new",
+                      "not new", "Customer Return", "usato", "gebraucht",
+                      "μεταχειρισμένο"):
             with self.subTest(value=value):
                 self.assertEqual(non_new_condition(condition=value), value)
 
@@ -147,10 +151,12 @@ class FeedConditionReadingTests(unittest.TestCase):
             with self.subTest(value=value):
                 self.assertEqual(non_new_condition(condition=value), "")
 
-    def test_a_column_that_states_nothing_hides_no_product(self) -> None:
-        # An unpopulated condition column must not empty a feed: PicWise does not know
-        # these items are used, so it does not treat them as used.
-        for value in ("", "n/a", "N/A", "-", "--", "unknown", "not specified", "0", "1"):
+    def test_wording_picwise_cannot_read_hides_no_product(self) -> None:
+        # Not understanding a word is not knowing the item is used. The opposite
+        # default would empty a whole feed in silence the day a merchant writes its
+        # condition column in wording PicWise has never seen.
+        for value in ("", "n/a", "N/A", "-", "--", "unknown", "not specified", "0",
+                      "1", "A-stock", "Nuovo", "grade b", "XX7"):
             with self.subTest(value=value):
                 self.assertEqual(non_new_condition(condition=value), "")
 
@@ -379,6 +385,14 @@ class DeployedSurfaceConditionTests(unittest.TestCase):
             ]
         )
         self.assertEqual(sorted(self._shown("kettle")), ["j1", "j2", "j3", "j4"])
+
+    def test_a_whole_feed_written_in_wording_picwise_cannot_read_still_answers(self) -> None:
+        # The failure this guards: one unread word on every row of a real feed, and
+        # the site answers nothing, for every search, without saying why.
+        for value in ("A-stock", "Nuovo", "B2", "stock"):
+            with self.subTest(value=value):
+                self._serve([dict(row, condition=value) for row in _new_kettles(4)])
+                self.assertEqual(len(self._shown("kettle")), 4)
 
     def test_the_condition_word_does_not_filter_the_feed_text(self) -> None:
         # "refurbished" appears in no title here. Read as a word to match, it would

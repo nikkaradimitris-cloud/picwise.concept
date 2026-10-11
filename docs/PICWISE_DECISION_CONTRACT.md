@@ -85,9 +85,15 @@ counted towards the four, never the recommendation.
 "Not new" is what the feed itself states, in one of two places (one rule for the
 selection gate and for the card disclosure, `picwise_providers.product_condition`):
 
-- a condition column (`condition`, `product_condition`, `item_condition`) whose value
-  is not a "new" value. A value that states nothing ("n/a", "unknown", "-", a bare
-  number) is read as unknown, not as non-new, so an unpopulated column hides nothing.
+- a condition column (`condition`, `product_condition`, `item_condition`) carrying a
+  word that means not new ("Refurbished Grade A", "Used - Very Good", "gebraucht").
+  Wording PicWise cannot read ("A-stock", "Nuovo", "n/a", a bare code) is treated as
+  unknown, not as non-new, and the product stays visible: not understanding a word is
+  not knowing an item is used, and the opposite default would empty a whole feed in
+  silence the day a merchant writes its condition in unfamiliar wording. The cost runs
+  the other way — an unread wording that did mean "used" shows up unasked — which is
+  visible and fixable: `tools/check_awin_feed.py` lists the condition values it could
+  not read so they can be added to the vocabulary.
 - the product's own text (title, product type, category), where many merchants write
   it instead ("Refurbished Dell Latitude", "Open Box"). Only words that can mean
   nothing else count there; "used" and "renewed" are read from a condition column but

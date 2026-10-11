@@ -7,12 +7,16 @@ module, so what is hidden by default and what a shown card admits cannot drift a
 
 A product counts as non-new when the feed itself says so, in one of two places:
 
-- **A condition column** (`condition`, `product_condition`, `item_condition`) whose
-  value is not a "new" value. A value that carries no information ("n/a", "unknown",
-  "-", a bare number) is read as unknown, not as non-new: a sloppy column must not
-  empty a whole feed. Any other wording is taken at face value, including wordings
-  this module has no vocabulary for ("usato", "grade b"), because a feed that bothered
-  to write something other than "new" there is saying something.
+- **A condition column** (`condition`, `product_condition`, `item_condition`) that
+  carries a word meaning not new ("Refurbished Grade A", "Used - Very Good",
+  "gebraucht"). Wording this module cannot read ("A-stock", "Nuovo", "n/a", a bare
+  code) is treated as **unknown**, not as non-new, and the product stays visible.
+  That direction is deliberate: not understanding a word is not knowing the item is
+  used, and the opposite default would empty a whole feed in silence the day a
+  merchant writes its condition in wording PicWise has never seen. The cost is the
+  other way round -- an unread wording that did mean "used" shows up unasked -- which
+  is visible and fixable: `tools/check_awin_feed.py` lists the condition values it
+  could not read, so they can be added here.
 - **The product's own text** (title, product type, category), where many merchants put
   it instead ("Refurbished Dell Latitude", "Open Box"). Only words that can mean
   nothing else count here. "used" and "renewed" are deliberately not among them:
@@ -29,7 +33,10 @@ from typing import Any, Iterable, Mapping
 # The columns a feed states an item's condition in, in the order they are trusted.
 CONDITION_KEYS = ("condition", "product_condition", "item_condition")
 
-# Values that mean a new item.
+# Values that mean a new item. The gate never relies on this set -- a value is
+# excluded only when it carries a word from the vocabulary below -- but
+# `tools/check_awin_feed.py` uses it to tell an understood "new" from a wording
+# PicWise cannot read and should be shown to the operator.
 NEW_CONDITION_VALUES = frozenset(
     {
         "new",
@@ -41,24 +48,32 @@ NEW_CONDITION_VALUES = frozenset(
     }
 )
 
-# Values that state nothing: an empty column filled with a placeholder. Reading these
-# as non-new would hide every product of a feed whose condition column is unpopulated.
-_NO_INFORMATION_VALUES = frozenset(
-    {
-        "",
-        "-",
-        "--",
-        "n a",
-        "na",
-        "none",
-        "null",
-        "nil",
-        "unknown",
-        "unspecified",
-        "not specified",
-        "not applicable",
-        "not available",
-    }
+# Words in a condition column that mean the item is not new. A column is a declared
+# field, so "used" and "renewed" are trusted here, unlike in marketing text. Matched
+# inside the value, because feeds grade them ("Used - Very Good", "Refurbished Grade
+# A"). The non-English words are the ones a European feed is likeliest to use; a
+# wording not listed here is unknown, not non-new (see the module docstring).
+_COLUMN_NON_NEW_PHRASES = (
+    "used",
+    "renewed",
+    "not new",
+    "like new",
+    "customer return",
+    "customer returned",
+    "usato",
+    "usata",
+    "usado",
+    "usada",
+    "segunda mano",
+    "gebraucht",
+    "generaluberholt",
+    "generalüberholt",
+    "occasion",
+    "seconde main",
+    "reconditionne",
+    "reconditionné",
+    "ricondizionato",
+    "reacondicionado",
 )
 
 # Words in a product's own text that can only mean a non-new item. Kept narrow on
@@ -121,6 +136,22 @@ _NON_NEW_TEXT_HINTS = (
     "σμεν",
     "σμέν",
 )
+# The column is a declared field, so it is read with the text vocabulary plus the
+# words that are only trusted when a feed states them as the condition.
+_COLUMN_NON_NEW_RE = re.compile(
+    "|".join(
+        [
+            r"\b(?:"
+            + "|".join(
+                re.escape(phrase)
+                for phrase in (_NON_NEW_TEXT_PHRASES + _COLUMN_NON_NEW_PHRASES)
+            )
+            + r")\b",
+            *[rf"\b{_accent_insensitive(stem)}\w*" for stem in _GREEK_NON_NEW_STEMS],
+        ]
+    ),
+    flags=re.IGNORECASE | re.UNICODE,
+)
 _PUNCTUATION_RE = re.compile(r"[^\w\s]+", flags=re.UNICODE)
 
 
@@ -143,13 +174,11 @@ def _comparable(value: str) -> str:
 def condition_value_is_non_new(condition: str) -> bool:
     """Does this condition value say the item is not new?
 
-    A value that is a "new" value, carries no information, or is a bare number (a feed
-    code PicWise cannot read) says nothing about wear, so it is not read as non-new.
+    Only a value carrying a word from the vocabulary does. Wording PicWise cannot read
+    ("A-stock", "Nuovo", "n/a", a bare code) says nothing it can act on, and a feed
+    whose whole column is written that way must keep working rather than vanish.
     """
-    comparable = _comparable(condition)
-    if comparable in _NO_INFORMATION_VALUES or comparable in NEW_CONDITION_VALUES:
-        return False
-    return not comparable.replace(" ", "").isdigit()
+    return bool(_COLUMN_NON_NEW_RE.search(_comparable(condition)))
 
 
 def non_new_words_in_text(text: str) -> str:
