@@ -31,10 +31,17 @@ for path in (SRC, ROOT):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
+# Every column PicWise reads, so a feed built without one is reported rather than
+# quietly losing the check that needs it: `condition` decides whether a product is
+# shown at all before the buyer asks for a non-new one, `ean`/`product_GTIN`/`mpn`
+# make the same product from several merchants one product, and `is_for_sale`,
+# `pre_order`, `valid_from`/`valid_to` keep offers that cannot be bought out.
 _USEFUL_COLUMNS = (
-    "aw_product_id", "product_name", "aw_deep_link", "merchant_image_url", "search_price",
-    "currency", "merchant_name", "brand_name", "category_name", "merchant_category",
-    "product_type", "in_stock", "stock_status", "description", "keywords", "last_updated",
+    "aw_product_id", "product_name", "aw_deep_link", "merchant_image_url", "aw_image_url",
+    "search_price", "currency", "merchant_name", "brand_name", "category_name",
+    "merchant_category", "product_type", "in_stock", "stock_status", "description",
+    "keywords", "last_updated", "condition", "ean", "product_GTIN", "mpn", "is_for_sale",
+    "pre_order", "valid_from", "valid_to",
 )
 
 
