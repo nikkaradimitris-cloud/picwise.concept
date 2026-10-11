@@ -10,6 +10,7 @@ from picwise_nlu.concept_understanding import (
     ConceptReading,
     annotate_product_concepts,
     normalize_spec_text,
+    product_text_names_concept,
     read_condition_request,
     strip_accents_if_needed,
     understand_product_query,
@@ -1184,6 +1185,33 @@ def _choose_shown_products_for_condition(
     return filled
 
 
+def _restrict_to_one_currency(
+    ranked: list[tuple[tuple[int, int, int, str, str], ProviderProduct]],
+    *,
+    safe_max: int,
+) -> list[tuple[tuple[int, int, int, str, str], ProviderProduct]]:
+    """Keep the four comparable: every one of them priced in the same currency.
+
+    Owner decision (2026-10-11). Prices in different currencies are never compared, so
+    a four drawn from several of them has no price rank, no price spread and no honest
+    "cheapest" -- the buyer is left to convert in their head, which is the opposite of
+    a decision engine. The currency kept is the best-ranked one that can supply the
+    whole four; when none can, the best-ranked product's own, and the selection then
+    reports too few rather than mixing them.
+    """
+    groups: dict[str, list[tuple[tuple[int, int, int, str, str], ProviderProduct]]] = {}
+    for row in ranked:
+        groups.setdefault(str(row[1].currency or "").strip().upper(), []).append(row)
+    if len(groups) <= 1:
+        return ranked
+    # Insertion order is rank order, so the first group that can fill the four is the
+    # one whose products answered the search best.
+    for rows in groups.values():
+        if len(_dedupe_selected_products(rows)) >= safe_max:
+            return rows
+    return next(iter(groups.values()))
+
+
 def _condition_request_report(
     shown: tuple[ProviderProduct, ...] | list[ProviderProduct],
     condition_request: tuple[str, ...],
@@ -1240,13 +1268,21 @@ def _product_concepts(product: ProviderProduct, fields: dict[str, str]) -> froze
     )
 
 
-def _unannotated_product_names_concept(fields: dict[str, str], feed_terms: tuple[str, ...]) -> bool:
-    # A product whose feed text names no known concept at all can still be the thing
-    # asked for; it qualifies only if its own text carries the concept's English name.
+def _unannotated_product_names_concept(
+    fields: dict[str, str], feed_terms: tuple[str, ...], concept_id: str
+) -> bool:
+    """A product whose feed text names no known kind can still be the thing asked for.
+
+    It qualifies only if its own title or product type **names** that kind, read the
+    same way the annotation reads a kind: carrying the word somewhere is not enough,
+    or a "TV Show Theme Blanket" joins the televisions.
+    """
     if not feed_terms:
         return False
-    text = " ".join((fields["title"], fields["product_type"], fields["category"]))
-    return all(term in text for term in feed_terms)
+    text = " ".join(part for part in (fields["title"], fields["product_type"]) if part)
+    if not all(_word_in_text(term, text) for term in feed_terms):
+        return False
+    return product_text_names_concept(text, concept_id)
 
 
 def _distinct_product_count(rows: list[tuple[ProviderProduct, dict[str, str]]]) -> int:
@@ -1281,7 +1317,8 @@ def _select_products_for_concept(
         for product, fields in zip(eligible, eligible_fields):
             concepts = _product_concepts(product, fields)
             if concept_id in concepts or (
-                not concepts and _unannotated_product_names_concept(fields, reading.feed_terms)
+                not concepts
+                and _unannotated_product_names_concept(fields, reading.feed_terms, concept_id)
             ):
                 rows.append((product, fields))
         return rows
@@ -1345,6 +1382,7 @@ def _select_products_for_concept(
             ranked = rank_with(required)
 
     ranked.sort(key=lambda row: (-row[0][1], -row[0][2], -row[0][0], row[0][3], row[0][4]))
+    ranked = _restrict_to_one_currency(ranked, safe_max=safe_max)
     deduped = _dedupe_selected_products(ranked)
 
     # A filter that could not hold for all four may still hold for some of them; those
@@ -1525,6 +1563,7 @@ def select_provider_products_for_query(
             ranked = rank_with(required_tokens)
 
     ranked.sort(key=lambda row: (-row[0][1], -row[0][2], -row[0][0], row[0][3], row[0][4]))
+    ranked = _restrict_to_one_currency(ranked, safe_max=safe_max)
     # "Strong" means the product carries the whole reading the selection committed to.
     # Counting against the original words would make every relaxed query weak by
     # definition, which would hide results the selection had already judged good.

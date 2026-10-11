@@ -400,6 +400,9 @@ _UNIT_FIELD_HINTS = {
 class _Form:
     concept_id: str
     words: tuple[tuple[str, str], ...]  # (kind, key) per word; kind is "el" or "en"
+    # A name that also reads as an ordinary word inside other products' names
+    # ("cap", "ball", "screen"). Read from a query, ignored in feed text.
+    weak: bool = False
 
 
 def _word_identity(word: str) -> tuple[str, str]:
@@ -413,17 +416,19 @@ class _Lexicon:
         self.forms_by_first: dict[tuple[str, str], list[_Form]] = {}
         words: dict[str, set[str]] = {"el": set(), "en": set()}
         for concept in get_product_concepts():
+            weak_forms = {normalize_understanding_text(form) for form in concept.weak}
             for text in concept.english + concept.greek:
                 tokens = normalize_understanding_text(text).split()
                 if not tokens:
                     continue
                 identities = tuple(_word_identity(token) for token in tokens)
-                self._add(_Form(concept.concept_id, identities), words)
+                weak = normalize_understanding_text(text) in weak_forms
+                self._add(_Form(concept.concept_id, identities, weak), words)
                 kinds = {kind for kind, _ in identities}
                 if len(identities) > 1 and len(kinds) == 1:
                     # The same name typed without spaces: "πλυντηριορουχων".
                     joined = (identities[0][0], "".join(key for _, key in identities))
-                    self._add(_Form(concept.concept_id, (joined,)), words)
+                    self._add(_Form(concept.concept_id, (joined,), weak), words)
         self.fuzzy = {kind: _FuzzyIndex(keys) for kind, keys in words.items()}
         # English names as spelled, to tell an exact word from one that only shares
         # its key once doubled letters collapse ("bots" and "boots").
@@ -446,6 +451,14 @@ class _Lexicon:
                     self.qualifiers[identity[1]] = qualifier.english
                     qualifier_keys.add(identity[1])
         self.qualifier_fuzzy = _FuzzyIndex(qualifier_keys)
+        # The feed's own language for the same preferences ("black", "wireless"), used
+        # to tell a word that only describes a product from one that renames it.
+        self.english_qualifier_words = frozenset(
+            word
+            for qualifier in get_qualifiers()
+            if qualifier.english
+            for word in normalize_understanding_text(qualifier.english).split()
+        )
 
         # Words asking for a non-new item, by the same phonetic keys as everything
         # else, so "μεταχειρισμένο", "metaxirismeno" and "used" are all read. Phrases
@@ -486,6 +499,7 @@ class _Span:
     concept_id: str
     cost: float
     kind: str
+    weak: bool = False
 
 
 @dataclass(frozen=True)
@@ -632,7 +646,9 @@ def _find_spans(
                 else:
                     if safe_only and cost >= 0.5 and not _fuzzy_span_is_safe(tokens[start:end], exact_words):
                         continue
-                    spans.append(_Span(start, end, form.concept_id, cost, identity[0]))
+                    spans.append(
+                        _Span(start, end, form.concept_id, cost, identity[0], form.weak)
+                    )
     return spans
 
 
@@ -1008,14 +1024,81 @@ def _exact_candidates(token: str) -> dict[tuple[str, str], float]:
 
 
 def _concepts_in_text(text: str) -> list[_Span]:
+    """The concepts a piece of **feed** text names, by exact key and strong names only.
+
+    A weak name ("cap", "ball", "screen") is left out here: in feed text it is almost
+    always part of something else ("Lens Cap", "Mirror Ball", "Carplay Screen"), and
+    answering "καπέλο" with lens caps is the one thing PicWise must never do. A query
+    still reads those names, where the buyer means the product.
+    """
     tokens = tuple(normalize_understanding_text(text).split())
     if not tokens:
         return []
     candidates = [_exact_candidates(token) for token in tokens]
-    spans = _choose_spans(_find_spans(tokens, candidates))
+    spans = [span for span in _find_spans(tokens, candidates) if not span.weak]
+    spans = _choose_spans(spans)
     # The product in a title is named before what it is for: "charger for iphone".
     cut = next((i for i, token in enumerate(tokens) if token in _PURPOSE_WORDS), len(tokens))
     return [span for span in spans if span.start < cut] or spans
+
+
+_BREADCRUMB_SPLIT_RE = re.compile(r"\s*(?:>|\u2192|\|)\s*")
+
+
+def _category_heads(category: str, title: str) -> tuple[list[str], bool]:
+    """The concepts a category names, and whether it says "accessory of" instead.
+
+    A category is usually a breadcrumb, from the widest aisle to the narrowest shelf:
+    "Electronics > Cables > Monitor". The **first** shelf that names a product is the
+    one to trust -- these are cables, kept under the monitors -- because a later step
+    says what the thing is for as often as what it is. Any shelf that says accessories
+    of a product decides for the whole crumb: "Cameras > Camera Accessories" is not a
+    camera. A shelf must name its product as its head ("Surveillance Cameras"), not in
+    passing ("Power banks and batteries"), and a shelf holding two kinds only counts
+    when the product's own title says which of them it is.
+    """
+    heads: list[str] = []
+    for segment in _BREADCRUMB_SPLIT_RE.split(str(category or "")):
+        head = _head_of_text(segment, strict_tail=True)
+        if head is ACCESSORY_MARKER:
+            return [], True
+        if heads:
+            # "Car & bike > Other car accessories": a shelf of accessories under a
+            # product names things for it, not the product.
+            words = normalize_understanding_text(segment).split()
+            if words and words[-1] in _ACCESSORY_WORDS and not _concepts_in_text(segment):
+                return [], True
+            continue
+        shelf = {span.concept_id for span in _concepts_in_text(segment)}
+        unrelated = [
+            concept
+            for concept in sorted(shelf)
+            if not any(other != concept and _related(concept, other) for other in shelf)
+        ]
+        if len(unrelated) > 1:
+            # A shelf of several kinds: "Fans & Heaters". Only the product's own title
+            # can say which of them this one is.
+            named_by_title = {span.concept_id for span in _concepts_in_text(title)}
+            confirmed = [concept for concept in unrelated if concept in named_by_title]
+            if len(confirmed) == 1:
+                heads.append(confirmed[0])
+            continue
+        if head is not None:
+            # None here means the shelf names a product only in passing ("Power banks
+            # and batteries" holds both, and a coin cell is not a power bank).
+            heads.append(head)
+    return heads, False
+
+
+@lru_cache(maxsize=65536)
+def product_text_names_concept(text: str, concept_id: str) -> bool:
+    """Does this feed text name that kind of product as the product it is?
+
+    The same reading `annotate_product_concepts` uses, for callers that have a concept
+    in hand and only need to know whether a product's own words name it ("TV Show
+    Theme Blanket" does not name a television).
+    """
+    return _head_of_text(text, strict_tail=True) == concept_id
 
 
 @lru_cache(maxsize=262144)
@@ -1028,21 +1111,39 @@ def annotate_product_concepts(product_type: str, category: str, title: str) -> f
     titled "Robot Vacuum Cleaner" is also a robot vacuum.
     """
     bases: list[str] = []
-    for text in (product_type, category):
-        # A feed type can list several kinds: "Fans & Heaters", "Cases, Covers".
-        for part in _TYPE_LIST_SPLIT_RE.split(str(text or "")):
-            head = _head_of_text(part)
-            if head is ACCESSORY_MARKER:
-                return frozenset({ACCESSORY_MARKER})
-            if head is not None:
-                bases.append(head)
-        if bases:
-            break
+    # A feed type can list several kinds: "Fans & Heaters", "Cases, Covers".
+    for part in _TYPE_LIST_SPLIT_RE.split(str(product_type or "")):
+        head = _head_of_text(part)
+        if head is ACCESSORY_MARKER:
+            return frozenset({ACCESSORY_MARKER})
+        if head is not None:
+            bases.append(head)
+    if not bases:
+        bases, category_says_accessory = _category_heads(category, title)
+        if category_says_accessory:
+            return frozenset({ACCESSORY_MARKER})
     title_spans = _concepts_in_text(title)
+    if bases and title_spans:
+        # "Smartphone USB-C" on a microphone whose title says "Microphone | Used for:
+        # ... Smartphone": the type names what the product plugs into. When the title
+        # names another product before any purpose word, and the category agrees with
+        # the title rather than the type, the type was a compatibility label.
+        # Read without the strict tail: the category agreeing with the title is the
+        # corroboration that rule asks for.
+        title_head = _head_of_text(title)
+        if (
+            title_head is not None
+            and title_head is not ACCESSORY_MARKER
+            and not any(_related(title_head, base) for base in bases)
+            and not any(span.concept_id in bases for span in title_spans)
+        ):
+            category_heads, _accessory = _category_heads(category, title)
+            if title_head in category_heads:
+                bases = [title_head]
     if not bases:
         if not title_spans:
             return frozenset()
-        head = _head_of_text(title, first=True)
+        head = _head_of_text(title, strict_tail=True)
         if head is ACCESSORY_MARKER or head is None:
             return frozenset({ACCESSORY_MARKER}) if head is ACCESSORY_MARKER else frozenset()
         bases = [head]
@@ -1072,7 +1173,38 @@ _ACCESSORY_WORDS = frozenset(
 )
 
 
-def _head_of_text(text: str, *, first: bool = False) -> str | None:
+# Words that turn the product name before them into a description of something else:
+# "table runner", "cable ties", "mirror ball", "ring light", "shoe restore kit". Read
+# off a real feed, where each of these answered a search with the wrong kind of
+# product. Only English text puts the modifier first, so only English text is read
+# this way.
+_MODIFIER_TAIL_WORDS = frozenset(
+    """
+    runner runners mat mats decor cloth cloths ties tie clip clips sleeving duct ducts
+    ball balls light lights restore stopper stoppers component components
+    """.split()
+)
+
+
+# Words that may follow a product name in a title without changing what it is: a
+# colour or other preference word, a spec, a number, a packaging or version word.
+_DESCRIPTOR_TAIL_WORDS = frozenset(
+    """
+    color colour colours colors version edition set sets pack packs pcs piece pieces
+    plus pro max mini lite uk eu us plug size type new
+    """.split()
+)
+
+
+def _is_descriptor_word(token: str) -> bool:
+    if not token or any(ch.isdigit() for ch in token):
+        return True
+    if token in _DESCRIPTOR_TAIL_WORDS or _is_exact_qualifier(token):
+        return True
+    return token in _lexicon().english_qualifier_words
+
+
+def _head_of_text(text: str, *, first: bool = False, strict_tail: bool = False) -> str | None:
     """The concept a piece of feed text names, or ACCESSORY_MARKER for an accessory of it.
 
     The accessory word's position decides: English puts the main product first and the
@@ -1099,13 +1231,38 @@ def _head_of_text(text: str, *, first: bool = False) -> str | None:
     )
     if head.start > cut:
         return ACCESSORY_MARKER
+    if head.kind == "en" and head.end < cut and tokens[head.end] in _MODIFIER_TAIL_WORDS:
+        # "table runner", "cable ties": the product name describes what the thing is
+        # for, it does not name it.
+        return ACCESSORY_MARKER
+    # An accessory word counts even when it is itself a product name ("Luggage Cover"
+    # is a cover, not luggage); only the head's own words, and other names of the same
+    # product, are read as part of the product.
+    head_words = {
+        i
+        for span in spans
+        if span is head or _related(span.concept_id, head.concept_id)
+        for i in range(span.start, span.end)
+    }
     for index, token in enumerate(tokens[:cut]):
-        if index in covered or token not in _ACCESSORY_WORDS:
+        if index in head_words or token not in _ACCESSORY_WORDS:
             continue
         if head.kind == "en" and index >= head.end:
             return ACCESSORY_MARKER
         if head.kind == "el" and index < head.start:
             return ACCESSORY_MARKER
+    if (
+        strict_tail
+        and head.kind == "en"
+        and head.end < cut
+        and not _is_descriptor_word(tokens[head.end])
+    ):
+        # The text names the product in passing, with a word PicWise cannot read right
+        # after it: "Truck Bed Tailgate Extender", "Power banks and batteries". On
+        # that evidence the kind is a guess, and PicWise shows nothing rather than the
+        # wrong kind. A colour, a spec or a packaging word still reads as the product
+        # ("Smartwatch Black Dial", "Speaker 40W").
+        return None
     return head.concept_id
 
 

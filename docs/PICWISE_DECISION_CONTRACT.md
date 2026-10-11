@@ -76,6 +76,24 @@ An output is valid only if all checks pass:
   and keeps its rank order.)
 - Localization strategy for labels/CTAs: TODO
 
+## One currency per answer, decided by the owner, 2026-10-11
+
+The four choices of an answer are always priced in **one currency**.
+
+Prices in different currencies are never compared (the price rank, the price spread
+and the "cheapest" tie-break all refuse to), so a four drawn from several currencies
+has no price rank, no spread and no honest cheapest: the buyer is left converting in
+their head, which is the opposite of a decision engine.
+
+The currency kept is the best-ranked one that can supply the whole four — the
+currency of the products that answered the search best. When no single currency has
+four, PicWise shows no four rather than mixing them.
+
+Decided on the first real feed, whose 11,573 products are priced in GBP, USD and EUR,
+mixed inside the same kind of product. Implemented in
+`search_selection._restrict_to_one_currency`, pinned by
+`tests/test_picwise_single_currency_four.py`.
+
 ## Item Condition (refurbished / used), decided by the owner, 2026-10-10
 
 A product the provider feed says is not new is shown **only when the buyer asks for
