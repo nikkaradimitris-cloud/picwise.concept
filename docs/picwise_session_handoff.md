@@ -104,7 +104,12 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 
 ## Waiting on the owner
 
-1. **Awin: link set, live result NOT VERIFIED.** On 2026-10-10 the owner created a
+1. ~~**Awin: link set, live result NOT VERIFIED.**~~ **Verified live on 2026-10-11**: a
+   new feed (11,573 UK electronics products, category-based, Electronics only) is set
+   in Vercel, `/private-beta-readiness` reports `provider_feed_ready`, and
+   `/search?q=ακουστικα` returns four real headphones with one suggested, all in GBP.
+   The owner's manual Redeploy works again (the GitHub App is installed), so an
+   environment change no longer needs a commit. Older note, kept for the history: On 2026-10-10 the owner created a
    Create-a-Feed link (Legacy format, CSV, comma, gzip, a handful of UK advertisers in
    "Awin" datafeed format, about 15,000 products, GBP prices) and set it in Vercel as
    `AWIN_FEED_URL` (Production only, Secret). Next: check
