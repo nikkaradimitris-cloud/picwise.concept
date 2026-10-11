@@ -202,6 +202,29 @@ files: correcting the phase wording is the owner's decision, not the engineer's.
   kind asked for, accessory words before or inside its name are its type ("Filter Coffee
   Machine", "Battery Lawn Mower", "Stand Mixer"); a part word anywhere, an accessory word
   after the name, a name only after "for", or a Greek name keep the full penalty.
+- **What kind of product a feed row is** (`concept_understanding.annotate_product_concepts`),
+  tightened on the first real feed, where it answered searches with the wrong kind
+  (899 table runners under "τραπέζι", lens caps under "καπέλο", disco balls under
+  "μπάλα", USB cables under "οθόνη"). Four rules, each pinned by
+  `tests/test_picwise_feed_kind_truth.py`:
+  (1) **weak names** (`~word` in the concept table: cap, ball, ring, screen, desktop,
+  pc, tripod, controller, mixer, cover) are read from a query but never classify a feed
+  product, because in feed text they are almost always part of something else;
+  (2) **tail words** (`_MODIFIER_TAIL_WORDS`: runner, mats, ties, clip, ball, light,
+  restore…) turn the name before them into a description: "table runner", "cable ties";
+  (3) a **category breadcrumb** is read shelf by shelf — the first shelf that names a
+  product wins ("Electronics > Cables > Monitor" is cables), any shelf of accessories
+  decides for the whole crumb, a shelf naming a product only in passing ("Power banks
+  and batteries") names nothing, and a shelf of two kinds is decided by the title
+  ("Fans & Heaters");
+  (4) when **only a title** says what the product is, a word PicWise cannot read right
+  after the name voids it ("Truck Bed Tailgate Extender"), while a colour, spec or pack
+  word does not ("Smartwatch Black Dial"). Also: a product type that names what the
+  product plugs into ("Smartphone USB-C" on a microphone) gives way when the title and
+  the category agree on another kind.
+- One currency per answer (owner decision, 2026-10-11, in the Decision Contract):
+  `_restrict_to_one_currency` keeps the best-ranked currency that can fill the four;
+  no currency with four means no four.
 - Condition (`product_condition.py`, one rule for the gate and the cards): a product
   the feed calls not new is shown only when the query asks for that condition. "Not
   new" = a condition column carrying a word from the vocabulary ("Used - Very Good",

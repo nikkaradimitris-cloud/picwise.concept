@@ -54,12 +54,23 @@ class ProductConcept:
     english: tuple[str, ...]
     greek: tuple[str, ...]
     broader: tuple[str, ...] = ()
+    # Names marked "~" in the table: read when a buyer types them, never trusted to
+    # say what a feed product is. See `weak_forms` below.
+    weak: tuple[str, ...] = ()
 
     @property
     def primary_english(self) -> str:
         return self.english[0] if self.english else ""
 
 
+# A name written "~word" is a **weak form**: a real name of the product that is also
+# an ordinary word in other products' names. A buyer who types it means the product
+# ("cap" is a hat), but feed text that contains it usually does not ("Lens Cap 67mm" is
+# not headwear, "Mirror Ball" is not a football, "Carplay Screen" is not a monitor).
+# Weak forms are read from a query and ignored when classifying a feed product, where
+# a wrong kind of product is the worst thing PicWise can do. A feed that really sells
+# these kinds names them in its product type with the full word.
+#
 # concept id | mega | broader | English names | Greek names
 _CONCEPT_TABLE = """
 washing_machine|HA||washing machine,washing machines,washer,washers|πλυντήριο ρούχων,πλυντήρια ρούχων,πλυντήριο,πλυντήρια
@@ -86,7 +97,7 @@ cooker|KI||cooker,cookers,stove,range cooker|κουζίνα,κουζίνες,η�
 hob|KI||hob,hobs,cooktop,induction hob|εστία,εστίες,επαγωγική εστία
 air_fryer|KI||air fryer,air fryers|φριτέζα αέρος,φριτέζες αέρος,φριτέζα αέρα,φριτέζα χωρίς λάδι
 deep_fryer|KI||deep fryer,deep fryers|φριτέζα,φριτέζες
-mixer|KI||mixer,mixers,stand mixer,hand mixer|μίξερ,κουζινομηχανή,κουζινομηχανές
+mixer|KI||~mixer,~mixers,stand mixer,hand mixer,food mixer|μίξερ,κουζινομηχανή,κουζινομηχανές
 hand_blender|KI||hand blender,immersion blender,stick blender|μίνι πίμερ,ραβδομπλέντερ
 blender|KI||blender,blenders|μπλέντερ
 food_processor|KI||food processor,food processors|πολυμίξερ,multi
@@ -113,13 +124,13 @@ power_bank|PH||power bank,power banks,powerbank,portable charger,external batter
 phone_charger|PH||charger,chargers,phone charger,wall charger,usb charger|φορτιστής,φορτιστές,φορτιστής κινητού
 wireless_charger|PH|phone_charger|wireless charger,wireless chargers,charging pad|ασύρματος φορτιστής,ασύρματοι φορτιστές
 charging_cable|PH||charging cable,usb cable,cable,cables,usb c cable,lightning cable|καλώδιο φόρτισης,καλώδιο,καλώδια
-phone_case|PH||phone case,phone cases,case,cover,phone cover|θήκη κινητού,θήκες κινητού,θήκη,θήκες
+phone_case|PH||phone case,phone cases,case,~cover,phone cover|θήκη κινητού,θήκες κινητού,θήκη,θήκες
 screen_protector|PH||screen protector,screen protectors,tempered glass|προστασία οθόνης,προστατευτικό οθόνης,τζαμάκι
 car_phone_holder|PH||car phone holder,car phone mount,phone holder|βάση κινητού αυτοκινήτου,βάση κινητού
 smartwatch|PH|watch|smartwatch,smartwatches,smart watch,fitness tracker,fitness trackers|έξυπνο ρολόι,έξυπνα ρολόγια
 laptop|CO||laptop,laptops,notebook computer,notebook computers|λάπτοπ,φορητός υπολογιστής,φορητοί υπολογιστές,φορητό
-desktop_pc|CO||desktop pc,desktop pcs,desktop computer,desktop computers,desktop,pc|υπολογιστής,υπολογιστές,σταθερός υπολογιστής,κομπιούτερ
-monitor|CO||monitor,monitors,computer monitor,computer monitors,pc monitor,screen|οθόνη υπολογιστή,οθόνες υπολογιστή,οθόνη,οθόνες,μόνιτορ
+desktop_pc|CO||desktop pc,desktop pcs,desktop computer,desktop computers,~desktop,~pc|υπολογιστής,υπολογιστές,σταθερός υπολογιστής,κομπιούτερ
+monitor|CO||monitor,monitors,computer monitor,computer monitors,pc monitor,~screen|οθόνη υπολογιστή,οθόνες υπολογιστή,οθόνη,οθόνες,μόνιτορ
 printer|CO||printer,printers,multifunction printer,multifunction printers,all in one printer,laser printer,inkjet printer|εκτυπωτής,εκτυπωτές,πολυμηχάνημα,πολυμηχανήματα
 toner|CO||toner,toners,toner cartridge,toner cartridges|τόνερ
 ink_cartridge|CO||ink cartridge,ink cartridges,printer ink,ink|μελάνι,μελάνια,μελάνι εκτυπωτή,μελάνια εκτυπωτή,φυσίγγιο μελανιού,αμπούλα,αμπούλες
@@ -135,7 +146,7 @@ speaker|AV||speaker,speakers,bluetooth speaker,portable speaker|ηχείο,ηχ�
 soundbar|AV||soundbar,soundbars,sound bar|μπάρα ήχου
 headphones|AV||headphones,headphone,headset,headsets,earphones,earbuds|ακουστικά,ακουστικό,ακουστικά κεφαλής,ψείρες
 game_console|AV||games console,game console,gaming console,games consoles,game consoles|κονσόλα,κονσόλες,κονσόλα παιχνιδιών
-game_controller|AV||controller,controllers,gamepad,joystick|χειριστήριο,χειριστήρια
+game_controller|AV||~controller,~controllers,gamepad,joystick,game controller,game controllers|χειριστήριο,χειριστήρια
 camera|AV||camera,cameras,digital camera,mirrorless camera,dslr|φωτογραφική μηχανή,φωτογραφικές μηχανές,κάμερα,κάμερες
 action_camera|AV|camera|action camera,action cameras,action cam|κάμερα δράσης
 microphone|AV||microphone,microphones,mic|μικρόφωνο,μικρόφωνα
@@ -268,7 +279,7 @@ sandals|FO|shoes|sandals|σανδάλια,πέδιλα
 slippers|FO|shoes|slippers,flip flops|παντόφλες,σαγιονάρες
 insoles|FO||insoles|πάτοι,ανατομικοί πάτοι
 watch|JW||watch,watches,wristwatch,wristwatches|ρολόι,ρολόγια,ρολόι χειρός,ρολόγια χειρός
-ring|JW||ring,rings|δαχτυλίδι,δαχτυλίδια
+ring|JW||~ring,~rings,gold ring,silver ring,engagement ring|δαχτυλίδι,δαχτυλίδια
 necklace|JW||necklace,necklaces,pendant|κολιέ,μενταγιόν
 bracelet|JW||bracelet,bracelets|βραχιόλι,βραχιόλια
 earrings|JW||earrings|σκουλαρίκια,σκουλαρίκι
@@ -280,7 +291,7 @@ handbag|JW|bag|handbag,handbags,shoulder bag,crossbody bag,tote bag|τσάντα
 suitcase|JW||suitcase,suitcases,luggage|βαλίτσα,βαλίτσες
 wallet|JW||wallet,wallets,purse|πορτοφόλι,πορτοφόλια
 belt|JW||belt,belts|ζώνη,ζώνες
-hat|JW||hat,hats,cap,caps,beanie|καπέλο,καπέλα,σκούφος
+hat|JW||hat,hats,~cap,~caps,beanie|καπέλο,καπέλα,σκούφος
 gloves|JW||gloves|γάντια
 tablet|CO||tablet,tablets,android tablet,ipad|τάμπλετ,ταμπλέτα υπολογιστή
 e_reader|CO||e reader,ebook reader,kindle|ηλεκτρονικός αναγνώστης βιβλίων
@@ -295,9 +306,9 @@ ups|CO||ups,uninterruptible power supply|ups αδιάλειπτης παροχή
 smart_speaker|AV||smart speaker,smart speakers|έξυπνο ηχείο
 drone|AV||drone,drones|ντρόουν
 vr_headset|AV||vr headset,vr headsets,virtual reality headset|γυαλιά εικονικής πραγματικότητας
-tv_box|AV||tv box,tv boxes,android tv box,android tv boxes,streaming device|tv box
+tv_box|AV||tv box,tv boxes,android tv box,android tv boxes,streaming device,tv stick,tv sticks,streaming stick|tv box,tv stick
 car_charger|PH|phone_charger|car charger,car chargers|φορτιστής αυτοκινήτου
-selfie_stick|PH||selfie stick,tripod|μπαστούνι selfie,τρίποδο
+selfie_stick|PH||selfie stick,~tripod|μπαστούνι selfie,τρίποδο
 car_audio|TY||car stereo,car radio,car speakers|ηχοσύστημα αυτοκινήτου,ράδιο αυτοκινήτου
 gps_navigator|TY||gps navigator,sat nav,gps|πλοηγός gps,πλοηγός
 dishwasher_tablets|KI||dishwasher tablets,dishwasher pods|ταμπλέτες πλυντηρίου πιάτων,κάψουλες πλυντηρίου πιάτων
@@ -331,7 +342,7 @@ board_game|BK||board game,board games|επιτραπέζιο,επιτραπέζ�
 doll|BK||doll,dolls|κούκλα,κούκλες
 kettlebell|BK||kettlebell,kettlebells|kettlebell
 weight_bench|BK||weight bench,gym bench|πάγκος γυμναστικής
-football|BK||football,soccer ball,basketball,ball|μπάλα,μπάλες,μπάλα ποδοσφαίρου,μπάλα μπάσκετ
+football|BK||football,soccer ball,basketball,~ball|μπάλα,μπάλες,μπάλα ποδοσφαίρου,μπάλα μπάσκετ
 makeup|BE||makeup,foundation,mascara,lipstick|μακιγιάζ,μέικαπ,κραγιόν,μάσκαρα
 nail_polish|BE||nail polish|βερνίκι νυχιών,μανό
 hair_brush|BE||hair brush,hairbrush,comb|βούρτσα μαλλιών,χτένα
@@ -440,13 +451,18 @@ def get_product_concepts() -> tuple[ProductConcept, ...]:
     concepts: list[ProductConcept] = []
     for line in _CONCEPT_TABLE.strip().splitlines():
         concept_id, mega, broader, english, greek = line.split("|")
+        english_forms = tuple(form.strip() for form in english.split(",") if form.strip())
+        greek_forms = tuple(form.strip() for form in greek.split(",") if form.strip())
         concepts.append(
             ProductConcept(
                 concept_id=concept_id,
                 mega_category_id=_MEGA[mega],
-                english=tuple(form.strip() for form in english.split(",") if form.strip()),
-                greek=tuple(form.strip() for form in greek.split(",") if form.strip()),
+                english=tuple(form.lstrip("~") for form in english_forms),
+                greek=tuple(form.lstrip("~") for form in greek_forms),
                 broader=tuple(b for b in broader.split(",") if b),
+                weak=tuple(
+                    form[1:] for form in english_forms + greek_forms if form.startswith("~")
+                ),
             )
         )
     return tuple(concepts)
