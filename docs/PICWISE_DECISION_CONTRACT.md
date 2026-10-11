@@ -72,6 +72,17 @@ An output is valid only if all checks pass:
   it is — the closest match to the search, then the lowest price among choices that
   match equally — and the recommended card says exactly that, so nothing is claimed
   that is not true.
+
+  What the first real feed does carry, measured over all 149 of its columns on
+  2026-10-11, is recorded in `docs/picwise_session_handoff.md`. The one finding that
+  bears on the ranking: no ratings and an empty `specifications` column, but a
+  `description` on 92% of products, with readable specification numbers inside it for
+  the audio and video kinds (headphones 19% -> 75% of products once the description is
+  read, speaker 49% -> 75%, camera 5% -> 47%, amplifier 69% -> 91%) and for whole
+  other kinds nothing in any field (watch and smartwatch 9%, vacuum cleaner 3%,
+  backpack and phone case 2%). A kind with neither a rating nor a specification has no
+  ranking signal that is true, so it can only show its four and declare that — which
+  is the `data_not_yet` rule of QUALITY_RULES, not a weight to invent.
 - Tie-break protocol between close candidates: **decided by the owner, 2026-10-08.**
   When the ranking leaves more than four substantially equivalent products, the four
   shown spread across their price range: the cheapest, the dearest and two in between,

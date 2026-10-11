@@ -125,6 +125,41 @@ guide for the owner), `docs/picwise_query_understanding.md`,
    inventing a rating is forbidden. The owner is looking for Awin advertisers whose
    feed fills `rating` / `average_rating`; the way to tell is to build a feed with
    them and run the tool over it.
+
+   What that feed does send was measured on 2026-10-11 over all 149 of its columns
+   (11,573 electronics products), because the question "is a quality signal available
+   at all?" cannot be answered by reading one column:
+
+   | What | Filled |
+   | --- | --- |
+   | `description` (long text) | 92% |
+   | `brand_name` | 83% · `mpn` 67% · `ean` 34% · `product_GTIN` 26% |
+   | `aw_image_url` | 100% · `alternate_image` 37% |
+   | `condition` | 63% |
+   | `delivery_cost` 31% · `delivery_time` | 23% |
+   | `stock_status` 23% · `stock_quantity` | 13% (`in_stock` is 100% but constant) |
+   | `rrp_price` 10% · `saving` | 1% |
+   | `product_short_description` 16% · `specifications` | 1% |
+   | `keywords` 13% · `colour` | 7% |
+   | **`rating` / `average_rating`** | **1%, every value "0"** |
+
+   So the feed has no ratings and no usable specification column, but it does carry a
+   description for nearly every product, and specifications are often written inside
+   it. Measured per kind, products carrying at least one readable number (inches, W,
+   Hz, mAh, GB, hours, metres) in title only vs. in title or description:
+   headphones 19% -> 75%, speaker 49% -> 75%, camera 5% -> 47%, amplifier 69% -> 91%,
+   microphone 0% -> 27%, charging_cable 96% -> 98%, television 78% (unchanged),
+   projector 15% -> 24%, tv_box 32% (unchanged). And the kinds that stay empty either
+   way: watch and smartwatch 9%, vacuum_cleaner 3%, backpack and phone_case 2%.
+
+   Two things follow. Reading specifications from the description, not only the title,
+   is the one route to a real quality signal from this feed -- and it is marketing
+   copy, so a number found there needs to be tied to the product rather than to an
+   accessory or a comparison ("better than 32 inch models"). And for whole kinds there
+   is nothing to read at all, which is a decision for the owner, not a gap to paper
+   over: their rule is that price must not decide, and ANTI_FAKE forbids inventing a
+   quality signal, so those kinds can only show four and declare that no ranking
+   signal exists.
 3. **Supabase project for the query log — and for click/decision events.** Click and
    impression events live only in a per-process list today (audit D5), so production
    records no click durably. None of the account's three projects is PicWise's (one
