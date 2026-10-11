@@ -70,6 +70,59 @@ python tools/check_awin_feed.py --url "<ο σύνδεσμος>"
 | `AWIN_FEED_MAX_STALE_SECONDS` | 86400 (24 ώρες) | πόσο παλιό αντίγραφο επιτρέπεται αν αποτύχει η ανανέωση |
 | `AWIN_FEED_MAX_BYTES` | 300 MB | ανώτατο μέγεθος καταλόγου |
 
+## Ποια καταστήματα να βάλετε στο feed
+
+Ο κανόνας που μετράει: το PicWise δεν δείχνει αποτέλεσμα αν δεν βρει **τέσσερα
+διαφορετικά προϊόντα του ίδιου είδους**, διαθέσιμα. Ένα κατάστημα με μία οθόνη δεν
+βγάζει τετράδα. Άρα διαλέγετε καταστήματα με **βάθος σε λίγες κατηγορίες**, όχι
+καταστήματα με ένα-δύο προϊόντα από το κάθε τι.
+
+Το λεξικό του PicWise ξέρει σήμερα 278 είδη προϊόντων, σε 18 κατηγορίες. Όσο πιο κοντά
+είναι ο κατάλογος του καταστήματος σε αυτές, τόσο πιο σωστά δουλεύουν οι δοκιμές:
+
+| Κατηγορία | Είδη | Παραδείγματα (όπως τα γράφει ένα αγγλικό feed) |
+|---|---|---|
+| Παιδικά, κατοικίδια, αθλητικά | 26 | baby monitor, baby carrier, stroller, cat food, board game, tent |
+| Κουζίνα και σπίτι | 25 | air fryer, coffee machine, kettle, blender, toaster, dishwasher tablets |
+| Υπολογιστές και γραφείο | 23 | laptop, monitor, keyboard, mouse, printer, external hard drive |
+| Έπιπλα, ύπνος, smart home | 20 | bed, mattress, chair, desk, lamp, curtains |
+| Κήπος και εξωτερικός χώρος | 19 | bbq, lawn mower, hedge trimmer, chainsaw, garden hose |
+| Ρούχα | 19 | jacket, jeans, hoodie, dress, raincoat, hi vis vest |
+| Λευκές συσκευές και κλίμα | 17 | fridge, washing machine, air conditioner, dehumidifier, air purifier, fan |
+| Ήχος, εικόνα, gaming, κάμερες | 15 | headphones, tv, soundbar, games console, camera, drone |
+| Εργαλεία χειρός | 15 | hammer, screwdriver set, pliers, socket set, multimeter |
+| Καλλυντικά και προσωπική φροντίδα | 15 | hair dryer, electric shaver, electric toothbrush, epilator, face cream |
+| Κοσμήματα, ρολόγια, τσάντες | 15 | backpack, handbag, wristwatch, bracelet, earrings, belt |
+| Ηλεκτρικά εργαλεία | 13 | drill, angle grinder, circular saw, impact driver, jigsaw |
+| Κινητά και αξεσουάρ | 11 | power bank, charger, phone case, charging cable, car phone holder |
+| Υγεία και ασφάλεια | 10 | bathroom scale, blood pressure monitor, smoke detector, pulse oximeter |
+| Ανταλλακτικά και service αυτοκινήτου | 9 | car battery, brake pads, engine oil, oil filter, spark plug |
+| Ελαστικά και αξεσουάρ αυτοκινήτου | 9 | tyres, alloy wheels, dash cam, child car seat, car stereo |
+| Υποδήματα | 9 | running shoes, boots, hiking boots, sandals, safety shoes |
+| Μοτοσικλέτα και ποδήλατο | 8 | bicycle, electric scooter, helmet, bike lock, electric bike |
+
+Είδη εκτός λίστας (λουλούδια, κρασί, αρώματα, τρόφιμα) **δεν βγάζουν αποτέλεσμα** — και
+σωστά, γιατί το PicWise δεν τα γνωρίζει ακόμη. Δεν είναι βλάβη. Αν θέλετε κάποιο από
+αυτά, ζητήστε να μπει στο λεξικό.
+
+Μετά την αλλαγή του feed, τρέξτε:
+
+```bash
+python tools/check_awin_feed.py --url "<ο σύνδεσμος>"
+```
+
+και διαβάστε τέσσερις γραμμές:
+
+- **«Recognised kind of product»** — πόσα προϊόντα του καταλόγου αναγνωρίζονται. Αν είναι
+  χαμηλό, τα καταστήματα δεν ταιριάζουν με το λεξικό.
+- **«most common kinds»** — τι έχει πραγματικά μέσα ο κατάλογος. Από εδώ βγαίνουν οι
+  αναζητήσεις που έχει νόημα να δοκιμάσετε στο site.
+- **«feed types PicWise does not recognise»** — υποψήφιες προσθήκες στο λεξικό.
+- **«Not new»** και **«condition values PicWise cannot read»** — πόσα είναι
+  μεταχειρισμένα/ανακατασκευασμένα (εμφανίζονται μόνο όταν τα ζητήσει ο χρήστης), και
+  ποιες λέξεις της στήλης `condition` δεν κατάλαβε το PicWise. Αν κάποια από αυτές
+  σημαίνει «μεταχειρισμένο», στείλτε τη για να μπει στον κατάλογο λέξεων.
+
 ## Γνωστοί περιορισμοί
 
 - **Μέγεθος καταλόγου.** Η Vercel ξεκινά «κρύα» αντίγραφα του site, και το καθένα

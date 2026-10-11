@@ -392,6 +392,43 @@ _JUDGEMENT_QUALIFIERS = (
 )
 
 
+# Words a buyer uses to ask for an item that is not new. PicWise shows refurbished and
+# used products only when they are asked for (owner decision, 2026-10-10), so these
+# words are read as a request about the item's condition and are never matched against
+# feed text: the feed states a condition in its own column, in its own wording, which
+# `picwise_providers.product_condition` reads. Written here, next to the other words
+# that are not the product itself, so one file holds the query vocabulary.
+_CONDITION_REQUEST_ENGLISH = (
+    "refurbished,refurb,refurbs,reconditioned,renewed,used,second hand,secondhand,"
+    "pre owned,preowned,open box,openbox,ex display,ex demo"
+)
+_CONDITION_REQUEST_GREEK = (
+    "μεταχειρισμένο,μεταχειρισμένα,μεταχειρισμένος,μεταχειρισμένη,μεταχειρισμένες,"
+    "μεταχειρισμένοι,μεταχειρισμένου,ανακατασκευασμένο,ανακατασκευασμένα,"
+    "ανακατασκευασμένος,ανακατασκευασμένη,ανακαινισμένο,ανακαινισμένα,ανακαινισμένος,"
+    "ανακαινισμένη,σεκοντ χαντ"
+)
+
+
+@dataclass(frozen=True)
+class ConditionRequestWords:
+    """The words that ask for a non-new item, in each language the buyer may type."""
+
+    english: tuple[str, ...]
+    greek: tuple[str, ...]
+
+
+@lru_cache(maxsize=1)
+def get_condition_request_words() -> ConditionRequestWords:
+    def forms(table: str) -> tuple[str, ...]:
+        return tuple(form.strip() for form in table.split(",") if form.strip())
+
+    return ConditionRequestWords(
+        english=forms(_CONDITION_REQUEST_ENGLISH),
+        greek=forms(_CONDITION_REQUEST_GREEK),
+    )
+
+
 @dataclass(frozen=True)
 class Qualifier:
     english: str | None

@@ -25,6 +25,9 @@ import re
 from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
 
+from .product_condition import non_new_condition as read_non_new_condition
+from .product_condition import product_text_for_condition, stated_condition
+
 _PRICE_NUMBER_RE = re.compile(r"\d[\d.,]*\d|\d")
 
 _ORDINAL_PREFIXES = {2: "2nd", 3: "3rd", 4: "4th", 5: "5th"}
@@ -112,20 +115,23 @@ def format_price_display(product: Mapping[str, Any]) -> str:
     return price_text
 
 
-# Feed condition values that mean a new item. Anything else the feed states ("used",
-# "refurbished", "like new", "open box") is shown as the feed wrote it.
-_NEW_CONDITION_VALUES = frozenset({"new", "brand new", "new with tags", "new with box"})
 _FEED_LISTS_AS_AVAILABLE_STATES = frozenset({"trusted", "weak"})
 
 
 def non_new_condition(product: Mapping[str, Any]) -> str:
-    """The feed's own condition text when it is not "new", else ""."""
-    condition = " ".join(str(product.get("condition") or "").split())
-    if not condition:
-        return ""
-    if condition.lower().replace("-", " ").replace("_", " ") in _NEW_CONDITION_VALUES:
-        return ""
-    return condition
+    """What the feed said to call this choice not new, else "".
+
+    Read through `product_condition`, the same module the selection gate reads, so a
+    card cannot stay silent about a condition the selection acted on, or admit one the
+    selection did not see. Since the owner decision of 2026-10-10 a non-new choice is
+    only ever shown to a buyer who asked for that condition.
+    """
+    return read_non_new_condition(
+        condition=stated_condition(product),
+        text=product_text_for_condition(
+            (product.get("title"), product.get("product_type"))
+        ),
+    )
 
 
 def _is_verified_purchasable(product: Mapping[str, Any]) -> bool:

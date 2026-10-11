@@ -33,6 +33,9 @@ How a query is read:
 - words that are not retail at all (a bank, a loan, insurance) are never fuzzily
   matched onto a product: "τράπεζα" is one letter from "τραπέζι" and must not become
   a table.
+- a word asking for a non-new item ("μεταχειρισμένο", "metaxirismeno", "refurbished")
+  is read as a condition request, not as a filter: the feed states a condition in its
+  own column, so matching the word against feed text would answer the wrong question.
 
 Product text is annotated with the same lexicon but by exact key only, since feed text
 is spelled correctly and a fuzzy match there would invent concepts.
@@ -47,6 +50,7 @@ from functools import lru_cache
 from .misspelling_variants import english_layout_text_to_greek
 from .product_concepts import (
     broader_concepts,
+    get_condition_request_words,
     get_product_concepts,
     get_product_concepts_by_id,
     get_qualifiers,
@@ -443,6 +447,22 @@ class _Lexicon:
                     qualifier_keys.add(identity[1])
         self.qualifier_fuzzy = _FuzzyIndex(qualifier_keys)
 
+        # Words asking for a non-new item, by the same phonetic keys as everything
+        # else, so "μεταχειρισμένο", "metaxirismeno" and "used" are all read. Phrases
+        # ("second hand") are keyed word by word and looked up as a pair.
+        condition = get_condition_request_words()
+        self.condition_words: set[str] = set()
+        self.condition_phrases: set[str] = set()
+        for form in condition.english + condition.greek:
+            keys = [_word_identity(token)[1] for token in normalize_understanding_text(form).split()]
+            if not keys or not all(keys):
+                continue
+            if len(keys) == 1:
+                self.condition_words.add(keys[0])
+            else:
+                self.condition_phrases.add(" ".join(keys))
+        self.condition_fuzzy = _FuzzyIndex(self.condition_words)
+
     def _add(self, form: _Form, words: dict[str, set[str]]) -> None:
         self.forms_by_first.setdefault(form.words[0], []).append(form)
         for kind, key in form.words:
@@ -497,6 +517,10 @@ class ConceptReading:
     filters: tuple[str, ...] = ()
     filter_sources: dict[str, str] = field(default_factory=dict)
     judgements: tuple[str, ...] = ()
+    # The buyer's own words asking for a non-new item ("μεταχειρισμένο", "refurbished").
+    # Never a filter: no feed text can be trusted to carry them, and the feed states a
+    # condition in its own column. The selection reads them as a condition request.
+    condition_request: tuple[str, ...] = ()
     specs: tuple[SpecValue, ...] = ()
     other_concepts: tuple[str, ...] = ()
     non_retail: bool = False
@@ -517,6 +541,7 @@ class ConceptReading:
             "feed_terms": list(self.feed_terms),
             "filters": list(self.filters),
             "judgements": list(self.judgements),
+            "condition_request": list(self.condition_request),
             "specs": [
                 {"value": spec.token, "unit": spec.unit, "spec_field": spec.spec_field}
                 for spec in self.specs
@@ -720,6 +745,75 @@ def _qualifier_for(token: str) -> tuple[bool, str | None]:
     return False, None
 
 
+@dataclass(frozen=True)
+class ConditionRequest:
+    """Which words of a query ask for an item that is not new, and where they are."""
+
+    words: tuple[str, ...] = ()
+    positions: frozenset[int] = frozenset()
+
+    @property
+    def wants_non_new(self) -> bool:
+        return bool(self.words)
+
+
+def _condition_keys_for_token(token: str) -> tuple[str, ...]:
+    """The keys this typed word could be: Greek by sound, Latin as English or greeklish."""
+    if is_greek_word(token):
+        return (greek_key(token),)
+    return tuple(dict.fromkeys((english_key(token), greeklish_key(token))))
+
+
+def _token_asks_for_non_new(token: str) -> bool:
+    lexicon = _lexicon()
+    keys = _condition_keys_for_token(token)
+    if any(key in lexicon.condition_words for key in keys):
+        return True
+    # Only long words are corrected, as with preference words: at four letters "used"
+    # is one mistake away from ordinary words, and reading those as a request for a
+    # second-hand item would hide every new product the buyer actually wanted.
+    return any(
+        len(key) >= 5 and lexicon.condition_fuzzy.lookup(key, _max_distance(len(token)))
+        for key in keys
+    )
+
+
+def _pair_asks_for_non_new(first: str, second: str) -> bool:
+    lexicon = _lexicon()
+    return any(
+        f"{left} {right}" in lexicon.condition_phrases
+        for left in _condition_keys_for_token(first)
+        for right in _condition_keys_for_token(second)
+    )
+
+
+def _read_condition_request(tokens: tuple[str, ...]) -> ConditionRequest:
+    words: list[str] = []
+    positions: set[int] = set()
+    index = 0
+    while index < len(tokens):
+        if index + 1 < len(tokens) and _pair_asks_for_non_new(tokens[index], tokens[index + 1]):
+            words.append(" ".join(tokens[index:index + 2]))
+            positions.update({index, index + 1})
+            index += 2
+            continue
+        if _token_asks_for_non_new(tokens[index]):
+            words.append(tokens[index])
+            positions.add(index)
+        index += 1
+    return ConditionRequest(words=tuple(dict.fromkeys(words)), positions=frozenset(positions))
+
+
+@lru_cache(maxsize=4096)
+def read_condition_request(query: str) -> ConditionRequest:
+    """Read a query for a request for a non-new item, without reading anything else.
+
+    The selection needs this for queries that name no known product too, where there
+    is no concept reading to carry it.
+    """
+    return _read_condition_request(tuple(normalize_understanding_text(query).split()))
+
+
 def _words_of_concept(concept_id: str) -> set[tuple[str, str]]:
     concept = get_product_concepts_by_id()[concept_id]
     words: set[tuple[str, str]] = set()
@@ -736,13 +830,14 @@ def understand_product_query(query: str) -> ConceptReading:
     if not tokens:
         return ConceptReading(query=str(query or ""), tokens=tokens)
 
+    condition = _read_condition_request(tokens)
     spec_spans, spec_positions = _parse_specs(list(tokens))
     non_retail_positions = {i for i, token in enumerate(tokens) if token in _NON_RETAIL_WORDS}
     # Connectives and non-retail words are matched exactly only: they may be part of a
     # product name ("φριτέζα χωρίς λάδι", "power bank") but are never guessed at.
     candidates = [
         {}
-        if i in spec_positions
+        if i in spec_positions or i in condition.positions
         else _token_candidates(
             token,
             fuzzy=not (
@@ -761,6 +856,7 @@ def understand_product_query(query: str) -> ConceptReading:
         return ConceptReading(
             query=str(query or ""),
             tokens=tokens,
+            condition_request=condition.words,
             non_retail=bool(non_retail_positions),
         )
 
@@ -776,7 +872,7 @@ def understand_product_query(query: str) -> ConceptReading:
 
     index = 0
     while index < len(tokens):
-        if index in head_positions:
+        if index in head_positions or index in condition.positions:
             index += 1
             continue
         if index in spec_start:
@@ -810,7 +906,9 @@ def understand_product_query(query: str) -> ConceptReading:
         # A corrected single word among several words PicWise does not know is more
         # likely an ordinary word than a misspelled product: "wedding cake topper" is
         # not a toner. Without the rest of the query making sense, do not guess.
-        return ConceptReading(query=str(query or ""), tokens=tokens)
+        return ConceptReading(
+            query=str(query or ""), tokens=tokens, condition_request=condition.words
+        )
 
     fallback = concept.broader[0] if concept.broader else None
     fallback_unmatched: tuple[str, ...] = ()
@@ -834,6 +932,7 @@ def understand_product_query(query: str) -> ConceptReading:
         filters=tuple(filters),
         filter_sources=sources,
         judgements=tuple(judgements),
+        condition_request=condition.words,
         specs=tuple(specs),
         other_concepts=tuple(span.concept_id for span in spans if span is not head),
         non_retail=bool(non_retail_positions) and not spans,
