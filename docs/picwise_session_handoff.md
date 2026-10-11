@@ -6,7 +6,10 @@ Current state for whoever picks the project up next. Updated 2026-10-10.
 ## Where the work is
 
 - Repository: `nikkaradimitris-cloud/picwise.concept`
-- **Everything is on `main`.** PR #2 was merged on 2026-10-08 (merge commit `148a552`,
+- **Everything is on `main`.** The condition work (non-new products only when the buyer
+  asks) was merged on 2026-10-11 by the owner's instruction: merge commit `b28da32`, a
+  normal merge of `ccr-fd5dc1bc-4vgsgl`, no pull request. Its deployment is NOT VERIFIED
+  from a session. Earlier: PR #2 was merged on 2026-10-08 (merge commit `148a552`,
   a normal merge, by the owner's instruction). It carried all of PR #1, so GitHub marked
   PR #1 as merged too; the owner chose this knowing it. `main` holds the 4+1 Awin path,
   the misspelling understanding, the mission truth audit of 2026-10-08 and its fixes
@@ -122,7 +125,7 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 ## Next engineering steps, in order
 
 0. ~~Refurbished / used products must appear only when the buyer asks for them.~~
-   **Done, 2026-10-10** (owner decision; recorded in `docs/PICWISE_DECISION_CONTRACT.md`,
+   **Done, 2026-10-10, on `main` since 2026-10-11** (owner decision; recorded in `docs/PICWISE_DECISION_CONTRACT.md`,
    section "Item Condition"). A product the feed calls not new is no longer a candidate
    at all unless the query asks for that condition; when it is asked for, those come
    first, missing slots fill with new products, and the page says how many of the four
