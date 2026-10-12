@@ -91,10 +91,21 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 
 - Misspelling benchmark: **96.0% pass, 0 wrong kind of product shown** (was 25.2% / 19);
   unchanged after the audit fixes.
-- Test suite, last full run 2026-10-08 after the F3/F4 fixes (224 modules, every module
-  except the two hour-long ones, one process per module): **1,810 tests, 2 failures,
-  48 skipped** (skips need the operator's private feeds). The two failures predate all
-  of this work and fail identically on `4475192` (checked in a clean worktree):
+- Test suite, last full run **2026-10-12** after the description rule, the spec reader
+  and the fixture updates (228 modules, every module except the two hour-long ones,
+  one process per module, `PYTHONPATH=.`): **226 modules pass, 2 fail**, and both
+  failures are the two that already predated this work. One module failed during the
+  run and was fixed inside it -- `test_picwise_product_type_coverage_matrix`, whose
+  weak-feed-opportunity case wrote a 47-character description, below the 120 the
+  owner's rule requires, so its four rows stopped being showable; it passes on
+  `9ac4bb8`. Two things to know before running it: the modules must be run with
+  `PYTHONPATH=.` (several import `from src.picwise_...`, which fails when a module is
+  run as a script from `tests/`), and `tests/` has no `__init__.py`, so
+  `unittest discover` cannot load it -- run one process per module.
+  Older note, kept for the history: full run 2026-10-08 after the F3/F4 fixes (224
+  modules): **1,810 tests, 2 failures, 48 skipped** (skips need the operator's private
+  feeds). The two failures predate all of this work and fail identically on `4475192`
+  (checked in a clean worktree):
   `test_picwise_canonical_vocabulary_registry_stage2`,
   `test_picwise_search_index_generated_blind_stage4` (graph-alias leet records in the
   registry). `test_picwise_learning_stage7b` passes in about 41 min;
