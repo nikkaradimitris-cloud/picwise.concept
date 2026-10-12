@@ -196,3 +196,56 @@ the owner -- ask the shop to fill the column, or drop the shop from the feed -- 
 visible before a search returns nothing.
 
 Pinned by `tests/test_picwise_product_description_rule.py` (14 tests).
+
+## Reading a product's specifications, decided by the owner, 2026-10-12
+
+Owner instruction: "πάντα πρέπει να ανατρέχουμε στα χαρακτηριστικά του προϊόντος όταν
+αυτά είναι διαθέσιμα" -- always read a product's specifications when the feed carries
+them -- with the clarification that a number should be cross-checked against a second
+source "όπου αυτό είναι εφικτό", where feasible.
+
+**It is not feasible in the feed PicWise has, and that was measured, not assumed.** Of
+the specification numbers that appear only in a product's description, none is
+repeated by any other column: 0 of 107 for speakers, 0 of 90 for headphones, 0 of 28
+for cameras, 0 of 17 for amplifiers. There is no second source to check against.
+
+So `picwise_providers.product_specs` uses the only corroboration the data allows: a
+number counts when the feed **states it as a property**, not when it merely appears.
+
+- The `specifications` column states properties by construction, so a labelled number
+  there is read ("Extended Length (mm): 610"). Three shops fill it, two on every row.
+- A **title** or **product type** is a declared field -- the merchant chose those
+  words -- so a number with a unit needs no label ("TV Box 4GB RAM 64GB ROM", "Cable
+  1.5 m"). Requiring a label here would drop cable length from 98% of cables to 15%.
+- A **description** is marketing copy, so a number is read only where a word names the
+  property just before it ("Driver Diameter 40 mm", "Battery: 3000mAh") and no hedge
+  or comparison precedes it ("up to 9 hours", "better than 32 inch", "works with 128
+  GB cards"). Measured, this keeps 70% of description-only numbers for speakers and
+  81% for amplifiers, and drops the prose.
+- A RAM figure is never read as storage. The kind whose recommendation storage would
+  decide states both in its title, and ranking by the 4 of "4GB RAM 64GB ROM" would
+  rank the wrong number.
+
+**Which properties may decide the recommendation is a separate question**, because a
+specification is not automatically a measure of quality. Shown the coverage on
+2026-10-12, the owner left the choice to PicWise, and the rule taken is: a property
+ranks only where "more is better" is beyond dispute for every buyer.
+`RANKING_PROPERTIES` is that set -- **storage, battery, playtime**. **Power does not
+rank**: a louder amplifier is not a better one, and ranking by watts would put a claim
+on the card that is not true. **Length does not rank**, by the owner's explicit answer
+the same day: a buyer wants the cable length that fits, not the longest one, so length
+is shown on the card and decides nothing. Everything else is read and shown, never
+ranked. Adding a property to that set is the owner's decision, not an implementation
+detail.
+
+**What this yields on the feed PicWise has, measured after the description rule:**
+almost nothing. Headphones 17% of showable products state a ranking property, speakers
+8%, cameras 5%, and every other kind 0% -- because the products with the best
+specifications in the feed (TV boxes, 78% storage in their titles) were Geekbuying's,
+and Geekbuying sends no description, so the description rule removed them. So today
+nearly every search is a kind that cannot be compared on specifications. That is a
+fact about this feed, not a design, and the comparison is therefore decided **per
+answer** from what the four products actually state, never from a list of kinds
+written by hand: a feed that carries the data lights the comparison up on its own.
+
+Pinned by `tests/test_picwise_product_specs.py` (22 tests).
