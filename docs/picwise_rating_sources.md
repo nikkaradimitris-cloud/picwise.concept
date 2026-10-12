@@ -125,6 +125,29 @@ lost on the next deploy.
 - **Icecat carries editorial content and awards, not user ratings.** It is the right
   answer for specifications and the wrong one for this.
 
+## The shop's reliability belongs to the shop, not to the feed
+
+Owner point, raised on reading the above: Trustpilot rates the shop -- but that shop
+is on Awin today and on whatever network PicWise works with next.
+
+So the reliability of a shop is stored against the shop's own **domain**, never
+against a feed row or a network's name for a merchant. `picwise_providers.merchant_identity`
+reads it, and three things follow:
+
+- **Trustpilot's public Business Units API is itself keyed by domain**, so the key
+  PicWise stores is the key the lookup already needs. Nothing is translated.
+- **A shop joined through two networks is one shop.** It is rated once, and a second
+  network's feed inherits every reliability fact already collected rather than
+  starting the shop again from nothing.
+- **Two storefronts of one brand stay apart.** `ie.plusshop.com` and `uk.plusshop.com`
+  are two shops with two reputations; the merchant name alone would have merged them.
+
+The domain is read from the merchant's own link and never from the network's redirect:
+every row of the Awin feed carries an `aw_deep_link` on `awin1.com`, which names the
+network. A row that carries only a redirect does not identify a shop, and PicWise says
+so rather than hanging a rating on a shop it cannot name. On the real feed all 11,573
+rows resolve, to 26 shop domains.
+
 ## Recommended order
 
 1. **Trustpilot's public Business Units API for the shop's reliability** (criterion 3).
