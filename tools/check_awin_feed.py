@@ -11,6 +11,9 @@ Reports what the site will actually be able to do with the feed:
 - what each shop actually fills in, which is the choice the feed leaves its owner:
   Awin passes a merchant's own upload through, so a shop that sends no description or
   no specifications cannot be made to by any feed setting -- only by dropping it
+- how many of its products can be found in a product database at all (a valid GTIN, or
+  a brand with a real part code), which is the one column that decides whether a shop
+  can ever be ranked on more than its price
 - which of Awin's columns are present, and which useful ones are missing
 - merchants and currencies in the feed
 - how many products PicWise recognises as a known kind of product, and the feed
@@ -69,6 +72,7 @@ def main() -> None:
     from picwise_nlu.product_concepts import get_product_concepts_by_id
     from picwise_providers.awin_adapter import awin_feed_config_from_env, load_awin_provider_feed
     from picwise_providers.product_condition import NEW_CONDITION_VALUES, stated_condition
+    from picwise_providers.product_identity import read_product_identity
     from picwise_providers.product_description import (
         DESCRIPTION_MIN_CHARS,
         has_sufficient_description,
@@ -151,12 +155,19 @@ def main() -> None:
     # present and `specifications` was filled by three shops (one at 100%), so the
     # columns a feed arrives with are a merchant's own upload, not a checkbox. Which
     # makes this table the decision the owner actually has: which shops to keep.
+    # Owner decision, 2026-10-12: the feed is an offer source, not a product source,
+    # so the question that decides whether a shop is usable is whether its products
+    # can be found in a product database at all. A shop at 0% "known" can never be
+    # enriched and so can never be ranked on anything but its price, whatever else it
+    # sends -- which makes this column, not the description one, the shop-selection
+    # criterion. "known" is a valid GTIN, or a brand with a real part code.
     quality_keys = (
+        ("known", "__identity__"),
         ("desc", "description"),
         ("specs", "specifications"),
         ("type", "product_type"),
         ("brand", "brand_name"),
-        ("ean", "ean"),
+        ("gtin", "__gtin__"),
         ("rating", "average_rating"),
     )
     filled: dict[str, Counter] = {}
@@ -165,19 +176,32 @@ def main() -> None:
         merchant = " ".join(str(raw.get("merchant_name") or "?").split())
         counts = filled.setdefault(merchant, Counter())
         counts["rows"] += 1
+        identity = read_product_identity(raw, brand=product.brand)
+        counts["__identity__"] += identity.matchable
+        counts["__gtin__"] += bool(identity.gtin)
         if has_sufficient_description(raw, title=product.title):
             counts["description"] += 1
-        for _label, column in quality_keys[1:]:
+        for _label, column in quality_keys:
+            # `description` is counted above by the rule, not by the column being
+            # filled, and the `__` keys are counted from the identity above.
+            if column.startswith("__") or column == "description":
+                continue
             value = " ".join(str(raw.get(column) or "").split())
             if value and not (column == "average_rating" and value in {"0", "0.0"}):
                 counts[column] += 1
-    print("\nWhat each shop actually sends (share of its own rows):")
-    header = f"    {'shop':<26}{'rows':>6}" + "".join(f"{label:>8}" for label, _c in quality_keys)
-    print(header)
+    known = sum(counts["__identity__"] for counts in filled.values())
+    print(
+        f"\nFindable in a product database (valid GTIN, or brand + part code): "
+        f"{known} of {len(feed_eligible)} feed-eligible products"
+    )
+    print("What each shop actually sends (share of its own rows):")
+    print(f"    {'shop':<26}{'rows':>6}" + "".join(f"{label:>8}" for label, _c in quality_keys))
     for merchant, counts in sorted(filled.items(), key=lambda item: -item[1]["rows"])[:15]:
         rows = counts["rows"]
         line = f"    {merchant[:25]:<26}{rows:>6}"
         line += "".join(f"{counts[column] * 100 // rows:>7}%" for _label, column in quality_keys)
+        if not counts["__identity__"]:
+            line += "  <- no identifier at all: can never be enriched"
         print(line)
 
     # Non-new stock, which is hidden unless a buyer asks for that condition (owner
