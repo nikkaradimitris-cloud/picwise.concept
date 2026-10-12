@@ -103,6 +103,63 @@ class SpreadAcrossPriceTests(unittest.TestCase):
         self.assertEqual(_ids(_spread_across_price(unpriced, 4)), _ids(unpriced[:4]))
 
 
+class DistinctPriceZoneTests(unittest.TestCase):
+    """Four price zones, not four positions.
+
+    Owner restatement, 2026-10-12: the four come from four **different** price zones.
+    Spreading over evenly spaced positions of the price-sorted group satisfied that
+    only when the prices were themselves spread. On the real feed "phone case" showed
+    27.00, 27.00, 27.00 and 55.00 and "backpack" 34.95, 35.95, 35.95, 35.95 -- four
+    cards at one price, which is not a decision.
+    """
+
+    def test_repeated_prices_never_fill_more_than_their_zone(self) -> None:
+        group = [_offer("a", "27.00"), _offer("b", "27.00"), _offer("c", "27.00"),
+                 _offer("d", "55.00"), _offer("e", "80.00"), _offer("f", "15.00")]
+        shown = _spread_across_price(group, 4)
+        prices = [product.price_text for product in shown]
+        self.assertEqual(prices, ["15.00", "27.00", "55.00", "80.00"])
+
+    def test_the_best_ranked_product_represents_its_zone(self) -> None:
+        # "b" is at the same price as "c" but ranked ahead of it, so "b" shows.
+        group = [_offer("first", "10.00"), _offer("b", "27.00"), _offer("c", "27.00"),
+                 _offer("last", "99.00"), _offer("mid", "50.00")]
+        self.assertEqual(_ids(_spread_across_price(group, 4)), ["first", "b", "mid", "last"])
+
+    def test_fewer_zones_than_slots_still_fills_the_four(self) -> None:
+        # The real feed holds 43 backpacks at two prices. A zone that does not exist
+        # cannot be invented, and the contract still owes four choices.
+        group = [_offer("x1", "34.95"), _offer("x2", "35.95"), _offer("x3", "35.95"),
+                 _offer("x4", "35.95")]
+        shown = _spread_across_price(group, 4)
+        self.assertEqual(len(shown), 4)
+        self.assertEqual([product.price_text for product in shown],
+                         ["34.95", "35.95", "35.95", "35.95"])
+
+    def test_one_price_for_everything_is_still_four_choices(self) -> None:
+        group = [_offer(f"w{index}", "50.00") for index in range(6)]
+        self.assertEqual(_ids(_spread_across_price(group, 4)), ["w0", "w1", "w2", "w3"])
+
+    def test_zones_are_counted_not_products(self) -> None:
+        # Nine products, four prices: every price shows exactly once.
+        group = (
+            [_offer(f"c{index}", "5.00") for index in range(4)]
+            + [_offer("m1", "10.00"), _offer("m2", "10.00")]
+            + [_offer("h1", "20.00")]
+            + [_offer("t1", "40.00"), _offer("t2", "40.00")]
+        )
+        shown = _spread_across_price(group, 4)
+        self.assertEqual([product.price_text for product in shown],
+                         ["5.00", "10.00", "20.00", "40.00"])
+
+    def test_one_slot_takes_the_middle_zone_not_the_middle_product(self) -> None:
+        # Five products, three zones: the middle zone is 10.00, although the middle
+        # product by position is one of the three at 5.00.
+        group = [_offer("c1", "5.00"), _offer("c2", "5.00"), _offer("c3", "5.00"),
+                 _offer("m", "10.00"), _offer("h", "20.00")]
+        self.assertEqual(_ids(_spread_across_price(group, 1)), ["m"])
+
+
 class _FeedCase(unittest.TestCase):
     def _serve_file(self, path: Path) -> None:
         previous = os.environ.get("AWIN_FEED_FILE")

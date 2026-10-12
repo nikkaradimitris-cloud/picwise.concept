@@ -83,10 +83,28 @@ An output is valid only if all checks pass:
   backpack and phone case 2%). A kind with neither a rating nor a specification has no
   ranking signal that is true, so it can only show its four and declare that — which
   is the `data_not_yet` rule of QUALITY_RULES, not a weight to invent.
-- Tie-break protocol between close candidates: **decided by the owner, 2026-10-08.**
-  When the ranking leaves more than four substantially equivalent products, the four
-  shown spread across their price range: the cheapest, the dearest and two in between,
-  never bypassing a hard filter. "Substantially equivalent" means the same match with
+- Tie-break protocol between close candidates: **decided by the owner, 2026-10-08,
+  restated 2026-10-12.** When the ranking leaves more than four substantially
+  equivalent products, the four shown spread across their price range: the cheapest,
+  the dearest and two in between, never bypassing a hard filter. The owner restated
+  this on 2026-10-12 as four **different** price zones, and that is a correction the
+  measurement earned: spreading over evenly spaced **positions** of the price-sorted
+  group gave four different prices only where the prices were themselves spread. On
+  the real feed "phone case" showed 27.00, 27.00, 27.00 and 55.00 and "backpack"
+  34.95, 35.95, 35.95, 35.95 -- four cards at one price, which is not a decision. The
+  spread is now taken over the group's **distinct prices**: one zone per price, evenly
+  spaced zones with the endpoints included, and the best-ranked product at a chosen
+  price represents its zone. Where a group holds fewer distinct prices than there are
+  slots, every zone shows and the spare slots go to the next best-ranked products: the
+  contract owes four choices and a zone that does not exist cannot be invented -- the
+  real feed has 43 backpacks at two prices and its watches at one. Measured after the
+  change: speakers 7.99 / 48.99 / 136.22 / 469.42, cameras 34.99 / 60.75 / 88.19 /
+  200.89, microphones 2.99 / 14.98 / 19.39 / 68.59, amplifiers 15.67 / 195.02 / 332.22
+  / 685.02. Phone cases reach only two zones, because the four come from one
+  equivalence group and that group holds two prices, although the kind has 13 across
+  the whole feed: reaching the others would mean showing less relevant products, which
+  is the owner's call and is not taken here.
+  `tests/test_picwise_price_range_diversity.py` (15 tests). "Substantially equivalent" means the same match with
   the search in what identifies the product (title, product type, category, brand,
   accessory or not); words found only in merchant free text (keywords, description)
   do not count. Implemented in `search_selection._choose_shown_products`.

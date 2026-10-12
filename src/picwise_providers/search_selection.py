@@ -1071,12 +1071,23 @@ def _spread_across_price(group: list[ProviderProduct], slots: int) -> list[Provi
 
     Owner decision (2026-10-08): when the ranking leaves more than four substantially
     equivalent products, the four shown are the cheapest, the dearest and two in
-    between. In general the picks are evenly spaced positions of the price-sorted
-    group, endpoints included: two slots are the cheapest and the dearest, three add
-    the middle one, one slot is the middle one; a position halfway between two
-    products rounds up. Returned cheapest first. Prices that cannot be compared
-    (missing, or in different currencies) give no range to spread across, so the group
-    keeps its rank order.
+    between, so a buyer sees the range rather than four neighbours. Restated by the
+    owner on 2026-10-12 as four **different** price zones, cheapest first.
+
+    That restatement is a correction, and it was earned by measurement. Spreading over
+    evenly spaced **positions** of the price-sorted group gives four different prices
+    only when the prices are themselves spread: on the real feed, "phone case" showed
+    27.00, 27.00, 27.00 and 55.00, and "backpack" 34.95, 35.95, 35.95, 35.95. Four
+    cards at one price are not a decision. So the spread is taken over the group's
+    **distinct prices**: one zone per price, evenly spaced zones, endpoints included,
+    and the best-ranked product of each chosen zone represents it.
+
+    Where a group holds fewer distinct prices than there are slots, every zone shows
+    and the spare slots go to the next best-ranked products, because the contract owes
+    four choices and a zone that does not exist cannot be invented -- the real feed has
+    43 backpacks at two prices. Prices that cannot be compared (missing, or in
+    different currencies) give no range to spread across, so the group keeps its rank
+    order.
     """
     if slots <= 0 or not group:
         return []
@@ -1084,15 +1095,27 @@ def _spread_across_price(group: list[ProviderProduct], slots: int) -> list[Provi
     currencies = {str(product.currency or "").strip().upper() for product in group}
     if any(price is None for price in prices) or len(currencies) > 1:
         return group[:slots]
-    order = sorted(range(len(group)), key=lambda index: (prices[index], index))
-    if len(order) <= slots:
-        return [group[index] for index in order]
-    last = len(order) - 1
+    # One zone per distinct price, each keeping the group's rank order inside it, so
+    # the product representing a zone is the best-matching one at that price.
+    zones: dict[float, list[int]] = {}
+    for index, price in enumerate(prices):
+        zones.setdefault(float(price), []).append(index)
+    distinct = sorted(zones)
+    if len(distinct) <= slots:
+        chosen = [zones[price][0] for price in distinct]
+        taken = set(chosen)
+        spare = sorted(
+            index for price in distinct for index in zones[price] if index not in taken
+        )
+        chosen.extend(spare[: slots - len(chosen)])
+        chosen.sort(key=lambda index: (prices[index], index))
+        return [group[index] for index in chosen]
+    last = len(distinct) - 1
     if slots == 1:
-        # The middle position, rounded the same way as every other pick.
-        return [group[order[int(last / 2 + 0.5)]]]
-    picks = [order[int(step * last / (slots - 1) + 0.5)] for step in range(slots)]
-    return [group[index] for index in picks]
+        # The middle zone, rounded the same way as every other pick.
+        return [group[zones[distinct[int(last / 2 + 0.5)]][0]]]
+    picked = [distinct[int(step * last / (slots - 1) + 0.5)] for step in range(slots)]
+    return [group[zones[price][0]] for price in picked]
 
 
 def _choose_shown_products(
