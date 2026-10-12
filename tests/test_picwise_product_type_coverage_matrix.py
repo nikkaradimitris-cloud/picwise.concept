@@ -21,17 +21,18 @@ import unittest
 from pathlib import Path
 from urllib.parse import quote
 
-ROOT = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+for _path in (HERE, SRC, ROOT):
+    if str(_path) not in sys.path:
+        sys.path.insert(0, str(_path))
 
 from api.index import app as wsgi_app  # noqa: E402
 from picwise_providers.awin_adapter import clear_awin_feed_parse_cache  # noqa: E402
 from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
 from picwise_search.live_search_resolver import resolve_live_search  # noqa: E402
+from fixture_support import fixture_description  # noqa: E402
 
 FIXTURE_CSV = ROOT / "tests" / "fixtures" / "provider_feed_coverage_matrix_fixture.csv"
 _FEED_ENV = "AWIN_FEED_FILE"
@@ -193,7 +194,11 @@ class WithheldRecommendationTests(_CoverageFixtureTestCase):
             rows = list(csv.DictReader(source))[:4]
         for row in rows:
             row["product_type"] = row["merchant_category"] = "Gadgets"
-            row["description"] = "Local fixture row mentioning zorblax only here."
+            # Long enough to be a product PicWise may show (owner rule, 2026-10-12),
+            # with "zorblax" still only in the description and in no title.
+            row["description"] = fixture_description(
+                "Local fixture row mentioning zorblax only here."
+            )
         handle = tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False, encoding="utf-8", newline="")
         with handle:
             writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
