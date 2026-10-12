@@ -43,6 +43,12 @@ So a kind of product carries a list of each, and the two are never mixed.
   honest control is the one the owner named: **four different answers and a "see more"
   button**, because the engine cannot narrow a taste for the buyer.
 
+`fit` is also the **default**, by the owner's decision of 2026-10-12: a kind of
+product PicWise does not recognise claims no best. Claiming one requires knowing what
+makes that kind of thing better, and an unrecognised kind is exactly the case where
+PicWise does not know. So the three sets below are all explicit, and nothing reaches
+`rating` or `spec` by omission.
+
 `fit` is not a weaker class. It is the class where PicWise's promise changes shape, and
 saying so is what keeps the other two honest.
 
@@ -185,6 +191,17 @@ _FIT: dict[str, tuple[tuple[str, ...], str]] = {
     "pool": (("capacity_l", "size"), "size and taste"),
     "garden_furniture": (("size",), "size and taste"),
     "flower_pot_saucer": (("size",), "size"),
+    # Furniture, moved here by the owner on 2026-10-12. A mattress and a chair do have
+    # real quality, but the choice is led by the size of the room and by taste, and
+    # nobody asks for the best table.
+    "bed": (("size",), "bed size and taste"),
+    "mattress": (("size",), "bed size and firmness preference"),
+    "sofa": (("size",), "room size and taste"),
+    "chair": (("size",), "taste"),
+    "desk": (("size",), "room size and taste"),
+    "table": (("size",), "room size and taste"),
+    "wardrobe": (("size",), "room size and taste"),
+    "shelving": (("size",), "room size and taste"),
 }
 
 # --- spec: a ranking criterion exists ------------------------------------------------
@@ -228,6 +245,66 @@ _SPEC: dict[str, tuple[tuple[str, ...], tuple[str, ...], str]] = {
 }
 
 
+# --- rating: quality is real, no feed number measures it ---------------------------
+# A drill really can be better than another drill, and nothing in any product feed
+# says which. Only a rating can separate these, which is why the owner's rule that
+# the comparison starts from the product's rating is not a preference: for most of
+# the catalogue it is the only honest route. Listed explicitly rather than left as a
+# default, because the default is `fit` (see `_rule_for`).
+_RATING: frozenset[str] = frozenset(
+    {
+        # Appliances, kitchen machines and cookware: a kettle really can be better than
+    # another kettle, and nothing in a feed says which.
+        "dehumidifier", "air_purifier", "heater", "fan", "steam_mop",
+        "iron", "coffee_machine", "microwave", "oven", "cooker",
+        "hob", "air_fryer", "deep_fryer", "mixer", "hand_blender",
+        "blender", "food_processor", "toaster", "kettle", "juicer",
+        "cookware", "pressure_cooker", "kitchen_scale", "knife_set", "cutlery",
+        "water_filter_jug", "grill",
+        # Computing, networking, office and PC hardware.
+        "office_chair", "lamp", "smart_plug", "phone_charger", "wireless_charger",
+        "smartwatch", "desktop_pc", "printer", "router", "keyboard",
+        "mouse", "webcam", "scanner", "docking_station", "graphics_card",
+        "processor", "motherboard", "power_supply", "pc_case",
+        # Audio, camera and video gear, where build and sound quality are real and
+    # unmeasured by any feed number.
+        "speaker", "soundbar", "game_controller", "camera", "action_camera",
+        "microphone", "projector", "amplifier", "drone", "vr_headset",
+        "selfie_stick", "car_audio", "gps_navigator", "dash_cam",
+        # Car care, child safety and mobility, where a standard or a build decides.
+        "engine_oil", "coolant", "child_car_seat", "bicycle", "helmet",
+        "bicycle_helmet", "moto_helmet", "scooter", "bike_lock",
+        # Power tools, hand tools and garden machines.
+        "drill", "rotary_hammer", "impact_driver", "angle_grinder", "circular_saw",
+        "jigsaw", "mitre_saw", "sander", "heat_gun", "air_compressor",
+        "multi_tool", "nail_gun", "welder", "screwdriver", "screwdriver_set",
+        "socket_set", "spanner", "pliers", "hammer", "tape_measure",
+        "spirit_level", "utility_knife", "tool_box", "multimeter", "soldering_iron",
+        "hand_saw", "work_gloves", "brush_cutter", "hedge_trimmer", "chainsaw",
+        "leaf_blower", "pressure_washer", "garden_hose", "water_pump", "tiller",
+        "ladder", "garden_sprayer", "paint", "tap", "blood_pressure_monitor",
+        "thermometer",
+        # Health, measuring and mobility devices.
+        "pulse_oximeter", "smoke_detector", "bathroom_scale", "massager", "glucose_meter",
+        "hearing_aid", "wheelchair", "face_mask",
+        # Personal care and cosmetics with a function rather than a shade.
+        "electric_shaver", "hair_clipper", "hair_dryer", "hair_straightener", "electric_toothbrush",
+        "epilator", "hair_brush", "shampoo", "face_cream", "sunscreen",
+        "deodorant", "baby_stroller", "baby_carrier",
+        # Baby, child and pet equipment, where safety and durability are the question.
+        "high_chair", "baby_monitor", "cot", "baby_bottle", "breast_pump",
+        "dog_food", "cat_food", "pet_carrier", "cat_litter", "treadmill",
+        "exercise_bike",
+        # Sport, fitness and outdoor gear built for a job.
+        "dumbbells", "kettlebell", "weight_bench", "yoga_mat", "football",
+        "tent", "sleeping_bag", "work_trousers", "safety_vest", "athletic_shoes",
+        # Workwear, performance footwear and bags built for a job -- deliberately apart
+    # from their fashion twins `shoes`, `boots`, `bag` and `handbag`, which are `fit`.
+        "running_shoes", "hiking_boots", "safety_shoes", "backpack", "laptop_bag",
+        "suitcase", "dishwasher_tablets", "laundry_detergent",
+    }
+)
+
 def _rule_for(concept_id: str) -> ComparisonRule:
     if concept_id in _FIT:
         matching, note = _FIT[concept_id]
@@ -246,14 +323,23 @@ def _rule_for(concept_id: str) -> ComparisonRule:
             matching_criteria=matching,
             note=note,
         )
-    # Everything else: quality is real and differs, and no number in a feed captures
-    # it. A drill, a frying pan, a shampoo, a child's car seat. Only a rating can
-    # separate them, which is why "comparison starts with the rating" is not a
-    # preference but the only honest route for most of the catalogue.
+    if concept_id in _RATING:
+        return ComparisonRule(
+            concept_id=concept_id,
+            comparison_class="rating",
+            note="quality is real but no feed number measures it",
+        )
+    # Anything PicWise does not recognise is `fit`, by the owner's decision of
+    # 2026-10-12. This is the safe direction and the only honest one: claiming a best
+    # requires knowing what makes this kind of thing better, and an unknown kind is
+    # exactly the case where PicWise does not know. The default used to be `rating`,
+    # which would have let the engine claim a best tablecloth or a best wine -- both
+    # kinds the taxonomy does not carry. A kind that belongs in `rating` or `spec` is
+    # added to the sets above, deliberately, rather than arriving there by omission.
     return ComparisonRule(
         concept_id=concept_id,
-        comparison_class="rating",
-        note="quality is real but no feed number measures it",
+        comparison_class="fit",
+        note="not a kind PicWise recognises, so no best is claimed",
     )
 
 
@@ -263,8 +349,17 @@ def comparison_rule(concept_id: str) -> ComparisonRule:
 
 
 def kinds_without_a_best() -> tuple[str, ...]:
-    """The kinds where PicWise must not claim a best, and offers "see more" instead."""
+    """The kinds listed as having no best, where PicWise offers "see more" instead.
+
+    An unrecognised kind is treated the same way but is not listed here: this is the
+    vocabulary, not the behaviour.
+    """
     return tuple(sorted(_FIT))
+
+
+def kinds_judged_by_rating() -> tuple[str, ...]:
+    """The kinds where quality is real and only a rating can separate them."""
+    return tuple(sorted(_RATING))
 
 
 def kinds_with_a_ranking_criterion() -> tuple[str, ...]:

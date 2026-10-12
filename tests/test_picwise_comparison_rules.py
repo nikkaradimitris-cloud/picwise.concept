@@ -30,6 +30,7 @@ from picwise_taxonomy.comparison_rules import (  # noqa: E402
     MATCHING_CRITERIA,
     RANKING_CRITERIA,
     comparison_rule,
+    kinds_judged_by_rating,
     kinds_with_a_ranking_criterion,
     kinds_without_a_best,
 )
@@ -40,7 +41,10 @@ class OwnersExamplesTests(unittest.TestCase):
 
     def test_shoes_a_bag_and_home_textiles_claim_no_best(self) -> None:
         for concept_id in ("shoes", "bag", "handbag", "curtains", "bed_linen", "towels",
-                           "dress", "ring", "wall_clock"):
+                           "dress", "ring", "wall_clock",
+                           # Furniture, moved here by the owner on 2026-10-12.
+                           "bed", "mattress", "sofa", "chair", "desk", "table",
+                           "wardrobe", "shelving"):
             with self.subTest(concept_id=concept_id):
                 rule = comparison_rule(concept_id)
                 self.assertEqual(rule.comparison_class, "fit")
@@ -126,8 +130,8 @@ class SpecClassTests(unittest.TestCase):
 class RatingClassTests(unittest.TestCase):
     """Quality is real, no feed number measures it, so only a rating separates them."""
 
-    def test_a_tool_or_an_appliance_without_a_number_falls_to_rating(self) -> None:
-        for concept_id in ("drill", "frying_pan", "shampoo", "child_car_seat", "kettle",
+    def test_a_tool_or_an_appliance_without_a_number_is_judged_by_rating(self) -> None:
+        for concept_id in ("drill", "shampoo", "child_car_seat", "kettle",
                            "camera", "amplifier", "speaker"):
             with self.subTest(concept_id=concept_id):
                 rule = comparison_rule(concept_id)
@@ -135,10 +139,28 @@ class RatingClassTests(unittest.TestCase):
                 self.assertTrue(rule.supports_best)
                 self.assertFalse(rule.shows_see_more)
 
-    def test_an_unknown_kind_falls_to_rating_not_to_a_best_claim_on_price(self) -> None:
-        rule = comparison_rule("something_picwise_has_never_seen")
-        self.assertEqual(rule.comparison_class, "rating")
-        self.assertEqual(rule.ranking_criteria, tuple())
+    def test_a_kind_picwise_does_not_recognise_claims_no_best(self) -> None:
+        # Owner decision, 2026-10-12: the default is `fit`. Claiming a best requires
+        # knowing what makes that kind of thing better, and an unrecognised kind is
+        # exactly the case where PicWise does not know. Wine and a tablecloth are the
+        # owner's own examples, and neither is in the eighteen mega-categories.
+        for concept_id in ("wine", "tablecloth", "olive_oil",
+                           "something_picwise_has_never_seen"):
+            with self.subTest(concept_id=concept_id):
+                rule = comparison_rule(concept_id)
+                self.assertEqual(rule.comparison_class, "fit")
+                self.assertFalse(rule.supports_best)
+                self.assertTrue(rule.shows_see_more)
+                self.assertEqual(rule.ranking_criteria, tuple())
+
+    def test_nothing_reaches_a_best_claim_by_omission(self) -> None:
+        # The consequence of that default: every kind allowed to carry a best is named
+        # in one of the two sets, so a kind can never acquire one by being forgotten.
+        allowed = set(kinds_judged_by_rating()) | set(kinds_with_a_ranking_criterion())
+        for concept in get_product_concepts():
+            if comparison_rule(concept.concept_id).supports_best:
+                with self.subTest(concept_id=concept.concept_id):
+                    self.assertIn(concept.concept_id, allowed)
 
     def test_performance_goods_are_separated_from_their_fashion_twins(self) -> None:
         # A safety boot has a standard to meet; a sandal has a style. Deliberate, and
