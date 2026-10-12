@@ -6,7 +6,8 @@
 
 Reports what the site will actually be able to do with the feed:
 
-- how many rows parse, how many products are card-eligible (in stock, priced, linked)
+- how many rows parse, how many products are card-eligible (in stock, priced, linked,
+  described) and which merchants send no description, so are never shown
 - which of Awin's columns are present, and which useful ones are missing
 - merchants and currencies in the feed
 - how many products PicWise recognises as a known kind of product, and the feed
@@ -65,8 +66,16 @@ def main() -> None:
     from picwise_nlu.product_concepts import get_product_concepts_by_id
     from picwise_providers.awin_adapter import awin_feed_config_from_env, load_awin_provider_feed
     from picwise_providers.product_condition import NEW_CONDITION_VALUES, stated_condition
+    from picwise_providers.product_description import (
+        DESCRIPTION_MIN_CHARS,
+        has_sufficient_description,
+    )
     from picwise_providers.search_selection import product_non_new_condition
-    from picwise_providers.state import load_eligible_provider_feed_products
+    from picwise_providers.offer_health import evaluate_product_eligibility
+    from picwise_providers.state import (
+        build_feed_availability_context,
+        load_eligible_provider_feed_products,
+    )
     from picwise_search.live_search_resolver import resolve_live_search
     from picwise_surface import provider_feed_cards_will_render
 
@@ -91,8 +100,48 @@ def main() -> None:
     print("  useful columns present:", ", ".join(present) or "-")
     print("  useful columns missing:", ", ".join(missing) or "-")
 
-    eligible = load_eligible_provider_feed_products(config)
-    print(f"Card-eligible products: {len(eligible)} of {len(products)}")
+    # Two gates, and the tool used to report the first under the second's name. The
+    # feed gate (`picwise_providers.eligibility`) decides whether a row became a
+    # usable product at all; the card gate (`evaluate_product_eligibility`) decides
+    # whether a search may show it, and it is the one that answers "what will the site
+    # do with this feed". Everything below is counted over the products that can
+    # actually be shown.
+    feed_eligible = load_eligible_provider_feed_products(config)
+    feed_ctx = build_feed_availability_context(feed_eligible)
+    card_results = [
+        (product, evaluate_product_eligibility(product, feed_ctx=feed_ctx))
+        for product in feed_eligible
+    ]
+    eligible = [product for product, result in card_results if result.card_eligible]
+    print(f"Feed-eligible products: {len(feed_eligible)} of {len(products)} rows")
+    print(f"Card-eligible products (a search may show these): {len(eligible)}")
+    blocked = Counter(
+        code for _product, result in card_results if not result.card_eligible
+        for code in result.reason_codes
+    )
+    for code, count in blocked.most_common(8):
+        print(f"    {count:6d}  {code}")
+
+    # The description rule (owner, 2026-10-12): nothing is shown without one, so the
+    # shops that send none lose every product they have. Reported per merchant because
+    # that is the level the owner can act on -- a shop that describes nothing can be
+    # dropped from the feed, or asked to fill the column.
+    thin = Counter()
+    per_merchant = Counter()
+    for product in feed_eligible:
+        merchant = " ".join(str((product.raw or {}).get("merchant_name") or "?").split())
+        per_merchant[merchant] += 1
+        if not has_sufficient_description(product.raw or {}, title=product.title):
+            thin[merchant] += 1
+    total_thin = sum(thin.values())
+    print(
+        f"No usable description (never shown, {DESCRIPTION_MIN_CHARS}+ characters needed): "
+        f"{total_thin} of {len(feed_eligible)} feed-eligible products"
+    )
+    for merchant, count in thin.most_common(8):
+        share = count * 100 // max(1, per_merchant[merchant])
+        note = " -- this shop describes nothing" if share == 100 else ""
+        print(f"    {count:6d}  {merchant} ({share}% of its {per_merchant[merchant]} rows){note}")
 
     # Non-new stock, which is hidden unless a buyer asks for that condition (owner
     # decision, 2026-10-10). Worth knowing how much of the feed that is.

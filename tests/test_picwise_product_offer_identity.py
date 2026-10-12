@@ -18,9 +18,10 @@ import unittest
 from pathlib import Path
 from urllib.parse import urlencode
 
-ROOT = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 SRC = ROOT / "src"
-for path in (ROOT, SRC):
+for path in (HERE, ROOT, SRC):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
@@ -33,11 +34,12 @@ from picwise_providers.search_selection import (  # noqa: E402
     resolve_query_token_plan,
 )
 from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
+from fixture_support import fixture_description  # noqa: E402
 
 _COLUMNS = (
     "aw_product_id", "product_name", "brand_name", "merchant_category", "product_type",
     "aw_deep_link", "aw_image_url", "search_price", "currency", "in_stock", "merchant_name",
-    "ean", "mpn", "data_provenance",
+    "ean", "mpn", "description", "data_provenance",
 )
 
 
@@ -53,7 +55,11 @@ def _offer(pid: str, title: str, price: str, **raw: str) -> ProviderProduct:
         price_text=price,
         availability_text="in stock",
         currency=raw.pop("currency", "GBP"),
-        raw={"product_type": "Mobile Phones", **raw},
+        raw={
+            "product_type": "Mobile Phones",
+            "description": fixture_description(),
+            **raw,
+        },
     )
 
 
@@ -126,6 +132,7 @@ class DeployedSurfaceIdentityTests(unittest.TestCase):
                         "merchant_category": "Mobile Phones", "product_type": "Mobile Phones",
                         "aw_deep_link": f"https://fixture.example.invalid/out/{pid}",
                         "aw_image_url": f"https://fixture.example.invalid/img/{pid}.jpg",
+                        "description": fixture_description(),
                         "search_price": price, "currency": "GBP", "in_stock": "1",
                         "merchant_name": merchant, "ean": ean, "mpn": "", "data_provenance": "local_test_fixture",
                     }

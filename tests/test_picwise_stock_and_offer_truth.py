@@ -25,9 +25,10 @@ import unittest
 from pathlib import Path
 from urllib.parse import urlencode
 
-ROOT = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 SRC = ROOT / "src"
-for path in (ROOT, SRC):
+for path in (HERE, ROOT, SRC):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
@@ -40,11 +41,12 @@ from picwise_providers.offer_health import (  # noqa: E402
     interpret_availability_state,
 )
 from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
+from fixture_support import fixture_description  # noqa: E402
 
 _COLUMNS = (
     "aw_product_id", "product_name", "brand_name", "merchant_category", "product_type",
     "aw_deep_link", "aw_image_url", "search_price", "currency", "in_stock", "stock_status",
-    "merchant_name", "condition", "is_for_sale", "pre_order", "valid_to", "data_provenance",
+    "merchant_name", "condition", "description", "is_for_sale", "pre_order", "valid_to", "data_provenance",
 )
 
 
@@ -63,6 +65,7 @@ def _row(pid: str, name: str, price: str, **fields: str) -> dict[str, str]:
         "stock_status": "in stock",
         "merchant_name": "Fixture Store One",
         "condition": "new",
+        "description": fixture_description(),
         "is_for_sale": "1",
         "pre_order": "0",
         "valid_to": "",
@@ -84,7 +87,11 @@ def _product(pid: str, **raw: str) -> ProviderProduct:
         price_text="20.00",
         availability_text=str(raw.get("in_stock") or raw.get("stock_status") or ""),
         currency="GBP",
-        raw={"product_type": "Kettles", **raw},
+        raw={
+            "product_type": "Kettles",
+            "description": fixture_description(),
+            **raw,
+        },
     )
 
 

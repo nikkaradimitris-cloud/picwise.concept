@@ -22,20 +22,22 @@ import unittest
 from pathlib import Path
 from urllib.parse import urlencode
 
-ROOT = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 SRC = ROOT / "src"
-for path in (ROOT, SRC):
+for path in (HERE, ROOT, SRC):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
 from api.index import app as wsgi_app  # noqa: E402
 from picwise_providers.awin_adapter import clear_awin_feed_parse_cache  # noqa: E402
 from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
+from fixture_support import fixture_description  # noqa: E402
 
 _COLUMNS = (
     "aw_product_id", "product_name", "brand_name", "product_type", "merchant_category",
     "aw_deep_link", "aw_image_url", "search_price", "currency", "in_stock", "merchant_name",
-    "data_provenance",
+    "description", "data_provenance",
 )
 
 
@@ -50,7 +52,7 @@ class ProductKindReadingTests(unittest.TestCase):
                     [pid, title, title.split()[0], kind, kind,
                      f"https://fixture.example.invalid/out/{pid}",
                      f"https://fixture.example.invalid/img/{pid}.jpg", price, "GBP", "1",
-                     "Fixture Store One", "local_test_fixture"]
+                     "Fixture Store One", fixture_description(), "local_test_fixture"]
                 )
         previous = os.environ.get("AWIN_FEED_FILE")
         os.environ["AWIN_FEED_FILE"] = str(path)

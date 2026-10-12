@@ -171,6 +171,26 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 
 ## Next engineering steps, in order
 
+0. ~~Every product shown carries availability, a price, an image and a description.~~
+   **Done, 2026-10-12** (owner rule; recorded in `docs/PICWISE_DECISION_CONTRACT.md`,
+   section "What a product must carry to be shown"). The first three were already
+   required for a card; the description is new, lives in
+   `picwise_providers.product_description`, and is read by both the card gate and
+   `tools/check_awin_feed.py`. It costs 1,495 of the real feed's 11,573 products, and
+   the cost is per shop, not per kind: Geekbuying (877) and Xiaomi RO (66) send no
+   descriptions at all, so the kinds only they carry -- televisions, TV boxes, vacuum
+   cleaners, robot vacuums, treadmills, and nearly all watches, smartwatches and
+   projectors -- no longer appear. The owner was told before it went in. The feed tool
+   prints it per shop so the choice (ask the shop, or drop it from the feed) is visible.
+   Two gotchas found while doing it, both now fixed: `tools/check_awin_feed.py` was
+   reporting the **feed** eligibility gate under the name of the **card** gate, so it
+   claimed 11,573 of 11,573 showable when the real number is 9,954; and every provider
+   fixture in `tests/` needed a description, which `tests/fixture_support.py` now
+   supplies in text that names no product, because a description is a field the search
+   ranks on and fixture text mentioning the product would hand each row free evidence
+   for its own kind.
+   `tests/test_picwise_product_description_rule.py` (14 tests).
+
 0. ~~Refurbished / used products must appear only when the buyer asks for them.~~
    **Done, 2026-10-10, on `main` since 2026-10-11** (owner decision; recorded in `docs/PICWISE_DECISION_CONTRACT.md`,
    section "Item Condition"). A product the feed calls not new is no longer a candidate

@@ -23,9 +23,10 @@ import unittest
 from pathlib import Path
 from urllib.parse import urlencode
 
-ROOT = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 SRC = ROOT / "src"
-for path in (ROOT, SRC):
+for path in (HERE, ROOT, SRC):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
@@ -34,6 +35,7 @@ from picwise_providers.awin_adapter import clear_awin_feed_parse_cache  # noqa: 
 from picwise_providers.contracts import ProviderProduct  # noqa: E402
 from picwise_providers.search_selection import _spread_across_price  # noqa: E402
 from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
+from fixture_support import fixture_description  # noqa: E402
 
 FIXTURE_CSV = ROOT / "tests" / "fixtures" / "provider_feed_local_test_fixture.csv"
 _COLUMNS = (
@@ -55,7 +57,10 @@ def _offer(pid: str, price: str, currency: str = "GBP") -> ProviderProduct:
         price_text=price,
         availability_text="in stock",
         currency=currency,
-        raw={"product_type": "Kettles"},
+        raw={
+            "product_type": "Kettles",
+            "description": fixture_description(),
+        },
     )
 
 
@@ -151,7 +156,8 @@ def _kettle(pid: str, name: str, price: str, **fields: str) -> dict[str, str]:
         "aw_deep_link": f"https://fixture.example.invalid/out/{pid}",
         "aw_image_url": f"https://fixture.example.invalid/img/{pid}.jpg",
         "search_price": price, "currency": "GBP", "in_stock": "1", "stock_status": "in stock",
-        "merchant_name": "Fixture Store One", "description": "", "keywords": "",
+        "merchant_name": "Fixture Store One", "description": fixture_description(),
+        "keywords": "",
         "ean": "", "valid_to": "", "data_provenance": "local_test_fixture",
     }
     row.update(fields)
@@ -205,7 +211,12 @@ class DeployedPriceRangeTests(_FeedCase):
     def test_merchant_free_text_does_not_buy_a_place(self) -> None:
         self._serve_rows(
             [
-                _kettle("d15", "Fixturon Aero Kettle", "15.00", description="the best kettle"),
+                _kettle(
+                    "d15",
+                    "Fixturon Aero Kettle",
+                    "15.00",
+                    description=fixture_description("The best kettle."),
+                ),
                 _kettle("d10", "Testline Boil Kettle", "10.00"),
                 _kettle("d20", "Sampleworks Steam Kettle", "20.00"),
                 _kettle("d30", "Fixturon Mini Kettle", "30.00"),

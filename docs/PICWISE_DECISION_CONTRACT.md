@@ -159,3 +159,40 @@ Implemented in `search_selection` (`_non_new_condition`,
 `_choose_shown_products_for_condition`, `_condition_request_report`,
 `decide_recommended_provider_product`) and read in `concept_understanding`
 (`read_condition_request`). Pinned by `tests/test_picwise_condition_request.py`.
+
+## What a product must carry to be shown, decided by the owner, 2026-10-12
+
+Owner rule, in their words: "Τα προϊόντα που παρουσιάζει η πλατφόρμα πρέπει πάντα να
+έχουν διαθεσιμότητα τιμή επαρκή περιγραφή ... καθώς και εικόνα" -- the products the
+platform presents must **always** have availability, a price, a sufficient description
+and an image. The description is named partly for the buyer and partly so the pages
+PicWise publishes are not thin content.
+
+Availability, a price, an image, a readable currency and a product type or category
+were already required of every card (`offer_health.evaluate_product_eligibility`). The
+description is the new one:
+
+- The rule lives in `picwise_providers.product_description`, read by both the card
+  gate and `tools/check_awin_feed.py`, so what is required and what is reported cannot
+  drift apart.
+- "Sufficient" is `DESCRIPTION_MIN_CHARS` (120) characters of text a reader would see.
+  HTML is stripped first, entities count as the one character they stand for, and the
+  longest of `description`, `product_short_description` and `specifications` is used.
+- A description that only repeats the product's title does not count. Filling the
+  column with the product name adds nothing for a reader or a search engine, and
+  counting it would admit exactly the thin page the rule exists to prevent.
+- A product without one is not a candidate at all: it cannot be shown, counted as a
+  match, or recommended. A kind of product with fewer than four described products
+  therefore shows no four, which is the honest outcome, not a bug.
+
+**What it costs, measured on the first real feed (11,573 products, 2026-10-12):** 1,495
+products, and the cost falls on shops rather than kinds. Two merchants send no
+description at all -- Geekbuying (877 products) and Xiaomi RO (66) -- while every other
+shop in the feed fills them on 88% to 100% of its rows. Those two carry whole kinds
+that consequently stop appearing: televisions, TV boxes, vacuum cleaners, robot
+vacuums and treadmills entirely, and all but a handful of watches, smartwatches and
+projectors. `tools/check_awin_feed.py` reports this per shop, so the choice it leaves
+the owner -- ask the shop to fill the column, or drop the shop from the feed -- is
+visible before a search returns nothing.
+
+Pinned by `tests/test_picwise_product_description_rule.py` (14 tests).

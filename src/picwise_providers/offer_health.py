@@ -13,6 +13,7 @@ from .contracts import (
     RECOMMENDATION_CONFIDENCE_LEVELS,
 )
 from .normalization import is_valid_http_url
+from .product_description import has_sufficient_description
 
 _AFFILIATE_URL_KEYS = (
     "affiliate_url",
@@ -524,6 +525,14 @@ def evaluate_product_eligibility(
         reason_codes.append("missing_currency")
     if not _has_product_type_or_category_evidence(product):
         reason_codes.append("missing_product_type_or_category_evidence")
+    # Owner rule (2026-10-12): a product PicWise shows always carries a description,
+    # not only a price, an image and availability. A card without one tells the buyer
+    # nothing the title did not, and the page built from it is thin content.
+    if not has_sufficient_description(
+        product.raw if isinstance(product.raw, Mapping) else {},
+        title=product.title,
+    ):
+        reason_codes.append("missing_product_description")
 
     if offer_health.availability_state == "out_of_stock":
         reason_codes.append("availability_out_of_stock")
