@@ -8,6 +8,9 @@ Reports what the site will actually be able to do with the feed:
 
 - how many rows parse, how many products are card-eligible (in stock, priced, linked,
   described) and which merchants send no description, so are never shown
+- what each shop actually fills in, which is the choice the feed leaves its owner:
+  Awin passes a merchant's own upload through, so a shop that sends no description or
+  no specifications cannot be made to by any feed setting -- only by dropping it
 - which of Awin's columns are present, and which useful ones are missing
 - merchants and currencies in the feed
 - how many products PicWise recognises as a known kind of product, and the feed
@@ -142,6 +145,40 @@ def main() -> None:
         share = count * 100 // max(1, per_merchant[merchant])
         note = " -- this shop describes nothing" if share == 100 else ""
         print(f"    {count:6d}  {merchant} ({share}% of its {per_merchant[merchant]} rows){note}")
+
+    # Data quality per shop. Measured on 2026-10-12 after the owner asked whether the
+    # thin feed was a Create-a-Feed setting: it is not. All 149 Awin columns were
+    # present and `specifications` was filled by three shops (one at 100%), so the
+    # columns a feed arrives with are a merchant's own upload, not a checkbox. Which
+    # makes this table the decision the owner actually has: which shops to keep.
+    quality_keys = (
+        ("desc", "description"),
+        ("specs", "specifications"),
+        ("type", "product_type"),
+        ("brand", "brand_name"),
+        ("ean", "ean"),
+        ("rating", "average_rating"),
+    )
+    filled: dict[str, Counter] = {}
+    for product in feed_eligible:
+        raw = product.raw if isinstance(product.raw, dict) else {}
+        merchant = " ".join(str(raw.get("merchant_name") or "?").split())
+        counts = filled.setdefault(merchant, Counter())
+        counts["rows"] += 1
+        if has_sufficient_description(raw, title=product.title):
+            counts["description"] += 1
+        for _label, column in quality_keys[1:]:
+            value = " ".join(str(raw.get(column) or "").split())
+            if value and not (column == "average_rating" and value in {"0", "0.0"}):
+                counts[column] += 1
+    print("\nWhat each shop actually sends (share of its own rows):")
+    header = f"    {'shop':<26}{'rows':>6}" + "".join(f"{label:>8}" for label, _c in quality_keys)
+    print(header)
+    for merchant, counts in sorted(filled.items(), key=lambda item: -item[1]["rows"])[:15]:
+        rows = counts["rows"]
+        line = f"    {merchant[:25]:<26}{rows:>6}"
+        line += "".join(f"{counts[column] * 100 // rows:>7}%" for _label, column in quality_keys)
+        print(line)
 
     # Non-new stock, which is hidden unless a buyer asks for that condition (owner
     # decision, 2026-10-10). Worth knowing how much of the feed that is.

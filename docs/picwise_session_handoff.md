@@ -118,6 +118,35 @@ guide for the owner), `docs/picwise_query_understanding.md`,
    (flowers, wine, perfume, fashion), so many searches will truthfully show no four.
    `tools/check_awin_feed.py` now also reports how much of the feed is not new ("Not
    new (shown only when asked for): n of m eligible"), worth reading on the real feed.
+1b. **Shops, not feed settings, decide what data PicWise has.** The owner asked on
+   2026-10-12 whether the thin feed was a Create-a-Feed misconfiguration -- a
+   reasonable guess, and it is answered: no. The feed arrives with **all 149 Awin
+   columns**, nothing was left unchecked, and `specifications` is filled by three of
+   its shops (Baccus 100%, 4x4 Predator 79%, LIKA 100%), so the column works and the
+   emptiness is each merchant's own upload. Awin passes a merchant's file through
+   unchanged, so no setting on the owner's side can make a shop send descriptions or
+   specifications. What each shop sends, measured:
+
+   | Shop | Rows | Description | Specs | product_type | Brand | EAN |
+   | --- | --- | --- | --- | --- | --- | --- |
+   | Boxed2me | 3,474 | 97% (median 598 chars) | 0% | 99% | 100% | 94% |
+   | Aperturee | 1,802 | 100% (298) | 0% | 0% | 100% | 0% |
+   | TV Cables | 1,745 | 81% (258) | 0% | 0% | 100% | 0% |
+   | **Geekbuying** | **877** | **0% (column empty)** | 0% | 0% | 0% | 0% |
+   | Cerqular | 672 | 97% | 0% | 100% | 100% | 11% |
+   | Tooled Up | 423 | 98% | 0% | 0% | 100% | 100% |
+   | 4x4 Predator | 109 | 100% | **79%** | 100% | 0% | 42% |
+   | Baccus (UK) | 18 | 100% | **100%** | 100% | 0% | 0% |
+
+   Two shops are worth naming. **Geekbuying** (877 products: the televisions, TV
+   boxes, vacuum cleaners, robot vacuums and treadmills) sends a title, a price and
+   nothing else -- no description, no product type, no brand, no EAN. **Xiaomi RO**
+   (66 products) does send a `description`, but it is the product's own name repeated
+   ("Xiaomi TV S Pro Mini LED 55'' 2026", median 27 characters), which is exactly the
+   case `product_description.product_description_text` rejects. So the owner's lever
+   is which shops go into the feed, and `tools/check_awin_feed.py` now prints this
+   table for any feed so the decision can be made on measurement.
+
 2. **A feed that carries real product ratings.** The owner decided on 2026-10-11 that
    the recommendation must follow a product's rating rather than its price, and the
    current feed has none at all (`check_awin_feed.py` now reports this as "Products
