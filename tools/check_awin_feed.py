@@ -259,6 +259,54 @@ def main() -> None:
     else:
         print("  no merchant in this feed provides a usable rating (0 and empty do not count)")
 
+    # The verdict, so a feed is judged in one glance rather than read as a table. The
+    # criteria are the owner's, taken on 2026-10-12: a shop whose products cannot be
+    # found in a product database can never be enriched and so can never be ranked on
+    # anything but price, and is rejected until its data changes; and the decisive
+    # question for the whole project is whether any shop sends a real rating at all.
+    print("\nVERDICT")
+    if rating_rows:
+        shops_with_ratings = len(rated)
+        print(
+            f"  RATINGS FOUND: {rating_rows} products from {shops_with_ratings} shop(s). "
+            "This feed can rank on the owner's first criterion."
+        )
+    else:
+        print(
+            "  NO RATINGS. No shop in this feed sends one, so nothing here can be "
+            "ranked on the product's rating -- the owner's first criterion."
+        )
+    # A shop is kept when its products can be judged, by either route: it sends the
+    # specifications itself, or it sends an identifier so a product database can. The
+    # first draft of this rule failed 4x4 Predator for being only 42% findable while
+    # it sends specifications on 79% of its rows -- a shop that already carries what
+    # the database would have supplied does not need the database.
+    keep, reject = [], []
+    for merchant, counts in filled.items():
+        rows = counts["rows"]
+        findable = counts["__identity__"] * 100 // rows
+        described = counts["description"] * 100 // rows
+        specified = counts["specifications"] * 100 // rows
+        judgeable = findable >= 50 or specified >= 50
+        (keep if judgeable and described >= 50 else reject).append(
+            (merchant, rows, findable, described, specified)
+        )
+    for label, rows_of in (("KEEP", keep), ("REJECT (temporarily)", reject)):
+        rows_of.sort(key=lambda row: -row[1])
+        total = sum(row[1] for row in rows_of)
+        print(f"  {label}: {len(rows_of)} shops, {total} products")
+        for merchant, rows, findable, described, specified in rows_of[:12]:
+            why = []
+            if findable < 50 and specified < 50:
+                why.append(
+                    f"{findable}% findable in a product database and {specified}% "
+                    "send their own specifications"
+                )
+            if described < 50:
+                why.append(f"only {described}% described")
+            note = f"  -- {', '.join(why)}" if why else ""
+            print(f"      {rows:6d}  {merchant[:34]}{note}")
+
     merchants = Counter(str((p.raw or {}).get("merchant_name") or "?") for p in products)
     currencies = Counter(str(p.currency or "?") for p in products)
     print("Merchants:", ", ".join(f"{name} ({count})" for name, count in merchants.most_common(10)))
