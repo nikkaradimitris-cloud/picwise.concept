@@ -343,3 +343,32 @@ Premium, in which "Best Overall" is explicitly not "most of everything". Balanci
 specification against price is a weight, so it is not invented here.
 
 Pinned by `tests/test_picwise_specs_outrank_price.py` (10 tests).
+
+## The main judgement, stated by the owner 2026-10-13
+
+> Η κύρια κρίση μας πρέπει να βγαίνει από το πόσοι το αγόρασαν το προϊόν και πώς το
+> βαθμολόγησε ο κόσμος. Όλα τα υπόλοιπα είναι γύρω από αυτή την κρίση.
+
+The main judgement rests on **two** numbers together, not one:
+
+1. **How many people bought it** -- the weight of evidence behind the score.
+2. **How they rated it** -- the score itself.
+
+This sharpens what was recorded on 2026-10-12 as "the rating first". A rating alone is
+not the criterion: a 5.0 from two buyers is not a better product than a 4.6 from nine
+hundred, and the first number is what separates them. Everything already built --
+the condition rule, the one currency, the price zones, the comparison classes, the
+specification ranking, the "see more" -- sits around that judgement rather than
+replacing it.
+
+**Nothing further is built until a feed carries those numbers.** Owner instruction,
+the same day. Which fields they arrive in is a question for the feed that brings them;
+`tools/check_awin_feed.py` already reports, on the first line of its verdict, whether
+any shop sends a real rating, and the per-shop table shows which do.
+
+What this implies about sources, recorded so the search does not have to be redone:
+a review count is the readable proxy for "how many bought it", because no affiliate
+feed carries sales volume. The one source found in this session that states both a
+score and a volume directly is the AliExpress affiliate API (`evaluate_rate` plus
+sales volume), and the marketplaces are the places where both exist at all, because a
+small shop has neither. See `docs/picwise_rating_sources.md`.
