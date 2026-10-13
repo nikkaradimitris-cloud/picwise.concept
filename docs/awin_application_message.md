@@ -1,18 +1,21 @@
 # Application message for Awin advertisers
 
-The owner's own wording, in English. Short on purpose: these are read in twenty
-seconds.
+Short on purpose: these are read in twenty seconds.
 
 ---
 
 > **PicWise**
 >
-> PicWise is a product search engine built to send buyers with high purchase intent
-> straight to the product they are looking for.
+> PicWise is a product search engine for shoppers who have already decided to buy and
+> only need to settle on which one. We take them from their search to the right
+> product page in a single step.
 >
-> To do that well we need the data behind the product: customer ratings, availability
-> and specifications. Our aim is to generate the maximum number of sales for you —
-> every conversion is what creates the value in PicWise.
+> How well we do that depends entirely on the product data we have to work with —
+> customer ratings, availability and specifications. Where a retailer's data is
+> strong, we can put its products in front of exactly the right buyer.
+>
+> Our interest is the same as yours: PicWise earns only when a visitor buys, so we are
+> built to send you buyers rather than clicks that go nowhere.
 >
 > We would like access to your product feed, including the rating and review count
 > fields where your platform provides them.
@@ -23,12 +26,14 @@ seconds.
 
 ## Shorter, for a small form
 
-> PicWise is a product search engine that sends high purchase-intent buyers straight
-> to the product they want. We need ratings, availability and specifications to do it
-> well. Our aim is maximum sales for you — every conversion is what creates our value.
+> PicWise is a product search engine for shoppers who have already decided to buy and
+> only need to choose which one — we take them straight to the right product page. How
+> well that works depends on the product data available: ratings, availability and
+> specifications. PicWise earns only when a visitor buys, so our interest is the same
+> as yours.
 
 ## After they approve you
 
 > Does your Awin product feed populate `average_rating` and the review count? We use
-> the product rating to send the buyer to the right product, and your site collects
-> them already. If they are not in the feed, is it possible to include them?
+> the product rating to send a buyer to the right product, and your site collects them
+> already. If they are not currently in the feed, is it possible to include them?
