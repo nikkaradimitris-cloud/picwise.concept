@@ -33,6 +33,16 @@ _REQUIRED_FEED_PRODUCT_FIELDS = (
 _FEED_RECOMMENDATION_REASON_LABELS = {
     # What separated the recommended choice from the rest; always listed first.
     "closer_search_match": "Matches your search more closely than the other choices",
+    # A specification decides before the price does, where the kind of product has one
+    # whose direction no buyer would dispute and at least two of the four state it.
+    # The wording says "that state it" because some of the four may not have.
+    "better_storage": "More storage than the other choices that state theirs",
+    "better_battery": "Larger battery than the other choices that state theirs",
+    "better_playtime": "Longer stated battery life than the other choices that state theirs",
+    # Not readable from a feed yet, and labelled now so that the day one is, the card
+    # has words for it rather than falling silent.
+    "better_warranty": "Longer warranty than the other choices that state theirs",
+    "better_efficiency_class": "Better energy rating than the other choices that state theirs",
     "price_tie_breaker": "Lowest price among the choices that match your search equally",
     "tie_on_search_match_and_price": (
         "Matches your search as closely as another choice, at the same price; "

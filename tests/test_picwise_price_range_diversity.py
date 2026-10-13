@@ -228,8 +228,14 @@ class DeployedPriceRangeTests(_FeedCase):
         # 399, 529, 749, 899, 1099, 1249 are equivalent: cheapest, two between, dearest.
         # Alphabetical order used to drop both Testline laptops (529, 899).
         self.assertEqual(shown, ["fx-laptop-4", "fx-laptop-1", "fx-laptop-5", "fx-laptop-3"])
-        self.assertEqual(recommended, "fx-laptop-4")
-        self.assertIn("Lowest price among the choices that match your search equally", body)
+        # Which four are shown is a price-range question and is unchanged. Which one is
+        # recommended is not: since 2026-10-13 a stated specification decides before
+        # the price, and a laptop is ranked on storage. `fx-laptop-3` states 1TB where
+        # `fx-laptop-4` states 128GB, so the recommendation moved off the cheapest --
+        # which is the owner's rule working, not a regression.
+        self.assertEqual(recommended, "fx-laptop-3")
+        self.assertIn("More storage than the other choices that state theirs", body)
+        self.assertNotIn("Lowest price among the choices that match your search equally", body)
 
     def test_hard_filters_hold_before_the_range_is_taken(self) -> None:
         self._serve_rows(

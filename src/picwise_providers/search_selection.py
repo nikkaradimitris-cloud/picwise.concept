@@ -21,6 +21,7 @@ from picwise_taxonomy.comparison_rules import comparison_rule
 from .contracts import FeedAvailabilityContext, OfferHealth, ProviderProduct
 from .normalization import extract_merchant_name
 from .decision_labels import parse_price_amount
+from .product_specs import read_product_specs
 from .product_condition import (
     non_new_condition,
     product_text_for_condition,
@@ -1763,7 +1764,56 @@ def _comparable_tie_break_prices(
     return amounts
 
 
-def _deciding_reason_code(sorted_keys: list[tuple[Any, ...]], choice_count: int) -> str:
+def _comparable_ranking_property(
+    products: tuple[ProviderProduct, ...],
+    concept_id: str,
+) -> tuple[str, dict[int, float]]:
+    """The one specification these products can be ranked on, and each one's value.
+
+    Owner's rule, from 2026-10-11 onward: the recommendation must not rest on price.
+    Where the feed states a specification whose direction no buyer would dispute --
+    storage, battery, runtime -- that specification decides instead, and price falls
+    back to being the last resort it was always meant to be.
+
+    Three conditions, all of them about not overclaiming:
+
+    - The **kind of product** must have a ranking criterion at all
+      (`picwise_taxonomy.comparison_rules`). More watts is not a better amplifier and
+      more metres is not a better cable, so those kinds never reach here.
+    - **At least two** of the four must state the same property. One product stating
+      its battery is not a comparison, it is a fact about one product.
+    - Every value is read from what the feed **stated as a property**
+      (`picwise_providers.product_specs`), never from a number loose in marketing
+      prose.
+
+    Returns ("", {}) when the four cannot be compared this way, which is the normal
+    case on a feed without specifications, and then nothing here changes the order.
+    """
+    criteria = comparison_rule(concept_id).ranking_criteria if concept_id else tuple()
+    if not criteria:
+        return "", {}
+    stated: dict[str, dict[int, float]] = {}
+    for product in products:
+        raw = product.raw if isinstance(product.raw, dict) else {}
+        for spec in read_product_specs(raw, title=product.title):
+            if spec.property_id in criteria and spec.ranks:
+                stated.setdefault(spec.property_id, {})[id(product)] = spec.value
+    # The property the most of them state; ties fall to the order the kind lists its
+    # criteria in, so the same property is chosen for every query of that kind.
+    best = ""
+    for property_id in criteria:
+        values = stated.get(property_id) or {}
+        if len(values) >= 2 and len(values) > len(stated.get(best) or {}):
+            best = property_id
+    return (best, stated[best]) if best else ("", {})
+
+
+def _deciding_reason_code(
+    sorted_keys: list[tuple[Any, ...]],
+    choice_count: int,
+    *,
+    ranking_property: str = "",
+) -> str:
     """What actually separated the recommended choice from the runner-up.
 
     Shown first on the recommended card, because it is the answer to "why this one?".
@@ -1777,10 +1827,13 @@ def _deciding_reason_code(sorted_keys: list[tuple[Any, ...]], choice_count: int)
     winner, runner_up = sorted_keys[0], sorted_keys[1]
     if winner[:2] != runner_up[:2]:
         return "closer_search_match"
-    if winner[2] == -1 and winner[2:4] < runner_up[2:4]:
+    # The specification comes before the price, which is the whole point of reading it.
+    if ranking_property and winner[2] != runner_up[2]:
+        return f"better_{ranking_property}"
+    if winner[3] == -1 and winner[3:5] < runner_up[3:5]:
         return "price_tie_breaker"
-    # Same match, same or incomparable price: only the title order is left, which is
-    # no fact about the products. Say so rather than dress it up.
+    # Same match, same specification, same or incomparable price: only the title order
+    # is left, which is no fact about the products. Say so rather than dress it up.
     return "tie_on_search_match_and_price"
 
 
@@ -1877,6 +1930,12 @@ def decide_recommended_provider_product(
     candidates: list[tuple[tuple[Any, ...], ProviderProduct]] = []
     full_scores: dict[int, int] = {}
     tie_break_prices = _comparable_tie_break_prices(selected_products)
+    # The specification these four can be ranked on, when the kind has one and at
+    # least two of them state it. Empty on a feed without specifications, and then
+    # the order below is exactly what it was.
+    ranking_property, ranking_values = _comparable_ranking_property(
+        selected_products, concept_id if concept_verified else ""
+    )
 
     for product in selected_products:
         ranking = _score_product_for_tokens(
@@ -1899,9 +1958,14 @@ def decide_recommended_provider_product(
         )
         price_value = tie_break_prices.get(str(product.provider_product_id or ""))
         has_price = 1 if price_value is not None else 0
+        # A product that does not state the property cannot win on it, and is not
+        # penalised by it either: it simply sorts below the ones that did, and the
+        # card says how many of the four stated theirs.
+        spec_value = ranking_values.get(id(product))
         sort_key = (
             -substantive_score,
             -title_matches,
+            -spec_value if spec_value is not None else float("inf"),
             -has_price,
             price_value if price_value is not None else float("inf"),
             title_key,
@@ -1933,6 +1997,7 @@ def decide_recommended_provider_product(
         # Among the condition asked for, what separated this one from the others of
         # that condition. The condition itself is stated as its own reason below.
         len(candidates) if narrowed_by_condition else len(selected_products),
+        ranking_property=ranking_property,
     )
 
     reason_codes = _recommendation_reason_codes_for_product(

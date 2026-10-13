@@ -297,3 +297,49 @@ How it behaves:
   in this kind of product, because that is the thing the buyer needs told.
 
 Pinned by `tests/test_picwise_see_more_second_four.py` (8 tests).
+
+## A stated specification decides before the price, 2026-10-13
+
+The owner's rule, held since 2026-10-11: the recommendation must not rest on price.
+Until now it did, because the feed gave nothing else -- the first reason code on a
+real answer was literally `price_tie_breaker`. This is the route out of that, and it
+works the day a feed carries the data rather than needing anything else built.
+
+Where the kind of product has a **ranking criterion** -- one whose direction no buyer
+would dispute, listed in `picwise_taxonomy.comparison_rules.RANKING_CRITERIA` -- and
+the feed **states** it, that specification decides the recommendation and price falls
+back to the last resort it was always meant to be. The order is now:
+
+1. the closest match to what the buyer asked for
+2. **the stated specification**, where the kind has one and the four state it
+3. the lowest price among choices that are equal on both
+4. and when even that cannot separate them, the card says so
+
+Three conditions stop it overclaiming, each pinned by a test:
+
+- **The kind must carry a ranking criterion.** More watts is not a better amplifier
+  and more metres is not a better cable, so those kinds never reach this rule at all.
+- **At least two of the four must state the same property.** One product stating its
+  battery is a fact about one product, not a ranking of four.
+- **The value must have been stated as a property**, read through
+  `picwise_providers.product_specs`: a number loose in marketing copy, such as "works
+  with 128 GB cards", never ranks anything.
+
+A product that does not state the property is not penalised by it -- it simply cannot
+win on it -- and the card says so in its own words: "More storage than the other
+choices **that state theirs**".
+
+**What it changes today:** almost nothing, and that is the honest measure of the feed
+rather than of the rule. On the real feed the four shown for headphones, speakers and
+cameras state no ranking criterion, so price still decides and the card still says so.
+On the local fixture it is already visible: `laptop` moves its recommendation from the
+cheapest (£399, 128GB) to the one stating 1TB (£1,249).
+
+**An open question that change exposes, for the owner.** Ranking purely by a
+specification means the largest wins regardless of price -- a £1,249 laptop
+recommended over a £399 one. That is the rule as instructed, and it may not be what is
+wanted: `concept.picwise.txt` describes four roles, Budget / Value / Best Overall /
+Premium, in which "Best Overall" is explicitly not "most of everything". Balancing a
+specification against price is a weight, so it is not invented here.
+
+Pinned by `tests/test_picwise_specs_outrank_price.py` (10 tests).
