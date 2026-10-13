@@ -98,6 +98,9 @@ class LiveSearchResolution:
     provider_feed_matched_count: int = 0
     provider_feed_selected_count: int = 0
     provider_feed_selected_products: tuple[dict[str, Any], ...] = field(default_factory=tuple)
+    # A second four, for the kinds of product that carry no "best" and are chosen by
+    # taste or fit. Empty for every other kind. See `picwise_taxonomy.comparison_rules`.
+    provider_feed_more_products: tuple[dict[str, Any], ...] = field(default_factory=tuple)
     provider_feed_decision_status: str | None = None
     provider_feed_recommended_product_id: str | None = None
     provider_feed_recommendation_reason_codes: tuple[str, ...] = field(default_factory=tuple)
@@ -151,6 +154,7 @@ class LiveSearchResolution:
             payload["provider_feed_matched_count"] = self.provider_feed_matched_count
             payload["provider_feed_selected_count"] = self.provider_feed_selected_count
             payload["provider_feed_selected_products"] = list(self.provider_feed_selected_products)
+            payload["provider_feed_more_products"] = list(self.provider_feed_more_products)
             if self.provider_feed_decision_status is not None:
                 payload["provider_feed_decision_status"] = self.provider_feed_decision_status
                 payload["provider_feed_recommended_product_id"] = self.provider_feed_recommended_product_id
@@ -414,6 +418,7 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     provider_feed_matched_count = 0
     provider_feed_selected_count = 0
     provider_feed_selected_products: tuple[dict[str, Any], ...] = ()
+    provider_feed_more_products: tuple[dict[str, Any], ...] = ()
     provider_feed_decision_status: str | None = None
     provider_feed_recommended_product_id: str | None = None
     provider_feed_recommendation_reason_codes: tuple[str, ...] = ()
@@ -499,6 +504,15 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
                                 product, feed_ctx=selection.feed_availability_context
                             )
                             for product in selection.selected_products
+                        )
+                        # The second four rides with the first: it is the same
+                        # selection, shown behind "see more" rather than separately,
+                        # so it is never exposed when the four themselves are not.
+                        provider_feed_more_products = tuple(
+                            provider_product_to_backend_dict(
+                                product, feed_ctx=selection.feed_availability_context
+                            )
+                            for product in selection.more_products
                         )
                     if recommendation.decision_status == "recommended" and not products_exposed:
                         # A weak feed-opportunity selection is reported but not exposed.
@@ -594,6 +608,7 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
         provider_feed_matched_count=provider_feed_matched_count,
         provider_feed_selected_count=provider_feed_selected_count,
         provider_feed_selected_products=provider_feed_selected_products,
+        provider_feed_more_products=provider_feed_more_products,
         provider_feed_decision_status=provider_feed_decision_status,
         provider_feed_recommended_product_id=provider_feed_recommended_product_id,
         provider_feed_recommendation_reason_codes=provider_feed_recommendation_reason_codes,

@@ -16,6 +16,7 @@ from picwise_nlu.concept_understanding import (
     understand_product_query,
     words_after_product_name,
 )
+from picwise_taxonomy.comparison_rules import comparison_rule
 
 from .contracts import FeedAvailabilityContext, OfferHealth, ProviderProduct
 from .normalization import extract_merchant_name
@@ -421,6 +422,11 @@ class ProviderProductSelectionResult:
     # The buyer's own words asking for a non-new item, when they asked. Empty means
     # they did not, and then nothing the feed calls non-new was a candidate at all.
     condition_request: tuple[str, ...] = field(default_factory=tuple)
+    # A second four, for the kinds of product where there is no "best" and the buyer
+    # is choosing by taste or by fit. Owner instruction (2026-10-12): those get a "see
+    # more" button. Empty for every other kind, and empty when the feed has no second
+    # four to give -- the button is only offered when there is something behind it.
+    more_products: tuple[ProviderProduct, ...] = field(default_factory=tuple)
     # The feed availability context the selection judged card eligibility against. The
     # exported card fields and the recommendation must read the same one.
     feed_availability_context: FeedAvailabilityContext | None = None
@@ -435,6 +441,7 @@ class ProviderProductSelectionResult:
             "matched_count": self.matched_count,
             "strong_matched_count": self.strong_matched_count,
             "selected_count": len(self.selected_products),
+            "more_count": len(self.more_products),
             "reason_codes": list(self.reason_codes),
             "unmatched_query_terms": list(self.unmatched_query_terms),
             "condition_request": list(self.condition_request),
@@ -1208,6 +1215,51 @@ def _choose_shown_products_for_condition(
     return filled
 
 
+def _next_four_after(
+    ranked: list[tuple[tuple[int, int, int, str, str], ProviderProduct]],
+    shown: list[ProviderProduct],
+    *,
+    safe_max: int,
+    fields_by_id: dict[int, dict[str, str]],
+    scoring_tokens: tuple[str, ...],
+    prefer_non_new: bool,
+) -> list[ProviderProduct]:
+    """A second four from the same candidates, chosen by exactly the same rules.
+
+    Owner instruction (2026-10-12): where a kind of product has no "best" -- a dress, a
+    bag, a tablecloth, a cable of a particular length -- the four are four different
+    answers and the buyer gets a "see more" button, because the engine cannot narrow a
+    taste for them.
+
+    The second four is the next four by relevance, spread across their own distinct
+    price zones, with everything already shown excluded. It is not a page two of a
+    list: the same ranking decides it, so a buyer who asks for more gets four more
+    answers rather than the remainder of an inventory.
+
+    Empty when the feed has nothing more to give, so the button is never offered with
+    nothing behind it.
+    """
+    taken_identities = {key for key in (_product_identity_key(p) for p in shown) if key}
+    taken_titles = {key for key in (_normalize_dedupe_title(p.title) for p in shown) if key}
+    taken_ids = {key for key in (str(p.provider_product_id or "").strip() for p in shown) if key}
+    rest = [
+        row
+        for row in ranked
+        if _product_identity_key(row[1]) not in taken_identities
+        and _normalize_dedupe_title(row[1].title) not in taken_titles
+        and str(row[1].provider_product_id or "").strip() not in taken_ids
+    ]
+    if not rest:
+        return []
+    return _choose_shown_products_for_condition(
+        rest,
+        safe_max=safe_max,
+        fields_by_id=fields_by_id,
+        scoring_tokens=scoring_tokens,
+        prefer_non_new=prefer_non_new,
+    )
+
+
 def _restrict_to_one_currency(
     ranked: list[tuple[tuple[int, int, int, str, str], ProviderProduct]],
     *,
@@ -1418,6 +1470,20 @@ def _select_products_for_concept(
         scoring_tokens=scoring_tokens,
         prefer_non_new=bool(condition_request),
     )
+    # A second four, only for the kinds where there is no best to recommend and the
+    # buyer is choosing by taste or fit (`picwise_taxonomy.comparison_rules`).
+    more = (
+        _next_four_after(
+            ranked,
+            shown,
+            safe_max=safe_max,
+            fields_by_id=fields_by_id,
+            scoring_tokens=scoring_tokens,
+            prefer_non_new=bool(condition_request),
+        )
+        if comparison_rule(concept_id).shows_see_more
+        else []
+    )
     fully_unmatched: list[str] = []
     partial: list[tuple[str, int]] = []
     for term in unmatchable:
@@ -1461,6 +1527,7 @@ def _select_products_for_concept(
         # which is what "strong" means for a token match.
         strong_matched_count=len(deduped),
         selected_products=tuple(shown),
+        more_products=tuple(more) if len(more) >= safe_max else tuple(),
         reason_codes=("provider_feed_products_selected", "product_concept_understood"),
         **common,
     )

@@ -311,6 +311,123 @@ def _build_provider_feed_result_cards(
     return cards, True, _FEED_DISCLOSURE, safe_note
 
 
+
+def _render_choice_card(card: dict[str, object], idx: int) -> str:
+    """One choice card's HTML. Used for the four and for the second four alike,
+    so a card behind "see more" cannot drift from a card in front of it."""
+    rec_class = " pw-card-recommended" if bool(card["recommended"]) else ""
+    rec_header = (
+        f'<div class="pw-rec-badge">{card.get("rec_badge_html") or "Suggested by PicWise"}</div>'
+        if bool(card["recommended"])
+        else ""
+    )
+    reasons = "".join(
+        f'<li class="pw-feature-item"><span class="pw-feature-dot" aria-hidden="true"></span><span>{escape(str(reason))}</span></li>'
+        for reason in list(card["bullets"])
+    )
+    warning_html = (
+        f'<p class="pw-warning"><span class="pw-warning-icon" aria-hidden="true">&#9651;</span>{escape(str(card["warning"]))}</p>'
+        if str(card["warning"])
+        else ""
+    )
+    rec_note = (
+        f'<p class="pw-rec-note">{escape(str(card["rec_note"]))}</p>' if str(card["rec_note"]) else ""
+    )
+    role_label_html = (
+        f'<p class="pw-role-label">{escape(str(card.get("role_label")))}</p>'
+        if str(card.get("role_label") or "")
+        else ""
+    )
+    cta = (
+        f'<a class="pw-card-cta pw-card-cta-link" href="{escape(str(card["href"]), quote=True)}" rel="nofollow sponsored noopener">{escape(str(card["cta"]))}</a>'
+        if card.get("href")
+        else f'<button class="pw-card-cta" type="submit">{escape(str(card["cta"]))}</button>'
+    )
+    return (
+        f'<article class="pw-card{rec_class}" data-choice-id="{escape(str(card.get("choice_id") or f"fixed-{idx}"), quote=True)}">'
+        f"{rec_header}"
+        f'<span class="pw-badge {escape(str(card["badge_class"]), quote=True)}">{escape(str(card["badge"]))}</span>'
+        f"{role_label_html}"
+        f'<h2 class="pw-card-title">{escape(str(card["name"]))}</h2>'
+        f'<p class="pw-card-description">{escape(str(card["description"]))}</p>'
+        f'<div class="pw-product-image-wrap"><img class="pw-product-image" src="{escape(str(card["image"]), quote=True)}" alt="{escape(str(card["name"]))} product image"></div>'
+        f'<p class="pw-price">{escape(str(card["price"]))}</p>'
+        f'<p class="pw-meta">{escape(str(card["meta"]))}</p>'
+        f'<ul class="pw-feature-list">{reasons}</ul>'
+        f"{warning_html}"
+        f"{rec_note}"
+        f"{cta}"
+        "</article>"
+    )
+
+
+def _build_more_choice_cards(
+    *,
+    resolution: LiveSearchResolution,
+    source_page: str = "search",
+) -> list[dict[str, object]]:
+    """The second four, for a kind of product that carries no "best".
+
+    Owner instruction (2026-10-12): where there is no better, only different -- a
+    dress, a bag, a tablecloth, a cable of a particular length -- the buyer gets a
+    "see more" button instead of a recommendation they cannot trust. These cards are
+    built like the first four and carry no recommendation of any kind: no badge, no
+    recommendation note, and `rec=0` in the click, so nothing in the tracking claims
+    PicWise suggested one of them.
+
+    Returns [] when the selection offered no second four, so the control is never
+    rendered with nothing behind it.
+    """
+    products = list(getattr(resolution, "provider_feed_more_products", ()) or [])
+    if not products:
+        return []
+    if any(_provider_feed_product_blocks_ui(product) for product in products):
+        return []
+    if not all(_feed_product_dict_complete(product) for product in products):
+        return []
+    labels = build_fact_based_choice_labels(products)
+    cards: list[dict[str, object]] = []
+    for index, product in enumerate(products):
+        label = labels[index] if index < len(labels) else None
+        product_id = str(product.get("provider_product_id") or "").strip()
+        store_label = _provider_store_label(
+            str(product.get("provider_key") or "").strip(),
+            str(product.get("merchant_name") or ""),
+        )
+        cards.append(
+            {
+                "badge": "REAL FEED",
+                "badge_class": "pw-badge-value",
+                "name": str(product.get("title") or "").strip(),
+                "role_label": label.role_label if label else "",
+                "choice_id": product_id,
+                "description": (
+                    label.decision_label
+                    if label and label.decision_label
+                    else "Selected real product (purchase not verified)"
+                ),
+                "rating": "",
+                "reviews": "",
+                "price": format_price_display(product),
+                "meta": _provider_feed_card_meta(product, store_label=store_label),
+                "bullets": list(label.key_reasons) if label else [],
+                "warning": label.risk_or_limitation if label else "",
+                "cta": "View in Store",
+                "image": str(product.get("image_url") or "").strip(),
+                "recommended": False,
+                "rec_note": "",
+                "rec_badge_html": "",
+                "href": (
+                    f"/out/feed?pid={quote(product_id, safe='')}"
+                    f"&q={quote(str(resolution.display_query or ''), safe='')}"
+                    f"&src={quote(source_page, safe='')}"
+                    "&rec=0"
+                ),
+            }
+        )
+    return cards
+
+
 def render_picwise_reference_surface(
     query: str = "",
     *,
@@ -426,54 +543,14 @@ def render_picwise_reference_surface(
     if not card_specs:
         card_specs = []
 
-    card_html = []
-    for idx, card in enumerate(card_specs, start=1):
-        rec_class = " pw-card-recommended" if bool(card["recommended"]) else ""
-        rec_header = (
-            f'<div class="pw-rec-badge">{card.get("rec_badge_html") or "Suggested by PicWise"}</div>'
-            if bool(card["recommended"])
-            else ""
-        )
-        reasons = "".join(
-            f'<li class="pw-feature-item"><span class="pw-feature-dot" aria-hidden="true"></span><span>{escape(str(reason))}</span></li>'
-            for reason in list(card["bullets"])
-        )
-        warning_html = (
-            f'<p class="pw-warning"><span class="pw-warning-icon" aria-hidden="true">&#9651;</span>{escape(str(card["warning"]))}</p>'
-            if str(card["warning"])
-            else ""
-        )
-        rec_note = (
-            f'<p class="pw-rec-note">{escape(str(card["rec_note"]))}</p>' if str(card["rec_note"]) else ""
-        )
-        role_label_html = (
-            f'<p class="pw-role-label">{escape(str(card.get("role_label")))}</p>'
-            if str(card.get("role_label") or "")
-            else ""
-        )
-        cta = (
-            f'<a class="pw-card-cta pw-card-cta-link" href="{escape(str(card["href"]), quote=True)}" rel="nofollow sponsored noopener">{escape(str(card["cta"]))}</a>'
-            if card.get("href")
-            else f'<button class="pw-card-cta" type="submit">{escape(str(card["cta"]))}</button>'
-        )
-        card_html.append(
-            (
-                f'<article class="pw-card{rec_class}" data-choice-id="{escape(str(card.get("choice_id") or f"fixed-{idx}"), quote=True)}">'
-                f"{rec_header}"
-                f'<span class="pw-badge {escape(str(card["badge_class"]), quote=True)}">{escape(str(card["badge"]))}</span>'
-                f"{role_label_html}"
-                f'<h2 class="pw-card-title">{escape(str(card["name"]))}</h2>'
-                f'<p class="pw-card-description">{escape(str(card["description"]))}</p>'
-                f'<div class="pw-product-image-wrap"><img class="pw-product-image" src="{escape(str(card["image"]), quote=True)}" alt="{escape(str(card["name"]))} product image"></div>'
-                f'<p class="pw-price">{escape(str(card["price"]))}</p>'
-                f'<p class="pw-meta">{escape(str(card["meta"]))}</p>'
-                f'<ul class="pw-feature-list">{reasons}</ul>'
-                f"{warning_html}"
-                f"{rec_note}"
-                f"{cta}"
-                "</article>"
-            )
-        )
+    card_html = [_render_choice_card(card, idx) for idx, card in enumerate(card_specs, start=1)]
+    more_cards = _build_more_choice_cards(resolution=resolution, source_page=source_page) if (
+        feed_results and card_specs
+    ) else []
+    more_html = "".join(
+        _render_choice_card(card, idx)
+        for idx, card in enumerate(more_cards, start=len(card_specs) + 1)
+    )
 
     if show_demo_note:
         # The provider feed is the only source of cards, so has_live_results implies
@@ -487,6 +564,25 @@ def render_picwise_reference_surface(
             '<section class="pw-empty-state">PicWise safely shows no product cards until intent confidence '
             "and provider availability are both verified.</section>"
         )
+    # "See more": a second four, offered only where the kind of product carries no
+    # best (owner instruction, 2026-10-12). A `details` element, so it works with no
+    # JavaScript and the second four is in the page for a reader who opens it. The
+    # wording says what the control is for rather than just "see more", because the
+    # reason there is no recommendation is the thing the buyer needs told.
+    more_section_html = (
+        (
+            '<details class="pw-more">'
+            '<summary class="pw-more-summary">See four more</summary>'
+            '<p class="pw-more-note">There is no single best choice in this kind of '
+            "product, so these are four more answers rather than a longer list.</p>"
+            f'<section class="pw-grid pw-grid-more" data-card-count="{len(more_cards)}">'
+            f"{more_html}"
+            "</section>"
+            "</details>"
+        )
+        if more_cards
+        else ""
+    )
     safe_note_html = f'<p class="pw-reference-disclaimer">{escape(safe_note_line)}</p>' if safe_note_line else ""
 
     html = (
@@ -559,6 +655,13 @@ def render_picwise_reference_surface(
         ".pw-footer{text-align:center;padding:6px 0 10px;font-size:12px;color:#6e83a3;}"
         ".pw-footer a{color:#6e83a3;text-decoration:none;margin-left:22px;}"
         "@media (min-width:1100px){.pw-reference-viewport{padding:8px;}.pw-reference-frame{padding:12px 20px 16px;}.pw-topbar{height:46px;margin-bottom:16px;}.pw-brand-wrap{margin:0 0 24px;}.pw-search-wrap{height:52px;margin:0 auto 20px;}.pw-query-line{margin:0 auto 40px;}.pw-card{padding:12px 12px 10px;min-height:444px;}.pw-product-image-wrap{height:74px;margin:0 0 8px;}.pw-product-image{width:228px;height:74px;}}"
+        ".pw-more{width:100%;max-width:1190px;margin:26px auto 0;}"
+        ".pw-more-summary{cursor:pointer;font-size:15px;font-weight:600;color:#1f6dff;padding:10px 0;list-style:none;text-align:center;}"
+        ".pw-more-summary::-webkit-details-marker{display:none;}"
+        ".pw-more-summary::after{content:\" \\25BE\";}"
+        ".pw-more[open] .pw-more-summary::after{content:\" \\25B4\";}"
+        ".pw-more-note{font-size:13px;color:#5a6b85;text-align:center;margin:0 auto 16px;max-width:620px;}"
+        ".pw-grid-more{margin-bottom:8px;}"
         "@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:760px;}.pw-topbar{height:auto;gap:10px;}}"
         "@media (max-width:640px){.pw-grid{grid-template-columns:1fr;max-width:420px;}}"
         "@media (max-width:699px){.pw-reference-frame{padding:14px 12px 20px;}.pw-topbar{flex-direction:column;align-items:center;margin-bottom:20px;}.pw-actions{width:100%;justify-content:center;gap:8px;}.pw-brand-wrap{margin:0 0 24px;}.pw-brand-name{font-size:33px;}.pw-search-wrap{height:auto;}.pw-search-shell{height:52px;padding:0 8px 0 14px;}.pw-search-input{height:50px;font-size:16px;}.pw-query-line{font-size:14px;margin:0 auto 36px;}.pw-grid{grid-template-columns:1fr;max-width:360px;}.pw-card{max-width:360px;}.pw-tooltip{width:min(430px,calc(100% - 8px));}}"
@@ -589,6 +692,7 @@ def render_picwise_reference_surface(
         f'<section class="pw-grid" data-card-count="{len(card_html)}">'
         f"{''.join(card_html)}"
         "</section>"
+        f"{more_section_html}"
         f"{note_or_empty_html}"
         f"{render_public_footer()}"
         "</div>"

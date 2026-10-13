@@ -267,3 +267,33 @@ answer** from what the four products actually state, never from a list of kinds
 written by hand: a feed that carries the data lights the comparison up on its own.
 
 Pinned by `tests/test_picwise_product_specs.py` (22 tests).
+
+## "See more": a second four where there is no best, 2026-10-12
+
+Owner instruction: in the kinds of product that do not support the notions of
+comparison and best -- a dress, a bag, a tablecloth, a cable of a particular length --
+the four are four different answers and the buyer gets a **"see more" button**, because
+the engine cannot narrow a taste for them.
+
+Which kinds those are is `comparison_class == "fit"` in
+`src/picwise_taxonomy/comparison_rules.py`, and `docs/picwise_comparison_rules.md`
+lists them: 84 of the 278 kinds PicWise recognises, plus every kind it does not
+recognise.
+
+How it behaves:
+
+- The second four is chosen by **exactly the same rules** as the first -- the same
+  relevance order, spread across its own distinct price zones, with everything already
+  shown excluded. It is not page two of a list: a buyer who asks for more gets four
+  more answers, not the remainder of an inventory.
+- It is **never offered with nothing behind it**, and never with a partial set. Six
+  handbags give four cards and no button, because two is not a four and the contract
+  owes four answers.
+- **Nothing in it is recommended.** No badge, no recommendation note, and `rec=0` in
+  the click, so no tracking event claims PicWise suggested one of them. The page still
+  carries exactly one recommendation, as `docs/MISSION.md` requires.
+- The control is a `details` element, so it needs no JavaScript and the second four is
+  in the page for anyone who opens it. Its wording says *why* there is no single best
+  in this kind of product, because that is the thing the buyer needs told.
+
+Pinned by `tests/test_picwise_see_more_second_four.py` (8 tests).
