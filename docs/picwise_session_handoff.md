@@ -1,12 +1,46 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-10.
+Current state for whoever picks the project up next. Updated 2026-10-15.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
+
+## Start here (2026-10-15)
+
+- **The owner's standing instruction: build nothing now.** "We wait for a proper feed
+  with ratings, because our main judgement must come from how many people bought the
+  product and how they rated it; everything else is around that judgement." Do not
+  start new engineering until such a feed arrives or the owner says otherwise.
+- **Branch, not `main`.** 27 commits on `ccr-fd5dc1bc-4vgsgl` are not on `main`
+  (description rule, specs reader, identity readers, comparison rules, "see four
+  more", spec-before-price, feed checker, docs). Merge to `main` only when the owner
+  says so explicitly.
+- **Both real feeds measured so far carry zero ratings and zero sales counts**, checked
+  over every row: the first (11,573 UK electronics) and the second (51,630: Tyres UK,
+  Aosom UK, Living and Home). Details in "Waiting on the owner" item 2 and `PROGRESS.md`.
+- **Awin Google format:** the owner asked whether ratings come there. Answer given:
+  almost certainly not. Awin's Google format mirrors Google's main product data
+  specification, which has no rating field; Google takes ratings through a separate
+  Product Ratings XML feed. Not verified against Awin's own column list
+  (`help.awin.com` is blocked from sessions). The cheap proof, offered and not yet
+  done: a feed of Living and Home's **Google** row only (4,483 products; it may also
+  carry the category its Awin row lacks).
+- **Awin status (owner's screenshots, 2026-10-14):** Joined -- Living and Home, Back
+  to the Office, Game Over, Tyres UK, Aosom UK. Pending -- Gtech, Songmics, Mstore,
+  Hoxton Macs, Road Angel, Boots.com, Currys, Euroffice. Rejected -- Beldray, Mattress
+  Online, SharkNinja UK (advised not to re-apply now). Markets: UK and US.
+- **When a new feed file arrives:** copy it into its own empty directory, run
+  `python -I tools/check_awin_feed.py <file>` and also check the rating/sales columns
+  over all rows (not only card-eligible ones). Report in Greek, short. Never ask the
+  owner to paste a feed link (it holds the API key): they download and upload the file.
+- **Open owner decisions:** confidence-weighted rating (floor 5 reviews, weight 20) --
+  yes not given; role sets per category group; spec vs price balance; what to do when
+  one of four has no rating; where wine/food/textiles belong.
+- **Homepage** still reads "Buying Decision Preview" / "Live safe mode" and `/about` is
+  404; likely hurting Awin approvals. The owner declined a fix on 2026-10-14.
 
 ## Where the work is
 
 - Repository: `nikkaradimitris-cloud/picwise.concept`
-- **Everything is on `main`.** The condition work (non-new products only when the buyer
+- **Stale, see "Start here" above:** the branch is ahead of `main` again. The condition work (non-new products only when the buyer
   asks) was merged on 2026-10-11 by the owner's instruction: merge commit `b28da32`, a
   normal merge of `ccr-fd5dc1bc-4vgsgl`, no pull request. Its deployment is NOT VERIFIED
   from a session. Earlier: PR #2 was merged on 2026-10-08 (merge commit `148a552`,
