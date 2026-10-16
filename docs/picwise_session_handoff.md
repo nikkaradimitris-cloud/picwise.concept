@@ -34,8 +34,8 @@ Current state for whoever picks the project up next. Updated 2026-10-16.
     £X–£Y range").
 
   The marketing proposals in the plan file are proposals; none is approved.
-- **Branch, not `main`.** `ccr-fd5dc1bc-4vgsgl` is ahead of `main` by 31 commits on
-  2026-10-16 (`git rev-list --count origin/main..origin/ccr-fd5dc1bc-4vgsgl`). Merge
+- **Branch, not `main`.** `ccr-fd5dc1bc-4vgsgl` is ahead of `main`; count the commits
+  with `git rev-list --count origin/main..origin/ccr-fd5dc1bc-4vgsgl`. Merge
   to `main` only when the owner says so explicitly. A session may be set up to push to
   another branch (on 2026-10-16 it was `claude/vibrant-cerf-b2afyt`). The owner works
   on `ccr-fd5dc1bc-4vgsgl`, so ask before writing anywhere else.
