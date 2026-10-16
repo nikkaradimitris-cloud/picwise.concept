@@ -393,7 +393,8 @@ The owner dropped ratings: two real feeds, about fifteen shops, and not one rati
 sales figure between them. In their place:
 
 1. only the kind of product asked for ("laptop" shows laptops, not their accessories)
-2. never a product the feed says is out of stock, with the feed refreshed daily
+2. never a product the feed says is out of stock, with the feed refreshed daily. The
+   feed's word is trusted; no shop page is checked (owner, 2026-10-16)
 3. the products must carry title, price, image, description, link and availability, as
    ruled on 2026-10-12; specifications and codes are shown when present, never required
 4. cheapest first, by product price alone, with no delivery cost
@@ -401,9 +402,12 @@ sales figure between them. In their place:
    stock; no code, no joining
 6. no ratings anywhere
 7. the first four are one **"Recommended"** and the three cheapest, with "4 of 45"
-   beneath. The Recommended is the product with an EAN/GTIN whose price is closest to
-   the middle of the whole result's price range, (cheapest + dearest) ÷ 2, the cheaper
-   of two on a tie. **No commission is used** and none is mentioned on the card
+   beneath. The Recommended is **the middle product of the whole result in price
+   order** (of 45, the 23rd); if it has no EAN/GTIN, the nearest product to it that
+   has one, the cheaper of two equally near. Changed by the owner on 2026-10-16 from
+   the middle of the price range, (cheapest + dearest) ÷ 2, which on the real feed
+   recommended the top end (a £4,809.99 MacBook Pro for "laptop"). **No commission is
+   used** and none is mentioned on the card
 8. "more" gives the next four cheapest, "8 of 45", as often as asked, none of them
    recommended
 9. one general affiliate line in the site footer

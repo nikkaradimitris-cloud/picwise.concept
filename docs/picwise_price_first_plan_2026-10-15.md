@@ -38,6 +38,9 @@ In their words: «προτείνω να πάμε με τη λογική της �
    as in stock by the feed at its last refresh, not verified at the moment of the click.
    In the first feed Awin's `in_stock` flag is 1 on every row, and the real state is in
    `stock_status` (23% of rows); `offer_health` already reads it that way.
+   **Decided by the owner on 2026-10-16: the feed's word is trusted, and no shop page
+   is checked.** On the third feed no shop sends a usable stock state, so there this
+   rule removes nothing; the application messages ask shops to send it.
 3. **Required on every product**, unchanged from the owner's rule of 2026-10-12: title,
    price, image, a sufficient description, link, availability. **Specifications and
    codes (EAN, GTIN, MPN) are shown when the feed has them and are never required**
@@ -59,14 +62,16 @@ In their words: «προτείνω να πάμε με τη λογική της �
    counting the recommended one), with a counter beneath: "4 of 45". Owner: «δεν
    χαλάμε την τετράδα, γράφει 4 από 45 ... 8 από 45». The Recommended:
    - is computed over **every result of the search** (all 45), not over the four;
-   - sits at **the middle of the price range: (cheapest + dearest) ÷ 2**. The owner chose
-     this ("B") over the middle product by position ("A") after seeing the difference:
-     with £200, £250, £300, £350, £1,500 the middle of the range is £850 and the closest
-     product is £350, where A would give £300;
-   - is the product whose price is **closest to that midpoint, among products with an
-     EAN/GTIN** (owner: yes), so that "not cheaper elsewhere on PicWise" can be known.
-     With rule 5 it is then always the cheapest in-stock offer of that product;
-   - on a tie, the cheaper of the two (stated to the owner, not objected to);
+   - is **the middle product in price order** ("A", the median: of 45, the 23rd).
+     **Changed on 2026-10-16.** The owner first chose "B", the middle of the price range,
+     (cheapest + dearest) ÷ 2, over A, having seen the difference on £200, £250, £300,
+     £350 and £1,500 (B gives £350, A £300). Measured on the third feed, B recommended
+     the top end: a £4,809.99 MacBook Pro for "laptop", where A gives a £879.99 ThinkPad
+     (see "Measured on the third feed"). Shown that, the owner chose A;
+   - must have an **EAN/GTIN** (owner: yes), so that "not cheaper elsewhere on PicWise"
+     can be known. If the middle product has none, the nearest product to it that has
+     one; of two equally near, the cheaper. With rule 5 it is then always the cheapest
+     in-stock offer of that product;
    - carries the label **"Recommended"** (the owner's word, held over "Featured"). The
      line under it was proposed as "Mid-priced for this category" and not objected to.
      The owner's reasoning, with their own example of £100, £150 and £200: recommend
@@ -149,9 +154,9 @@ What the files said before:
    on every card. Proposal: "Lowest price", and "Lowest price of N shops" when rule 5
    joined offers.
 5. Whether brand + MPN may also join "the same product" (rule 5).
-6. The line under Recommended: "Mid-priced for this category", or the marketing
-   proposal "Middle of the £X–£Y range". Also, optionally, whether to leave the extreme
-   prices out of the midpoint.
+6. The line under Recommended: "Mid-priced for this category". The marketing
+   proposal "Middle of the £X–£Y range" no longer fits, because the Recommended is now
+   the median and not the middle of the range.
 
 ## What it means for the engineering, later
 
@@ -316,9 +321,9 @@ that basis only, across all the product categories.
    Awin approvals still pending (Currys, Boots). The homepage still reads "Buying
    Decision Preview" and `/about` is a 404; the owner declined a fix on 2026-10-14,
    before the plan changed.
-2. **Put the price range in the label:** *"Recommended · Middle of the £130–£3,500
-   range"*. It is entirely true and explains by itself why the Recommended can cost more
-   than the cheap three. Optionally, leave the extreme prices out of the midpoint.
+2. ~~**Put the price range in the label:** *"Recommended · Middle of the £130–£3,500
+   range"*.~~ No longer fits since 2026-10-16: the Recommended is the median, not the
+   middle of the range.
 3. **The strongest trust line available:** *"Our pick is never paid for."* True as long
    as commission stays out of the Recommended, which it does under this plan.
 4. **Never "the cheapest in the UK".** Use "Sorted by price" or "Lowest price across 4

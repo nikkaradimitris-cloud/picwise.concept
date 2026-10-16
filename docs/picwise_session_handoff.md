@@ -29,16 +29,17 @@ Current state for whoever picks the project up next. Updated 2026-10-16.
   - no product is in two shops;
   - a search takes 4 to 16 seconds.
 
-  **Waiting on the owner:** B or the median for the Recommended, and whether to trust
-  the feed's "in stock" or check the shop page. **First engineering step regardless:** a
-  strict yes/no test that a product is the kind asked for.
+  **Decided by the owner, 2026-10-16:** the Recommended is the median (the middle
+  product in price order), and the feed's "in stock" is trusted (no shop page is
+  checked). **First engineering step:** a strict yes/no test that a product is the kind
+  asked for. The owner also asked to check how well English searches with misspellings
+  and different phrasings are understood.
 - **Open owner decisions:**
   - no Recommended when no product has an EAN/GTIN?
   - fewer than four results;
   - the labels on the three cheapest cards;
   - whether brand + MPN also counts as "the same product";
-  - the line under Recommended ("Mid-priced for this category" or "Middle of the
-    £X–£Y range").
+  - the line under Recommended ("Mid-priced for this category" proposed).
 
   The marketing proposals in the plan file are proposals; none is approved.
 - **Branch, not `main`.** `ccr-fd5dc1bc-4vgsgl` is ahead of `main`; count the commits
@@ -117,7 +118,7 @@ If these layers conflict, do not guess: stop and raise it (PROJECT_RULES section
 In short:
 
 - every purchase-intent query: only the kind asked for, only in stock, cheapest first;
-  4 choices first (1 Recommended at the middle of the price range + the 3 cheapest),
+  4 choices first (1 Recommended, the middle product in price order, + the 3 cheapest),
   then "More" for the next 4 as often as asked; decision labels, CTA, direct redirect,
   tracking event (price first, 2026-10-16)
 - no fake data of any kind; no commission-based ranking; missing data uses the enum

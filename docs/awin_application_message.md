@@ -17,8 +17,8 @@ advertiser who checks the site must not find a claim it does not meet.
 >
 > PicWise is a product search for shoppers who already know what they want to buy. It
 > is designed to show only the kind of product asked for and only what is in stock,
-> cheapest first, with one recommended pick from the middle of the price range rather
-> than simply the cheapest.
+> cheapest first, with one mid-priced recommended pick rather than simply the
+> cheapest.
 >
 > That depends on good product data. A product appears only when its feed carries a
 > clear description, and never when the feed lists it as out of stock; our recommended
@@ -46,7 +46,7 @@ advertiser who checks the site must not find a claim it does not meet.
 > Thank you for considering our application. PicWise is a product search for shoppers
 > who already know what they want to buy. It is designed to show only the kind of
 > product asked for and only what is in stock, cheapest first, with one recommended
-> pick from the middle of the price range, not simply the cheapest. PicWise earns only
+> pick from the middle of the prices, not simply the cheapest. PicWise earns only
 > when a visitor buys, so our interest is the same as yours. We would be glad to work
 > with you, and happy to answer any questions.
 

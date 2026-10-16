@@ -10,9 +10,10 @@ first, and makes one honest pick.
 
 For every purchase-intent query, Picwise must:
 - show only the kind of product asked for
-- never show a product the feed says is out of stock
-- return 4 choices first: exactly 1 Recommended (the product with an EAN/GTIN whose
-  price is closest to the middle of the result's price range) and the 3 cheapest
+- never show a product the shop's feed says is out of stock (the feed's word is
+  trusted; no shop page is checked)
+- return 4 choices first: exactly 1 Recommended (the middle product of the result in
+  price order, or the nearest one to it that has an EAN/GTIN) and the 3 cheapest
 - show how many there are ("4 of 45")
 - offer "More": the next 4 cheapest, as often as the buyer asks
 - explain the recommendation briefly and clearly
@@ -46,7 +47,7 @@ Picwise must not become:
 - No commission-first ranking or recommendation. Commission never decides the order
   or the Recommended.
 - The order is the price, after the kind asked for and availability. The Recommended
-  is the middle of the price range. No ratings are used.
+  is the middle product in price order. No ratings are used.
 
 ## First Phase Boundary
 
