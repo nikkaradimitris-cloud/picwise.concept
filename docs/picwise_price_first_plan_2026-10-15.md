@@ -246,6 +246,62 @@ a stand-in for the strict test the plan needs, not that test.
   pulls it down: for "smartphone" it lands on a £23.99 screen protector. So it needs rule
   1 first. Put to the owner on 2026-10-16.
 
+## Search understanding, English, measured 2026-10-16
+
+Asked by the owner: does the search understand English typed with misspellings and in
+different phrasings, so that it knows what to send? Test: 118 queries written by
+hand for the kinds in the third feed, run through the real resolver
+(`resolve_live_search`) on that feed (42,076 rows). The styles were 37 clean names, 26
+misspellings, 30 phrasings and sentences, 14 synonyms, 4 with a brand and 7 for kinds
+the lexicon does not know. Every card shown was then read by hand.
+
+**Understanding is good; what is shown is not yet.**
+
+| Outcome | Searches |
+| --- | --- |
+| the right kind understood | 109 of 118 (92%) |
+| all four cards right | 80 |
+| three of four right, or a qualifier missed ("gaming", "ssd") | 7 |
+| wrong things shown | 21 |
+| nothing shown | 10 |
+
+- **Misspellings: 21 of 26 understood:** labtop, lapptop, smartfone, tablit, moniter,
+  headfones, keybord, mosue, printor, tonner, hardrive, ofice chair, tabel, soffa,
+  garden furnature, barbeque, kettel, heatr, shelfs, dumbells and the rest. Not
+  understood: "inc cartridge", "tnet", "lamb for bedroom" and "mirrer", each offered
+  the right "did you mean" (ink cartridge, tent, lamp, mirror). "dsek for home office"
+  got no suggestion.
+- **Phrasings and synonyms work:** "i need a new laptop for work", "cell phone",
+  "mobile phone", "notebook computer 15 inch", "pc screen 24in", "couch", "web cam
+  for zoom calls", "uninterruptible power supply". Kinds the lexicon does not know
+  were found by their words: greenhouse, cat tree, dog crate, rabbit hutch, memory
+  card, network switch.
+- **The 21 with wrong things are kind-reading errors, not understanding errors.**
+  - "tablet" (4 searches) shows tablet casings and mounts;
+  - "desk" (3) shows desk trays and under-desk drawers;
+  - "dining table" and "coffee table" show a wall clock and table football;
+  - "printer" (3) shows label makers;
+  - "desk fan" and "pedestal fan" show fan speed controllers, and "ceiling fan with
+    light" shows PC case fans;
+  - "floor lamp" shows table lamps, and "double bed frame" camping cots;
+  - "corner sofa bed" shows dog sofa beds, and "ups battery backup" shows replacement
+    UPS batteries.
+
+  This is the same flaw the price-first measurement found, and the same fix: a strict
+  yes/no test of the kind.
+- **Two bugs.**
+  - "patio set" and "patio heater" are read as "insoles": "patio" is taken for the
+    greeklish of «πάτοι». English must win over a greeklish reading of a real English
+    word.
+  - "3 seater sofa grey", "4 person camping tent" and "electric kettle 1.7l" find
+    four right products, and the page still shows nothing. The old recommendation step
+    demands every word of the search from each card, finds no card with all of them,
+    recommends none, and the render gate then refuses the page. The median rule
+    replaces that step.
+- **Data:** an iiyama monitor priced £1,344,000.00 appears on two answers. A price
+  sanity check is needed before cards are drawn.
+- **Speed:** 3.4 to 20 seconds per search, median 4.1 s, against the 1.5 s target.
+
 ## Marketing analysis, 2026-10-15 (proposals, not decisions)
 
 Asked by the owner: analyse the plan at the level of marketing, and make proposals on

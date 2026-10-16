@@ -32,8 +32,12 @@ Current state for whoever picks the project up next. Updated 2026-10-16.
   **Decided by the owner, 2026-10-16:** the Recommended is the median (the middle
   product in price order), and the feed's "in stock" is trusted (no shop page is
   checked). **First engineering step:** a strict yes/no test that a product is the kind
-  asked for. The owner also asked to check how well English searches with misspellings
-  and different phrasings are understood.
+  asked for. **English understanding, tested the same day:** 118 queries with
+  misspellings and phrasings; the right kind understood for 109 (92%), but only 80
+  showed four right products. Kind-reading errors (tablet casings, desk trays, label
+  makers) account for most of the rest; also "patio" is read as greeklish «πάτοι»
+  (insoles), and queries with numbers show empty pages through the old recommendation
+  step. Details in the plan file, "Search understanding, English".
 - **Open owner decisions:**
   - no Recommended when no product has an EAN/GTIN?
   - fewer than four results;
