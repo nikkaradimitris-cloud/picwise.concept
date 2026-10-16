@@ -1,5 +1,9 @@
 # Advertisers to look for, UK and US
 
+> **2026-10-16:** the owner dropped ratings (`docs/picwise_price_first_plan_2026-10-15.md`),
+> so the priority below, which ranks shops by whether they can supply a rating, is
+> superseded. Kept as the record of the search.
+
 Owner decision (2026-10-13): PicWise is for the **UK and the US**. They asked for one
 large advertiser per mega-category, to search for on the Awin platform, preferring
 programmes that need no approval.
