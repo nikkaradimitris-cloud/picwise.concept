@@ -327,7 +327,7 @@ glassware|KI||glasses set,drinking glasses,wine glasses|ποτήρια,σετ π
 water_filter_jug|KI||water filter jug,filter jug|κανάτα φίλτρου νερού
 food_storage|KI||food containers,lunch box,food storage containers|δοχεία φαγητού,φαγητοδοχείο,τάπερ
 grill|GA||bbq,bbqs,barbecue,barbecues,barbeque,barbeques,grill,grills,gas grill,gas grills,gas bbq,gas bbqs,charcoal grill,charcoal grills,charcoal bbq,charcoal bbqs|ψησταριά,ψησταριές,μπάρμπεκιου,ψησταριά υγραερίου
-garden_furniture|GA||garden furniture,patio furniture,outdoor furniture,garden chairs|έπιπλα κήπου,καρέκλες κήπου,τραπέζι κήπου
+garden_furniture|GA||garden furniture,patio furniture,outdoor furniture,garden chairs,~patio|έπιπλα κήπου,καρέκλες κήπου,τραπέζι κήπου
 parasol|GA||parasol,patio umbrella,sun umbrella|ομπρέλα βεράντας,ομπρέλα κήπου,ομπρέλα παραλίας
 pool|GA||swimming pool,above ground pool,paddling pool|πισίνα,φουσκωτή πισίνα
 flower_pot|GA||flower pot,flower pots,plant pot,plant pots,planter,planters,planter box,planter boxes,planter bed,planter beds,raised garden bed,raised garden beds,raised bed,raised beds,garden bed,garden beds,flower bed,flower beds,raised flower bed,raised flower beds|γλάστρα,γλάστρες,ζαρντινιέρα,ζαρντινιέρες

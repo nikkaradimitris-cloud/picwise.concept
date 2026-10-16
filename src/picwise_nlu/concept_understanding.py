@@ -442,6 +442,19 @@ class _Lexicon:
             for token in normalize_understanding_text(text).split()
             if not is_greek_word(token)
         )
+        # Which kinds each English word belongs to, and which kinds each Greek key
+        # belongs to: "patio" is a word of "patio furniture", not of «πάτοι».
+        english_word_concepts: dict[str, set[str]] = {}
+        greek_key_concepts: dict[str, set[str]] = {}
+        for concept in get_product_concepts():
+            for text in concept.english + concept.greek:
+                for token in normalize_understanding_text(text).split():
+                    if is_greek_word(token):
+                        greek_key_concepts.setdefault(greek_key(token), set()).add(concept.concept_id)
+                    else:
+                        english_word_concepts.setdefault(token, set()).add(concept.concept_id)
+        self.english_word_concepts = {word: frozenset(ids) for word, ids in english_word_concepts.items()}
+        self.greek_key_concepts = {key: frozenset(ids) for key, ids in greek_key_concepts.items()}
 
         self.qualifiers: dict[str, str | None] = {}
         qualifier_keys: set[str] = set()
@@ -606,6 +619,16 @@ def _token_candidates(token: str, *, fuzzy: bool = True) -> dict[tuple[str, str]
             offer("el", greeklish_key(token.replace("h", "x")), 0.15)
         if len(token) >= 3:
             offer("el", greek_key(english_layout_text_to_greek(token)), 0.3)
+        # English before greeklish (owner's build order, step 2, 2026-10-16): a word
+        # PicWise knows as English is not read as the greeklish of a Greek name of
+        # another kind. "patio" was read as «πάτοι» (insoles), so "patio heater"
+        # answered with insoles; "scales" as «σκάλες» (ladders). A greeklish reading
+        # that names the same kind stays: "consoles" and «κονσόλες».
+        own_kinds = lexicon.english_word_concepts.get(token)
+        if own_kinds:
+            for identity in [identity for identity in candidates if identity[0] == "el"]:
+                if not lexicon.greek_key_concepts.get(identity[1], frozenset()) & own_kinds:
+                    del candidates[identity]
     return candidates
 
 
