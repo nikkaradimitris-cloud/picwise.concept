@@ -21,10 +21,17 @@ Current state for whoever picks the project up next. Updated 2026-10-16.
 - **Not built yet.** No code has changed: the engine still runs the superseded rules
   (price zones, specification ranking, see-more for `fit` only, `more_choices` capped
   at 4).
-- **Next step:** measure the plan on the 51,630-row feed. The owner re-uploads it; it
-  is not in the session. Count per shop and per kind: how many
-  products pass, how many join as the same product, and how many carry an EAN/GTIN for
-  the Recommended.
+- **Measured on 2026-10-16** on a new feed (Back to the Office, Aosom UK, Living and
+  Home; 42,076 rows). Results are in the plan file, "Measured on the third feed":
+  - cheapest first puts accessories on top ("laptop" opens with docking stations);
+  - the middle of the range recommends the top end (a £4,809.99 MacBook Pro);
+  - no shop sends a real stock state;
+  - no product is in two shops;
+  - a search takes 4 to 16 seconds.
+
+  **Waiting on the owner:** B or the median for the Recommended, and whether to trust
+  the feed's "in stock" or check the shop page. **First engineering step regardless:** a
+  strict yes/no test that a product is the kind asked for.
 - **Open owner decisions:**
   - no Recommended when no product has an EAN/GTIN?
   - fewer than four results;
