@@ -215,6 +215,7 @@ _SPEC: dict[str, tuple[tuple[str, ...], tuple[str, ...], str]] = {
     "tablet": (("storage", "battery"), ("screen",), "storage and battery decide; screen size is a choice"),
     "e_reader": (("storage", "battery"), ("screen",), "storage and battery decide"),
     "smartphone": (("storage", "battery"), ("screen",), "storage and battery decide; screen size is a choice"),
+    "mobile_phone": (("battery",), ("screen",), "battery decides; screen size is a choice"),
     "laptop": (("storage", "battery"), ("screen", "weight"), "storage and battery decide; screen size is a choice"),
     "game_console": (("storage",), tuple(), "storage decides"),
     "headphones": (("playtime", "battery"), ("frequency", "impedance", "weight"), "playtime decides"),

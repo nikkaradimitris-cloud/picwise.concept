@@ -222,12 +222,50 @@ class QueryReadingTests(unittest.TestCase):
         for query, concept in (
             ("ip phone", "desk_phone"),
             ("conference phone", "desk_phone"),
-            ("phone", "smartphone"),
+            ("phone", "mobile_phone"),
             ("foosball table", "game_table"),
             ("play tent", "play_tent"),
             ("shower chair", "shower_seat"),
             ("raised garden bed", "flower_pot"),
             ("greenhouse", "greenhouse"),
+        ):
+            with self.subTest(query=query):
+                self.assertEqual(understand_product_query(query).concept_id, concept)
+
+
+class PhoneKindTests(unittest.TestCase):
+    """Owner's rule of 2026-10-16: «Smartphone να δείχνεις smartphone... Τα υπόλοιπα
+    είναι mobile phone», and "mobile phone", «κινητό» and "phone" show only those."""
+
+    def test_the_title_says_which_phone_a_mobile_phones_type_holds(self) -> None:
+        for title in (
+            "Fixturon CORE-S5 2.4\" Mobile Phone (1001) - Black",
+            "Testline Leva E22 2.8\" Flip Phone (8992) - Red",
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(_kinds("Mobile Phones", "", title), {"mobile_phone"})
+        for title in (
+            "Sampleworks Pulse 5G Smartphone 128GB",
+            "Fixturon Wave 256GB Blue",
+            "Testline Nova 6.5\" Dual SIM Black",
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(_kinds("Mobile Phones", "", title), {"smartphone"})
+        self.assertEqual(
+            _kinds("Smartphones", "", "Sampleworks K70 SE 6.56\" 4G Smartphone"), {"smartphone"}
+        )
+
+    def test_queries_name_one_phone_or_the_other(self) -> None:
+        for query, concept in (
+            ("smartphone", "smartphone"),
+            ("smart phone", "smartphone"),
+            ("unlocked android phone", "smartphone"),
+            ("mobile phone", "mobile_phone"),
+            ("cell phone", "mobile_phone"),
+            ("phone", "mobile_phone"),
+            ("κινητό", "mobile_phone"),
+            ("flip phone", "mobile_phone"),
+            ("phone case", "phone_case"),
         ):
             with self.subTest(query=query):
                 self.assertEqual(understand_product_query(query).concept_id, concept)
@@ -582,6 +620,22 @@ class StrictKindPageTests(unittest.TestCase):
         )
         self.assertEqual(sorted(self._shown("smartphone")), ["s1", "s2", "s3", "s4"])
         self.assertEqual(sorted(self._shown("printer")), ["p1", "p2", "p3", "p4"])
+
+    def test_smartphone_and_mobile_phone_show_different_phones(self) -> None:
+        self._serve(
+            [
+                ("s1", "Fixturon Nova A17 6.7\" 5G Smartphone 128GB", "Mobile Phones", "Computers", "216.99"),
+                ("s2", "Testline Edge 70 6.8\" 5G Smartphone 256GB", "Mobile Phones", "Computers", "375.99"),
+                ("s3", "Sampleworks Pixel 10 6.3\" 5G Smartphone", "Mobile Phones", "Computers", "991.99"),
+                ("s4", "Fixturon K70 SE 6.56\" 4G Smartphone", "Mobile Phones", "Computers", "113.99"),
+                ("m1", "Testline CORE-S5 2.4\" Mobile Phone - Black", "Mobile Phones", "Computers", "67.99"),
+                ("m2", "Sampleworks Leva E10 2.4\" Mobile Phone - Red", "Mobile Phones", "Computers", "71.99"),
+                ("m3", "Fixturon Leva E22 2.8\" Flip Phone - Red", "Mobile Phones", "Computers", "79.99"),
+                ("m4", "Testline Big Button 1.8\" Mobile Phone - Grey", "Mobile Phones", "Computers", "39.99"),
+            ]
+        )
+        self.assertEqual(sorted(self._shown("smartphone")), ["s1", "s2", "s3", "s4"])
+        self.assertEqual(sorted(self._shown("mobile phone")), ["m1", "m2", "m3", "m4"])
 
     def test_the_shops_own_category_path_is_read_on_its_own(self) -> None:
         beds = "home goods > bedroom furniture > beds"

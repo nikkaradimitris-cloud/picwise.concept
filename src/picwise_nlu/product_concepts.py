@@ -120,7 +120,8 @@ table|FU||table,tables|τραπέζι,τραπέζια,τραπεζάκι,τρα
 lamp|FU||lamp,lamps,desk lamp,ceiling light,ceiling lights,pendant light,pendant lights,wall light,wall lights,chandelier,chandeliers,light fitting,light fittings|φωτιστικό,φωτιστικά,πορτατίφ,φωτιστικό οροφής
 light_bulb|FU||light bulb,light bulbs,led bulb,smart bulb|λάμπα,λάμπες,λαμπτήρας,λαμπτήρες
 smart_plug|FU||smart plug,smart plugs|έξυπνη πρίζα,έξυπνες πρίζες
-smartphone|PH||smartphone,smartphones,mobile phone,mobile phones,cell phone,phone,phones|κινητό,κινητά,κινητό τηλέφωνο,κινητά τηλέφωνα,τηλέφωνο
+smartphone|PH||smartphone,smartphones,smart phone,smart phones,android phone,android phones,galaxy phone,galaxy phones|σμαρτφόν,έξυπνο κινητό,έξυπνα κινητά
+mobile_phone|PH||mobile phone,mobile phones,cell phone,cell phones,phone,phones,basic phone,basic phones,feature phone,feature phones,flip phone,flip phones,big button phone,big button phones,senior phone,senior phones|κινητό,κινητά,κινητό τηλέφωνο,κινητά τηλέφωνα,τηλέφωνο,απλό κινητό,απλά κινητά
 desk_phone|PH||ip phone,ip phones,voip phone,voip phones,sip phone,sip phones,conference phone,conference phones,desk phone,desk phones,office phone,office phones,landline phone,landline phones,cordless phone,cordless phones,dect phone,dect phones|σταθερό τηλέφωνο,σταθερά τηλέφωνα,ασύρματο τηλέφωνο,ασύρματα τηλέφωνα,τηλέφωνο γραφείου
 power_bank|PH||power bank,power banks,powerbank,portable charger,external battery|εξωτερική μπαταρία,εξωτερικές μπαταρίες,φορητή μπαταρία,φορητός φορτιστής,πάουερ μπανκ
 phone_charger|PH||charger,chargers,phone charger,wall charger,usb charger,power adapter,power adapters,ac adapter,ac adapters|φορτιστής,φορτιστές,φορτιστής κινητού

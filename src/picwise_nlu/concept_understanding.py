@@ -1267,7 +1267,39 @@ def _annotate_kinds(product_type: str, category: str, title: str) -> frozenset[s
         chain = broader_concepts(span.concept_id)
         if any(base in chain[1:] for base in bases):
             concepts.update(chain)
+    if "mobile_phone" in concepts:
+        # Feeds file smartphones and basic phones alike under "Mobile Phones"; the
+        # title says which (`_title_says_smartphone`).
+        if _title_says_smartphone(title):
+            concepts.discard("mobile_phone")
+            concepts.update(broader_concepts("smartphone"))
+        else:
+            concepts.discard("smartphone")
     return frozenset(concepts)
+
+
+# The owner's rule of 2026-10-16: "smartphone" shows smartphones, and "mobile phone",
+# "κινητό" or "phone" the other mobile phones -- basic, flip and big-button phones.
+# Feeds file both under "Mobile Phones": the first real feed held its smartphones
+# there, the third its basic phones, "Doro Leva E10 2.4\" Mobile Phone". So a phone
+# is a smartphone when its title says so, or names what only a smartphone has: a
+# smartphone system or 5G, 16 GB or more of storage, or a screen of 4 inches or more.
+_PHONE_KINDS = frozenset({"smartphone", "mobile_phone"})
+_SMARTPHONE_WORDS = frozenset({"android", "ios", "iphone", "5g"})
+_STORAGE_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*(gb|tb)\b", flags=re.IGNORECASE)
+_SCREEN_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*(?:\"|''|\u201d|inch(?:es)?\b|in\b)", flags=re.IGNORECASE)
+
+
+def _title_says_smartphone(title: str) -> bool:
+    text = str(title or "")
+    if set(normalize_understanding_text(text).split()) & _SMARTPHONE_WORDS:
+        return True
+    if any(span.concept_id == "smartphone" for span in _concepts_in_text(text)):
+        return True
+    for value, unit in _STORAGE_RE.findall(text):
+        if unit.lower() == "tb" or float(value.replace(",", ".")) >= 16:
+            return True
+    return any(4.0 <= float(value.replace(",", ".")) <= 8.0 for value in _SCREEN_RE.findall(text))
 
 
 # Products that belong with another product rather than being it: "Washing Machine
@@ -1594,6 +1626,9 @@ def _title_lead_verdict(title: str, bases: list[str], *, trust_title: bool = Fal
             or _related(concept_id, base)
             or _siblings(concept_id, base)
             or _named_as_kind_of(base, concept_id)
+            # A "Mobile Phones" type with a title saying "Smartphone": the title says
+            # which phone it is, it does not contradict the type.
+            or {concept_id, base} == _PHONE_KINDS
             for base in bases
         )
 
