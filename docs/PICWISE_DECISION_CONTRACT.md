@@ -404,7 +404,10 @@ sales figure between them. In their place:
 7. the first four are one **"Recommended"** and the three cheapest, with "4 of 45"
    beneath. The Recommended is **the middle product of the whole result in price
    order** (of 45, the 23rd); if it has no EAN/GTIN, the nearest product to it that
-   has one, the cheaper of two equally near. Changed by the owner on 2026-10-16 from
+   has one, the cheaper of two equally near. Before the middle is found, a dearest
+   product that costs at least twice the next dearest is left out of the count, and
+   again for the next one; it stays in the list (owner, 2026-10-16). Changed by the
+   owner on 2026-10-16 from
    the middle of the price range, (cheapest + dearest) ÷ 2, which on the real feed
    recommended the top end (a £4,809.99 MacBook Pro for "laptop"). **No commission is
    used** and none is mentioned on the card
@@ -419,8 +422,9 @@ analysis, is in `docs/picwise_price_first_plan_2026-10-15.md`.
 `concept.picwise.txt` (sections 6 and 10), `docs/MISSION.md` and `PROJECT_RULES.md`
 (sections 2 and 4). Raised with the owner on 2026-10-16 under PROJECT_RULES section
 1.4, they chose to change those files to the plan, and they were changed the same day,
-along with `docs/LANDING_PAGE_SPEC.md`. For services (insurance, energy, banking,
-software) nothing has been decided, and their rules stand as they were.
+along with `docs/LANDING_PAGE_SPEC.md`. For services (insurance, banking, energy,
+software) there is no Recommended in this phase, unless a mechanism is found that can
+decide what is the better deal (owner, 2026-10-16).
 
 **Not implemented yet.** The code still runs the superseded rules. The next step is to
 measure the plan on the real feed.

@@ -50,7 +50,7 @@ The project must never:
 
 - Picwise may earn through affiliate/referral/lead/conversion models.
 - Commission is never part of recommendation logic.
-- The order is the price, after the kind asked for and availability. The Recommended is the middle product in price order, the median (`docs/PICWISE_DECISION_CONTRACT.md`, "Price first"; changed on 2026-10-16 by the owner).
+- The order is the price, after the kind asked for and availability. The Recommended is the middle product in price order, the median, with a dearest product costing at least twice the next one left out of the count (`docs/PICWISE_DECISION_CONTRACT.md`, "Price first"; changed on 2026-10-16 by the owner).
 
 ## 6) Brain Model
 

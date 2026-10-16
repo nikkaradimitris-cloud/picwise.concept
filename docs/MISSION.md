@@ -13,7 +13,9 @@ For every purchase-intent query, Picwise must:
 - never show a product the shop's feed says is out of stock (the feed's word is
   trusted; no shop page is checked)
 - return 4 choices first: exactly 1 Recommended (the middle product of the result in
-  price order, or the nearest one to it that has an EAN/GTIN) and the 3 cheapest
+  price order, or the nearest one to it that has an EAN/GTIN; a dearest product
+  costing at least twice the next one does not count towards the middle) and the 3
+  cheapest
 - show how many there are ("4 of 45")
 - offer "More": the next 4 cheapest, as often as the buyer asks
 - explain the recommendation briefly and clearly
@@ -21,8 +23,10 @@ For every purchase-intent query, Picwise must:
 - track decision and click events
 - redirect directly to the merchant/provider
 
-This covers products from shops. For services (insurance, energy, banking, software)
-nothing has been decided yet, and until it is, `concept.picwise.txt` stands for them.
+This covers products from shops: PicWise rests on volume, it is a shopping search. For
+services (insurance, banking, energy, software) there is no Recommended in this phase,
+unless a mechanism is found that can decide what is the better deal (owner,
+2026-10-16).
 
 ## Product Promise
 

@@ -38,6 +38,17 @@ Current state for whoever picks the project up next. Updated 2026-10-16.
   makers) account for most of the rest; also "patio" is read as greeklish «πάτοι»
   (insoles), and queries with numbers show empty pages through the old recommendation
   step. Details in the plan file, "Search understanding, English".
+- **The owner's additions (2026-10-16), in the plan file:**
+  - suggestions as the buyer types (faint completion plus a word list from the first
+    letter);
+  - a microphone in the search box;
+  - trends below the box, true to their source;
+  - many more shops (every Awin programme with a feed, then CJ and others);
+  - extreme top prices (at least twice the next) do not count for the Recommended;
+  - no Recommended for services in this phase.
+
+  Proposed build order: strict kind test, English over greeklish, the price-first
+  engine, speed and a store, suggestions and microphone, trends, other networks.
 - **Open owner decisions:**
   - no Recommended when no product has an EAN/GTIN?
   - fewer than four results;

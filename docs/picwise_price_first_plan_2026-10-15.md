@@ -72,6 +72,10 @@ In their words: «προτείνω να πάμε με τη λογική της �
      can be known. If the middle product has none, the nearest product to it that has
      one; of two equally near, the cheaper. With rule 5 it is then always the cheapest
      in-stock offer of that product;
+   - leaves out extreme top prices (owner, 2026-10-16): before the middle is found, a
+     dearest product that costs at least twice the next dearest does not count, and
+     again for the next one. It stays in the list. With £100, £150, £200 and £1,000,
+     the £1,000 is five times £200 and does not count, so the Recommended is £150;
    - carries the label **"Recommended"** (the owner's word, held over "Featured"). The
      line under it was proposed as "Mid-priced for this category" and not objected to.
      The owner's reasoning, with their own example of £100, £150 and £200: recommend
@@ -301,6 +305,71 @@ the lexicon does not know. Every card shown was then read by hand.
 - **Data:** an iiyama monitor priced £1,344,000.00 appears on two answers. A price
   sanity check is needed before cards are drawn.
 - **Speed:** 3.4 to 20 seconds per search, median 4.1 s, against the 1.5 s target.
+
+## The owner's additions, 2026-10-16
+
+Decided by the owner after the understanding test, each with what it means in
+practice:
+
+1. **Search suggestions as the buyer types.** The likely word appears in faint letters
+   and fills in on a tap; below the box, word suggestions from the first letter that
+   narrow with each letter ("l" -> laptop, lamp). In practice:
+   - the suggestions come from PicWise's own vocabulary (the 278 kinds in English and
+     Greek, plus brands and words found in the feeds), and only words that return
+     products are offered;
+   - the list is loaded with the page, so a keystroke costs no request to the server;
+   - it needs JavaScript, which today's pages do not use.
+2. **A microphone in the search box.** The buyer speaks and the words are written. In
+   practice:
+   - it uses the browser's own speech recognition, which works in Chrome, Edge and
+     Safari but not Firefox, and needs no key and costs nothing;
+   - in Chrome the audio goes to Google's speech service, so the privacy note must say
+     so;
+   - phone keyboards already have dictation, so the button helps desktop most;
+   - the spoken words then go through the same misspelling understanding as typed
+     ones.
+3. **Availability is what the feed says** (confirmed).
+4. **Many more shops at once.** Apply to every Awin programme that has a product feed,
+   accept the shops that invite PicWise, and add other networks later. In practice:
+   - for the UK and US the main other networks are CJ, Rakuten Advertising and Impact,
+     plus Webgains in the UK;
+   - each network has its own feed format, so each needs its own reader. Amazon stays
+     removed;
+   - the bigger change is engineering. Today every cold start downloads and parses the
+     whole feed, and a search took about 4 s on 42,076 products, so many shops need a
+     store refreshed daily and a search index;
+   - a store large enough for millions of products is likely a paid plan, to be costed
+     before anything is created.
+5. **Extreme top prices do not count for the Recommended** (rule 7 above). The reading
+   "at least twice, and again for the next one, still listed" was stated to the owner.
+   With the median one extreme price moves the middle by half a place, so the rule
+   matters most on short lists and against feed errors such as the £1,344,000 monitor.
+   That monitor would still show at the end of the list, so a price sanity check
+   remains proposed.
+6. **Services get no Recommended in this phase:** insurance, banking, energy and
+   software, unless a mechanism is found that can decide what is the better deal.
+   PicWise rests on volume; it is a shopping search.
+7. **Trends below the search box:** what people look for today, a tap fills the box.
+   They must state only what is known (ANTI_FAKE):
+   - at first, seasonal picks labelled as such;
+   - then the most frequent searches on PicWise, which needs the query log stored (a
+     Supabase project, the owner's yes first);
+   - "what people buy" only from real purchase data, such as PicWise's own sales in
+     Awin's reports.
+8. **Why volume pays.** A buyer who reaches a shop through PicWise gets its cookie.
+   Anything they buy there within the cookie's life earns commission, the product they
+   saw or any other. The cookie's length and what counts are set per programme in its
+   terms.
+
+**Build order proposed to the owner:**
+1. the strict kind test;
+2. English over greeklish ("patio");
+3. the price-first engine: cheapest first, the median Recommended with the
+   extreme-price rule, More, the counter, and the same-product join;
+4. speed and a store, needed to go live and for many shops;
+5. suggestions and the microphone;
+6. trends;
+7. other networks.
 
 ## Marketing analysis, 2026-10-15 (proposals, not decisions)
 

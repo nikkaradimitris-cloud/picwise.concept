@@ -18,6 +18,19 @@ Must not include:
 - empty search-like first state
 - an infinite scroll that loads on its own ("More" is a button the buyer presses)
 
+## Search Box
+
+Added on 2026-10-16 by the owner.
+
+- As the buyer types, the likely word is completed in faint letters; a tap fills it in.
+- Word suggestions appear below from the first letter and narrow with each letter
+  ("l" -> laptop, lamp).
+- A microphone: the buyer speaks and the words are written.
+- Below the box: trends; a tap puts the word in the box and shows the products.
+- Trends state only what is known (ANTI_FAKE): seasonal picks labelled as such at first,
+  then the most frequent searches on PicWise. "What people buy" only once real
+  purchase data exists.
+
 ## Card Structure Requirements
 
 Each choice card must show:
