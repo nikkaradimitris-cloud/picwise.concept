@@ -18,9 +18,17 @@ Current state for whoever picks the project up next. Updated 2026-10-16.
   `docs/LANDING_PAGE_SPEC.md` were changed. Each changed passage in the concept carries
   a dated note. Services (insurance, energy, banking, software) were not decided and
   keep their old rules.
-- **Not built yet.** No code has changed: the engine still runs the superseded rules
-  (price zones, specification ranking, see-more for `fit` only, `more_choices` capped
-  at 4).
+- **Step 1 of the build order is built** (2026-10-16, on the branch): only the kind
+  asked for. A product answers a kind only when its type, its shop's category path or
+  its title's lead says so plainly. Doubtful products (11,187 of 42,076) are found
+  only by their own words, and pet and camping products answer only searches that
+  name them. Of the same 118 English searches, 95 now show four right products (80
+  before) and none shows the wrong kind (21 before). What price order would list
+  first is now the product, not its accessory: "laptop" opens with a £125.99 HP Stream
+  instead of a £3.99 adapter. Details and what is left: the plan file, "Step 1 built".
+  **Next: step 2, English over greeklish ("patio").** The rest is not built: the
+  engine still runs the superseded rules (price zones, specification ranking, see-more
+  for `fit` only, `more_choices` capped at 4).
 - **Measured on 2026-10-16** on a new feed (Back to the Office, Aosom UK, Living and
   Home; 42,076 rows). Results are in the plan file, "Measured on the third feed":
   - cheapest first puts accessories on top ("laptop" opens with docking stations);
@@ -61,8 +69,10 @@ Current state for whoever picks the project up next. Updated 2026-10-16.
   7. the app;
   8. other networks.
 
-  Waiting on the owner's yes to the order, and to the reading of the extreme-price
-  rule.
+  The owner restated the extreme-price rule for step 3 (2026-10-16: «όταν το
+  ακριβότερο είναι δύο φορές ακριβότερο από το προηγούμενο φθηνότερο να εξαιρείται
+  από το μέσο όρο»), which matches the recorded reading, and did not object to the
+  order; step 1 is built.
 - **Open owner decisions:**
   - no Recommended when no product has an EAN/GTIN?
   - fewer than four results;
@@ -309,10 +319,15 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 ## Next engineering steps, in order
 
 0. **Price-first plan** (`docs/picwise_price_first_plan_2026-10-15.md`): the founding
-   files were changed to it on 2026-10-16. Measure on the real feed first, then build in
-   small tested steps. Its "engineering, later" section lists what
-   it will need: `custom_6` for tyres, a category for Living and Home, and a store
-   refreshed daily.
+   files were changed to it on 2026-10-16. Measured on the third feed, and built in
+   small tested steps in the order recorded there. **Step 1, only the kind asked for,
+   is done** (section "Step 1 built"; `tests/test_picwise_strict_kind_reading.py`).
+   Next is step 2, English over greeklish ("patio" read as «πάτοι»), then step 3, the
+   price-first engine. Step 3 also replaces the old decision step behind the empty
+   pages ("3 seater sofa grey", "gas bbq with 4 burners") and makes the other words of
+   a search narrow the kind ("ceiling fan with light"). The plan's "engineering,
+   later" section lists what it will need: `custom_6` for tyres, a category for Living
+   and Home, and a store refreshed daily.
 
 0. ~~Every product shown carries availability, a price, an image and a description.~~
    **Done, 2026-10-12** (owner rule; recorded in `docs/PICWISE_DECISION_CONTRACT.md`,

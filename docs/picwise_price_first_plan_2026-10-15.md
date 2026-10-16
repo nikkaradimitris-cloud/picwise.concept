@@ -306,6 +306,129 @@ the lexicon does not know. Every card shown was then read by hand.
   sanity check is needed before cards are drawn.
 - **Speed:** 3.4 to 20 seconds per search, median 4.1 s, against the 1.5 s target.
 
+## Step 1 built: only the kind asked for, 2026-10-16
+
+The owner's rule, in their words: «το laptop πρέπει να βγάζει laptop». Built on the
+branch, not on `main`: the kind reader (`src/picwise_nlu/concept_understanding.py`),
+the lexicon (`src/picwise_nlu/product_concepts.py`) and the search
+(`src/picwise_providers/search_selection.py`), tested in
+`tests/test_picwise_strict_kind_reading.py`. The page still shows the old four cards.
+Price order, More and the median come in step 3. What they will show is decided here,
+because price order puts each kind's cheapest products first, and those were its
+accessories and look-alikes.
+
+**How a product's kind is read now.**
+- **The product type, by its last words.**
+  - "Tablet Cases" are cases; "Printer Labels" and "Printer Drums" are supplies.
+  - A type that names a kind PicWise does not know makes the product doubtful, and
+    its title is not searched for a kind instead. "Temperature & Humidity Sensors"
+    are not monitors.
+  - A type that lists such a kind ("Industrial Environmental Sensors & Monitors",
+    "Power Adapters & Inverters") needs the title to name the known kind.
+- **Each category field is its own breadcrumb.** A feed row carries the shop's own
+  path, the network's taxonomy and a short name. These used to be joined into one
+  text, and the shelves ran into each other ("console tables home & garden"). The
+  first field that says anything decides: the shop's "Laundry > Tumble Dryers" over
+  the network's "Bathroom Accessories".
+- **The title's lead** is the part before "(", ",", " - ", ":", "+", "with", "for" or
+  "w/". A "+" between digits does not end it, so "4+1 Burner" stays in.
+  - The noun the lead ends with is the product: "Lenovo Tab 11" Folio Case" is a
+    case, "Sandbox Cover" a cover.
+  - A lead that names a kind only to describe something else makes the product
+    doubtful: "Coat Rack ... Shelf", "Sofa Arm Tray", "Safety Bed Rail", "Basketball
+    Hoop".
+  - On a shelf, a kind named inside the product's own phrase only describes it:
+    "Kids Desk Chairs" on the kids' desks shelf are chairs.
+- **A product filed in another department is doubtful,** such as a car booster seat
+  on the "Changing Tables" shelf. Toys and garden furniture are aisles and keep what
+  is filed there: a kids' scooter is a toy, and a bistro table is garden furniture.
+- **Pet and camping products carry their context.** "bed" shows no dog beds or
+  camping cots; "dog bed" shows dog beds.
+- **A doubtful product is never shown for a kind** but is still found by its own
+  words. This is 11,187 of the 42,076 rows. Another 4,714 are accessories, against
+  4,409 before.
+
+Products counted per kind on the whole feed, before and after:
+
+| Kind | Before | After |
+| --- | --- | --- |
+| laptop | 1,118 | 734 |
+| smartphone | 840 | 132 |
+| tablet | 326 | 123 |
+| printer | 535 | 260 |
+| ups | 918 | 211 |
+| fan | 229 | 38 |
+
+**New kinds,** so that the look-alikes have their own:
+- desk phone (IP and conference phones);
+- label printer;
+- PC cooling;
+- sofa bed;
+- game table (foosball, pool, table tennis, poker);
+- play tent (a toy);
+- shower seat;
+- greenhouse (grow tents, polytunnels);
+- barbell (weight plates).
+
+Existing kinds were widened too: raised garden beds are planters, electric
+fireplaces are heaters, and ceiling and pendant lights are lamps.
+
+**Measured on the third feed** (42,076 rows), with the same 118 English searches as
+before, every card read by hand:
+
+| Outcome | Before | After |
+| --- | --- | --- |
+| all four cards right | 80 | 95 |
+| right kind, but a card misses a word of the search | 7 | 12 |
+| wrong things shown | 21 | 0 |
+| nothing shown | 10 | 11 |
+
+The misspelling benchmark is unchanged: 96.0%, 1 wrong, 27 not understood. Of 106
+test modules, 105 pass. The other, `test_picwise_query_understanding`, fails the same
+two tests ("machine" ambiguity) on the unchanged code too.
+
+**What price order would list first,** the cheapest product of each kind on this feed
+that passes the card rules:
+
+| Kind | Before | Now |
+| --- | --- | --- |
+| laptop | £3.99 USB-C audio adapter | £125.99 HP Stream laptop |
+| smartphone | £2.99 screen protector | £67.99 Crosscall mobile phone |
+| tablet | £15.99 folio case | £72.99 Samsung Galaxy Tab A |
+| monitor | £20.99 temperature and humidity monitor | £58.99 piXL portable monitor |
+| printer | £2.99 ribbon cartridge | £45.99 Canon PIXMA inkjet printer |
+| desk | £8.99 letter tray | £19.99 foldable laptop desk |
+| table | £16.99 table football | £17.99 bedside table |
+| sofa | £14.99 sofa arm tray | £39.99 kids' sofa |
+| bed | £12.99 cat bed | £59.99 single bed frame |
+| tent | £19.99 kids' play tent | £22.99 2-person camping tent |
+| toy | £12.99 sandbox cover | £16.99 kids' playhouse |
+| fan | £4.99 PC case fan | £16.99 handheld fan |
+| ups | £44.99 replacement battery | £46.99 VIDA 650VA UPS |
+
+The middle product moved the same way. For "smartphone" it was a £23.99 phone case and
+is now a £868.99 iPhone 16. For "tablet" it was a £93.99 folio and is now a £936.99
+iPad mini.
+
+**What step 1 does not fix:**
+- **Basic phones first under "smartphone".** The cheapest are Crosscall and Doro
+  basic phones, which the feed files as "Mobile Phones". PicWise reads "mobile phone"
+  as a smartphone. Separating the two is a small change, if the owner wants it.
+- **The other words of a search still do not narrow the kind.** "ceiling fan with
+  light" shows handheld fans, "portable ssd" shows portable hard drives, and one
+  wired headset appears under "wireless headphones". This is step 3: the price-first
+  engine reads those words.
+- **Empty pages** for "3 seater sofa grey", "4 person camping tent", "electric kettle
+  1.7l" and now "gas bbq with 4 burners". The search finds four right products,
+  here four 4+1 burner gas grills, and the old decision step answers
+  "insufficient_selected_products", so no page is drawn. That step goes in step 3.
+- **"patio"** is read as greeklish. That is step 2.
+- **Searches for an accessory of a kind** are read as the accessory's own kind:
+  "bbq cover" is read as a phone case, through the lexicon's weak "cover". This was
+  found, not fixed, and the old code reads it the same way.
+- **Prices:** £0.99 headsets and a £1,344,000 monitor reach the cards. A price check
+  before cards are drawn belongs to step 3.
+
 ## The owner's additions, 2026-10-16
 
 Decided by the owner after the understanding test, each with what it means in
@@ -384,7 +507,11 @@ practice:
       product. That need not cost anything: a scheduled job can build it and store it
       as files. A paid database comes in only if it outgrows free limits.
 
-**Build order proposed to the owner (updated the same day):**
+**Build order proposed to the owner (updated the same day).** The owner restated the
+extreme-price rule for step 3 in their own words («όταν το ακριβότερο είναι δύο φορές
+ακριβότερο από το προηγούμενο φθηνότερο να εξαιρείται από το μέσο όρο»), which matches
+the reading above, and did not object to the order. Step 1 was built the same day:
+see "Step 1 built".
 1. the strict kind test;
 2. English over greeklish ("patio");
 3. the price-first engine: cheapest first, the median Recommended with the
