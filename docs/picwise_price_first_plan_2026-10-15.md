@@ -172,6 +172,75 @@ Recorded so it does not have to be found again. None of it is decided.
   every serverless cold start downloads and parses the whole feed (`AWIN_FEED_URL`,
   reused for 6 hours). Supabase only with the owner's yes.
 
+## Measured on the third feed, 2026-10-16
+
+The owner sent a new file for the shops asked for: 42,076 rows, 100 columns, all GBP.
+**Back to the Office** has 29,831 rows and is an IT and office-supplies shop, not a
+furniture one: cables, toner, laptops, drives, UPS units, monitors, phones, ink,
+keyboards, printers. **Aosom UK** has 9,984 and **Living and Home** 2,261. Songmics and
+Euroffice are not in it.
+
+Method: the project's own loader and checks (`offer_health`, `product_description`,
+`product_identity`, `search_selection._product_concepts` and `_title_accessory_penalty`).
+The kind test is membership in the concept with the accessory penalty at zero. That is
+a stand-in for the strict test the plan needs, not that test.
+
+- **`tools/check_awin_feed.py`:** 39,592 products card-eligible; **Living and Home 0**,
+  all its rows held at the feed gate for having no category; ratings 0; 15 refurbished;
+  a known kind for 61% of eligible products. **Each sample search took 3.7 to 16.2
+  seconds**, against the section 9 target of a first render under 1.5 seconds.
+- **Rules 1–3:** 41,692 rows carry title, price, image, description, link and
+  availability (Aosom 9,930, Back to the Office 29,661, Living and Home 2,101; 159 of its
+  rows have no price). With a known kind that is not an accessory, 21,135: Aosom 5,083,
+  Back to the Office 15,358, and Living and Home 694 with the kind read from the title.
+  The plan does not require a category, so those 694 could be shown.
+- **Rule 2 removes nothing, because no shop sends a usable stock state.** `in_stock` is 1
+  on every row of all three. `stock_status` reads "in stock" on every Aosom row and is
+  empty for the other two, and `stock_quantity` is empty everywhere. Every product is
+  "listed as available", and nothing in the feed can pick out one that is not.
+- **Rule 5 joins nothing.** No EAN/GTIN appears in two shops: these shops sell
+  different products. 17 codes repeat inside a single shop.
+- **Kinds:** 167 have at least one product and 122 have four or more. Kinds where two
+  shops each have four or more: chair, table, toy, bag, garden furniture, lamp, bed,
+  office chair, shelving, fan, desk, mirror, heater, sofa, tent, grill, kettle, coffee
+  machine, dinnerware. Laptops, phones, printers, toner and the other IT kinds come
+  from Back to the Office alone.
+- **Cheapest first exposes every mistake in reading the kind,** because accessories and
+  look-alikes are the cheapest things in any kind. Even with the engine's accessory test
+  as a strict gate:
+  - the three cheapest "laptops" are docking stations (£11.99, £16.99, £17.99);
+  - the cheapest "smartphone" is a screen protector (£2.99), and the cheapest "tablets"
+    are folio cases (£15.99);
+  - the cheapest "monitor" is a temperature-and-humidity monitor (£20.99), and the
+    cheapest "printers" are ribbon cartridges (£2.99);
+  - the cheapest "desk" is a letter tray (£8.99), and the cheapest "sofa" an armrest
+    tray (£14.99);
+  - "bed" opens with pet beds, and "garden furniture" with furniture covers.
+
+  Today the relevance order keeps these at the bottom; price order puts them at the
+  top. So rule 1 needs a strict yes/no test of the kind, and that is the first
+  engineering step.
+- **The middle of the range picks the top end.** The Recommended under the rule as
+  decided ("B"), under the middle product by position ("A", the median), and under B
+  with the cheapest and dearest 5% left out:
+
+  | Kind | B (decided) | A (median) | B without extremes |
+  | --- | --- | --- | --- |
+  | laptop | £4,809.99 MacBook Pro 16" | £879.99 ThinkPad L13 | £1,804.99 |
+  | monitor | £2,574.99 | £226.99 | £580.99 |
+  | printer | £6,504.99 large-format | £161.99 | £1,105.99 |
+  | headphones | £279.99 | £67.99 | £129.99 |
+  | office chair | £332.99 | £94.99 | £205.99 |
+  | garden furniture | £643.99 | £110.99 | £288.99 |
+  | sofa | £600.00 | £295.99 | £600.00 |
+  | kettle | £69.99 | £41.99 | £45.99 |
+
+  Prices are skewed: a few dear products stretch the range, so its middle sits near
+  the top. One mistyped price can decide it. The "monitor" range runs to a product
+  listed at £1,344,000. The median moves for neither, but any accessory left in the list
+  pulls it down: for "smartphone" it lands on a £23.99 screen protector. So it needs rule
+  1 first. Put to the owner on 2026-10-16.
+
 ## Marketing analysis, 2026-10-15 (proposals, not decisions)
 
 Asked by the owner: analyse the plan at the level of marketing, and make proposals on
