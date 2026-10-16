@@ -1,5 +1,9 @@
 # Where the ratings come from
 
+> **2026-10-15:** the owner dropped ratings from PicWise's judgement
+> (`docs/picwise_price_first_plan_2026-10-15.md`). Kept as the record of the search,
+> so it is not redone.
+
 Owner question (2026-10-12): whatever information the existing feed does not give --
 say where we will collect **ratings** from.
 

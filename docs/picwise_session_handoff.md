@@ -1,41 +1,61 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-15.
+Current state for whoever picks the project up next. Updated 2026-10-16.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Start here (2026-10-15)
+## Start here (2026-10-16)
 
-- **The owner's standing instruction: build nothing now.** "We wait for a proper feed
-  with ratings, because our main judgement must come from how many people bought the
-  product and how they rated it; everything else is around that judgement." Do not
-  start new engineering until such a feed arrives or the owner says otherwise.
-- **Branch, not `main`.** 27 commits on `ccr-fd5dc1bc-4vgsgl` are not on `main`
-  (description rule, specs reader, identity readers, comparison rules, "see four
-  more", spec-before-price, feed checker, docs). Merge to `main` only when the owner
-  says so explicitly.
-- **Both real feeds measured so far carry zero ratings and zero sales counts**, checked
-  over every row: the first (11,573 UK electronics) and the second (51,630: Tyres UK,
-  Aosom UK, Living and Home). Details in "Waiting on the owner" item 2 and `PROGRESS.md`.
-- **Awin Google format:** the owner asked whether ratings come there. Answer given:
-  almost certainly not. Awin's Google format mirrors Google's main product data
-  specification, which has no rating field; Google takes ratings through a separate
-  Product Ratings XML feed. Not verified against Awin's own column list
-  (`help.awin.com` is blocked from sessions). The cheap proof, offered and not yet
-  done: a feed of Living and Home's **Google** row only (4,483 products; it may also
-  carry the category its Awin row lacks).
+- **New direction: price first, no ratings** (owner, 2026-10-15). Read
+  `docs/picwise_price_first_plan_2026-10-15.md` before anything else. In short: only
+  the kind asked for; never out of stock; cheapest first; the same product once, from
+  its cheapest in-stock shop; the first four are a "Recommended" at the middle of the
+  price range plus the three cheapest, with "4 of 45"; "more" again and again. The old
+  instruction, "build nothing until a feed with ratings arrives", is over, and the
+  search for ratings stops.
+- **Not built, and not to be built yet.** The plan contradicts the founding files:
+  `concept.picwise.txt` sections 6 and 10, `docs/MISSION.md` and `PROJECT_RULES.md`
+  sections 2 and 4 (no endless list, not a search engine). Raised with the owner on
+  2026-10-16. Their answer decides whether those files change or the plan narrows. No
+  code has changed: the engine still runs the superseded rules (price zones,
+  specification ranking, see-more for `fit` only).
+- **Next step once the owner answers:** measure the plan on the 51,630-row feed. The
+  owner re-uploads it; it is not in the session. Count per shop and per kind: how many
+  products pass, how many join as the same product, and how many carry an EAN/GTIN for
+  the Recommended.
+- **Open owner decisions:**
+  - the conflict above;
+  - no Recommended when no product has an EAN/GTIN?
+  - fewer than four results;
+  - the labels on the three cheapest cards;
+  - whether brand + MPN also counts as "the same product";
+  - the line under Recommended ("Mid-priced for this category" or "Middle of the
+    £X–£Y range").
+
+  The marketing proposals in the plan file are proposals; none is approved.
+- **Branch, not `main`.** 29 commits on `ccr-fd5dc1bc-4vgsgl` are not on `main`. Merge
+  to `main` only when the owner says so explicitly. A session may be set up to push to
+  another branch (on 2026-10-16 it was `claude/vibrant-cerf-b2afyt`). The owner works
+  on `ccr-fd5dc1bc-4vgsgl`, so ask before writing anywhere else.
+- **Both real feeds measured carry zero ratings and zero sales counts**, checked over
+  every row: the first (11,573 UK electronics) and the second (51,630: Tyres UK, Aosom
+  UK, Living and Home). Two facts from the second that the plan depends on:
+  - Tyres UK (39,403 rows) writes its description in `custom_6`, so no tyre passes the
+    description rule until that column is read;
+  - Living and Home (2,255 rows) sends no category, so all its rows are held at the
+    feed gate.
+- **Awin Google format:** it cannot be mixed with Awin-format feeds in one file (Game
+  Over offers only Google format). Whether it carries ratings no longer matters.
 - **Awin status (owner's screenshots, 2026-10-14):** Joined -- Living and Home, Back
   to the Office, Game Over, Tyres UK, Aosom UK. Pending -- Gtech, Songmics, Mstore,
   Hoxton Macs, Road Angel, Boots.com, Currys, Euroffice. Rejected -- Beldray, Mattress
   Online, SharkNinja UK (advised not to re-apply now). Markets: UK and US.
 - **When a new feed file arrives:** copy it into its own empty directory, run
-  `python -I tools/check_awin_feed.py <file>` and also check the rating/sales columns
-  over all rows (not only card-eligible ones). Report in Greek, short. Never ask the
-  owner to paste a feed link (it holds the API key): they download and upload the file.
-- **Open owner decisions:** confidence-weighted rating (floor 5 reviews, weight 20) --
-  yes not given; role sets per category group; spec vs price balance; what to do when
-  one of four has no rating; where wine/food/textiles belong.
+  `python -I tools/check_awin_feed.py <file>` and measure it against the price-first
+  rules. Report in Greek, short. Never ask the owner to paste a feed link (it holds the
+  API key): they download and upload the file.
 - **Homepage** still reads "Buying Decision Preview" / "Live safe mode" and `/about` is
-  404; likely hurting Awin approvals. The owner declined a fix on 2026-10-14.
+  404; likely hurting Awin approvals. The owner declined a fix on 2026-10-14, before the
+  plan changed. The marketing analysis proposes a new homepage sentence.
 
 ## Where the work is
 
@@ -192,7 +212,8 @@ guide for the owner), `docs/picwise_query_understanding.md`,
    is which shops go into the feed, and `tools/check_awin_feed.py` now prints this
    table for any feed so the decision can be made on measurement.
 
-2. **A feed that carries real product ratings.** The owner decided on 2026-10-11 that
+2. ~~**A feed that carries real product ratings.**~~ **Dropped by the owner on
+   2026-10-15** (price first, see "Start here"). Kept as the record. The owner decided on 2026-10-11 that
    the recommendation must follow a product's rating rather than its price, and the
    current feed has none at all (`check_awin_feed.py` now reports this as "Products
    with a real rating"). Nothing changes in the ranking until such a feed exists:
@@ -245,6 +266,12 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 
 ## Next engineering steps, in order
 
+0. **Price-first plan** (`docs/picwise_price_first_plan_2026-10-15.md`): blocked on
+   the owner settling its conflict with the founding files. Then measure on the real
+   feed, then build in small tested steps. Its "engineering, later" section lists what
+   it will need: `custom_6` for tyres, a category for Living and Home, and a store
+   refreshed daily.
+
 0. ~~Every product shown carries availability, a price, an image and a description.~~
    **Done, 2026-10-12** (owner rule; recorded in `docs/PICWISE_DECISION_CONTRACT.md`,
    section "What a product must carry to be shown"). The first three were already
@@ -290,6 +317,13 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 5. Investigate the two pre-existing registry failures.
 
 ## Known doc conflict (unresolved, owner's call)
+
+**New, 2026-10-16:** the price-first plan contradicts `concept.picwise.txt` sections 6
+and 10, `docs/MISSION.md` and `PROJECT_RULES.md` sections 2 and 4. The table is in
+`docs/picwise_price_first_plan_2026-10-15.md`. It was raised with the owner, and no
+founding file was changed.
+
+Older, and still open:
 
 Three files still describe the project as being in the documentation-only phase:
 
@@ -382,7 +416,8 @@ files: correcting the phase wording is the owner's decision, not the engineer's.
   sits behind a substring pre-filter for speed (38 ms for 15,000 products, worst case);
   a vocabulary word added without its hint would stop being read, which
   `test_picwise_condition_request` guards.
-- Which four are shown (owner decision, 2026-10-08, confirmed with its details and
+- Which four are shown (superseded by the price-first plan of 2026-10-15, not yet
+  built; what the code does today) (owner decision, 2026-10-08, confirmed with its details and
   recorded in the Decision Contract): groups of substantially equivalent products in
   relevance order; a group too big for the free slots is spread across its price range
   (four slots: cheapest, two between, dearest; two: cheapest and dearest; one: the

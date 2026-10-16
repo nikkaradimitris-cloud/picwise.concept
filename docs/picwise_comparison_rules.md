@@ -1,5 +1,10 @@
 # Comparison rules: where "better" exists, and where it does not
 
+> **2026-10-15:** the owner moved PicWise to price first
+> (`docs/picwise_price_first_plan_2026-10-15.md`). Under that plan these classes no
+> longer decide what the page shows. They stay here as the record, and in the code
+> until the plan is built.
+
 Owner instruction (2026-10-12): make rules for the subcategories that cannot be
 compared with each other; find the ones that do not support the notions of
 **comparison** and **best**, because those get a "see more" button; and find which

@@ -61,8 +61,9 @@ An output is valid only if all checks pass:
 
 ## Undefined Details
 
-- Ranking formula weights: TODO, **waiting on data, not on a decision** (owner,
-  2026-10-11). The owner's rule: the recommended choice must follow the **rating** of
+- Ranking formula weights: **superseded on 2026-10-15** by "Price first" below, where
+  the owner dropped ratings. Kept as the record of how it stood. TODO, **waiting on
+  data, not on a decision** (owner, 2026-10-11). The owner's rule: the recommended choice must follow the **rating** of
   a product, not its price. PicWise has no ratings today. The first real feed carries
   none — `rating` and `average_rating` are filled on 127 of 11,573 rows and every one
   of them says `0`, and the `reviews` column holds colours ("Black", "Olive/Camo") —
@@ -83,8 +84,9 @@ An output is valid only if all checks pass:
   backpack and phone case 2%). A kind with neither a rating nor a specification has no
   ranking signal that is true, so it can only show its four and declare that — which
   is the `data_not_yet` rule of QUALITY_RULES, not a weight to invent.
-- Tie-break protocol between close candidates: **decided by the owner, 2026-10-08,
-  restated 2026-10-12.** When the ranking leaves more than four substantially
+- Tie-break protocol between close candidates: **superseded on 2026-10-15** by "Price
+  first" below (the first four become the Recommended plus the three cheapest); still
+  what the code does. **Decided by the owner, 2026-10-08, restated 2026-10-12.** When the ranking leaves more than four substantially
   equivalent products, the four shown spread across their price range: the cheapest,
   the dearest and two in between, never bypassing a hard filter. The owner restated
   this on 2026-10-12 as four **different** price zones, and that is a correction the
@@ -270,6 +272,9 @@ Pinned by `tests/test_picwise_product_specs.py` (22 tests).
 
 ## "See more": a second four where there is no best, 2026-10-12
 
+> **Superseded on 2026-10-15** by "Price first" below: "more" on every search, by
+> price, as often as the buyer asks. Still what the code does.
+
 Owner instruction: in the kinds of product that do not support the notions of
 comparison and best -- a dress, a bag, a tablecloth, a cable of a particular length --
 the four are four different answers and the buyer gets a **"see more" button**, because
@@ -299,6 +304,9 @@ How it behaves:
 Pinned by `tests/test_picwise_see_more_second_four.py` (8 tests).
 
 ## A stated specification decides before the price, 2026-10-13
+
+> **Superseded on 2026-10-15** by "Price first" below: specifications are shown when
+> present and decide nothing. Still what the code does.
 
 The owner's rule, held since 2026-10-11: the recommendation must not rest on price.
 Until now it did, because the feed gave nothing else -- the first reason code on a
@@ -346,6 +354,9 @@ Pinned by `tests/test_picwise_specs_outrank_price.py` (10 tests).
 
 ## The main judgement, stated by the owner 2026-10-13
 
+> **Superseded on 2026-10-15** by "Price first" below: the owner dropped ratings and
+> sales counts, because no shop measured sends them.
+
 > Η κύρια κρίση μας πρέπει να βγαίνει από το πόσοι το αγόρασαν το προϊόν και πώς το
 > βαθμολόγησε ο κόσμος. Όλα τα υπόλοιπα είναι γύρω από αυτή την κρίση.
 
@@ -372,3 +383,38 @@ feed carries sales volume. The one source found in this session that states both
 score and a volume directly is the AliExpress affiliate API (`evaluate_rate` plus
 sales volume), and the marketplaces are the places where both exist at all, because a
 small shop has neither. See `docs/picwise_rating_sources.md`.
+
+## Price first, decided by the owner, 2026-10-15
+
+> «προτείνω να πάμε με τη λογική της τιμής εμφανίζουμε πρώτα αυτά με τη φθηνότερη
+> τιμή και πάντα με σκληρό κριτήριο τη διαθεσιμότητα»
+
+The owner dropped ratings: two real feeds, about fifteen shops, and not one rating or
+sales figure between them. In their place:
+
+1. only the kind of product asked for ("laptop" shows laptops, not their accessories)
+2. never a product the feed says is out of stock, with the feed refreshed daily
+3. the products must carry title, price, image, description, link and availability, as
+   ruled on 2026-10-12; specifications and codes are shown when present, never required
+4. cheapest first, by product price alone, with no delivery cost
+5. the same product (same EAN/GTIN) shown once, from the cheapest shop that has it in
+   stock; no code, no joining
+6. no ratings anywhere
+7. the first four are one **"Recommended"** and the three cheapest, with "4 of 45"
+   beneath. The Recommended is the product with an EAN/GTIN whose price is closest to
+   the middle of the whole result's price range, (cheapest + dearest) ÷ 2, the cheaper
+   of two on a tie. **No commission is used** and none is mentioned on the card
+8. "more" gives the next four cheapest, "8 of 45", as often as asked, none of them
+   recommended
+9. one general affiliate line in the site footer
+
+The full record, with the reasons, what stays, the open questions and the marketing
+analysis, is in `docs/picwise_price_first_plan_2026-10-15.md`.
+
+**Not implemented, and not to be until the owner settles one conflict.** Rules 7 and 8
+contradict the founding files: `concept.picwise.txt` section 10 (more opens «μόνο 4
+ακόμα», «όχι κατάλογος», «όχι 30 προϊόντα») and section 6 («Τα 4 προϊόντα δεν είναι
+λίστα»), `docs/MISSION.md` (not "an infinite product list") and `PROJECT_RULES.md`
+sections 2 and 4 ("decision engine, not a search engine"; never "Show infinite product
+lists"). PROJECT_RULES section 1.4 says to stop and raise it, and it was raised with
+the owner on 2026-10-16. Those files are unchanged.
