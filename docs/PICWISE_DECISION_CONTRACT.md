@@ -415,7 +415,10 @@ sales figure between them. In their place:
    recommended the top end (a £4,809.99 MacBook Pro for "laptop"). **No commission is
    used** and none is mentioned on the card. When no product of the search has an
    EAN/GTIN there is no Recommended, only the four cheapest, and fewer than four right
-   products are shown as they are, "2 of 2" (owner, 2026-10-16)
+   products are shown as they are, "2 of 2" (owner, 2026-10-16). The Recommended's
+   line reads "Mid-priced for this category"; the three cheapest say "Lowest price",
+   or "Lowest price of N shops" when one product is joined across shops (owner,
+   2026-10-16)
 8. "more" gives the next four cheapest, "8 of 45", as often as asked, none of them
    recommended
 9. one general affiliate line in the site footer

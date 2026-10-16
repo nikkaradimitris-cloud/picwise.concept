@@ -26,9 +26,12 @@ Current state for whoever picks the project up next. Updated 2026-10-16.
   before) and none shows the wrong kind (21 before). What price order would list
   first is now the product, not its accessory: "laptop" opens with a £125.99 HP Stream
   instead of a £3.99 adapter. Details and what is left: the plan file, "Step 1 built".
-  **Next: step 2, English over greeklish ("patio").** The rest is not built: the
-  engine still runs the superseded rules (price zones, specification ranking, see-more
-  for `fit` only, `more_choices` capped at 4).
+  **Step 2 is built too** (English before greeklish: "patio set" shows garden
+  furniture, not insoles). The 118 searches now give 97 with four right cards. **Next:
+  step 3, the price-first engine.** It must also replace the old decision step that
+  empties four pages, and make a search's other words narrow the kind. The rest is
+  not built: the engine still runs the superseded rules (price zones, specification
+  ranking, see-more for `fit` only, `more_choices` capped at 4).
 - **Measured on 2026-10-16** on a new feed (Back to the Office, Aosom UK, Living and
   Home; 42,076 rows). Results are in the plan file, "Measured on the third feed":
   - cheapest first puts accessories on top ("laptop" opens with docking stations);
@@ -78,12 +81,13 @@ Current state for whoever picks the project up next. Updated 2026-10-16.
     basic phones. This is built, on the branch;
   - no Recommended when no product has an EAN/GTIN;
   - fewer than four results are shown as they are ("2 of 2");
-  - brand + MPN counts as the same product.
+  - brand + MPN counts as the same product;
+  - the three cheapest cards say "Lowest price" ("Lowest price of N shops" when
+    offers are joined), and the line under Recommended is "Mid-priced for this
+    category".
 
-  The last three are for step 3.
-- **Open owner decisions:**
-  - the labels on the three cheapest cards ("Lowest price" proposed);
-  - the line under Recommended ("Mid-priced for this category" proposed).
+  All but the first are for step 3.
+- **Open owner decisions:** none on the plan.
 
   The marketing proposals in the plan file are proposals; none is approved.
 - **Branch, not `main`.** `ccr-fd5dc1bc-4vgsgl` is ahead of `main`; count the commits
@@ -326,9 +330,10 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 0. **Price-first plan** (`docs/picwise_price_first_plan_2026-10-15.md`): the founding
    files were changed to it on 2026-10-16. Measured on the third feed, and built in
    small tested steps in the order recorded there. **Step 1, only the kind asked for,
-   is done** (section "Step 1 built"; `tests/test_picwise_strict_kind_reading.py`).
-   Next is step 2, English over greeklish ("patio" read as «πάτοι»), then step 3, the
-   price-first engine. Step 3 also replaces the old decision step behind the empty
+   is done** (section "Step 1 built"; `tests/test_picwise_strict_kind_reading.py`), and
+   so is **step 2, English before greeklish** (section "Step 2 built";
+   `tests/test_picwise_english_over_greeklish.py`). Next is step 3, the price-first
+   engine. Step 3 also replaces the old decision step behind the empty
    pages ("3 seater sofa grey", "gas bbq with 4 burners") and makes the other words of
    a search narrow the kind ("ceiling fan with light"). The plan's "engineering,
    later" section lists what it will need: `custom_6` for tyres, a category for Living

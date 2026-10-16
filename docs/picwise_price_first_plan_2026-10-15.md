@@ -164,14 +164,13 @@ What the files said before:
    Recommended, the four cheapest only (rule 7).
 3. ~~Fewer than four results.~~ Settled on 2026-10-16: shown as they are, "2 of 2"
    (rule 7).
-4. What the three cheapest cards say. The contract requires a role label and a reason
-   on every card. Proposal: "Lowest price", and "Lowest price of N shops" when rule 5
-   joined offers.
+4. ~~What the three cheapest cards say.~~ Settled on 2026-10-16 (owner: «Οκ» to the
+   proposal): "Lowest price", and "Lowest price of N shops" when rule 5 joined offers.
 5. ~~Whether brand + MPN may also join "the same product".~~ Settled on 2026-10-16:
    yes (rule 5).
-6. The line under Recommended: "Mid-priced for this category". The marketing
-   proposal "Middle of the £X–£Y range" no longer fits, because the Recommended is now
-   the median and not the middle of the range.
+6. ~~The line under Recommended.~~ Settled on 2026-10-16 (owner: «Οκ»): "Mid-priced
+   for this category". The marketing proposal "Middle of the £X–£Y range" no longer
+   fits, because the Recommended is now the median and not the middle of the range.
 
 ## What it means for the engineering, later
 
@@ -453,12 +452,51 @@ left as it is, so that the number shows the rule's effect.
   1.7l" and now "gas bbq with 4 burners". The search finds four right products,
   here four 4+1 burner gas grills, and the old decision step answers
   "insufficient_selected_products", so no page is drawn. That step goes in step 3.
-- **"patio"** is read as greeklish. That is step 2.
+- **"patio"** was read as greeklish. Fixed in step 2, below.
 - **Searches for an accessory of a kind** are read as the accessory's own kind:
   "bbq cover" is read as a phone case, through the lexicon's weak "cover". This was
   found, not fixed, and the old code reads it the same way.
 - **Prices:** £0.99 headsets and a £1,344,000 monitor reach the cards. A price check
   before cards are drawn belongs to step 3.
+
+## Step 2 built: English before greeklish, 2026-10-16
+
+The bug: "patio set" and "patio heater" answered with insoles, because "patio" was
+read as the greeklish of «πάτοι». The rule now: a Latin-script word that PicWise's own
+lexicon knows as English is not read as the greeklish of a Greek name of another kind.
+A greeklish reading that names the same kind stays: "consoles" and «κονσόλες»,
+"laptop", "mixer". Greeklish that is not an English word is read as before: "patoi"
+is still insoles, and "skales" is still ladders.
+
+Checked across the whole lexicon, the rule changed two words:
+- "patio" was insoles;
+- "scales" was ladders («σκάλες»).
+
+"patio" is now a word buyers use for garden furniture ("patio set"). In feed titles it
+names nothing by itself: a "Patio Heater" is a heater.
+
+On the third feed, of the same 118 searches:
+- "patio set" now shows four garden furniture sets;
+- "patio heater" shows four patio heaters;
+- before, both showed nothing.
+
+| Outcome | After step 1 | After step 2 |
+| --- | --- | --- |
+| all four cards right | 95 | 97 |
+| right kind, but a card misses a word of the search | 12 | 12 |
+| wrong things shown | 0 | 0 |
+| nothing shown | 11 | 9 |
+
+"mobile phone" and "cell phone" now show basic phones, which is right by the owner's
+rule of the same day. The misspelling benchmark is unchanged by this step, at 93.9%
+with the same cases. Tests: `tests/test_picwise_english_over_greeklish.py` (3).
+
+The nine that show nothing:
+- "3 seater sofa grey", "4 person camping tent", "electric kettle 1.7l" and "gas bbq
+  with 4 burners" are the old decision step, which goes in step 3;
+- "inc cartridge epson", "tnet", "lamb for bedroom" and "mirrer" each offer the right
+  "did you mean";
+- "dsek for home office" offers none.
 
 ## The owner's additions, 2026-10-16
 
@@ -543,14 +581,16 @@ practice:
 - fewer than four results are shown as they are;
 - brand + MPN is the same product.
 
-All three are recorded in rules 5 and 7. Still open: the labels on the three cheapest
-cards, and the line under the Recommended.
+All three are recorded in rules 5 and 7. The owner then accepted the two remaining
+proposals («Οκ»): the three cheapest cards say "Lowest price" ("Lowest price of N
+shops" when offers are joined), and the line under the Recommended is "Mid-priced for
+this category". Nothing in "Open, for the owner" is left.
 
 **Build order proposed to the owner (updated the same day).** The owner restated the
 extreme-price rule for step 3 in their own words («όταν το ακριβότερο είναι δύο φορές
 ακριβότερο από το προηγούμενο φθηνότερο να εξαιρείται από το μέσο όρο»), which matches
-the reading above, and did not object to the order. Step 1 was built the same day:
-see "Step 1 built".
+the reading above, and did not object to the order. Steps 1 and 2 were built the same day: see "Step 1 built" and "Step 2 built". Next is
+step 3, the price-first engine.
 1. the strict kind test;
 2. English over greeklish ("patio");
 3. the price-first engine: cheapest first, the median Recommended with the
