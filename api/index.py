@@ -19,6 +19,7 @@ from picwise_integrations import (  # noqa: E402
     UrllibSubbyBridgeEventSender,
     send_subby_live_proof_event,
 )
+from picwise_search.live_search_resolver import parse_shown_count  # noqa: E402
 from picwise_surface import (  # noqa: E402
     render_affiliate_disclosure_page,
     render_branded_not_found_page,
@@ -81,8 +82,11 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         # Honour an inbound purchase-intent query: a visitor arriving from Google
         # on /?q=<intent> must see the decision result, not an empty landing.
         query_string = str(environ.get("QUERY_STRING", ""))
-        query = parse_qs(query_string).get("q", [""])[0]
-        html = _APP.root_landing_html(query)
+        params = parse_qs(query_string)
+        query = params.get("q", [""])[0]
+        html = _APP.root_landing_html(
+            query, shown=parse_shown_count(params.get("shown", [""])[0])
+        )
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
@@ -120,16 +124,26 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
 
     if path in {"/search", "/results"}:
         query_string = str(environ.get("QUERY_STRING", ""))
-        query = parse_qs(query_string).get("q", [""])[0]
+        params = parse_qs(query_string)
+        query = params.get("q", [""])[0]
         source_page = "results" if path == "/results" else "search"
-        html = _APP.picwise_reference_html(query, source_page=source_page)
+        html = _APP.picwise_reference_html(
+            query,
+            source_page=source_page,
+            shown=parse_shown_count(params.get("shown", [""])[0]),
+        )
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
     if path == "/picwise-reference":
         query_string = str(environ.get("QUERY_STRING", ""))
-        query = parse_qs(query_string).get("q", [""])[0]
-        html = _APP.picwise_reference_html(query, source_page="search")
+        params = parse_qs(query_string)
+        query = params.get("q", [""])[0]
+        html = _APP.picwise_reference_html(
+            query,
+            source_page="search",
+            shown=parse_shown_count(params.get("shown", [""])[0]),
+        )
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 

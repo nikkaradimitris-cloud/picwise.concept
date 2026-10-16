@@ -92,6 +92,15 @@ _NON_NEW_TEXT_PHRASES = (
     "ex display",
     "ex demo",
 )
+# A grade with its wording, the way refurbishers title a graded item: "(Grade A1 - Like
+# New)", "(Grade B - Average)". Measured on the third real feed (2026-10-16): 158
+# laptops, desktops and televisions at Back to the Office, with an empty condition
+# column, which price order put first in their kinds. "Grade" alone is not enough:
+# "Commercial Grade TV Wall Mount" and "military grade rugged case" are new.
+_GRADED_CONDITION_PATTERN = (
+    r"\bgrade\s+[a-d][0-9+]?\s*[-\u2013:]\s*"
+    r"(?:like new|excellent|very good|good|average|fair|acceptable|pristine|poor)\b"
+)
 # Greek says it with an ending on a stem, and every ending says the same thing
 # ("μεταχειρισμένο", "μεταχειρισμένα", "μεταχειρισμένος"), so the stem is matched and
 # the whole word the feed wrote is reported back.
@@ -114,6 +123,7 @@ _NON_NEW_TEXT_RE = re.compile(
     "|".join(
         [
             r"\b(?:" + "|".join(re.escape(phrase) for phrase in _NON_NEW_TEXT_PHRASES) + r")\b",
+            _GRADED_CONDITION_PATTERN,
             *[rf"\b{_accent_insensitive(stem)}\w*" for stem in _GREEK_NON_NEW_STEMS],
         ]
     ),
@@ -133,6 +143,7 @@ _NON_NEW_TEXT_HINTS = (
     "box",
     "ex di",
     "ex de",
+    "grade",
     "σμεν",
     "σμέν",
 )

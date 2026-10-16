@@ -44,6 +44,8 @@ from typing import Any, Mapping
 GTIN_KEYS = ("ean", "product_GTIN", "gtin", "upc", "isbn")
 # The columns a manufacturer's part code may arrive in.
 PART_CODE_KEYS = ("mpn", "model_number", "product_model", "manufacturer_part_number")
+# The columns that join offers of one product (`same_product_key`): the MPN only.
+MPN_KEYS = ("mpn", "manufacturer_part_number")
 BRAND_KEYS = ("brand_name", "brand", "manufacturer")
 
 _NON_DIGITS = re.compile(r"\D")
@@ -114,6 +116,48 @@ def _looks_like_a_part_code(value: str) -> bool:
     return bool(re.search(r"\d", text)) or bool(re.search(r"[A-Z]{2,}", text))
 
 
+def valid_gtin(row: Mapping[str, Any] | None) -> str:
+    """The first GTIN in the row whose check digit agrees, as digits, or ""."""
+    raw = row if isinstance(row, Mapping) else {}
+    for key in GTIN_KEYS:
+        value = raw.get(key)
+        if gtin_is_valid(value):
+            return _NON_DIGITS.sub("", str(value))
+    return ""
+
+
+def same_product_key(row: Mapping[str, Any] | None, *, brand: str = "") -> str:
+    """The key that joins offers of one product across shops, or "" when there is none.
+
+    Owner rule of 2026-10-16: the same product in several shops is shown once, from the
+    cheapest. "The same product" is the same EAN/GTIN, or, where that is missing, the
+    same brand and the same manufacturer part number (MPN). Without either an offer is
+    joined with nothing, so that two different products are never merged.
+
+    The part number is read from the MPN columns only. A model column ("Galaxy S24")
+    can name a range of products, and joining on it would show a 256 GB phone at the
+    price of the 128 GB one. A GTIN is padded to 14 digits, so the UPC-12 and EAN-13
+    forms of one code agree.
+    """
+    raw = row if isinstance(row, Mapping) else {}
+    gtin = valid_gtin(raw)
+    if gtin:
+        return f"gtin:{gtin.zfill(14)}"
+    name = " ".join(str(brand or "").split())
+    if not name:
+        for key in BRAND_KEYS:
+            name = " ".join(str(raw.get(key) or "").split())
+            if name:
+                break
+    if not name:
+        return ""
+    for key in MPN_KEYS:
+        value = " ".join(str(raw.get(key) or "").split())
+        if _looks_like_a_part_code(value):
+            return f"mpn:{name.lower()}|{value.lower()}"
+    return ""
+
+
 def read_product_identity(
     row: Mapping[str, Any] | None,
     *,
@@ -121,12 +165,7 @@ def read_product_identity(
 ) -> ProductIdentity:
     """The product-database keys this feed row carries, after checking each one."""
     raw = row if isinstance(row, Mapping) else {}
-    gtin = ""
-    for key in GTIN_KEYS:
-        value = raw.get(key)
-        if gtin_is_valid(value):
-            gtin = _NON_DIGITS.sub("", str(value))
-            break
+    gtin = valid_gtin(raw)
     part_code = ""
     for key in PART_CODE_KEYS:
         value = " ".join(str(raw.get(key) or "").split())

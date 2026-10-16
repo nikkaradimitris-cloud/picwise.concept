@@ -6,9 +6,11 @@ records what was decided, what it replaces, what stays, where it contradicts the
 project's founding files, what is still open, and the marketing analysis given the
 same day. The marketing part is proposals, not decisions.
 
-**Nothing in the code has changed.** The engine still runs the rules this plan
-replaces. The conflict with the founding files was settled on 2026-10-16: the owner
-chose to change them to the plan, and they now say the same (see below).
+**Built on the branch, 2026-10-16:** steps 1 to 3 of the build order (below), so a
+search whose product is understood now runs this plan: see "Step 1 built", "Step 2
+built" and "Step 3 built". A search whose product is not understood still runs the rules
+this plan replaces. The conflict with the founding files was settled on 2026-10-16: the
+owner chose to change them to the plan, and they now say the same (see below).
 
 ## Why the owner changed course
 
@@ -186,7 +188,9 @@ Recorded so it does not have to be found again. None of it is decided.
 - **The code caps "more" today.** `src/picwise_contracts/models.py` rejects more than 4
   `more_choices` ("no infinite list behavior"), and `search_selection._next_four_after`
   offers a second four only for `fit` kinds. Both follow the old rule and change when
-  the plan is built.
+  the plan is built. *Step 3 (2026-10-16): `_next_four_after` is gone and "More" runs on
+  every understood search. The contract model is not used by the live page and still
+  has the cap.*
 - **Thousands of products and a repeated "more"** need a store refreshed daily. Today
   every serverless cold start downloads and parses the whole feed (`AWIN_FEED_URL`,
   reused for 6 hours). Supabase only with the owner's yes.
@@ -498,6 +502,216 @@ The nine that show nothing:
   "did you mean";
 - "dsek for home office" offers none.
 
+## Step 3 built: price first, 2026-10-16
+
+Built on the branch, not on `main`, for every search whose product is understood:
+`src/picwise_providers/search_selection.py` (the selection), `src/picwise_providers/state.py`
+(the decision), `src/picwise_surface/reference.py` (the page). "More" is a `shown`
+parameter on `/search`. Tested in `tests/test_picwise_price_first.py`.
+
+**What a search shows now.**
+- Every product of the kind asked for that carries the search's other words, cheapest
+  first, each product once.
+- The first page: the Recommended, then the three cheapest. Under the cards, "4 of 677"
+  and a "More" button.
+- "More" opens the next four cheapest, as often as asked: "8 of 677", and the page opens
+  at the first new card. Nothing it opens is recommended. It needs no JavaScript: the
+  page is drawn again with four more. A page holds at most 400 products (100 presses),
+  so that a hand-typed address cannot ask for the whole feed at once.
+- Fewer than four are shown as they are. "gas bbq with 4 burners" shows its 4 grills,
+  "standing desk" 3 and "hp 26a toner" 2, where the old decision step showed an empty
+  page.
+
+**The Recommended**, as the owner ruled, and where a rule needed reading to be built:
+- the middle product by price over the whole answer: of 677 laptops, the 339th. Of an
+  even number, the cheaper of the two middle ones;
+- a dearest product at least twice the next dearest is left out of the count, and
+  again for the next one. It stays in the list;
+- it carries an EAN/GTIN whose check digit agrees. If the middle product has none, the
+  product nearest to it **in price** that has one, the cheaper of two equally near;
+- it is priced above the cheapest and below the dearest that count, because its card
+  says "Mid-priced for this category". On a short list the nearest product with a code
+  can be the cheapest one, and calling that mid-priced would be false;
+- with fewer than three products there is no middle, and so no Recommended. With no
+  mid-priced product carrying a code there is none either, as the owner ruled. The
+  note above the cards says which.
+
+**The cards.**
+- The Recommended: a "★ Recommended" badge and the owner's line, "Mid-priced for this
+  category".
+- The cheap cards: "Lowest price", or "Lowest price of N shops" when one product is sold
+  by several. On this feed no product is in two shops.
+- Every card states its place in the whole answer by price: "Cheapest of 677", "3rd
+  cheapest of 677", and for the Recommended of "laptop" "341st cheapest of 677": the
+  middle one, the 339th, carries no EAN, nor does the 340th, and the 341st is the
+  nearest by price that does. Products at one price share a place. A product that is
+  not new says so on the same line. This is the card's decision label, as concept
+  section 8 has it ("Η φθηνότερη από τις διαθέσιμες"), and it is arithmetic over the
+  prices, nothing else.
+- "Lowest price" goes only on first-page cards priced at or below the Recommended. On a
+  short list one of the three cheapest can be dearer than the Recommended (of four: the
+  Recommended is the 2nd cheapest, and the 4th cheapest is on the page too), and calling
+  it the lowest price would be false. It then carries no price label. The cards "More"
+  opens carry none either, except "Lowest price of N shops".
+- The note above the cards: "Sorted by price, lowest first, from the shops connected to
+  PicWise. The Recommended is mid-priced for this category. Prices and stock are as the
+  shops list them."
+
+**The same product once.** Offers with the same EAN/GTIN (check digit agreeing; the UPC
+and EAN forms of one code agree) or, without it, the same brand and MPN are one card, at
+the cheapest offer. Only the `mpn` columns count: a model column names a range ("Galaxy
+S24"), not one product. The card counts the shops the feed names, and an offer whose
+shop is not named is not counted as another shop. The same shop listing one title at
+one price twice is one card. Without either code nothing is joined.
+
+**The search's other words now decide what is in the answer.** In price order the
+cheapest product carrying a word comes first, so a loose match is the first card a buyer
+sees. Measured and fixed on the 118 searches:
+- a word is matched whole, with its singular or plural: "set" is not found in "settee",
+  and "burners" finds "4 Burner";
+- a count is read with its noun: "3 seater", "4 burners", "4 person". "4+1 Burner" counts
+  as 4 burners;
+- the words are read in the product's own title, type and brand. The description is a
+  shop's marketing text, and a shop's shelf is shared and joins kinds: "Floor & Table
+  Lamps" put table lamps under "floor lamp", "Kitchen & Dining" bar tables under "dining
+  table", and "Garden Furniture Sets" single chairs under "rattan garden furniture set".
+  The kind itself is still read from the shelf;
+- a word typed just before the product's name that names a sub-kind ("floor lamp",
+  "dining table", "standing desk", "bunk bed", "patio heater", "bathroom mirror") must
+  stand before the kind's name in the title, with at most one word between: "Coffee
+  Wood Effect" is a colour, not a coffee table. Brands, numbers, specs, the lexicon's
+  preference words and words that say what a product has or is made of (wireless,
+  bluetooth, LED, glass, wooden, the colours) are read anywhere in the title;
+- "Set of 2" is how many come in the pack, not a set;
+- every word is required while one product carries them all, and the answer is the
+  products that do ("wireless headphones noise cancelling": 2 of 2). When none carries
+  them all, specs, counts and preference words are kept while one product carries them:
+  "power bank 20000mah for iphone" answers with the one 20000mAh power bank. Any other
+  word is kept only if a full page carries it: "web cam for zoom calls" no longer
+  answers with the one webcam that mentions a digital zoom. Every word left out is
+  named on the page: "PicWise could not match: calls", or "Only some match: zoom (1 of
+  76)";
+- "24in" is read as 24 inches ("2 in 1" is not), and "pc screen" as a monitor.
+
+**Item condition.** A buyer who asks for refurbished or used gets only products that are
+not new, cheapest first, each card naming its condition ("refurbished" does not exclude a
+used one); when the feed has none, the new ones, with the condition named as not matched.
+New products no longer make up a four: fewer and right. Titles graded by a refurbisher,
+"(Grade B - Average)", "(Grade A1 - Like New)", are now read as not new: 158 laptops,
+desktops and televisions at Back to the Office, with an empty condition column, which
+price order put first among laptops (a £125.99 "HP Stream ... (Grade B - Average)").
+
+**Kinds split, because price order showed them.** The cheapest products of a broad kind
+are its smallest or nearest things, so each of these led a search with the wrong product:
+- a USB stick is its own kind: "hard drive" opened with 8 GB sticks at £7.99 (241
+  products);
+- a bookcase is its own kind, inside shelving: "bookcase" opened with a plant shelf, a
+  CD rack and a TV shelf (97 products; 4 more are CD racks the shop files under
+  bookcases);
+- a fire pit is its own kind: through the "patio heaters" shelf fire pits were heaters,
+  and "electric heater" listed a £29.99 fire pit (16 products);
+- drive bay panels and brackets are not drives (9 products), which "hard drive" opened
+  with once the sticks had gone.
+
+**Measured on the third feed** (42,076 rows), with the same 118 English searches, every
+first page read by hand:
+
+| Outcome | After step 2 | After step 3 |
+| --- | --- | --- |
+| every card of the first page right | 97 | 100 |
+| right kind, but a card misses a word of the search | 12 | 12 |
+| a card of the wrong kind | 0 | 1 |
+| nothing shown | 9 | 5 |
+
+After step 2 a page meant four cards; now it holds one to four. Three searches show
+fewer than four, all of them right: "wireless headphones noise cancelling" 2, "hp 26a
+toner" 2 and "standing desk" 3.
+
+- The four pages the old decision step left empty are answered: "3 seater sofa grey"
+  with 16 grey three-seaters, "4 person camping tent" with 10 tents, "electric kettle
+  1.7l" with 52 kettles and "gas bbq with 4 burners" with its 4 grills. The five still
+  empty are misspellings with no product understood: "inc cartridge epson", "tnet",
+  "lamb for bedroom" and "mirrer" offer the right "did you mean", "dsek for home office"
+  none.
+- The search's words narrow it now: "floor lamp" lists 126 floor lamps and no table lamp,
+  "table lamp" 37, "patio heater" 14 patio heaters and no fire pit, "bunk bed for kids" 4
+  kids' bunk beds, "pc screen 24in" 36 24-inch monitors. "ceiling fan with light" shows
+  the feed's 5 handheld fans and says that none carries "ceiling" or "light".
+- 98 of the 106 price-first pages have a Recommended. 4 have none because no mid-priced
+  product carries a code ("notebook computer 15 inch" and the three fan searches), and 4
+  because there is no middle price: two products, or three of which the dearest counts
+  as extreme ("standing desk"), or four whose middle price is also the cheapest ("bunk
+  bed for kids").
+- The one wrong card: "toy" lists a £17.99 trampoline ladder, an accessory its shop
+  files under toys.
+- The twelve with a card that misses a word: a word inside the product's own name
+  ("unlocked android phone" recommends an iPhone, "ipad 11 inch" lists Honor and Lenovo
+  tablets, "android tablet for kids" recommends an iPad, "bluetooth earbuds" a headband
+  headset, "bluetooth speaker" a Dell soundbar); "external" and "ssd" inside the drive
+  kind ("external hard drive 2tb" recommends an internal drive, "portable ssd 1tb" lists
+  portable hard drives); "patio set" answered with sets of chairs; the "Kettle & 2 Slice
+  Toaster Set" as the Recommended of the three kettle searches; and a TV shelf among
+  "shelving unit".
+- Speed: a median of 4.0 s a search with the tests running beside it, 24 s for the first
+  search after a cold start. Unchanged by this step.
+
+**What step 3 does not fix:**
+- Searches whose product is not understood ("cat tree", "dog crate", "kids ride on car",
+  "memory card 128gb", "network switch", "lenovo thinkpad 16gb ram") still show four
+  cards by the earlier rules: relevance, price zones and the old decision step. That is
+  part 3b, and it needs the strict kind test the understood searches have.
+- A word inside the product's own name does not narrow it. "android phone" and "ipad"
+  are names of smartphone and tablet, so "unlocked android phone" recommends an
+  iPhone and "ipad 11 inch" lists Honor and Lenovo tablets; "gas bbq" lists charcoal
+  grills too.
+- A word after "for" narrows like any other: "printer for home" shows the 4 Epson
+  "Expression Home" printers, "4 of 4", not the 260 printers.
+- £0.99 headsets open "headphones", and a £1,344,000 monitor stays at the end of its
+  list (the extreme rule keeps it out of the middle). A check on implausible prices is
+  still a proposal.
+- A "Kettle & 2 Slice Toaster Set" is read as a kettle, and it is the Recommended for
+  "kettle".
+- Without a Recommended every first-page card says "Lowest price", on a short list even
+  the dearest: "standing desk" shows a £630.99 desk as "Lowest price" and "3rd cheapest
+  of 3". Put to the owner.
+- Speed is unchanged: about 4 s a search on this feed, about 25 s for the first
+  after a cold start.
+- The search box still says "See the 4 best products before you buy", and "What is
+  PicWise?" still says it "recommends the 4 best matches". Neither is true of price
+  first; the wording is the owner's call.
+- `src/picwise_contracts/models.py` still rejects more than 4 `more_choices`. The live
+  page does not use that model; the model follows when the contract objects are next
+  changed.
+
+Tests: `tests/test_picwise_price_first.py` is new (36 tests): the same product once (one
+GTIN in two shops, its UPC and EAN forms, brand and MPN but not a model name, no code no
+join, a wrong check digit, one currency), the Recommended (the 23rd of 45, the owner's
+£100, £150 and £200, an extreme price once and twice, an even count, the nearest by price
+and the cheaper on a tie, never the cheapest or the dearest, no code, too few), graded
+titles, the `shown` parameter (a typed "²" or a number of 5,000 digits opens the first
+page or the last and breaks nothing), and the deployed page (the first page, "More" to
+the end, no product twice, "2 of 2", a dearer card without "Lowest price", no barcode,
+two shops, the search's words, a word named when dropped, whole words, description
+words, a spec kept when another word fails, a word one product happens to carry, a
+dropped word that every product shown carries after all is not reported, graded
+laptops). `tests/test_picwise_strict_kind_reading.py` gains 4 tests for the split kinds.
+`tests/test_picwise_see_more_second_four.py` is removed: its rule is superseded, and its
+guarantees for "More" (nothing in it recommended, no product twice, no button with
+nothing behind it) are in the new module. 18 other modules were changed to the owner's
+price-first rules, each change saying why in the test. The three shared fixture feeds
+now carry a valid EAN on every row, as most real products do, so that the tests reach
+the Recommended.
+
+Of 238 test modules, 234 pass. The other four fail the same way on the unchanged code
+(checked in a clean worktree of `3ca88bc`): `test_picwise_query_understanding` (two
+"machine" tests), `test_picwise_canonical_vocabulary_registry_stage2`,
+`test_picwise_search_index_generated_blind_stage4`, and
+`test_picwise_search_index_blind_evaluation_stage6a`, which imports none of the changed
+modules, takes 43 minutes, and fails one of its 13 tests ("amazon" and "galaxy" missing
+from its broad terms). The misspelling benchmark stays at 93.9% (1 wrong, 42 not
+understood). Its "pass" now asks that every card be the kind expected, and no longer
+four cards and a Recommended, because fewer than four are shown as they are.
+
 ## The owner's additions, 2026-10-16
 
 Decided by the owner after the understanding test, each with what it means in
@@ -589,8 +803,9 @@ this category". Nothing in "Open, for the owner" is left.
 **Build order proposed to the owner (updated the same day).** The owner restated the
 extreme-price rule for step 3 in their own words («όταν το ακριβότερο είναι δύο φορές
 ακριβότερο από το προηγούμενο φθηνότερο να εξαιρείται από το μέσο όρο»), which matches
-the reading above, and did not object to the order. Steps 1 and 2 were built the same day: see "Step 1 built" and "Step 2 built". Next is
-step 3, the price-first engine.
+the reading above, and did not object to the order. Steps 1 to 3 were built the same
+day: see "Step 1 built", "Step 2 built" and "Step 3 built". Next is step 4, the search
+page.
 1. the strict kind test;
 2. English over greeklish ("patio");
 3. the price-first engine: cheapest first, the median Recommended with the

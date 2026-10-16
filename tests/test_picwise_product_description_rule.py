@@ -241,12 +241,13 @@ class DeployedSearchTests(unittest.TestCase):
         self.assertEqual(len(shown), 4)
         self.assertEqual(set(shown), {"k0", "k1", "k2", "k3"})
 
-    def test_a_kind_with_fewer_than_four_described_products_shows_no_four(self) -> None:
-        # Six kettles but only three described. PicWise has no four and says so
-        # rather than filling the page with products it may not show.
+    def test_a_kind_with_fewer_than_four_described_products_shows_only_those(self) -> None:
+        # Six kettles but only three described. Price first shows fewer than four as
+        # they are (owner, 2026-10-16): the three, never an undescribed one to make up
+        # the number.
         self._serve(_kettles(6, described=3))
         shown, _body = self._cards("kettle")
-        self.assertEqual(shown, [])
+        self.assertEqual(sorted(shown), ["k0", "k1", "k2"])
 
     def test_a_fully_described_feed_is_unaffected(self) -> None:
         self._serve(_kettles(6))

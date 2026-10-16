@@ -22,6 +22,7 @@ import re
 import sys
 import tempfile
 import unittest
+import zlib
 from pathlib import Path
 from urllib.parse import urlencode
 
@@ -47,7 +48,15 @@ _COLUMNS = (
     "aw_product_id", "product_name", "brand_name", "merchant_category", "product_type",
     "aw_deep_link", "aw_image_url", "search_price", "currency", "in_stock", "stock_status",
     "merchant_name", "condition", "description", "is_for_sale", "pre_order", "valid_to", "data_provenance",
+    "ean",
 )
+
+
+def _ean_for(pid: str) -> str:
+    """A valid EAN-13 of its own for each fixture row, so a Recommended can be chosen."""
+    body = f"500000{zlib.crc32(pid.encode()) % 1_000_000:06d}"
+    total = sum(int(char) * (3 if index % 2 else 1) for index, char in enumerate(body))
+    return body + str((10 - total % 10) % 10)
 
 
 def _row(pid: str, name: str, price: str, **fields: str) -> dict[str, str]:
@@ -70,6 +79,7 @@ def _row(pid: str, name: str, price: str, **fields: str) -> dict[str, str]:
         "pre_order": "0",
         "valid_to": "",
         "data_provenance": "local_test_fixture",
+        "ean": _ean_for(pid),
     }
     row.update(fields)
     return row
@@ -307,9 +317,14 @@ class DeployedSurfaceStockTruthTests(unittest.TestCase):
             ]
         )
         cards = {card["choice_id"]: card for card in self._cards("refurbished kettle")}
+        # Price first shows the condition asked for, and only that (owner, 2026-10-16).
+        self.assertEqual(set(cards), {"r1"})
         self.assertIn("condition: refurbished", cards["r1"]["text"])
         self.assertIn("not new", cards["r1"]["text"])
-        self.assertNotIn("not new", cards["r2"]["text"])
+        new_cards = {card["choice_id"]: card for card in self._cards("kettle")}
+        self.assertEqual(set(new_cards), {"r2", "r3", "r4"})
+        for card in new_cards.values():
+            self.assertNotIn("not new", card["text"])
 
 
 if __name__ == "__main__":

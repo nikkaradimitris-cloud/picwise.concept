@@ -19,6 +19,13 @@ Every output must include:
 
 If any item is missing, output is non-compliant.
 
+> **Amended by the owner on 2026-10-16** ("Price first", rule 7, below): fewer than four
+> right products are shown as they are ("2 of 2"), and there is no recommended choice
+> when no mid-priced product carries an EAN/GTIN, or when the products give no middle
+> price (fewer than three). Items 1 and 2 hold whenever the feed has four products of
+> the kind and a mid-priced one with a code. Built for searches whose product is
+> understood on 2026-10-16 (step 3 of the build order).
+
 ## Choice Object Contract
 
 Each of the 4 choices must include:
@@ -85,8 +92,9 @@ An output is valid only if all checks pass:
   ranking signal that is true, so it can only show its four and declare that — which
   is the `data_not_yet` rule of QUALITY_RULES, not a weight to invent.
 - Tie-break protocol between close candidates: **superseded on 2026-10-15** by "Price
-  first" below (the first four become the Recommended plus the three cheapest); still
-  what the code does. **Decided by the owner, 2026-10-08, restated 2026-10-12.** When the ranking leaves more than four substantially
+  first" below (the first four become the Recommended plus the three cheapest). Since
+  step 3 (2026-10-16) the code does this only for searches whose product is not
+  understood. **Decided by the owner, 2026-10-08, restated 2026-10-12.** When the ranking leaves more than four substantially
   equivalent products, the four shown spread across their price range: the cheapest,
   the dearest and two in between, never bypassing a hard filter. The owner restated
   this on 2026-10-12 as four **different** price zones, and that is a correction the
@@ -273,7 +281,8 @@ Pinned by `tests/test_picwise_product_specs.py` (22 tests).
 ## "See more": a second four where there is no best, 2026-10-12
 
 > **Superseded on 2026-10-15** by "Price first" below: "more" on every search, by
-> price, as often as the buyer asks. Still what the code does.
+> price, as often as the buyer asks. Built in step 3 (2026-10-16): the second four,
+> and `tests/test_picwise_see_more_second_four.py`, are gone.
 
 Owner instruction: in the kinds of product that do not support the notions of
 comparison and best -- a dress, a bag, a tablecloth, a cable of a particular length --
@@ -301,12 +310,13 @@ How it behaves:
   in the page for anyone who opens it. Its wording says *why* there is no single best
   in this kind of product, because that is the thing the buyer needs told.
 
-Pinned by `tests/test_picwise_see_more_second_four.py` (8 tests).
+Was pinned by `tests/test_picwise_see_more_second_four.py` (8 tests), removed in step 3; what it guaranteed (nothing behind "More" is recommended, no product twice, no button with nothing behind it) is pinned for the new "More" in `tests/test_picwise_price_first.py`.
 
 ## A stated specification decides before the price, 2026-10-13
 
 > **Superseded on 2026-10-15** by "Price first" below: specifications are shown when
-> present and decide nothing. Still what the code does.
+> present and decide nothing. Since step 3 (2026-10-16) the code ranks on a
+> specification only for searches whose product is not understood.
 
 The owner's rule, held since 2026-10-11: the recommendation must not rest on price.
 Until now it did, because the feed gave nothing else -- the first reason code on a
@@ -434,5 +444,11 @@ along with `docs/LANDING_PAGE_SPEC.md`. For services (insurance, banking, energy
 software) there is no Recommended in this phase, unless a mechanism is found that can
 decide what is the better deal (owner, 2026-10-16).
 
-**Not implemented yet.** The code still runs the superseded rules. The next step is to
-measure the plan on the real feed.
+**Built on 2026-10-16** (step 3 of the build order, on the branch) for every search
+whose product is understood; the others still run the superseded rules. Where a rule
+needed reading to be built, the reading is recorded with it in
+`docs/picwise_price_first_plan_2026-10-15.md`, "Step 3 built": of an even number of
+products the cheaper middle one; "nearest" by price; the Recommended priced between
+the cheapest and the dearest, so that "Mid-priced" is true; "Lowest price" only on cards
+priced at or below the Recommended; a search's words read in the product's own title,
+type and brand.

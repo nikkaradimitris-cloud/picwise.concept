@@ -100,11 +100,11 @@ class ProductKindReadingTests(unittest.TestCase):
         for query in ("laptop", "λάπτοπ"):
             with self.subTest(query=query):
                 shown, body = self._shown(query)
-                # Three laptops cannot make four, and the sleeve does not make up the
-                # number: the page says so instead.
+                # Three laptops are shown as they are (price first, owner 2026-10-16),
+                # and the sleeve does not make up the number.
                 self.assertNotIn("s1", shown)
-                self.assertEqual(shown, [])
-                self.assertIn("has no four products it can show for it", body)
+                self.assertEqual(sorted(shown), ["l1", "l2", "l3"])
+                self.assertIn('<p class="pw-counter">3 of 3</p>', body)
 
     def test_what_comes_with_a_product_does_not_hide_it(self) -> None:
         self._serve(

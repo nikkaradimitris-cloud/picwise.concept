@@ -309,6 +309,7 @@ def resolve_search_provider_feed_product_selection(
     feed_config: ProviderFeedConfig | None = None,
     max_products: int = 4,
     reading: ConceptReading | None = None,
+    shown: int = 0,
 ) -> ProviderProductSelectionResult:
     products, availability_context = _load_eligible_products_with_availability_context(
         feed_config
@@ -319,6 +320,7 @@ def resolve_search_provider_feed_product_selection(
         max_products=max_products,
         reading=reading,
         feed_ctx=availability_context,
+        shown=shown,
     )
     if availability_context is None:
         return selection
@@ -330,6 +332,8 @@ def resolve_search_provider_feed_recommendation_decision(
     query: str,
     selection: ProviderProductSelectionResult,
 ) -> ProviderFeedRecommendationDecision:
+    if selection.price_first:
+        return _price_first_recommendation_decision(selection)
     if selection.status == "insufficient_relevant_products":
         return ProviderFeedRecommendationDecision(
             decision_status="insufficient_selected_products",
@@ -356,6 +360,47 @@ def resolve_search_provider_feed_recommendation_decision(
         required_tokens=selection.required_query_terms or None,
         condition_requested=bool(selection.condition_request),
         feed_ctx=selection.feed_availability_context,
+    )
+
+
+# Price first (owner, 2026-10-15 and 2026-10-16). The selection already chose the
+# Recommended over the whole answer, by price; nothing here scores the products again.
+# The old step re-read the search's words from each of four cards, found none carrying
+# all of them for "3 seater sofa grey", and left a page of four right products empty.
+_PRICE_FIRST_NO_RECOMMENDATION = {
+    "no_product_code": "no_recommendation_without_product_code",
+    "too_few_products": "no_recommendation_too_few_products",
+}
+
+
+def _price_first_recommendation_decision(
+    selection: ProviderProductSelectionResult,
+) -> ProviderFeedRecommendationDecision:
+    if selection.status == "insufficient_relevant_products":
+        return ProviderFeedRecommendationDecision(
+            decision_status="insufficient_selected_products",
+            recommendation_reason_codes=("insufficient_selected_products",),
+        )
+    if selection.status != "selected" or not selection.selected_products:
+        return ProviderFeedRecommendationDecision(
+            decision_status="no_selection",
+            recommendation_reason_codes=("no_feed_selection",),
+        )
+    if selection.recommended_product_id:
+        return ProviderFeedRecommendationDecision(
+            decision_status="recommended",
+            recommended_product_id=selection.recommended_product_id,
+            recommendation_reason_codes=("price_first_mid_priced",),
+            # Not a confidence judgement: the Recommended follows a stated price rule.
+            recommendation_confidence="not_applicable",
+        )
+    status = _PRICE_FIRST_NO_RECOMMENDATION.get(
+        selection.recommendation_status, "no_recommendation_too_few_products"
+    )
+    return ProviderFeedRecommendationDecision(
+        decision_status=status,
+        recommendation_reason_codes=(status,),
+        recommendation_confidence="not_applicable",
     )
 
 

@@ -374,6 +374,9 @@ _UNIT_ALIASES = {
     "mp": ("mp", "megapixel"),
 }
 _UNIT_BY_ALIAS = {alias: unit for unit, aliases in _UNIT_ALIASES.items() for alias in aliases}
+# Units read only when written onto the number: "24in" is 24 inches, while the "in" of
+# "2 in 1" is the word "in".
+_FUSED_ONLY_UNIT_BY_ALIAS = {"in": "inch"}
 _FUSED_SPEC_RE = re.compile(r"^(\d+(?:[.,]\d+)?)([a-zα-ω\"']+)$")
 _NUMBER_RE = re.compile(r"^\d+(?:[.,]\d+)?$")
 
@@ -747,8 +750,10 @@ def _parse_specs(tokens: list[str]) -> tuple[list[tuple[int, int, str, str]], se
         if index in used:
             continue
         fused = _FUSED_SPEC_RE.match(token)
-        if fused and fused.group(2) in _UNIT_BY_ALIAS:
-            unit = _UNIT_BY_ALIAS[fused.group(2)]
+        if fused and (
+            fused.group(2) in _UNIT_BY_ALIAS or fused.group(2) in _FUSED_ONLY_UNIT_BY_ALIAS
+        ):
+            unit = _UNIT_BY_ALIAS.get(fused.group(2)) or _FUSED_ONLY_UNIT_BY_ALIAS[fused.group(2)]
             found.append((index, index + 1, f"{fused.group(1).replace(',', '.')}{unit}", unit))
             used.add(index)
             continue
@@ -1371,7 +1376,7 @@ _CLASSIFICATION_ACCESSORY_WORDS = _ACCESSORY_WORDS | frozenset(
     sensor sensors cabinet cabinets cart carts trolley trolleys dock docks docking
     replicator replicators charger chargers cushion cushions shield shields
     battery batteries cartridge cartridges label labels drum drums cleaning
-    upgrade upgrades support supports
+    upgrade upgrades support supports panel panels bracket brackets
     """.split()
 )
 
@@ -2007,6 +2012,10 @@ _CANONICAL_UNIT = {
 }
 
 
+# "23.8in" in a title is inches; "2 in 1" and "2-in-1" are not, so only the fused form.
+_FUSED_INCH_RE = re.compile(r"(\d+(?:[.,]\d+)?)in\b", flags=re.IGNORECASE)
+
+
 def normalize_spec_text(text: str) -> str:
     """Write every "<number> <unit>" in feed text as the fused token a query produces."""
 
@@ -2014,4 +2023,5 @@ def normalize_spec_text(text: str) -> str:
         unit = match.group(2).lower()
         return f"{match.group(1).replace(',', '.')}{_CANONICAL_UNIT.get(unit, unit)}"
 
-    return _SPACED_SPEC_RE.sub(replace, str(text or ""))
+    fused = _SPACED_SPEC_RE.sub(replace, str(text or ""))
+    return _FUSED_INCH_RE.sub(lambda match: f"{match.group(1).replace(',', '.')}inch", fused)

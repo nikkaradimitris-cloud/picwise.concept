@@ -293,8 +293,8 @@ class DeployedSurfaceConditionTests(unittest.TestCase):
         self.assertEqual(sorted(shown), ["n1", "n2", "n3", "n4"])
 
     def test_a_non_new_product_is_not_counted_as_one_of_the_four_either(self) -> None:
-        # Three new kettles and two non-new ones are not five choices: PicWise owes
-        # four it may actually show, so it shows none and says so.
+        # Three new kettles and two non-new ones are not five choices. Price first
+        # shows fewer than four as they are (owner, 2026-10-16): the three new ones.
         self._serve(
             [
                 _row("r1", "Fixturon Aero Kettle 1.7L", "9.00", condition="refurbished"),
@@ -302,7 +302,8 @@ class DeployedSurfaceConditionTests(unittest.TestCase):
                 *_new_kettles(3),
             ]
         )
-        self.assertEqual(self._cards("kettle"), [])
+        self.assertEqual(sorted(self._shown("kettle")), ["n1", "n2", "n3"])
+        self.assertIn('<p class="pw-counter">3 of 3</p>', self._page("kettle"))
 
     def test_the_four_are_the_condition_asked_for_when_the_feed_has_four(self) -> None:
         self._serve(
@@ -319,9 +320,11 @@ class DeployedSurfaceConditionTests(unittest.TestCase):
                 self.assertEqual(sorted(self._shown(query)), ["r1", "r2", "r3", "r4"])
                 self.assertNotIn("Only some of the four match", self._text(query))
 
-    def test_too_few_of_the_condition_asked_for_fill_up_with_new_ones_and_say_so(self) -> None:
-        # Owner decision, 2026-10-10: fill the remaining slots rather than leave the
-        # buyer with nothing, and state how many of the four are what they asked for.
+    def test_too_few_of_the_condition_asked_for_are_shown_as_they_are(self) -> None:
+        # Owner decision, 2026-10-10: the condition asked for comes first, and the page
+        # never leaves the buyer with nothing. Price first (2026-10-16) shows fewer than
+        # four as they are, so two used kettles are the answer, "2 of 2", and new ones
+        # are no longer mixed in to make up four.
         self._serve(
             [
                 _row("r1", "Fixturon Aero Kettle 1.7L", "9.00", condition="refurbished"),
@@ -331,20 +334,14 @@ class DeployedSurfaceConditionTests(unittest.TestCase):
         )
         cards = self._cards("μεταχειρισμενος βραστηρας")
         shown = [str(card["choice_id"]) for card in cards]
-        self.assertEqual(len(shown), 4)
-        self.assertIn("r1", shown)
-        self.assertIn("r2", shown)
-        # The ones asked for come first, so the buyer reads the answer to their
-        # question before the fill-ins.
-        self.assertEqual(shown[:2], ["r1", "r2"])
+        self.assertEqual(shown, ["r1", "r2"])
         page = self._text("μεταχειρισμενος βραστηρας")
-        self.assertIn("Only some of the four match: μεταχειρισμενος (2 of 4)", page)
+        self.assertIn("2 of 2", page)
         self.assertNotIn("could not match", page)
         # Every non-new card still admits its condition.
         by_id = {str(card["choice_id"]): str(card["text"]) for card in cards}
         self.assertIn("not new", by_id["r1"])
         self.assertIn("not new", by_id["r2"])
-        self.assertNotIn("not new", by_id[shown[2]])
 
     def test_the_recommendation_comes_from_the_condition_asked_for(self) -> None:
         # The dearest refurbished one against three cheaper new ones: price must not
@@ -356,11 +353,11 @@ class DeployedSurfaceConditionTests(unittest.TestCase):
             ]
         )
         cards = self._cards("refurbished kettle")
-        recommended = [card for card in cards if card["recommended"]]
-        self.assertEqual(len(recommended), 1)
-        self.assertEqual(recommended[0]["choice_id"], "r1")
-        self.assertIn("in the condition you asked for", str(recommended[0]["text"]))
-        self.assertIn("Only some of the four match: refurbished (1 of 4)", self._text("refurbished kettle"))
+        # Price first: the one refurbished kettle is the answer. Nothing new is shown,
+        # and one product has no middle price to recommend.
+        self.assertEqual([card["choice_id"] for card in cards], ["r1"])
+        self.assertFalse(any(card["recommended"] for card in cards))
+        self.assertIn("not new", str(cards[0]["text"]))
 
     def test_a_condition_the_feed_cannot_answer_is_reported_unmatched(self) -> None:
         self._serve(_new_kettles(4))
@@ -399,14 +396,15 @@ class DeployedSurfaceConditionTests(unittest.TestCase):
 
     def test_the_condition_word_does_not_filter_the_feed_text(self) -> None:
         # "refurbished" appears in no title here. Read as a word to match, it would
-        # leave nothing to show; read as a condition, it still answers with four.
+        # leave nothing to show; read as a condition, it answers with the refurbished
+        # kettle the condition column names.
         self._serve(
             [
                 _row("r1", "Fixturon Aero Kettle 1.7L", "9.00", condition="refurbished"),
                 *_new_kettles(4),
             ]
         )
-        self.assertEqual(len(self._shown("refurbished kettle")), 4)
+        self.assertEqual(self._shown("refurbished kettle"), ["r1"])
 
     def test_a_query_that_names_no_known_product_honours_the_condition_too(self) -> None:
         # The token path: no concept is understood for "widget", so the gate has to
@@ -436,9 +434,7 @@ class DeployedSurfaceConditionTests(unittest.TestCase):
             ]
         )
         shown = self._shown("refurbished kettle")
-        self.assertEqual(len(shown), 4)
-        self.assertIn("d1", shown)
-        self.assertNotIn("d2", shown)
+        self.assertEqual(shown, ["d1"])
 
 
 if __name__ == "__main__":

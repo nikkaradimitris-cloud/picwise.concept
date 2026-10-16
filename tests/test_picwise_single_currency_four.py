@@ -151,11 +151,13 @@ class SingleCurrencyFourTests(unittest.TestCase):
         self.assertTrue(all(choice_id.startswith("u") for choice_id in shown), shown)
         self.assertEqual(self._currencies("kettle"), {"USD"})
 
-    def test_no_currency_with_four_shows_no_four(self) -> None:
-        # Three and three is not four: PicWise would have to compare prices it cannot
-        # compare, so it answers nothing instead.
+    def test_no_currency_with_four_shows_one_currency_only(self) -> None:
+        # Three and three: price first shows fewer than four as they are (owner,
+        # 2026-10-16), in one currency, never prices it cannot compare.
         self._serve(_kettles("g", 3, "GBP", 10) + _kettles("u", 3, "USD", 12))
-        self.assertEqual(self._cards("kettle"), [])
+        shown = {card["choice_id"] for card in self._cards("kettle")}
+        self.assertEqual(len(shown), 3)
+        self.assertEqual(len(self._currencies("kettle")), 1)
 
     def test_one_currency_in_the_feed_is_unaffected(self) -> None:
         self._serve(_kettles("g", 6, "GBP", 10))

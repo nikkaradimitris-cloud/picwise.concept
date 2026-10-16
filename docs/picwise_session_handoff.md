@@ -8,8 +8,8 @@ Current state for whoever picks the project up next. Updated 2026-10-16.
 - **New direction: price first, no ratings** (owner, 2026-10-15). Read
   `docs/picwise_price_first_plan_2026-10-15.md` before anything else. In short: only
   the kind asked for; never out of stock; cheapest first; the same product once, from
-  its cheapest in-stock shop; the first four are a "Recommended" at the middle of the
-  price range plus the three cheapest, with "4 of 45"; "more" again and again. The old
+  its cheapest in-stock shop; the first four are a "Recommended", the middle product in
+  price order, plus the three cheapest, with "4 of 45"; "more" again and again. The old
   instruction, "build nothing until a feed with ratings arrives", is over, and the
   search for ratings stops.
 - **The founding files now say the same as the plan.** It contradicted them (no endless
@@ -27,11 +27,18 @@ Current state for whoever picks the project up next. Updated 2026-10-16.
   first is now the product, not its accessory: "laptop" opens with a £125.99 HP Stream
   instead of a £3.99 adapter. Details and what is left: the plan file, "Step 1 built".
   **Step 2 is built too** (English before greeklish: "patio set" shows garden
-  furniture, not insoles). The 118 searches now give 97 with four right cards. **Next:
-  step 3, the price-first engine.** It must also replace the old decision step that
-  empties four pages, and make a search's other words narrow the kind. The rest is
-  not built: the engine still runs the superseded rules (price zones, specification
-  ranking, see-more for `fit` only, `more_choices` capped at 4).
+  furniture, not insoles). **Step 3 is built too** (2026-10-16): the price-first engine,
+  for every search whose product is understood. Cheapest first, each product once; the
+  Recommended is the middle product by price with a valid EAN/GTIN, never the cheapest
+  or the dearest; "Lowest price" on the cheap cards; "4 of 677" and a "More" that opens
+  the next four as often as asked (`/search?q=...&shown=8`); fewer than four as they
+  are. A search's other words now decide what is in the answer, read in each product's
+  title, type and brand. Graded refurbished titles are read as not new, and USB sticks,
+  bookcases and fire pits are their own kinds. Of the 118 searches, 100 show a right
+  first page, 12 a card that misses a word, 1 a wrong card, 5 nothing. Details,
+  including where a rule needed reading, in the plan file, "Step 3 built". Searches
+  whose product is not understood still run the superseded rules (part 3b). **Next:
+  step 4, the search page.**
 - **Measured on 2026-10-16** on a new feed (Back to the Office, Aosom UK, Living and
   Home; 42,076 rows). Results are in the plan file, "Measured on the third feed":
   - cheapest first puts accessories on top ("laptop" opens with docking stations);
@@ -86,8 +93,13 @@ Current state for whoever picks the project up next. Updated 2026-10-16.
     offers are joined), and the line under Recommended is "Mid-priced for this
     category".
 
-  All but the first are for step 3.
-- **Open owner decisions:** none on the plan.
+  All are built (steps 1 and 3).
+- **Open owner decisions:** none on the plan. Put to the owner with step 3:
+  - the search box still says "See the 4 best products before you buy", and "What is
+    PicWise?" that it "recommends the 4 best matches"; new wording is theirs to choose;
+  - a check on implausible prices (£0.99 headsets lead "headphones");
+  - whether a word after "for" ("printer for home") should narrow the answer;
+  - the readings made to build rule 7 (see the plan file).
 
   The marketing proposals in the plan file are proposals; none is approved.
 - **Branch, not `main`.** `ccr-fd5dc1bc-4vgsgl` is ahead of `main`; count the commits
@@ -224,7 +236,9 @@ guide for the owner), `docs/picwise_query_understanding.md`,
   `test_picwise_canonical_vocabulary_registry_stage2`,
   `test_picwise_search_index_generated_blind_stage4` (graph-alias leet records in the
   registry). `test_picwise_learning_stage7b` passes in about 41 min;
-  `test_picwise_search_index_blind_evaluation_stage6a` runs over an hour (not run).
+  `test_picwise_search_index_blind_evaluation_stage6a` takes about 43 min and, run on
+  2026-10-16, fails one of its 13 tests ("amazon" and "galaxy" missing from its broad
+  terms), the same on the code before step 3.
 - Cold start through `api/index.py`, 19-row fixture: first request 677–724 ms, import plus
   first request 1,045–1,078 ms (target 1,500 ms). A real feed adds its download and parse.
 

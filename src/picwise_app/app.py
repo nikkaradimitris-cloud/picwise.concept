@@ -19,7 +19,11 @@ from picwise_learning.stage31_runtime_controller import build_default_stage31_ru
 from picwise_mvp import build_mvp_private_beta_readiness_report
 from picwise_nlu import adapt_local_nlu_intent_for_router, build_local_nlu_intent
 from picwise_search import resolve_live_search, route_search_query
-from picwise_search.live_search_resolver import empty_landing_search_resolution, is_empty_search_query
+from picwise_search.live_search_resolver import (
+    empty_landing_search_resolution,
+    is_empty_search_query,
+    parse_shown_count,
+)
 from picwise_search.search_warmup import schedule_search_warmup_if_needed
 from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
 from picwise_providers import resolve_card_eligible_provider_feed_product_by_id
@@ -94,7 +98,7 @@ class PicwiseLocalApp:
         _ = query
         return render_demo_info_page()
 
-    def root_landing_html(self, query: str = "") -> str:
+    def root_landing_html(self, query: str = "", *, shown: int = 0) -> str:
         """Render the landing surface, honouring an inbound purchase-intent query.
 
         The mission requires that a visitor arriving from Google on
@@ -102,13 +106,16 @@ class PicwiseLocalApp:
         empty search page, so the query is resolved here exactly as on /search.
         With no query this stays the plain landing page.
         """
-        return self.picwise_reference_html(query, source_page="search")
+        return self.picwise_reference_html(query, source_page="search", shown=shown)
 
-    def picwise_reference_html(self, query: str = "", *, source_page: str = "search") -> str:
+    def picwise_reference_html(
+        self, query: str = "", *, source_page: str = "search", shown: int = 0
+    ) -> str:
+        """The search page. `shown` is how many products "More" has opened the page to."""
         if is_empty_search_query(query):
             resolution = empty_landing_search_resolution(query)
         else:
-            resolution = resolve_live_search(query)
+            resolution = resolve_live_search(query, shown=shown)
         html = render_picwise_reference_surface(query=query, resolution=resolution, source_page=source_page)
         self.record_decision_impression(
             query=query,
@@ -141,8 +148,8 @@ class PicwiseLocalApp:
     def not_found_html(self) -> str:
         return render_branded_not_found_page()
 
-    def mvp_search_html(self, query: str, *, source_page: str = "search") -> str:
-        return self.picwise_reference_html(query, source_page=source_page)
+    def mvp_search_html(self, query: str, *, source_page: str = "search", shown: int = 0) -> str:
+        return self.picwise_reference_html(query, source_page=source_page, shown=shown)
 
     def record_decision_impression(
         self,
@@ -206,11 +213,15 @@ class PicwiseLocalApp:
 
         if cards_rendered:
             selected = list(getattr(resolution, "provider_feed_selected_products", ()) or ())
+            shown_count = len(selected)
+            if getattr(resolution, "provider_feed_price_first", False):
+                # The page holds the first page and every four "More" opened.
+                shown_count += len(getattr(resolution, "provider_feed_more_products", ()) or ())
             events.append(
                 dict(
                     base,
                     event_name="choices_shown",
-                    choice_count=str(len(selected)),
+                    choice_count=str(shown_count),
                     provider_id=str(
                         (selected[0].get("provider_key") if selected else "") or ""
                     )
@@ -705,8 +716,11 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.OK, self.app.health_payload())
             return
         if parsed.path == "/":
-            query = parse_qs(parsed.query).get("q", [""])[0]
-            html = self.app.root_landing_html(query)
+            params = parse_qs(parsed.query)
+            query = params.get("q", [""])[0]
+            html = self.app.root_landing_html(
+                query, shown=parse_shown_count(params.get("shown", [""])[0])
+            )
             self._send_html(HTTPStatus.OK, html)
             return
         if parsed.path == "/demo":
@@ -735,14 +749,24 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             self._send_html(HTTPStatus.OK, html)
             return
         if parsed.path in {"/search", "/results"}:
-            query = parse_qs(parsed.query).get("q", [""])[0]
+            params = parse_qs(parsed.query)
+            query = params.get("q", [""])[0]
             source_page = "results" if parsed.path == "/results" else "search"
-            html = self.app.mvp_search_html(query, source_page=source_page)
+            html = self.app.mvp_search_html(
+                query,
+                source_page=source_page,
+                shown=parse_shown_count(params.get("shown", [""])[0]),
+            )
             self._send_html(HTTPStatus.OK, html)
             return
         if parsed.path == "/picwise-reference":
-            query = parse_qs(parsed.query).get("q", [""])[0]
-            html = self.app.picwise_reference_html(query, source_page="search")
+            params = parse_qs(parsed.query)
+            query = params.get("q", [""])[0]
+            html = self.app.picwise_reference_html(
+                query,
+                source_page="search",
+                shown=parse_shown_count(params.get("shown", [""])[0]),
+            )
             self._send_html(HTTPStatus.OK, html)
             return
         if parsed.path == "/out/feed":

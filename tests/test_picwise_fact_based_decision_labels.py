@@ -306,10 +306,17 @@ class RenderedCardContractTests(unittest.TestCase):
         cards = self._cards()
         self.assertEqual(len(cards), 4)
         for card in cards:
-            self.assertTrue(card["role_label"], card)
             self.assertTrue(card["decision_label"], card)
             self.assertTrue(card["key_reasons"], card)
             self.assertTrue(card["risk"], card)
+        # Price first (owner, 2026-10-16): the Recommended says it is mid-priced, and a
+        # card cheaper than it says "Lowest price". The fixture holds six laptops, so
+        # the first page also shows one dearer than the Recommended, and that one
+        # claims no price label at all rather than a false "lowest".
+        self.assertEqual(cards[0]["role_label"], "Mid-priced for this category")
+        self.assertEqual(
+            [card["role_label"] for card in cards[1:]], ["Lowest price", "Lowest price", ""]
+        )
 
     def test_choice_id_is_the_real_product_id_not_a_placeholder(self) -> None:
         cards = self._cards()
@@ -318,8 +325,12 @@ class RenderedCardContractTests(unittest.TestCase):
             self.assertNotIn("fixed-", str(card["choice_id"]))
 
     def test_rendered_role_labels_are_distinct_for_distinct_prices(self) -> None:
-        roles = [card["role_label"] for card in self._cards()]
-        self.assertEqual(len(set(roles)), 4, roles)
+        # Where each sits in the whole answer by price: four prices, four places.
+        places = [card["decision_label"] for card in self._cards()]
+        self.assertEqual(
+            places,
+            ["3rd cheapest of 6", "Cheapest of 6", "2nd cheapest of 6", "4th cheapest of 6"],
+        )
 
     def test_exactly_one_rendered_card_is_recommended(self) -> None:
         cards = self._cards()

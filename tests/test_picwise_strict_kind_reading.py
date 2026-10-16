@@ -115,9 +115,11 @@ class UnknownKindLabelTests(unittest.TestCase):
                 self.assertEqual(_kinds(product_type, "", title), {UNCERTAIN_MARKER})
 
     def test_a_type_sharing_a_real_word_with_the_title_lets_the_title_decide(self) -> None:
+        # A USB stick is its own kind since step 3 (2026-10-16): price order put 8 GB
+        # sticks first under "hard drive".
         self.assertEqual(
             _kinds("USB Flash Drives", "", "Testline Extreme USB flash drive 128 GB USB Type-A"),
-            {"storage_drive"},
+            {"usb_flash_drive"},
         )
         self.assertEqual(
             _kinds("Computer Cooling Systems", "", "Sampleworks Light Wings 140mm PWM Case Fan Black"),
@@ -231,6 +233,55 @@ class QueryReadingTests(unittest.TestCase):
         ):
             with self.subTest(query=query):
                 self.assertEqual(understand_product_query(query).concept_id, concept)
+
+
+class KindsPriceOrderExposedTests(unittest.TestCase):
+    """Kinds split in step 3 (2026-10-16), because price order lists a broad kind's
+    smallest or nearest things first: 8 GB USB sticks under "hard drive", plant shelves
+    and CD racks under "bookcase", fire pits under "electric heater"."""
+
+    def test_a_usb_stick_is_not_a_hard_drive(self) -> None:
+        self.assertEqual(understand_product_query("usb stick 64gb").concept_id, "usb_flash_drive")
+        self.assertEqual(understand_product_query("στικακι").concept_id, "usb_flash_drive")
+        self.assertEqual(understand_product_query("hard drive").concept_id, "storage_drive")
+        self.assertEqual(
+            _kinds("External Hard Drives", "", "Fixturon Go 2TB USB 3.0 External Hard Drive"),
+            {"storage_drive"},
+        )
+        self.assertNotIn(
+            "storage_drive",
+            _kinds("USB Flash Drives", "", "Testline Cruzer USB flash drive 8 GB USB Type-A"),
+        )
+
+    def test_a_bookcase_is_a_kind_of_shelving_and_not_every_shelf_is_a_bookcase(self) -> None:
+        self.assertEqual(understand_product_query("bookcase").concept_id, "bookcase")
+        self.assertEqual(understand_product_query("bookshelf").concept_id, "bookcase")
+        self.assertEqual(understand_product_query("shelving unit").concept_id, "shelving")
+        self.assertEqual(
+            _kinds("", "home goods > home furniture > bookcases", "Fixturon 5-Tier Bookcase, Oak"),
+            {"bookcase", "shelving"},
+        )
+        self.assertEqual(
+            _kinds("", "garden > plant stands", "Testline Four-Tier Steel Plant Shelf - Black"),
+            {"shelving"},
+        )
+
+    def test_a_fire_pit_is_not_a_heater(self) -> None:
+        crumbs = _crumbs(
+            "garden & outdoor > fire pits & patio heaters > fire pits",
+            "home & garden > household appliances > climate control appliances > patio heaters",
+        )
+        self.assertEqual(
+            _kinds("", crumbs, "Sampleworks Smokeless Fire Pit, 38cm Wood Burning Firepit"),
+            {"fire_pit"},
+        )
+        self.assertEqual(understand_product_query("fire pit").concept_id, "fire_pit")
+
+    def test_a_drive_bay_panel_is_not_a_drive(self) -> None:
+        self.assertNotIn(
+            "storage_drive",
+            _kinds("Drive Bay Panels", "", "Fixturon 2.5in SSD/HDD Mounting Bracket for 3.5in Drive Bay"),
+        )
 
 
 class PhoneKindTests(unittest.TestCase):

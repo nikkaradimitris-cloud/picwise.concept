@@ -82,6 +82,7 @@ freezer|HA||freezer,freezers,chest freezer,chest freezers|καταψύκτης,�
 air_conditioner|HA||air conditioner,air conditioners,air conditioning unit,aircon|κλιματιστικό,κλιματιστικά
 dehumidifier|HA||dehumidifier,dehumidifiers|αφυγραντήρας,αφυγραντήρες
 air_purifier|HA||air purifier,air purifiers|καθαριστής αέρα,καθαριστές αέρα,ιονιστής
+fire_pit|GA||fire pit,fire pits,firepit,firepits,fire bowl,fire bowls,chiminea,chimineas|εστία φωτιάς,εστίες φωτιάς
 heater|HA||heater,heaters,electric heater,electric heaters,radiator heater,electric fire,electric fires,electric fireplace,electric fireplaces,fireplace,fireplaces,fireplace stove,fireplace stoves,log burner,log burners,wood burner,wood burners|θερμάστρα,θερμάστρες,καλοριφέρ λαδιού,αερόθερμο,τζάκι,ηλεκτρικό τζάκι
 fan|HA||fan,fans,electric fan|ανεμιστήρας,ανεμιστήρες
 heat_pump|HA||heat pump,heat pumps|αντλία θερμότητας,αντλίες θερμότητας
@@ -115,7 +116,8 @@ sofa_bed|FU|sofa|sofa bed,sofa beds|καναπές κρεβάτι,καναπέδ
 bed|FU||bed,beds,bed frame|κρεβάτι,κρεβάτια
 mattress|FU||mattress,mattresses|στρώμα,στρώματα
 wardrobe|FU||wardrobe,wardrobes|ντουλάπα,ντουλάπες
-shelving|FU||bookcase,bookcases,shelf,shelves,shelving unit|βιβλιοθήκη,βιβλιοθήκες,ραφιέρα,ράφι,ράφια
+shelving|FU||shelving unit,shelving units,shelf,shelves,shelving|ραφιέρα,ραφιέρες,ράφι,ράφια
+bookcase|FU|shelving|bookcase,bookcases,~bookshelf,~bookshelves|βιβλιοθήκη,βιβλιοθήκες
 table|FU||table,tables|τραπέζι,τραπέζια,τραπεζάκι,τραπεζαρία
 lamp|FU||lamp,lamps,desk lamp,ceiling light,ceiling lights,pendant light,pendant lights,wall light,wall lights,chandelier,chandeliers,light fitting,light fittings|φωτιστικό,φωτιστικά,πορτατίφ,φωτιστικό οροφής
 light_bulb|FU||light bulb,light bulbs,led bulb,smart bulb|λάμπα,λάμπες,λαμπτήρας,λαμπτήρες
@@ -133,7 +135,7 @@ car_phone_holder|PH||car phone holder,car phone mount,phone holder|βάση κι
 smartwatch|PH|watch|smartwatch,smartwatches,smart watch,fitness tracker,fitness trackers|έξυπνο ρολόι,έξυπνα ρολόγια
 laptop|CO||laptop,laptops,notebook computer,notebook computers|λάπτοπ,φορητός υπολογιστής,φορητοί υπολογιστές,φορητό
 desktop_pc|CO||desktop pc,desktop pcs,desktop computer,desktop computers,~desktop,~pc|υπολογιστής,υπολογιστές,σταθερός υπολογιστής,κομπιούτερ
-monitor|CO||monitor,monitors,computer monitor,computer monitors,pc monitor,~screen|οθόνη υπολογιστή,οθόνες υπολογιστή,οθόνη,οθόνες,μόνιτορ
+monitor|CO||monitor,monitors,computer monitor,computer monitors,pc monitor,pc monitors,pc screen,pc screens,computer screen,computer screens,~screen|οθόνη υπολογιστή,οθόνες υπολογιστή,οθόνη,οθόνες,μόνιτορ
 printer|CO||printer,printers,multifunction printer,multifunction printers,all in one printer|εκτυπωτής,εκτυπωτές,πολυμηχάνημα,πολυμηχανήματα
 label_printer|CO||label printer,label printers,label maker,label makers|ετικετογράφος,ετικετογράφοι,εκτυπωτής ετικετών
 toner|CO||toner,toners,toner cartridge,toner cartridges|τόνερ
@@ -143,7 +145,8 @@ keyboard|CO||keyboard,keyboards|πληκτρολόγιο,πληκτρολόγι�
 mouse|CO||mouse,mice,computer mouse|ποντίκι,ποντίκια
 webcam|CO||webcam,webcams,web camera,web cam|κάμερα υπολογιστή,κάμερες υπολογιστή,κάμερα web
 scanner|CO||scanner,scanners,document scanner|σαρωτής,σαρωτές,σκάνερ
-storage_drive|CO||external hard drive,external hard drives,hard drive,hard drives,internal hard drive,internal hard drives,ssd,ssds,solid state drive,solid state drives,usb stick,usb sticks,flash drive,flash drives|σκληρός δίσκος,εξωτερικός σκληρός δίσκος,στικάκι,φλασάκι
+storage_drive|CO||external hard drive,external hard drives,hard drive,hard drives,internal hard drive,internal hard drives,ssd,ssds,solid state drive,solid state drives|σκληρός δίσκος,εξωτερικός σκληρός δίσκος
+usb_flash_drive|CO||usb stick,usb sticks,usb flash drive,usb flash drives,flash drive,flash drives,pen drive,pen drives,memory stick,memory sticks|στικάκι,στικάκια,φλασάκι,φλασάκια
 docking_station|CO||docking station,docking stations,dock,docks,laptop dock,laptop docks,port replicator,port replicators,usb hub|βάση σύνδεσης
 television|AV||tv,tvs,television,televisions,smart tv|τηλεόραση,τηλεοράσεις
 speaker|AV||speaker,speakers,bluetooth speaker,portable speaker|ηχείο,ηχεία
