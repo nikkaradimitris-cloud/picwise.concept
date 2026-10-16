@@ -33,6 +33,11 @@ In their words: «προτείνω να πάμε με τη λογική της �
    asked for ("laptop case"). A product PicWise cannot say with confidence is the kind
    asked for is not shown; fewer and right beats more and wrong. Owner: «το laptop
    πρέπει να βγάζει laptop».
+   **Phones (owner, 2026-10-16):** «Smartphone να δείχνεις smartphone... Τα υπόλοιπα
+   είναι mobile phone». "smartphone" shows only smartphones. "mobile phone", "cell
+   phone", "phone" and «κινητό» show only the other mobile phones: basic, flip and
+   big-button phones. The owner chose this over "all mobile phones" when both were
+   put to them.
 2. **Availability is a hard criterion.** A product the feed says is out of stock is
    never shown, and the feed is refreshed every day. What this can honestly mean: listed
    as in stock by the feed at its last refresh, not verified at the moment of the click.
@@ -52,10 +57,10 @@ In their words: «προτείνω να πάμε με τη λογική της �
    would compare them unevenly.
 5. **The same product in several shops is shown once**, from the cheapest shop that has
    it in stock; if the cheapest is out of stock, the next cheapest that is in stock.
-   "The same product" means the same EAN/GTIN. Where the code is missing, products are
-   not joined, so that two different products are never merged. Implementation note:
-   `_product_identity_key` today also joins on brand + MPN. Whether this dedupe may do
-   the same is not decided; the owner was told "the code only".
+   "The same product" means the same EAN/GTIN, or, where that code is missing, **the
+   same brand and the same manufacturer code (MPN)** (owner, 2026-10-16). Without
+   either, products are not joined, so that two different products are never merged.
+   `_product_identity_key` already joins on brand + MPN.
 6. **No ratings**, in the ranking or on the cards. The search for a feed with ratings
    stops.
 7. **The first four: one "Recommended" card first, then the three cheapest** (not
@@ -90,7 +95,13 @@ In their words: «προτείνω να πάμε με τη λογική της �
      `concept.picwise.txt` (section 14, "Revenue Rule"), `docs/MISSION.md`,
      `PROJECT_RULES.md` sections 4 and 5, `docs/REVENUE_NEUTRALITY_RULES.md` and the
      Decision Contract. The owner was also told that a "Recommended" chosen by
-     commission, with nothing on the page saying so, is a legal risk in the UK and the US.
+     commission, with nothing on the page saying so, is a legal risk in the UK and the US;
+   - **is left out when no product of the search has an EAN/GTIN** (owner,
+     2026-10-16). The four cheapest are then shown with no Recommended, because without
+     a code PicWise cannot know that the same product is not cheaper elsewhere.
+
+   **Fewer than four right products are shown as they are**, with "2 of 2" (owner,
+   2026-10-16). Today such a search shows an empty page.
 8. **"More"**: the next four cheapest, "8 of 45", and again and again until the list
    ends. Nothing in them is recommended. Owner: «ο κόσμος θέλει να δει ποσότητα».
 9. **One general affiliate line in the site footer**, about all links, not about the
@@ -149,15 +160,15 @@ What the files said before:
 ## Open, for the owner
 
 1. ~~The conflicts above.~~ Settled on 2026-10-16: the founding files were changed.
-2. A search where no product has an EAN/GTIN: no Recommended at all? The Decision
-   Contract requires exactly one. Code coverage varies by shop: Aosom 92%, the first
-   feed's `ean` 34%.
-3. Fewer than four results: show what there is, or nothing? Today the answer is no
-   four.
+2. ~~A search where no product has an EAN/GTIN.~~ Settled on 2026-10-16: no
+   Recommended, the four cheapest only (rule 7).
+3. ~~Fewer than four results.~~ Settled on 2026-10-16: shown as they are, "2 of 2"
+   (rule 7).
 4. What the three cheapest cards say. The contract requires a role label and a reason
    on every card. Proposal: "Lowest price", and "Lowest price of N shops" when rule 5
    joined offers.
-5. Whether brand + MPN may also join "the same product" (rule 5).
+5. ~~Whether brand + MPN may also join "the same product".~~ Settled on 2026-10-16:
+   yes (rule 5).
 6. The line under Recommended: "Mid-priced for this category". The marketing
    proposal "Middle of the £X–£Y range" no longer fits, because the Recommended is now
    the median and not the middle of the range.
@@ -410,10 +421,30 @@ The middle product moved the same way. For "smartphone" it was a £23.99 phone c
 is now a £868.99 iPhone 16. For "tablet" it was a £93.99 folio and is now a £936.99
 iPad mini.
 
+**Phones, split the same day by the owner's rule.** The cheapest "smartphone" results
+were Crosscall and Doro basic phones that the feed files as "Mobile Phones". There are
+now two kinds:
+- **smartphone** answers "smartphone", "smart phone", "android phone" and "galaxy
+  phone";
+- **mobile phone** answers "mobile phone", "cell phone", "phone", «κινητό», "flip
+  phone" and "basic phone".
+
+Feeds file both under "Mobile Phones": the first real feed held its smartphones there,
+the third its basic phones. So the title says which. A phone is a smartphone when its
+title says so, or names what only a smartphone has: Android, iOS, iPhone or 5G, 16 GB
+of storage or more, or a screen of 4 inches or more.
+
+On the third feed, "smartphone" now opens with a £113.99 TCL smartphone, and "mobile
+phone", "cell phone" and «κινητό» with a £67.99 Crosscall and Doro basic phones. A
+plain "phone" shows the search's suggestions instead of cards, as it did before.
+
+The misspelling benchmark falls from 96.0% to 93.9% (42 not understood, 27 before). The
+15 new misses are all «κινητό τηλέφωνο» and its misspellings. The benchmark expects
+them to find its fixture's "Mobile Phones" rows, which are smartphones. Under the rule
+they now look for basic phones, which that fixture does not stock. The benchmark was
+left as it is, so that the number shows the rule's effect.
+
 **What step 1 does not fix:**
-- **Basic phones first under "smartphone".** The cheapest are Crosscall and Doro
-  basic phones, which the feed files as "Mobile Phones". PicWise reads "mobile phone"
-  as a smartphone. Separating the two is a small change, if the owner wants it.
 - **The other words of a search still do not narrow the kind.** "ceiling fan with
   light" shows handheld fans, "portable ssd" shows portable hard drives, and one
   wired headset appears under "wireless headphones". This is step 3: the price-first
@@ -506,6 +537,14 @@ practice:
     - the answer to both is data prepared once a day, such as an index by kind of
       product. That need not cost anything: a scheduled job can build it and store it
       as files. A paid database comes in only if it outgrows free limits.
+
+**Also decided on 2026-10-16, for step 3:**
+- no Recommended when no product has an EAN/GTIN;
+- fewer than four results are shown as they are;
+- brand + MPN is the same product.
+
+All three are recorded in rules 5 and 7. Still open: the labels on the three cheapest
+cards, and the line under the Recommended.
 
 **Build order proposed to the owner (updated the same day).** The owner restated the
 extreme-price rule for step 3 in their own words («όταν το ακριβότερο είναι δύο φορές

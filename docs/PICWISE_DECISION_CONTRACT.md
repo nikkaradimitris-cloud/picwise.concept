@@ -392,14 +392,17 @@ small shop has neither. See `docs/picwise_rating_sources.md`.
 The owner dropped ratings: two real feeds, about fifteen shops, and not one rating or
 sales figure between them. In their place:
 
-1. only the kind of product asked for ("laptop" shows laptops, not their accessories)
+1. only the kind of product asked for ("laptop" shows laptops, not their accessories).
+   "smartphone" shows smartphones; "mobile phone", "phone" and «κινητό» the other
+   mobile phones, basic, flip and big-button (owner, 2026-10-16)
 2. never a product the feed says is out of stock, with the feed refreshed daily. The
    feed's word is trusted; no shop page is checked (owner, 2026-10-16)
 3. the products must carry title, price, image, description, link and availability, as
    ruled on 2026-10-12; specifications and codes are shown when present, never required
 4. cheapest first, by product price alone, with no delivery cost
-5. the same product (same EAN/GTIN) shown once, from the cheapest shop that has it in
-   stock; no code, no joining
+5. the same product (same EAN/GTIN or, without it, same brand and manufacturer code,
+   MPN; owner, 2026-10-16) shown once, from the cheapest shop that has it in stock;
+   neither code, no joining
 6. no ratings anywhere
 7. the first four are one **"Recommended"** and the three cheapest, with "4 of 45"
    beneath. The Recommended is **the middle product of the whole result in price
@@ -410,7 +413,9 @@ sales figure between them. In their place:
    owner on 2026-10-16 from
    the middle of the price range, (cheapest + dearest) ÷ 2, which on the real feed
    recommended the top end (a £4,809.99 MacBook Pro for "laptop"). **No commission is
-   used** and none is mentioned on the card
+   used** and none is mentioned on the card. When no product of the search has an
+   EAN/GTIN there is no Recommended, only the four cheapest, and fewer than four right
+   products are shown as they are, "2 of 2" (owner, 2026-10-16)
 8. "more" gives the next four cheapest, "8 of 45", as often as asked, none of them
    recommended
 9. one general affiliate line in the site footer

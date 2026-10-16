@@ -73,11 +73,16 @@ Current state for whoever picks the project up next. Updated 2026-10-16.
   ακριβότερο είναι δύο φορές ακριβότερο από το προηγούμενο φθηνότερο να εξαιρείται
   από το μέσο όρο»), which matches the recorded reading, and did not object to the
   order; step 1 is built.
+- **Decided by the owner on 2026-10-16:**
+  - "smartphone" shows smartphones; "mobile phone", "phone" and «κινητό» show only
+    basic phones. This is built, on the branch;
+  - no Recommended when no product has an EAN/GTIN;
+  - fewer than four results are shown as they are ("2 of 2");
+  - brand + MPN counts as the same product.
+
+  The last three are for step 3.
 - **Open owner decisions:**
-  - no Recommended when no product has an EAN/GTIN?
-  - fewer than four results;
-  - the labels on the three cheapest cards;
-  - whether brand + MPN also counts as "the same product";
+  - the labels on the three cheapest cards ("Lowest price" proposed);
   - the line under Recommended ("Mid-priced for this category" proposed).
 
   The marketing proposals in the plan file are proposals; none is approved.
