@@ -411,10 +411,12 @@ sales figure between them. In their place:
 The full record, with the reasons, what stays, the open questions and the marketing
 analysis, is in `docs/picwise_price_first_plan_2026-10-15.md`.
 
-**Not implemented, and not to be until the owner settles one conflict.** Rules 7 and 8
-contradict the founding files: `concept.picwise.txt` section 10 (more opens «μόνο 4
-ακόμα», «όχι κατάλογος», «όχι 30 προϊόντα») and section 6 («Τα 4 προϊόντα δεν είναι
-λίστα»), `docs/MISSION.md` (not "an infinite product list") and `PROJECT_RULES.md`
-sections 2 and 4 ("decision engine, not a search engine"; never "Show infinite product
-lists"). PROJECT_RULES section 1.4 says to stop and raise it, and it was raised with
-the owner on 2026-10-16. Those files are unchanged.
+**The founding files now say the same.** Rules 7 and 8 contradicted
+`concept.picwise.txt` (sections 6 and 10), `docs/MISSION.md` and `PROJECT_RULES.md`
+(sections 2 and 4). Raised with the owner on 2026-10-16 under PROJECT_RULES section
+1.4, they chose to change those files to the plan, and they were changed the same day,
+along with `docs/LANDING_PAGE_SPEC.md`. For services (insurance, energy, banking,
+software) nothing has been decided, and their rules stand as they were.
+
+**Not implemented yet.** The code still runs the superseded rules. The next step is to
+measure the plan on the real feed.

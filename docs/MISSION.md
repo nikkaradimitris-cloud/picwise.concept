@@ -2,36 +2,51 @@
 
 ## Mission Lock
 
-Picwise is a decision engine, not a search engine.
+> Changed on 2026-10-16 by the owner's decision, "price first" (`docs/picwise_price_first_plan_2026-10-15.md`). It
+> replaces "a decision engine, not a search engine" and the limited "more".
+
+Picwise finds the product the buyer asked for, shows only what is in stock, cheapest
+first, and makes one honest pick.
 
 For every purchase-intent query, Picwise must:
-- return exactly 4 curated choices
-- return exactly 1 recommended choice
+- show only the kind of product asked for
+- never show a product the feed says is out of stock
+- return 4 choices first: exactly 1 Recommended (the product with an EAN/GTIN whose
+  price is closest to the middle of the result's price range) and the 3 cheapest
+- show how many there are ("4 of 45")
+- offer "More": the next 4 cheapest, as often as the buyer asks
 - explain the recommendation briefly and clearly
 - include a clear CTA per choice
 - track decision and click events
 - redirect directly to the merchant/provider
 
+This covers products from shops. For services (insurance, energy, banking, software)
+nothing has been decided yet, and until it is, `concept.picwise.txt` stands for them.
+
 ## Product Promise
 
 Enter confused. Leave decided.
 
-Picwise reduces search-to-decision time by presenting small, decisive, and trustworthy outputs instead of infinite browsing.
+Picwise reduces search-to-decision time by showing only what was asked for and only
+what is in stock, cheapest first, with one honest pick on top and as many more as the
+buyer wants.
 
 ## Non-Negotiable Identity
 
 Picwise must not become:
-- a search engine
 - an e-shop
 - a marketplace
 - an affiliate blog
-- an infinite product list
+- a list padded with accessories, out-of-stock products or products the buyer did not
+  ask for
 
 ## Trust and Neutrality Commitments
 
 - No fake products, reviews, ratings, conversions, revenue, savings, urgency, or confidence signals.
-- No commission-first ranking or recommendation.
-- Recommendation logic is based on user fit, reliability, cost, terms, risk, availability, and decision quality.
+- No commission-first ranking or recommendation. Commission never decides the order
+  or the Recommended.
+- The order is the price, after the kind asked for and availability. The Recommended
+  is the middle of the price range. No ratings are used.
 
 ## First Phase Boundary
 

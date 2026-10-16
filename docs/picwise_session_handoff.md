@@ -12,18 +12,20 @@ Current state for whoever picks the project up next. Updated 2026-10-16.
   price range plus the three cheapest, with "4 of 45"; "more" again and again. The old
   instruction, "build nothing until a feed with ratings arrives", is over, and the
   search for ratings stops.
-- **Not built, and not to be built yet.** The plan contradicts the founding files:
-  `concept.picwise.txt` sections 6 and 10, `docs/MISSION.md` and `PROJECT_RULES.md`
-  sections 2 and 4 (no endless list, not a search engine). Raised with the owner on
-  2026-10-16. Their answer decides whether those files change or the plan narrows. No
-  code has changed: the engine still runs the superseded rules (price zones,
-  specification ranking, see-more for `fit` only).
-- **Next step once the owner answers:** measure the plan on the 51,630-row feed. The
-  owner re-uploads it; it is not in the session. Count per shop and per kind: how many
+- **The founding files now say the same as the plan.** It contradicted them (no endless
+  list, not a search engine); on 2026-10-16 the owner chose to change them, and
+  `concept.picwise.txt`, `docs/MISSION.md`, `PROJECT_RULES.md` and
+  `docs/LANDING_PAGE_SPEC.md` were changed. Each changed passage in the concept carries
+  a dated note. Services (insurance, energy, banking, software) were not decided and
+  keep their old rules.
+- **Not built yet.** No code has changed: the engine still runs the superseded rules
+  (price zones, specification ranking, see-more for `fit` only, `more_choices` capped
+  at 4).
+- **Next step:** measure the plan on the 51,630-row feed. The owner re-uploads it; it
+  is not in the session. Count per shop and per kind: how many
   products pass, how many join as the same product, and how many carry an EAN/GTIN for
   the Recommended.
 - **Open owner decisions:**
-  - the conflict above;
   - no Recommended when no product has an EAN/GTIN?
   - fewer than four results;
   - the labels on the three cheapest cards;
@@ -106,8 +108,10 @@ If these layers conflict, do not guess: stop and raise it (PROJECT_RULES section
 
 In short:
 
-- every purchase-intent query: exactly 4 choices + 1 recommended, decision labels, CTA,
-  direct redirect, tracking event
+- every purchase-intent query: only the kind asked for, only in stock, cheapest first;
+  4 choices first (1 Recommended at the middle of the price range + the 3 cheapest),
+  then "More" for the next 4 as often as asked; decision labels, CTA, direct redirect,
+  tracking event (price first, 2026-10-16)
 - no fake data of any kind; no commission-based ranking; missing data uses the enum
   (`not_connected`, `data_not_yet`, `not_applicable`, `unknown`)
 - small, closed, tested steps; do not invent business logic (flag a TODO instead)
@@ -266,9 +270,9 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 
 ## Next engineering steps, in order
 
-0. **Price-first plan** (`docs/picwise_price_first_plan_2026-10-15.md`): blocked on
-   the owner settling its conflict with the founding files. Then measure on the real
-   feed, then build in small tested steps. Its "engineering, later" section lists what
+0. **Price-first plan** (`docs/picwise_price_first_plan_2026-10-15.md`): the founding
+   files were changed to it on 2026-10-16. Measure on the real feed first, then build in
+   small tested steps. Its "engineering, later" section lists what
    it will need: `custom_6` for tyres, a category for Living and Home, and a store
    refreshed daily.
 
@@ -318,10 +322,9 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 
 ## Known doc conflict (unresolved, owner's call)
 
-**New, 2026-10-16:** the price-first plan contradicts `concept.picwise.txt` sections 6
-and 10, `docs/MISSION.md` and `PROJECT_RULES.md` sections 2 and 4. The table is in
-`docs/picwise_price_first_plan_2026-10-15.md`. It was raised with the owner, and no
-founding file was changed.
+**Settled on 2026-10-16:** the price-first plan contradicted `concept.picwise.txt`,
+`docs/MISSION.md` and `PROJECT_RULES.md`; the owner chose to change them, and they
+were changed (details in `docs/picwise_price_first_plan_2026-10-15.md`).
 
 Older, and still open:
 

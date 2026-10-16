@@ -7,8 +7,8 @@ project's founding files, what is still open, and the marketing analysis given t
 same day. The marketing part is proposals, not decisions.
 
 **Nothing in the code has changed.** The engine still runs the rules this plan
-replaces. And the plan is not to be built until the owner settles the conflicts listed
-below (PROJECT_RULES section 1.4).
+replaces. The conflict with the founding files was settled on 2026-10-16: the owner
+chose to change them to the plan, and they now say the same (see below).
 
 ## Why the owner changed course
 
@@ -119,25 +119,27 @@ marked as superseded:
 - No fake data, the missing-data values, Amazon removed, and commission never in the
   recommendation.
 
-## Where the plan contradicts the founding files (owner's call)
+## Where the plan contradicted the founding files: settled 2026-10-16
 
 PROJECT_RULES section 1.4: when the layers conflict, stop and raise it. Raised with the
-owner on 2026-10-16. None of these files was changed, because changing the mission is
-the owner's decision.
+owner on 2026-10-16. Given the choice of changing the founding files or narrowing the
+plan, **the owner chose to change the files**, and they were changed the same day:
+`concept.picwise.txt` sections 1-8, 10, 11, 13 and 22, `docs/MISSION.md`,
+`PROJECT_RULES.md` sections 2-5 and `docs/LANDING_PAGE_SPEC.md`. Every changed passage
+in the concept carries a dated note. Services (insurance, energy, banking, software)
+were not part of the decision, so their passages were left as they were and say so.
 
-| The plan | Says the opposite |
+What the files said before:
+
+| The plan | What the files said |
 | --- | --- |
 | "More" again and again, "4 of 45 ... 8 of 45" | `concept.picwise.txt` section 10: «ανοίγει μόνο 4 ακόμα / όχι infinite scroll / όχι κατάλογος / όχι 30 προϊόντα»; section 3: «Δεν τον βάζουμε να συγκρίνει άπειρες επιλογές»; `docs/MISSION.md`: must not become "an infinite product list", "small, decisive ... outputs instead of infinite browsing"; `PROJECT_RULES.md` section 4: never "Show infinite product lists" |
 | The three cheapest after the Recommended | `concept.picwise.txt` section 6: «Τα 4 προϊόντα δεν είναι λίστα. Τα 4 προϊόντα είναι 4 διαφορετικές απαντήσεις» (Budget, Value, Best Overall, Premium) |
 | A price-ordered list of everything in stock | `docs/MISSION.md` and `PROJECT_RULES.md` sections 2 and 4: "a decision engine, not a search engine" |
 
-The owner has two ways out: update those files to the new plan, or bring the plan
-back inside them (for example, a limited "more"). Until they choose, the plan is
-recorded and not built.
-
 ## Open, for the owner
 
-1. The conflicts above.
+1. ~~The conflicts above.~~ Settled on 2026-10-16: the founding files were changed.
 2. A search where no product has an EAN/GTIN: no Recommended at all? The Decision
    Contract requires exactly one. Code coverage varies by shop: Aosom 92%, the first
    feed's `ean` 34%.
@@ -162,6 +164,10 @@ Recorded so it does not have to be found again. None of it is decided.
   Under rule 3, no tyre appears until that column is read.
 - **Living and Home** (2,255 rows) sends no category, so every row is held at the feed
   gate as `missing_category_text`.
+- **The code caps "more" today.** `src/picwise_contracts/models.py` rejects more than 4
+  `more_choices` ("no infinite list behavior"), and `search_selection._next_four_after`
+  offers a second four only for `fit` kinds. Both follow the old rule and change when
+  the plan is built.
 - **Thousands of products and a repeated "more"** need a store refreshed daily. Today
   every serverless cold start downloads and parses the whole feed (`AWIN_FEED_URL`,
   reused for 6 hours). Supabase only with the owner's yes.
