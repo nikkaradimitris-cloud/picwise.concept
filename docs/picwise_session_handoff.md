@@ -47,8 +47,22 @@ Current state for whoever picks the project up next. Updated 2026-10-16.
   - extreme top prices (at least twice the next) do not count for the Recommended;
   - no Recommended for services in this phase.
 
-  Proposed build order: strict kind test, English over greeklish, the price-first
-  engine, speed and a store, suggestions and microphone, trends, other networks.
+  - PicWise as a phone app, later in the Play Store;
+  - a truthful scanning screen that lets results take about 4 s (concept section 18
+    and PROJECT_RULES section 9 changed).
+
+  Proposed build order:
+  1. strict kind test;
+  2. English over greeklish;
+  3. the price-first engine;
+  4. the search page (scanning screen, suggestions, microphone);
+  5. data prepared daily (needed before going live);
+  6. trends;
+  7. the app;
+  8. other networks.
+
+  Waiting on the owner's yes to the order, and to the reading of the extreme-price
+  rule.
 - **Open owner decisions:**
   - no Recommended when no product has an EAN/GTIN?
   - fewer than four results;

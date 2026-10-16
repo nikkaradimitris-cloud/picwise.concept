@@ -361,15 +361,41 @@ practice:
    saw or any other. The cookie's length and what counts are set per programme in its
    terms.
 
-**Build order proposed to the owner:**
+9. **An app, not only a website** (owner, the same day). PicWise will install on phones
+   and later go to the Play Store. In practice:
+   - the website becomes installable as an app, and the Play Store version is the same
+     site in an Android wrapper, with one codebase;
+   - links to shops must open in the phone's browser, so the shop's cookie is set where
+     the buyer buys and the commission is not lost;
+   - the Play Store needs the owner's Play Console account, a privacy page (the mic and
+     cookies must be described there) and a verification file on the domain;
+   - Apple's store is stricter with sites in a wrapper and is not planned now.
+10. **A scanning screen while a search runs** (owner, the same day): "searching N shops,
+    M products, found these, cross-checking, sending". It appears within 1.5 s, and the
+    results may take about 4 s behind it. Written into the concept (section 18) and
+    PROJECT_RULES section 9 under two conditions: the screen states only true facts,
+    and results are never held back on purpose. In practice:
+    - it makes today's 4 s acceptable without making the search faster;
+    - it cannot cover growth. Every search reads every product, so the time grows with
+      the catalogue: 4 s at 42,076 products, tens of seconds at hundreds of thousands;
+    - every cold start downloads and parses the whole feed (10 s here), and the first
+      search after it took 20 s;
+    - the answer to both is data prepared once a day, such as an index by kind of
+      product. That need not cost anything: a scheduled job can build it and store it
+      as files. A paid database comes in only if it outgrows free limits.
+
+**Build order proposed to the owner (updated the same day):**
 1. the strict kind test;
 2. English over greeklish ("patio");
 3. the price-first engine: cheapest first, the median Recommended with the
    extreme-price rule, More, the counter, and the same-product join;
-4. speed and a store, needed to go live and for many shops;
-5. suggestions and the microphone;
+4. the search page in the browser: the scanning screen, suggestions as the buyer
+   types, and the microphone;
+5. data prepared once a day, for fast cold starts and for many shops. Going live
+   needs steps 1-5;
 6. trends;
-7. other networks.
+7. the app, installable first and then in the Play Store;
+8. other networks.
 
 ## Marketing analysis, 2026-10-15 (proposals, not decisions)
 

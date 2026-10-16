@@ -30,6 +30,12 @@ Added on 2026-10-16 by the owner.
 - Trends state only what is known (ANTI_FAKE): seasonal picks labelled as such at first,
   then the most frequent searches on PicWise. "What people buy" only once real
   purchase data exists.
+- While a search runs, a scanning screen shows what is happening: searching N shops
+  and M products, found these, cross-checking, sending. It appears within 1.5 s, and
+  the results may follow within about 4 s. Only true facts; never a deliberate delay.
+- PicWise will also install on phones as an app, and later go to the Play Store. Links
+  to shops open in the phone's browser, so the shop's cookie is set where the buyer
+  buys.
 
 ## Card Structure Requirements
 

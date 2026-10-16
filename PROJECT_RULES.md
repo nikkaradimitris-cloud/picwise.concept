@@ -83,6 +83,9 @@ Mandatory targets:
 - First render < 1.5 sec
 - Full interactive < 2 sec
 - Click to redirect < 300 ms
+- Results behind the scanning screen within about 4 sec (owner, 2026-10-16). The
+  screen states only true facts, the real number of shops and products and the steps
+  actually taken, and results are never held back on purpose.
 
 Do not ship changes that knowingly violate these targets without explicit approval.
 
