@@ -7,15 +7,20 @@ from urllib.parse import urlparse
 
 from picwise_nlu import normalize_query
 from picwise_nlu.concept_understanding import (
+    CAMPING_MARKER,
+    CATEGORY_FIELD_SEPARATOR,
+    PET_MARKER,
     ConceptReading,
     annotate_product_concepts,
     normalize_spec_text,
     product_text_names_concept,
+    query_allows_context,
     read_condition_request,
     strip_accents_if_needed,
     understand_product_query,
     words_after_product_name,
 )
+from picwise_nlu.product_concepts import get_product_concepts_by_id
 from picwise_taxonomy.comparison_rules import comparison_rule
 
 from .contracts import FeedAvailabilityContext, OfferHealth, ProviderProduct
@@ -706,7 +711,10 @@ def _build_secondary_category_text(raw: dict[str, Any], product: ProviderProduct
     if category_text and not _is_generic_category(category_text):
         parts.append(category_text)
 
-    return " ".join(part.strip().lower() for part in parts if part.strip())
+    # Each field is its own breadcrumb. Joined with a bare space, the last shelf of one
+    # ran into the first of the next ("console tables home & garden") and the kind
+    # reader could not read either shelf.
+    return CATEGORY_FIELD_SEPARATOR.join(part.strip().lower() for part in parts if part.strip())
 
 
 def _product_search_fields(product: ProviderProduct) -> dict[str, str]:
@@ -1361,6 +1369,34 @@ def _unannotated_product_names_concept(
     return product_text_names_concept(text, concept_id)
 
 
+_FURNITURE_MEGA_CATEGORY = "furniture_living_storage_smart_home"
+
+
+def _context_allows_member(
+    concepts: frozenset[str], concept_id: str, query_tokens: tuple[str, ...]
+) -> bool:
+    """May a product of this kind answer this search, given the context it carries?
+
+    A pet product answers a search that names a pet ("dog bed") or a kind that is for
+    pets ("cat litter"), never a plain "bed" or "sofa" or "toy". A camping product
+    answers furniture searches only when the buyer says camping: "bed" is not answered
+    with a camping cot. Owner rule of 2026-10-16: the kind asked for, and only that.
+    """
+    if PET_MARKER in concepts:
+        pet_kind = bool({"pet", "dog", "cat"} & set(concept_id.split("_")))
+        if not pet_kind and not query_allows_context(query_tokens, PET_MARKER):
+            return False
+    if CAMPING_MARKER in concepts:
+        concept = get_product_concepts_by_id().get(concept_id)
+        if (
+            concept is not None
+            and concept.mega_category_id == _FURNITURE_MEGA_CATEGORY
+            and not query_allows_context(query_tokens, CAMPING_MARKER)
+        ):
+            return False
+    return True
+
+
 def _distinct_product_count(rows: list[tuple[ProviderProduct, dict[str, str]]]) -> int:
     seen: set[str] = set()
     for product, _fields in rows:
@@ -1392,9 +1428,11 @@ def _select_products_for_concept(
         rows = []
         for product, fields in zip(eligible, eligible_fields):
             concepts = _product_concepts(product, fields)
-            if concept_id in concepts or (
-                not concepts
-                and _unannotated_product_names_concept(fields, reading.feed_terms, concept_id)
+            if concept_id in concepts:
+                if _context_allows_member(concepts, concept_id, reading.tokens):
+                    rows.append((product, fields))
+            elif not concepts and _unannotated_product_names_concept(
+                fields, reading.feed_terms, concept_id
             ):
                 rows.append((product, fields))
         return rows
