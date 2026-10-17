@@ -9,7 +9,10 @@
 - an offer whose validity window closed after the file was written is left out;
 - the outbound redirect finds a prepared product, and nothing else;
 - with a purchasability cache configured the prepared file is not used;
-- a server reads a file only when one is configured, or built into a Vercel deployment.
+- a server reads a file only when one is configured, or built into a Vercel deployment;
+- the readiness page says whether the server answers from a prepared file, and why not;
+- a deployment's build leaves a public note of what it prepared, and a failure while
+  preparing neither fails the build nor prints the error's text.
 
 Every row is written with fictional brands and `.invalid` URLs; the page tests are
 served through api/index.py, the deployed entry point.
@@ -18,12 +21,15 @@ from __future__ import annotations
 
 import csv
 import gzip
+import importlib.util
+import io
 import json
 import os
 import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -36,6 +42,7 @@ for path in (HERE, ROOT, SRC):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
+from api.index import app as wsgi_app  # noqa: E402
 from fixture_support import fixture_description  # noqa: E402
 from picwise_providers import prepared_catalogue, state  # noqa: E402
 from picwise_providers.awin_adapter import clear_awin_feed_parse_cache  # noqa: E402
@@ -331,6 +338,123 @@ class PrepareToolTests(_PreparedMixin, unittest.TestCase):
         self.assertEqual(kept_going.returncode, 0)
         self.assertIn("nothing written", kept_going.stdout)
         self.assertFalse(out.exists())
+
+    def test_the_build_leaves_a_public_note_of_what_it_prepared(self) -> None:
+        # Vercel serves `--static-dir` as the site's static files and will not deploy it
+        # empty; the note says what the build prepared, and nothing of the feed's link.
+        feed = self._write_feed(_feed_rows())
+        static = self.folder / "public"
+        result = self._run(
+            "--feed-file", str(feed), "--out", str(self.prepared_path), "--keep-going", "--static-dir", str(static)
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        note = json.loads((static / "prepared.json").read_text(encoding="utf-8"))
+        self.assertEqual((note["prepared"], note["products"], note["shops"]), (True, 16, 1))
+        prepared_at = read_prepared_catalogue(self.prepared_path).prepared_at
+        self.assertLess(abs((datetime.fromisoformat(note["prepared_at"]) - prepared_at).total_seconds()), 1)
+        self.assertEqual(set(note), {"prepared", "prepared_at", "products", "shops", "written_at"})
+
+        empty = self.folder / "public-without-feed"
+        result = self._run("--out", str(self.folder / "none.json.gz"), "--keep-going", "--static-dir", str(empty))
+        self.assertEqual(result.returncode, 0)
+        note = json.loads((empty / "prepared.json").read_text(encoding="utf-8"))
+        self.assertEqual((note["prepared"], note["reason"]), (False, "feed_not_readable"))
+
+    def test_a_failure_while_preparing_never_fails_the_build_nor_shows_its_text(self) -> None:
+        # An error's own text can quote the feed's link, which holds the API key.
+        tool = _load_prepare_tool()
+        link = "https://productdata.example.invalid/datafeed/download/apikey/SECRET123/feed.csv.gz"
+        out = self.folder / "failed.json.gz"
+        static = self.folder / "public"
+        printed = io.StringIO()
+        with patch.object(state, "prepare_feed_catalogue", side_effect=ValueError(f"cannot read {link}")):
+            with redirect_stdout(printed):
+                code = tool.main(["--out", str(out), "--keep-going", "--static-dir", str(static)])
+            self.assertEqual(code, 0)
+            self.assertIn("preparing the feed failed (ValueError at", printed.getvalue())
+            self.assertNotIn("SECRET123", printed.getvalue())
+            self.assertNotIn("productdata", printed.getvalue())
+            self.assertFalse(out.exists())
+            note = json.loads((static / "prepared.json").read_text(encoding="utf-8"))
+            self.assertEqual((note["prepared"], note["reason"]), (False, "preparing_failed"))
+            # Run by hand, without --keep-going, the error is shown in full.
+            with redirect_stdout(io.StringIO()), self.assertRaises(ValueError):
+                tool.main(["--out", str(out)])
+
+
+def _load_prepare_tool():
+    spec = importlib.util.spec_from_file_location("prepare_catalogue_tool", ROOT / "tools" / "prepare_catalogue.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class PreparedStatusTests(_PreparedMixin, unittest.TestCase):
+    """What /private-beta-readiness says of the prepared feed (step 5): whether the
+    server answers from it, and when it was prepared."""
+
+    def _status(self) -> dict:
+        def start_response(_status: str, _headers: list[tuple[str, str]]) -> None:
+            return None
+
+        body = b"".join(
+            wsgi_app(
+                {"REQUEST_METHOD": "GET", "PATH_INFO": "/private-beta-readiness", "QUERY_STRING": "",
+                 "wsgi.input": io.BytesIO(b""), "wsgi.url_scheme": "https"},
+                start_response,
+            )
+        )
+        return json.loads(body)["prepared_feed"]
+
+    def test_a_fresh_file_is_in_use(self) -> None:
+        self._write_feed(_feed_rows())
+        self.assertEqual(self._status(), {"state": "not_present"})
+        prepared_at = datetime.now(timezone.utc) - timedelta(hours=3)
+        self._prepare(now=prepared_at)
+        self._answer_from_prepared()
+        status = self._status()
+        self.assertEqual(status["state"], "in_use")
+        self.assertEqual(status["prepared_at"], prepared_at.isoformat(timespec="seconds"))
+        self.assertEqual(status["age_hours"], 3.0)
+
+    def test_why_a_file_is_not_used(self) -> None:
+        self._write_feed(_feed_rows())
+        self._prepare(now=datetime.now(timezone.utc) - timedelta(hours=40))
+        self._answer_from_prepared()
+        status = self._status()
+        self.assertEqual(status["state"], "too_old")
+        self.assertGreaterEqual(status["age_hours"], 40.0)
+        good = self.prepared_path.read_bytes()
+        payload = json.loads(gzip.decompress(good))
+        cases = {
+            "other_code": gzip.compress(json.dumps({**payload, "code": "0" * 64}).encode("utf-8")),
+            "other_format": gzip.compress(json.dumps({**payload, "version": 2}).encode("utf-8")),
+            "unreadable": good[: len(good) // 2],
+        }
+        for state_name, data in cases.items():
+            with self.subTest(state=state_name):
+                self.prepared_path.write_bytes(data)
+                self._answer_from_prepared()
+                self.assertEqual(self._status(), {"state": state_name})
+        with self.subTest(state="no file where one is configured"):
+            self.prepared_path.unlink()
+            self._answer_from_prepared()
+            self.assertEqual(self._status(), {"state": "not_present"})
+
+    def test_a_file_that_ages_past_the_limit_while_served(self) -> None:
+        self._write_feed(_feed_rows())
+        self._prepare(now=datetime.now(timezone.utc) - timedelta(hours=2))
+        self._answer_from_prepared()
+        self.assertEqual(self._status()["state"], "in_use")
+        os.environ[PREPARED_MAX_AGE_ENV] = "1"
+        self.assertEqual(self._status()["state"], "too_old")
+
+    def test_a_purchasability_cache_turns_it_off(self) -> None:
+        self._write_feed(_feed_rows())
+        self._prepare()
+        self._answer_from_prepared()
+        configure_purchasability_cache(str(self.folder / "checked.json"))
+        self.assertEqual(self._status(), {"state": "not_used", "reason": "purchasability_cache_configured"})
 
 
 if __name__ == "__main__":

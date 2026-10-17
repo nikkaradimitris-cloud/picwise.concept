@@ -161,27 +161,45 @@ def write_prepared_catalogue(prepared: PreparedCatalogue, path: Path) -> int:
     return len(data)
 
 
-def read_prepared_catalogue(path: Path, *, now: datetime | None = None) -> PreparedCatalogue | None:
-    """The prepared file at `path`, or None when it cannot stand in for the feed."""
+@dataclass(frozen=True)
+class PreparedFileCheck:
+    """A prepared file as read, and why it can or cannot stand in for the feed.
+
+    `state` is "fresh", "too_old", "other_code" (written by other code), "other_format"
+    or "unreadable"; only a fresh file carries its catalogue.
+    """
+
+    state: str
+    catalogue: PreparedCatalogue | None = None
+    prepared_at: datetime | None = None
+
+
+def check_prepared_catalogue(path: Path, *, now: datetime | None = None) -> PreparedFileCheck:
+    """The prepared file at `path`, read and checked."""
     try:
         payload = json.loads(gzip.decompress(path.read_bytes()))
     except (OSError, EOFError, ValueError):
-        return None
+        return PreparedFileCheck("unreadable")
     if not isinstance(payload, dict):
-        return None
+        return PreparedFileCheck("unreadable")
     if payload.get("format") != _FORMAT or payload.get("version") != _VERSION:
-        return None
+        return PreparedFileCheck("other_format")
     if payload.get("code") != code_fingerprint():
-        return None
+        return PreparedFileCheck("other_code")
     try:
         prepared_at = datetime.fromisoformat(str(payload["prepared_at"]))
         if prepared_at.tzinfo is None:
-            return None
+            return PreparedFileCheck("unreadable")
         if (now or datetime.now(timezone.utc)) - prepared_at > prepared_catalogue_age_limit():
-            return None
-        return _catalogue_from_payload(payload, prepared_at)
+            return PreparedFileCheck("too_old", prepared_at=prepared_at)
+        return PreparedFileCheck("fresh", _catalogue_from_payload(payload, prepared_at), prepared_at)
     except (KeyError, TypeError, ValueError, IndexError):
-        return None
+        return PreparedFileCheck("unreadable")
+
+
+def read_prepared_catalogue(path: Path, *, now: datetime | None = None) -> PreparedCatalogue | None:
+    """The prepared file at `path`, or None when it cannot stand in for the feed."""
+    return check_prepared_catalogue(path, now=now).catalogue
 
 
 def _catalogue_from_payload(payload: dict[str, Any], prepared_at: datetime) -> PreparedCatalogue:

@@ -30,9 +30,9 @@ from .offer_health import (
 )
 from .prepared_catalogue import (
     PreparedCatalogue,
+    check_prepared_catalogue,
     prepared_catalogue_age_limit,
     prepared_catalogue_path,
-    read_prepared_catalogue,
 )
 from .normalization import extract_merchant_name
 from .purchasability_cache import enrich_provider_products_with_cache, resolve_purchasability_cache
@@ -388,10 +388,11 @@ def _active_prepared_catalogue() -> PreparedCatalogue | None:
     if file_key is None:
         return None
     if _PREPARED_STATE.get("file_key") != file_key:
-        prepared = read_prepared_catalogue(path)
+        check = check_prepared_catalogue(path)
         _PREPARED_STATE.clear()
         _PREPARED_STATE["file_key"] = file_key
-        _PREPARED_STATE["prepared"] = prepared
+        _PREPARED_STATE["prepared"] = check.catalogue
+        _PREPARED_STATE["check"] = check
         remember_product_kinds({})
     prepared = _PREPARED_STATE.get("prepared")
     # Older than the limit, the feed itself is read again until a new file comes.
@@ -400,6 +401,42 @@ def _active_prepared_catalogue() -> PreparedCatalogue | None:
 
 def _is_fresh(prepared: PreparedCatalogue) -> bool:
     return datetime.now(timezone.utc) - prepared.prepared_at <= prepared_catalogue_age_limit()
+
+
+def prepared_catalogue_status() -> dict[str, Any]:
+    """Whether this server answers from a prepared feed, for the readiness page.
+
+    "in_use" with the time it was prepared; else why not: "not_present" (no file in
+    this deployment, or none configured), "not_used" (a purchasability cache is
+    configured), "too_old", "other_code", "other_format" or "unreadable", and in each of
+    those the server reads the feed itself. Loads the file when this process has not.
+    """
+    path = prepared_catalogue_path()
+    if path is None or feed_file_cache_key(str(path)) is None:
+        return {"state": "not_present"}
+    if resolve_purchasability_cache() is not None:
+        return {"state": "not_used", "reason": "purchasability_cache_configured"}
+    prepared = _active_prepared_catalogue()
+    if prepared is not None:
+        return {"state": "in_use", **_prepared_time(prepared.prepared_at)}
+    check = _PREPARED_STATE.get("check")
+    if check is None:
+        return {"state": "not_present"}
+    if check.state == "fresh":
+        # Read fresh, and older than the limit since.
+        return {"state": "too_old", **_prepared_time(check.prepared_at)}
+    status: dict[str, Any] = {"state": check.state}
+    if check.prepared_at is not None:
+        status.update(_prepared_time(check.prepared_at))
+    return status
+
+
+def _prepared_time(prepared_at: datetime) -> dict[str, Any]:
+    age = datetime.now(timezone.utc) - prepared_at
+    return {
+        "prepared_at": prepared_at.astimezone(timezone.utc).isoformat(timespec="seconds"),
+        "age_hours": round(age.total_seconds() / 3600, 1),
+    }
 
 
 def _prepared_search_catalogue(prepared: PreparedCatalogue) -> SearchCatalogue:

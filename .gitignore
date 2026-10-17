@@ -40,3 +40,4 @@ temp/
 
 # Prepared feed (step 5): built by tools/prepare_catalogue.py, never committed
 prepared/
+public/prepared.json

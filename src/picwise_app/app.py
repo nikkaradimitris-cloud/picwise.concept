@@ -29,6 +29,7 @@ from picwise_search.offer_resolver import resolve_specific_product_offers_from_c
 from picwise_providers import resolve_card_eligible_provider_feed_product_by_id
 from picwise_providers.state import (
     peek_search_catalogue_counts,
+    prepared_catalogue_status,
     resolve_provider_feed_status,
     search_suggestions,
 )
@@ -373,6 +374,8 @@ class PicwiseLocalApp:
                 {"key": check.key, "status": check.status.value, "details": check.details}
                 for check in report.checks
             ],
+            # Whether the feed above is answered from the build's prepared file (step 5).
+            "prepared_feed": prepared_catalogue_status(),
         }
 
     def build_demo_output(self, query: str) -> DecisionOutput:

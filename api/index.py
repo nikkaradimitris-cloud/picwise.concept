@@ -15,6 +15,7 @@ if str(SRC) not in sys.path:
 
 from picwise_app import PicwiseLocalApp  # noqa: E402
 from picwise_app.buying_routes import render_best_slug_html, render_buying_sitemap_xml  # noqa: E402
+from picwise_app.prepared_renewal import RENEWAL_PATH, request_prepared_feed_renewal  # noqa: E402
 from picwise_integrations import (  # noqa: E402
     UrllibSubbyBridgeEventSender,
     send_subby_live_proof_event,
@@ -256,6 +257,14 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         payload = _APP.private_beta_readiness_payload()
         body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
         return _response("200 OK", "application/json; charset=utf-8", body, start_response)
+
+    if path == RENEWAL_PATH:
+        # Vercel's daily scheduled job (vercel.json "crons"), with CRON_SECRET.
+        status, payload = request_prepared_feed_renewal(str(environ.get("HTTP_AUTHORIZATION") or ""))
+        body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
+        return _response(
+            status, "application/json; charset=utf-8", body, start_response, cache_control="no-store"
+        )
 
     html = render_branded_not_found_page()
     body = html.encode("utf-8")
