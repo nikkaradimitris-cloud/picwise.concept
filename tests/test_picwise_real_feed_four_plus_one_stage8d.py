@@ -5,10 +5,12 @@ import sys
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
+for path in (HERE, SRC):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
 
 from picwise_providers.contracts import ProviderFeedConfig, ProviderProduct  # noqa: E402
 from picwise_providers.search_selection import (  # noqa: E402
@@ -22,6 +24,7 @@ from picwise_providers.state import (  # noqa: E402
     resolve_search_provider_feed_selection_with_recommendation,
 )
 from picwise_search.live_search_resolver import resolve_live_search  # noqa: E402
+from fixture_support import fixture_description  # noqa: E402
 
 _REAL_FEED_ENV = "AWIN_FEED_FILE"
 _REAL_FEED_DEFAULT = Path(r"C:\Users\User\Desktop\picwise-private-feeds\geekbuying_feed.csv.gz")
@@ -68,6 +71,7 @@ def _sample_four_monitor_products() -> tuple[ProviderProduct, ...]:
                     "category_name": "Monitors",
                     "merchant_category": "Computer Monitors",
                     "keywords": "gaming monitor qhd",
+                    "description": fixture_description(),
                 },
             )
         )

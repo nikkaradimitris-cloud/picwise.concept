@@ -15,10 +15,12 @@ if str(SRC) not in sys.path:
 
 from picwise_app import PicwiseLocalApp  # noqa: E402
 from picwise_app.buying_routes import render_best_slug_html, render_buying_sitemap_xml  # noqa: E402
+from picwise_app.prepared_renewal import RENEWAL_PATH, request_prepared_feed_renewal  # noqa: E402
 from picwise_integrations import (  # noqa: E402
     UrllibSubbyBridgeEventSender,
     send_subby_live_proof_event,
 )
+from picwise_search.live_search_resolver import parse_shown_count  # noqa: E402
 from picwise_surface import (  # noqa: E402
     render_affiliate_disclosure_page,
     render_branded_not_found_page,
@@ -33,6 +35,7 @@ from picwise_surface import (  # noqa: E402
 StartResponse = Callable[[str, list[tuple[str, str]]], None]
 
 _APP = PicwiseLocalApp()
+_SUGGESTIONS_CACHE_CONTROL = "public, max-age=3600"
 
 
 def _response(
@@ -40,14 +43,16 @@ def _response(
     content_type: str,
     body: bytes,
     start_response: StartResponse,
+    *,
+    cache_control: str = "",
 ) -> list[bytes]:
-    start_response(
-        status,
-        [
-            ("Content-Type", content_type),
-            ("Content-Length", str(len(body))),
-        ],
-    )
+    headers = [
+        ("Content-Type", content_type),
+        ("Content-Length", str(len(body))),
+    ]
+    if cache_control:
+        headers.append(("Cache-Control", cache_control))
+    start_response(status, headers)
     return [body]
 
 
@@ -81,8 +86,11 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         # Honour an inbound purchase-intent query: a visitor arriving from Google
         # on /?q=<intent> must see the decision result, not an empty landing.
         query_string = str(environ.get("QUERY_STRING", ""))
-        query = parse_qs(query_string).get("q", [""])[0]
-        html = _APP.root_landing_html(query)
+        params = parse_qs(query_string)
+        query = params.get("q", [""])[0]
+        html = _APP.root_landing_html(
+            query, shown=parse_shown_count(params.get("shown", [""])[0])
+        )
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
@@ -118,18 +126,40 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
+    if path == "/suggest.json":
+        # The search box's suggestions, fetched once by the page and kept by the
+        # browser for an hour, so a keystroke costs no request (step 4).
+        body = _APP.search_suggestions_json().encode("utf-8")
+        return _response(
+            "200 OK",
+            "application/json; charset=utf-8",
+            body,
+            start_response,
+            cache_control=_SUGGESTIONS_CACHE_CONTROL,
+        )
+
     if path in {"/search", "/results"}:
         query_string = str(environ.get("QUERY_STRING", ""))
-        query = parse_qs(query_string).get("q", [""])[0]
+        params = parse_qs(query_string)
+        query = params.get("q", [""])[0]
         source_page = "results" if path == "/results" else "search"
-        html = _APP.picwise_reference_html(query, source_page=source_page)
+        html = _APP.picwise_reference_html(
+            query,
+            source_page=source_page,
+            shown=parse_shown_count(params.get("shown", [""])[0]),
+        )
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
     if path == "/picwise-reference":
         query_string = str(environ.get("QUERY_STRING", ""))
-        query = parse_qs(query_string).get("q", [""])[0]
-        html = _APP.picwise_reference_html(query, source_page="search")
+        params = parse_qs(query_string)
+        query = params.get("q", [""])[0]
+        html = _APP.picwise_reference_html(
+            query,
+            source_page="search",
+            shown=parse_shown_count(params.get("shown", [""])[0]),
+        )
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
@@ -227,6 +257,14 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         payload = _APP.private_beta_readiness_payload()
         body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
         return _response("200 OK", "application/json; charset=utf-8", body, start_response)
+
+    if path == RENEWAL_PATH:
+        # Vercel's daily scheduled job (vercel.json "crons"), with CRON_SECRET.
+        status, payload = request_prepared_feed_renewal(str(environ.get("HTTP_AUTHORIZATION") or ""))
+        body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
+        return _response(
+            status, "application/json; charset=utf-8", body, start_response, cache_control="no-store"
+        )
 
     html = render_branded_not_found_page()
     body = html.encode("utf-8")

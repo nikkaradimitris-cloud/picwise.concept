@@ -13,6 +13,7 @@ from .contracts import (
     RECOMMENDATION_CONFIDENCE_LEVELS,
 )
 from .normalization import is_valid_http_url
+from .product_description import has_sufficient_description
 
 _AFFILIATE_URL_KEYS = (
     "affiliate_url",
@@ -282,7 +283,19 @@ def offer_flag_reason_codes(
     for key, token in _raw_field_tokens(product, _FOR_SALE_KEYS):
         if token in _FALSE_FLAGS and _flag_is_informative(key, feed_ctx):
             reasons.append("offer_not_for_sale")
+    reasons.extend(offer_validity_reason_codes(product, today=today))
+    return tuple(dict.fromkeys(reasons))
+
+
+def offer_validity_reason_codes(
+    product: ProviderProduct,
+    *,
+    today: date | None = None,
+) -> tuple[str, ...]:
+    """The offer's validity window closed ("offer_expired") or not yet open
+    ("offer_not_yet_valid") on `today`: the one judgement that moves with the date."""
     raw = product.raw if isinstance(product.raw, dict) else {}
+    reasons: list[str] = []
     current = today or datetime.now(timezone.utc).date()
     for key in _VALID_TO_KEYS:
         valid_to = _parse_feed_date(raw.get(key))
@@ -292,7 +305,7 @@ def offer_flag_reason_codes(
         valid_from = _parse_feed_date(raw.get(key))
         if valid_from is not None and valid_from > current:
             reasons.append("offer_not_yet_valid")
-    return tuple(dict.fromkeys(reasons))
+    return tuple(reasons)
 
 
 def _parse_bool(value: object) -> bool | None:
@@ -524,6 +537,14 @@ def evaluate_product_eligibility(
         reason_codes.append("missing_currency")
     if not _has_product_type_or_category_evidence(product):
         reason_codes.append("missing_product_type_or_category_evidence")
+    # Owner rule (2026-10-12): a product PicWise shows always carries a description,
+    # not only a price, an image and availability. A card without one tells the buyer
+    # nothing the title did not, and the page built from it is thin content.
+    if not has_sufficient_description(
+        product.raw if isinstance(product.raw, Mapping) else {},
+        title=product.title,
+    ):
+        reason_codes.append("missing_product_description")
 
     if offer_health.availability_state == "out_of_stock":
         reason_codes.append("availability_out_of_stock")

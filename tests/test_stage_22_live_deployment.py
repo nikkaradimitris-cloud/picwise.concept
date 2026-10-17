@@ -108,7 +108,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(status, "200 OK")
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
         self.assertIn("<main", body.lower())
-        self.assertIn("See the 4 best products before you buy", body)
+        self.assertIn("What are you looking for?", body)
         self.assertIn("Live safe mode", body)
         self.assertIn("shopping decision assistant", body)
         self.assertIn("<title>PicWise Reference — Buying Decision Preview</title>", body)
@@ -118,7 +118,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn('action="/search"', body)
         self.assertIn('method="get"', body)
         self.assertIn('name="q"', body)
-        self.assertIn('placeholder="See the 4 best products before you buy"', body)
+        self.assertIn('placeholder="What are you looking for?"', body)
         self.assertIn('class="pw-search-button"', body)
         self.assertIn("What is PicWise?", body)
         self.assertIn("Login", body)
@@ -133,15 +133,15 @@ class DeploymentEntrypointTests(unittest.TestCase):
         status, headers, body = _call_wsgi("/picwise-reference")
         self.assertEqual(status, "200 OK")
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
-        self.assertIn("See the 4 best products before you buy", body)
+        self.assertIn("What are you looking for?", body)
         self.assertIn("Live safe mode", body)
         self.assertIn(
-            'placeholder="See the 4 best products before you buy"',
+            'placeholder="What are you looking for?"',
             body,
         )
-        self.assertNotIn("<h1>See the 4 best products before you buy</h1>", body)
+        self.assertNotIn("<h1>What are you looking for?</h1>", body)
         self.assertNotIn("Search your product here", body)
-        self.assertNotIn('value="See the 4 best products before you buy"', body)
+        self.assertNotIn('value="What are you looking for?"', body)
         for forbidden_image_placeholder in (
             "TravelCore 20K product image placeholder",
             "DailyBalance PD20 product image placeholder",
@@ -507,7 +507,18 @@ class DeploymentEntrypointTests(unittest.TestCase):
 
     def test_search_route_does_not_show_forbidden_commerce_claims(self) -> None:
         _status, _headers, body = _call_wsgi("/search", "q=power%20bank")
-        lowered = body.lower()
+        # "What is PicWise?" describes the service as the owner chose it (2026-10-17):
+        # what PicWise does, on every page, not a claim about a product shown. It is
+        # checked to be exactly that text, and the rest of the page is checked for claims.
+        tooltip = re.search(r'<div class="pw-tooltip" id="pw-tooltip">(.*?)</div>', body)
+        self.assertIsNotNone(tooltip)
+        self.assertEqual(
+            tooltip.group(1),
+            "PicWise finds the product you want in the shops it is connected to, shows "
+            "what the shops list as in stock, cheapest first, and marks one mid-priced "
+            "Recommended.",
+        )
+        lowered = (body[: tooltip.start()] + body[tooltip.end():]).lower()
         self.assertNotIn("eur ", lowered)
         self.assertNotIn("in stock", lowered)
         self.assertNotIn("prime", lowered)
@@ -541,15 +552,15 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(demo_status, "200 OK")
         self.assertEqual(reference_status, "200 OK")
 
-        self.assertIn("See the 4 best products before you buy", reference_body)
+        self.assertIn("What are you looking for?", reference_body)
         self.assertNotIn("shopping assistant", reference_body)
         self.assertIn(
-            'placeholder="See the 4 best products before you buy"',
+            'placeholder="What are you looking for?"',
             reference_body,
         )
-        self.assertNotIn("<h1>See the 4 best products before you buy</h1>", reference_body)
+        self.assertNotIn("<h1>What are you looking for?</h1>", reference_body)
         self.assertNotIn("Search your product here", reference_body)
-        self.assertNotIn('value="See the 4 best products before you buy"', reference_body)
+        self.assertNotIn('value="What are you looking for?"', reference_body)
         self.assertNotIn(
             "Showing 4 options for: power bank 20000mah for iphone",
             reference_body,
@@ -651,10 +662,10 @@ class DeploymentEntrypointTests(unittest.TestCase):
 
     def test_root_route_contains_four_primary_cards_and_one_recommended_marker(self) -> None:
         _status, _headers, body = _call_wsgi("/")
-        self.assertIn("See the 4 best products before you buy", body)
+        self.assertIn("What are you looking for?", body)
         self.assertIn('action="/search"', body)
         self.assertIn('name="q"', body)
-        self.assertIn('placeholder="See the 4 best products before you buy"', body)
+        self.assertIn('placeholder="What are you looking for?"', body)
         self.assertIn('class="pw-search-button"', body)
         self.assertNotIn("View demo", body)
         self.assertIn("What is PicWise?", body)

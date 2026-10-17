@@ -9,6 +9,13 @@ decided (audit finding D4 in docs/picwise_mission_truth_audit_2026-10-08.md).
 product (title, product type, category, brand, accessory or not); a word found only in
 merchant free text (keywords, description) does not make a product a closer match.
 
+Superseded for searches whose product is understood by the owner's price-first plan
+(2026-10-15, settled 2026-10-16; `docs/picwise_price_first_plan_2026-10-15.md`): the
+first page is the Recommended, the middle product by price, and then the three
+cheapest. The price-zone spread still chooses the four of a word search, which the
+unit tests at the top pin; the page tests below pin what replaced it, and that the
+hard filters still hold before any price is compared.
+
 All rows are local test data: fictional brands, `.invalid` URLs.
 """
 from __future__ import annotations
@@ -23,9 +30,10 @@ import unittest
 from pathlib import Path
 from urllib.parse import urlencode
 
-ROOT = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 SRC = ROOT / "src"
-for path in (ROOT, SRC):
+for path in (HERE, ROOT, SRC):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
@@ -34,6 +42,7 @@ from picwise_providers.awin_adapter import clear_awin_feed_parse_cache  # noqa: 
 from picwise_providers.contracts import ProviderProduct  # noqa: E402
 from picwise_providers.search_selection import _spread_across_price  # noqa: E402
 from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
+from fixture_support import fixture_description  # noqa: E402
 
 FIXTURE_CSV = ROOT / "tests" / "fixtures" / "provider_feed_local_test_fixture.csv"
 _COLUMNS = (
@@ -55,7 +64,10 @@ def _offer(pid: str, price: str, currency: str = "GBP") -> ProviderProduct:
         price_text=price,
         availability_text="in stock",
         currency=currency,
-        raw={"product_type": "Kettles"},
+        raw={
+            "product_type": "Kettles",
+            "description": fixture_description(),
+        },
     )
 
 
@@ -96,6 +108,63 @@ class SpreadAcrossPriceTests(unittest.TestCase):
         self.assertEqual(_ids(_spread_across_price(mixed, 4)), _ids(mixed[:4]))
         unpriced = self.group[:4] + [_offer("none", "call for price")]
         self.assertEqual(_ids(_spread_across_price(unpriced, 4)), _ids(unpriced[:4]))
+
+
+class DistinctPriceZoneTests(unittest.TestCase):
+    """Four price zones, not four positions.
+
+    Owner restatement, 2026-10-12: the four come from four **different** price zones.
+    Spreading over evenly spaced positions of the price-sorted group satisfied that
+    only when the prices were themselves spread. On the real feed "phone case" showed
+    27.00, 27.00, 27.00 and 55.00 and "backpack" 34.95, 35.95, 35.95, 35.95 -- four
+    cards at one price, which is not a decision.
+    """
+
+    def test_repeated_prices_never_fill_more_than_their_zone(self) -> None:
+        group = [_offer("a", "27.00"), _offer("b", "27.00"), _offer("c", "27.00"),
+                 _offer("d", "55.00"), _offer("e", "80.00"), _offer("f", "15.00")]
+        shown = _spread_across_price(group, 4)
+        prices = [product.price_text for product in shown]
+        self.assertEqual(prices, ["15.00", "27.00", "55.00", "80.00"])
+
+    def test_the_best_ranked_product_represents_its_zone(self) -> None:
+        # "b" is at the same price as "c" but ranked ahead of it, so "b" shows.
+        group = [_offer("first", "10.00"), _offer("b", "27.00"), _offer("c", "27.00"),
+                 _offer("last", "99.00"), _offer("mid", "50.00")]
+        self.assertEqual(_ids(_spread_across_price(group, 4)), ["first", "b", "mid", "last"])
+
+    def test_fewer_zones_than_slots_still_fills_the_four(self) -> None:
+        # The real feed holds 43 backpacks at two prices. A zone that does not exist
+        # cannot be invented, and the contract still owes four choices.
+        group = [_offer("x1", "34.95"), _offer("x2", "35.95"), _offer("x3", "35.95"),
+                 _offer("x4", "35.95")]
+        shown = _spread_across_price(group, 4)
+        self.assertEqual(len(shown), 4)
+        self.assertEqual([product.price_text for product in shown],
+                         ["34.95", "35.95", "35.95", "35.95"])
+
+    def test_one_price_for_everything_is_still_four_choices(self) -> None:
+        group = [_offer(f"w{index}", "50.00") for index in range(6)]
+        self.assertEqual(_ids(_spread_across_price(group, 4)), ["w0", "w1", "w2", "w3"])
+
+    def test_zones_are_counted_not_products(self) -> None:
+        # Nine products, four prices: every price shows exactly once.
+        group = (
+            [_offer(f"c{index}", "5.00") for index in range(4)]
+            + [_offer("m1", "10.00"), _offer("m2", "10.00")]
+            + [_offer("h1", "20.00")]
+            + [_offer("t1", "40.00"), _offer("t2", "40.00")]
+        )
+        shown = _spread_across_price(group, 4)
+        self.assertEqual([product.price_text for product in shown],
+                         ["5.00", "10.00", "20.00", "40.00"])
+
+    def test_one_slot_takes_the_middle_zone_not_the_middle_product(self) -> None:
+        # Five products, three zones: the middle zone is 10.00, although the middle
+        # product by position is one of the three at 5.00.
+        group = [_offer("c1", "5.00"), _offer("c2", "5.00"), _offer("c3", "5.00"),
+                 _offer("m", "10.00"), _offer("h", "20.00")]
+        self.assertEqual(_ids(_spread_across_price(group, 1)), ["m"])
 
 
 class _FeedCase(unittest.TestCase):
@@ -151,7 +220,8 @@ def _kettle(pid: str, name: str, price: str, **fields: str) -> dict[str, str]:
         "aw_deep_link": f"https://fixture.example.invalid/out/{pid}",
         "aw_image_url": f"https://fixture.example.invalid/img/{pid}.jpg",
         "search_price": price, "currency": "GBP", "in_stock": "1", "stock_status": "in stock",
-        "merchant_name": "Fixture Store One", "description": "", "keywords": "",
+        "merchant_name": "Fixture Store One", "description": fixture_description(),
+        "keywords": "",
         "ean": "", "valid_to": "", "data_provenance": "local_test_fixture",
     }
     row.update(fields)
@@ -159,14 +229,15 @@ def _kettle(pid: str, name: str, price: str, **fields: str) -> dict[str, str]:
 
 
 class DeployedPriceRangeTests(_FeedCase):
-    def test_six_equivalent_laptops_show_the_price_range_not_the_alphabet(self) -> None:
+    def test_six_laptops_show_the_middle_price_and_the_cheapest_not_the_alphabet(self) -> None:
         self._serve_file(FIXTURE_CSV)
         shown, recommended, body = self._cards("laptop")
-        # 399, 529, 749, 899, 1099, 1249 are equivalent: cheapest, two between, dearest.
-        # Alphabetical order used to drop both Testline laptops (529, 899).
-        self.assertEqual(shown, ["fx-laptop-4", "fx-laptop-1", "fx-laptop-5", "fx-laptop-3"])
-        self.assertEqual(recommended, "fx-laptop-4")
-        self.assertIn("Lowest price among the choices that match your search equally", body)
+        # 399, 529, 749, 899, 1099, 1249: the middle one by price is the 749, then the
+        # three cheapest of the others. Alphabetical order used to drop both Testline
+        # laptops (529, 899); price order cannot.
+        self.assertEqual(shown, ["fx-laptop-1", "fx-laptop-4", "fx-laptop-2", "fx-laptop-5"])
+        self.assertEqual(recommended, "fx-laptop-1")
+        self.assertIn('<p class="pw-counter">4 of 6</p>', body)
 
     def test_hard_filters_hold_before_the_range_is_taken(self) -> None:
         self._serve_rows(
@@ -180,11 +251,13 @@ class DeployedPriceRangeTests(_FeedCase):
                 _kettle("k90", "Fixturon Grand Kettle", "90.00", valid_to="2020-01-01"),
             ]
         )
-        shown, _recommended, _body = self._cards("kettle")
-        # The out-of-stock cheapest and the expired dearest never widen the range.
-        self.assertEqual(shown, ["k10", "k20", "k40", "k50"])
+        shown, _recommended, body = self._cards("kettle")
+        # The out-of-stock cheapest is never first, and the expired dearest is never
+        # counted: the answer is the five that can be bought.
+        self.assertEqual(shown, ["k10", "k20", "k30", "k40"])
+        self.assertIn('<p class="pw-counter">4 of 5</p>', body)
 
-    def test_better_matches_come_first_and_the_rest_spread(self) -> None:
+    def test_a_spec_the_search_names_decides_what_is_in_the_answer(self) -> None:
         self._serve_rows(
             [
                 _kettle("w1", "Fixturon Aero Kettle 1.7L", "35.00"),
@@ -197,15 +270,20 @@ class DeployedPriceRangeTests(_FeedCase):
             ]
         )
         shown, _recommended, body = self._cards("kettle 1.7l")
-        # The two carrying 1.7L match more closely; the other two slots take the cheapest
-        # and dearest of the rest.
-        self.assertEqual(shown, ["w2", "w1", "n1", "n5"])
-        self.assertIn("Only some of the four match", body)
+        # Two carry 1.7L, and they are the answer, cheapest first: "2 of 2".
+        self.assertEqual(shown, ["w2", "w1"])
+        self.assertIn('<p class="pw-counter">2 of 2</p>', body)
+        self.assertNotIn("Only some", body)
 
     def test_merchant_free_text_does_not_buy_a_place(self) -> None:
         self._serve_rows(
             [
-                _kettle("d15", "Fixturon Aero Kettle", "15.00", description="the best kettle"),
+                _kettle(
+                    "d15",
+                    "Fixturon Aero Kettle",
+                    "15.00",
+                    description=fixture_description("The best kettle."),
+                ),
                 _kettle("d10", "Testline Boil Kettle", "10.00"),
                 _kettle("d20", "Sampleworks Steam Kettle", "20.00"),
                 _kettle("d30", "Fixturon Mini Kettle", "30.00"),
@@ -214,25 +292,30 @@ class DeployedPriceRangeTests(_FeedCase):
             ]
         )
         shown, recommended, _body = self._cards("kettle")
-        # d15 and d50 mention "kettle" only in description/keywords: still equivalent.
-        self.assertEqual(shown, ["d10", "d20", "d30", "d50"])
-        self.assertEqual(recommended, "d10")
+        # The price alone orders them; what a merchant wrote about its kettle does not.
+        # No product carries a barcode, so there is no Recommended (owner, 2026-10-16).
+        self.assertEqual(shown, ["d10", "d15", "d20", "d30"])
+        self.assertIsNone(recommended)
 
     def test_offers_of_one_product_count_once_before_the_range(self) -> None:
         self._serve_rows(
             [
-                _kettle("s1", "Fixturon Aero Kettle", "10.00", ean="5000000000048"),
-                _kettle("s2", "Fixturon Aero Kettle 1.7L", "12.00", ean="5000000000048"),
+                _kettle("s1", "Fixturon Aero Kettle", "10.00", ean="5000000000043"),
+                _kettle("s2", "Fixturon Aero Kettle 1.7L", "12.00", ean="5000000000043"),
                 _kettle("o20", "Testline Boil Kettle", "20.00"),
                 _kettle("o30", "Sampleworks Steam Kettle", "30.00"),
                 _kettle("o40", "Fixturon Mini Kettle", "40.00"),
                 _kettle("o50", "Testline Glass Kettle", "50.00"),
             ]
         )
-        shown, _recommended, _body = self._cards("kettle")
-        # Five distinct products (s1 and s2 are one, at its cheaper offer): positions
-        # 0, 1, 3, 4 of the price-sorted five.
-        self.assertEqual(shown, ["s1", "o20", "o40", "o50"])
+        shown, recommended, body = self._cards("kettle")
+        # Five distinct products: s1 and s2 are one, at its cheaper offer. It is the
+        # only one with a barcode, and the cheapest, which is not mid-priced: there is
+        # no Recommended, and the four cheapest are shown.
+        self.assertNotIn("s2", shown)
+        self.assertEqual(shown, ["s1", "o20", "o30", "o40"])
+        self.assertIsNone(recommended)
+        self.assertIn('<p class="pw-counter">4 of 5</p>', body)
 
 
 if __name__ == "__main__":

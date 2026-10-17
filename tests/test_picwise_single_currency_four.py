@@ -25,20 +25,22 @@ import unittest
 from pathlib import Path
 from urllib.parse import urlencode
 
-ROOT = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 SRC = ROOT / "src"
-for path in (ROOT, SRC):
+for path in (HERE, ROOT, SRC):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
 from api.index import app as wsgi_app  # noqa: E402
+from fixture_support import fixture_description  # noqa: E402
 from picwise_providers.awin_adapter import clear_awin_feed_parse_cache  # noqa: E402
 from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
 
 _COLUMNS = (
     "aw_product_id", "product_name", "brand_name", "merchant_category", "product_type",
     "aw_deep_link", "aw_image_url", "search_price", "currency", "in_stock", "stock_status",
-    "merchant_name", "condition", "data_provenance",
+    "merchant_name", "condition", "description", "data_provenance",
 )
 
 
@@ -57,6 +59,7 @@ def _row(pid: str, name: str, price: str, currency: str) -> dict[str, str]:
         "stock_status": "in stock",
         "merchant_name": "Fixture Store One",
         "condition": "new",
+        "description": fixture_description(),
         "data_provenance": "local_test_fixture",
     }
 
@@ -148,11 +151,13 @@ class SingleCurrencyFourTests(unittest.TestCase):
         self.assertTrue(all(choice_id.startswith("u") for choice_id in shown), shown)
         self.assertEqual(self._currencies("kettle"), {"USD"})
 
-    def test_no_currency_with_four_shows_no_four(self) -> None:
-        # Three and three is not four: PicWise would have to compare prices it cannot
-        # compare, so it answers nothing instead.
+    def test_no_currency_with_four_shows_one_currency_only(self) -> None:
+        # Three and three: price first shows fewer than four as they are (owner,
+        # 2026-10-16), in one currency, never prices it cannot compare.
         self._serve(_kettles("g", 3, "GBP", 10) + _kettles("u", 3, "USD", 12))
-        self.assertEqual(self._cards("kettle"), [])
+        shown = {card["choice_id"] for card in self._cards("kettle")}
+        self.assertEqual(len(shown), 3)
+        self.assertEqual(len(self._currencies("kettle")), 1)
 
     def test_one_currency_in_the_feed_is_unaffected(self) -> None:
         self._serve(_kettles("g", 6, "GBP", 10))

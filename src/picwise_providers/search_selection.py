@@ -2,24 +2,37 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from functools import lru_cache
 from typing import Any
 from urllib.parse import urlparse
 
 from picwise_nlu import normalize_query
 from picwise_nlu.concept_understanding import (
+    ACCESSORY_MARKER,
+    CAMPING_MARKER,
+    CATEGORY_FIELD_SEPARATOR,
+    PET_MARKER,
+    UNCERTAIN_MARKER,
     ConceptReading,
     annotate_product_concepts,
     normalize_spec_text,
+    KindWordReading,
+    read_kind_word,
     product_text_names_concept,
+    query_allows_context,
     read_condition_request,
     strip_accents_if_needed,
     understand_product_query,
     words_after_product_name,
 )
+from picwise_nlu.product_concepts import broader_concepts, get_product_concepts_by_id, get_qualifiers
+from picwise_taxonomy.comparison_rules import comparison_rule
 
 from .contracts import FeedAvailabilityContext, OfferHealth, ProviderProduct
 from .normalization import extract_merchant_name
 from .decision_labels import parse_price_amount
+from .product_specs import read_product_specs
+from .product_identity import same_product_key
 from .product_condition import (
     non_new_condition,
     product_text_for_condition,
@@ -228,11 +241,6 @@ class QueryTokenPlan:
     ambiguous_product_families: tuple[str, ...] = field(default_factory=tuple)
 
 
-def _product_text_contains_token(product: ProviderProduct, token: str) -> bool:
-    fields = _product_search_fields(product)
-    return any(_token_matches_field(token, value) for value in fields.values())
-
-
 def _query_token_candidates(tokens: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(token for token in tokens if token not in _CONNECTIVE_TOKENS)
 
@@ -421,12 +429,44 @@ class ProviderProductSelectionResult:
     # The buyer's own words asking for a non-new item, when they asked. Empty means
     # they did not, and then nothing the feed calls non-new was a candidate at all.
     condition_request: tuple[str, ...] = field(default_factory=tuple)
+    # A second four, for the kinds of product where there is no "best" and the buyer
+    # is choosing by taste or by fit. Owner instruction (2026-10-12): those get a "see
+    # more" button. Empty for every other kind, and empty when the feed has no second
+    # four to give -- the button is only offered when there is something behind it.
+    more_products: tuple[ProviderProduct, ...] = field(default_factory=tuple)
     # The feed availability context the selection judged card eligibility against. The
     # exported card fields and the recommendation must read the same one.
     feed_availability_context: FeedAvailabilityContext | None = None
+    # Price first (owner, 2026-10-15 and 2026-10-16). When set, `selected_products` is
+    # the first page (the Recommended, then the cheapest) and `more_products` the
+    # products "More" has opened after it, in the order shown; `total_count` is how
+    # many products the whole answer holds, for the counter "4 of 45".
+    price_first: bool = False
+    total_count: int = 0
+    # The Recommended, chosen over the whole answer, or "" when there is none.
+    recommended_product_id: str = ""
+    # Why there is a Recommended or not: "recommended", "no_product_code" (no product
+    # of the answer carries an EAN/GTIN) or "too_few_products" (no middle to take).
+    recommendation_status: str = ""
+    # First-page products that are the cheap end of the answer: priced at or below the
+    # Recommended or, when there is none, at or below the middle price.
+    cheapest_product_ids: tuple[str, ...] = field(default_factory=tuple)
+    # (product id, shops) for shown products sold by more than one shop: the card
+    # says "Lowest price of N shops".
+    shop_counts: tuple[tuple[str, int], ...] = field(default_factory=tuple)
+    # (product id, place in the whole answer by price) for shown products: 1 is the
+    # cheapest, and products at one price share a place.
+    price_ranks: tuple[tuple[str, int], ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "price_first": self.price_first,
+            "total_count": self.total_count,
+            "recommended_product_id": self.recommended_product_id,
+            "recommendation_status": self.recommendation_status,
+            "cheapest_product_ids": list(self.cheapest_product_ids),
+            "shop_counts": [list(row) for row in self.shop_counts],
+            "price_ranks": [list(row) for row in self.price_ranks],
             "partially_matched_terms": [list(row) for row in self.partially_matched_terms],
             "understood_concept": self.understood_concept,
             "effective_query": self.effective_query,
@@ -435,6 +475,7 @@ class ProviderProductSelectionResult:
             "matched_count": self.matched_count,
             "strong_matched_count": self.strong_matched_count,
             "selected_count": len(self.selected_products),
+            "more_count": len(self.more_products),
             "reason_codes": list(self.reason_codes),
             "unmatched_query_terms": list(self.unmatched_query_terms),
             "condition_request": list(self.condition_request),
@@ -698,7 +739,10 @@ def _build_secondary_category_text(raw: dict[str, Any], product: ProviderProduct
     if category_text and not _is_generic_category(category_text):
         parts.append(category_text)
 
-    return " ".join(part.strip().lower() for part in parts if part.strip())
+    # Each field is its own breadcrumb. Joined with a bare space, the last shelf of one
+    # ran into the first of the next ("console tables home & garden") and the kind
+    # reader could not read either shelf.
+    return CATEGORY_FIELD_SEPARATOR.join(part.strip().lower() for part in parts if part.strip())
 
 
 def _product_search_fields(product: ProviderProduct) -> dict[str, str]:
@@ -1071,12 +1115,23 @@ def _spread_across_price(group: list[ProviderProduct], slots: int) -> list[Provi
 
     Owner decision (2026-10-08): when the ranking leaves more than four substantially
     equivalent products, the four shown are the cheapest, the dearest and two in
-    between. In general the picks are evenly spaced positions of the price-sorted
-    group, endpoints included: two slots are the cheapest and the dearest, three add
-    the middle one, one slot is the middle one; a position halfway between two
-    products rounds up. Returned cheapest first. Prices that cannot be compared
-    (missing, or in different currencies) give no range to spread across, so the group
-    keeps its rank order.
+    between, so a buyer sees the range rather than four neighbours. Restated by the
+    owner on 2026-10-12 as four **different** price zones, cheapest first.
+
+    That restatement is a correction, and it was earned by measurement. Spreading over
+    evenly spaced **positions** of the price-sorted group gives four different prices
+    only when the prices are themselves spread: on the real feed, "phone case" showed
+    27.00, 27.00, 27.00 and 55.00, and "backpack" 34.95, 35.95, 35.95, 35.95. Four
+    cards at one price are not a decision. So the spread is taken over the group's
+    **distinct prices**: one zone per price, evenly spaced zones, endpoints included,
+    and the best-ranked product of each chosen zone represents it.
+
+    Where a group holds fewer distinct prices than there are slots, every zone shows
+    and the spare slots go to the next best-ranked products, because the contract owes
+    four choices and a zone that does not exist cannot be invented -- the real feed has
+    43 backpacks at two prices. Prices that cannot be compared (missing, or in
+    different currencies) give no range to spread across, so the group keeps its rank
+    order.
     """
     if slots <= 0 or not group:
         return []
@@ -1084,166 +1139,27 @@ def _spread_across_price(group: list[ProviderProduct], slots: int) -> list[Provi
     currencies = {str(product.currency or "").strip().upper() for product in group}
     if any(price is None for price in prices) or len(currencies) > 1:
         return group[:slots]
-    order = sorted(range(len(group)), key=lambda index: (prices[index], index))
-    if len(order) <= slots:
-        return [group[index] for index in order]
-    last = len(order) - 1
-    if slots == 1:
-        # The middle position, rounded the same way as every other pick.
-        return [group[order[int(last / 2 + 0.5)]]]
-    picks = [order[int(step * last / (slots - 1) + 0.5)] for step in range(slots)]
-    return [group[index] for index in picks]
-
-
-def _choose_shown_products(
-    ranked: list[tuple[tuple[int, int, int, str, str], ProviderProduct]],
-    *,
-    safe_max: int,
-    fields_by_id: dict[int, dict[str, str]],
-    scoring_tokens: tuple[str, ...],
-) -> list[ProviderProduct]:
-    """The products to show, from candidates that already passed every hard filter.
-
-    Groups of substantially equivalent products are taken in relevance order; a group
-    that fits in the free slots is shown whole, and the group that does not is reduced
-    by `_spread_across_price`. Nothing here adds a candidate: the alphabetical order of
-    titles, which used to decide among equivalents, no longer decides anything.
-    """
-    rows = []
-    for position, (ranking, ranked_product, shown_product) in enumerate(
-        _dedupe_ranked_products(ranked)
-    ):
-        fields = fields_by_id.get(id(ranked_product)) or _product_search_fields(ranked_product)
-        rows.append((_substantive_relevance(ranking, fields, scoring_tokens), position, shown_product))
-    rows.sort(key=lambda row: (-row[0][0], -row[0][1], -row[0][2], row[1]))
-
-    chosen: list[ProviderProduct] = []
-    start = 0
-    while start < len(rows) and len(chosen) < safe_max:
-        end = start
-        while end < len(rows) and rows[end][0] == rows[start][0]:
-            end += 1
-        group = [product for _relevance, _position, product in rows[start:end]]
-        chosen.extend(_spread_across_price(group, safe_max - len(chosen)))
-        start = end
-    return chosen
-
-
-def _choose_shown_products_for_condition(
-    ranked: list[tuple[tuple[int, int, int, str, str], ProviderProduct]],
-    *,
-    safe_max: int,
-    fields_by_id: dict[int, dict[str, str]],
-    scoring_tokens: tuple[str, ...],
-    prefer_non_new: bool,
-) -> list[ProviderProduct]:
-    """The four to show, non-new first when the buyer asked for that condition.
-
-    Owner decision (2026-10-10): a buyer who asks for refurbished or used gets those
-    first, and what the feed does not have in that condition fills up with new products
-    rather than leaving the buyer with nothing. `_condition_request_report` says how
-    many of the four are the condition asked for, so the page never implies all are.
-    Without the request nothing non-new reaches this function: the selection dropped it.
-    """
-    def choose(
-        rows: list[tuple[tuple[int, int, int, str, str], ProviderProduct]], slots: int
-    ) -> list[ProviderProduct]:
-        return _choose_shown_products(
-            rows,
-            safe_max=slots,
-            fields_by_id=fields_by_id,
-            scoring_tokens=scoring_tokens,
+    # One zone per distinct price, each keeping the group's rank order inside it, so
+    # the product representing a zone is the best-matching one at that price.
+    zones: dict[float, list[int]] = {}
+    for index, price in enumerate(prices):
+        zones.setdefault(float(price), []).append(index)
+    distinct = sorted(zones)
+    if len(distinct) <= slots:
+        chosen = [zones[price][0] for price in distinct]
+        taken = set(chosen)
+        spare = sorted(
+            index for price in distinct for index in zones[price] if index not in taken
         )
-
-    if not prefer_non_new:
-        return choose(ranked, safe_max)
-    asked_for: list[tuple[tuple[int, int, int, str, str], ProviderProduct]] = []
-    others: list[tuple[tuple[int, int, int, str, str], ProviderProduct]] = []
-    for row in ranked:
-        (asked_for if product_non_new_condition(row[1]) else others).append(row)
-    chosen = choose(asked_for, safe_max)
-    if len(chosen) >= safe_max:
-        return chosen
-    # The same product can be offered both new and refurbished. Dedupe ran inside each
-    # group, so exclude what the first group already took, or one product fills two
-    # of the four slots.
-    taken_identities = {key for key in (_product_identity_key(p) for p in chosen) if key}
-    taken_titles = {key for key in (_normalize_dedupe_title(p.title) for p in chosen) if key}
-    taken_ids = {key for key in (str(p.provider_product_id or "").strip() for p in chosen) if key}
-    rest = [
-        row
-        for row in others
-        if _product_identity_key(row[1]) not in taken_identities
-        and _normalize_dedupe_title(row[1].title) not in taken_titles
-        and str(row[1].provider_product_id or "").strip() not in taken_ids
-    ]
-    filled = chosen + choose(rest, safe_max - len(chosen))
-    if len(filled) < safe_max <= len(_dedupe_selected_products(ranked)):
-        # The split must never cost a slot: the contract owes four choices, and the
-        # candidates for four are there. Fall back to choosing from all of them.
-        return choose(ranked, safe_max)
-    return filled
-
-
-def _restrict_to_one_currency(
-    ranked: list[tuple[tuple[int, int, int, str, str], ProviderProduct]],
-    *,
-    safe_max: int,
-) -> list[tuple[tuple[int, int, int, str, str], ProviderProduct]]:
-    """Keep the four comparable: every one of them priced in the same currency.
-
-    Owner decision (2026-10-11). Prices in different currencies are never compared, so
-    a four drawn from several of them has no price rank, no price spread and no honest
-    "cheapest" -- the buyer is left to convert in their head, which is the opposite of
-    a decision engine. The currency kept is the best-ranked one that can supply the
-    whole four; when none can, the best-ranked product's own, and the selection then
-    reports too few rather than mixing them.
-    """
-    groups: dict[str, list[tuple[tuple[int, int, int, str, str], ProviderProduct]]] = {}
-    for row in ranked:
-        groups.setdefault(str(row[1].currency or "").strip().upper(), []).append(row)
-    if len(groups) <= 1:
-        return ranked
-    # Insertion order is rank order, so the first group that can fill the four is the
-    # one whose products answered the search best.
-    for rows in groups.values():
-        if len(_dedupe_selected_products(rows)) >= safe_max:
-            return rows
-    return next(iter(groups.values()))
-
-
-def _condition_request_report(
-    shown: tuple[ProviderProduct, ...] | list[ProviderProduct],
-    condition_request: tuple[str, ...],
-) -> tuple[tuple[str, ...], tuple[tuple[str, int], ...]]:
-    """What to say about a condition request, as (unmatched terms, partial terms).
-
-    A request the feed answered for every one of the four needs no note. Answered for
-    some, the page says how many ("μεταχειρισμένο (2 of 4)"); answered for none, the
-    word is reported unmatched, exactly as any other filter the feed cannot answer.
-    """
-    if not condition_request or not shown:
-        return (), ()
-    word = condition_request[0]
-    matching = sum(1 for product in shown if product_non_new_condition(product))
-    if matching == 0:
-        return (word,), ()
-    if matching < len(shown):
-        return (), ((word, matching),)
-    return (), ()
-
-
-def _count_strong_matches(
-    ranked_products: list[tuple[tuple[int, int, int, str, str], ProviderProduct]],
-    *,
-    token_count: int,
-) -> int:
-    strong_count = 0
-    for ranking, _product in ranked_products:
-        _matched_tokens, score, title_matches, _title_key, _product_id = ranking
-        if score >= _STRONG_MATCH_MIN_SCORE and title_matches >= token_count:
-            strong_count += 1
-    return strong_count
+        chosen.extend(spare[: slots - len(chosen)])
+        chosen.sort(key=lambda index: (prices[index], index))
+        return [group[index] for index in chosen]
+    last = len(distinct) - 1
+    if slots == 1:
+        # The middle zone, rounded the same way as every other pick.
+        return [group[zones[distinct[int(last / 2 + 0.5)]][0]]]
+    picked = [distinct[int(step * last / (slots - 1) + 0.5)] for step in range(slots)]
+    return [group[zones[price][0]] for price in picked]
 
 
 def is_strong_feed_opportunity_selection(
@@ -1254,18 +1170,38 @@ def is_strong_feed_opportunity_selection(
     safe_max = max(1, int(max_products))
     if selection.status != "selected":
         return False
+    if selection.price_first:
+        # Fewer than four are shown as they are (owner, 2026-10-16). A search PicWise
+        # did not understand is strong when the kind test passed and every one of its
+        # words is carried: "inc cartridge epson" leaves "inc" out and stays weak.
+        return bool(selection.selected_products) and (
+            selection.strong_matched_count >= selection.total_count > 0
+        )
     if len(selection.selected_products) < safe_max:
         return False
     return selection.strong_matched_count >= safe_max
 
 
-def _product_concepts(product: ProviderProduct, fields: dict[str, str]) -> frozenset[str]:
+# Kinds already read by the code that prepared the feed (`prepared_catalogue.py`),
+# keyed as `annotate_product_concepts` is: reading 40,000 products takes seconds.
+_PREPARED_KINDS: dict[tuple[str, str, str], frozenset[str]] = {}
+
+
+def remember_product_kinds(kinds: dict[tuple[str, str, str], frozenset[str]]) -> None:
+    """Take the kinds a prepared feed was read as, in place of any taken before."""
+    _PREPARED_KINDS.clear()
+    _PREPARED_KINDS.update(kinds)
+
+
+def product_kind_key(product: ProviderProduct, fields: dict[str, str]) -> tuple[str, str, str]:
     raw = product.raw if isinstance(product.raw, dict) else {}
-    return annotate_product_concepts(
-        str(raw.get("product_type") or ""),
-        fields["category"],
-        str(product.title or ""),
-    )
+    return (str(raw.get("product_type") or ""), fields["category"], str(product.title or ""))
+
+
+def _product_concepts(product: ProviderProduct, fields: dict[str, str]) -> frozenset[str]:
+    key = product_kind_key(product, fields)
+    known = _PREPARED_KINDS.get(key)
+    return known if known is not None else annotate_product_concepts(*key)
 
 
 def _unannotated_product_names_concept(
@@ -1285,15 +1221,460 @@ def _unannotated_product_names_concept(
     return product_text_names_concept(text, concept_id)
 
 
-def _distinct_product_count(rows: list[tuple[ProviderProduct, dict[str, str]]]) -> int:
-    seen: set[str] = set()
-    for product, _fields in rows:
-        seen.add(
-            _product_identity_key(product)
-            or str(product.provider_product_id or "").strip()
-            or _normalize_dedupe_title(product.title)
+_FURNITURE_MEGA_CATEGORY = "furniture_living_storage_smart_home"
+
+
+def _context_allows_member(
+    concepts: frozenset[str], concept_id: str, query_tokens: tuple[str, ...]
+) -> bool:
+    """May a product of this kind answer this search, given the context it carries?
+
+    A pet product answers a search that names a pet ("dog bed") or a kind that is for
+    pets ("cat litter"), never a plain "bed" or "sofa" or "toy". A camping product
+    answers furniture searches only when the buyer says camping: "bed" is not answered
+    with a camping cot. Owner rule of 2026-10-16: the kind asked for, and only that.
+    """
+    if PET_MARKER in concepts:
+        pet_kind = bool({"pet", "dog", "cat"} & set(concept_id.split("_")))
+        if not pet_kind and not query_allows_context(query_tokens, PET_MARKER):
+            return False
+    if CAMPING_MARKER in concepts:
+        concept = get_product_concepts_by_id().get(concept_id)
+        if (
+            concept is not None
+            and concept.mega_category_id == _FURNITURE_MEGA_CATEGORY
+            and not query_allows_context(query_tokens, CAMPING_MARKER)
+        ):
+            return False
+    return True
+
+
+# --------------------------------------------------------------------------------------
+# Price first: the owner's plan of 2026-10-15, settled on 2026-10-16
+# (docs/picwise_price_first_plan_2026-10-15.md). Built for the searches whose product
+# was understood on 2026-10-16, and for the others, answered by their words, on
+# 2026-10-17 (part 3b).
+# --------------------------------------------------------------------------------------
+
+# The Recommended is the middle product by price. With fewer products there is no
+# middle: of two, the "middle" is the cheaper one, and "mid-priced" would be false.
+# The owner's own example, £100, £150 and £200, recommends £150.
+_RECOMMENDED_MIN_PRODUCTS = 3
+# A dearest product costing at least twice the next dearest does not count towards the
+# middle, and again for the next one (owner, 2026-10-16). It stays in the list.
+_EXTREME_PRICE_FACTOR = 2.0
+# The subset search over the buyer's words is exponential in their number.
+_MAX_RELAXABLE_FILTERS = 8
+_BARE_NUMBER_RE = re.compile(r"^\d+$")
+# Short forms a buyer types for the word a feed title writes in full.
+_FILTER_WORD_ALIASES = {
+    "mic": ("microphone",),
+    "mics": ("microphones",),
+}
+# Where a search's words are looked for: the fields that name this one product. The
+# keywords and description are marketing text each merchant writes its own way, and a
+# shop's shelf is shared by many products and joins kinds together ("Floor & Table
+# Lamps", "Kitchen & Dining", "Garden Furniture Sets"): measured on the third real feed
+# (2026-10-16), "floor lamp" listed table lamps from that shelf, "dining table" bar
+# tables, and "rattan garden furniture set" single chairs. The kind itself is still
+# read from the shelf; only the search's further words are not.
+_FILTER_FIELDS = ("title", "product_type", "brand")
+# Where the word naming a sub-kind is read with the name it qualifies ("floor lamp").
+_KIND_PHRASE_FIELDS = ("title", "product_type")
+
+
+@dataclass(frozen=True)
+class _FilterUnit:
+    """One thing a search asks of every product: a word, or a count with its noun."""
+
+    # The buyer's own words, as the page quotes them.
+    display: str
+    # The feed-language filters it stands for.
+    terms: tuple[str, ...]
+    pattern: re.Pattern[str]
+    # A spec ("1.7l"), a count with its noun ("3 seater") or a preference the lexicon
+    # knows ("wireless", "grey", "kids"): something a product either is or is not.
+    # Any other word may be the buyer's own phrasing ("pc", "zoom", "home").
+    known: bool = False
+    # Which text it is read in: the fields that say what a product is, or only its
+    # title and type, for a word naming a sub-kind with the kind's name.
+    fields: tuple[str, ...] = _FILTER_FIELDS
+
+
+# Words that say what a product has or is made of, never which kind of it it is: they
+# are read anywhere in what identifies the product, not as a sub-kind with the kind's
+# name ("bluetooth earbuds" are earbuds that are Bluetooth, wherever the title says so).
+# The lexicon's preference words (`get_qualifiers`) are the same in the buyer's Greek.
+_PROPERTY_WORDS = frozenset(
+    """
+    bluetooth usb led solar rechargeable foldable folding adjustable outdoor indoor
+    wooden wood glass metal steel stainless velvet fabric rattan wicker plastic bamboo
+    oak pine marble wifi hdmi rgb automatic manual mini small tall round square
+    """.split()
+)
+
+
+@lru_cache(maxsize=1)
+def _qualifier_feed_words() -> frozenset[str]:
+    return frozenset(
+        word
+        for qualifier in get_qualifiers()
+        if qualifier.english
+        for word in qualifier.english.split()
+    ) | _PROPERTY_WORDS
+
+
+@dataclass(frozen=True)
+class _PricedProduct:
+    """One product of a price-first answer, at the cheapest offer PicWise has for it."""
+
+    product: ProviderProduct
+    price: float
+    # `same_product_key`: a GTIN key, a brand and MPN key, or "".
+    key: str
+    shops: int
+
+
+def _word_forms(word: str) -> tuple[str, ...]:
+    """A filter word with its singular or plural, so "burners" finds "4 Burner Gas BBQ"."""
+    if len(word) < 3 or any(char.isdigit() for char in word):
+        return (word,)
+    forms = {word, *_FILTER_WORD_ALIASES.get(word, ())}
+    if word.endswith("ies"):
+        forms.add(word[:-3] + "y")
+    elif word.endswith("es"):
+        forms.update({word[:-2], word[:-1]})
+    elif word.endswith("s") and not word.endswith("ss"):
+        forms.add(word[:-1])
+    elif word.endswith("y"):
+        forms.update({word + "s", word[:-1] + "ies"})
+    else:
+        forms.update({word + "s", word + "es"})
+    return tuple(sorted(forms, key=lambda form: (-len(form), form)))
+
+
+def _kind_name_pattern(concept_id: str) -> str:
+    """The names of a kind as one alternation, each with its plural."""
+    concept = get_product_concepts_by_id().get(concept_id)
+    names = concept.english if concept is not None else ()
+    alternatives: set[str] = set()
+    for name in names:
+        words = name.split()
+        if not words:
+            continue
+        for last in _word_forms(words[-1]):
+            alternatives.add(r"[\s-]+".join(re.escape(word) for word in words[:-1] + [last]))
+    return "|".join(sorted(alternatives, key=lambda form: (-len(form), form)))
+
+
+def _kind_modifier(reading: ConceptReading, brand_words: frozenset[str]) -> str:
+    """The word naming a sub-kind: typed right before the product's name, and neither
+    a brand, a number, a spec nor a preference the lexicon knows ("floor lamp",
+    "dining table", "standing desk"), or "" when there is none."""
+    tokens = list(reading.tokens)
+    head = list(reading.concept_words)
+    if not head:
+        return ""
+    start = next(
+        (index for index in range(len(tokens)) if tokens[index : index + len(head)] == head),
+        -1,
+    )
+    if start <= 0:
+        return ""
+    word = tokens[start - 1]
+    if (
+        word not in reading.filters
+        or reading.filter_sources.get(word, word) != word
+        or any(char.isdigit() for char in word)
+        or word in brand_words
+        or word in _qualifier_feed_words()
+        or word in {spec.token for spec in reading.specs}
+    ):
+        return ""
+    if start >= 2 and _BARE_NUMBER_RE.match(tokens[start - 2]):
+        # "3 seater sofa": the word is the noun of a count, read with its number.
+        return ""
+    return word
+
+
+def _filter_units(
+    filters: tuple[str, ...],
+    sources: dict[str, str],
+    *,
+    spec_values: frozenset[str] = frozenset(),
+    modifier: str = "",
+    kind_names: str = "",
+) -> tuple[_FilterUnit, ...]:
+    """The search's filters as whole words, each found in a product's text or not.
+
+    Price first lists every product that carries the filters, so a filter decides what
+    is in the answer and not only its order, and readings loose enough for a ranking
+    are not loose enough for that:
+    - a filter is matched as a whole word, with its singular or plural: "set" is not
+      found in "settee", nor "light" in "lightweight";
+    - a count is read with the noun after it: "3 seater", "4 burners". The "3" alone is
+      found in any dimension and narrows nothing. "4+1 Burner" counts as 4 burners;
+    - the word naming a sub-kind (`modifier`, from `_kind_modifier`) is read with the
+      kind's name after it: "floor lamp" is not a table lamp on a "Floor & Table Lamps"
+      shelf, nor "coffee table" a side table in "Coffee Wood Effect";
+    - "set" followed by "of" is the size of a pack.
+    """
+    units: list[_FilterUnit] = []
+    index = 0
+    while index < len(filters):
+        word = filters[index]
+        following = filters[index + 1] if index + 1 < len(filters) else ""
+        if _BARE_NUMBER_RE.match(word) and following.isalpha():
+            noun = "|".join(re.escape(form) for form in _word_forms(following))
+            units.append(
+                _FilterUnit(
+                    display=f"{sources.get(word, word)} {sources.get(following, following)}",
+                    terms=(word, following),
+                    pattern=re.compile(rf"(?<!\w){word}(?:\s*\+\s*\d+)?[\s-]*(?:{noun})(?!\w)"),
+                    known=True,
+                )
+            )
+            index += 2
+            continue
+        forms = "|".join(re.escape(form) for form in _word_forms(word))
+        # "Set of 2" is how many come in the pack, not a set of furniture: "patio set"
+        # once answered with a pair of folding chairs.
+        not_a_count = r"(?!\s+of\b)" if word in {"set", "sets"} else ""
+        if word == modifier and kind_names:
+            # "floor lamp": the word with the kind's name after it, one word between
+            # at most ("Floor Standing Lamp"), in the product's own title or type.
+            units.append(
+                _FilterUnit(
+                    display=sources.get(word, word),
+                    terms=(word,),
+                    pattern=re.compile(
+                        rf"(?<!\w)(?:{forms})(?:[\s-]+\w+)?[\s-]+(?:{kind_names})(?!\w)"
+                    ),
+                    fields=_KIND_PHRASE_FIELDS,
+                )
+            )
+            index += 1
+            continue
+        units.append(
+            _FilterUnit(
+                display=sources.get(word, word),
+                terms=(word,),
+                pattern=re.compile(rf"(?<!\w)(?:{forms})(?!\w){not_a_count}", flags=re.IGNORECASE),
+                known=word in spec_values or word in _qualifier_feed_words(),
+            )
         )
-    return len(seen)
+        index += 1
+    return tuple(units)
+
+
+def _carries(unit: _FilterUnit, texts: dict[str, str]) -> bool:
+    return bool(unit.pattern.search(texts.get(unit.fields, "")))
+
+
+def _honoured_filter_units(
+    units: tuple[_FilterUnit, ...], haystacks: list[dict[tuple[str, ...], str]], *, page_size: int
+) -> tuple[tuple[_FilterUnit, ...], tuple[_FilterUnit, ...]]:
+    """Which filters the answer requires, and which it had to drop, as (kept, dropped).
+
+    Every filter is required while at least one product carries them all: fewer and
+    right beats more and wrong (owner, 2026-10-16), and "2 of 2" is shown as it is.
+
+    When no product carries them all, the search is partly unanswerable, and the set of
+    words kept must still be a reading of it:
+    - specs, counts and the preferences the lexicon knows (`_FilterUnit.known`) are
+      kept while one product carries them: "power bank 20000mah for iphone" is answered
+      with the one 20000mAh power bank, though none says iPhone;
+    - any other word is kept only if a full page of products carries it with them (all
+      the products, if fewer). One product that happens to carry it is no reading of
+      the search: "web cam for zoom calls" once answered with the one webcam whose
+      title mentions a digital zoom.
+    Of the sets that qualify, the one with the most known filters, then the most
+    filters, then the one more products carry, then the one keeping the words typed
+    first. The page names every dropped filter.
+    """
+    relaxable = units[:_MAX_RELAXABLE_FILTERS]
+    beyond = units[_MAX_RELAXABLE_FILTERS:]
+    if not relaxable:
+        return (), beyond
+    masks: dict[int, int] = {}
+    for haystack in haystacks:
+        mask = 0
+        for index, unit in enumerate(relaxable):
+            if _carries(unit, haystack):
+                mask |= 1 << index
+        masks[mask] = masks.get(mask, 0) + 1
+    full = (1 << len(relaxable)) - 1
+    if masks.get(full):
+        return relaxable, beyond
+    enough = max(1, min(page_size, len(haystacks)))
+    known_mask = sum(1 << index for index, unit in enumerate(relaxable) if unit.known)
+    best: tuple[tuple[int, int, int, int], int] | None = None
+    for subset in range(full, 0, -1):
+        support = sum(count for mask, count in masks.items() if mask & subset == subset)
+        if support < (1 if subset & ~known_mask == 0 else enough):
+            continue
+        # Keeping an earlier word ranks higher: bit i of the typed order is worth more
+        # the earlier the word was typed.
+        typed_first = sum(
+            1 << (len(relaxable) - 1 - index)
+            for index in range(len(relaxable))
+            if subset & (1 << index)
+        )
+        rank = (bin(subset & known_mask).count("1"), bin(subset).count("1"), support, typed_first)
+        if best is None or rank > best[0]:
+            best = (rank, subset)
+    kept_mask = best[1] if best else 0
+    kept = tuple(unit for index, unit in enumerate(relaxable) if kept_mask & (1 << index))
+    dropped = tuple(
+        unit for index, unit in enumerate(relaxable) if not kept_mask & (1 << index)
+    ) + beyond
+    return kept, dropped
+
+
+def _merchant_identity(product: ProviderProduct) -> str:
+    """The shop selling this offer, as the feed names it, or "" when it does not say."""
+    raw = product.raw if isinstance(product.raw, dict) else {}
+    merchant = extract_merchant_name(raw) or str(raw.get("merchant_id") or "").strip()
+    return merchant.lower()
+
+
+def _shop_count(offers: list[ProviderProduct]) -> int:
+    """How many shops the feed names for these offers. An unnamed one is not counted as
+    another shop: "Lowest price of 2 shops" must not rest on a guess."""
+    return max(1, len({_merchant_identity(offer) for offer in offers} - {""}))
+
+
+def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduct]:
+    """The answer's products, each once at its cheapest offer, cheapest first.
+
+    - Prices in different currencies cannot be sorted against each other (owner,
+      2026-10-11), so the answer keeps the currency most of its products are priced in.
+    - Offers of one product (`same_product_key`) are joined into one, at the cheapest
+      offer, and the number of shops selling it is kept for the card (owner rule 5,
+      2026-10-16). Every offer here is listed as in stock: card eligibility has
+      already removed the rest, so the cheapest kept is the cheapest in stock.
+    - The same shop listing one title at one price twice is one card: nothing on the
+      page could tell the two apart. Offers whose shop the feed does not name count as
+      one shop here.
+    - Equal prices are ordered by title, then id, so the order is the same every time.
+    """
+    priced: list[tuple[ProviderProduct, float, str]] = []
+    for product in products:
+        price = parse_price_amount(product.price_text)
+        if price is None:
+            continue
+        priced.append((product, price, str(product.currency or "").strip().upper()))
+    if not priced:
+        return []
+    by_currency: dict[str, int] = {}
+    for _product, _price, currency in priced:
+        by_currency[currency] = by_currency.get(currency, 0) + 1
+    if len(by_currency) > 1:
+        # The first currency seen wins a tie, so the choice does not depend on hashing.
+        kept_currency = max(by_currency, key=lambda currency: by_currency[currency])
+        priced = [row for row in priced if row[2] == kept_currency]
+
+    def order_key(row: tuple[ProviderProduct, float, str]) -> tuple[float, str, str]:
+        product, price, _currency = row
+        return (price, _normalize_dedupe_title(product.title), str(product.provider_product_id))
+
+    priced.sort(key=order_key)
+    groups: dict[str, list[ProviderProduct]] = {}
+    group_price: dict[str, float] = {}
+    for product, price, _currency in priced:
+        raw = product.raw if isinstance(product.raw, dict) else {}
+        key = same_product_key(raw, brand=str(product.brand or ""))
+        group = key or f"offer:{product.provider_product_id}:{id(product)}"
+        if group not in groups:
+            groups[group] = []
+            group_price[group] = price
+        groups[group].append(product)
+
+    ordered: list[_PricedProduct] = []
+    seen_cards: set[tuple[str, float, str]] = set()
+    seen_ids: set[str] = set()
+    # Groups were created in price order, so the first offer of each is its cheapest.
+    for group, offers in groups.items():
+        cheapest = offers[0]
+        product_id = str(cheapest.provider_product_id or "").strip()
+        card = (
+            _normalize_dedupe_title(cheapest.title),
+            group_price[group],
+            _merchant_identity(cheapest),
+        )
+        if card in seen_cards or (product_id and product_id in seen_ids):
+            continue
+        seen_cards.add(card)
+        if product_id:
+            seen_ids.add(product_id)
+        ordered.append(
+            _PricedProduct(
+                product=cheapest,
+                price=group_price[group],
+                key="" if group.startswith("offer:") else group,
+                shops=_shop_count(offers),
+            )
+        )
+    return ordered
+
+
+def _counted_products(ordered: list[_PricedProduct]) -> int:
+    """How many products of the answer, cheapest first, count towards its middle price.
+
+    A dearest product costing at least twice the next dearest does not count, and again
+    for the next one (owner, 2026-10-16). It stays in the list.
+    """
+    counted = len(ordered)
+    while counted >= 2 and ordered[counted - 1].price >= _EXTREME_PRICE_FACTOR * ordered[counted - 2].price:
+        counted -= 1
+    return counted
+
+
+def _middle_price(ordered: list[_PricedProduct]) -> float | None:
+    """The middle price of the answer: of 45 products the 23rd's, of an even number the
+    cheaper middle one's, extreme top prices left out (`_counted_products`)."""
+    counted = _counted_products(ordered)
+    return ordered[(counted - 1) // 2].price if counted else None
+
+
+def _median_recommendation(ordered: list[_PricedProduct]) -> tuple[int | None, str]:
+    """Which product of the answer is the Recommended, as (index, status).
+
+    Owner rules of 2026-10-15 and 2026-10-16:
+    - the middle product by price over the whole answer: of 45, the 23rd; of an even
+      number, the cheaper of the two middle ones;
+    - before the middle is found, a dearest product costing at least twice the next
+      dearest does not count, and again for the next one. It stays in the list;
+    - it must carry an EAN/GTIN, so that "not cheaper elsewhere on PicWise" can be
+      known. If the middle product has none, the product nearest to it in price that
+      has one; of two equally near, the cheaper;
+    - with no product carrying one, there is no Recommended, and the cheapest are shown.
+
+    The card says "Mid-priced for this category", so the nearest product with a code
+    must be priced between the cheapest and the dearest that count: on a short list the
+    nearest one can be the cheapest, and calling it mid-priced would be false.
+    """
+    counted = _counted_products(ordered)
+    if counted < _RECOMMENDED_MIN_PRODUCTS:
+        return None, "too_few_products"
+    middle_price = ordered[(counted - 1) // 2].price
+    lowest, highest = ordered[0].price, ordered[counted - 1].price
+    if not lowest < middle_price < highest:
+        # One price for all, or the middle at an end: no product is mid-priced.
+        return None, "too_few_products"
+    best: tuple[tuple[float, float, int], int] | None = None
+    for index in range(counted):
+        candidate = ordered[index]
+        if not candidate.key.startswith("gtin:"):
+            continue
+        if not lowest < candidate.price < highest:
+            continue
+        rank = (abs(candidate.price - middle_price), candidate.price, index)
+        if best is None or rank < best[0]:
+            best = (rank, index)
+    if best is None:
+        return None, "no_product_code"
+    return best[1], "recommended"
 
 
 def _select_products_for_concept(
@@ -1303,22 +1684,30 @@ def _select_products_for_concept(
     *,
     safe_max: int,
     condition_request: tuple[str, ...] = (),
+    shown: int = 0,
 ) -> ProviderProductSelectionResult:
-    """Select four instances of the concept the buyer means, then apply their filters.
+    """Every instance of the concept the buyer means that carries their filters, cheapest first.
 
     The product name is not a text filter here: every candidate is already an instance
     of the concept, established from its feed type by `annotate_product_concepts`. That
     is what lets "πλυντηριο", "plintirio" and "washing machine" reach the same products,
     and what stops a relaxed filter from ever changing the kind of product answered.
+
+    The answer is ordered by price (owner, 2026-10-15). The first page holds the
+    Recommended (`_median_recommendation`) and then the cheapest; "More" opens the next
+    cheapest, four at a time, as often as asked. `shown` is how many products the page
+    holds, a multiple of `safe_max`.
     """
 
     def members_for(concept_id: str) -> list[tuple[ProviderProduct, dict[str, str]]]:
         rows = []
         for product, fields in zip(eligible, eligible_fields):
             concepts = _product_concepts(product, fields)
-            if concept_id in concepts or (
-                not concepts
-                and _unannotated_product_names_concept(fields, reading.feed_terms, concept_id)
+            if concept_id in concepts:
+                if _context_allows_member(concepts, concept_id, reading.tokens):
+                    rows.append((product, fields))
+            elif not concepts and _unannotated_product_names_concept(
+                fields, reading.feed_terms, concept_id
             ):
                 rows.append((product, fields))
         return rows
@@ -1326,120 +1715,543 @@ def _select_products_for_concept(
     concept_id = str(reading.concept_id)
     unmatched_name_words: tuple[str, ...] = tuple()
     members = members_for(concept_id)
-    if _distinct_product_count(members) < safe_max and reading.fallback_concept_id:
-        # Too few of the narrower kind ("σκούπα ρομπότ"): answer with the broader kind
-        # it belongs to and say which word of the name could not be honoured.
+    if not members and reading.fallback_concept_id:
+        # None of the narrower kind ("σκούπα ρομπότ"): answer with the broader kind it
+        # belongs to and say which word of the name could not be honoured. One product
+        # of the narrower kind is answer enough: fewer and right (owner, 2026-10-16).
         broader_members = members_for(reading.fallback_concept_id)
-        if _distinct_product_count(broader_members) >= safe_max:
+        if broader_members:
             members = broader_members
             concept_id = reading.fallback_concept_id
             unmatched_name_words = reading.fallback_unmatched
 
     filters = tuple(term for term in reading.filters if term not in _CONNECTIVE_TOKENS)
     feed_terms = tuple(reading.feed_terms)
-    scoring_tokens = tuple(dict.fromkeys(feed_terms + filters))
-    effective_query = " ".join(scoring_tokens)
-    query_seeks_accessory = _query_seeks_accessory(scoring_tokens, effective_query)
+    effective_query = " ".join(dict.fromkeys(feed_terms + filters))
 
-    def display(terms: tuple[str, ...]) -> tuple[str, ...]:
-        # Quote the buyer's own words, not the feed-language filter they became.
-        return tuple(dict.fromkeys(reading.filter_sources.get(term, term) for term in terms))
-
-    def rank_with(required: tuple[str, ...]):
-        rows: list[tuple[tuple[int, int, int, str, str], ProviderProduct]] = []
-        for product, fields in members:
-            ranking = _score_product_for_tokens(
-                product,
-                required,
-                normalized_query=effective_query,
-                query_seeks_accessory=query_seeks_accessory,
-                scoring_tokens=scoring_tokens,
-                fields=fields,
-                concept_verified=True,
-                concept_id=concept_id,
-            )
-            if ranking is not None:
-                rows.append((ranking, product))
-        return rows
-
-    required = filters
-    unmatchable: tuple[str, ...] = tuple()
-    ranked = rank_with(required)
-    # How many products carry the whole request, reported when four cannot be shown.
-    strict_count = len(_dedupe_selected_products(ranked))
-    if filters and len(_dedupe_selected_products(ranked)) < safe_max:
-        plan = resolve_query_token_plan(
-            filters,
-            tuple(product for product, _ in members),
-            max_products=safe_max,
-            product_fields=tuple(fields for _, fields in members),
-        )
-        required, unmatchable = plan.required, plan.unmatchable
-        ranked = rank_with(required)
-        if len(_dedupe_selected_products(ranked)) < safe_max:
-            # No filter can be honoured with a full set; the concept alone still can.
-            required, unmatchable = tuple(), filters
-            ranked = rank_with(required)
-
-    ranked.sort(key=lambda row: (-row[0][1], -row[0][2], -row[0][0], row[0][3], row[0][4]))
-    ranked = _restrict_to_one_currency(ranked, safe_max=safe_max)
-    deduped = _dedupe_selected_products(ranked)
-
-    # A filter that could not hold for all four may still hold for some of them; those
-    # rank first. Say how many rather than calling it unmatched.
-    fields_by_id = {id(product): fields for product, fields in members}
-    shown = _choose_shown_products_for_condition(
-        ranked,
-        safe_max=safe_max,
-        fields_by_id=fields_by_id,
-        scoring_tokens=scoring_tokens,
-        prefer_non_new=bool(condition_request),
-    )
-    fully_unmatched: list[str] = []
-    partial: list[tuple[str, int]] = []
-    for term in unmatchable:
-        carrying = sum(
-            1
-            for product in shown
-            if term in " ".join(value for value in fields_by_id.get(id(product), {}).values() if value)
-        )
-        if 0 < carrying < len(shown):
-            partial.append((reading.filter_sources.get(term, term), carrying))
+    # Owner decision (2026-10-10): products that are not new appear only when asked
+    # for. When they are, the answer is the products in that condition; when the feed
+    # has none, it is the new ones, and the page says the condition was not matched.
+    condition_unmatched: tuple[str, ...] = tuple()
+    if condition_request:
+        asked_for = [row for row in members if product_non_new_condition(row[0])]
+        if asked_for:
+            members = asked_for
         else:
-            fully_unmatched.append(term)
-    unmatched = display(tuple(fully_unmatched)) + tuple(reading.judgements) + unmatched_name_words
-    enough = len(deduped) >= safe_max
-    condition_unmatched, condition_partial = (
-        _condition_request_report(shown, condition_request) if enough else ((), ())
+            condition_unmatched = (condition_request[0],)
+
+    brand_words = frozenset(
+        word for _product, fields in members for word in fields.get("brand", "").split()
     )
-    unmatched = tuple(dict.fromkeys(unmatched + condition_unmatched))
-    common = dict(
+    units = _filter_units(
+        filters,
+        reading.filter_sources,
+        spec_values=frozenset(spec.token for spec in reading.specs),
+        modifier=_kind_modifier(reading, brand_words),
+        kind_names=_kind_name_pattern(concept_id),
+    )
+    haystacks = [
+        {
+            scope: " ".join(fields[name] for name in scope if fields.get(name))
+            for scope in (_FILTER_FIELDS, _KIND_PHRASE_FIELDS)
+        }
+        for _product, fields in members
+    ]
+    kept, dropped, ordered = _price_first_answer(members, haystacks, units, page_size=safe_max)
+    return _price_first_result(
+        ordered,
+        kept,
+        dropped,
+        members,
+        haystacks,
+        safe_max=safe_max,
+        shown=shown,
         understood_concept=concept_id,
         effective_query=effective_query,
-        required_filter_terms=required,
-        required_query_terms=feed_terms + required,
-        unmatched_query_terms=unmatched,
-        partially_matched_terms=(tuple(partial) + condition_partial) if enough else tuple(),
+        name_terms=feed_terms,
         condition_request=condition_request,
+        also_unmatched=tuple(reading.judgements) + tuple(unmatched_name_words) + condition_unmatched,
+        reason_code="product_concept_understood",
     )
-    if len(deduped) < safe_max:
+
+
+def _price_first_answer(
+    members: list[tuple[ProviderProduct, dict[str, str]]],
+    haystacks: list[dict[tuple[str, ...], str]],
+    units: tuple[_FilterUnit, ...],
+    *,
+    page_size: int,
+) -> tuple[tuple[_FilterUnit, ...], tuple[_FilterUnit, ...], list[_PricedProduct]]:
+    """The words the answer requires and drops, and its products cheapest first."""
+    kept, dropped = _honoured_filter_units(units, haystacks, page_size=page_size)
+    carrying = [
+        product
+        for (product, _fields), haystack in zip(members, haystacks)
+        if all(_carries(unit, haystack) for unit in kept)
+    ]
+    return kept, dropped, _price_first_products(carrying)
+
+
+def _price_first_result(
+    ordered: list[_PricedProduct],
+    kept: tuple[_FilterUnit, ...],
+    dropped: tuple[_FilterUnit, ...],
+    members: list[tuple[ProviderProduct, dict[str, str]]],
+    haystacks: list[dict[tuple[str, ...], str]],
+    *,
+    safe_max: int,
+    shown: int,
+    understood_concept: str,
+    effective_query: str,
+    name_terms: tuple[str, ...],
+    condition_request: tuple[str, ...],
+    also_unmatched: tuple[str, ...],
+    reason_code: str,
+    strong_only_if_whole: bool = False,
+) -> ProviderProductSelectionResult:
+    """One price-first answer as the page shows it.
+
+    The first page holds the Recommended (`_median_recommendation`) and then the
+    cheapest; "More" opens the next cheapest, four at a time, as often as asked.
+    `shown` is how many products the page holds, a multiple of `safe_max`. With
+    `strong_only_if_whole`, the answer counts as a strong match only when it carries
+    every word of the search: a search PicWise did not understand is shown on its own
+    strength (`is_strong_feed_opportunity_selection`), and a dropped word weakens it.
+    """
+    recommended_index, recommendation_status = _median_recommendation(ordered)
+    if recommended_index is None:
+        display_order = list(ordered)
+    else:
+        display_order = (
+            [ordered[recommended_index]]
+            + ordered[:recommended_index]
+            + ordered[recommended_index + 1 :]
+        )
+    page_size = max(safe_max, -(-max(int(shown or 0), safe_max) // safe_max) * safe_max)
+    first_page = display_order[:safe_max]
+    opened = display_order[safe_max:page_size]
+
+    recommended = ordered[recommended_index] if recommended_index is not None else None
+    # "Lowest price" is for the cheap end of the answer: first-page products priced at
+    # or below the Recommended or, with none, at or below the middle price (owner,
+    # 2026-10-16 and 2026-10-17). Of three standing desks, the £630.99 one is not the
+    # lowest price, though it is on the page.
+    lowest_price_ceiling = recommended.price if recommended is not None else _middle_price(ordered)
+    cheapest_ids = tuple(
+        str(entry.product.provider_product_id or "").strip()
+        for entry in first_page
+        if entry is not recommended
+        and lowest_price_ceiling is not None
+        and entry.price <= lowest_price_ceiling
+    )
+    shop_counts = tuple(
+        (str(entry.product.provider_product_id or "").strip(), entry.shops)
+        for entry in first_page + opened
+        if entry.shops > 1
+    )
+    first_place: dict[float, int] = {}
+    for place, entry in enumerate(ordered, start=1):
+        first_place.setdefault(entry.price, place)
+    price_ranks = tuple(
+        (str(entry.product.provider_product_id or "").strip(), first_place[entry.price])
+        for entry in first_page + opened
+    )
+
+    # A filter dropped for the whole answer may still be carried by part of it. Say
+    # how many rather than calling it unmatched, and nothing when every product of the
+    # answer carries it after all: "Only some match: retro (1 of 1)" would be false.
+    fully_unmatched: list[str] = []
+    partial: list[tuple[str, int]] = []
+    texts = {
+        id(product): haystack for (product, _fields), haystack in zip(members, haystacks)
+    }
+    for unit in dropped:
+        count = sum(1 for entry in ordered if _carries(unit, texts.get(id(entry.product), {})))
+        if ordered and count == len(ordered):
+            continue
+        if count:
+            partial.append((unit.display, count))
+        else:
+            fully_unmatched.append(unit.display)
+    unmatched = tuple(dict.fromkeys(tuple(fully_unmatched) + also_unmatched))
+    required = tuple(term for unit in kept for term in unit.terms)
+    common = dict(
+        understood_concept=understood_concept,
+        effective_query=effective_query,
+        required_filter_terms=required,
+        required_query_terms=name_terms + required,
+        unmatched_query_terms=unmatched,
+        partially_matched_terms=tuple(partial),
+        condition_request=condition_request,
+        price_first=True,
+        total_count=len(ordered),
+    )
+    if not ordered:
         return ProviderProductSelectionResult(
             status="insufficient_relevant_products",
-            matched_count=strict_count,
-            strong_matched_count=strict_count,
+            matched_count=0,
+            strong_matched_count=0,
             selected_products=tuple(),
-            reason_codes=("insufficient_relevant_products", "product_concept_understood"),
+            reason_codes=("insufficient_relevant_products", reason_code),
             **common,
         )
     return ProviderProductSelectionResult(
         status="selected",
-        matched_count=len(deduped),
-        # Every one is an instance of the concept and carries every required filter,
-        # which is what "strong" means for a token match.
-        strong_matched_count=len(deduped),
-        selected_products=tuple(shown),
-        reason_codes=("provider_feed_products_selected", "product_concept_understood"),
+        # Every one is the kind asked for and carries every required filter, which is
+        # what "strong" means for a token match.
+        matched_count=len(ordered),
+        strong_matched_count=0 if strong_only_if_whole and dropped else len(ordered),
+        selected_products=tuple(entry.product for entry in first_page),
+        more_products=tuple(entry.product for entry in opened),
+        reason_codes=("provider_feed_products_selected", reason_code, "price_first"),
+        recommended_product_id=(
+            str(recommended.product.provider_product_id or "").strip() if recommended else ""
+        ),
+        recommendation_status=recommendation_status,
+        cheapest_product_ids=cheapest_ids,
+        shop_counts=shop_counts,
+        price_ranks=price_ranks,
         **common,
+    )
+
+
+# Part 3b (2026-10-17): price first for a search whose product the lexicon does not know.
+# The words that end the name of the product a search asks for ("lamp for bedroom").
+_PURPOSE_TOKENS = frozenset({"for", "with", "without", "gia", "me", "xoris", "choris"})
+# The share of the products carrying every word of such a search that must be of one
+# known kind for the search to be answered as that kind: "lenovo thinkpad 16gb ram"
+# names no kind PicWise knows, and the 59 products carrying its words are laptops.
+_DOMINANT_KIND_SHARE = 2 / 3
+_KIND_MARKERS = frozenset({ACCESSORY_MARKER, UNCERTAIN_MARKER, PET_MARKER, CAMPING_MARKER})
+# A second kind holding this share of the answer to a one-word search makes it name
+# several kinds (`_head_names_several_kinds`).
+_AMBIGUOUS_FAMILY_SHARE = 0.1
+# How many kinds an ambiguous search names on the page.
+_AMBIGUOUS_FAMILIES_SHOWN = 8
+
+
+def _search_head_word(
+    tokens: tuple[str, ...],
+    units: tuple[_FilterUnit, ...],
+    members: list[tuple[ProviderProduct, dict[str, str]]],
+    haystacks: list[dict[tuple[str, ...], str]],
+) -> _FilterUnit | None:
+    """The word that names the product a search asks for, as the unit that matches it.
+
+    The last word before "for", "with" or "without" that is a word, and not a number, a
+    spec, a count's noun ("3 seater"), a preference the lexicon knows or a brand: "dog
+    crate", "lamb for bedroom", "inc cartridge epson". A word is read as a brand when
+    most of the products carrying it carry it in their brand.
+    """
+    cut = next((i for i, token in enumerate(tokens) if token in _PURPOSE_TOKENS), len(tokens))
+    for index in range(cut - 1, -1, -1):
+        word = tokens[index]
+        if (
+            len(word) < 3
+            or not word.isalpha()
+            or word in _CONNECTIVE_TOKENS
+            or word in _qualifier_feed_words()
+            or (index >= 1 and _BARE_NUMBER_RE.match(tokens[index - 1]))
+        ):
+            continue
+        unit = next((unit for unit in units if unit.terms == (word,)), None)
+        if unit is None:
+            continue
+        carriers = [i for i, haystack in enumerate(haystacks) if _carries(unit, haystack)]
+        in_brand = sum(1 for i in carriers if word in members[i][1].get("brand", "").split())
+        if carriers and in_brand * 2 >= len(carriers):
+            continue
+        return unit
+    return None
+
+
+def _kind_name(concept_id: str) -> str:
+    concept = get_product_concepts_by_id().get(concept_id)
+    return concept.english[0] if concept is not None and concept.english else concept_id
+
+
+def _known_kind_counts(rows: list[tuple[ProviderProduct, dict[str, str]]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for product, fields in rows:
+        for concept_id in _product_concepts(product, fields) - _KIND_MARKERS:
+            counts[concept_id] = counts.get(concept_id, 0) + 1
+    return counts
+
+
+def _dominant_known_kind(rows: list[tuple[ProviderProduct, dict[str, str]]]) -> str:
+    """The one known kind most of these products are, or "" when there is none."""
+    counts = _known_kind_counts(rows)
+    if not counts:
+        return ""
+    # A broader kind counts every product of its narrower ones; of equal counts the
+    # narrower kind is the reading ("laptop" before "computer").
+    best = max(counts, key=lambda concept_id: (counts[concept_id], len(broader_concepts(concept_id)), concept_id))
+    return best if counts[best] >= _DOMINANT_KIND_SHARE * len(rows) else ""
+
+
+def _families_of(rows: list[tuple[ProviderProduct, dict[str, str]]]) -> tuple[str, ...]:
+    """The kinds a set of products falls into, largest first, as the page names them:
+    the broadest known kind of each, or its product type."""
+    counts: dict[str, int] = {}
+    for product, fields in rows:
+        kinds = _product_concepts(product, fields) - _KIND_MARKERS
+        if kinds:
+            name = _kind_name(min(broader_concepts(kind)[-1] for kind in kinds))
+        else:
+            name = _product_family(product).split(">")[-1].strip()
+        if name:
+            counts[name] = counts.get(name, 0) + 1
+    return tuple(sorted(counts, key=lambda name: (-counts[name], name)))[:_AMBIGUOUS_FAMILIES_SHOWN]
+
+
+def _shelf_family(product: ProviderProduct, fields: dict[str, str]) -> str:
+    """Where a product is kept: its product type, else its shop's department (the first
+    crumb of its first category path), else ""."""
+    raw = product.raw if isinstance(product.raw, dict) else {}
+    product_type = " ".join(str(raw.get("product_type") or "").split(">")[-1].lower().split())
+    if product_type:
+        return f"type:{product_type}"
+    category = fields.get("category", "")
+    first_path = category.split(CATEGORY_FIELD_SEPARATOR)[0] if category else ""
+    department = " ".join(first_path.split(">")[0].split())
+    return f"department:{department}" if department else ""
+
+
+def _head_names_several_kinds(
+    head: _FilterUnit,
+    kept: tuple[_FilterUnit, ...],
+    ordered: list[_PricedProduct],
+    readings: dict[int, KindWordReading],
+    index_of: dict[int, int],
+    members: list[tuple[ProviderProduct, dict[str, str]]],
+) -> tuple[str, ...]:
+    """The kinds a one-word search names, when it names several, else ().
+
+    Measured on the third real feed (2026-10-17): "switch" is a network switch (416), a
+    KVM switch (76) or a video switch (19), and price order opened with a £11.99 HDMI
+    switch; "tree" is a Christmas tree, a cat tree or a topiary tree; "machine" a coffee,
+    binding or stepper machine. PicWise asks which, rather than list them together.
+    Products kept apart -- by their product type, or by the shop department they are
+    sold in -- are different kinds, and the search is read as naming several when a
+    second one holds a tenth of the answer. "gazebo", "hutch", "hammock" and "crate"
+    each sit in one department and are answered. A search that says which ("dog
+    crate", "network switch") is not read this way; one whose other word no product
+    carries ("cofefe machine") is, because the answer is then the head word's alone.
+    """
+    if any(unit is not head and not unit.known for unit in kept) or not ordered:
+        return tuple()
+    families: dict[str, int] = {}
+    modifiers: dict[str, int] = {}
+    for entry in ordered:
+        index = index_of.get(id(entry.product))
+        if index is None:
+            continue
+        product, fields = members[index]
+        family = _shelf_family(product, fields)
+        if family:
+            families[family] = families.get(family, 0) + 1
+        modifier = readings[index].modifier
+        if (
+            modifier
+            and modifier.isalpha()
+            and modifier not in _CONNECTIVE_TOKENS
+            and modifier not in fields.get("brand", "").split()
+            and modifier not in _qualifier_feed_words()
+        ):
+            modifiers[modifier] = modifiers.get(modifier, 0) + 1
+    large = [family for family, count in families.items() if count >= _AMBIGUOUS_FAMILY_SHARE * len(ordered)]
+    if len(large) < 2:
+        return tuple()
+    word = head.terms[0]
+    named = [f"{modifier} {word}" for modifier in sorted(modifiers, key=lambda m: (-modifiers[m], m))]
+    if len(named) < 2:
+        named = [family.split(":", 1)[1] for family in sorted(large, key=lambda f: (-families[f], f))]
+    return tuple(named[:_AMBIGUOUS_FAMILIES_SHOWN])
+
+
+def _ambiguous_selection(
+    families: tuple[str, ...],
+    dropped: tuple[_FilterUnit, ...],
+    condition_request: tuple[str, ...],
+) -> ProviderProductSelectionResult:
+    return ProviderProductSelectionResult(
+        status="ambiguous_product_family",
+        matched_count=0,
+        strong_matched_count=0,
+        selected_products=tuple(),
+        reason_codes=("ambiguous_product_family",),
+        unmatched_query_terms=tuple(unit.display for unit in dropped),
+        ambiguous_product_families=families,
+        condition_request=condition_request,
+    )
+
+
+def _select_products_by_words(
+    reading: ConceptReading,
+    tokens: tuple[str, ...],
+    eligible: tuple[ProviderProduct, ...],
+    eligible_fields: tuple[dict[str, str], ...],
+    *,
+    safe_max: int,
+    condition_request: tuple[str, ...] = (),
+    shown: int = 0,
+) -> ProviderProductSelectionResult:
+    """Price first for a search whose product PicWise did not understand (part 3b).
+
+    The answer is every product carrying the search's words, cheapest first, read as
+    an understood search reads its filters (`_filter_units`). The kind is tested as
+    strictly, because price order puts look-alikes first:
+    - the word naming the product (`_search_head_word`) must be what the product is
+      (`read_kind_word`): "rabbit hutch" lists hutches, not the £14.99 hutch cover. A
+      word that is no product's own noun in the feed names no product there: "lamb
+      for bedroom" lists nothing, rather than a cat tree with "Lamb Fleece";
+    - when no product is that, or the search names no product, and most products
+      carrying all its words are one known kind, the answer is that kind:
+      "lenovo thinkpad 16gb ram" lists the ThinkPads carrying it;
+    - a search that names several kinds is not guessed at: "machine" and "samsung"
+      ask which product is meant.
+    """
+    members = list(zip(eligible, eligible_fields))
+    condition_unmatched: tuple[str, ...] = tuple()
+    if condition_request:
+        asked_for = [row for row in members if product_non_new_condition(row[0])]
+        if asked_for:
+            members = asked_for
+        else:
+            condition_unmatched = (condition_request[0],)
+    filters = tuple(token for token in tokens if token not in _CONNECTIVE_TOKENS)
+    spec_values = frozenset(spec.token for spec in reading.specs) | frozenset(
+        token for token in filters if any(char.isdigit() for char in token)
+    )
+    units = _filter_units(filters, {}, spec_values=spec_values)
+    haystacks = [
+        {
+            scope: " ".join(fields[name] for name in scope if fields.get(name))
+            for scope in (_FILTER_FIELDS, _KIND_PHRASE_FIELDS)
+        }
+        for _product, fields in members
+    ]
+    head = _search_head_word(tokens, units, members, haystacks)
+    readings: dict[int, KindWordReading] = {}
+    if head is not None:
+        forms = _word_forms(head.terms[0])
+        for i, ((product, _fields), haystack) in enumerate(zip(members, haystacks)):
+            if not _carries(head, haystack):
+                continue
+            raw = product.raw if isinstance(product.raw, dict) else {}
+            kind_reading = read_kind_word(
+                str(raw.get("product_type") or ""), str(product.title or ""), forms
+            )
+            if kind_reading.names:
+                readings[i] = kind_reading
+        if not any(kind_reading.as_noun for kind_reading in readings.values()):
+            readings = {}
+    chosen = sorted(readings)
+    understood_concept = ""
+    if not chosen:
+        carrying_all = [
+            members[i]
+            for i, haystack in enumerate(haystacks)
+            if units and all(_carries(unit, haystack) for unit in units)
+        ]
+        concept_id = _dominant_known_kind(carrying_all)
+        if not concept_id:
+            families = _families_of(carrying_all)
+            if len(families) > 1:
+                return _ambiguous_selection(families, tuple(), condition_request)
+        else:
+            understood_concept = concept_id
+            chosen = [
+                i
+                for i, (product, fields) in enumerate(members)
+                if concept_id in (concepts := _product_concepts(product, fields))
+                and not concepts & {ACCESSORY_MARKER, UNCERTAIN_MARKER}
+                and _context_allows_member(concepts, concept_id, tokens)
+            ]
+    answer_members = [members[i] for i in chosen]
+    answer_haystacks = [haystacks[i] for i in chosen]
+    kept, dropped, ordered = _price_first_answer(
+        answer_members, answer_haystacks, units, page_size=safe_max
+    )
+    if head is not None and readings:
+        index_of = {id(members[i][0]): i for i in chosen}
+        families = _head_names_several_kinds(head, kept, ordered, readings, index_of, members)
+        if families:
+            return _ambiguous_selection(families, dropped, condition_request)
+    return _price_first_result(
+        ordered,
+        kept,
+        dropped,
+        answer_members,
+        answer_haystacks,
+        safe_max=safe_max,
+        shown=shown,
+        understood_concept=understood_concept,
+        effective_query=" ".join(dict.fromkeys(filters)),
+        name_terms=tuple(),
+        condition_request=condition_request,
+        also_unmatched=condition_unmatched,
+        reason_code="product_named_by_words",
+        strong_only_if_whole=True,
+    )
+
+
+@dataclass(frozen=True)
+class SearchCatalogue:
+    """The products a search reads, judged once (step 5 of the price-first plan).
+
+    Whether a product can be shown on a card and whether the feed calls it not new do
+    not depend on the search, and judging every product again on every search was
+    about 4 of the 5 seconds a search took on the third feed. Each product's search
+    fields are kept with it, read-only.
+    """
+
+    # Card-eligible products, in feed order, new or not: a search that asks for a
+    # condition reads these.
+    products: tuple[ProviderProduct, ...]
+    fields: tuple[dict[str, str], ...]
+    # The new ones among them: every other search reads only these.
+    new_products: tuple[ProviderProduct, ...]
+    new_fields: tuple[dict[str, str], ...]
+
+
+def build_search_catalogue(
+    products: tuple[ProviderProduct, ...],
+    *,
+    feed_ctx: FeedAvailabilityContext | None = None,
+    card_eligible: tuple[bool, ...] | None = None,
+    non_new: tuple[str, ...] | None = None,
+) -> SearchCatalogue:
+    """Judge each product once: can a card show it, and is it new.
+
+    `card_eligible`, when given, is that judgement already made for each product, in
+    order, against `feed_ctx`: the feed pipeline makes it as it loads the feed.
+    `non_new`, when given, is `product_non_new_condition` of each product, in order: a
+    prepared feed carries it.
+    """
+    if card_eligible is None:
+        if feed_ctx is None:
+            feed_ctx = build_feed_availability_context(products)
+        card_eligible = tuple(
+            evaluate_product_eligibility(product, feed_ctx=feed_ctx).card_eligible
+            for product in products
+        )
+    eligible = tuple(product for product, shown in zip(products, card_eligible) if shown)
+    if non_new is None:
+        conditions = tuple(product_non_new_condition(product) for product in eligible)
+    else:
+        conditions = tuple(condition for condition, shown in zip(non_new, card_eligible) if shown)
+    fields = tuple(_product_search_fields(product) for product in eligible)
+    new_rows = tuple(
+        (product, product_fields)
+        for product, product_fields, condition in zip(eligible, fields, conditions)
+        if not condition
+    )
+    return SearchCatalogue(
+        products=eligible,
+        fields=fields,
+        new_products=tuple(product for product, _fields in new_rows),
+        new_fields=tuple(product_fields for _product, product_fields in new_rows),
     )
 
 
@@ -1450,7 +2262,16 @@ def select_provider_products_for_query(
     max_products: int = 4,
     reading: ConceptReading | None = None,
     feed_ctx: FeedAvailabilityContext | None = None,
+    shown: int = 0,
+    catalogue: SearchCatalogue | None = None,
 ) -> ProviderProductSelectionResult:
+    """The products to show for one search.
+
+    `shown` is how many products of a price-first answer the page holds: the first
+    page, plus every four "More" has opened. 0 means the first page only.
+    `catalogue` is `products` already judged (`build_search_catalogue`); without it they
+    are judged here.
+    """
     safe_max = max(1, int(max_products))
     if reading is None:
         reading = understand_product_query(str(query or ""))
@@ -1468,11 +2289,6 @@ def select_provider_products_for_query(
         )
     )
     condition_words = {word for phrase in condition_request for word in phrase.split()}
-    normalized_query = " ".join(
-        token
-        for token in normalize_query(str(query or "")).split()
-        if not _is_condition_request_token(token, condition_words)
-    )
     tokens = tuple(
         token
         for token in _tokenize_query(query)
@@ -1487,23 +2303,16 @@ def select_provider_products_for_query(
             reason_codes=("empty_query",),
         )
 
-    query_seeks_accessory = _query_seeks_accessory(tokens, normalized_query)
-    if feed_ctx is None:
-        feed_ctx = build_feed_availability_context(products)
+    if catalogue is None:
+        catalogue = build_search_catalogue(products, feed_ctx=feed_ctx)
     # Owner decision (2026-10-10): a product the feed calls refurbished, used or
     # otherwise not new is not a candidate at all unless the buyer asked for that
     # condition. Dropped here, before any ranking, so it cannot be shown, counted,
     # recommended or reported as a match.
-    wants_non_new = bool(condition_request)
-    eligible = tuple(
-        product
-        for product in products
-        if evaluate_product_eligibility(product, feed_ctx=feed_ctx).card_eligible
-        and (wants_non_new or not product_non_new_condition(product))
-    )
-    # Build each product's searchable text once and reuse it for both the reading
-    # decision and the scoring below.
-    eligible_fields = tuple(_product_search_fields(product) for product in eligible)
+    if condition_request:
+        eligible, eligible_fields = catalogue.products, catalogue.fields
+    else:
+        eligible, eligible_fields = catalogue.new_products, catalogue.new_fields
 
     if reading.understood:
         return _select_products_for_concept(
@@ -1512,119 +2321,16 @@ def select_provider_products_for_query(
             eligible_fields,
             safe_max=safe_max,
             condition_request=condition_request,
+            shown=shown,
         )
-
-    def rank_with(required: tuple[str, ...]):
-        rows: list[tuple[tuple[int, int, int, str, str], ProviderProduct]] = []
-        for product, fields in zip(eligible, eligible_fields):
-            ranking = _score_product_for_tokens(
-                product,
-                required,
-                normalized_query=normalized_query,
-                query_seeks_accessory=query_seeks_accessory,
-                scoring_tokens=tokens,
-                fields=fields,
-            )
-            if ranking is not None:
-                rows.append((ranking, product))
-        return rows
-
-    # Try the buyer's words as given first. When the inventory answers them there is
-    # nothing to relax, and this path costs exactly what it did before relaxation
-    # existed -- which matters, because relaxation is a second pass over the feed.
-    strict_tokens = tuple(_query_token_candidates(tokens)) or tokens
-    ranked = rank_with(strict_tokens)
-    required_tokens = strict_tokens
-    token_plan = QueryTokenPlan(
-        required=strict_tokens,
-        unmatchable=tuple(),
-        connectives=tuple(token for token in tokens if token in _CONNECTIVE_TOKENS),
-    )
-    if len(_dedupe_selected_products(ranked)) < safe_max:
-        token_plan = resolve_query_token_plan(
-            tokens,
-            eligible,
-            max_products=safe_max,
-            product_fields=eligible_fields,
-        )
-        if token_plan.ambiguous_product_families:
-            return ProviderProductSelectionResult(
-                status="ambiguous_product_family",
-                matched_count=0,
-                strong_matched_count=0,
-                selected_products=tuple(),
-                reason_codes=("ambiguous_product_family",),
-                unmatched_query_terms=token_plan.unmatchable,
-                ambiguous_product_families=token_plan.ambiguous_product_families,
-            )
-        relaxed_tokens = token_plan.required or strict_tokens
-        if relaxed_tokens != strict_tokens:
-            required_tokens = relaxed_tokens
-            ranked = rank_with(required_tokens)
-
-    ranked.sort(key=lambda row: (-row[0][1], -row[0][2], -row[0][0], row[0][3], row[0][4]))
-    ranked = _restrict_to_one_currency(ranked, safe_max=safe_max)
-    # "Strong" means the product carries the whole reading the selection committed to.
-    # Counting against the original words would make every relaxed query weak by
-    # definition, which would hide results the selection had already judged good.
-    strong_matched_count = _count_strong_matches(
-        ranked,
-        token_count=len(required_tokens),
-    )
-    deduped = _dedupe_selected_products(ranked)
-    matched_count = len(deduped)
-
-    if matched_count < safe_max:
-        return ProviderProductSelectionResult(
-            status="insufficient_relevant_products",
-            matched_count=matched_count,
-            strong_matched_count=strong_matched_count,
-            selected_products=tuple(),
-            reason_codes=("insufficient_relevant_products",),
-            unmatched_query_terms=token_plan.unmatchable,
-            required_query_terms=required_tokens,
-            condition_request=condition_request,
-        )
-
-    chosen = tuple(
-        _choose_shown_products_for_condition(
-            ranked,
-            safe_max=safe_max,
-            fields_by_id={id(product): fields for product, fields in zip(eligible, eligible_fields)},
-            scoring_tokens=tokens,
-            prefer_non_new=wants_non_new,
-        )
-    )
-    chosen_families = {_product_family(product) for product in chosen}
-    if len(chosen_families) > 1 and "" not in chosen_families:
-        # Without an understood product the words matched several kinds of product
-        # ("machine": coffee machines and washing machines). Four choices of different
-        # kinds are not a decision between alternatives, so ask instead of guessing.
-        return ProviderProductSelectionResult(
-            status="ambiguous_product_family",
-            matched_count=0,
-            strong_matched_count=0,
-            selected_products=tuple(),
-            reason_codes=("ambiguous_product_family",),
-            unmatched_query_terms=token_plan.unmatchable,
-            ambiguous_product_families=tuple(sorted(chosen_families))[:8],
-        )
-
-    condition_unmatched, condition_partial = _condition_request_report(
-        chosen, condition_request
-    )
-    return ProviderProductSelectionResult(
-        status="selected",
-        matched_count=matched_count,
-        strong_matched_count=strong_matched_count,
-        selected_products=chosen,
-        reason_codes=("provider_feed_products_selected",),
-        unmatched_query_terms=tuple(
-            dict.fromkeys(token_plan.unmatchable + condition_unmatched)
-        ),
-        partially_matched_terms=condition_partial,
-        required_query_terms=required_tokens,
+    return _select_products_by_words(
+        reading,
+        tokens,
+        eligible,
+        eligible_fields,
+        safe_max=safe_max,
         condition_request=condition_request,
+        shown=shown,
     )
 
 
@@ -1673,7 +2379,56 @@ def _comparable_tie_break_prices(
     return amounts
 
 
-def _deciding_reason_code(sorted_keys: list[tuple[Any, ...]], choice_count: int) -> str:
+def _comparable_ranking_property(
+    products: tuple[ProviderProduct, ...],
+    concept_id: str,
+) -> tuple[str, dict[int, float]]:
+    """The one specification these products can be ranked on, and each one's value.
+
+    Owner's rule, from 2026-10-11 onward: the recommendation must not rest on price.
+    Where the feed states a specification whose direction no buyer would dispute --
+    storage, battery, runtime -- that specification decides instead, and price falls
+    back to being the last resort it was always meant to be.
+
+    Three conditions, all of them about not overclaiming:
+
+    - The **kind of product** must have a ranking criterion at all
+      (`picwise_taxonomy.comparison_rules`). More watts is not a better amplifier and
+      more metres is not a better cable, so those kinds never reach here.
+    - **At least two** of the four must state the same property. One product stating
+      its battery is not a comparison, it is a fact about one product.
+    - Every value is read from what the feed **stated as a property**
+      (`picwise_providers.product_specs`), never from a number loose in marketing
+      prose.
+
+    Returns ("", {}) when the four cannot be compared this way, which is the normal
+    case on a feed without specifications, and then nothing here changes the order.
+    """
+    criteria = comparison_rule(concept_id).ranking_criteria if concept_id else tuple()
+    if not criteria:
+        return "", {}
+    stated: dict[str, dict[int, float]] = {}
+    for product in products:
+        raw = product.raw if isinstance(product.raw, dict) else {}
+        for spec in read_product_specs(raw, title=product.title):
+            if spec.property_id in criteria and spec.ranks:
+                stated.setdefault(spec.property_id, {})[id(product)] = spec.value
+    # The property the most of them state; ties fall to the order the kind lists its
+    # criteria in, so the same property is chosen for every query of that kind.
+    best = ""
+    for property_id in criteria:
+        values = stated.get(property_id) or {}
+        if len(values) >= 2 and len(values) > len(stated.get(best) or {}):
+            best = property_id
+    return (best, stated[best]) if best else ("", {})
+
+
+def _deciding_reason_code(
+    sorted_keys: list[tuple[Any, ...]],
+    choice_count: int,
+    *,
+    ranking_property: str = "",
+) -> str:
     """What actually separated the recommended choice from the runner-up.
 
     Shown first on the recommended card, because it is the answer to "why this one?".
@@ -1687,10 +2442,13 @@ def _deciding_reason_code(sorted_keys: list[tuple[Any, ...]], choice_count: int)
     winner, runner_up = sorted_keys[0], sorted_keys[1]
     if winner[:2] != runner_up[:2]:
         return "closer_search_match"
-    if winner[2] == -1 and winner[2:4] < runner_up[2:4]:
+    # The specification comes before the price, which is the whole point of reading it.
+    if ranking_property and winner[2] != runner_up[2]:
+        return f"better_{ranking_property}"
+    if winner[3] == -1 and winner[3:5] < runner_up[3:5]:
         return "price_tie_breaker"
-    # Same match, same or incomparable price: only the title order is left, which is
-    # no fact about the products. Say so rather than dress it up.
+    # Same match, same specification, same or incomparable price: only the title order
+    # is left, which is no fact about the products. Say so rather than dress it up.
     return "tie_on_search_match_and_price"
 
 
@@ -1787,6 +2545,12 @@ def decide_recommended_provider_product(
     candidates: list[tuple[tuple[Any, ...], ProviderProduct]] = []
     full_scores: dict[int, int] = {}
     tie_break_prices = _comparable_tie_break_prices(selected_products)
+    # The specification these four can be ranked on, when the kind has one and at
+    # least two of them state it. Empty on a feed without specifications, and then
+    # the order below is exactly what it was.
+    ranking_property, ranking_values = _comparable_ranking_property(
+        selected_products, concept_id if concept_verified else ""
+    )
 
     for product in selected_products:
         ranking = _score_product_for_tokens(
@@ -1809,9 +2573,14 @@ def decide_recommended_provider_product(
         )
         price_value = tie_break_prices.get(str(product.provider_product_id or ""))
         has_price = 1 if price_value is not None else 0
+        # A product that does not state the property cannot win on it, and is not
+        # penalised by it either: it simply sorts below the ones that did, and the
+        # card says how many of the four stated theirs.
+        spec_value = ranking_values.get(id(product))
         sort_key = (
             -substantive_score,
             -title_matches,
+            -spec_value if spec_value is not None else float("inf"),
             -has_price,
             price_value if price_value is not None else float("inf"),
             title_key,
@@ -1843,6 +2612,7 @@ def decide_recommended_provider_product(
         # Among the condition asked for, what separated this one from the others of
         # that condition. The condition itself is stated as its own reason below.
         len(candidates) if narrowed_by_condition else len(selected_products),
+        ranking_property=ranking_property,
     )
 
     reason_codes = _recommendation_reason_codes_for_product(

@@ -97,7 +97,7 @@ class AppHttpEndpointTests(unittest.TestCase):
 
     def test_root_route_shows_main_picwise_reference_ui(self) -> None:
         body = self._fetch("/")
-        self.assertIn("See the 4 best products before you buy", body)
+        self.assertIn("What are you looking for?", body)
         self.assertIn("shopping decision assistant", body)
         self.assertIn("shopping decision assistant", body)
         self.assertIn("Live safe mode", body)
@@ -160,15 +160,15 @@ class AppHttpEndpointTests(unittest.TestCase):
 
     def test_picwise_reference_route_renders_main_reference_shell(self) -> None:
         body = self._fetch("/picwise-reference")
-        self.assertIn("See the 4 best products before you buy", body)
+        self.assertIn("What are you looking for?", body)
         self.assertIn("Live safe mode", body)
         self.assertIn(
-            'placeholder="See the 4 best products before you buy"',
+            'placeholder="What are you looking for?"',
             body,
         )
-        self.assertNotIn("<h1>See the 4 best products before you buy</h1>", body)
+        self.assertNotIn("<h1>What are you looking for?</h1>", body)
         self.assertNotIn("Search your product here", body)
-        self.assertNotIn('value="See the 4 best products before you buy"', body)
+        self.assertNotIn('value="What are you looking for?"', body)
         self.assertIn("What is PicWise?", body)
         self.assertNotIn("Showing 4 options for: power bank 20000mah for iphone", body)
         self.assertNotIn("View in Store", body)
@@ -276,7 +276,19 @@ class AppHttpEndpointTests(unittest.TestCase):
 
     def test_search_route_does_not_show_forbidden_commerce_claims(self) -> None:
         body = self._fetch("/search?q=power%20bank")
-        lowered = body.lower()
+        # "What is PicWise?" describes the service as the owner chose it (2026-10-17),
+        # "...shows what the shops list as in stock, cheapest first...": what PicWise
+        # does, on every page, not a claim about a product shown. It is checked to be
+        # exactly that text, and the rest of the page is checked for claims.
+        tooltip = re.search(r'<div class="pw-tooltip" id="pw-tooltip">(.*?)</div>', body)
+        self.assertIsNotNone(tooltip)
+        self.assertEqual(
+            tooltip.group(1),
+            "PicWise finds the product you want in the shops it is connected to, shows "
+            "what the shops list as in stock, cheapest first, and marks one mid-priced "
+            "Recommended.",
+        )
+        lowered = (body[: tooltip.start()] + body[tooltip.end():]).lower()
         self.assertNotIn("eur ", lowered)
         self.assertNotIn("in stock", lowered)
         self.assertNotIn("prime", lowered)

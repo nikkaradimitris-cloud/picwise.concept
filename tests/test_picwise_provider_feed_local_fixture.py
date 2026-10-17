@@ -148,13 +148,24 @@ class FourPlusOneDecisionTests(unittest.TestCase):
         self.assertNotIn("fx-laptop-bag", selected_ids)
 
     def test_query_without_matching_inventory_stays_safely_empty(self) -> None:
-        for query in ("office chair", "laptop bag"):
-            with self.subTest(query=query):
-                selection, decision = _selection(query)
-                self.assertEqual(selection.status, "insufficient_relevant_products")
-                self.assertEqual(selection.selected_products, tuple())
-                self.assertEqual(decision.decision_status, "insufficient_selected_products")
-                self.assertIsNone(decision.recommended_product_id)
+        selection, decision = _selection("office chair")
+        self.assertEqual(selection.status, "insufficient_relevant_products")
+        self.assertEqual(selection.selected_products, tuple())
+        self.assertEqual(decision.decision_status, "insufficient_selected_products")
+        self.assertIsNone(decision.recommended_product_id)
+
+    def test_a_kind_with_one_product_shows_that_one_and_recommends_none(self) -> None:
+        # Price first (owner, 2026-10-16): fewer than four are shown as they are. The
+        # fixture holds one laptop bag; it is the answer, and one product has no middle
+        # price to recommend.
+        selection, decision = _selection("laptop bag")
+        self.assertEqual(selection.status, "selected")
+        self.assertEqual(
+            [product.provider_product_id for product in selection.selected_products],
+            ["fx-laptop-bag"],
+        )
+        self.assertEqual(decision.decision_status, "no_recommendation_too_few_products")
+        self.assertIsNone(decision.recommended_product_id)
 
 
 class RuntimeTruthTests(unittest.TestCase):

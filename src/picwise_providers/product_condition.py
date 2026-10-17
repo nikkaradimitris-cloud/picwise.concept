@@ -92,6 +92,15 @@ _NON_NEW_TEXT_PHRASES = (
     "ex display",
     "ex demo",
 )
+# A grade with its wording, the way refurbishers title a graded item: "(Grade A1 - Like
+# New)", "(Grade B - Average)". Measured on the third real feed (2026-10-16): 158
+# laptops, desktops and televisions at Back to the Office, with an empty condition
+# column, which price order put first in their kinds. "Grade" alone is not enough:
+# "Commercial Grade TV Wall Mount" and "military grade rugged case" are new.
+_GRADED_CONDITION_PATTERN = (
+    r"\bgrade\s+[a-d][0-9+]?\s*[-\u2013:]\s*"
+    r"(?:like new|excellent|very good|good|average|fair|acceptable|pristine|poor)\b"
+)
 # Greek says it with an ending on a stem, and every ending says the same thing
 # ("μεταχειρισμένο", "μεταχειρισμένα", "μεταχειρισμένος"), so the stem is matched and
 # the whole word the feed wrote is reported back.
@@ -114,6 +123,7 @@ _NON_NEW_TEXT_RE = re.compile(
     "|".join(
         [
             r"\b(?:" + "|".join(re.escape(phrase) for phrase in _NON_NEW_TEXT_PHRASES) + r")\b",
+            _GRADED_CONDITION_PATTERN,
             *[rf"\b{_accent_insensitive(stem)}\w*" for stem in _GREEK_NON_NEW_STEMS],
         ]
     ),
@@ -133,6 +143,7 @@ _NON_NEW_TEXT_HINTS = (
     "box",
     "ex di",
     "ex de",
+    "grade",
     "σμεν",
     "σμέν",
 )
@@ -155,14 +166,34 @@ _COLUMN_NON_NEW_RE = re.compile(
 _PUNCTUATION_RE = re.compile(r"[^\w\s]+", flags=re.UNICODE)
 
 
+# A product data sheet written into the description ("... Form factor. Clamshell.
+# Refurbished. Yes. Display. ...") states the condition as a field, unlike the prose
+# around it. Measured on the third real feed (2026-10-17): 22 refurbished laptops and
+# desktops at Back to the Office (A2C, T1A, Circular Computing) say so only there,
+# with an empty condition column. The prose is not read: 616 new UPS batteries say
+# "No Refurbished or Re-used Parts", and printer inks list "PIXMA iP2600 Refurbished"
+# among the printers they fit.
+_DECLARED_REFURBISHED_RE = re.compile(r"\brefurbished\s*[.:]\s*yes\b", flags=re.IGNORECASE)
+
+
 def stated_condition(row: Mapping[str, Any] | None) -> str:
-    """The condition the feed row states, whitespace collapsed, or ""."""
+    """The condition the feed row states, whitespace collapsed, or "".
+
+    The condition columns first; when they are silent, a "Refurbished: Yes" field in
+    the description's data sheet, as "refurbished".
+    """
     if not row:
         return ""
     for key in CONDITION_KEYS:
         value = " ".join(str(row.get(key) or "").split())
         if value:
             return value
+    description = str(row.get("description") or "")
+    # A substring check first: this runs once per product of the feed on every search.
+    if ("efurbished" in description or "EFURBISHED" in description) and (
+        _DECLARED_REFURBISHED_RE.search(description)
+    ):
+        return "refurbished"
     return ""
 
 

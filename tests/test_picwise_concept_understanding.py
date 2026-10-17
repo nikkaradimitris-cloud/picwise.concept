@@ -95,7 +95,9 @@ class EverySpellingReachesTheConceptTests(unittest.TestCase):
         self.assertEqual(concept_of("webcam για laptop"), "webcam")
         self.assertEqual(concept_of("τόνερ για εκτυπωτή laser"), "toner")
         self.assertEqual(concept_of("power bank for iphone"), "power_bank")
-        self.assertEqual(concept_of("κινητο με καλη καμερα"), "smartphone")
+        # Since the owner's rule of 2026-10-16, «κινητό» names the basic mobile phones and
+        # only "smartphone" the smartphones; what follows «με» is still not the product.
+        self.assertEqual(concept_of("κινητο με καλη καμερα"), "mobile_phone")
 
     def test_greek_names_the_product_first_and_english_last(self) -> None:
         self.assertEqual(concept_of("θήκη κινητού"), "phone_case")
@@ -179,7 +181,10 @@ class ProductAnnotationTests(unittest.TestCase):
     def test_feed_types_map_to_concepts(self) -> None:
         for product_type, concept in (
             ("Washing Machines", "washing_machine"),
-            ("Mobile Phones", "smartphone"),
+            # A "Mobile Phones" type holds smartphones or basic phones; with no title
+            # saying which, a basic mobile phone (owner's rule of 2026-10-16).
+            ("Mobile Phones", "mobile_phone"),
+            ("Smartphones", "smartphone"),
             ("Multifunction Printers", "printer"),
             ("Blood Pressure Monitors", "blood_pressure_monitor"),
             ("Πλυντήρια Ρούχων", "washing_machine"),

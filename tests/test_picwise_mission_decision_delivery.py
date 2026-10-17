@@ -99,12 +99,12 @@ class InboundQueryLandsOnDecisionTests(_FixtureFeedTestCase):
     def test_root_with_purchase_intent_query_returns_the_decision(self) -> None:
         status, _headers, body = _call("/", "q=laptop")
         self.assertTrue(status.startswith("200"), status)
-        self.assertIn("Showing 4 selected real products for: laptop", body)
+        self.assertIn("Results for: laptop, cheapest first", body)
 
     def test_root_without_a_query_stays_the_plain_landing(self) -> None:
         status, _headers, body = _call("/")
         self.assertTrue(status.startswith("200"), status)
-        self.assertNotIn("Showing 4 selected real products", body)
+        self.assertNotIn("Results for:", body)
 
     def test_root_and_search_agree_for_the_same_query(self) -> None:
         _status_a, _h, root_body = _call("/", "q=laptop")
@@ -116,7 +116,7 @@ class InboundQueryLandsOnDecisionTests(_FixtureFeedTestCase):
     def test_root_keeps_safe_empty_state_for_unstocked_query(self) -> None:
         status, _headers, body = _call("/", "q=office+chair")
         self.assertTrue(status.startswith("200"), status)
-        self.assertNotIn("Showing 4 selected real products", body)
+        self.assertNotIn("Results for:", body)
 
 
 class MerchantAttributionTests(_FixtureFeedTestCase):

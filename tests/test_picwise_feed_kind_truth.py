@@ -25,6 +25,7 @@ for path in (ROOT, SRC):
 
 from picwise_nlu.concept_understanding import (  # noqa: E402
     ACCESSORY_MARKER,
+    UNCERTAIN_MARKER,
     annotate_product_concepts,
     understand_product_query,
 )
@@ -105,8 +106,13 @@ class TitleEvidenceTests(unittest.TestCase):
     """When only a title says what the product is, it must say it plainly."""
 
     def test_a_name_followed_by_an_unreadable_word_is_not_the_product(self) -> None:
-        self.assertEqual(_kinds("", "", "Fixturon Universal Truck Bed Tailgate Extender"), set())
-        self.assertEqual(_kinds("", "", "Sampleworks WiFi Smart Curtain Switch"), set())
+        # Since the strict reading of 2026-10-16 such a title is doubtful rather than
+        # kindless: neither the kind nor the "names the kind in its own words" fallback
+        # lets it answer "bed" or "curtains".
+        self.assertEqual(
+            _kinds("", "", "Fixturon Universal Truck Bed Tailgate Extender"), {UNCERTAIN_MARKER}
+        )
+        self.assertEqual(_kinds("", "", "Sampleworks WiFi Smart Curtain Switch"), {UNCERTAIN_MARKER})
 
     def test_a_colour_a_spec_or_a_pack_word_still_reads_as_the_product(self) -> None:
         self.assertIn("smartwatch", _kinds("", "", "Testline APP 7 MAX Smartwatch Black Dial"))

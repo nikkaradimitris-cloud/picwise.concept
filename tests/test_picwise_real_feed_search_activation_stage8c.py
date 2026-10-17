@@ -6,10 +6,12 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-ROOT = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
+for path in (HERE, SRC):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
 
 from picwise_providers.contracts import ProviderFeedConfig, ProviderProduct, SearchProviderFeedMetadata  # noqa: E402
 from picwise_providers.search_selection import (  # noqa: E402
@@ -21,6 +23,7 @@ from picwise_providers.state import (  # noqa: E402
     resolve_search_provider_feed_product_selection,
 )
 from picwise_search.live_search_resolver import resolve_live_search  # noqa: E402
+from fixture_support import fixture_description  # noqa: E402
 
 _REAL_FEED_ENV = "AWIN_FEED_FILE"
 _REAL_FEED_DEFAULT = Path(r"C:\Users\User\Desktop\picwise-private-feeds\geekbuying_feed.csv.gz")
@@ -62,6 +65,7 @@ def _sample_products() -> tuple[ProviderProduct, ...]:
                 "category_name": "Monitors",
                 "merchant_category": "Computer Monitors",
                 "keywords": "gaming monitor qhd",
+                "description": fixture_description(),
             },
         },
         {
@@ -134,10 +138,16 @@ def _sample_products() -> tuple[ProviderProduct, ...]:
                 "category_name": "Monitors",
                 "merchant_category": "Computer Monitors",
                 "keywords": "gaming monitor qhd",
+                "description": fixture_description(),
             },
         },
     ]
-    return tuple(ProviderProduct(**row) for row in rows)
+    # Every sample row carries a description: without one it is not a product PicWise
+    # would show, so a selection test built on it would measure nothing real.
+    return tuple(
+        ProviderProduct(**{**row, "raw": {"description": fixture_description(), **row["raw"]}})
+        for row in rows
+    )
 
 
 class ProviderSearchSelectionUnitTests(unittest.TestCase):
@@ -154,7 +164,10 @@ class ProviderSearchSelectionUnitTests(unittest.TestCase):
                 price_text="149.99",
                 availability_text="in stock",
                 currency="USD",
-                raw={"keywords": "gaming monitor"},
+                raw={
+                    "keywords": "gaming monitor",
+                    "description": fixture_description(),
+                },
             )
             for index in range(3)
         )
@@ -168,15 +181,18 @@ class ProviderSearchSelectionUnitTests(unittest.TestCase):
         )
 
     def test_dedupes_near_identical_titles(self) -> None:
+        # Price first shows fewer than four as they are (owner, 2026-10-16), and the
+        # near-identical titles are still one product.
         result = select_provider_products_for_query("gaming monitor", _sample_products())
-        self.assertEqual(result.status, "insufficient_relevant_products")
+        self.assertEqual(result.status, "selected")
         self.assertEqual(result.matched_count, 1)
+        self.assertEqual(len(result.selected_products), 1)
 
-    def test_returns_insufficient_when_fewer_than_four_matches(self) -> None:
+    def test_fewer_than_four_matches_are_shown_as_they_are(self) -> None:
         result = select_provider_products_for_query("tv box", _sample_products())
-        self.assertEqual(result.status, "insufficient_relevant_products")
+        self.assertEqual(result.status, "selected")
         self.assertEqual(result.matched_count, 1)
-        self.assertEqual(result.selected_products, tuple())
+        self.assertEqual(len(result.selected_products), 1)
 
     def test_empty_query_is_safe_no_selection(self) -> None:
         result = select_provider_products_for_query("", _sample_products())

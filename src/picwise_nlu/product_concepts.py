@@ -82,8 +82,9 @@ freezer|HA||freezer,freezers,chest freezer,chest freezers|καταψύκτης,�
 air_conditioner|HA||air conditioner,air conditioners,air conditioning unit,aircon|κλιματιστικό,κλιματιστικά
 dehumidifier|HA||dehumidifier,dehumidifiers|αφυγραντήρας,αφυγραντήρες
 air_purifier|HA||air purifier,air purifiers|καθαριστής αέρα,καθαριστές αέρα,ιονιστής
-heater|HA||heater,heaters,electric heater,radiator heater|θερμάστρα,θερμάστρες,καλοριφέρ λαδιού,αερόθερμο
-fan|HA||fan,fans,electric fan,tower fan,ceiling fan|ανεμιστήρας,ανεμιστήρες
+fire_pit|GA||fire pit,fire pits,firepit,firepits,fire bowl,fire bowls,chiminea,chimineas|εστία φωτιάς,εστίες φωτιάς
+heater|HA||heater,heaters,electric heater,electric heaters,radiator heater,electric fire,electric fires,electric fireplace,electric fireplaces,fireplace,fireplaces,fireplace stove,fireplace stoves,log burner,log burners,wood burner,wood burners|θερμάστρα,θερμάστρες,καλοριφέρ λαδιού,αερόθερμο,τζάκι,ηλεκτρικό τζάκι
+fan|HA||fan,fans,electric fan|ανεμιστήρας,ανεμιστήρες
 heat_pump|HA||heat pump,heat pumps|αντλία θερμότητας,αντλίες θερμότητας
 water_heater|HA||water heater,water heaters,boiler,immersion heater|θερμοσίφωνας,θερμοσίφωνες,ηλιακός θερμοσίφωνας,λέβητας
 vacuum_cleaner|HA||vacuum cleaner,vacuum cleaners,vacuum,vacuums,hoover|ηλεκτρική σκούπα,ηλεκτρικές σκούπες,σκούπα,σκούπες
@@ -93,60 +94,66 @@ iron|HA||iron,steam iron,clothes iron,steam generator iron|σίδερο,σίδε
 coffee_machine|KI||coffee machine,coffee machines,coffee maker,coffee makers,espresso machine,espresso machines|καφετιέρα,καφετιέρες,μηχανή καφέ,μηχανές καφέ,μηχανή εσπρέσο,καφετιέρα φίλτρου
 microwave|KI||microwave,microwaves,microwave oven,microwave ovens|φούρνος μικροκυμάτων,φούρνοι μικροκυμάτων,μικροκύματα
 oven|KI||oven,ovens,built in oven|φούρνος,φούρνοι,εντοιχιζόμενος φούρνος
-cooker|KI||cooker,cookers,stove,range cooker|κουζίνα,κουζίνες,ηλεκτρική κουζίνα,ηλεκτρικές κουζίνες
+cooker|KI||cooker,cookers,~stove,range cooker|κουζίνα,κουζίνες,ηλεκτρική κουζίνα,ηλεκτρικές κουζίνες
 hob|KI||hob,hobs,cooktop,induction hob|εστία,εστίες,επαγωγική εστία
-air_fryer|KI||air fryer,air fryers|φριτέζα αέρος,φριτέζες αέρος,φριτέζα αέρα,φριτέζα χωρίς λάδι
+air_fryer|KI||air fryer,air fryers,air fryer oven,air fryer ovens|φριτέζα αέρος,φριτέζες αέρος,φριτέζα αέρα,φριτέζα χωρίς λάδι
 deep_fryer|KI||deep fryer,deep fryers|φριτέζα,φριτέζες
 mixer|KI||~mixer,~mixers,stand mixer,hand mixer,food mixer|μίξερ,κουζινομηχανή,κουζινομηχανές
 hand_blender|KI||hand blender,immersion blender,stick blender|μίνι πίμερ,ραβδομπλέντερ
 blender|KI||blender,blenders|μπλέντερ
-food_processor|KI||food processor,food processors|πολυμίξερ,multi
+food_processor|KI||food processor,food processors|πολυμίξερ,~multi
 toaster|KI||toaster,toasters,sandwich maker,sandwich toaster|τοστιέρα,τοστιέρες,φρυγανιέρα
 kettle|KI||kettle,kettles,electric kettle|βραστήρας,βραστήρες
 juicer|KI||juicer,juicers,citrus press|αποχυμωτής,αποχυμωτές,στίφτης
-cookware|KI||frying pan,frying pans,pan,pans,pot,pots,cookware set|τηγάνι,τηγάνια,κατσαρόλα,κατσαρόλες,σετ μαγειρικών σκευών
+cookware|KI||frying pan,frying pans,pan,pans,~pot,~pots,cooking pot,cooking pots,stock pot,stock pots,saucepan,saucepans,cookware set|τηγάνι,τηγάνια,κατσαρόλα,κατσαρόλες,σετ μαγειρικών σκευών
 pressure_cooker|KI||pressure cooker,pressure cookers|χύτρα ταχύτητας,χύτρες ταχύτητας,χύτρα
 kitchen_scale|KI||kitchen scale,kitchen scales|ζυγαριά κουζίνας
-office_chair|FU|chair|office chair,office chairs,computer chair,computer chairs,desk chair,gaming chair,gaming chairs|καρέκλα γραφείου,καρέκλες γραφείου,καρέκλα υπολογιστή,πολυθρόνα γραφείου
-chair|FU||chair,chairs|καρέκλα,καρέκλες
-desk|FU||desk,desks,computer desk,office desk,standing desk|γραφείο υπολογιστή,γραφεία υπολογιστή,γραφείο,γραφεία
+office_chair|FU|chair|office chair,office chairs,computer chair,computer chairs,desk chair|καρέκλα γραφείου,καρέκλες γραφείου,καρέκλα υπολογιστή,πολυθρόνα γραφείου
+chair|FU||chair,chairs,armchair,armchairs,recliner,recliners,accent chair,accent chairs|καρέκλα,καρέκλες
+desk|FU||desk,desks,computer desk,office desk|γραφείο υπολογιστή,γραφεία υπολογιστή,γραφείο,γραφεία
 sofa|FU||sofa,sofas,couch,settee|καναπές,καναπέδες
+sofa_bed|FU|sofa|sofa bed,sofa beds|καναπές κρεβάτι,καναπέδες κρεβάτι
 bed|FU||bed,beds,bed frame|κρεβάτι,κρεβάτια
 mattress|FU||mattress,mattresses|στρώμα,στρώματα
 wardrobe|FU||wardrobe,wardrobes|ντουλάπα,ντουλάπες
-shelving|FU||bookcase,bookcases,shelf,shelves,shelving unit|βιβλιοθήκη,βιβλιοθήκες,ραφιέρα,ράφι,ράφια
-table|FU||table,tables,dining table,coffee table|τραπέζι,τραπέζια,τραπεζάκι,τραπεζαρία
-lamp|FU||lamp,lamps,desk lamp,floor lamp,ceiling light,light fitting|φωτιστικό,φωτιστικά,πορτατίφ,φωτιστικό οροφής
+shelving|FU||shelving unit,shelving units,shelf,shelves,shelving|ραφιέρα,ραφιέρες,ράφι,ράφια
+bookcase|FU|shelving|bookcase,bookcases,~bookshelf,~bookshelves|βιβλιοθήκη,βιβλιοθήκες
+table|FU||table,tables|τραπέζι,τραπέζια,τραπεζάκι,τραπεζαρία
+lamp|FU||lamp,lamps,desk lamp,ceiling light,ceiling lights,pendant light,pendant lights,wall light,wall lights,chandelier,chandeliers,light fitting,light fittings|φωτιστικό,φωτιστικά,πορτατίφ,φωτιστικό οροφής
 light_bulb|FU||light bulb,light bulbs,led bulb,smart bulb|λάμπα,λάμπες,λαμπτήρας,λαμπτήρες
 smart_plug|FU||smart plug,smart plugs|έξυπνη πρίζα,έξυπνες πρίζες
-smartphone|PH||smartphone,smartphones,mobile phone,mobile phones,cell phone,phone,phones|κινητό,κινητά,κινητό τηλέφωνο,κινητά τηλέφωνα,τηλέφωνο
+smartphone|PH||smartphone,smartphones,smart phone,smart phones,android phone,android phones,galaxy phone,galaxy phones|σμαρτφόν,έξυπνο κινητό,έξυπνα κινητά
+mobile_phone|PH||mobile phone,mobile phones,cell phone,cell phones,phone,phones,basic phone,basic phones,feature phone,feature phones,flip phone,flip phones,big button phone,big button phones,senior phone,senior phones|κινητό,κινητά,κινητό τηλέφωνο,κινητά τηλέφωνα,τηλέφωνο,απλό κινητό,απλά κινητά
+desk_phone|PH||ip phone,ip phones,voip phone,voip phones,sip phone,sip phones,conference phone,conference phones,desk phone,desk phones,office phone,office phones,landline phone,landline phones,cordless phone,cordless phones,dect phone,dect phones|σταθερό τηλέφωνο,σταθερά τηλέφωνα,ασύρματο τηλέφωνο,ασύρματα τηλέφωνα,τηλέφωνο γραφείου
 power_bank|PH||power bank,power banks,powerbank,portable charger,external battery|εξωτερική μπαταρία,εξωτερικές μπαταρίες,φορητή μπαταρία,φορητός φορτιστής,πάουερ μπανκ
-phone_charger|PH||charger,chargers,phone charger,wall charger,usb charger|φορτιστής,φορτιστές,φορτιστής κινητού
+phone_charger|PH||charger,chargers,phone charger,wall charger,usb charger,power adapter,power adapters,ac adapter,ac adapters|φορτιστής,φορτιστές,φορτιστής κινητού
 wireless_charger|PH|phone_charger|wireless charger,wireless chargers,charging pad|ασύρματος φορτιστής,ασύρματοι φορτιστές
 charging_cable|PH||charging cable,usb cable,cable,cables,usb c cable,lightning cable|καλώδιο φόρτισης,καλώδιο,καλώδια
-phone_case|PH||phone case,phone cases,case,~cover,phone cover|θήκη κινητού,θήκες κινητού,θήκη,θήκες
-screen_protector|PH||screen protector,screen protectors,tempered glass|προστασία οθόνης,προστατευτικό οθόνης,τζαμάκι
+phone_case|PH||phone case,phone cases,mobile phone case,mobile phone cases,cell phone case,cell phone cases,smartphone case,smartphone cases,case,~cover,phone cover|θήκη κινητού,θήκες κινητού,θήκη,θήκες
+screen_protector|PH||screen protector,screen protectors,screen back protector,screen back protectors,tempered glass|προστασία οθόνης,προστατευτικό οθόνης,τζαμάκι
 car_phone_holder|PH||car phone holder,car phone mount,phone holder|βάση κινητού αυτοκινήτου,βάση κινητού
 smartwatch|PH|watch|smartwatch,smartwatches,smart watch,fitness tracker,fitness trackers|έξυπνο ρολόι,έξυπνα ρολόγια
 laptop|CO||laptop,laptops,notebook computer,notebook computers|λάπτοπ,φορητός υπολογιστής,φορητοί υπολογιστές,φορητό
 desktop_pc|CO||desktop pc,desktop pcs,desktop computer,desktop computers,~desktop,~pc|υπολογιστής,υπολογιστές,σταθερός υπολογιστής,κομπιούτερ
-monitor|CO||monitor,monitors,computer monitor,computer monitors,pc monitor,~screen|οθόνη υπολογιστή,οθόνες υπολογιστή,οθόνη,οθόνες,μόνιτορ
-printer|CO||printer,printers,multifunction printer,multifunction printers,all in one printer,laser printer,inkjet printer|εκτυπωτής,εκτυπωτές,πολυμηχάνημα,πολυμηχανήματα
+monitor|CO||monitor,monitors,computer monitor,computer monitors,pc monitor,pc monitors,pc screen,pc screens,computer screen,computer screens,~screen|οθόνη υπολογιστή,οθόνες υπολογιστή,οθόνη,οθόνες,μόνιτορ
+printer|CO||printer,printers,multifunction printer,multifunction printers,all in one printer|εκτυπωτής,εκτυπωτές,πολυμηχάνημα,πολυμηχανήματα
+label_printer|CO||label printer,label printers,label maker,label makers|ετικετογράφος,ετικετογράφοι,εκτυπωτής ετικετών
 toner|CO||toner,toners,toner cartridge,toner cartridges|τόνερ
 ink_cartridge|CO||ink cartridge,ink cartridges,printer ink,ink|μελάνι,μελάνια,μελάνι εκτυπωτή,μελάνια εκτυπωτή,φυσίγγιο μελανιού,αμπούλα,αμπούλες
-router|CO||router,routers,wifi router,modem|ρούτερ,μόντεμ
+router|CO||router,routers,wifi router,network router,network routers,modem,modems|ρούτερ,μόντεμ
 keyboard|CO||keyboard,keyboards|πληκτρολόγιο,πληκτρολόγια
 mouse|CO||mouse,mice,computer mouse|ποντίκι,ποντίκια
 webcam|CO||webcam,webcams,web camera,web cam|κάμερα υπολογιστή,κάμερες υπολογιστή,κάμερα web
 scanner|CO||scanner,scanners,document scanner|σαρωτής,σαρωτές,σκάνερ
-storage_drive|CO||external hard drive,hard drive,hard drives,ssd,usb stick,flash drive|σκληρός δίσκος,εξωτερικός σκληρός δίσκος,στικάκι,φλασάκι
-docking_station|CO||docking station,usb hub|βάση σύνδεσης
+storage_drive|CO||external hard drive,external hard drives,hard drive,hard drives,internal hard drive,internal hard drives,ssd,ssds,solid state drive,solid state drives|σκληρός δίσκος,εξωτερικός σκληρός δίσκος
+usb_flash_drive|CO||usb stick,usb sticks,usb flash drive,usb flash drives,flash drive,flash drives,pen drive,pen drives,memory stick,memory sticks|στικάκι,στικάκια,φλασάκι,φλασάκια
+docking_station|CO||docking station,docking stations,dock,docks,laptop dock,laptop docks,port replicator,port replicators,usb hub|βάση σύνδεσης
 television|AV||tv,tvs,television,televisions,smart tv|τηλεόραση,τηλεοράσεις
 speaker|AV||speaker,speakers,bluetooth speaker,portable speaker|ηχείο,ηχεία
 soundbar|AV||soundbar,soundbars,sound bar|μπάρα ήχου
 headphones|AV||headphones,headphone,headset,headsets,earphones,earbuds|ακουστικά,ακουστικό,ακουστικά κεφαλής,ψείρες
 game_console|AV||games console,game console,gaming console,games consoles,game consoles|κονσόλα,κονσόλες,κονσόλα παιχνιδιών
-game_controller|AV||~controller,~controllers,gamepad,joystick,game controller,game controllers|χειριστήριο,χειριστήρια
+game_controller|AV||~controller,~controllers,gamepad,joystick,game controller,game controllers,gaming controller,gaming controllers|χειριστήριο,χειριστήρια
 camera|AV||camera,cameras,digital camera,mirrorless camera,dslr|φωτογραφική μηχανή,φωτογραφικές μηχανές,κάμερα,κάμερες
 action_camera|AV|camera|action camera,action cameras,action cam|κάμερα δράσης
 microphone|AV||microphone,microphones,mic|μικρόφωνο,μικρόφωνα
@@ -247,8 +254,10 @@ cat_food|BK||cat food|τροφή γάτας,τροφή για γάτες
 treadmill|BK||treadmill,treadmills|διάδρομος γυμναστικής,διάδρομος
 exercise_bike|BK||exercise bike,exercise bikes|στατικό ποδήλατο
 dumbbells|BK||dumbbells,dumbbell|αλτήρες,βαράκια
+barbell|BK||barbell,barbells,barbell set,barbell sets,barbell bar,curl bar,weight plate,weight plates,olympic plates|μπάρα,μπάρες,δίσκοι βαρών,δίσκος βαρών
 yoga_mat|BK||yoga mat,exercise mat|στρώμα γιόγκα,στρωματάκι γυμναστικής
 tent|BK||tent,tents|σκηνή,σκηνές
+play_tent|BK|toy|play tent,play tents,kids tent,kids tents,kids play tent,kids play tents,play teepee,play teepees,kids teepee,kids teepees|σκηνή παιχνιδιού,σκηνές παιχνιδιού,παιδική σκηνή,παιδικές σκηνές
 sleeping_bag|BK||sleeping bag,sleeping bags|υπνόσακος,υπνόσακοι
 trousers|CL||trousers,pants,chinos,cargo trousers|παντελόνι,παντελόνια
 work_trousers|CL|trousers|work trousers,work pants|παντελόνι εργασίας,παντελόνια εργασίας
@@ -280,13 +289,13 @@ slippers|FO|shoes|slippers,flip flops|παντόφλες,σαγιονάρες
 insoles|FO||insoles|πάτοι,ανατομικοί πάτοι
 watch|JW||watch,watches,wristwatch,wristwatches|ρολόι,ρολόγια,ρολόι χειρός,ρολόγια χειρός
 ring|JW||~ring,~rings,gold ring,silver ring,engagement ring|δαχτυλίδι,δαχτυλίδια
-necklace|JW||necklace,necklaces,pendant|κολιέ,μενταγιόν
+necklace|JW||necklace,necklaces,~pendant|κολιέ,μενταγιόν
 bracelet|JW||bracelet,bracelets|βραχιόλι,βραχιόλια
 earrings|JW||earrings|σκουλαρίκια,σκουλαρίκι
 sunglasses|JW||sunglasses|γυαλιά ηλίου
 bag|JW||bag,bags|τσάντα,τσάντες
 backpack|JW|bag|backpack,backpacks,rucksack|σακίδιο,σακίδιο πλάτης,τσάντα πλάτης
-laptop_bag|JW|bag|laptop bag,laptop bags,laptop case,laptop cases,laptop sleeve|τσάντα laptop,τσάντα λάπτοπ,θήκη laptop,θήκη λάπτοπ
+laptop_bag|JW|bag|laptop bag,laptop bags,laptop case,laptop cases,laptop sleeve,laptop sleeves|τσάντα laptop,τσάντα λάπτοπ,θήκη laptop,θήκη λάπτοπ
 handbag|JW|bag|handbag,handbags,shoulder bag,crossbody bag,tote bag|τσάντα χειρός,τσάντα ώμου
 suitcase|JW||suitcase,suitcases,luggage|βαλίτσα,βαλίτσες
 wallet|JW||wallet,wallets,purse|πορτοφόλι,πορτοφόλια
@@ -297,10 +306,11 @@ tablet|CO||tablet,tablets,android tablet,ipad|τάμπλετ,ταμπλέτα υ
 e_reader|CO||e reader,ebook reader,kindle|ηλεκτρονικός αναγνώστης βιβλίων
 graphics_card|CO||graphics card,graphics cards,video card,gpu|κάρτα γραφικών,κάρτες γραφικών
 processor|CO||processor,processors,cpu|επεξεργαστής,επεξεργαστές
-ram_memory|CO||ram memory,ram module,memory module,ddr4 ram,ddr5 ram|μνήμη ram,μνήμες ram
+ram_memory|CO||ram memory,ram module,ram modules,memory module,memory modules,ddr4 ram,ddr5 ram|μνήμη ram,μνήμες ram
 motherboard|CO||motherboard,motherboards|μητρική,μητρική κάρτα,μητρικές
 power_supply|CO||power supply unit,psu,pc power supply|τροφοδοτικό,τροφοδοτικά
-pc_case|CO||pc case,computer case,tower case|κουτί υπολογιστή
+pc_case|CO||pc case,pc cases,computer case,computer cases,tower case|κουτί υπολογιστή
+pc_cooling|CO||case fan,case fans,pc fan,pc fans,cpu cooler,cpu coolers,computer cooling system,computer cooling systems,liquid cooler|ανεμιστήρας υπολογιστή,ψύκτρα,ψύξη υπολογιστή
 printer_paper|CO||printer paper,copy paper,a4 paper|χαρτί εκτυπωτή,χαρτί φωτοτυπικού,χαρτί a4
 ups|CO||ups,uninterruptible power supply|ups αδιάλειπτης παροχής
 smart_speaker|AV||smart speaker,smart speakers|έξυπνο ηχείο
@@ -315,17 +325,18 @@ dishwasher_tablets|KI||dishwasher tablets,dishwasher pods|ταμπλέτες π�
 laundry_detergent|KI||laundry detergent,washing powder,washing liquid|απορρυπαντικό ρούχων,σκόνη πλυντηρίου,απορρυπαντικό
 knife_set|KI||knife set,kitchen knives,chef knife|σετ μαχαιριών,μαχαίρια κουζίνας,μαχαίρι κουζίνας
 cutlery|KI||cutlery,cutlery set|μαχαιροπίρουνα,σετ μαχαιροπίρουνα
-dinnerware|KI||dinner set,plates,dinnerware|σερβίτσιο,πιάτα
+dinnerware|KI||dinner set,dinner sets,dinner plates,~plates,dinnerware|σερβίτσιο,πιάτα
 glassware|KI||glasses set,drinking glasses,wine glasses|ποτήρια,σετ ποτηριών
 water_filter_jug|KI||water filter jug,filter jug|κανάτα φίλτρου νερού
 food_storage|KI||food containers,lunch box,food storage containers|δοχεία φαγητού,φαγητοδοχείο,τάπερ
-grill|GA||bbq,barbecue,grill,grills,gas grill,charcoal grill|ψησταριά,ψησταριές,μπάρμπεκιου,ψησταριά υγραερίου
-garden_furniture|GA||garden furniture,patio furniture,outdoor furniture,garden chairs|έπιπλα κήπου,καρέκλες κήπου,τραπέζι κήπου
+grill|GA||bbq,bbqs,barbecue,barbecues,barbeque,barbeques,grill,grills,gas grill,gas grills,gas bbq,gas bbqs,charcoal grill,charcoal grills,charcoal bbq,charcoal bbqs|ψησταριά,ψησταριές,μπάρμπεκιου,ψησταριά υγραερίου
+garden_furniture|GA||garden furniture,patio furniture,outdoor furniture,garden chairs,~patio|έπιπλα κήπου,καρέκλες κήπου,τραπέζι κήπου
 parasol|GA||parasol,patio umbrella,sun umbrella|ομπρέλα βεράντας,ομπρέλα κήπου,ομπρέλα παραλίας
 pool|GA||swimming pool,above ground pool,paddling pool|πισίνα,φουσκωτή πισίνα
-flower_pot|GA||flower pot,plant pot,planter|γλάστρα,γλάστρες,ζαρντινιέρα
+flower_pot|GA||flower pot,flower pots,plant pot,plant pots,planter,planters,planter box,planter boxes,planter bed,planter beds,raised garden bed,raised garden beds,raised bed,raised beds,garden bed,garden beds,flower bed,flower beds,raised flower bed,raised flower beds|γλάστρα,γλάστρες,ζαρντινιέρα,ζαρντινιέρες
+greenhouse|GA||greenhouse,greenhouses,grow tent,grow tents,polytunnel,polytunnels,cold frame,cold frames|θερμοκήπιο,θερμοκήπια
 towels|FU||towel,towels,bath towel,beach towel|πετσέτα,πετσέτες,πετσέτα μπάνιου,πετσέτα θαλάσσης
-bed_linen|FU||bed sheets,bed linen,duvet cover,sheets|σεντόνια,σετ σεντόνια,παπλωματοθήκη
+bed_linen|FU||bed sheets,bed linen,duvet cover,~sheets|σεντόνια,σετ σεντόνια,παπλωματοθήκη
 pillow|FU||pillow,pillows|μαξιλάρι,μαξιλάρια
 duvet|FU||duvet,duvets,quilt,comforter|πάπλωμα,παπλώματα,κουβέρτα
 curtains|FU||curtains,curtain,blinds|κουρτίνες,κουρτίνα,στόρια
@@ -343,6 +354,7 @@ doll|BK||doll,dolls|κούκλα,κούκλες
 kettlebell|BK||kettlebell,kettlebells|kettlebell
 weight_bench|BK||weight bench,gym bench|πάγκος γυμναστικής
 football|BK||football,soccer ball,basketball,~ball|μπάλα,μπάλες,μπάλα ποδοσφαίρου,μπάλα μπάσκετ
+game_table|BK||game table,game tables,games table,games tables,football table,football tables,foosball table,foosball tables,table football,pool table,pool tables,snooker table,snooker tables,billiard table,billiard tables,air hockey table,air hockey tables,table tennis table,table tennis tables,ping pong table,ping pong tables,poker table,poker tables,card table,card tables,casino table,casino tables,blackjack table,blackjack tables|ποδοσφαιράκι,τραπέζι ποδοσφαιράκι,μπιλιάρδο,τραπέζι μπιλιάρδου,τραπέζι πινγκ πονγκ,τραπέζι πόκερ
 makeup|BE||makeup,foundation,mascara,lipstick|μακιγιάζ,μέικαπ,κραγιόν,μάσκαρα
 nail_polish|BE||nail polish|βερνίκι νυχιών,μανό
 hair_brush|BE||hair brush,hairbrush,comb|βούρτσα μαλλιών,χτένα
@@ -350,6 +362,7 @@ razor_blades|BE||razor blades,razor cartridges|ξυραφάκια,λεπίδες
 deodorant|BE||deodorant,antiperspirant|αποσμητικό,αποσμητικά
 hearing_aid|HE||hearing aid,hearing amplifier|ακουστικό βαρηκοΐας,ακουστικά βαρηκοΐας
 wheelchair|HE||wheelchair,rollator,walking frame|αναπηρικό αμαξίδιο,περιπατητήρας
+shower_seat|HE||shower seat,shower seats,shower chair,shower chairs,shower stool,shower stools,bath seat,bath seats,bath chair,bath chairs|κάθισμα μπάνιου,καρέκλα μπάνιου,κάθισμα ντουζιέρας
 face_mask|HE||face mask,face masks|μάσκα προσώπου,μάσκες προσώπου
 """
 

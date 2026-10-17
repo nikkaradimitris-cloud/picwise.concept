@@ -19,6 +19,13 @@ Every output must include:
 
 If any item is missing, output is non-compliant.
 
+> **Amended by the owner on 2026-10-16** ("Price first", rule 7, below): fewer than four
+> right products are shown as they are ("2 of 2"), and there is no recommended choice
+> when no mid-priced product carries an EAN/GTIN, or when the products give no middle
+> price (fewer than three). Items 1 and 2 hold whenever the feed has four products of
+> the kind and a mid-priced one with a code. Built for searches whose product is
+> understood on 2026-10-16 (step 3 of the build order).
+
 ## Choice Object Contract
 
 Each of the 4 choices must include:
@@ -61,11 +68,53 @@ An output is valid only if all checks pass:
 
 ## Undefined Details
 
-- Ranking formula weights: TODO
-- Tie-break protocol between close candidates: **decided by the owner, 2026-10-08.**
-  When the ranking leaves more than four substantially equivalent products, the four
-  shown spread across their price range: the cheapest, the dearest and two in between,
-  never bypassing a hard filter. "Substantially equivalent" means the same match with
+- Ranking formula weights: **superseded on 2026-10-15** by "Price first" below, where
+  the owner dropped ratings. Kept as the record of how it stood. TODO, **waiting on
+  data, not on a decision** (owner, 2026-10-11). The owner's rule: the recommended choice must follow the **rating** of
+  a product, not its price. PicWise has no ratings today. The first real feed carries
+  none — `rating` and `average_rating` are filled on 127 of 11,573 rows and every one
+  of them says `0`, and the `reviews` column holds colours ("Black", "Olive/Camo") —
+  and inventing one is forbidden (ANTI_FAKE_TRUST_RULES). So the search for a feed
+  that carries real ratings comes first; `tools/check_awin_feed.py` reports it
+  ("Products with a real rating: n of m eligible"). Until then the tie-break stays as
+  it is — the closest match to the search, then the lowest price among choices that
+  match equally — and the recommended card says exactly that, so nothing is claimed
+  that is not true.
+
+  What the first real feed does carry, measured over all 149 of its columns on
+  2026-10-11, is recorded in `docs/picwise_session_handoff.md`. The one finding that
+  bears on the ranking: no ratings and an empty `specifications` column, but a
+  `description` on 92% of products, with readable specification numbers inside it for
+  the audio and video kinds (headphones 19% -> 75% of products once the description is
+  read, speaker 49% -> 75%, camera 5% -> 47%, amplifier 69% -> 91%) and for whole
+  other kinds nothing in any field (watch and smartwatch 9%, vacuum cleaner 3%,
+  backpack and phone case 2%). A kind with neither a rating nor a specification has no
+  ranking signal that is true, so it can only show its four and declare that — which
+  is the `data_not_yet` rule of QUALITY_RULES, not a weight to invent.
+- Tie-break protocol between close candidates: **superseded on 2026-10-15** by "Price
+  first" below (the first four become the Recommended plus the three cheapest). Since
+  step 3 (2026-10-16) the code does this only for searches whose product is not
+  understood. **Decided by the owner, 2026-10-08, restated 2026-10-12.** When the ranking leaves more than four substantially
+  equivalent products, the four shown spread across their price range: the cheapest,
+  the dearest and two in between, never bypassing a hard filter. The owner restated
+  this on 2026-10-12 as four **different** price zones, and that is a correction the
+  measurement earned: spreading over evenly spaced **positions** of the price-sorted
+  group gave four different prices only where the prices were themselves spread. On
+  the real feed "phone case" showed 27.00, 27.00, 27.00 and 55.00 and "backpack"
+  34.95, 35.95, 35.95, 35.95 -- four cards at one price, which is not a decision. The
+  spread is now taken over the group's **distinct prices**: one zone per price, evenly
+  spaced zones with the endpoints included, and the best-ranked product at a chosen
+  price represents its zone. Where a group holds fewer distinct prices than there are
+  slots, every zone shows and the spare slots go to the next best-ranked products: the
+  contract owes four choices and a zone that does not exist cannot be invented -- the
+  real feed has 43 backpacks at two prices and its watches at one. Measured after the
+  change: speakers 7.99 / 48.99 / 136.22 / 469.42, cameras 34.99 / 60.75 / 88.19 /
+  200.89, microphones 2.99 / 14.98 / 19.39 / 68.59, amplifiers 15.67 / 195.02 / 332.22
+  / 685.02. Phone cases reach only two zones, because the four come from one
+  equivalence group and that group holds two prices, although the kind has 13 across
+  the whole feed: reaching the others would mean showing less relevant products, which
+  is the owner's call and is not taken here.
+  `tests/test_picwise_price_range_diversity.py` (15 tests). "Substantially equivalent" means the same match with
   the search in what identifies the product (title, product type, category, brand,
   accessory or not); words found only in merchant free text (keywords, description)
   do not count. Implemented in `search_selection._choose_shown_products`.
@@ -138,3 +187,272 @@ Implemented in `search_selection` (`_non_new_condition`,
 `_choose_shown_products_for_condition`, `_condition_request_report`,
 `decide_recommended_provider_product`) and read in `concept_understanding`
 (`read_condition_request`). Pinned by `tests/test_picwise_condition_request.py`.
+
+## What a product must carry to be shown, decided by the owner, 2026-10-12
+
+Owner rule, in their words: "Τα προϊόντα που παρουσιάζει η πλατφόρμα πρέπει πάντα να
+έχουν διαθεσιμότητα τιμή επαρκή περιγραφή ... καθώς και εικόνα" -- the products the
+platform presents must **always** have availability, a price, a sufficient description
+and an image. The description is named partly for the buyer and partly so the pages
+PicWise publishes are not thin content.
+
+Availability, a price, an image, a readable currency and a product type or category
+were already required of every card (`offer_health.evaluate_product_eligibility`). The
+description is the new one:
+
+- The rule lives in `picwise_providers.product_description`, read by both the card
+  gate and `tools/check_awin_feed.py`, so what is required and what is reported cannot
+  drift apart.
+- "Sufficient" is `DESCRIPTION_MIN_CHARS` (120) characters of text a reader would see.
+  HTML is stripped first, entities count as the one character they stand for, and the
+  longest of `description`, `product_short_description` and `specifications` is used.
+- A description that only repeats the product's title does not count. Filling the
+  column with the product name adds nothing for a reader or a search engine, and
+  counting it would admit exactly the thin page the rule exists to prevent.
+- A product without one is not a candidate at all: it cannot be shown, counted as a
+  match, or recommended. A kind of product with fewer than four described products
+  therefore shows no four, which is the honest outcome, not a bug.
+
+**What it costs, measured on the first real feed (11,573 products, 2026-10-12):** 1,495
+products, and the cost falls on shops rather than kinds. Two merchants send no
+description at all -- Geekbuying (877 products) and Xiaomi RO (66) -- while every other
+shop in the feed fills them on 88% to 100% of its rows. Those two carry whole kinds
+that consequently stop appearing: televisions, TV boxes, vacuum cleaners, robot
+vacuums and treadmills entirely, and all but a handful of watches, smartwatches and
+projectors. `tools/check_awin_feed.py` reports this per shop, so the choice it leaves
+the owner -- ask the shop to fill the column, or drop the shop from the feed -- is
+visible before a search returns nothing.
+
+Pinned by `tests/test_picwise_product_description_rule.py` (14 tests).
+
+## Reading a product's specifications, decided by the owner, 2026-10-12
+
+Owner instruction: "πάντα πρέπει να ανατρέχουμε στα χαρακτηριστικά του προϊόντος όταν
+αυτά είναι διαθέσιμα" -- always read a product's specifications when the feed carries
+them -- with the clarification that a number should be cross-checked against a second
+source "όπου αυτό είναι εφικτό", where feasible.
+
+**It is not feasible in the feed PicWise has, and that was measured, not assumed.** Of
+the specification numbers that appear only in a product's description, none is
+repeated by any other column: 0 of 107 for speakers, 0 of 90 for headphones, 0 of 28
+for cameras, 0 of 17 for amplifiers. There is no second source to check against.
+
+So `picwise_providers.product_specs` uses the only corroboration the data allows: a
+number counts when the feed **states it as a property**, not when it merely appears.
+
+- The `specifications` column states properties by construction, so a labelled number
+  there is read ("Extended Length (mm): 610"). Three shops fill it, two on every row.
+- A **title** or **product type** is a declared field -- the merchant chose those
+  words -- so a number with a unit needs no label ("TV Box 4GB RAM 64GB ROM", "Cable
+  1.5 m"). Requiring a label here would drop cable length from 98% of cables to 15%.
+- A **description** is marketing copy, so a number is read only where a word names the
+  property just before it ("Driver Diameter 40 mm", "Battery: 3000mAh") and no hedge
+  or comparison precedes it ("up to 9 hours", "better than 32 inch", "works with 128
+  GB cards"). Measured, this keeps 70% of description-only numbers for speakers and
+  81% for amplifiers, and drops the prose.
+- A RAM figure is never read as storage. The kind whose recommendation storage would
+  decide states both in its title, and ranking by the 4 of "4GB RAM 64GB ROM" would
+  rank the wrong number.
+
+**Which properties may decide the recommendation is a separate question**, because a
+specification is not automatically a measure of quality. Shown the coverage on
+2026-10-12, the owner left the choice to PicWise, and the rule taken is: a property
+ranks only where "more is better" is beyond dispute for every buyer.
+`RANKING_PROPERTIES` is that set -- **storage, battery, playtime**. **Power does not
+rank**: a louder amplifier is not a better one, and ranking by watts would put a claim
+on the card that is not true. **Length does not rank**, by the owner's explicit answer
+the same day: a buyer wants the cable length that fits, not the longest one, so length
+is shown on the card and decides nothing. Everything else is read and shown, never
+ranked. Adding a property to that set is the owner's decision, not an implementation
+detail.
+
+**What this yields on the feed PicWise has, measured after the description rule:**
+almost nothing. Headphones 17% of showable products state a ranking property, speakers
+8%, cameras 5%, and every other kind 0% -- because the products with the best
+specifications in the feed (TV boxes, 78% storage in their titles) were Geekbuying's,
+and Geekbuying sends no description, so the description rule removed them. So today
+nearly every search is a kind that cannot be compared on specifications. That is a
+fact about this feed, not a design, and the comparison is therefore decided **per
+answer** from what the four products actually state, never from a list of kinds
+written by hand: a feed that carries the data lights the comparison up on its own.
+
+Pinned by `tests/test_picwise_product_specs.py` (22 tests).
+
+## "See more": a second four where there is no best, 2026-10-12
+
+> **Superseded on 2026-10-15** by "Price first" below: "more" on every search, by
+> price, as often as the buyer asks. Built in step 3 (2026-10-16): the second four,
+> and `tests/test_picwise_see_more_second_four.py`, are gone.
+
+Owner instruction: in the kinds of product that do not support the notions of
+comparison and best -- a dress, a bag, a tablecloth, a cable of a particular length --
+the four are four different answers and the buyer gets a **"see more" button**, because
+the engine cannot narrow a taste for them.
+
+Which kinds those are is `comparison_class == "fit"` in
+`src/picwise_taxonomy/comparison_rules.py`, and `docs/picwise_comparison_rules.md`
+lists them: 84 of the 278 kinds PicWise recognises, plus every kind it does not
+recognise.
+
+How it behaves:
+
+- The second four is chosen by **exactly the same rules** as the first -- the same
+  relevance order, spread across its own distinct price zones, with everything already
+  shown excluded. It is not page two of a list: a buyer who asks for more gets four
+  more answers, not the remainder of an inventory.
+- It is **never offered with nothing behind it**, and never with a partial set. Six
+  handbags give four cards and no button, because two is not a four and the contract
+  owes four answers.
+- **Nothing in it is recommended.** No badge, no recommendation note, and `rec=0` in
+  the click, so no tracking event claims PicWise suggested one of them. The page still
+  carries exactly one recommendation, as `docs/MISSION.md` requires.
+- The control is a `details` element, so it needs no JavaScript and the second four is
+  in the page for anyone who opens it. Its wording says *why* there is no single best
+  in this kind of product, because that is the thing the buyer needs told.
+
+Was pinned by `tests/test_picwise_see_more_second_four.py` (8 tests), removed in step 3; what it guaranteed (nothing behind "More" is recommended, no product twice, no button with nothing behind it) is pinned for the new "More" in `tests/test_picwise_price_first.py`.
+
+## A stated specification decides before the price, 2026-10-13
+
+> **Superseded on 2026-10-15** by "Price first" below: specifications are shown when
+> present and decide nothing. Since step 3 (2026-10-16) the code ranks on a
+> specification only for searches whose product is not understood.
+
+The owner's rule, held since 2026-10-11: the recommendation must not rest on price.
+Until now it did, because the feed gave nothing else -- the first reason code on a
+real answer was literally `price_tie_breaker`. This is the route out of that, and it
+works the day a feed carries the data rather than needing anything else built.
+
+Where the kind of product has a **ranking criterion** -- one whose direction no buyer
+would dispute, listed in `picwise_taxonomy.comparison_rules.RANKING_CRITERIA` -- and
+the feed **states** it, that specification decides the recommendation and price falls
+back to the last resort it was always meant to be. The order is now:
+
+1. the closest match to what the buyer asked for
+2. **the stated specification**, where the kind has one and the four state it
+3. the lowest price among choices that are equal on both
+4. and when even that cannot separate them, the card says so
+
+Three conditions stop it overclaiming, each pinned by a test:
+
+- **The kind must carry a ranking criterion.** More watts is not a better amplifier
+  and more metres is not a better cable, so those kinds never reach this rule at all.
+- **At least two of the four must state the same property.** One product stating its
+  battery is a fact about one product, not a ranking of four.
+- **The value must have been stated as a property**, read through
+  `picwise_providers.product_specs`: a number loose in marketing copy, such as "works
+  with 128 GB cards", never ranks anything.
+
+A product that does not state the property is not penalised by it -- it simply cannot
+win on it -- and the card says so in its own words: "More storage than the other
+choices **that state theirs**".
+
+**What it changes today:** almost nothing, and that is the honest measure of the feed
+rather than of the rule. On the real feed the four shown for headphones, speakers and
+cameras state no ranking criterion, so price still decides and the card still says so.
+On the local fixture it is already visible: `laptop` moves its recommendation from the
+cheapest (£399, 128GB) to the one stating 1TB (£1,249).
+
+**An open question that change exposes, for the owner.** Ranking purely by a
+specification means the largest wins regardless of price -- a £1,249 laptop
+recommended over a £399 one. That is the rule as instructed, and it may not be what is
+wanted: `concept.picwise.txt` describes four roles, Budget / Value / Best Overall /
+Premium, in which "Best Overall" is explicitly not "most of everything". Balancing a
+specification against price is a weight, so it is not invented here.
+
+Pinned by `tests/test_picwise_specs_outrank_price.py` (10 tests).
+
+## The main judgement, stated by the owner 2026-10-13
+
+> **Superseded on 2026-10-15** by "Price first" below: the owner dropped ratings and
+> sales counts, because no shop measured sends them.
+
+> Η κύρια κρίση μας πρέπει να βγαίνει από το πόσοι το αγόρασαν το προϊόν και πώς το
+> βαθμολόγησε ο κόσμος. Όλα τα υπόλοιπα είναι γύρω από αυτή την κρίση.
+
+The main judgement rests on **two** numbers together, not one:
+
+1. **How many people bought it** -- the weight of evidence behind the score.
+2. **How they rated it** -- the score itself.
+
+This sharpens what was recorded on 2026-10-12 as "the rating first". A rating alone is
+not the criterion: a 5.0 from two buyers is not a better product than a 4.6 from nine
+hundred, and the first number is what separates them. Everything already built --
+the condition rule, the one currency, the price zones, the comparison classes, the
+specification ranking, the "see more" -- sits around that judgement rather than
+replacing it.
+
+**Nothing further is built until a feed carries those numbers.** Owner instruction,
+the same day. Which fields they arrive in is a question for the feed that brings them;
+`tools/check_awin_feed.py` already reports, on the first line of its verdict, whether
+any shop sends a real rating, and the per-shop table shows which do.
+
+What this implies about sources, recorded so the search does not have to be redone:
+a review count is the readable proxy for "how many bought it", because no affiliate
+feed carries sales volume. The one source found in this session that states both a
+score and a volume directly is the AliExpress affiliate API (`evaluate_rate` plus
+sales volume), and the marketplaces are the places where both exist at all, because a
+small shop has neither. See `docs/picwise_rating_sources.md`.
+
+## Price first, decided by the owner, 2026-10-15
+
+> «προτείνω να πάμε με τη λογική της τιμής εμφανίζουμε πρώτα αυτά με τη φθηνότερη
+> τιμή και πάντα με σκληρό κριτήριο τη διαθεσιμότητα»
+
+The owner dropped ratings: two real feeds, about fifteen shops, and not one rating or
+sales figure between them. In their place:
+
+1. only the kind of product asked for ("laptop" shows laptops, not their accessories).
+   "smartphone" shows smartphones; "mobile phone", "phone" and «κινητό» the other
+   mobile phones, basic, flip and big-button (owner, 2026-10-16)
+2. never a product the feed says is out of stock, with the feed refreshed daily. The
+   feed's word is trusted; no shop page is checked (owner, 2026-10-16)
+3. the products must carry title, price, image, description, link and availability, as
+   ruled on 2026-10-12; specifications and codes are shown when present, never required
+4. cheapest first, by product price alone, with no delivery cost
+5. the same product (same EAN/GTIN or, without it, same brand and manufacturer code,
+   MPN; owner, 2026-10-16) shown once, from the cheapest shop that has it in stock;
+   neither code, no joining
+6. no ratings anywhere
+7. the first four are one **"Recommended"** and the three cheapest, with "4 of 45"
+   beneath. The Recommended is **the middle product of the whole result in price
+   order** (of 45, the 23rd); if it has no EAN/GTIN, the nearest product to it that
+   has one, the cheaper of two equally near. Before the middle is found, a dearest
+   product that costs at least twice the next dearest is left out of the count, and
+   again for the next one; it stays in the list (owner, 2026-10-16). Changed by the
+   owner on 2026-10-16 from
+   the middle of the price range, (cheapest + dearest) ÷ 2, which on the real feed
+   recommended the top end (a £4,809.99 MacBook Pro for "laptop"). **No commission is
+   used** and none is mentioned on the card. When no product of the search has an
+   EAN/GTIN there is no Recommended, only the four cheapest, and fewer than four right
+   products are shown as they are, "2 of 2" (owner, 2026-10-16). The Recommended's
+   line reads "Mid-priced for this category"; the three cheapest say "Lowest price",
+   or "Lowest price of N shops" when one product is joined across shops (owner,
+   2026-10-16)
+8. "more" gives the next four cheapest, "8 of 45", as often as asked, none of them
+   recommended
+9. one general affiliate line in the site footer
+
+The full record, with the reasons, what stays, the open questions and the marketing
+analysis, is in `docs/picwise_price_first_plan_2026-10-15.md`.
+
+**The founding files now say the same.** Rules 7 and 8 contradicted
+`concept.picwise.txt` (sections 6 and 10), `docs/MISSION.md` and `PROJECT_RULES.md`
+(sections 2 and 4). Raised with the owner on 2026-10-16 under PROJECT_RULES section
+1.4, they chose to change those files to the plan, and they were changed the same day,
+along with `docs/LANDING_PAGE_SPEC.md`. For services (insurance, banking, energy,
+software) there is no Recommended in this phase, unless a mechanism is found that can
+decide what is the better deal (owner, 2026-10-16).
+
+**Built on 2026-10-16** (step 3 of the build order, on the branch) for every search
+whose product is understood, and on 2026-10-17 for the others, answered by their words
+with a kind test of their own ("Part 3b built" in the plan file). Where a rule
+needed reading to be built, the reading is recorded with it in
+`docs/picwise_price_first_plan_2026-10-15.md`, "Step 3 built": of an even number of
+products the cheaper middle one; "nearest" by price; the Recommended priced between
+the cheapest and the dearest, so that "Mid-priced" is true; "Lowest price" only on cards
+priced at or below the Recommended; a search's words read in the product's own title,
+type and brand. The owner accepted these readings on 2026-10-17 («Οκ σε όλους»), and
+decided that without a Recommended "Lowest price" goes, the same way, only on cards
+priced at or below the middle price («Ως τη μεσαία τιμή»): of three standing desks, a
+£630.99 one is not the lowest price.

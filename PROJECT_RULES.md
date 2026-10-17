@@ -11,9 +11,11 @@ Mandatory operating rulebook for Picwise Production.
 
 ## 2) Core Identity
 
-- Picwise is a decision engine, not a search engine.
+Changed on 2026-10-16 by the owner: "price first" (`docs/picwise_price_first_plan_2026-10-15.md`).
+
+- Picwise finds the product the buyer asked for, shows only what is in stock, cheapest first, and makes one honest pick.
 - Picwise must reduce search-to-decision time.
-- Every purchase-intent query must lead to exactly 4 curated buying decisions and 1 honest recommended choice.
+- Every purchase-intent query must lead to 4 choices first, with exactly 1 honest recommended choice among them, and a "More" that opens the next 4 cheapest as often as the buyer asks.
 
 ## 3) Required Output Contract (Always)
 
@@ -25,6 +27,7 @@ Every purchase-intent result must include all of the following:
 - clear CTA
 - direct redirect
 - tracking event
+- a "More" for the next 4 cheapest
 - no fake data
 - no commission-first ranking
 
@@ -34,11 +37,10 @@ If any item is missing, the output is non-compliant.
 
 The project must never:
 
-- Turn Picwise into a search engine.
 - Turn Picwise into an e-shop.
 - Turn Picwise into a marketplace.
 - Turn Picwise into an affiliate blog.
-- Show infinite product lists.
+- Show a product that is out of stock, or that is not the kind the buyer asked for.
 - Add fake products, fake reviews, fake ratings, fake conversions, fake revenue, fake savings, fake urgency, or fake AI confidence.
 - Use commission as a product ranking or recommendation criterion.
 - Create frontend/backend implementation before required specs/contracts exist, unless explicitly instructed.
@@ -48,7 +50,7 @@ The project must never:
 
 - Picwise may earn through affiliate/referral/lead/conversion models.
 - Commission is never part of recommendation logic.
-- Recommendations must be based on user fit, reliability, cost, terms, risk, availability, and decision quality.
+- The order is the price, after the kind asked for and availability. The Recommended is the middle product in price order, the median, with a dearest product costing at least twice the next one left out of the count (`docs/PICWISE_DECISION_CONTRACT.md`, "Price first"; changed on 2026-10-16 by the owner).
 
 ## 6) Brain Model
 
@@ -81,6 +83,9 @@ Mandatory targets:
 - First render < 1.5 sec
 - Full interactive < 2 sec
 - Click to redirect < 300 ms
+- Results behind the scanning screen within about 4 sec (owner, 2026-10-16). The
+  screen states only true facts, the real number of shops and products and the steps
+  actually taken, and results are never held back on purpose.
 
 Do not ship changes that knowingly violate these targets without explicit approval.
 

@@ -1,12 +1,192 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-10.
+Current state for whoever picks the project up next. Updated 2026-10-17.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
+
+## Start here (2026-10-17)
+
+- **Step 5 is begun** (2026-10-17, on the branch; nothing of steps 1 to 5 is on
+  `main`). A search takes about 0.34 s (5 s before), a cold server reading the feed
+  reaches the first page in 22-24 s (38-40 s), and one given a **prepared file**
+  (`tools/prepare_catalogue.py`, `src/picwise_providers/prepared_catalogue.py`) in
+  about 4 s, without reading the feed; 0 of the 118 pages changed. Details and what
+  keeps a prepared file honest: the plan file, "Step 5, first part built".
+  **Second part built too** (2026-10-17, on the branch, not checked on Vercel): every
+  deployment's build prepares the feed (`vercel.json` build command, no more `builds`),
+  a deployment never fails because of the feed (`--keep-going`), one Vercel scheduled
+  job a day calls `/cron/renew-prepared-feed`, which with `CRON_SECRET` posts to the
+  Deploy Hook in `PICWISE_DEPLOY_HOOK_URL` (both keys only in Vercel), and
+  `/private-beta-readiness` says under `"prepared_feed"` whether the server answers from
+  the file. Checked with Vercel's own CLI (`vercel build`) on a fictional feed; details
+  in the plan file, "Step 5, second part built". **Waits on the owner, in Vercel**
+  (Greek steps: `docs/vercel_daily_feed_setup_el.md`): the Deploy Hook, the two keys,
+  `AWIN_FEED_URL` for Preview on this branch for the test, a look at the test
+  deployment, then the word for `main`. This conversation had no Vercel connection
+  either; none is needed for these steps, the owner does them in the dashboard. On
+  Google Cloud Run, were PicWise moved there, the same tool and file serve
+  (`PICWISE_PREPARED_CATALOGUE_FILE`); only the schedule and the hook are Vercel's.
+  **Next after that:** the regular visit that keeps the server awake (below), its
+  interval measured on the live site. **Decided by the owner, 2026-10-17:** a file prepared once a day is fresh
+  enough («Ναι φορά τη μέρα μου αρκεί»), and a regular visit keeps the server awake
+  (the owner's idea, "every hour"; plan file, "Step 5, first part built").
+  The owner does not pay $20 a month for Vercel Pro (2026-10-17); Vercel's terms, as
+  remembered and not checked from here, keep the free plan for non-commercial use;
+  Google Cloud Run's free tier was proposed, nothing decided; build so it runs on either.
+  The owner also wants all projects under SUBBY CLOUD and the GitHub account renamed
+  "subbycloud"; steps given, nothing done by Claude.
+- **Picking up in a new conversation.** Everything is pushed to `ccr-fd5dc1bc-4vgsgl`.
+  To measure a change that should only be faster:
+  - the owner uploads the feed file (Awin, download, then upload here; never the
+    link). Copy it into its own empty directory;
+  - before the change: `python -I tools/price_first_eval.py <feed.csv.gz> before.json`
+    (118 searches, a few minutes); after it: `python -I tools/price_first_eval.py
+    <feed.csv.gz> after.json --compare before.json`, which lists every page that
+    changed and the time per search before and after; `--prepared <file>` answers
+    from a prepared file;
+  - tests per module: `PYTHONPATH=.:src python3 -m unittest tests.<module>`, a few
+    at a time, and `PYTHONPATH=.:src python3 tools/nlu_misspelling_benchmark.py
+    --failures 60`. Known failures on unchanged code are in "Current numbers" below;
+    the rest of the gotchas at the end of this file.
+- **New direction: price first, no ratings** (owner, 2026-10-15). Read
+  `docs/picwise_price_first_plan_2026-10-15.md` before anything else. In short: only
+  the kind asked for; never out of stock; cheapest first; the same product once, from
+  its cheapest in-stock shop; the first four are a "Recommended", the middle product in
+  price order, plus the three cheapest, with "4 of 45"; "more" again and again. The old
+  instruction, "build nothing until a feed with ratings arrives", is over, and the
+  search for ratings stops.
+- **The founding files now say the same as the plan.** It contradicted them (no endless
+  list, not a search engine); on 2026-10-16 the owner chose to change them, and
+  `concept.picwise.txt`, `docs/MISSION.md`, `PROJECT_RULES.md` and
+  `docs/LANDING_PAGE_SPEC.md` were changed. Each changed passage in the concept carries
+  a dated note. Services (insurance, energy, banking, software) were not decided and
+  keep their old rules.
+- **Step 1 of the build order is built** (2026-10-16, on the branch): only the kind
+  asked for. A product answers a kind only when its type, its shop's category path or
+  its title's lead says so plainly. Doubtful products (11,187 of 42,076) are found
+  only by their own words, and pet and camping products answer only searches that
+  name them. Of the same 118 English searches, 95 now show four right products (80
+  before) and none shows the wrong kind (21 before). What price order would list
+  first is now the product, not its accessory: "laptop" opens with a £125.99 HP Stream
+  instead of a £3.99 adapter. Details and what is left: the plan file, "Step 1 built".
+  **Step 2 is built too** (English before greeklish: "patio set" shows garden
+  furniture, not insoles). **Step 3 is built too** (2026-10-16): the price-first engine,
+  for every search whose product is understood. Cheapest first, each product once; the
+  Recommended is the middle product by price with a valid EAN/GTIN, never the cheapest
+  or the dearest; "Lowest price" on the cheap cards; "4 of 677" and a "More" that opens
+  the next four as often as asked (`/search?q=...&shown=8`); fewer than four as they
+  are. A search's other words now decide what is in the answer, read in each product's
+  title, type and brand. Graded refurbished titles are read as not new, and USB sticks,
+  bookcases and fire pits are their own kinds. Of the 118 searches, 100 show a right
+  first page, 12 a card that misses a word, 1 a wrong card, 5 nothing. Details,
+  including where a rule needed reading, in the plan file, "Step 3 built". The owner
+  accepted those readings on 2026-10-17 and decided that without a Recommended
+  "Lowest price" goes only up to the middle price (built the same day). **Part 3b is
+  built too** (2026-10-17): a search whose product is not understood ("cat tree", "dog
+  crate", "network switch") is answered by its words on the same price-first page,
+  with its own kind test (no hutch covers for "rabbit hutch"), a model name answered
+  as the kind its products are ("lenovo thinkpad 16gb ram": laptops), and a one-word
+  search that names several kinds asking which ("switch", "tree", "machine"). Details
+  in the plan file, "Part 3b built". **Step 4 is built too** (2026-10-17): the box
+  reads "What are you looking for?" (owner); a scanning screen with the real counts
+  as a search starts; suggestions as the buyer types (kind names in English and
+  Greek, brand with kind, the shops' own names, only those that find products,
+  fetched once from `/suggest.json`); a microphone where the browser can listen, the
+  search starting when the buyer stops (owner). Details in the plan file, "Step 4
+  built". **Next: step 5, data prepared once a day** (the first speed-up: stop judging
+  every product's eligibility again on every search).
+- **Measured on 2026-10-16** on a new feed (Back to the Office, Aosom UK, Living and
+  Home; 42,076 rows). Results are in the plan file, "Measured on the third feed":
+  - cheapest first puts accessories on top ("laptop" opens with docking stations);
+  - the middle of the range recommends the top end (a £4,809.99 MacBook Pro);
+  - no shop sends a real stock state;
+  - no product is in two shops;
+  - a search takes 4 to 16 seconds.
+
+  **Decided by the owner, 2026-10-16:** the Recommended is the median (the middle
+  product in price order), and the feed's "in stock" is trusted (no shop page is
+  checked). **First engineering step:** a strict yes/no test that a product is the kind
+  asked for. **English understanding, tested the same day:** 118 queries with
+  misspellings and phrasings; the right kind understood for 109 (92%), but only 80
+  showed four right products. Kind-reading errors (tablet casings, desk trays, label
+  makers) account for most of the rest; also "patio" is read as greeklish «πάτοι»
+  (insoles), and queries with numbers show empty pages through the old recommendation
+  step. Details in the plan file, "Search understanding, English".
+- **The owner's additions (2026-10-16), in the plan file:**
+  - suggestions as the buyer types (faint completion plus a word list from the first
+    letter);
+  - a microphone in the search box;
+  - trends below the box, true to their source;
+  - many more shops (every Awin programme with a feed, then CJ and others);
+  - extreme top prices (at least twice the next) do not count for the Recommended;
+  - no Recommended for services in this phase.
+
+  - PicWise as a phone app, later in the Play Store;
+  - a truthful scanning screen that lets results take about 4 s (concept section 18
+    and PROJECT_RULES section 9 changed).
+
+  Proposed build order:
+  1. strict kind test;
+  2. English over greeklish;
+  3. the price-first engine;
+  4. the search page (scanning screen, suggestions, microphone);
+  5. data prepared daily (needed before going live);
+  6. trends;
+  7. the app;
+  8. other networks.
+
+  The owner restated the extreme-price rule for step 3 (2026-10-16: «όταν το
+  ακριβότερο είναι δύο φορές ακριβότερο από το προηγούμενο φθηνότερο να εξαιρείται
+  από το μέσο όρο»), which matches the recorded reading, and did not object to the
+  order; step 1 is built.
+- **Decided by the owner on 2026-10-16:**
+  - "smartphone" shows smartphones; "mobile phone", "phone" and «κινητό» show only
+    basic phones. This is built, on the branch;
+  - no Recommended when no product has an EAN/GTIN;
+  - fewer than four results are shown as they are ("2 of 2");
+  - brand + MPN counts as the same product;
+  - the three cheapest cards say "Lowest price" ("Lowest price of N shops" when
+    offers are joined), and the line under Recommended is "Mid-priced for this
+    category".
+
+  All are built (steps 1 and 3).
+- **Open owner decisions:** none on the plan. Put to the owner with step 3:
+  - ~~the search box wording~~: chosen on 2026-10-17 ("What are you looking for?") and
+    built in step 4;
+  - a check on implausible prices (£0.99 headsets lead "headphones");
+  - whether a word after "for" ("printer for home") should narrow the answer;
+  - ~~the readings made to build rule 7~~: accepted on 2026-10-17 («Οκ σε όλους»).
+
+  The marketing proposals in the plan file are proposals; none is approved.
+- **Branch, not `main`.** `ccr-fd5dc1bc-4vgsgl` is ahead of `main`; count the commits
+  with `git rev-list --count origin/main..origin/ccr-fd5dc1bc-4vgsgl`. Merge
+  to `main` only when the owner says so explicitly. A session may be set up to push to
+  another branch (on 2026-10-16 it was `claude/vibrant-cerf-b2afyt`). The owner works
+  on `ccr-fd5dc1bc-4vgsgl`, so ask before writing anywhere else.
+- **Both real feeds measured carry zero ratings and zero sales counts**, checked over
+  every row: the first (11,573 UK electronics) and the second (51,630: Tyres UK, Aosom
+  UK, Living and Home). Two facts from the second that the plan depends on:
+  - Tyres UK (39,403 rows) writes its description in `custom_6`, so no tyre passes the
+    description rule until that column is read;
+  - Living and Home (2,255 rows) sends no category, so all its rows are held at the
+    feed gate.
+- **Awin Google format:** it cannot be mixed with Awin-format feeds in one file (Game
+  Over offers only Google format). Whether it carries ratings no longer matters.
+- **Awin status (owner's screenshots, 2026-10-14):** Joined -- Living and Home, Back
+  to the Office, Game Over, Tyres UK, Aosom UK. Pending -- Gtech, Songmics, Mstore,
+  Hoxton Macs, Road Angel, Boots.com, Currys, Euroffice. Rejected -- Beldray, Mattress
+  Online, SharkNinja UK (advised not to re-apply now). Markets: UK and US.
+- **When a new feed file arrives:** copy it into its own empty directory, run
+  `python -I tools/check_awin_feed.py <file>` and measure it against the price-first
+  rules. Report in Greek, short. Never ask the owner to paste a feed link (it holds the
+  API key): they download and upload the file.
+- **Homepage** still reads "Buying Decision Preview" / "Live safe mode" and `/about` is
+  404; likely hurting Awin approvals. The owner declined a fix on 2026-10-14, before the
+  plan changed. The marketing analysis proposes a new homepage sentence.
 
 ## Where the work is
 
 - Repository: `nikkaradimitris-cloud/picwise.concept`
-- **Everything is on `main`.** The condition work (non-new products only when the buyer
+- **Stale, see "Start here" above:** the branch is ahead of `main` again. The condition work (non-new products only when the buyer
   asks) was merged on 2026-10-11 by the owner's instruction: merge commit `b28da32`, a
   normal merge of `ccr-fd5dc1bc-4vgsgl`, no pull request. Its deployment is NOT VERIFIED
   from a session. Earlier: PR #2 was merged on 2026-10-08 (merge commit `148a552`,
@@ -52,8 +232,10 @@ If these layers conflict, do not guess: stop and raise it (PROJECT_RULES section
 
 In short:
 
-- every purchase-intent query: exactly 4 choices + 1 recommended, decision labels, CTA,
-  direct redirect, tracking event
+- every purchase-intent query: only the kind asked for, only in stock, cheapest first;
+  4 choices first (1 Recommended, the middle product in price order, + the 3 cheapest),
+  then "More" for the next 4 as often as asked; decision labels, CTA, direct redirect,
+  tracking event (price first, 2026-10-16)
 - no fake data of any kind; no commission-based ranking; missing data uses the enum
   (`not_connected`, `data_not_yet`, `not_applicable`, `unknown`)
 - small, closed, tested steps; do not invent business logic (flag a TODO instead)
@@ -68,7 +250,10 @@ In short:
 |---|---|
 | Product concept lexicon (278 kinds, EN + GR names, mega category, `broader`, preference words) | `src/picwise_nlu/product_concepts.py` |
 | Understanding: phonetic keys, typo correction with safety fences, specs, product annotation (incl. accessory guard), "did you mean" | `src/picwise_nlu/concept_understanding.py` |
-| Selection of the four (concept path, token path with relaxation, family guard, condition gate) | `src/picwise_providers/search_selection.py` |
+| Price-first selection: the kind test, cheapest first, the same product once, the Recommended, "4 of 45"; the concept path (`_select_products_for_concept`), the word path for kinds not understood (`_select_products_by_words`), the question when a word names several kinds; the condition gate | `src/picwise_providers/search_selection.py` |
+| The catalogue a search reads, judged once per feed load (`SearchCatalogue`); the counts on the scanning screen; the suggestions | `src/picwise_providers/state.py`, `src/picwise_providers/suggestions.py` |
+| The prepared feed: written by `tools/prepare_catalogue.py`, read instead of the feed when fresh and written by the same code | `src/picwise_providers/prepared_catalogue.py`, `state.py` (`prepare_feed_catalogue`, `_active_prepared_catalogue`, `prepared_catalogue_status`) |
+| On Vercel: the build that prepares the feed, the daily scheduled job, the renewal route (`CRON_SECRET`, Deploy Hook) | `vercel.json`, `src/picwise_app/prepared_renewal.py`, `api/index.py` |
 | Whether the feed says a product is not new (one rule for the gate and the cards) | `src/picwise_providers/product_condition.py` |
 | Resolver | `src/picwise_search/live_search_resolver.py` |
 | Page text ("Understood as", "Only some of the four match: X (n of 4)", "could not match") | `src/picwise_surface/reference.py` |
@@ -78,33 +263,71 @@ In short:
 
 Tools:
 
+- `python -I tools/price_first_eval.py <feed.csv.gz> out.json [--cards] [--compare earlier.json]`
+  — 118 buyer searches on a real feed file: what each page shows, and how long it took
+- `python tools/prepare_catalogue.py [--feed-file F] [--out PATH] [--keep-going]
+  [--static-dir DIR]` — the feed prepared once (step 5); a server reads it with
+  `PICWISE_PREPARED_CATALOGUE_FILE`, a Vercel deployment from its own build
 - `python tools/nlu_misspelling_benchmark.py` — 706 misspelled queries end to end
 - `python tools/check_awin_feed.py --url "<feed link>"` — what a real feed will do
 - `python tools/nlu_mistake_report.py queries.txt` or `--from-query-log` — lexicon review queue
 - `python tools/build_picwise_search_artifact.py` — rebuild the search artifact
 
 Docs: `docs/picwise_misspelling_understanding.md`, `docs/awin_feed_setup_el.md` (Greek
-guide for the owner), `docs/picwise_query_understanding.md`,
+guide for the owner), `docs/vercel_daily_feed_setup_el.md` (Greek: the prepared feed on
+Vercel, every day), `docs/picwise_query_understanding.md`,
 `docs/picwise_mission_decision_delivery.md`.
 
 ## Current numbers (local fixtures only)
 
-- Misspelling benchmark: **96.0% pass, 0 wrong kind of product shown** (was 25.2% / 19);
-  unchanged after the audit fixes.
-- Test suite, last full run 2026-10-08 after the F3/F4 fixes (224 modules, every module
-  except the two hour-long ones, one process per module): **1,810 tests, 2 failures,
-  48 skipped** (skips need the operator's private feeds). The two failures predate all
-  of this work and fail identically on `4475192` (checked in a clean worktree):
+- Misspelling benchmark: **93.8% pass, 0 wrong kind of product shown** (2026-10-17,
+  after part 3b; 96.0% until 2026-10-16). It fell to 93.9% with the owner's rule that
+  "mobile phone" and «κινητό» show basic phones, because 15 of its cases expect
+  smartphones; those cases were left as they are so the number shows the rule.
+- Test suite, last full run **2026-10-17** for step 5's second part (all modules but
+  the two hour-long ones, one process per module, four at a time, after the commit):
+  **238 of 240 pass**, 2,082 tests, 48 skipped; the two that fail are the same two as
+  below. Misspelling benchmark unchanged (93.8%, 0 wrong).
+- Before it, the same day for step 5's first part (all modules but the two
+  hour-long ones, one process per module): **237 of 239 pass** with the contracts test
+  run after the commit. The two that fail fail the same on the code before this work:
+  `test_picwise_canonical_vocabulary_registry_stage2` and
+  `test_picwise_search_index_generated_blind_stage4`. At `deab42a` (step 4)
+  `test_picwise_search_index_blind_evaluation_stage6a` failed one of its 13 tests, as
+  before step 3 (about 43 min; run it on its own, as `test_picwise_learning_stage7b`,
+  about 41 min, which passes).
+- Older, kept for the history: full run **2026-10-12** after the description rule, the spec reader
+  and the fixture updates (228 modules, every module except the two hour-long ones,
+  one process per module, `PYTHONPATH=.`): **226 modules pass, 2 fail**, and both
+  failures are the two that already predated this work. One module failed during the
+  run and was fixed inside it -- `test_picwise_product_type_coverage_matrix`, whose
+  weak-feed-opportunity case wrote a 47-character description, below the 120 the
+  owner's rule requires, so its four rows stopped being showable; it passes on
+  `9ac4bb8`. Two things to know before running it: the modules must be run with
+  `PYTHONPATH=.` (several import `from src.picwise_...`, which fails when a module is
+  run as a script from `tests/`), and `tests/` has no `__init__.py`, so
+  `unittest discover` cannot load it -- run one process per module.
+  Older note, kept for the history: full run 2026-10-08 after the F3/F4 fixes (224
+  modules): **1,810 tests, 2 failures, 48 skipped** (skips need the operator's private
+  feeds). The two failures predate all of this work and fail identically on `4475192`
+  (checked in a clean worktree):
   `test_picwise_canonical_vocabulary_registry_stage2`,
   `test_picwise_search_index_generated_blind_stage4` (graph-alias leet records in the
   registry). `test_picwise_learning_stage7b` passes in about 41 min;
-  `test_picwise_search_index_blind_evaluation_stage6a` runs over an hour (not run).
+  `test_picwise_search_index_blind_evaluation_stage6a` takes about 43 min and, run on
+  2026-10-16, fails one of its 13 tests ("amazon" and "galaxy" missing from its broad
+  terms), the same on the code before step 3.
 - Cold start through `api/index.py`, 19-row fixture: first request 677–724 ms, import plus
   first request 1,045–1,078 ms (target 1,500 ms). A real feed adds its download and parse.
 
 ## Waiting on the owner
 
-1. **Awin: link set, live result NOT VERIFIED.** On 2026-10-10 the owner created a
+1. ~~**Awin: link set, live result NOT VERIFIED.**~~ **Verified live on 2026-10-11**: a
+   new feed (11,573 UK electronics products, category-based, Electronics only) is set
+   in Vercel, `/private-beta-readiness` reports `provider_feed_ready`, and
+   `/search?q=ακουστικα` returns four real headphones with one suggested, all in GBP.
+   The owner's manual Redeploy works again (the GitHub App is installed), so an
+   environment change no longer needs a commit. Older note, kept for the history: On 2026-10-10 the owner created a
    Create-a-Feed link (Legacy format, CSV, comma, gzip, a handful of UK advertisers in
    "Awin" datafeed format, about 15,000 products, GBP prices) and set it in Vercel as
    `AWIN_FEED_URL` (Production only, Secret). Next: check
@@ -113,16 +336,121 @@ guide for the owner), `docs/picwise_query_understanding.md`,
    (flowers, wine, perfume, fashion), so many searches will truthfully show no four.
    `tools/check_awin_feed.py` now also reports how much of the feed is not new ("Not
    new (shown only when asked for): n of m eligible"), worth reading on the real feed.
-2. **Supabase project for the query log — and for click/decision events.** Click and
+1b. **Shops, not feed settings, decide what data PicWise has.** The owner asked on
+   2026-10-12 whether the thin feed was a Create-a-Feed misconfiguration -- a
+   reasonable guess, and it is answered: no. The feed arrives with **all 149 Awin
+   columns**, nothing was left unchecked, and `specifications` is filled by three of
+   its shops (Baccus 100%, 4x4 Predator 79%, LIKA 100%), so the column works and the
+   emptiness is each merchant's own upload. Awin passes a merchant's file through
+   unchanged, so no setting on the owner's side can make a shop send descriptions or
+   specifications. What each shop sends, measured:
+
+   | Shop | Rows | Description | Specs | product_type | Brand | EAN |
+   | --- | --- | --- | --- | --- | --- | --- |
+   | Boxed2me | 3,474 | 97% (median 598 chars) | 0% | 99% | 100% | 94% |
+   | Aperturee | 1,802 | 100% (298) | 0% | 0% | 100% | 0% |
+   | TV Cables | 1,745 | 81% (258) | 0% | 0% | 100% | 0% |
+   | **Geekbuying** | **877** | **0% (column empty)** | 0% | 0% | 0% | 0% |
+   | Cerqular | 672 | 97% | 0% | 100% | 100% | 11% |
+   | Tooled Up | 423 | 98% | 0% | 0% | 100% | 100% |
+   | 4x4 Predator | 109 | 100% | **79%** | 100% | 0% | 42% |
+   | Baccus (UK) | 18 | 100% | **100%** | 100% | 0% | 0% |
+
+   Two shops are worth naming. **Geekbuying** (877 products: the televisions, TV
+   boxes, vacuum cleaners, robot vacuums and treadmills) sends a title, a price and
+   nothing else -- no description, no product type, no brand, no EAN. **Xiaomi RO**
+   (66 products) does send a `description`, but it is the product's own name repeated
+   ("Xiaomi TV S Pro Mini LED 55'' 2026", median 27 characters), which is exactly the
+   case `product_description.product_description_text` rejects. So the owner's lever
+   is which shops go into the feed, and `tools/check_awin_feed.py` now prints this
+   table for any feed so the decision can be made on measurement.
+
+2. ~~**A feed that carries real product ratings.**~~ **Dropped by the owner on
+   2026-10-15** (price first, see "Start here"). Kept as the record. The owner decided on 2026-10-11 that
+   the recommendation must follow a product's rating rather than its price, and the
+   current feed has none at all (`check_awin_feed.py` now reports this as "Products
+   with a real rating"). Nothing changes in the ranking until such a feed exists:
+   inventing a rating is forbidden. The owner is looking for Awin advertisers whose
+   feed fills `rating` / `average_rating`; the way to tell is to build a feed with
+   them and run the tool over it.
+
+   What that feed does send was measured on 2026-10-11 over all 149 of its columns
+   (11,573 electronics products), because the question "is a quality signal available
+   at all?" cannot be answered by reading one column:
+
+   | What | Filled |
+   | --- | --- |
+   | `description` (long text) | 92% |
+   | `brand_name` | 83% · `mpn` 67% · `ean` 34% · `product_GTIN` 26% |
+   | `aw_image_url` | 100% · `alternate_image` 37% |
+   | `condition` | 63% |
+   | `delivery_cost` 31% · `delivery_time` | 23% |
+   | `stock_status` 23% · `stock_quantity` | 13% (`in_stock` is 100% but constant) |
+   | `rrp_price` 10% · `saving` | 1% |
+   | `product_short_description` 16% · `specifications` | 1% |
+   | `keywords` 13% · `colour` | 7% |
+   | **`rating` / `average_rating`** | **1%, every value "0"** |
+
+   So the feed has no ratings and no usable specification column, but it does carry a
+   description for nearly every product, and specifications are often written inside
+   it. Measured per kind, products carrying at least one readable number (inches, W,
+   Hz, mAh, GB, hours, metres) in title only vs. in title or description:
+   headphones 19% -> 75%, speaker 49% -> 75%, camera 5% -> 47%, amplifier 69% -> 91%,
+   microphone 0% -> 27%, charging_cable 96% -> 98%, television 78% (unchanged),
+   projector 15% -> 24%, tv_box 32% (unchanged). And the kinds that stay empty either
+   way: watch and smartwatch 9%, vacuum_cleaner 3%, backpack and phone_case 2%.
+
+   Two things follow. Reading specifications from the description, not only the title,
+   is the one route to a real quality signal from this feed -- and it is marketing
+   copy, so a number found there needs to be tied to the product rather than to an
+   accessory or a comparison ("better than 32 inch models"). And for whole kinds there
+   is nothing to read at all, which is a decision for the owner, not a gap to paper
+   over: their rule is that price must not decide, and ANTI_FAKE forbids inventing a
+   quality signal, so those kinds can only show four and declare that no ranking
+   signal exists.
+3. **Supabase project for the query log — and for click/decision events.** Click and
    impression events live only in a per-process list today (audit D5), so production
    records no click durably. None of the account's three projects is PicWise's (one
    inactive, `taxi-chat` belongs to another app, `mysubby.cloud@gmail.com`). Do not
    create tables in them without the owner saying which; a new project may cost money,
    so ask first. The owner said on 2026-10-08 to decide this later: create nothing.
-3. Optional: allow `productdata.awin.com` in the cloud environment's network settings so
+4. Optional: allow `productdata.awin.com` in the cloud environment's network settings so
    a session can check the real feed.
 
 ## Next engineering steps, in order
+
+0. **Price-first plan** (`docs/picwise_price_first_plan_2026-10-15.md`): the founding
+   files were changed to it on 2026-10-16. Measured on the third feed, and built in
+   small tested steps in the order recorded there. **Step 1, only the kind asked for,
+   is done** (section "Step 1 built"; `tests/test_picwise_strict_kind_reading.py`), and
+   so is **step 2, English before greeklish** (section "Step 2 built";
+   `tests/test_picwise_english_over_greeklish.py`). **Step 3, the price-first
+   engine, part 3b and step 4, the search page, are done too** (sections "Step 3
+   built", "Part 3b built", "Step 4 built"; `tests/test_picwise_price_first.py`,
+   `tests/test_picwise_search_page.py`). Next is step 5, data prepared daily (see
+   "Start here" for its first speed-up). The plan's "engineering, later" section lists
+   what is still needed: `custom_6` for tyres, a category for Living and Home, and a
+   store refreshed daily.
+
+0. ~~Every product shown carries availability, a price, an image and a description.~~
+   **Done, 2026-10-12** (owner rule; recorded in `docs/PICWISE_DECISION_CONTRACT.md`,
+   section "What a product must carry to be shown"). The first three were already
+   required for a card; the description is new, lives in
+   `picwise_providers.product_description`, and is read by both the card gate and
+   `tools/check_awin_feed.py`. It costs 1,495 of the real feed's 11,573 products, and
+   the cost is per shop, not per kind: Geekbuying (877) and Xiaomi RO (66) send no
+   descriptions at all, so the kinds only they carry -- televisions, TV boxes, vacuum
+   cleaners, robot vacuums, treadmills, and nearly all watches, smartwatches and
+   projectors -- no longer appear. The owner was told before it went in. The feed tool
+   prints it per shop so the choice (ask the shop, or drop it from the feed) is visible.
+   Two gotchas found while doing it, both now fixed: `tools/check_awin_feed.py` was
+   reporting the **feed** eligibility gate under the name of the **card** gate, so it
+   claimed 11,573 of 11,573 showable when the real number is 9,954; and every provider
+   fixture in `tests/` needed a description, which `tests/fixture_support.py` now
+   supplies in text that names no product, because a description is a field the search
+   ranks on and fixture text mentioning the product would hand each row free evidence
+   for its own kind.
+   `tests/test_picwise_product_description_rule.py` (14 tests).
 
 0. ~~Refurbished / used products must appear only when the buyer asks for them.~~
    **Done, 2026-10-10, on `main` since 2026-10-11** (owner decision; recorded in `docs/PICWISE_DECISION_CONTRACT.md`,
@@ -150,6 +478,12 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 
 ## Known doc conflict (unresolved, owner's call)
 
+**Settled on 2026-10-16:** the price-first plan contradicted `concept.picwise.txt`,
+`docs/MISSION.md` and `PROJECT_RULES.md`; the owner chose to change them, and they
+were changed (details in `docs/picwise_price_first_plan_2026-10-15.md`).
+
+Older, and still open:
+
 Three files still describe the project as being in the documentation-only phase:
 
 - `docs/MISSION.md` → "First Phase Boundary": no frontend, no backend implementation
@@ -167,6 +501,23 @@ files: correcting the phase wording is the owner's decision, not the engineer's.
 
 - Run tests **per module**, a few in parallel; never the whole suite in one process
   (out of memory, hours).
+- A prepared feed file is tied to the code that wrote it: any change to a file under
+  `src/picwise_providers` or `src/picwise_nlu` makes old files unusable (the server then
+  reads the feed). Prepare again after such a change. Outside Vercel a server reads one
+  only when `PICWISE_PREPARED_CATALOGUE_FILE` names it, so tests never pick one up.
+- `vercel.json`: a `builds` key makes Vercel skip the build command, so the file would
+  silently stop being built; the rewrites point at `/api/index` (the function's name
+  without `builds`); Vercel refuses an empty `outputDirectory`, which is why the build
+  writes `public/prepared.json`. To see what a change does to a deployment without
+  Vercel: `npm install vercel` in a scratch folder, a copy of the repository with a
+  hand-written `.vercel/project.json` (`{"projectId":"x","orgId":"y","settings":
+  {"framework":null}}`) and `.vercel/.env.production.local` naming a feed file, then
+  `vercel build --prod --yes`, and read `.vercel/output` (no login needed).
+- The daily renewal is a new production deployment each morning. After an Instant
+  Rollback, Vercel stops putting new deployments live until one is promoted by hand
+  (as remembered, not checked from here): the renewal would then build every day and
+  never go live, and the live file would pass its 30 hours. `prepared_feed` on
+  `/private-beta-readiness` shows it (`too_old`).
 - Tests rewrite `src/picwise_search_memory/artifacts/search_runtime_v1.json.gz`
   (`built_at` only). `git restore` it before committing.
 - `test_picwise_search_graph_contracts_stage1db1` fails while `app.py`,
@@ -223,8 +574,8 @@ files: correcting the phase wording is the owner's decision, not the engineer's.
   product plugs into ("Smartphone USB-C" on a microphone) gives way when the title and
   the category agree on another kind.
 - One currency per answer (owner decision, 2026-10-11, in the Decision Contract):
-  `_restrict_to_one_currency` keeps the best-ranked currency that can fill the four;
-  no currency with four means no four.
+  `_price_first_products` keeps the currency most of the answer's products are priced
+  in, since prices in two currencies cannot be put in one order.
 - Condition (`product_condition.py`, one rule for the gate and the cards): a product
   the feed calls not new is shown only when the query asks for that condition. "Not
   new" = a condition column carrying a word from the vocabulary ("Used - Very Good",
@@ -235,13 +586,14 @@ files: correcting the phase wording is the owner's decision, not the engineer's.
   whole feed in silence. `check_awin_feed.py` lists the condition values it could not
   read; a real one that means "used" belongs in `product_condition.py`. The request is read from the
   query by `read_condition_request` (Greek, greeklish, English, with typo correction)
-  and is never matched against feed text. Asked for: those come first, free slots fill
-  with new ones, the page says "μεταχειρισμενο (2 of 4)" (none at all: "could not
-  match"), and the recommendation comes from the condition asked for. The text scan
+  and is never matched against feed text. Asked for, under price first: the answer
+  is the products in that condition; when the feed has none, it is the new ones and the
+  page says the condition was not matched. The text scan
   sits behind a substring pre-filter for speed (38 ms for 15,000 products, worst case);
   a vocabulary word added without its hint would stop being read, which
   `test_picwise_condition_request` guards.
-- Which four are shown (owner decision, 2026-10-08, confirmed with its details and
+- Which four are shown: **replaced by price first** (steps 3 and 3b, built
+  2026-10-16/17, for every search). Kept as the record of the old rule (owner decision, 2026-10-08, confirmed with its details and
   recorded in the Decision Contract): groups of substantially equivalent products in
   relevance order; a group too big for the free slots is spread across its price range
   (four slots: cheapest, two between, dearest; two: cheapest and dearest; one: the

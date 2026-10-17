@@ -52,13 +52,15 @@ class _FeedCase(unittest.TestCase):
         clear_awin_feed_parse_cache()
         clear_provider_feed_pipeline_cache()
 
-    def assertDelivers(self, query: str, product_type: str) -> None:
+    def assertDelivers(self, query: str, product_type: str, count: int = 4) -> None:
         resolution = resolve_live_search(query)
         self.assertTrue(provider_feed_cards_will_render(resolution), query)
         types = {p.get("product_type") for p in resolution.provider_feed_selected_products}
         self.assertEqual(types, {product_type}, query)
-        self.assertEqual(len(resolution.provider_feed_selected_products), 4, query)
-        self.assertTrue(resolution.provider_feed_recommended_product_id, query)
+        self.assertEqual(len(resolution.provider_feed_selected_products), count, query)
+        if count >= 3:
+            # Price first: the middle product by price, when there is a middle.
+            self.assertTrue(resolution.provider_feed_recommended_product_id, query)
 
     def page(self, query: str) -> tuple[int, str]:
         environ: dict[str, object] = {
@@ -90,36 +92,39 @@ class GreekAndGreeklishQueriesOnAnEnglishFeedTests(_FeedCase):
         ("καρεκλα γραφειου εργονομικη", "Office & Computer Chairs"),
         ("ksiristiki mixani", "Electric Shavers"),
         ("xlookoptiko", "Lawn Mowers"),
-        ("μπαταρια αυτοκινητου 70ah", "Car Batteries"),
+        # One battery is 70Ah: price first shows it alone, "1 of 1" (owner, 2026-10-16).
+        ("μπαταρια αυτοκινητου 70ah", "Car Batteries", 1),
         ("τόνερ για εκτυπωτή laser", "Toner Cartridges"),
     )
 
     def test_each_delivers_four_of_the_right_kind(self) -> None:
-        for query, product_type in self.CASES:
+        for query, product_type, *count in self.CASES:
             with self.subTest(query=query):
-                self.assertDelivers(query, product_type)
+                self.assertDelivers(query, product_type, *count)
 
     def test_a_spec_filters_the_four(self) -> None:
-        # "70ah" matches one battery: it is reported, and all four are still batteries.
+        # "70ah" matches one battery: that battery is the answer, and nothing is
+        # reported as unmatched, because the spec was met.
         resolution = resolve_live_search("μπαταρια αυτοκινητου 70ah")
-        self.assertEqual(resolution.provider_feed_partially_matched_terms, (("70ah", 1),))
+        self.assertEqual(resolution.provider_feed_partially_matched_terms, ())
+        self.assertEqual(resolution.provider_feed_unmatched_query_terms, ())
+        self.assertEqual(len(resolution.provider_feed_selected_products), 1)
         self.assertIn("70Ah", resolution.provider_feed_selected_products[0].get("title", ""))
         resolution = resolve_live_search("πλυντηριο 8 κιλα")
         titles = [p.get("title", "") for p in resolution.provider_feed_selected_products]
         self.assertTrue(titles and all("Washing Machine" in t for t in titles), titles)
 
     def test_the_page_quotes_what_it_could_not_match_in_the_buyers_words(self) -> None:
-        # Two of the four fixture mice are wireless, so "ασυρματο" cannot hold for all
-        # four; "φθηνο" is a judgement no feed field confirms. Both are quoted as
-        # typed, not as the feed-language filter "wireless" they were read as.
+        # Two of the four fixture mice are wireless, and price first shows those two;
+        # "φθηνο" is a judgement no feed field confirms, and is quoted as typed.
         cards, line = self.page("ποντικι ασυρματο φθηνο")
-        self.assertEqual(cards, 4)
-        self.assertIn("Only some of the four match: ασυρματο (2 of 4)", line)
+        self.assertEqual(cards, 2)
         self.assertIn("could not match: φθηνο", line)
         self.assertNotIn("wireless", line)
         resolution = resolve_live_search("ποντικι ασυρματο")
-        top_two = [p.get("title", "") for p in resolution.provider_feed_selected_products[:2]]
-        self.assertTrue(all("Wireless" in title for title in top_two), top_two)
+        titles = [p.get("title", "") for p in resolution.provider_feed_selected_products]
+        self.assertEqual(len(titles), 2, titles)
+        self.assertTrue(all("Wireless" in title for title in titles), titles)
 
     def test_an_unrecognised_short_typo_asks_did_you_mean(self) -> None:
         cards, _line = self.page("dsk")
@@ -177,11 +182,10 @@ class GreekTitledFeedTests(_FeedCase):
         # The feed writes "8kg" and "8 kg"; the buyer writes "8 κιλα".
         resolution = resolve_live_search("πλυντηριο ρουχων 8 κιλα")
         self.assertTrue(provider_feed_cards_will_render(resolution))
-        # Only two of four are 8kg, so the four cannot all carry it; the two that do
-        # rank first, and the page says the spec could not be met by all four.
-        ranked = [p.get("provider_product_id") for p in resolution.provider_feed_selected_products]
-        self.assertEqual(set(ranked[:2]), {"gr-wm-1", "gr-wm-4"}, ranked)
-        self.assertEqual(resolution.provider_feed_partially_matched_terms, (("8 κιλα", 2),))
+        # Two of the four are 8kg, and price first shows exactly those two.
+        shown = [p.get("provider_product_id") for p in resolution.provider_feed_selected_products]
+        self.assertEqual(set(shown), {"gr-wm-1", "gr-wm-4"}, shown)
+        self.assertEqual(resolution.provider_feed_partially_matched_terms, ())
 
 
 if __name__ == "__main__":
