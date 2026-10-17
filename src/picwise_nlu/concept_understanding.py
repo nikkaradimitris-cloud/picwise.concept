@@ -66,6 +66,10 @@ _DOT_NOT_IN_NUMBER_RE = re.compile(r"(?<!\d)\.|\.(?!\d)")
 
 
 def _strip_marks(text: str) -> str:
+    if text.isascii():
+        # Nothing to strip, and most feed text is ASCII: checked first, it saves
+        # seconds when a large feed is read for the first time.
+        return text
     decomposed = unicodedata.normalize("NFD", text)
     return unicodedata.normalize(
         "NFC", "".join(ch for ch in decomposed if not unicodedata.combining(ch))
@@ -91,6 +95,8 @@ def _is_greek_char(ch: str) -> bool:
 
 
 def is_greek_word(word: str) -> bool:
+    if word.isascii():
+        return False
     letters = [ch for ch in word if ch.isalpha()]
     return bool(letters) and sum(_is_greek_char(ch) for ch in letters) * 2 >= len(letters)
 
@@ -1062,15 +1068,22 @@ def _concepts_in_text(text: str) -> list[_Span]:
     answering "καπέλο" with lens caps is the one thing PicWise must never do. A query
     still reads those names, where the buyer means the product.
     """
+    return list(_read_concepts_in_text(text))
+
+
+# Reading a feed reads the same text many times over: a product's title by several
+# rules, and a shop's category path and product type for each of its products.
+@lru_cache(maxsize=131072)
+def _read_concepts_in_text(text: str) -> tuple[_Span, ...]:
     tokens = tuple(normalize_understanding_text(text).split())
     if not tokens:
-        return []
+        return tuple()
     candidates = [_exact_candidates(token) for token in tokens]
     spans = [span for span in _find_spans(tokens, candidates) if not span.weak]
     spans = _choose_spans(spans)
     # The product in a title is named before what it is for: "charger for iphone".
     cut = next((i for i, token in enumerate(tokens) if token in _PURPOSE_WORDS), len(tokens))
-    return [span for span in spans if span.start < cut] or spans
+    return tuple([span for span in spans if span.start < cut] or spans)
 
 
 _BREADCRUMB_SPLIT_RE = re.compile(r"\s*(?:>|\u2192|\|)\s*")
