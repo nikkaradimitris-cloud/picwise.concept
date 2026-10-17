@@ -1,10 +1,28 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-16.
+Current state for whoever picks the project up next. Updated 2026-10-17.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Start here (2026-10-16)
+## Start here (2026-10-17)
 
+- **Picking up in a new conversation** (the owner moved the work to a new one on
+  2026-10-17). Everything is pushed to `ccr-fd5dc1bc-4vgsgl`; nothing of steps 1 to 4
+  is on `main`. Next is **step 5, data prepared once a day**, and its first speed-up is
+  measured: on the third feed a search takes about 5 s, first after a cold start 25
+  to 45 s, and about 4 of the 5 s is `evaluate_product_eligibility` judging all ~40,000
+  products again on every search (each mega category's pipeline cache entry judges
+  them again too). Judge each product's eligibility and "not new" once per feed load
+  and reuse it; the pages must not change. To measure it:
+  - the owner uploads the feed file (Awin, download, then upload here; never the
+    link). Copy it into its own empty directory;
+  - before the change: `python -I tools/price_first_eval.py <feed.csv.gz> before.json`
+    (118 searches, about 10 minutes); after it: `python -I tools/price_first_eval.py
+    <feed.csv.gz> after.json --compare before.json`, which lists every page that
+    changed and the time per search before and after;
+  - tests per module: `PYTHONPATH=.:src python3 -m unittest tests.<module>`, a few
+    at a time, and `PYTHONPATH=.:src python3 tools/nlu_misspelling_benchmark.py
+    --failures 60`. Known failures on unchanged code are in "Current numbers" below;
+    the rest of the gotchas at the end of this file.
 - **New direction: price first, no ratings** (owner, 2026-10-15). Read
   `docs/picwise_price_first_plan_2026-10-15.md` before anything else. In short: only
   the kind asked for; never out of stock; cheapest first; the same product once, from
@@ -208,7 +226,8 @@ In short:
 |---|---|
 | Product concept lexicon (278 kinds, EN + GR names, mega category, `broader`, preference words) | `src/picwise_nlu/product_concepts.py` |
 | Understanding: phonetic keys, typo correction with safety fences, specs, product annotation (incl. accessory guard), "did you mean" | `src/picwise_nlu/concept_understanding.py` |
-| Selection of the four (concept path, token path with relaxation, family guard, condition gate) | `src/picwise_providers/search_selection.py` |
+| Price-first selection: the kind test, cheapest first, the same product once, the Recommended, "4 of 45"; the concept path (`_select_products_for_concept`), the word path for kinds not understood (`_select_products_by_words`), the question when a word names several kinds; the condition gate | `src/picwise_providers/search_selection.py` |
+| The catalogue a search reads, cached per feed load; the counts on the scanning screen; the suggestions | `src/picwise_providers/state.py`, `src/picwise_providers/suggestions.py` |
 | Whether the feed says a product is not new (one rule for the gate and the cards) | `src/picwise_providers/product_condition.py` |
 | Resolver | `src/picwise_search/live_search_resolver.py` |
 | Page text ("Understood as", "Only some of the four match: X (n of 4)", "could not match") | `src/picwise_surface/reference.py` |
@@ -218,6 +237,8 @@ In short:
 
 Tools:
 
+- `python -I tools/price_first_eval.py <feed.csv.gz> out.json [--cards] [--compare earlier.json]`
+  — 118 buyer searches on a real feed file: what each page shows, and how long it took
 - `python tools/nlu_misspelling_benchmark.py` — 706 misspelled queries end to end
 - `python tools/check_awin_feed.py --url "<feed link>"` — what a real feed will do
 - `python tools/nlu_mistake_report.py queries.txt` or `--from-query-log` — lexicon review queue
@@ -229,9 +250,17 @@ guide for the owner), `docs/picwise_query_understanding.md`,
 
 ## Current numbers (local fixtures only)
 
-- Misspelling benchmark: **96.0% pass, 0 wrong kind of product shown** (was 25.2% / 19);
-  unchanged after the audit fixes.
-- Test suite, last full run **2026-10-12** after the description rule, the spec reader
+- Misspelling benchmark: **93.8% pass, 0 wrong kind of product shown** (2026-10-17,
+  after part 3b; 96.0% until 2026-10-16). It fell to 93.9% with the owner's rule that
+  "mobile phone" and «κινητό» show basic phones, because 15 of its cases expect
+  smartphones; those cases were left as they are so the number shows the rule.
+- Test suite, last full run **2026-10-17** at `deab42a` (step 4), one process per
+  module: **236 of 239 modules pass**. The three that fail fail the same on the code
+  before this work: `test_picwise_canonical_vocabulary_registry_stage2`,
+  `test_picwise_search_index_generated_blind_stage4` and, one of its 13 tests,
+  `test_picwise_search_index_blind_evaluation_stage6a` (about 43 min; run it on its
+  own, as `test_picwise_learning_stage7b`, about 41 min).
+- Older, kept for the history: full run **2026-10-12** after the description rule, the spec reader
   and the fixture updates (228 modules, every module except the two hour-long ones,
   one process per module, `PYTHONPATH=.`): **226 modules pass, 2 fail**, and both
   failures are the two that already predated this work. One module failed during the
@@ -359,12 +388,13 @@ guide for the owner), `docs/picwise_query_understanding.md`,
    small tested steps in the order recorded there. **Step 1, only the kind asked for,
    is done** (section "Step 1 built"; `tests/test_picwise_strict_kind_reading.py`), and
    so is **step 2, English before greeklish** (section "Step 2 built";
-   `tests/test_picwise_english_over_greeklish.py`). Next is step 3, the price-first
-   engine. Step 3 also replaces the old decision step behind the empty
-   pages ("3 seater sofa grey", "gas bbq with 4 burners") and makes the other words of
-   a search narrow the kind ("ceiling fan with light"). The plan's "engineering,
-   later" section lists what it will need: `custom_6` for tyres, a category for Living
-   and Home, and a store refreshed daily.
+   `tests/test_picwise_english_over_greeklish.py`). **Step 3, the price-first
+   engine, part 3b and step 4, the search page, are done too** (sections "Step 3
+   built", "Part 3b built", "Step 4 built"; `tests/test_picwise_price_first.py`,
+   `tests/test_picwise_search_page.py`). Next is step 5, data prepared daily (see
+   "Start here" for its first speed-up). The plan's "engineering, later" section lists
+   what is still needed: `custom_6` for tyres, a category for Living and Home, and a
+   store refreshed daily.
 
 0. ~~Every product shown carries availability, a price, an image and a description.~~
    **Done, 2026-10-12** (owner rule; recorded in `docs/PICWISE_DECISION_CONTRACT.md`,
@@ -491,8 +521,8 @@ files: correcting the phase wording is the owner's decision, not the engineer's.
   product plugs into ("Smartphone USB-C" on a microphone) gives way when the title and
   the category agree on another kind.
 - One currency per answer (owner decision, 2026-10-11, in the Decision Contract):
-  `_restrict_to_one_currency` keeps the best-ranked currency that can fill the four;
-  no currency with four means no four.
+  `_price_first_products` keeps the currency most of the answer's products are priced
+  in, since prices in two currencies cannot be put in one order.
 - Condition (`product_condition.py`, one rule for the gate and the cards): a product
   the feed calls not new is shown only when the query asks for that condition. "Not
   new" = a condition column carrying a word from the vocabulary ("Used - Very Good",
@@ -503,14 +533,14 @@ files: correcting the phase wording is the owner's decision, not the engineer's.
   whole feed in silence. `check_awin_feed.py` lists the condition values it could not
   read; a real one that means "used" belongs in `product_condition.py`. The request is read from the
   query by `read_condition_request` (Greek, greeklish, English, with typo correction)
-  and is never matched against feed text. Asked for: those come first, free slots fill
-  with new ones, the page says "μεταχειρισμενο (2 of 4)" (none at all: "could not
-  match"), and the recommendation comes from the condition asked for. The text scan
+  and is never matched against feed text. Asked for, under price first: the answer
+  is the products in that condition; when the feed has none, it is the new ones and the
+  page says the condition was not matched. The text scan
   sits behind a substring pre-filter for speed (38 ms for 15,000 products, worst case);
   a vocabulary word added without its hint would stop being read, which
   `test_picwise_condition_request` guards.
-- Which four are shown (superseded by the price-first plan of 2026-10-15, not yet
-  built; what the code does today) (owner decision, 2026-10-08, confirmed with its details and
+- Which four are shown: **replaced by price first** (steps 3 and 3b, built
+  2026-10-16/17, for every search). Kept as the record of the old rule (owner decision, 2026-10-08, confirmed with its details and
   recorded in the Decision Contract): groups of substantially equivalent products in
   relevance order; a group too big for the free slots is spread across its price range
   (four slots: cheapest, two between, dearest; two: cheapest and dearest; one: the
