@@ -1182,13 +1182,26 @@ def is_strong_feed_opportunity_selection(
     return selection.strong_matched_count >= safe_max
 
 
-def _product_concepts(product: ProviderProduct, fields: dict[str, str]) -> frozenset[str]:
+# Kinds already read by the code that prepared the feed (`prepared_catalogue.py`),
+# keyed as `annotate_product_concepts` is: reading 40,000 products takes seconds.
+_PREPARED_KINDS: dict[tuple[str, str, str], frozenset[str]] = {}
+
+
+def remember_product_kinds(kinds: dict[tuple[str, str, str], frozenset[str]]) -> None:
+    """Take the kinds a prepared feed was read as, in place of any taken before."""
+    _PREPARED_KINDS.clear()
+    _PREPARED_KINDS.update(kinds)
+
+
+def product_kind_key(product: ProviderProduct, fields: dict[str, str]) -> tuple[str, str, str]:
     raw = product.raw if isinstance(product.raw, dict) else {}
-    return annotate_product_concepts(
-        str(raw.get("product_type") or ""),
-        fields["category"],
-        str(product.title or ""),
-    )
+    return (str(raw.get("product_type") or ""), fields["category"], str(product.title or ""))
+
+
+def _product_concepts(product: ProviderProduct, fields: dict[str, str]) -> frozenset[str]:
+    key = product_kind_key(product, fields)
+    known = _PREPARED_KINDS.get(key)
+    return known if known is not None else annotate_product_concepts(*key)
 
 
 def _unannotated_product_names_concept(
@@ -2207,11 +2220,14 @@ def build_search_catalogue(
     *,
     feed_ctx: FeedAvailabilityContext | None = None,
     card_eligible: tuple[bool, ...] | None = None,
+    non_new: tuple[str, ...] | None = None,
 ) -> SearchCatalogue:
     """Judge each product once: can a card show it, and is it new.
 
     `card_eligible`, when given, is that judgement already made for each product, in
     order, against `feed_ctx`: the feed pipeline makes it as it loads the feed.
+    `non_new`, when given, is `product_non_new_condition` of each product, in order: a
+    prepared feed carries it.
     """
     if card_eligible is None:
         if feed_ctx is None:
@@ -2221,11 +2237,15 @@ def build_search_catalogue(
             for product in products
         )
     eligible = tuple(product for product, shown in zip(products, card_eligible) if shown)
+    if non_new is None:
+        conditions = tuple(product_non_new_condition(product) for product in eligible)
+    else:
+        conditions = tuple(condition for condition, shown in zip(non_new, card_eligible) if shown)
     fields = tuple(_product_search_fields(product) for product in eligible)
     new_rows = tuple(
         (product, product_fields)
-        for product, product_fields in zip(eligible, fields)
-        if not product_non_new_condition(product)
+        for product, product_fields, condition in zip(eligible, fields, conditions)
+        if not condition
     )
     return SearchCatalogue(
         products=eligible,

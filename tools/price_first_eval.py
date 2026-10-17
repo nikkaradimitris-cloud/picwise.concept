@@ -6,6 +6,7 @@ shows and how long it took.
     python -I tools/price_first_eval.py <feed.csv.gz> <out.json>
     python -I tools/price_first_eval.py <feed.csv.gz> <out.json> --cards
     python -I tools/price_first_eval.py <feed.csv.gz> <out.json> --compare <earlier.json>
+    python -I tools/price_first_eval.py <feed.csv.gz> <out.json> --prepared <catalogue.json.gz>
 
 Read-only: it reads the file and changes nothing. The feed is a file the owner downloads
 from Awin and uploads; never its link, which holds the account's API key.
@@ -13,6 +14,7 @@ from Awin and uploads; never its link, which holds the account's API key.
 `--cards` prints the cards each page shows. `--compare` reads an earlier run and lists
 the searches whose page changed (cards, prices, count) and the time per search before
 and after: run it before a change that should only be faster, then after, on the same file.
+`--prepared` answers from a file `tools/prepare_catalogue.py` wrote from the same feed.
 """
 from __future__ import annotations
 
@@ -30,9 +32,11 @@ ROOT = Path(__file__).resolve().parents[1]
 CASES_FILE = Path(__file__).resolve().with_name("price_first_eval_cases.py")
 
 
-def _run(feed: Path) -> list[dict]:
+def _run(feed: Path, prepared: Path | None = None) -> list[dict]:
     os.environ["AWIN_FEED_FILE"] = str(feed)
     os.environ.pop("AWIN_FEED_URL", None)
+    if prepared is not None:
+        os.environ["PICWISE_PREPARED_CATALOGUE_FILE"] = str(prepared)
     for path in (str(ROOT), str(ROOT / "src")):
         if path not in sys.path:
             sys.path.insert(0, path)
@@ -134,11 +138,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("out", type=Path, help="where to write what each search showed (JSON)")
     parser.add_argument("--cards", action="store_true", help="print the cards each page shows")
     parser.add_argument("--compare", type=Path, help="an earlier out.json to compare with")
+    parser.add_argument("--prepared", type=Path, help="answer from this prepared file")
     args = parser.parse_args(argv)
     if not args.feed.is_file():
         parser.error(f"no feed file at {args.feed}")
 
-    rows = _run(args.feed.resolve())
+    if args.prepared is not None and not args.prepared.is_file():
+        parser.error(f"no prepared file at {args.prepared}")
+    rows = _run(args.feed.resolve(), args.prepared.resolve() if args.prepared else None)
     args.out.write_text(json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")
     if args.cards:
         for row in rows:

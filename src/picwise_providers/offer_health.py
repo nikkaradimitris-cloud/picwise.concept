@@ -283,7 +283,19 @@ def offer_flag_reason_codes(
     for key, token in _raw_field_tokens(product, _FOR_SALE_KEYS):
         if token in _FALSE_FLAGS and _flag_is_informative(key, feed_ctx):
             reasons.append("offer_not_for_sale")
+    reasons.extend(offer_validity_reason_codes(product, today=today))
+    return tuple(dict.fromkeys(reasons))
+
+
+def offer_validity_reason_codes(
+    product: ProviderProduct,
+    *,
+    today: date | None = None,
+) -> tuple[str, ...]:
+    """The offer's validity window closed ("offer_expired") or not yet open
+    ("offer_not_yet_valid") on `today`: the one judgement that moves with the date."""
     raw = product.raw if isinstance(product.raw, dict) else {}
+    reasons: list[str] = []
     current = today or datetime.now(timezone.utc).date()
     for key in _VALID_TO_KEYS:
         valid_to = _parse_feed_date(raw.get(key))
@@ -293,7 +305,7 @@ def offer_flag_reason_codes(
         valid_from = _parse_feed_date(raw.get(key))
         if valid_from is not None and valid_from > current:
             reasons.append("offer_not_yet_valid")
-    return tuple(dict.fromkeys(reasons))
+    return tuple(reasons)
 
 
 def _parse_bool(value: object) -> bool | None:

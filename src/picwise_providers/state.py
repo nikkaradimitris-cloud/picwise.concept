@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
+from datetime import date, datetime, timezone
 from typing import Any
 from picwise_nlu.concept_understanding import ConceptReading
 
@@ -22,7 +23,17 @@ from .contracts import (
 )
 from .eligibility import evaluate_provider_product_eligibility
 from .graph_projection import project_provider_products_to_graph
-from .offer_health import build_feed_availability_context, evaluate_product_eligibility
+from .offer_health import (
+    build_feed_availability_context,
+    evaluate_product_eligibility,
+    offer_validity_reason_codes,
+)
+from .prepared_catalogue import (
+    PreparedCatalogue,
+    prepared_catalogue_age_limit,
+    prepared_catalogue_path,
+    read_prepared_catalogue,
+)
 from .normalization import extract_merchant_name
 from .purchasability_cache import enrich_provider_products_with_cache, resolve_purchasability_cache
 from .suggestions import SearchSuggestion, build_search_suggestions
@@ -30,9 +41,13 @@ from .search_selection import (
     ProviderFeedRecommendationDecision,
     ProviderProductSelectionResult,
     SearchCatalogue,
+    _product_concepts,
     build_search_catalogue,
     decide_recommended_provider_product,
     is_strong_feed_opportunity_selection,
+    product_kind_key,
+    product_non_new_condition,
+    remember_product_kinds,
     select_provider_products_for_query,
 )
 
@@ -149,6 +164,8 @@ _PIPELINE_CACHE_MAX_ENTRIES = 8
 def clear_provider_feed_pipeline_cache() -> None:
     """Drop the resolved-pipeline cache. For tests and for forcing a re-resolve."""
     _PIPELINE_CACHE.clear()
+    _PREPARED_STATE.clear()
+    remember_product_kinds({})
 
 
 def resolve_provider_feed_pipeline(
@@ -320,6 +337,101 @@ def _catalogue_counts(pipeline: ProviderFeedPipelineResult) -> tuple[int, int]:
     return len(products), len(shops)
 
 
+# The prepared feed this process read (`prepared_catalogue.py`), with the file identity
+# it was read from, and its search catalogue for the day it was built on.
+_PREPARED_STATE: dict[str, Any] = {}
+
+
+def prepare_feed_catalogue(
+    feed_config: ProviderFeedConfig | None = None,
+    *,
+    now: datetime | None = None,
+) -> PreparedCatalogue | None:
+    """The configured feed read and judged as a search reads it, ready to be written
+    (`tools/prepare_catalogue.py`), or None when the feed cannot be read."""
+    config = feed_config or awin_feed_config_from_env()
+    pipeline = resolve_provider_feed_pipeline(config, include_graph_projection=False)
+    if pipeline.feed_status.status != "provider_feed_ready" or pipeline.availability_context is None:
+        return None
+    catalogue = _search_catalogue(pipeline)
+    eligible_count, shop_count = _catalogue_counts(pipeline)
+    return PreparedCatalogue(
+        prepared_at=now or datetime.now(timezone.utc),
+        feed_status=pipeline.feed_status,
+        availability_context=pipeline.availability_context,
+        products=catalogue.products,
+        non_new=tuple(product_non_new_condition(product) for product in catalogue.products),
+        kinds=tuple(
+            _product_concepts(product, fields)
+            for product, fields in zip(catalogue.products, catalogue.fields)
+        ),
+        eligible_count=eligible_count,
+        shop_count=shop_count,
+        suggestions=build_search_suggestions(catalogue.new_products),
+    )
+
+
+def _today() -> date:
+    return datetime.now(timezone.utc).date()
+
+
+def _active_prepared_catalogue() -> PreparedCatalogue | None:
+    """The prepared feed to read instead of the feed itself, when there is a fresh one.
+
+    Not with a purchasability cache configured: a checked shop page can show a product
+    the prepared file had no reason to keep, or hide one it kept.
+    """
+    path = prepared_catalogue_path()
+    if path is None or resolve_purchasability_cache() is not None:
+        return None
+    file_key = feed_file_cache_key(str(path))
+    if file_key is None:
+        return None
+    if _PREPARED_STATE.get("file_key") != file_key:
+        prepared = read_prepared_catalogue(path)
+        _PREPARED_STATE.clear()
+        _PREPARED_STATE["file_key"] = file_key
+        _PREPARED_STATE["prepared"] = prepared
+        remember_product_kinds({})
+    prepared = _PREPARED_STATE.get("prepared")
+    # Older than the limit, the feed itself is read again until a new file comes.
+    return prepared if prepared is not None and _is_fresh(prepared) else None
+
+
+def _is_fresh(prepared: PreparedCatalogue) -> bool:
+    return datetime.now(timezone.utc) - prepared.prepared_at <= prepared_catalogue_age_limit()
+
+
+def _prepared_search_catalogue(prepared: PreparedCatalogue) -> SearchCatalogue:
+    """The prepared products a search reads today.
+
+    Everything was judged when the file was written except the one rule that moves with
+    the date: an offer whose validity window has closed since then is left out.
+    """
+    today = _today()
+    cached = _PREPARED_STATE.get("catalogue")
+    if cached is not None and cached[0] == today:
+        return cached[1]
+    open_today = tuple(
+        not offer_validity_reason_codes(product, today=today) for product in prepared.products
+    )
+    catalogue = build_search_catalogue(
+        prepared.products,
+        feed_ctx=prepared.availability_context,
+        card_eligible=open_today,
+        non_new=prepared.non_new,
+    )
+    kinds_of = {id(product): kinds for product, kinds in zip(prepared.products, prepared.kinds)}
+    remember_product_kinds(
+        {
+            product_kind_key(product, fields): kinds_of[id(product)]
+            for product, fields in zip(catalogue.products, catalogue.fields)
+        }
+    )
+    _PREPARED_STATE["catalogue"] = (today, catalogue)
+    return catalogue
+
+
 def peek_search_catalogue_counts() -> tuple[int, int] | None:
     """(products, shops) a search reads, when this process has the feed loaded, else None.
 
@@ -328,6 +440,9 @@ def peek_search_catalogue_counts() -> tuple[int, int] | None:
     and never reads the feed configuration either, which for a feed URL can start a
     download. A page drawn before the first search stays fast and names no number.
     """
+    prepared = _PREPARED_STATE.get("prepared")
+    if prepared is not None and _is_fresh(prepared):
+        return prepared.eligible_count, prepared.shop_count
     try:
         entries = list(_PIPELINE_CACHE.items())
     except RuntimeError:
@@ -343,6 +458,9 @@ def search_suggestions(
     feed_config: ProviderFeedConfig | None = None,
 ) -> tuple[SearchSuggestion, ...]:
     """What the search box suggests for the connected catalogue (`suggestions.py`)."""
+    prepared = _active_prepared_catalogue() if feed_config is None else None
+    if prepared is not None:
+        return prepared.suggestions
     config = feed_config or awin_feed_config_from_env()
     pipeline = resolve_provider_feed_pipeline(config, include_graph_projection=False)
     if pipeline.feed_status.status != "provider_feed_ready":
@@ -369,6 +487,18 @@ def resolve_card_eligible_provider_feed_product_by_id(
     wanted = str(provider_product_id or "").strip()
     if not wanted:
         return None
+    prepared = _active_prepared_catalogue() if feed_config is None else None
+    if prepared is not None:
+        index = _PREPARED_STATE.get("by_id")
+        if index is None:
+            index = {str(product.provider_product_id or "").strip(): product for product in prepared.products}
+            _PREPARED_STATE["by_id"] = index
+        match = index.get(wanted)
+        if match is None or evaluate_provider_product_eligibility(match).status != "eligible":
+            return None
+        if not evaluate_product_eligibility(match, feed_ctx=prepared.availability_context).card_eligible:
+            return None
+        return match
     config = feed_config or awin_feed_config_from_env()
     # Resolve straight off the parsed feed rather than the full pipeline: this runs
     # on every outbound click, and the pipeline's per-product eligibility sweep and
@@ -404,6 +534,18 @@ def resolve_search_provider_feed_product_selection(
     reading: ConceptReading | None = None,
     shown: int = 0,
 ) -> ProviderProductSelectionResult:
+    prepared = _active_prepared_catalogue() if feed_config is None else None
+    if prepared is not None:
+        selection = select_provider_products_for_query(
+            query,
+            prepared.products,
+            max_products=max_products,
+            reading=reading,
+            feed_ctx=prepared.availability_context,
+            shown=shown,
+            catalogue=_prepared_search_catalogue(prepared),
+        )
+        return replace(selection, feed_availability_context=prepared.availability_context)
     config = feed_config or awin_feed_config_from_env()
     pipeline = resolve_provider_feed_pipeline(config, include_graph_projection=False)
     catalogue = None
@@ -538,17 +680,9 @@ def resolve_search_provider_feed_metadata(
     if manual_provider_connected:
         return None
 
-    config = feed_config or awin_feed_config_from_env()
     if not _normalized_mega_category_id(mega_category_id) and not allow_without_mega_category:
         return None
-
-    # Only feed_status is read below, so skip the graph projection.
-    pipeline = resolve_provider_feed_pipeline(
-        config,
-        mega_category_id=str(mega_category_id or ""),
-        include_graph_projection=False,
-    )
-    feed_status = pipeline.feed_status
+    feed_status = resolve_provider_feed_status(feed_config)
     return SearchProviderFeedMetadata(
         provider_feed_status=feed_status.status,
         provider_feed_reason_codes=feed_status.reason_codes,
@@ -558,3 +692,14 @@ def resolve_search_provider_feed_metadata(
 
 def _normalized_mega_category_id(value: str | None) -> str:
     return " ".join(str(value or "").split()).strip()
+
+
+def resolve_provider_feed_status(feed_config: ProviderFeedConfig | None = None) -> ProviderFeedStatus:
+    """The status of the feed this server answers from: the prepared feed when there is
+    a fresh one, else the configured feed as loaded."""
+    prepared = _active_prepared_catalogue() if feed_config is None else None
+    if prepared is not None:
+        return prepared.feed_status
+    config = feed_config or awin_feed_config_from_env()
+    # Only feed_status is read, so skip the graph projection.
+    return resolve_provider_feed_pipeline(config, include_graph_projection=False).feed_status
