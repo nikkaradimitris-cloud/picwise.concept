@@ -966,9 +966,21 @@ They need the owner: the Vercel connection in Claude on the SUBBY CLOUD account 
 another account today), a Deploy Hook and a secret for the scheduled job created in
 Vercel's settings, and the merge to `main`.
 
-**For the owner to decide: how fresh the data must be.** Today a server reads the feed
-again every 6 hours. With a file prepared once a day, the prices and stock a page shows
-can be up to a day old.
+**Decided by the owner, 2026-10-17: once a day is fresh enough.** Today a server reads
+the feed again every 6 hours; with a file prepared once a day, the prices and stock a
+page shows can be up to a day old. The owner: «Ναι φορά τη μέρα μου αρκεί γιατί μπορούμε
+να φτιάξουμε κάτι που να χτυπάει τη βάση κάθε μία ώρα και να την ξυπνάει» -- once a day
+is enough, and something can visit the server regularly to keep it awake. For step 5's
+next part, as proposed to the owner the same day:
+- a light address that loads the prepared feed, visited on a schedule from outside:
+  Vercel's free plan runs its own scheduled job once a day, so the visits would come
+  from a scheduled GitHub workflow (the repository is public, so its minutes are free).
+  A visit needs no key;
+- how often: a server with no visit for some minutes is put to sleep by Vercel, so a
+  visit every hour may come too late; the interval is to be set by measuring the live
+  site (GitHub's shortest schedule is every 5 minutes, and it can run late);
+- with the prepared file, a sleeping server still answers in about 4 seconds, behind the
+  scanning screen.
 
 ## The owner's additions, 2026-10-16
 

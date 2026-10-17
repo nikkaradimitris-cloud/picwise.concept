@@ -13,12 +13,13 @@ Current state for whoever picks the project up next. Updated 2026-10-17.
   keeps a prepared file honest: the plan file, "Step 5, first part built". **Next:** the
   file built by the deployment and renewed daily (vercel.json build command, a daily
   scheduled job calling a Deploy Hook, a check on a test deployment, then `main`). It
-  waits on the owner: the Vercel connection in Claude is on the account
-  `nik.karadimitris@gmail.com`, which holds only `taxi-dashbord`; PicWise is on SUBBY
-  CLOUD (`mysubby.cloud@gmail.com`), so the connection must be made again with that
-  account (at claude.ai/customize/connectors), and a new conversation started, since a
-  conversation reads its connectors when it starts. Also for the owner: data up to a
-  day old instead of 6 hours (plan file).
+  waits on the owner: the Vercel connection in Claude is on another Vercel account of
+  the owner's, which holds only `taxi-dashbord`; PicWise is on SUBBY CLOUD, so the
+  connection must be made again with that account (at claude.ai/customize/connectors),
+  and a new conversation started, since a conversation reads its connectors when it
+  starts. **Decided by the owner, 2026-10-17:** a file prepared once a day is fresh
+  enough («Ναι φορά τη μέρα μου αρκεί»), and a regular visit keeps the server awake
+  (the owner's idea, "every hour"; plan file, "Step 5, first part built").
   The owner does not pay $20 a month for Vercel Pro (2026-10-17); Vercel's terms, as
   remembered and not checked from here, keep the free plan for non-commercial use;
   Google Cloud Run's free tier was proposed, nothing decided; build so it runs on either.
