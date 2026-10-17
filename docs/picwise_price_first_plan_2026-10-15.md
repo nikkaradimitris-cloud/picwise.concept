@@ -10,7 +10,9 @@ same day. The marketing part is proposals, not decisions.
 (below), so every search now runs this plan: see "Step 1 built", "Step 2 built", "Step 3
 built" and, for the searches whose product PicWise does not understand, "Part 3b built".
 The search page itself, with the scanning screen, suggestions and the microphone, is
-"Step 4 built".
+"Step 4 built". Step 5 is begun: a search takes a third of a second, and a feed prepared
+ahead answers a cold server in about 4 seconds ("Step 5, first part built"); the file is
+not yet built on the live site.
 The conflict with the founding files was settled on 2026-10-16: the owner chose to
 change them to the plan, and they now say the same (see below).
 
@@ -907,6 +909,67 @@ which has no microphone.
   about 4 s of the 5, and keeping that judgement per feed load is the first speed-up
   to make.
 
+## Step 5, first part built: a fast search and a prepared feed, 2026-10-17
+
+Measured on the third feed (42,076 rows) with `tools/price_first_eval.py`, the 118
+searches of the earlier measurements: after each change below, 0 of 118 pages changed.
+
+| Locally, on the third feed | Before step 5 | Now, reading the feed | Now, from the prepared file |
+| --- | --- | --- | --- |
+| A cold server, to the first search page | 38-40 s | 22-24 s | 4.2-4.5 s |
+| The next search | 10 s (another kind) | 0.2 s | 0.2 s |
+| A search, median of 118 | 5.0 s | 0.34 s | 0.34 s |
+| The slowest of 118 | 14.6 s | 1.1 s | 1.0 s |
+
+What changed, in `src/picwise_providers/state.py`, `search_selection.py`,
+`prepared_catalogue.py`, `awin_adapter.py`, `offer_health.py` and
+`src/picwise_nlu/concept_understanding.py`:
+
+- **A search reads the feed as judged once per load.** Every search judged all 40,000
+  products again (can a card show it, is it new) and built each one's search text:
+  about 4 of the 5 seconds. Each mega category also kept a judged copy of its own, so
+  the first search of each kind judged the whole feed again ("laptop" after "kettle":
+  10 s). Now the judgement is made as the feed loads and every search reads it.
+- **The first read of a feed is faster**: its rows are made in one step (7.1 s to 4.8 s
+  on this feed), ASCII text skips accent stripping, and what a piece of feed text names
+  is read once per text.
+- **The feed can be prepared once, ahead of the buyers.** `tools/prepare_catalogue.py`
+  reads the feed, judges it as a search does and writes `prepared/catalogue.json.gz`
+  (30 s and 26.7 MB for this feed): the products a card can show, what the feed says to
+  call each not new, the kinds each was read as, the counts and the suggestions; never
+  the feed's link. A server given the file answers searches, suggestions, the scanning
+  screen's numbers, the outbound redirect and the feed status from it, and does not
+  read the feed at all. The suggestions, 8 to 43 s before, are ready at once.
+
+What keeps a prepared file honest:
+
+- it is not used when older than 30 hours (`PICWISE_PREPARED_MAX_AGE_HOURS`), when it
+  was written by other code (any change under `src/picwise_providers` or
+  `src/picwise_nlu`), in another format or broken, or when a purchasability cache is
+  configured: the server then reads the feed itself, as before;
+- an offer whose validity window closes after the file was written is left out on that
+  day; the outbound redirect judges the product again before sending the buyer;
+- it holds each product as the feed gave it less its empty fields (72% of the fields of
+  this feed): no rule reads an empty field differently from a missing one, and the 118
+  pages are the same.
+
+**Not built yet: the file on the live site, renewed every day.** It needs, in order:
+1. the deployment to build the file: `vercel.json` gives up its old `builds` setting for
+   a build command that runs `tools/prepare_catalogue.py --keep-going` (a feed that
+   cannot be read writes nothing, and the server reads the feed as before);
+2. a daily renewal: Vercel's free plan runs one scheduled job a day, which would ask
+   Vercel for a new deployment through a Deploy Hook, so each day's build prepares that
+   day's feed;
+3. a check on a test deployment that the file is built and read, before `main`.
+
+They need the owner: the Vercel connection in Claude on the SUBBY CLOUD account (it is on
+another account today), a Deploy Hook and a secret for the scheduled job created in
+Vercel's settings, and the merge to `main`.
+
+**For the owner to decide: how fresh the data must be.** Today a server reads the feed
+again every 6 hours. With a file prepared once a day, the prices and stock a page shows
+can be up to a day old.
+
 ## The owner's additions, 2026-10-16
 
 Decided by the owner after the understanding test, each with what it means in
@@ -1000,7 +1063,8 @@ extreme-price rule for step 3 in their own words («όταν το ακριβότ
 ακριβότερο από το προηγούμενο φθηνότερο να εξαιρείται από το μέσο όρο»), which matches
 the reading above, and did not object to the order. Steps 1 to 3 were built the same
 day: see "Step 1 built", "Step 2 built" and "Step 3 built"; part 3b and step 4 on
-2026-10-17. Next is step 5, data prepared once a day.
+2026-10-17, and the first part of step 5 the same day ("Step 5, first part built"):
+next is the prepared file on the live site, renewed every day.
 1. the strict kind test;
 2. English over greeklish ("patio");
 3. the price-first engine: cheapest first, the median Recommended with the

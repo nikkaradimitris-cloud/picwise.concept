@@ -5,20 +5,32 @@ Current state for whoever picks the project up next. Updated 2026-10-17.
 
 ## Start here (2026-10-17)
 
-- **Picking up in a new conversation** (the owner moved the work to a new one on
-  2026-10-17). Everything is pushed to `ccr-fd5dc1bc-4vgsgl`; nothing of steps 1 to 4
-  is on `main`. Next is **step 5, data prepared once a day**, and its first speed-up is
-  measured: on the third feed a search takes about 5 s, first after a cold start 25
-  to 45 s, and about 4 of the 5 s is `evaluate_product_eligibility` judging all ~40,000
-  products again on every search (each mega category's pipeline cache entry judges
-  them again too). Judge each product's eligibility and "not new" once per feed load
-  and reuse it; the pages must not change. To measure it:
+- **Step 5 is begun** (2026-10-17, on the branch; nothing of steps 1 to 5 is on
+  `main`). A search takes about 0.34 s (5 s before), a cold server reading the feed
+  reaches the first page in 22-24 s (38-40 s), and one given a **prepared file**
+  (`tools/prepare_catalogue.py`, `src/picwise_providers/prepared_catalogue.py`) in
+  about 4 s, without reading the feed; 0 of the 118 pages changed. Details and what
+  keeps a prepared file honest: the plan file, "Step 5, first part built". **Next:** the
+  file built by the deployment and renewed daily (vercel.json build command, a daily
+  scheduled job calling a Deploy Hook, a check on a test deployment, then `main`). It
+  waits on the owner: the Vercel connection in Claude is on the account
+  `nik.karadimitris@gmail.com`, which holds only `taxi-dashbord`; PicWise is on SUBBY
+  CLOUD (`mysubby.cloud@gmail.com`), so the connection must be made again with that
+  account. Also for the owner: data up to a day old instead of 6 hours (plan file).
+  The owner does not pay $20 a month for Vercel Pro (2026-10-17); Vercel's terms, as
+  remembered and not checked from here, keep the free plan for non-commercial use;
+  Google Cloud Run's free tier was proposed, nothing decided; build so it runs on either.
+  The owner also wants all projects under SUBBY CLOUD and the GitHub account renamed
+  "subbycloud"; steps given, nothing done by Claude.
+- **Picking up in a new conversation.** Everything is pushed to `ccr-fd5dc1bc-4vgsgl`.
+  To measure a change that should only be faster:
   - the owner uploads the feed file (Awin, download, then upload here; never the
     link). Copy it into its own empty directory;
   - before the change: `python -I tools/price_first_eval.py <feed.csv.gz> before.json`
-    (118 searches, about 10 minutes); after it: `python -I tools/price_first_eval.py
+    (118 searches, a few minutes); after it: `python -I tools/price_first_eval.py
     <feed.csv.gz> after.json --compare before.json`, which lists every page that
-    changed and the time per search before and after;
+    changed and the time per search before and after; `--prepared <file>` answers
+    from a prepared file;
   - tests per module: `PYTHONPATH=.:src python3 -m unittest tests.<module>`, a few
     at a time, and `PYTHONPATH=.:src python3 tools/nlu_misspelling_benchmark.py
     --failures 60`. Known failures on unchanged code are in "Current numbers" below;
@@ -227,7 +239,8 @@ In short:
 | Product concept lexicon (278 kinds, EN + GR names, mega category, `broader`, preference words) | `src/picwise_nlu/product_concepts.py` |
 | Understanding: phonetic keys, typo correction with safety fences, specs, product annotation (incl. accessory guard), "did you mean" | `src/picwise_nlu/concept_understanding.py` |
 | Price-first selection: the kind test, cheapest first, the same product once, the Recommended, "4 of 45"; the concept path (`_select_products_for_concept`), the word path for kinds not understood (`_select_products_by_words`), the question when a word names several kinds; the condition gate | `src/picwise_providers/search_selection.py` |
-| The catalogue a search reads, cached per feed load; the counts on the scanning screen; the suggestions | `src/picwise_providers/state.py`, `src/picwise_providers/suggestions.py` |
+| The catalogue a search reads, judged once per feed load (`SearchCatalogue`); the counts on the scanning screen; the suggestions | `src/picwise_providers/state.py`, `src/picwise_providers/suggestions.py` |
+| The prepared feed: written by `tools/prepare_catalogue.py`, read instead of the feed when fresh and written by the same code | `src/picwise_providers/prepared_catalogue.py`, `state.py` (`prepare_feed_catalogue`, `_active_prepared_catalogue`) |
 | Whether the feed says a product is not new (one rule for the gate and the cards) | `src/picwise_providers/product_condition.py` |
 | Resolver | `src/picwise_search/live_search_resolver.py` |
 | Page text ("Understood as", "Only some of the four match: X (n of 4)", "could not match") | `src/picwise_surface/reference.py` |
@@ -239,6 +252,8 @@ Tools:
 
 - `python -I tools/price_first_eval.py <feed.csv.gz> out.json [--cards] [--compare earlier.json]`
   — 118 buyer searches on a real feed file: what each page shows, and how long it took
+- `python tools/prepare_catalogue.py [--feed-file F] [--out PATH] [--keep-going]` — the
+  feed prepared once (step 5); a server reads it with `PICWISE_PREPARED_CATALOGUE_FILE`
 - `python tools/nlu_misspelling_benchmark.py` — 706 misspelled queries end to end
 - `python tools/check_awin_feed.py --url "<feed link>"` — what a real feed will do
 - `python tools/nlu_mistake_report.py queries.txt` or `--from-query-log` — lexicon review queue
@@ -254,12 +269,14 @@ guide for the owner), `docs/picwise_query_understanding.md`,
   after part 3b; 96.0% until 2026-10-16). It fell to 93.9% with the owner's rule that
   "mobile phone" and «κινητό» show basic phones, because 15 of its cases expect
   smartphones; those cases were left as they are so the number shows the rule.
-- Test suite, last full run **2026-10-17** at `deab42a` (step 4), one process per
-  module: **236 of 239 modules pass**. The three that fail fail the same on the code
-  before this work: `test_picwise_canonical_vocabulary_registry_stage2`,
-  `test_picwise_search_index_generated_blind_stage4` and, one of its 13 tests,
-  `test_picwise_search_index_blind_evaluation_stage6a` (about 43 min; run it on its
-  own, as `test_picwise_learning_stage7b`, about 41 min).
+- Test suite, last full run **2026-10-17** for step 5 (all modules but the two
+  hour-long ones, one process per module): **237 of 239 pass** with the contracts test
+  run after the commit. The two that fail fail the same on the code before this work:
+  `test_picwise_canonical_vocabulary_registry_stage2` and
+  `test_picwise_search_index_generated_blind_stage4`. At `deab42a` (step 4)
+  `test_picwise_search_index_blind_evaluation_stage6a` failed one of its 13 tests, as
+  before step 3 (about 43 min; run it on its own, as `test_picwise_learning_stage7b`,
+  about 41 min, which passes).
 - Older, kept for the history: full run **2026-10-12** after the description rule, the spec reader
   and the fixture updates (228 modules, every module except the two hour-long ones,
   one process per module, `PYTHONPATH=.`): **226 modules pass, 2 fail**, and both
@@ -465,6 +482,10 @@ files: correcting the phase wording is the owner's decision, not the engineer's.
 
 - Run tests **per module**, a few in parallel; never the whole suite in one process
   (out of memory, hours).
+- A prepared feed file is tied to the code that wrote it: any change to a file under
+  `src/picwise_providers` or `src/picwise_nlu` makes old files unusable (the server then
+  reads the feed). Prepare again after such a change. Outside Vercel a server reads one
+  only when `PICWISE_PREPARED_CATALOGUE_FILE` names it, so tests never pick one up.
 - Tests rewrite `src/picwise_search_memory/artifacts/search_runtime_v1.json.gz`
   (`built_at` only). `git restore` it before committing.
 - `test_picwise_search_graph_contracts_stage1db1` fails while `app.py`,
