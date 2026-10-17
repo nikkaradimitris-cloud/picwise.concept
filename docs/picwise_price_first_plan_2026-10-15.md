@@ -536,6 +536,9 @@ parameter on `/search`. Tested in `tests/test_picwise_price_first.py`.
   mid-priced product carrying a code there is none either, as the owner ruled. The
   note above the cards says which.
 
+The owner accepted these readings on 2026-10-17 («Οκ σε όλους»), with those of the
+cards below, the item condition, and the cap on "More".
+
 **The cards.**
 - The Recommended: a "★ Recommended" badge and the owner's line, "Mid-priced for this
   category".
@@ -553,6 +556,11 @@ parameter on `/search`. Tested in `tests/test_picwise_price_first.py`.
   Recommended is the 2nd cheapest, and the 4th cheapest is on the page too), and calling
   it the lowest price would be false. It then carries no price label. The cards "More"
   opens carry none either, except "Lowest price of N shops".
+- Without a Recommended, "Lowest price" goes, the same way, only on first-page cards
+  priced at or below the middle price (owner, 2026-10-17: «Ως τη μεσαία τιμή»). It was
+  on every card, and "standing desk" showed a £630.99 desk, "3rd cheapest of 3", as
+  "Lowest price"; now only the £137.99 one says it, because the £630.99 one is extreme
+  and does not count, and the middle of the other two is the cheaper.
 - The note above the cards: "Sorted by price, lowest first, from the shops connected to
   PicWise. The Recommended is mid-priced for this category. Prices and stock are as the
   shops list them."
@@ -671,9 +679,6 @@ toner" 2 and "standing desk" 3.
   still a proposal.
 - A "Kettle & 2 Slice Toaster Set" is read as a kettle, and it is the Recommended for
   "kettle".
-- Without a Recommended every first-page card says "Lowest price", on a short list even
-  the dearest: "standing desk" shows a £630.99 desk as "Lowest price" and "3rd cheapest
-  of 3". Put to the owner.
 - Speed is unchanged: about 4 s a search on this feed, about 25 s for the first
   after a cold start.
 - The search box still says "See the 4 best products before you buy", and "What is
@@ -683,7 +688,8 @@ toner" 2 and "standing desk" 3.
   page does not use that model; the model follows when the contract objects are next
   changed.
 
-Tests: `tests/test_picwise_price_first.py` is new (36 tests): the same product once (one
+Tests: `tests/test_picwise_price_first.py` is new (37 tests, one of them added on
+2026-10-17 for "Lowest price" without a Recommended): the same product once (one
 GTIN in two shops, its UPC and EAN forms, brand and MPN but not a model name, no code no
 join, a wrong check digit, one currency), the Recommended (the 23rd of 45, the owner's
 £100, £150 and £200, an extreme price once and twice, an even count, the nearest by price

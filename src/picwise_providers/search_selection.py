@@ -450,7 +450,7 @@ class ProviderProductSelectionResult:
     # of the answer carries an EAN/GTIN) or "too_few_products" (no middle to take).
     recommendation_status: str = ""
     # First-page products that are the cheap end of the answer: priced at or below the
-    # Recommended, or every first-page product when there is no Recommended.
+    # Recommended or, when there is none, at or below the middle price.
     cheapest_product_ids: tuple[str, ...] = field(default_factory=tuple)
     # (product id, shops) for shown products sold by more than one shop: the card
     # says "Lowest price of N shops".
@@ -1749,6 +1749,25 @@ def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduc
     return ordered
 
 
+def _counted_products(ordered: list[_PricedProduct]) -> int:
+    """How many products of the answer, cheapest first, count towards its middle price.
+
+    A dearest product costing at least twice the next dearest does not count, and again
+    for the next one (owner, 2026-10-16). It stays in the list.
+    """
+    counted = len(ordered)
+    while counted >= 2 and ordered[counted - 1].price >= _EXTREME_PRICE_FACTOR * ordered[counted - 2].price:
+        counted -= 1
+    return counted
+
+
+def _middle_price(ordered: list[_PricedProduct]) -> float | None:
+    """The middle price of the answer: of 45 products the 23rd's, of an even number the
+    cheaper middle one's, extreme top prices left out (`_counted_products`)."""
+    counted = _counted_products(ordered)
+    return ordered[(counted - 1) // 2].price if counted else None
+
+
 def _median_recommendation(ordered: list[_PricedProduct]) -> tuple[int | None, str]:
     """Which product of the answer is the Recommended, as (index, status).
 
@@ -1766,9 +1785,7 @@ def _median_recommendation(ordered: list[_PricedProduct]) -> tuple[int | None, s
     must be priced between the cheapest and the dearest that count: on a short list the
     nearest one can be the cheapest, and calling it mid-priced would be false.
     """
-    counted = len(ordered)
-    while counted >= 2 and ordered[counted - 1].price >= _EXTREME_PRICE_FACTOR * ordered[counted - 2].price:
-        counted -= 1
+    counted = _counted_products(ordered)
     if counted < _RECOMMENDED_MIN_PRODUCTS:
         return None, "too_few_products"
     middle_price = ordered[(counted - 1) // 2].price
@@ -1893,11 +1910,17 @@ def _select_products_for_concept(
     opened = display_order[safe_max:page_size]
 
     recommended = ordered[recommended_index] if recommended_index is not None else None
+    # "Lowest price" is for the cheap end of the answer: first-page products priced at
+    # or below the Recommended or, with none, at or below the middle price (owner,
+    # 2026-10-16 and 2026-10-17). Of three standing desks, the £630.99 one is not the
+    # lowest price, though it is on the page.
+    lowest_price_ceiling = recommended.price if recommended is not None else _middle_price(ordered)
     cheapest_ids = tuple(
         str(entry.product.provider_product_id or "").strip()
         for entry in first_page
         if entry is not recommended
-        and (recommended is None or entry.price <= recommended.price)
+        and lowest_price_ceiling is not None
+        and entry.price <= lowest_price_ceiling
     )
     shop_counts = tuple(
         (str(entry.product.provider_product_id or "").strip(), entry.shops)

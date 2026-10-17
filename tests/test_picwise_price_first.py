@@ -449,6 +449,20 @@ class PriceFirstPageTests(unittest.TestCase):
         self.assertEqual(self._counter(page), "2 of 2")
         self.assertEqual(self._more_link(page), "")
         self.assertIn("No Recommended here: these products have no middle price to pick.", page)
+        # Of two, the middle price is the cheaper one's (owner, 2026-10-17).
+        self.assertEqual([card["role"] for card in cards], ["Lowest price", ""])
+
+    def test_without_a_recommended_lowest_price_goes_up_to_the_middle_price(self) -> None:
+        # Owner, 2026-10-17, on three standing desks that all said "Lowest price": as
+        # with a Recommended, only up to the middle price. The £630.99 one is extreme
+        # (at least twice the next) and does not count, so the middle of the other two
+        # is the cheaper one.
+        self._serve(self._kettles([137.99, 255.99, 630.99]))
+        page = self._page("kettle")
+        cards = self._cards(page)
+        self.assertEqual([card["id"] for card in cards], ["k1", "k2", "k3"])
+        self.assertFalse(any(card["recommended"] for card in cards))
+        self.assertEqual([card["role"] for card in cards], ["Lowest price", "", ""])
 
     def test_three_have_a_middle_and_a_dearer_card_is_not_the_lowest_price(self) -> None:
         self._serve(self._kettles([100, 150, 200]))
@@ -465,7 +479,11 @@ class PriceFirstPageTests(unittest.TestCase):
         cards = self._cards(page)
         self.assertEqual([card["id"] for card in cards], ["k2", "k4", "k5", "k3"])
         self.assertFalse(any(card["recommended"] or card["badge"] for card in cards))
-        self.assertEqual([card["role"] for card in cards], ["Lowest price"] * 4)
+        # "Lowest price" up to the middle price (owner, 2026-10-17): of six, the third
+        # cheapest, £40. The £50 kettle on the page claims no price label.
+        self.assertEqual(
+            [card["role"] for card in cards], ["Lowest price"] * 3 + [""]
+        )
         self.assertIn("No Recommended here", page)
         self.assertEqual(self._counter(page), "4 of 6")
 

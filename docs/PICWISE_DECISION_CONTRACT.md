@@ -451,4 +451,7 @@ needed reading to be built, the reading is recorded with it in
 products the cheaper middle one; "nearest" by price; the Recommended priced between
 the cheapest and the dearest, so that "Mid-priced" is true; "Lowest price" only on cards
 priced at or below the Recommended; a search's words read in the product's own title,
-type and brand.
+type and brand. The owner accepted these readings on 2026-10-17 («Οκ σε όλους»), and
+decided that without a Recommended "Lowest price" goes, the same way, only on cards
+priced at or below the middle price («Ως τη μεσαία τιμή»): of three standing desks, a
+£630.99 one is not the lowest price.
