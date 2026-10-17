@@ -10,14 +10,23 @@ Current state for whoever picks the project up next. Updated 2026-10-17.
   reaches the first page in 22-24 s (38-40 s), and one given a **prepared file**
   (`tools/prepare_catalogue.py`, `src/picwise_providers/prepared_catalogue.py`) in
   about 4 s, without reading the feed; 0 of the 118 pages changed. Details and what
-  keeps a prepared file honest: the plan file, "Step 5, first part built". **Next:** the
-  file built by the deployment and renewed daily (vercel.json build command, a daily
-  scheduled job calling a Deploy Hook, a check on a test deployment, then `main`). It
-  waits on the owner: the Vercel connection in Claude is on another Vercel account of
-  the owner's, which holds only `taxi-dashbord`; PicWise is on SUBBY CLOUD, so the
-  connection must be made again with that account (at claude.ai/customize/connectors),
-  and a new conversation started, since a conversation reads its connectors when it
-  starts. **Decided by the owner, 2026-10-17:** a file prepared once a day is fresh
+  keeps a prepared file honest: the plan file, "Step 5, first part built".
+  **Second part built too** (2026-10-17, on the branch, not checked on Vercel): every
+  deployment's build prepares the feed (`vercel.json` build command, no more `builds`),
+  a deployment never fails because of the feed (`--keep-going`), one Vercel scheduled
+  job a day calls `/cron/renew-prepared-feed`, which with `CRON_SECRET` posts to the
+  Deploy Hook in `PICWISE_DEPLOY_HOOK_URL` (both keys only in Vercel), and
+  `/private-beta-readiness` says under `"prepared_feed"` whether the server answers from
+  the file. Checked with Vercel's own CLI (`vercel build`) on a fictional feed; details
+  in the plan file, "Step 5, second part built". **Waits on the owner, in Vercel**
+  (Greek steps: `docs/vercel_daily_feed_setup_el.md`): the Deploy Hook, the two keys,
+  `AWIN_FEED_URL` for Preview on this branch for the test, a look at the test
+  deployment, then the word for `main`. This conversation had no Vercel connection
+  either; none is needed for these steps, the owner does them in the dashboard. On
+  Google Cloud Run, were PicWise moved there, the same tool and file serve
+  (`PICWISE_PREPARED_CATALOGUE_FILE`); only the schedule and the hook are Vercel's.
+  **Next after that:** the regular visit that keeps the server awake (below), its
+  interval measured on the live site. **Decided by the owner, 2026-10-17:** a file prepared once a day is fresh
   enough («Ναι φορά τη μέρα μου αρκεί»), and a regular visit keeps the server awake
   (the owner's idea, "every hour"; plan file, "Step 5, first part built").
   The owner does not pay $20 a month for Vercel Pro (2026-10-17); Vercel's terms, as
@@ -243,7 +252,8 @@ In short:
 | Understanding: phonetic keys, typo correction with safety fences, specs, product annotation (incl. accessory guard), "did you mean" | `src/picwise_nlu/concept_understanding.py` |
 | Price-first selection: the kind test, cheapest first, the same product once, the Recommended, "4 of 45"; the concept path (`_select_products_for_concept`), the word path for kinds not understood (`_select_products_by_words`), the question when a word names several kinds; the condition gate | `src/picwise_providers/search_selection.py` |
 | The catalogue a search reads, judged once per feed load (`SearchCatalogue`); the counts on the scanning screen; the suggestions | `src/picwise_providers/state.py`, `src/picwise_providers/suggestions.py` |
-| The prepared feed: written by `tools/prepare_catalogue.py`, read instead of the feed when fresh and written by the same code | `src/picwise_providers/prepared_catalogue.py`, `state.py` (`prepare_feed_catalogue`, `_active_prepared_catalogue`) |
+| The prepared feed: written by `tools/prepare_catalogue.py`, read instead of the feed when fresh and written by the same code | `src/picwise_providers/prepared_catalogue.py`, `state.py` (`prepare_feed_catalogue`, `_active_prepared_catalogue`, `prepared_catalogue_status`) |
+| On Vercel: the build that prepares the feed, the daily scheduled job, the renewal route (`CRON_SECRET`, Deploy Hook) | `vercel.json`, `src/picwise_app/prepared_renewal.py`, `api/index.py` |
 | Whether the feed says a product is not new (one rule for the gate and the cards) | `src/picwise_providers/product_condition.py` |
 | Resolver | `src/picwise_search/live_search_resolver.py` |
 | Page text ("Understood as", "Only some of the four match: X (n of 4)", "could not match") | `src/picwise_surface/reference.py` |
@@ -255,15 +265,17 @@ Tools:
 
 - `python -I tools/price_first_eval.py <feed.csv.gz> out.json [--cards] [--compare earlier.json]`
   — 118 buyer searches on a real feed file: what each page shows, and how long it took
-- `python tools/prepare_catalogue.py [--feed-file F] [--out PATH] [--keep-going]` — the
-  feed prepared once (step 5); a server reads it with `PICWISE_PREPARED_CATALOGUE_FILE`
+- `python tools/prepare_catalogue.py [--feed-file F] [--out PATH] [--keep-going]
+  [--static-dir DIR]` — the feed prepared once (step 5); a server reads it with
+  `PICWISE_PREPARED_CATALOGUE_FILE`, a Vercel deployment from its own build
 - `python tools/nlu_misspelling_benchmark.py` — 706 misspelled queries end to end
 - `python tools/check_awin_feed.py --url "<feed link>"` — what a real feed will do
 - `python tools/nlu_mistake_report.py queries.txt` or `--from-query-log` — lexicon review queue
 - `python tools/build_picwise_search_artifact.py` — rebuild the search artifact
 
 Docs: `docs/picwise_misspelling_understanding.md`, `docs/awin_feed_setup_el.md` (Greek
-guide for the owner), `docs/picwise_query_understanding.md`,
+guide for the owner), `docs/vercel_daily_feed_setup_el.md` (Greek: the prepared feed on
+Vercel, every day), `docs/picwise_query_understanding.md`,
 `docs/picwise_mission_decision_delivery.md`.
 
 ## Current numbers (local fixtures only)
@@ -272,7 +284,11 @@ guide for the owner), `docs/picwise_query_understanding.md`,
   after part 3b; 96.0% until 2026-10-16). It fell to 93.9% with the owner's rule that
   "mobile phone" and «κινητό» show basic phones, because 15 of its cases expect
   smartphones; those cases were left as they are so the number shows the rule.
-- Test suite, last full run **2026-10-17** for step 5 (all modules but the two
+- Test suite, last full run **2026-10-17** for step 5's second part (all modules but
+  the two hour-long ones, one process per module, four at a time, after the commit):
+  **238 of 240 pass**, 2,082 tests, 48 skipped; the two that fail are the same two as
+  below. Misspelling benchmark unchanged (93.8%, 0 wrong).
+- Before it, the same day for step 5's first part (all modules but the two
   hour-long ones, one process per module): **237 of 239 pass** with the contracts test
   run after the commit. The two that fail fail the same on the code before this work:
   `test_picwise_canonical_vocabulary_registry_stage2` and
@@ -489,6 +505,19 @@ files: correcting the phase wording is the owner's decision, not the engineer's.
   `src/picwise_providers` or `src/picwise_nlu` makes old files unusable (the server then
   reads the feed). Prepare again after such a change. Outside Vercel a server reads one
   only when `PICWISE_PREPARED_CATALOGUE_FILE` names it, so tests never pick one up.
+- `vercel.json`: a `builds` key makes Vercel skip the build command, so the file would
+  silently stop being built; the rewrites point at `/api/index` (the function's name
+  without `builds`); Vercel refuses an empty `outputDirectory`, which is why the build
+  writes `public/prepared.json`. To see what a change does to a deployment without
+  Vercel: `npm install vercel` in a scratch folder, a copy of the repository with a
+  hand-written `.vercel/project.json` (`{"projectId":"x","orgId":"y","settings":
+  {"framework":null}}`) and `.vercel/.env.production.local` naming a feed file, then
+  `vercel build --prod --yes`, and read `.vercel/output` (no login needed).
+- The daily renewal is a new production deployment each morning. After an Instant
+  Rollback, Vercel stops putting new deployments live until one is promoted by hand
+  (as remembered, not checked from here): the renewal would then build every day and
+  never go live, and the live file would pass its 30 hours. `prepared_feed` on
+  `/private-beta-readiness` shows it (`too_old`).
 - Tests rewrite `src/picwise_search_memory/artifacts/search_runtime_v1.json.gz`
   (`built_at` only). `git restore` it before committing.
 - `test_picwise_search_graph_contracts_stage1db1` fails while `app.py`,

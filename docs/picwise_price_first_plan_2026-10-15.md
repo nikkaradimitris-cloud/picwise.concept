@@ -953,7 +953,9 @@ What keeps a prepared file honest:
   this feed): no rule reads an empty field differently from a missing one, and the 118
   pages are the same.
 
-**Not built yet: the file on the live site, renewed every day.** It needs, in order:
+**Not built yet: the file on the live site, renewed every day** (built on the branch the
+same day, see "Step 5, second part built" below; the checks on Vercel wait on the
+owner). It needs, in order:
 1. the deployment to build the file: `vercel.json` gives up its old `builds` setting for
    a build command that runs `tools/prepare_catalogue.py --keep-going` (a feed that
    cannot be read writes nothing, and the server reads the feed as before);
@@ -981,6 +983,68 @@ next part, as proposed to the owner the same day:
   site (GitHub's shortest schedule is every 5 minutes, and it can run late);
 - with the prepared file, a sleeping server still answers in about 4 seconds, behind the
   scanning screen.
+
+## Step 5, second part built: the prepared feed on Vercel, every day, 2026-10-17
+
+Owner: «Επόμενο: το έτοιμο αρχείο στη Vercel, κάθε μέρα», with the keys only in Vercel.
+Built on the branch; nothing on `main`, nothing checked on Vercel itself yet (this
+conversation has no Vercel connection, and the session cannot reach `*.vercel.app`).
+
+What was built:
+
+- **The build prepares the feed.** `vercel.json` gives up the old `builds` setting, under
+  which Vercel runs no build command at all, for `"buildCommand": "python3
+  tools/prepare_catalogue.py --keep-going --static-dir public"`. Each deployment carries
+  the feed prepared at its own build, `prepared/catalogue.json.gz` inside the Python
+  function, next to the code that reads it. The rewrites now point at `/api/index`, the
+  name the function has without `builds`.
+- **A deployment never fails because of the feed.** With `--keep-going`, a feed that
+  cannot be read, or any error while preparing it, writes nothing and exits 0: the
+  server then reads the feed itself, as before. Of an error the tool prints its kind and
+  line only, since an error's own text can quote the feed's link.
+- **A public note.** Vercel refuses to deploy an empty static folder
+  (`outputDirectory`), so the build writes `public/prepared.json` there: whether it
+  prepared the feed, when, how many products and shops. Nothing else.
+- **The daily renewal.** `vercel.json` "crons" runs `/cron/renew-prepared-feed` once a
+  day, `17 4 * * *` (UTC; on the free plan any time in that hour). The route
+  (`src/picwise_app/prepared_renewal.py`) answers only a call carrying `CRON_SECRET`,
+  and then posts to the Deploy Hook in `PICWISE_DEPLOY_HOOK_URL`: a new deployment of
+  `main`, whose build prepares that day's feed. Both keys are Vercel environment
+  variables only; the answer names what happened, never a key.
+- **Whether the server reads it.** `/private-beta-readiness` has `"prepared_feed"`:
+  `in_use` with `prepared_at` and `age_hours`, or why not (`not_present`, `too_old`,
+  `other_code`, `other_format`, `unreadable`, `not_used` with a purchasability cache).
+
+How it was checked, here:
+
+- Vercel's own CLI (`vercel build`, 64.5.0, the builders Vercel's build machines run)
+  on a fictional feed: the build command runs before the Python function is packed,
+  the function holds `prepared/catalogue.json.gz`, the cron is registered, and the one
+  static file is `prepared.json`. Without `builds` and without a static file, Vercel's
+  build fails ("No Output Directory named public", then "is empty"); both were seen and
+  are what the note is for.
+- The built function copied out as Vercel holds it and run on Python 3.12 with no feed
+  configured: `prepared_feed` reads `in_use` and a search is answered from the file.
+- Which Python runs the build command on Vercel is not documented; Amazon Linux 2023's
+  own `python3` is 3.9. The tool runs on 3.9, from a file and from a link, and the files
+  prepared on 3.9 and on 3.12 are identical apart from the time on all three fixture
+  feeds of the repository, Greek titles included.
+- Memory, on a fictional feed of 42,000 rows and 150 columns: a cold server reading the
+  feed peaked at 527 MB; reading the prepared file, 359 MB, with the same page. Not
+  measured on a real feed in this conversation (none was uploaded).
+- `tests/test_picwise_daily_renewal.py` (10) and six new tests in
+  `tests/test_picwise_prepared_catalogue.py` (18 in all). Full run: 238 of 240 modules
+  pass, the two that failed before this work; misspelling benchmark unchanged (93.8%,
+  0 wrong).
+
+What it waits on (the owner, in Vercel; `docs/vercel_daily_feed_setup_el.md`, Greek):
+a Deploy Hook for `main`; `PICWISE_DEPLOY_HOOK_URL` and `CRON_SECRET` (Production,
+Sensitive); for the test deployment, `AWIN_FEED_URL` also for Preview on this branch,
+then a redeploy, then a look at the build log and at `/private-beta-readiness`; then the
+owner's word for `main`. After the merge: Settings, Cron Jobs, Run, once.
+
+Not built: the regular visit that keeps the server awake (the owner's idea, above). It
+is the next part, and its interval is to be measured on the live site.
 
 ## The owner's additions, 2026-10-16
 
