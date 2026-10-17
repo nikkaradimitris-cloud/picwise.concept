@@ -2182,6 +2182,59 @@ def _select_products_by_words(
         strong_only_if_whole=True,
     )
 
+
+@dataclass(frozen=True)
+class SearchCatalogue:
+    """The products a search reads, judged once (step 5 of the price-first plan).
+
+    Whether a product can be shown on a card and whether the feed calls it not new do
+    not depend on the search, and judging every product again on every search was
+    about 4 of the 5 seconds a search took on the third feed. Each product's search
+    fields are kept with it, read-only.
+    """
+
+    # Card-eligible products, in feed order, new or not: a search that asks for a
+    # condition reads these.
+    products: tuple[ProviderProduct, ...]
+    fields: tuple[dict[str, str], ...]
+    # The new ones among them: every other search reads only these.
+    new_products: tuple[ProviderProduct, ...]
+    new_fields: tuple[dict[str, str], ...]
+
+
+def build_search_catalogue(
+    products: tuple[ProviderProduct, ...],
+    *,
+    feed_ctx: FeedAvailabilityContext | None = None,
+    card_eligible: tuple[bool, ...] | None = None,
+) -> SearchCatalogue:
+    """Judge each product once: can a card show it, and is it new.
+
+    `card_eligible`, when given, is that judgement already made for each product, in
+    order, against `feed_ctx`: the feed pipeline makes it as it loads the feed.
+    """
+    if card_eligible is None:
+        if feed_ctx is None:
+            feed_ctx = build_feed_availability_context(products)
+        card_eligible = tuple(
+            evaluate_product_eligibility(product, feed_ctx=feed_ctx).card_eligible
+            for product in products
+        )
+    eligible = tuple(product for product, shown in zip(products, card_eligible) if shown)
+    fields = tuple(_product_search_fields(product) for product in eligible)
+    new_rows = tuple(
+        (product, product_fields)
+        for product, product_fields in zip(eligible, fields)
+        if not product_non_new_condition(product)
+    )
+    return SearchCatalogue(
+        products=eligible,
+        fields=fields,
+        new_products=tuple(product for product, _fields in new_rows),
+        new_fields=tuple(product_fields for _product, product_fields in new_rows),
+    )
+
+
 def select_provider_products_for_query(
     query: str,
     products: tuple[ProviderProduct, ...],
@@ -2190,11 +2243,14 @@ def select_provider_products_for_query(
     reading: ConceptReading | None = None,
     feed_ctx: FeedAvailabilityContext | None = None,
     shown: int = 0,
+    catalogue: SearchCatalogue | None = None,
 ) -> ProviderProductSelectionResult:
     """The products to show for one search.
 
     `shown` is how many products of a price-first answer the page holds: the first
     page, plus every four "More" has opened. 0 means the first page only.
+    `catalogue` is `products` already judged (`build_search_catalogue`); without it they
+    are judged here.
     """
     safe_max = max(1, int(max_products))
     if reading is None:
@@ -2227,21 +2283,16 @@ def select_provider_products_for_query(
             reason_codes=("empty_query",),
         )
 
-    if feed_ctx is None:
-        feed_ctx = build_feed_availability_context(products)
+    if catalogue is None:
+        catalogue = build_search_catalogue(products, feed_ctx=feed_ctx)
     # Owner decision (2026-10-10): a product the feed calls refurbished, used or
     # otherwise not new is not a candidate at all unless the buyer asked for that
     # condition. Dropped here, before any ranking, so it cannot be shown, counted,
     # recommended or reported as a match.
-    wants_non_new = bool(condition_request)
-    eligible = tuple(
-        product
-        for product in products
-        if evaluate_product_eligibility(product, feed_ctx=feed_ctx).card_eligible
-        and (wants_non_new or not product_non_new_condition(product))
-    )
-    # Each product's searchable text, built once for the kind reading and the words.
-    eligible_fields = tuple(_product_search_fields(product) for product in eligible)
+    if condition_request:
+        eligible, eligible_fields = catalogue.products, catalogue.fields
+    else:
+        eligible, eligible_fields = catalogue.new_products, catalogue.new_fields
 
     if reading.understood:
         return _select_products_for_concept(

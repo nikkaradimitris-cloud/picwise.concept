@@ -24,14 +24,15 @@ from .eligibility import evaluate_provider_product_eligibility
 from .graph_projection import project_provider_products_to_graph
 from .offer_health import build_feed_availability_context, evaluate_product_eligibility
 from .normalization import extract_merchant_name
-from .purchasability_cache import enrich_provider_products_with_cache
+from .purchasability_cache import enrich_provider_products_with_cache, resolve_purchasability_cache
 from .suggestions import SearchSuggestion, build_search_suggestions
 from .search_selection import (
     ProviderFeedRecommendationDecision,
     ProviderProductSelectionResult,
+    SearchCatalogue,
+    build_search_catalogue,
     decide_recommended_provider_product,
     is_strong_feed_opportunity_selection,
-    product_non_new_condition,
     select_provider_products_for_query,
 )
 
@@ -164,8 +165,11 @@ def resolve_provider_feed_pipeline(
     cannot absorb. The default stays True so external callers are unaffected.
     """
     file_key = feed_file_cache_key(config.feed_file)
+    # Only the graph projection reads the mega category. Without it every mega category
+    # shares one entry: each used to judge the whole feed again, seconds on a real feed.
+    cache_mega_category_id = str(mega_category_id or "") if include_graph_projection else ""
     cache_key = (
-        (file_key, str(mega_category_id or ""), bool(include_graph_projection))
+        (file_key, cache_mega_category_id, bool(include_graph_projection))
         if file_key is not None
         else None
     )
@@ -264,20 +268,32 @@ def _load_eligible_products_with_availability_context(
     return enrich_provider_products_with_cache(products), pipeline.availability_context
 
 
-def _searchable_products(pipeline: ProviderFeedPipelineResult) -> tuple[ProviderProduct, ...]:
-    """The products a search reads: eligible in the feed, card-eligible, and new."""
-    context = pipeline.availability_context
-    return tuple(
-        row.product
-        for row in pipeline.eligibility_results
-        if row.status == "eligible"
-        and evaluate_product_eligibility(row.product, feed_ctx=context).card_eligible
-        and not product_non_new_condition(row.product)
-    )
+def _feed_eligible_products(pipeline: ProviderFeedPipelineResult) -> tuple[ProviderProduct, ...]:
+    return tuple(row.product for row in pipeline.eligibility_results if row.status == "eligible")
 
 
-# The catalogue counts and suggestions of the pipeline last read, kept with it so they
-# are worked out once per feed load. Keyed by the pipeline object itself.
+def _search_catalogue(pipeline: ProviderFeedPipelineResult) -> SearchCatalogue:
+    """The products a search reads, judged once per feed load: eligible in the feed,
+    card-eligible, and which of them are new (`build_search_catalogue`)."""
+
+    def build(ready: ProviderFeedPipelineResult) -> SearchCatalogue:
+        rows = tuple(row for row in ready.eligibility_results if row.status == "eligible")
+        # The pipeline judged each row against the same availability context as it
+        # loaded the feed; that judgement is reused rather than made a second time.
+        judged = all(row.product_eligibility is not None for row in rows)
+        return build_search_catalogue(
+            tuple(row.product for row in rows),
+            feed_ctx=ready.availability_context,
+            card_eligible=(
+                tuple(row.product_eligibility.card_eligible for row in rows) if judged else None
+            ),
+        )
+
+    return _cached_for(pipeline, "search_catalogue", build)
+
+
+# The search catalogue, counts and suggestions of the pipeline last read, kept with it
+# so they are worked out once per feed load. Keyed by the pipeline object itself.
 _CATALOGUE_CACHE: dict[str, tuple[ProviderFeedPipelineResult, Any]] = {}
 
 
@@ -334,7 +350,7 @@ def search_suggestions(
     return _cached_for(
         pipeline,
         "suggestions",
-        lambda ready: build_search_suggestions(_searchable_products(ready)),
+        lambda ready: build_search_suggestions(_search_catalogue(ready).new_products),
     )
 
 
@@ -388,9 +404,21 @@ def resolve_search_provider_feed_product_selection(
     reading: ConceptReading | None = None,
     shown: int = 0,
 ) -> ProviderProductSelectionResult:
-    products, availability_context = _load_eligible_products_with_availability_context(
-        feed_config
-    )
+    config = feed_config or awin_feed_config_from_env()
+    pipeline = resolve_provider_feed_pipeline(config, include_graph_projection=False)
+    catalogue = None
+    if pipeline.feed_status.status != "provider_feed_ready":
+        products, availability_context = tuple(), None
+    else:
+        products = _feed_eligible_products(pipeline)
+        availability_context = pipeline.availability_context
+        purchasability_cache = resolve_purchasability_cache()
+        if purchasability_cache is None:
+            catalogue = _search_catalogue(pipeline)
+        else:
+            # A checked shop page can change whether a product may be shown between
+            # two searches, so these products are judged on every search.
+            products = enrich_provider_products_with_cache(products, purchasability_cache)
     selection = select_provider_products_for_query(
         query,
         products,
@@ -398,6 +426,7 @@ def resolve_search_provider_feed_product_selection(
         reading=reading,
         feed_ctx=availability_context,
         shown=shown,
+        catalogue=catalogue,
     )
     if availability_context is None:
         return selection
