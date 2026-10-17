@@ -23,12 +23,15 @@ from .contracts import (
 from .eligibility import evaluate_provider_product_eligibility
 from .graph_projection import project_provider_products_to_graph
 from .offer_health import build_feed_availability_context, evaluate_product_eligibility
+from .normalization import extract_merchant_name
 from .purchasability_cache import enrich_provider_products_with_cache
+from .suggestions import SearchSuggestion, build_search_suggestions
 from .search_selection import (
     ProviderFeedRecommendationDecision,
     ProviderProductSelectionResult,
     decide_recommended_provider_product,
     is_strong_feed_opportunity_selection,
+    product_non_new_condition,
     select_provider_products_for_query,
 )
 
@@ -259,6 +262,80 @@ def _load_eligible_products_with_availability_context(
         if row.status == "eligible"
     )
     return enrich_provider_products_with_cache(products), pipeline.availability_context
+
+
+def _searchable_products(pipeline: ProviderFeedPipelineResult) -> tuple[ProviderProduct, ...]:
+    """The products a search reads: eligible in the feed, card-eligible, and new."""
+    context = pipeline.availability_context
+    return tuple(
+        row.product
+        for row in pipeline.eligibility_results
+        if row.status == "eligible"
+        and evaluate_product_eligibility(row.product, feed_ctx=context).card_eligible
+        and not product_non_new_condition(row.product)
+    )
+
+
+# The catalogue counts and suggestions of the pipeline last read, kept with it so they
+# are worked out once per feed load. Keyed by the pipeline object itself.
+_CATALOGUE_CACHE: dict[str, tuple[ProviderFeedPipelineResult, Any]] = {}
+
+
+def _cached_for(pipeline: ProviderFeedPipelineResult, name: str, build):
+    cached = _CATALOGUE_CACHE.get(name)
+    if cached is not None and cached[0] is pipeline:
+        return cached[1]
+    value = build(pipeline)
+    _CATALOGUE_CACHE[name] = (pipeline, value)
+    return value
+
+
+def _catalogue_counts(pipeline: ProviderFeedPipelineResult) -> tuple[int, int]:
+    """The products a search looks through, the feed's eligible ones, and their shops.
+
+    Read from the pipeline as loaded, without judging each product again: this runs
+    when a page is drawn, and judging 40,000 products takes seconds.
+    """
+    products = [row.product for row in pipeline.eligibility_results if row.status == "eligible"]
+    shops = {
+        str(extract_merchant_name(product.raw if isinstance(product.raw, dict) else {}) or "").strip().lower()
+        for product in products
+    } - {""}
+    return len(products), len(shops)
+
+
+def peek_search_catalogue_counts() -> tuple[int, int] | None:
+    """(products, shops) a search reads, when this process has the feed loaded, else None.
+
+    For the scanning screen (step 4): "Searching 39,815 products from 2 shops". It reads
+    only the feed this process already holds, the one loaded last: it never loads one,
+    and never reads the feed configuration either, which for a feed URL can start a
+    download. A page drawn before the first search stays fast and names no number.
+    """
+    try:
+        entries = list(_PIPELINE_CACHE.items())
+    except RuntimeError:
+        # The search warm-up thread added a pipeline while this read: say no number.
+        return None
+    for (_file_key, mega_category_id, with_graph), pipeline in reversed(entries):
+        if not mega_category_id and not with_graph and pipeline.feed_status.status == "provider_feed_ready":
+            return _cached_for(pipeline, "counts", _catalogue_counts)
+    return None
+
+
+def search_suggestions(
+    feed_config: ProviderFeedConfig | None = None,
+) -> tuple[SearchSuggestion, ...]:
+    """What the search box suggests for the connected catalogue (`suggestions.py`)."""
+    config = feed_config or awin_feed_config_from_env()
+    pipeline = resolve_provider_feed_pipeline(config, include_graph_projection=False)
+    if pipeline.feed_status.status != "provider_feed_ready":
+        return tuple()
+    return _cached_for(
+        pipeline,
+        "suggestions",
+        lambda ready: build_search_suggestions(_searchable_products(ready)),
+    )
 
 
 def resolve_card_eligible_provider_feed_product_by_id(

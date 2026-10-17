@@ -33,7 +33,7 @@ def _assert_landing_shell(test_case: unittest.TestCase, body: str) -> None:
     )
     for href, label in expected_links:
         test_case.assertIn(f'class="pw-footer-link" href="{href}">{label}<', body)
-    test_case.assertIn("See the 4 best products before you buy", body)
+    test_case.assertIn("What are you looking for?", body)
     test_case.assertIn("Live safe mode", body)
     test_case.assertIn('action="/search"', body)
     test_case.assertIn('method="get"', body)

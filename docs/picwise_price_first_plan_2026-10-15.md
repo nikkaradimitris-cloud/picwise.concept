@@ -6,9 +6,11 @@ records what was decided, what it replaces, what stays, where it contradicts the
 project's founding files, what is still open, and the marketing analysis given the
 same day. The marketing part is proposals, not decisions.
 
-**Built on the branch, 2026-10-16 and 2026-10-17:** steps 1 to 3 of the build order
+**Built on the branch, 2026-10-16 and 2026-10-17:** steps 1 to 4 of the build order
 (below), so every search now runs this plan: see "Step 1 built", "Step 2 built", "Step 3
 built" and, for the searches whose product PicWise does not understand, "Part 3b built".
+The search page itself, with the scanning screen, suggestions and the microphone, is
+"Step 4 built".
 The conflict with the founding files was settled on 2026-10-16: the owner chose to
 change them to the plan, and they now say the same (see below).
 
@@ -691,7 +693,8 @@ toner" 2 and "standing desk" 3.
   after a cold start.
 - The search box still says "See the 4 best products before you buy", and "What is
   PicWise?" still says it "recommends the 4 best matches". Neither is true of price
-  first; the wording is the owner's call.
+  first; the wording is the owner's call. *Chosen by the owner and built on
+  2026-10-17: see "Step 4 built".*
 - `src/picwise_contracts/models.py` still rejects more than 4 `more_choices`. The live
   page does not use that model; the model follows when the contract objects are next
   changed.
@@ -821,6 +824,89 @@ test modules 235 pass; the other three fail the same way on the code before step
 - A department split can ask where a buyer would not: "trampoline" asks between
   fitness trampolines and inflatable bouncy castles called trampolines.
 
+## Step 4 built: the search page, 2026-10-17
+
+Built on the branch: the page (`src/picwise_surface/reference.py`), the suggestions
+(`src/picwise_providers/suggestions.py`, served at `/suggest.json` by `api/index.py`),
+the counts the scanning screen names (`peek_search_catalogue_counts` in
+`src/picwise_providers/state.py`) and the privacy page. Specified first in
+`docs/LANDING_PAGE_SPEC.md`, "Built in step 4", and tested in
+`tests/test_picwise_search_page.py` (21 tests). Five older modules expected the old box
+text and now expect the owner's. Of 239 test modules, 236 pass; the other three fail the
+same way on the code before step 3.
+
+**Wording, chosen by the owner on 2026-10-17.** The box reads "What are you looking
+for?". The owner chose it over "Search any product, cheapest first" because it promises
+nothing a shop reviewing PicWise for its affiliate programme could object to. "What is
+PicWise?" reads: "PicWise finds the product you want in the shops it is connected to,
+shows what the shops list as in stock, cheapest first, and marks one mid-priced
+Recommended." Both are written into the concept's search section too. The owner chose the
+text proposed to them, which said "shows what is in stock cheapest first"; it was then
+worded to what PicWise knows, "what the shops list as in stock", because PicWise trusts
+the shop's stock flag and checks no shop page (owner, 2026-10-16), and three truth tests
+forbid stating stock as a fact. Those tests now read the page without this one fixed
+description, and pin its text.
+
+**Everything else needs JavaScript and only adds to the page.** Without it the box is
+the plain form it was, and the search works as before. The script is about 6 KB, has
+no library, and loads nothing before the page is shown.
+
+**The scanning screen** shows the moment a search starts, from the box, a suggestion,
+the microphone or "More": "Searching 39,815 products from 2 shops for "rabbit
+hutches"…". In Chromium it appeared within 10 ms; the results page came 6.6 s later and
+replaced it, nothing held back. The numbers are the feed's eligible products and the
+shops they come from, as this server last loaded them; before the first search on a
+server the screen names no number ("Searching the shops connected to PicWise for…").
+It does not narrate "found these, cross-checking, sending": those happen on the server
+inside the one request, in under a second at its end, and the browser cannot see them,
+so naming them would break the owner's own rule that the screen says only what
+happens. Reading the counts never loads the feed, nor reads the feed configuration,
+which for a feed URL can start a download: the page stays fast.
+
+**Suggestions** from the first letter, up to 8 under the box, and the first completed
+in faint letters inside it (Tab, the right arrow, or a tap on the faint letters fills
+it in; a tap on a suggestion searches it). They are:
+- the names of the kinds PicWise knows, in English and Greek, one per singular and
+  plural ("laptop", "λάπτοπ", "φορητός υπολογιστής"), when a search for them lists
+  products; a kind with none here, like the washing machines, is not offered;
+- a brand with a kind ("Samsung smartphone") when the brand has two products of it. A
+  brand alone is never offered: "samsung" names no product and asks which;
+- the shops' own names for what they sell, a product type ("network switches") or the
+  last crumb of a category path ("rabbit hutches", "pop up gazebos"), when at least
+  three products would answer them: every word in the title, type or brand, and the
+  last word what the product is, read as the word search reads it.
+
+On the third feed that is 1,618 suggestions, 31 KB (about 10 KB compressed), the larger
+first. Accents, case and the final sigma do not matter: "λαπ" finds "λάπτοπ". The list
+is fetched once, on the first tap in the box, and the browser keeps it for an hour, so
+a keystroke costs no request. Checked in Chromium: "lap" gives laptop, laptop bag,
+laptop case, laptop sleeve; "λαπ" gives λάπτοπ, θήκη λάπτοπ, τσάντα λάπτοπ; "sam"
+completes to "Samsung monitor"; "dog cr" gives "dog crates"; at phone width the list
+fits the screen.
+
+**The microphone** shows only where the browser can turn speech into text (Chrome,
+Edge, Safari; not Firefox). The words appear in the box as they are spoken, and the
+search starts when the buyer stops (owner, 2026-10-17), through the same understanding
+as typed words. It listens in the browser's language, so a Greek browser hears Greek.
+The button's own text and the privacy page say who hears the audio: in Chrome, Google;
+in Edge and Safari, Microsoft or Apple; PicWise receives only the words. Checked in
+Chromium that the button appears; speech itself cannot be tried in this container,
+which has no microphone.
+
+**What step 4 does not fix:**
+- The suggestions are worked out from the loaded feed, once per feed load: 8 s on a
+  server that has already searched, 43 s on a cold one, where the first `/suggest.json`
+  waits for the feed like a first search does. Step 5, data prepared once a day, is
+  where they should be built.
+- A search that arrives from outside, from Google or a shared link, shows the
+  browser's own loading until the page comes: the scanning screen belongs to the page
+  the search starts from.
+- A search still takes about 5 s on this feed, and the first after a cold start about
+  25-45 s; the scanning screen makes the wait honest, not shorter (step 5). Measured
+  while building it: every search judges the eligibility of all 40,000 products again,
+  about 4 s of the 5, and keeping that judgement per feed load is the first speed-up
+  to make.
+
 ## The owner's additions, 2026-10-16
 
 Decided by the owner after the understanding test, each with what it means in
@@ -913,8 +999,8 @@ this category". Nothing in "Open, for the owner" is left.
 extreme-price rule for step 3 in their own words («όταν το ακριβότερο είναι δύο φορές
 ακριβότερο από το προηγούμενο φθηνότερο να εξαιρείται από το μέσο όρο»), which matches
 the reading above, and did not object to the order. Steps 1 to 3 were built the same
-day: see "Step 1 built", "Step 2 built" and "Step 3 built". Next is step 4, the search
-page.
+day: see "Step 1 built", "Step 2 built" and "Step 3 built"; part 3b and step 4 on
+2026-10-17. Next is step 5, data prepared once a day.
 1. the strict kind test;
 2. English over greeklish ("patio");
 3. the price-first engine: cheapest first, the median Recommended with the

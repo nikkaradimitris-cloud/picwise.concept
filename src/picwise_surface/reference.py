@@ -134,6 +134,204 @@ _PRICE_FIRST_DISCLOSURES = {
 }
 _PRICE_FIRST_PAGE_NOTE = "Real products from the shops' feeds, cheapest first."
 
+# The search box (owner, 2026-10-17). "What are you looking for?" promises nothing a
+# shop reviewing PicWise for its affiliate programme could object to; "What is
+# PicWise?" says what price first does.
+_SEARCH_PLACEHOLDER = "What are you looking for?"
+_WHAT_IS_PICWISE = (
+    "PicWise finds the product you want in the shops it is connected to, shows what the "
+    "shops list as in stock, cheapest first, and marks one mid-priced Recommended."
+)
+_MIC_TITLE = (
+    "Search by voice. Your browser turns your words into text; in Chrome the audio is "
+    "sent to Google for this."
+)
+_MIC_ICON = (
+    '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
+    '<path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/>'
+    "</svg>"
+)
+
+# Step 4 (owner, 2026-10-16): the scanning screen, suggestions as the buyer types, and
+# the microphone. Plain JavaScript, no library, and only additions: without it the box
+# is a plain form and the search works as before (docs/LANDING_PAGE_SPEC.md).
+# - The scanning screen shows on a search or on "More", with the counts the server
+#   wrote into the page, and says nothing the browser cannot see happening.
+# - The suggestions are fetched once, on the first focus, and matched in the browser.
+# - The microphone shows only where the browser can listen; the search starts when
+#   the buyer stops speaking (owner, 2026-10-17).
+_SEARCH_SCRIPT = r"""
+(function(){
+"use strict";
+var form=document.querySelector(".pw-search-shell");
+if(!form){return;}
+var input=form.querySelector(".pw-search-input");
+var list=document.getElementById("pw-suggest-list");
+var ghostTyped=document.getElementById("pw-ghost-typed");
+var ghostRest=document.getElementById("pw-ghost-rest");
+var scan=document.getElementById("pw-scan");
+var scanText=document.getElementById("pw-scan-text");
+var mic=document.getElementById("pw-mic");
+if(!input||!list||!ghostTyped||!ghostRest){return;}
+function scanFor(q){
+  if(!scan||!scanText||!q){return;}
+  var products=scan.getAttribute("data-products");
+  var shops=scan.getAttribute("data-shops");
+  var quoted="\u201c"+q+"\u201d";
+  scanText.textContent=(products&&shops)
+    ?"Searching "+products+(products==="1"?" product":" products")+" from "+shops+(shops==="1"?" shop":" shops")+" for "+quoted+"\u2026"
+    :"Searching the shops connected to PicWise for "+quoted+"\u2026";
+  scan.hidden=false;
+}
+window.addEventListener("pageshow",function(){if(scan){scan.hidden=true;}});
+form.addEventListener("submit",function(){
+  var q=input.value.trim();
+  closeList();
+  if(q){scanFor(q);}
+});
+var more=document.querySelector(".pw-more-button");
+if(more){more.addEventListener("click",function(){scanFor(input.defaultValue.trim());});}
+function norm(s){
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()
+    .replace(/\u03c2/g,"\u03c3").replace(/\s+/g," ");
+}
+var words=null,keys=null,loading=false,shown=[],active=-1;
+function load(){
+  if(words||loading||!window.fetch){return;}
+  loading=true;
+  fetch("/suggest.json").then(function(r){return r.ok?r.json():{};}).then(function(d){
+    words=(d&&d.suggestions)||[];
+    keys=words.map(norm);
+    if(document.activeElement===input){update();}
+  }).catch(function(){words=[];keys=[];});
+}
+function setGhost(typed,rest){
+  ghostTyped.textContent=typed;
+  ghostRest.textContent=rest;
+}
+function closeList(){
+  list.hidden=true;
+  list.textContent="";
+  shown=[];
+  active=-1;
+  input.setAttribute("aria-expanded","false");
+  input.removeAttribute("aria-activedescendant");
+}
+function update(){
+  var raw=input.value;
+  var q=norm(raw).replace(/^ /,"");
+  setGhost("","");
+  if(!words||!q.trim()){closeList();return;}
+  var starts=[],inner=[];
+  for(var i=0;i<words.length&&starts.length<8;i++){
+    if(keys[i].indexOf(q)===0){starts.push(i);}
+    else if(inner.length<8&&keys[i].indexOf(" "+q)>=0){inner.push(i);}
+  }
+  shown=starts.concat(inner).slice(0,8);
+  if(!shown.length){closeList();return;}
+  list.textContent="";
+  shown.forEach(function(index,pos){
+    var item=document.createElement("li");
+    item.id="pw-suggest-"+pos;
+    item.className="pw-suggest-item";
+    item.setAttribute("role","option");
+    item.setAttribute("aria-selected","false");
+    item.textContent=words[index];
+    item.addEventListener("mousedown",function(e){e.preventDefault();});
+    item.addEventListener("click",function(){choose(words[index]);});
+    list.appendChild(item);
+  });
+  active=-1;
+  list.hidden=false;
+  input.setAttribute("aria-expanded","true");
+  if(starts.length&&raw.charAt(0)!==" "&&input.selectionStart===raw.length){
+    setGhost(raw,words[starts[0]].slice(raw.length));
+  }
+}
+function accept(){
+  var rest=ghostRest.textContent;
+  if(!rest){return false;}
+  input.value=input.value+rest;
+  update();
+  return true;
+}
+function choose(text){
+  input.value=text;
+  closeList();
+  setGhost("","");
+  if(form.requestSubmit){form.requestSubmit();}else{scanFor(text);form.submit();}
+}
+input.addEventListener("focus",load);
+input.addEventListener("input",update);
+input.addEventListener("blur",function(){setTimeout(closeList,150);setGhost("","");});
+input.addEventListener("keydown",function(e){
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){
+    if(!shown.length){return;}
+    e.preventDefault();
+    active=e.key==="ArrowDown"?(active+1)%shown.length:(active<=0?shown.length-1:active-1);
+    Array.prototype.forEach.call(list.children,function(item,pos){
+      item.classList.toggle("is-active",pos===active);
+      item.setAttribute("aria-selected",pos===active?"true":"false");
+    });
+    input.setAttribute("aria-activedescendant","pw-suggest-"+active);
+  }else if(e.key==="Enter"&&active>=0){
+    e.preventDefault();
+    choose(words[shown[active]]);
+  }else if(e.key==="Escape"){
+    closeList();
+    setGhost("","");
+  }else if((e.key==="Tab"&&!e.shiftKey)||e.key==="ArrowRight"){
+    if(input.selectionStart===input.value.length&&ghostRest.textContent){
+      e.preventDefault();
+      accept();
+    }
+  }
+});
+ghostRest.addEventListener("mousedown",function(e){e.preventDefault();accept();});
+var Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(mic&&Recognition){
+  mic.hidden=false;
+  var recognition=null;
+  var resting=input.getAttribute("placeholder");
+  var stopListening=function(){
+    recognition=null;
+    mic.classList.remove("is-listening");
+    mic.setAttribute("aria-pressed","false");
+    input.setAttribute("placeholder",resting);
+  };
+  mic.addEventListener("click",function(){
+    if(recognition){recognition.stop();return;}
+    var heard="";
+    recognition=new Recognition();
+    recognition.lang=navigator.language||"en-GB";
+    recognition.interimResults=true;
+    recognition.maxAlternatives=1;
+    recognition.onresult=function(e){
+      var spoken="";
+      heard="";
+      for(var i=0;i<e.results.length;i++){
+        if(e.results[i].isFinal){heard+=e.results[i][0].transcript;}
+        else{spoken+=e.results[i][0].transcript;}
+      }
+      input.value=(heard+spoken).trim();
+    };
+    recognition.onerror=function(){heard="";};
+    recognition.onend=function(){
+      stopListening();
+      var q=heard.trim();
+      if(q){choose(q);}
+    };
+    closeList();
+    setGhost("","");
+    mic.classList.add("is-listening");
+    mic.setAttribute("aria-pressed","true");
+    input.setAttribute("placeholder","Listening\u2026");
+    try{recognition.start();}catch(err){stopListening();}
+  });
+}
+})();
+"""
+
 
 def _is_http_url(value: str) -> bool:
     lowered = str(value or "").strip().lower()
@@ -180,6 +378,23 @@ def _provider_feed_card_meta(product: dict[str, object], *, store_label: str) ->
         meta_parts.append("Purchase availability not verified")
     meta_parts.append(f"Provider: {store_label}")
     return "  ·  ".join(meta_parts)
+
+
+def _scanning_screen_html(catalogue: tuple[int, int] | None) -> str:
+    """The scanning screen, hidden until a search starts (`_SEARCH_SCRIPT`).
+
+    It carries the counts as the server last loaded them: the products a search looks
+    through and the shops they come from. Without them it names no number.
+    """
+    counts = ""
+    if catalogue and catalogue[0] > 0 and catalogue[1] > 0:
+        products, shops = catalogue
+        counts = f' data-products="{products:,}" data-shops="{shops:,}"'
+    return (
+        f'<div class="pw-scan" id="pw-scan" role="status" aria-live="polite"{counts} hidden>'
+        '<div class="pw-scan-card"><span class="pw-scan-dot" aria-hidden="true"></span>'
+        '<p class="pw-scan-text" id="pw-scan-text"></p></div></div>'
+    )
 
 
 def _price_first_display_allowed(resolution: LiveSearchResolution) -> bool:
@@ -600,7 +815,10 @@ def render_picwise_reference_surface(
     *,
     resolution: LiveSearchResolution | None = None,
     source_page: str = "search",
+    catalogue: tuple[int, int] | None = None,
 ) -> str:
+    """The search page. `catalogue` is (products, shops) a search reads, when the server
+    has the feed loaded, for the scanning screen; None makes it name no number."""
     display_query = str(query or "")
     query_line = ""
     disclaimer_line = (
@@ -848,16 +1066,39 @@ def render_picwise_reference_surface(
         ".pw-counter{margin:0;font-size:14px;font-weight:600;color:#3c5f8a;}"
         ".pw-more-button{display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 30px;border-radius:999px;background:#1f6dff;color:#fff;font-size:15px;font-weight:700;text-decoration:none;}"
         ".pw-more-button:focus-visible{outline:2px solid #2a6deb;outline-offset:3px;}"
+        ".pw-search-wrap{position:relative;}"
+        ".pw-input-wrap{position:relative;flex:1;display:flex;align-items:center;min-width:0;height:100%;}"
+        ".pw-input-wrap .pw-search-input{width:100%;padding:0;font-family:inherit;letter-spacing:normal;}"
+        ".pw-ghost{position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;font-family:inherit;font-size:19px;font-weight:500;letter-spacing:normal;white-space:pre;overflow:hidden;pointer-events:none;max-width:100%;}"
+        ".pw-ghost-typed{visibility:hidden;}"
+        ".pw-ghost-rest{color:#bccbe0;pointer-events:auto;cursor:pointer;}"
+        ".pw-mic-button{width:42px;height:42px;border-radius:999px;border:1px solid #dbe8fb;background:#fff;color:#4f6f9c;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;padding:0;}"
+        ".pw-mic-button[hidden]{display:none;}"
+        ".pw-mic-button.is-listening{background:#ffecec;border-color:#f0b3b3;color:#c43c3c;}"
+        ".pw-mic-button:focus-visible{outline:2px solid #2a6deb;outline-offset:3px;}"
+        ".pw-suggest{position:absolute;left:0;right:0;top:calc(100% + 6px);margin:0;padding:6px 0;list-style:none;background:#fff;border:1px solid #dbe8fb;border-radius:16px;z-index:5;text-align:left;}"
+        ".pw-suggest[hidden]{display:none;}"
+        ".pw-suggest-item{padding:9px 18px;font-size:16px;color:#112849;cursor:pointer;}"
+        ".pw-suggest-item.is-active,.pw-suggest-item:hover{background:#eef4ff;}"
+        ".pw-scan{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(248,251,255,.94);display:flex;align-items:flex-start;justify-content:center;padding:22vh 16px 0;z-index:20;}"
+        ".pw-scan[hidden]{display:none;}"
+        ".pw-scan-card{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #dbe8fb;border-radius:16px;padding:16px 20px;max-width:560px;}"
+        ".pw-scan-dot{width:12px;height:12px;border-radius:999px;background:#1f6dff;flex:0 0 auto;animation:pw-pulse 1s ease-in-out infinite alternate;}"
+        "@keyframes pw-pulse{from{opacity:.35;}to{opacity:1;}}"
+        ".pw-scan-text{margin:0;font-size:16px;color:#112849;line-height:1.45;}"
+        "@media (prefers-reduced-motion:reduce){.pw-scan-dot{animation:none;}}"
         "@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:760px;}.pw-topbar{height:auto;gap:10px;}}"
         "@media (max-width:640px){.pw-grid{grid-template-columns:1fr;max-width:420px;}}"
-        "@media (max-width:699px){.pw-reference-frame{padding:14px 12px 20px;}.pw-topbar{flex-direction:column;align-items:center;margin-bottom:20px;}.pw-actions{width:100%;justify-content:center;gap:8px;}.pw-brand-wrap{margin:0 0 24px;}.pw-brand-name{font-size:33px;}.pw-search-wrap{height:auto;}.pw-search-shell{height:52px;padding:0 8px 0 14px;}.pw-search-input{height:50px;font-size:16px;}.pw-query-line{font-size:14px;margin:0 auto 36px;}.pw-grid{grid-template-columns:1fr;max-width:360px;}.pw-card{max-width:360px;}.pw-tooltip{width:min(430px,calc(100% - 8px));}}"
+        "@media (max-width:699px){.pw-reference-frame{padding:14px 12px 20px;}.pw-topbar{flex-direction:column;align-items:center;margin-bottom:20px;}.pw-actions{width:100%;justify-content:center;gap:8px;}.pw-brand-wrap{margin:0 0 24px;}.pw-brand-name{font-size:33px;}.pw-search-wrap{height:auto;}.pw-search-shell{height:52px;padding:0 8px 0 14px;}.pw-search-input{height:50px;font-size:16px;}.pw-ghost{font-size:16px;}.pw-mic-button{width:38px;height:38px;}.pw-query-line{font-size:14px;margin:0 auto 36px;}.pw-grid{grid-template-columns:1fr;max-width:360px;}.pw-card{max-width:360px;}.pw-tooltip{width:min(430px,calc(100% - 8px));}}"
         ".pw-reference-viewport *,.pw-reference-viewport *::before,.pw-reference-viewport *::after{box-shadow:none!important;text-shadow:none!important;filter:none!important;}"
         "</style></head><body>"
         '<main class="pw-reference-viewport">'
         '<div class="pw-reference-scale-shell" id="pw-reference-scale-shell">'
         '<div class="pw-reference-frame" id="pw-reference-frame">'
         '<header class="pw-topbar">'
-        '<div class="pw-actions"><button class="pw-topbar-control pw-login-btn" type="button">Login</button><a class="pw-topbar-control pw-register" href="#">Register</a><section class="pw-info-wrap" id="pw-info-wrap"><button class="pw-topbar-control pw-info-link" id="pw-info-button" type="button" aria-label="What is PicWise?" aria-expanded="false" aria-controls="pw-tooltip">What is PicWise?</button><div class="pw-tooltip" id="pw-tooltip">PicWise compares products for what you want to buy, recommends the 4 best matches, saves you time, and helps you choose faster.</div></section></div>'
+        '<div class="pw-actions"><button class="pw-topbar-control pw-login-btn" type="button">Login</button><a class="pw-topbar-control pw-register" href="#">Register</a><section class="pw-info-wrap" id="pw-info-wrap"><button class="pw-topbar-control pw-info-link" id="pw-info-button" type="button" aria-label="What is PicWise?" aria-expanded="false" aria-controls="pw-tooltip">What is PicWise?</button><div class="pw-tooltip" id="pw-tooltip">'
+        f"{escape(_WHAT_IS_PICWISE)}"
+        '</div></section></div>'
         "</header>"
         '<section class="pw-brand-wrap" aria-label="PicWise brand">'
         '<a class="pw-brand" href="/" aria-label="PicWise home">'
@@ -866,12 +1107,18 @@ def render_picwise_reference_surface(
         "</a>"
         "</section>"
         '<section class="pw-search-wrap" aria-label="Search">'
-        '<form class="pw-search-shell" action="/search" method="get">'
+        '<form class="pw-search-shell" action="/search" method="get" role="search">'
         '<span class="pw-search-icon" aria-hidden="true"></span>'
-        f'<input class="pw-search-input" type="search" name="q" value="{escape(display_query, quote=True)}" placeholder="See the 4 best products before you buy" aria-label="See the 4 best products before you buy" autocomplete="off">'
+        '<span class="pw-input-wrap">'
+        f'<input class="pw-search-input" type="search" name="q" value="{escape(display_query, quote=True)}" placeholder="{escape(_SEARCH_PLACEHOLDER, quote=True)}" aria-label="{escape(_SEARCH_PLACEHOLDER, quote=True)}" autocomplete="off" spellcheck="false" autocapitalize="off" enterkeyhint="search" role="combobox" aria-autocomplete="both" aria-controls="pw-suggest-list" aria-expanded="false">'
+        '<span class="pw-ghost" aria-hidden="true"><span class="pw-ghost-typed" id="pw-ghost-typed"></span><span class="pw-ghost-rest" id="pw-ghost-rest"></span></span>'
+        "</span>"
+        f'<button class="pw-mic-button" id="pw-mic" type="button" aria-label="Search by voice" aria-pressed="false" title="{escape(_MIC_TITLE, quote=True)}" hidden>{_MIC_ICON}</button>'
         '<button class="pw-search-button" type="submit" aria-label="Search">'
         '<span class="pw-search-button-icon" aria-hidden="true"></span>'
-        "</button></form></section>"
+        "</button></form>"
+        '<ul class="pw-suggest" id="pw-suggest-list" role="listbox" aria-label="Suggestions" hidden></ul>'
+        "</section>"
         f'<p class="pw-query-line">{escape(query_line)}</p>'
         f'<p class="pw-reference-disclaimer">{escape(disclaimer_line)}</p>'
         f"{safe_note_html}"
@@ -905,6 +1152,8 @@ def render_picwise_reference_surface(
         '});'
         '})();'
         "</script>"
+        f"{_scanning_screen_html(catalogue)}"
+        f"<script>{_SEARCH_SCRIPT}</script>"
         "</main>"
         "</body></html>"
     )

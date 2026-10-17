@@ -37,6 +37,41 @@ Added on 2026-10-16 by the owner.
   to shops open in the phone's browser, so the shop's cookie is set where the buyer
   buys.
 
+### Built in step 4 (2026-10-17)
+
+Wording, chosen by the owner on 2026-10-17:
+- The box reads "What are you looking for?" (placeholder and label). The owner chose
+  it over "Search any product, cheapest first" because it promises nothing a shop
+  reviewing PicWise for its affiliate programme could object to.
+- "What is PicWise?" reads: "PicWise finds the product you want in the shops it is
+  connected to, shows what the shops list as in stock, cheapest first, and marks one mid-priced
+  Recommended."
+
+Everything below needs JavaScript and adds to the page; without it the box is a plain
+form and the search works as before.
+
+- **Scanning screen.** On a search (the box, a suggestion, the microphone) or on
+  "More", the page shows at once: "Searching 39,815 products from 2 shops for
+  "laptop"…". The numbers are the products PicWise can show and the shops they come
+  from, as the server last loaded them; a page that has not loaded the feed yet says
+  "Searching the shops connected to PicWise for "laptop"…". It names no step the
+  browser cannot see: finding, checking and sending happen on the server within the one
+  request, so the screen does not narrate them. It goes as soon as the results page
+  arrives; nothing waits for it.
+- **Suggestions.** From the first letter, up to 8 suggestions under the box, and the
+  first one completed in faint letters inside it: Tab or the right arrow, or a tap on
+  the faint letters, fills it in; a tap on a suggestion searches it. They are the
+  names of the kinds PicWise knows, in English and Greek, and a brand with a kind
+  ("samsung smartphone"), each offered only when the search returns products from
+  the connected shops, the larger first. Accents and case do not matter. The list is
+  fetched once (`/suggest.json`, kept by the browser for an hour), so a keystroke
+  costs no request to the server.
+- **Microphone.** A button in the box, shown only where the browser can turn speech
+  into text (Chrome, Edge, Safari; not Firefox). The words appear in the box as they
+  are spoken, and the search starts when the buyer stops (owner, 2026-10-17), through
+  the same understanding as typed words. The browser's own speech service does the
+  listening: in Chrome the audio goes to Google. The privacy page says so.
+
 ## Card Structure Requirements
 
 Each choice card must show:

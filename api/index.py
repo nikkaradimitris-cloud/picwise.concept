@@ -34,6 +34,7 @@ from picwise_surface import (  # noqa: E402
 StartResponse = Callable[[str, list[tuple[str, str]]], None]
 
 _APP = PicwiseLocalApp()
+_SUGGESTIONS_CACHE_CONTROL = "public, max-age=3600"
 
 
 def _response(
@@ -41,14 +42,16 @@ def _response(
     content_type: str,
     body: bytes,
     start_response: StartResponse,
+    *,
+    cache_control: str = "",
 ) -> list[bytes]:
-    start_response(
-        status,
-        [
-            ("Content-Type", content_type),
-            ("Content-Length", str(len(body))),
-        ],
-    )
+    headers = [
+        ("Content-Type", content_type),
+        ("Content-Length", str(len(body))),
+    ]
+    if cache_control:
+        headers.append(("Cache-Control", cache_control))
+    start_response(status, headers)
     return [body]
 
 
@@ -121,6 +124,18 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         html = render_contact_page()
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+
+    if path == "/suggest.json":
+        # The search box's suggestions, fetched once by the page and kept by the
+        # browser for an hour, so a keystroke costs no request (step 4).
+        body = _APP.search_suggestions_json().encode("utf-8")
+        return _response(
+            "200 OK",
+            "application/json; charset=utf-8",
+            body,
+            start_response,
+            cache_control=_SUGGESTIONS_CACHE_CONTROL,
+        )
 
     if path in {"/search", "/results"}:
         query_string = str(environ.get("QUERY_STRING", ""))

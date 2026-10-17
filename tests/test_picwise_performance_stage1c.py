@@ -215,7 +215,7 @@ class PicwisePerformanceStage1CTests(unittest.TestCase):
         with patch("picwise_app.app.resolve_live_search") as resolve_mock:
             html = app.root_landing_html()
         resolve_mock.assert_not_called()
-        self.assertIn("See the 4 best products before you buy", html)
+        self.assertIn("What are you looking for?", html)
 
     def test_stage1b_warmup_still_works_with_artifact_backed_cache(self) -> None:
         registry = build_canonical_vocabulary_registry()

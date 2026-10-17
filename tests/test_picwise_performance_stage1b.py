@@ -34,7 +34,7 @@ class PicwisePerformanceStage1BTests(unittest.TestCase):
                 html = self.app.root_landing_html()
         schedule_mock.assert_called_once_with()
         index_mock.assert_not_called()
-        self.assertIn("See the 4 best products before you buy", html)
+        self.assertIn("What are you looking for?", html)
 
     def test_empty_reference_schedules_warmup_without_calling_index_synchronously(self) -> None:
         with patch("picwise_app.app.schedule_search_warmup_if_needed") as schedule_mock:

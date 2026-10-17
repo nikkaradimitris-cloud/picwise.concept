@@ -44,7 +44,14 @@ Current state for whoever picks the project up next. Updated 2026-10-16.
   with its own kind test (no hutch covers for "rabbit hutch"), a model name answered
   as the kind its products are ("lenovo thinkpad 16gb ram": laptops), and a one-word
   search that names several kinds asking which ("switch", "tree", "machine"). Details
-  in the plan file, "Part 3b built". **Next: step 4, the search page.**
+  in the plan file, "Part 3b built". **Step 4 is built too** (2026-10-17): the box
+  reads "What are you looking for?" (owner); a scanning screen with the real counts
+  as a search starts; suggestions as the buyer types (kind names in English and
+  Greek, brand with kind, the shops' own names, only those that find products,
+  fetched once from `/suggest.json`); a microphone where the browser can listen, the
+  search starting when the buyer stops (owner). Details in the plan file, "Step 4
+  built". **Next: step 5, data prepared once a day** (the first speed-up: stop judging
+  every product's eligibility again on every search).
 - **Measured on 2026-10-16** on a new feed (Back to the Office, Aosom UK, Living and
   Home; 42,076 rows). Results are in the plan file, "Measured on the third feed":
   - cheapest first puts accessories on top ("laptop" opens with docking stations);
@@ -101,11 +108,11 @@ Current state for whoever picks the project up next. Updated 2026-10-16.
 
   All are built (steps 1 and 3).
 - **Open owner decisions:** none on the plan. Put to the owner with step 3:
-  - the search box still says "See the 4 best products before you buy", and "What is
-    PicWise?" that it "recommends the 4 best matches"; new wording is theirs to choose;
+  - ~~the search box wording~~: chosen on 2026-10-17 ("What are you looking for?") and
+    built in step 4;
   - a check on implausible prices (£0.99 headsets lead "headphones");
   - whether a word after "for" ("printer for home") should narrow the answer;
-  - the readings made to build rule 7 (see the plan file).
+  - ~~the readings made to build rule 7~~: accepted on 2026-10-17 («Οκ σε όλους»).
 
   The marketing proposals in the plan file are proposals; none is approved.
 - **Branch, not `main`.** `ccr-fd5dc1bc-4vgsgl` is ahead of `main`; count the commits

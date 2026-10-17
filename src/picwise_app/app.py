@@ -28,7 +28,11 @@ from picwise_search.search_warmup import schedule_search_warmup_if_needed
 from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
 from picwise_providers import resolve_card_eligible_provider_feed_product_by_id
 from picwise_providers.awin_adapter import awin_feed_config_from_env
-from picwise_providers.state import resolve_provider_feed_pipeline
+from picwise_providers.state import (
+    peek_search_catalogue_counts,
+    resolve_provider_feed_pipeline,
+    search_suggestions,
+)
 from picwise_providers.normalization import extract_merchant_name, is_valid_http_url
 from picwise_surface import (
     provider_feed_cards_will_render,
@@ -116,7 +120,12 @@ class PicwiseLocalApp:
             resolution = empty_landing_search_resolution(query)
         else:
             resolution = resolve_live_search(query, shown=shown)
-        html = render_picwise_reference_surface(query=query, resolution=resolution, source_page=source_page)
+        html = render_picwise_reference_surface(
+            query=query,
+            resolution=resolution,
+            source_page=source_page,
+            catalogue=peek_search_catalogue_counts(),
+        )
         self.record_decision_impression(
             query=query,
             source_page=source_page,
@@ -147,6 +156,15 @@ class PicwiseLocalApp:
 
     def not_found_html(self) -> str:
         return render_branded_not_found_page()
+
+    def search_suggestions_json(self) -> str:
+        """The search box's suggestions as JSON: `{"v": 1, "suggestions": [...]}`, the
+        larger first. Empty when no feed is connected; the box then suggests nothing."""
+        return json.dumps(
+            {"v": 1, "suggestions": [suggestion.text for suggestion in search_suggestions()]},
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
 
     def mvp_search_html(self, query: str, *, source_page: str = "search", shown: int = 0) -> str:
         return self.picwise_reference_html(query, source_page=source_page, shown=shown)
@@ -714,6 +732,15 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
                 return
         if parsed.path == "/health":
             self._send_json(HTTPStatus.OK, self.app.health_payload())
+            return
+        if parsed.path == "/suggest.json":
+            body = self.app.search_suggestions_json().encode("utf-8")
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "public, max-age=3600")
+            self.end_headers()
+            self.wfile.write(body)
             return
         if parsed.path == "/":
             params = parse_qs(parsed.query)
