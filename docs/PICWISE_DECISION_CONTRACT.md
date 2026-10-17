@@ -445,7 +445,8 @@ software) there is no Recommended in this phase, unless a mechanism is found tha
 decide what is the better deal (owner, 2026-10-16).
 
 **Built on 2026-10-16** (step 3 of the build order, on the branch) for every search
-whose product is understood; the others still run the superseded rules. Where a rule
+whose product is understood, and on 2026-10-17 for the others, answered by their words
+with a kind test of their own ("Part 3b built" in the plan file). Where a rule
 needed reading to be built, the reading is recorded with it in
 `docs/picwise_price_first_plan_2026-10-15.md`, "Step 3 built": of an even number of
 products the cheaper middle one; "nearest" by price; the Recommended priced between

@@ -6,11 +6,11 @@ records what was decided, what it replaces, what stays, where it contradicts the
 project's founding files, what is still open, and the marketing analysis given the
 same day. The marketing part is proposals, not decisions.
 
-**Built on the branch, 2026-10-16:** steps 1 to 3 of the build order (below), so a
-search whose product is understood now runs this plan: see "Step 1 built", "Step 2
-built" and "Step 3 built". A search whose product is not understood still runs the rules
-this plan replaces. The conflict with the founding files was settled on 2026-10-16: the
-owner chose to change them to the plan, and they now say the same (see below).
+**Built on the branch, 2026-10-16 and 2026-10-17:** steps 1 to 3 of the build order
+(below), so every search now runs this plan: see "Step 1 built", "Step 2 built", "Step 3
+built" and, for the searches whose product PicWise does not understand, "Part 3b built".
+The conflict with the founding files was settled on 2026-10-16: the owner chose to
+change them to the plan, and they now say the same (see below).
 
 ## Why the owner changed course
 
@@ -674,7 +674,8 @@ toner" 2 and "standing desk" 3.
 - Searches whose product is not understood ("cat tree", "dog crate", "kids ride on car",
   "memory card 128gb", "network switch", "lenovo thinkpad 16gb ram") still show four
   cards by the earlier rules: relevance, price zones and the old decision step. That is
-  part 3b, and it needs the strict kind test the understood searches have.
+  part 3b, and it needs the strict kind test the understood searches have. *Built on
+  2026-10-17: see "Part 3b built".*
 - A word inside the product's own name does not narrow it. "android phone" and "ipad"
   are names of smartphone and tablet, so "unlocked android phone" recommends an
   iPhone and "ipad 11 inch" lists Honor and Lenovo tablets; "gas bbq" lists charcoal
@@ -724,6 +725,101 @@ modules, takes 43 minutes, and fails one of its 13 tests ("amazon" and "galaxy" 
 from its broad terms). The misspelling benchmark stays at 93.9% (1 wrong, 42 not
 understood). Its "pass" now asks that every card be the kind expected, and no longer
 four cards and a Recommended, because fewer than four are shown as they are.
+
+## Part 3b built: price first for every search, 2026-10-17
+
+Step 3 ran price first only where PicWise understood the product ("laptop", "kettle").
+A search it does not understand ("cat tree", "dog crate", "network switch", "lenovo
+thinkpad 16gb ram") still showed four cards picked by relevance and price zones and
+judged by the old decision step. Now it runs the same page: every product carrying the
+search's words, cheapest first, the Recommended, "4 of 413" and "More". Built on the
+branch in `src/picwise_providers/search_selection.py` (`_select_products_by_words`) and
+`src/picwise_nlu/concept_understanding.py` (`read_kind_word`), tested in
+`tests/test_picwise_price_first.py` (`WordSearchPageTests`).
+
+**Why it needs its own kind test.** Price order puts the cheapest product carrying the
+words first, and on the third feed that was always a look-alike: "rabbit hutch" opened
+with a £14.99 hutch cover, "dog crate" with a pet carrier "with crate", "network switch"
+with a £1.99 "Network Switch Tracking" licence. The old relevance order had hidden them
+behind the real ones. So the word that names the product must be what each product is:
+- the word that names the product is the last word before "for", "with" or "without"
+  that is not a number, a spec, a count's noun, a preference the lexicon knows or a
+  brand ("inc cartridge epson": the cartridge). A word counts as a brand when most
+  products carrying it carry it in their brand;
+- a product type says it with its last word: "Network Switches" for "switch", not
+  "Network Switch Components" or "USB Cables";
+- with no type, the title's lead must carry the word and must not end in an accessory
+  noun or put one right after it: "PawHut Wooden Rabbit Hutch" is a hutch and "Cat Tree
+  Tower" a cat tree; "Waterproof Rabbit Hutch Cover" is a cover. Unless the lead ends
+  with it, the word must stand in its first seven words, because a title names its
+  product first and then lists what it has: "PawHut 8 Panel Dog Playpen Puppy Pen
+  Rabbits Guinea Metal Crate Pet Cage Run" is a playpen;
+- a word that is no product's own noun in the feed names no product there: "lamb for
+  bedroom" (for "lamp") lists nothing, rather than a cat tree "with Lamb Fleece".
+
+**A model name is answered as the kind its products are.** "lenovo thinkpad 16gb ram"
+names no kind PicWise knows, and its last word, "ram", is no product's noun. When most
+products carrying all the words (two in three) are one known kind, the answer is that
+kind: the 53 ThinkPads with 16 GB, cheapest first, and nothing that is not a laptop.
+
+**A word that names several kinds asks which.** "switch" alone is a network switch
+(416), a KVM switch (76) or a video switch (19), and price order opened with a £11.99
+HDMI switch. A one-word search whose answer falls into two product types, or two shop
+departments, each holding a tenth of it, is not answered: the page says "PicWise is not
+sure which product you mean. This search matches network switch and kvm switch and
+video switch. Add a word that names the product you want." Measured: "switch", "tree"
+(Christmas, cat, topiary), "machine" (coffee, binding, elliptical), "trampoline" (fitness
+and inflatable), "easel" and "samsung" ask; "hutch", "gazebo", "hammock", "crate" and
+"playpen" are answered. A search that says which ("dog crate", "network switch") is
+answered. The two tests that expected "machine" to ask, failing since before step 3,
+now pass.
+
+**A search not understood is shown on its own strength**, as before: when one of its
+words is carried by no product ("inc cartridge epson": "inc"), its products and its
+Recommended are not shown unless the old category reading recognised the search, and
+the page offers "ink cartridge" instead.
+
+**Removed:** the relevance ranking that picked four across price zones for these
+searches (`_choose_shown_products`, `_restrict_to_one_currency`, `_count_strong_matches`
+and their helpers). `resolve_query_token_plan` stays, because tests still read it.
+
+**Measured on the third feed** with the same 118 searches. The seven that went the old
+way now run price first, and every first page is right: "kids ride on car" lists 74
+ride-on cars, "cat tree" 97 cat trees, "dog crate" 59 crates (no playpen and no pet
+carrier), "rabbit hutch" 84 hutches (no cover), "memory card 128gb" 28 cards,
+"network switch" 413 switches (no licence) and "lenovo thinkpad 16gb ram" 53 ThinkPads.
+All 113 pages with cards now run price first (106 after step 3), 105 with a Recommended
+(98). The count of right first pages is unchanged, because the seven were right before
+too: 100 right, 12 with a card that misses a word, 1 wrong card, 5 empty (the same five
+misspellings). "laptop" now lists 660 laptops, not 677: the 17 refurbished laptops that
+say so only in their data sheet are left out (see "Item condition" above), and the
+Recommended is now a £1,354.99 Lenovo LOQ.
+
+The misspelling benchmark: 93.8% (93.9% before), and no wrong answer (1 before):
+"cofefe machine" showed washing machines and now asks which machine is meant; "set
+katsaidia" (screwdriver sets in greeklish, with a letter missing) found its sets by
+chance through the old ranking and now finds nothing (43 not understood, 42 before).
+
+Speed is about the same: about 5 s a search on this feed, measured side by side with
+the code before part 3b. "laptop" took 4.9 s both times; the searches answered by their
+words took from 0.2 s less ("network switch") to 0.5 s more ("dog crate").
+
+Tests: `tests/test_picwise_price_first.py` gains 5 (`WordSearchPageTests`: the kind
+the words name, cheapest first; a product type; a word no product is named by; a word
+that names several kinds; a model name). The weak-search test in
+`tests/test_picwise_product_type_coverage_matrix.py` now uses a word no product
+carries: a word found only in descriptions, as it used, matches nothing any more. The
+two "machine" tests in `tests/test_picwise_query_understanding.py` now pass, so of 238
+test modules 235 pass; the other three fail the same way on the code before step 3
+(`test_picwise_canonical_vocabulary_registry_stage2`,
+`test_picwise_search_index_generated_blind_stage4` and
+`test_picwise_search_index_blind_evaluation_stage6a`).
+
+**What part 3b does not fix:**
+- A one-word search across two kinds of one department is answered: "hutch" lists
+  rabbit and guinea pig hutches together, as the shop shelves them.
+- A department split can ask where a buyer would not: "trampoline" asks between
+  fitness trampolines and inflatable bouncy castles called trampolines.
 
 ## The owner's additions, 2026-10-16
 

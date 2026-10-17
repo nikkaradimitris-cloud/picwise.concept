@@ -527,9 +527,12 @@ def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
                 expose_selection = recognized_product_search or is_strong_feed_opportunity_selection(
                     selection
                 )
+                # An ambiguous answer is reported too, so the page can ask which product
+                # is meant ("switch": network, KVM or video switch); nothing is shown.
                 report_feed_opportunity_selection = bool(
                     feed_opportunity_search
-                    and selection.status in {"selected", "insufficient_relevant_products"}
+                    and selection.status
+                    in {"selected", "insufficient_relevant_products", "ambiguous_product_family"}
                 )
                 if expose_selection or report_feed_opportunity_selection:
                     provider_feed_selection_status = selection.status

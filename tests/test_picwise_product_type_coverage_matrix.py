@@ -185,20 +185,25 @@ class WithheldRecommendationTests(_CoverageFixtureTestCase):
     """A recommendation is never reported without the products behind it."""
 
     def test_weak_feed_opportunity_withholds_the_recommendation(self) -> None:
-        # A word no product concept names, found in four products' descriptions but in
-        # none of their titles: the selection is a weak feed opportunity.
+        # A search no product concept names, answered by its words (price first, part
+        # 3b, 2026-10-17): four products are named "Zorblax", and the search's other
+        # word is carried by none of them. Without that word the answer is a weak feed
+        # opportunity: its products are not shown, and the Recommended the selection
+        # chose is withheld rather than reported. (A word found only in descriptions,
+        # as this test once used, no longer matches anything: the description is a
+        # shop's marketing text.)
         import csv
         import tempfile
 
         with FIXTURE_CSV.open(encoding="utf-8") as source:
             rows = list(csv.DictReader(source))[:4]
-        for row in rows:
-            row["product_type"] = row["merchant_category"] = "Gadgets"
-            # Long enough to be a product PicWise may show (owner rule, 2026-10-12),
-            # with "zorblax" still only in the description and in no title.
-            row["description"] = fixture_description(
-                "Local fixture row mentioning zorblax only here."
-            )
+        for index, row in enumerate(rows):
+            row["product_type"] = ""
+            row["merchant_category"] = "Gadgets"
+            row["product_name"] = f"Fixturon Zorblax {index + 1}"
+            row["search_price"] = f"{20 + 10 * index}.00"
+            # Long enough to be a product PicWise may show (owner rule, 2026-10-12).
+            row["description"] = fixture_description("Local fixture row.")
         handle = tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False, encoding="utf-8", newline="")
         with handle:
             writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
@@ -209,7 +214,7 @@ class WithheldRecommendationTests(_CoverageFixtureTestCase):
         clear_awin_feed_parse_cache()
         clear_provider_feed_pipeline_cache()
 
-        resolution = resolve_live_search("zorblax")
+        resolution = resolve_live_search("qwertz zorblax")
         self.assertEqual(len(resolution.provider_feed_selected_products), 0)
         self.assertEqual(
             resolution.provider_feed_decision_status,

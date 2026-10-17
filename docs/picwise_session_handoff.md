@@ -38,9 +38,13 @@ Current state for whoever picks the project up next. Updated 2026-10-16.
   first page, 12 a card that misses a word, 1 a wrong card, 5 nothing. Details,
   including where a rule needed reading, in the plan file, "Step 3 built". The owner
   accepted those readings on 2026-10-17 and decided that without a Recommended
-  "Lowest price" goes only up to the middle price (built the same day). Searches
-  whose product is not understood still run the superseded rules (part 3b). **Next:
-  step 4, the search page.**
+  "Lowest price" goes only up to the middle price (built the same day). **Part 3b is
+  built too** (2026-10-17): a search whose product is not understood ("cat tree", "dog
+  crate", "network switch") is answered by its words on the same price-first page,
+  with its own kind test (no hutch covers for "rabbit hutch"), a model name answered
+  as the kind its products are ("lenovo thinkpad 16gb ram": laptops), and a one-word
+  search that names several kinds asking which ("switch", "tree", "machine"). Details
+  in the plan file, "Part 3b built". **Next: step 4, the search page.**
 - **Measured on 2026-10-16** on a new feed (Back to the Office, Aosom UK, Living and
   Home; 42,076 rows). Results are in the plan file, "Measured on the third feed":
   - cheapest first puts accessories on top ("laptop" opens with docking stations);

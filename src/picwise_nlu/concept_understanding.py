@@ -1793,6 +1793,112 @@ def _lead_ends_in_accessory(title: str, kinds: list[str]) -> bool:
     return tokens[index] not in own
 
 
+# What the word a search names must not be followed by, or end with, in a product's own
+# lead when no known kind reads the product: it is then a part of that thing or goes
+# with it ("Rabbit Hutch Cover", "Cat Tree Replacement Post", "Dog Crate Mat").
+_UNKNOWN_KIND_OTHER_PRODUCT_WORDS = (
+    _LEAD_ACCESSORY_NOUNS
+    | _OTHER_PRODUCT_TAIL_WORDS
+    | _ACCESSORY_WORDS
+    | frozenset("mat mats liner liners pad pads".split())
+)
+_TYPE_ALTERNATIVES_RE = re.compile(r"\s*(?:&|,|/|\band\b)\s*", flags=re.IGNORECASE)
+# A title names its product in its first words; further into a long lead, a word lists
+# what the product has or goes with: "PawHut 8 Panel Dog Playpen Puppy Pen Rabbits
+# Guinea Metal Crate Pet Cage Run" is a playpen. The kind's word must stand within the
+# lead's first seven words, unless the lead ends with it ("... Kids Ride on Car").
+_MAX_KIND_WORD_PLACE = 6
+
+
+@dataclass(frozen=True)
+class KindWordReading:
+    """How one product's own name reads one word of a search (`read_kind_word`)."""
+
+    # The product is the thing the word names.
+    names: bool = False
+    # The word is the product's own noun: the last word of its type, or the noun its
+    # title's lead ends with. A word no product of a feed has as its noun names no
+    # product there: "lamb" is only ever "Lamb Fleece" or "Lamb Wool".
+    as_noun: bool = False
+    # The word before it in the name ("coffee" in "Coffee Machine"), or "".
+    modifier: str = ""
+
+
+def read_kind_word(product_type: str, title: str, word_forms: tuple[str, ...]) -> KindWordReading:
+    """Does this product say it is the thing one word names, for a search with no known kind?
+
+    Part 3b of the price-first plan (2026-10-17). A search whose product the lexicon
+    does not know ("dog crate", "rabbit hutch", "network switch") is answered by its own
+    words, and price order puts the cheapest product carrying them first: on the third
+    real feed a £14.99 hutch cover, a pet carrier "with crate" and a £1.99 "Network
+    Switch Tracking" licence. So the word naming the product must be what the product
+    is, read the way a known kind is read:
+    - a product type says it with its last word, in its last breadcrumb, in any of the
+      kinds it lists: "Network Switches" and "Crates & Kennels" do, "Network Switch
+      Components" and "USB Cables" do not;
+    - with no type that says anything, the title's lead must carry the word, and must
+      not end in an accessory noun or put one right after the word: "PawHut Wooden
+      Rabbit Hutch" is a hutch and "Cat Tree Tower" a cat tree, "Waterproof Rabbit
+      Hutch Cover" is a cover.
+    """
+    forms = {normalize_understanding_text(form) for form in word_forms if form}
+    forms.discard("")
+    if not forms:
+        return KindWordReading()
+    last_crumb = str(product_type or "").split(">")[-1]
+    type_tokens = normalize_understanding_text(last_crumb).split()
+    type_says_something = bool(type_tokens) and not (
+        " ".join(type_tokens) in _UNINFORMATIVE_TYPES
+        or all(token in _DEPARTMENT_WORDS for token in type_tokens)
+    )
+    if type_says_something:
+        for alternative in _TYPE_ALTERNATIVES_RE.split(last_crumb):
+            tokens = normalize_understanding_text(alternative).split()
+            if tokens and tokens[-1] in forms:
+                return KindWordReading(
+                    names=True, as_noun=True, modifier=tokens[-2] if len(tokens) > 1 else ""
+                )
+        return KindWordReading()
+    lead_tokens = normalize_understanding_text(_title_lead(title)).split()
+    cut = next((i for i, token in enumerate(lead_tokens) if token in _PURPOSE_WORDS), len(lead_tokens))
+    lead_tokens = lead_tokens[:cut]
+    places = [i for i, token in enumerate(lead_tokens) if token in forms]
+    if not places:
+        return KindWordReading()
+    # The lead's own noun, past the specs and colours that close it ("Hutch Cover Grey").
+    index = len(lead_tokens) - 1
+    while (
+        index >= 0
+        and lead_tokens[index] not in forms
+        and lead_tokens[index] not in _UNKNOWN_KIND_OTHER_PRODUCT_WORDS
+        and _is_descriptor_word(lead_tokens[index])
+    ):
+        index -= 1
+    if index >= 0 and lead_tokens[index] in _GROUP_NOUNS:
+        index -= 1
+    if index >= 0 and lead_tokens[index] in _UNKNOWN_KIND_OTHER_PRODUCT_WORDS and lead_tokens[index] not in forms:
+        return KindWordReading()
+    as_noun = index in places
+    standing = [
+        place
+        for place in places
+        if (as_noun or place <= _MAX_KIND_WORD_PLACE)
+        and (
+            place + 1 >= len(lead_tokens)
+            or lead_tokens[place + 1] in forms
+            or lead_tokens[place + 1] not in _UNKNOWN_KIND_OTHER_PRODUCT_WORDS
+        )
+    ]
+    if not standing:
+        return KindWordReading()
+    place = standing[0]
+    return KindWordReading(
+        names=True,
+        as_noun=as_noun,
+        modifier=lead_tokens[place - 1] if place > 0 else "",
+    )
+
+
 def _lead_names_another_product_after(title: str, concept_id: str) -> bool:
     lead_tokens = normalize_understanding_text(_title_lead(title)).split()
     cut = next((i for i, token in enumerate(lead_tokens) if token in _PURPOSE_WORDS), len(lead_tokens))

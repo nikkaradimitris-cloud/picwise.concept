@@ -338,8 +338,8 @@ _COLUMNS = (
 )
 
 
-class PriceFirstPageTests(unittest.TestCase):
-    """The deployed page, end to end."""
+class _PageMixin:
+    """Serve fictional feed rows through the deployed entry point and read the page."""
 
     def _serve(self, rows: list[dict[str, str]]) -> None:
         path = Path(tempfile.mkdtemp()) / "feed.csv"
@@ -436,6 +436,11 @@ class PriceFirstPageTests(unittest.TestCase):
             }
             for index, price in enumerate(prices)
         ]
+
+
+
+class PriceFirstPageTests(_PageMixin, unittest.TestCase):
+    """The deployed page, end to end."""
 
     def test_the_recommended_comes_first_and_then_the_three_cheapest(self) -> None:
         # Nine kettles at £20 to £100: the middle one is the fifth, £60.
@@ -679,6 +684,99 @@ class PriceFirstPageTests(unittest.TestCase):
         self.assertEqual(
             [card["id"] for card in self._cards(self._page("refurbished laptop"))], ["r1"]
         )
+
+
+class WordSearchPageTests(_PageMixin, unittest.TestCase):
+    """Part 3b (2026-10-17): price first for a search whose product PicWise does not know.
+
+    The answer is the products carrying the search's words, cheapest first, and the word
+    naming the product must be what each product is, because price order would open
+    with the cheapest look-alike. Measured on the third real feed: "rabbit hutch" with a
+    £14.99 hutch cover, "network switch" with a £1.99 licence, "switch" with a £11.99
+    HDMI switch among network switches.
+    """
+
+    _PETS = "Pet Supplies > Small Animal Habitats"
+
+    def test_the_answer_is_what_the_words_name_cheapest_first(self) -> None:
+        rows = [
+            {"pid": f"h{index}", "title": f"Fixturon Wooden Rabbit Hutch {index}, 2 Tier",
+             "price": f"{price:.2f}", "type": "", "category": self._PETS,
+             "ean": _ean(500000002000 + index)}
+            for index, price in enumerate((40, 60, 80, 100, 120), start=1)
+        ] + [
+            {"pid": "c1", "title": "Testline Waterproof Rabbit Hutch Cover for 2 Tier Hutches",
+             "price": "9.99", "type": "", "category": self._PETS, "ean": _ean(500000002100)},
+        ]
+        self._serve(rows)
+        page = self._page("rabbit hutch")
+        cards = self._cards(page)
+        # The cover is not a hutch. Of five hutches the middle one, £80, is the
+        # Recommended, and then the three cheapest.
+        self.assertEqual([card["id"] for card in cards], ["h3", "h1", "h2", "h4"])
+        self.assertTrue(cards[0]["recommended"])
+        self.assertEqual(self._counter(page), "4 of 5")
+        self.assertIn("cheapest first", page)
+
+    def test_a_product_type_says_what_the_product_is(self) -> None:
+        rows = [
+            {"pid": f"s{index}", "title": f"Fixturon {index * 8}-Port Gigabit Network Switch",
+             "price": f"{price:.2f}", "type": "Network Switches", "category": "Computers",
+             "ean": _ean(500000003000 + index)}
+            for index, price in enumerate((20, 30, 40), start=1)
+        ] + [
+            {"pid": "l1", "title": "Testline Support Licence for Network Switch Tracking",
+             "price": "1.99", "type": "Software Licences", "category": "Computers",
+             "ean": _ean(500000003100)},
+        ]
+        self._serve(rows)
+        ids = [card["id"] for card in self._cards(self._page("network switch"))]
+        self.assertEqual(sorted(ids), ["s1", "s2", "s3"])
+
+    def test_a_word_no_product_is_named_by_finds_nothing(self) -> None:
+        # "lamb" for "lamp": the only title carrying it describes a cat tree's fleece.
+        self._serve([
+            {"pid": "t1",
+             "title": "Fixturon Cat Barrel Kitten Tree Tower Sisal Scratching Soft Plush & Lamb Fleece Grey",
+             "price": "57.99", "type": "", "category": "Pet Supplies > Cat Supplies",
+             "ean": _ean(500000004000)},
+        ])
+        self.assertEqual(self._cards(self._page("lamb for bedroom")), [])
+
+    def test_one_word_that_names_several_kinds_asks_which(self) -> None:
+        rows = [
+            {"pid": f"n{index}", "title": f"Fixturon {index * 8}-Port Network Switch",
+             "price": f"{20 + index}.00", "type": "Network Switches", "category": "Computers",
+             "ean": _ean(500000005000 + index)}
+            for index in range(1, 5)
+        ] + [
+            {"pid": f"k{index}", "title": f"Testline {index + 1}-Port KVM Switch",
+             "price": f"{10 + index}.00", "type": "KVM Switches", "category": "Computers",
+             "ean": _ean(500000005100 + index)}
+            for index in range(1, 3)
+        ]
+        self._serve(rows)
+        page = self._page("switch")
+        self.assertEqual(self._cards(page), [])
+        self.assertIn("not sure which product you mean", page)
+        self.assertIn("network switch", page)
+
+    def test_a_model_name_is_answered_as_the_kind_its_products_are(self) -> None:
+        # "fixbook 16gb ram" names no kind; three of the four products carrying its
+        # words are laptops, and the fourth, a memory module, is not one.
+        rows = [
+            {"pid": f"b{index}", "title": f"Fixturon FixBook {index} 14in Laptop - 16GB RAM, 512GB SSD",
+             "price": f"{price:.2f}", "type": "Laptops", "category": "Computers",
+             "ean": _ean(500000006000 + index)}
+            for index, price in enumerate((400, 500, 600), start=1)
+        ] + [
+            {"pid": "m1", "title": "Testline 16GB RAM Module for FixBook", "price": "39.99",
+             "type": "Memory Modules", "category": "Computers", "ean": _ean(500000006100)},
+        ]
+        self._serve(rows)
+        cards = self._cards(self._page("fixbook 16gb ram"))
+        self.assertEqual([card["id"] for card in cards], ["b2", "b1", "b3"])
+        self.assertTrue(cards[0]["recommended"])
 
 
 if __name__ == "__main__":
