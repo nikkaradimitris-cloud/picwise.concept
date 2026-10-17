@@ -609,6 +609,13 @@ New products no longer make up a four: fewer and right. Titles graded by a refur
 desktops and televisions at Back to the Office, with an empty condition column, which
 price order put first among laptops (a £125.99 "HP Stream ... (Grade B - Average)").
 
+On 2026-10-17 a data sheet in the description that says "Refurbished. Yes." is read as
+not new too, as a declared field; the prose around it still is not, because 616 new UPS
+batteries say "No Refurbished or Re-used Parts" and 172 data sheets "Refurbished. No.".
+That is 17 laptops and a desktop from refurbishers (A2C, T1A, Circular Computing, HP
+Renew) with nothing in the title, and the search "lenovo thinkpad 16gb ram" would have
+opened with a £298.99 one as new.
+
 **Kinds split, because price order showed them.** The cheapest products of a broad kind
 are its smallest or nearest things, so each of these led a search with the wrong product:
 - a USB stick is its own kind: "hard drive" opened with 8 GB sticks at £7.99 (241
@@ -688,8 +695,8 @@ toner" 2 and "standing desk" 3.
   page does not use that model; the model follows when the contract objects are next
   changed.
 
-Tests: `tests/test_picwise_price_first.py` is new (37 tests, one of them added on
-2026-10-17 for "Lowest price" without a Recommended): the same product once (one
+Tests: `tests/test_picwise_price_first.py` is new (41 tests; five were added on
+2026-10-17, for "Lowest price" without a Recommended and the declared condition field): the same product once (one
 GTIN in two shops, its UPC and EAN forms, brand and MPN but not a model name, no code no
 join, a wrong check digit, one currency), the Recommended (the 23rd of 45, the owner's
 £100, £150 and £200, an extreme price once and twice, an even count, the nearest by price

@@ -166,14 +166,34 @@ _COLUMN_NON_NEW_RE = re.compile(
 _PUNCTUATION_RE = re.compile(r"[^\w\s]+", flags=re.UNICODE)
 
 
+# A product data sheet written into the description ("... Form factor. Clamshell.
+# Refurbished. Yes. Display. ...") states the condition as a field, unlike the prose
+# around it. Measured on the third real feed (2026-10-17): 22 refurbished laptops and
+# desktops at Back to the Office (A2C, T1A, Circular Computing) say so only there,
+# with an empty condition column. The prose is not read: 616 new UPS batteries say
+# "No Refurbished or Re-used Parts", and printer inks list "PIXMA iP2600 Refurbished"
+# among the printers they fit.
+_DECLARED_REFURBISHED_RE = re.compile(r"\brefurbished\s*[.:]\s*yes\b", flags=re.IGNORECASE)
+
+
 def stated_condition(row: Mapping[str, Any] | None) -> str:
-    """The condition the feed row states, whitespace collapsed, or ""."""
+    """The condition the feed row states, whitespace collapsed, or "".
+
+    The condition columns first; when they are silent, a "Refurbished: Yes" field in
+    the description's data sheet, as "refurbished".
+    """
     if not row:
         return ""
     for key in CONDITION_KEYS:
         value = " ".join(str(row.get(key) or "").split())
         if value:
             return value
+    description = str(row.get("description") or "")
+    # A substring check first: this runs once per product of the feed on every search.
+    if ("efurbished" in description or "EFURBISHED" in description) and (
+        _DECLARED_REFURBISHED_RE.search(description)
+    ):
+        return "refurbished"
     return ""
 
 

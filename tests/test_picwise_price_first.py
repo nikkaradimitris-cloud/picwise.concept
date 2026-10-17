@@ -42,11 +42,16 @@ from api.index import app as wsgi_app  # noqa: E402
 from fixture_support import fixture_description  # noqa: E402
 from picwise_providers.awin_adapter import clear_awin_feed_parse_cache  # noqa: E402
 from picwise_providers.contracts import ProviderProduct  # noqa: E402
-from picwise_providers.product_condition import non_new_condition  # noqa: E402
+from picwise_providers.product_condition import (  # noqa: E402
+    non_new_condition,
+    stated_condition,
+)
 from picwise_providers.product_identity import same_product_key  # noqa: E402
 from picwise_providers.search_selection import (  # noqa: E402
     _median_recommendation,
     _price_first_products,
+    product_non_new_condition,
+    provider_product_to_backend_dict,
 )
 from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
 from picwise_search.live_search_resolver import (  # noqa: E402
@@ -267,6 +272,45 @@ class GradedConditionTests(unittest.TestCase):
         ):
             with self.subTest(title=title):
                 self.assertEqual(non_new_condition(text=title), "")
+
+
+class DeclaredConditionTests(unittest.TestCase):
+    """A data sheet in the description that says "Refurbished. Yes." is a declared field.
+
+    Measured on the third real feed (2026-10-17): 22 refurbished laptops and desktops
+    say so only there, and the search "lenovo thinkpad 16gb ram" would have opened with
+    one of them as new. The prose around it is not read: 616 new UPS batteries say "No
+    Refurbished or Re-used Parts".
+    """
+
+    def test_the_declared_field_says_refurbished(self) -> None:
+        for description in (
+            "Design. Product type. Laptop. Form factor. Clamshell. Refurbished. Yes. Display.",
+            "Product colour: Black. Refurbished: Yes. Weight: 1.4 kg",
+        ):
+            with self.subTest(description=description):
+                self.assertEqual(stated_condition({"description": description}), "refurbished")
+
+    def test_prose_and_a_no_say_nothing(self) -> None:
+        for description in (
+            "Design. Product colour. Black. Refurbished. No. Colour name. Black.",
+            "No Refurbished or Re-used Parts. Extensive Inventory Available.",
+            "The highest quality refurbished laptops in the world.",
+            "Compatibility. PIXMA iP2600, PIXMA iP2600 Refurbished, PIXMA iP6210D.",
+        ):
+            with self.subTest(description=description):
+                self.assertEqual(stated_condition({"description": description}), "")
+
+    def test_the_condition_column_still_wins(self) -> None:
+        row = {"condition": "new", "description": "Refurbished. Yes."}
+        self.assertEqual(stated_condition(row), "new")
+
+    def test_the_gate_and_the_card_agree(self) -> None:
+        product = _offer("r1", 300.0, gtin=_ean(700000000001))
+        product.raw["description"] = "Form factor. Clamshell. Refurbished. Yes. Display."
+        self.assertEqual(product_non_new_condition(product), "refurbished")
+        card = provider_product_to_backend_dict(product)
+        self.assertEqual(non_new_condition(text="", condition=card["condition"]), "refurbished")
 
 
 class ShownCountTests(unittest.TestCase):
