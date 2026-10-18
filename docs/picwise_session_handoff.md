@@ -1,7 +1,44 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-17.
+Current state for whoever picks the project up next. Updated 2026-10-18.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
+
+## Now (end of the conversation of 2026-10-17/18) -- read this first
+
+- **Live = `main`:** price first (steps 1-4), the search page, and step 5: every
+  deployment's build prepares the feed (`vercel.json` build command), a Vercel
+  scheduled job a day (`17 4 * * *` UTC) asks for a new deployment through the Deploy
+  Hook, so each day has its own prepared feed. The owner set the keys in Vercel on
+  2026-10-18 (`PICWISE_DEPLOY_HOOK_URL`, `CRON_SECRET`; Production, Secret). Also live:
+  products without a description are shown with a note (owner), and `/prepared.json`
+  carries `freshness` (listing ages, stock columns, per shop).
+- **Seen live** (through GitHub, below, 2026-10-18 11:59 UTC): `prepared_feed`
+  `in_use`; 11,423 products, 25 shops; searches 0.3-0.9 s; "tv" 4 of 23.
+  **Not seen yet:** the first morning renewal. Look on 2026-10-19 after about 05:00
+  UTC: `/prepared.json` `prepared_at` of that morning means it works.
+- **How a session sees the live site:** its own network cannot reach
+  `picwise.subby.cloud`. A push to `ccr-fd5dc1bc-4vgsgl` runs
+  `.github/workflows/live-check.yml`, which prints `/prepared.json`,
+  `/private-beta-readiness` and the cards of 12 searches; or re-run its last run with
+  the GitHub tools (`actions_run_trigger`, `rerun_workflow_run`) and read the log
+  (`get_job_logs`). Never ask the owner to copy pages by hand if this works.
+- **The branch** is ahead of `main` only by notes and that workflow; its code is the
+  same as `main` (the shop-page sample was reverted).
+- **Owner decisions of 2026-10-18:** a description is not required (note on the
+  card); no checking of shops' pages now; the order from here: (1) many more shops,
+  (2) then an evaluation mechanism at set hours, 200 checks per shop, giving a list
+  of reliable and unreliable shops (constraints in PROGRESS).
+- **Open, the owner's:** keep or drop Boxed2me (3,474 products, a clearance shop that
+  fills the cheapest-first pages for headphones, chargers, cameras, speakers, at
+  prices such as £0.99, the likeliest "ghosts"); which shops to add in Awin.
+- **Open, engineering, held until more shops are in:** the rule that reads a
+  product's kind lets wrong kinds onto first pages ("camera": a chime, a siren, a
+  shotgun microphone; "phone charger": an IEC plug), to be fixed once on all cases;
+  Xiaomi RO's TVs priced "EUR" 849-3,799 (likely Romanian lei); Geekbuying prices
+  shown with three decimals ("14.990 USD"); laptop, kettle, mouse and keyboard find
+  nothing in this feed (data, not understanding).
+- **Rules:** nothing to `main` without the owner's explicit yes; keys only in Vercel;
+  nothing changed in Supabase without asking; Greek, short, plain words.
 
 ## Start here (2026-10-17)
 
