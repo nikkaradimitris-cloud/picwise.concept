@@ -27,7 +27,10 @@ Current state for whoever picks the project up next. Updated 2026-10-18.
 - **Owner decisions of 2026-10-18:** a description is not required (note on the
   card); no checking of shops' pages now; the order from here: (1) many more shops,
   (2) then an evaluation mechanism at set hours, 200 checks per shop, giving a list
-  of reliable and unreliable shops (constraints in PROGRESS).
+  of reliable and unreliable shops (constraints in PROGRESS). **Code first:** that
+  mechanism and the fix of the kind rule are written in plain code; an AI system is
+  discussed with the owner only if code is shown not to reach the results wanted,
+  and is not proposed before that.
 - **Open, the owner's:** keep or drop Boxed2me (3,474 products, a clearance shop that
   fills the cheapest-first pages for headphones, chargers, cameras, speakers, at
   prices such as £0.99, the likeliest "ghosts"); which shops to add in Awin.
