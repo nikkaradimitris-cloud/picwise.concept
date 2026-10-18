@@ -28,6 +28,11 @@ Current state for whoever picks the project up next. Updated 2026-10-17.
   owner's yes); live result NOT VERIFIED from the session ("tv" should now show
   televisions, with the note). The microphone is hidden in Firefox (no speech recognition there);
   the owner uses Firefox.
+- **2026-10-18: "we show ghosts"** (owner): most products shown are out of stock on
+  the shop's page, old listings. Measuring first, by the owner's choice: the build
+  writes listing ages and stock quantities into `/prepared.json` (`freshness`;
+  `src/picwise_providers/feed_freshness.py`); the owner copies it, then chooses a rule.
+  Details in PROGRESS. Not a rule yet: nothing shown changes.
 - **Step 5 is begun** (2026-10-17, on the branch; nothing of steps 1 to 5 is on
   `main`). A search takes about 0.34 s (5 s before), a cold server reading the feed
   reaches the first page in 22-24 s (38-40 s), and one given a **prepared file**

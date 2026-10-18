@@ -17,7 +17,9 @@ feed's link.
 
 `--static-dir` is for the same build: Vercel serves that folder as the site's static
 files and refuses to deploy it empty, so the tool writes `prepared.json` there, a public
-note of what this build prepared (counts and the time, nothing else).
+note of what this build prepared: counts, the time, and how fresh the feed's listings
+are (`picwise_providers.feed_freshness`: listing age, stock quantities, per shop), never
+the feed's link.
 """
 from __future__ import annotations
 
@@ -79,16 +81,28 @@ def main(argv: list[str] | None = None) -> int:
         f"{prepared.shop_count} shops, {len(prepared.suggestions)} suggestions; "
         f"{size / 1e6:.1f} MB written to {args.out} in {time.perf_counter() - started:.1f} s"
     )
-    _write_static_note(
-        args.static_dir,
-        {
-            "prepared": True,
-            "prepared_at": prepared.prepared_at.astimezone(timezone.utc).isoformat(timespec="seconds"),
-            "products": len(prepared.products),
-            "shops": prepared.shop_count,
-        },
-    )
+    if args.static_dir is not None:
+        _write_static_note(
+            args.static_dir,
+            {
+                "prepared": True,
+                "prepared_at": prepared.prepared_at.astimezone(timezone.utc).isoformat(timespec="seconds"),
+                "products": len(prepared.products),
+                "shops": prepared.shop_count,
+                "freshness": _freshness(prepared),
+            },
+        )
     return 0
+
+
+def _freshness(prepared) -> dict[str, object]:
+    """How fresh the prepared products' listings are; a failure here is only noted."""
+    try:
+        from picwise_providers.feed_freshness import measure_feed_freshness
+
+        return measure_feed_freshness(prepared.products, today=prepared.prepared_at.date())
+    except Exception as error:
+        return {"error": _where(error)}
 
 
 def _where(error: BaseException) -> str:

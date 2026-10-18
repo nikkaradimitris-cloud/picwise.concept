@@ -352,7 +352,13 @@ class PrepareToolTests(_PreparedMixin, unittest.TestCase):
         self.assertEqual((note["prepared"], note["products"], note["shops"]), (True, 16, 1))
         prepared_at = read_prepared_catalogue(self.prepared_path).prepared_at
         self.assertLess(abs((datetime.fromisoformat(note["prepared_at"]) - prepared_at).total_seconds()), 1)
-        self.assertEqual(set(note), {"prepared", "prepared_at", "products", "shops", "written_at"})
+        self.assertEqual(
+            set(note), {"prepared", "prepared_at", "products", "shops", "freshness", "written_at"}
+        )
+        # How fresh the listings are (owner, 2026-10-18: "we show ghosts"), measured only.
+        self.assertEqual(note["freshness"]["products"], 16)
+        self.assertEqual(note["freshness"]["last_updated"]["no_date"], 16)
+        self.assertNotIn("fixture.example.invalid", json.dumps(note))
 
         empty = self.folder / "public-without-feed"
         result = self._run("--out", str(self.folder / "none.json.gz"), "--keep-going", "--static-dir", str(empty))
