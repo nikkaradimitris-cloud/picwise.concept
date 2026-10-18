@@ -5,6 +5,14 @@ Current state for whoever picks the project up next. Updated 2026-10-17.
 
 ## Start here (2026-10-17)
 
+- **2026-10-18: steps 1 to 5 are on `main`** (merge `e52339d`, a normal merge of
+  `ccr-fd5dc1bc-4vgsgl`, by the owner's yes «Ναι, τώρα», told beforehand that it puts
+  all of them live). Production NOT VERIFIED from the session, which cannot reach
+  Vercel or the domain: the owner looks at `picwise.subby.cloud`, its
+  `/private-beta-readiness` (`prepared_feed` should read `in_use` with today's time)
+  and `/prepared.json`, then Settings, Cron Jobs, Run, once. If the site misbehaves:
+  Vercel's Instant Rollback to the previous production deployment (`3b02aeb`), or a
+  revert of the merge. The notes below that say "nothing is on `main`" predate this.
 - **Step 5 is begun** (2026-10-17, on the branch; nothing of steps 1 to 5 is on
   `main`). A search takes about 0.34 s (5 s before), a cold server reading the feed
   reaches the first page in 22-24 s (38-40 s), and one given a **prepared file**
