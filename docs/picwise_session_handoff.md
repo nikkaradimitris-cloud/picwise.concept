@@ -21,6 +21,12 @@ Current state for whoever picks the project up next. Updated 2026-10-17.
   `prepared_feed` line, and a run of the daily job (it runs by itself each morning).
   A later session can tell from `/prepared.json`: a `prepared_at` of that morning means
   the renewal works. The session itself cannot open the site.
+- **2026-10-18, after the merge: products without a description are shown, with a
+  note** (owner: «Ναι, με σημείωση»; Decision Contract, "What a product must carry to
+  be shown"). "tv" found nothing live because the feed's televisions come only from
+  shops that send no description. On the branch (`7a08642`); `main` waits for the
+  owner's word. The microphone is hidden in Firefox (no speech recognition there);
+  the owner uses Firefox.
 - **Step 5 is begun** (2026-10-17, on the branch; nothing of steps 1 to 5 is on
   `main`). A search takes about 0.34 s (5 s before), a cold server reading the feed
   reaches the first page in 22-24 s (38-40 s), and one given a **prepared file**
