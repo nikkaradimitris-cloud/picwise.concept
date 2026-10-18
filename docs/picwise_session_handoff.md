@@ -16,9 +16,11 @@ Current state for whoever picks the project up next. Updated 2026-10-17.
   **Seen live by the owner the same day:** the home page opens with the new box
   ("What are you looking for?"); `/prepared.json` reads `prepared: true`, 9,935
   products, 25 shops, prepared 10:32:56 UTC (the production build read the real feed
-  and prepared it); `/private-beta-readiness` reports `provider_feed_ready`. Asked of
-  the owner and not yet reported: `prepared_feed` (should be `in_use`), the time of a
-  first search, and whether Cron Jobs, Run, gave a newer `prepared_at`.
+  and prepared it); `/private-beta-readiness` reports `provider_feed_ready`; a search
+  "was fast" (owner). Not checked, and the owner asked not to be asked again: the
+  `prepared_feed` line, and a run of the daily job (it runs by itself each morning).
+  A later session can tell from `/prepared.json`: a `prepared_at` of that morning means
+  the renewal works. The session itself cannot open the site.
 - **Step 5 is begun** (2026-10-17, on the branch; nothing of steps 1 to 5 is on
   `main`). A search takes about 0.34 s (5 s before), a cold server reading the feed
   reaches the first page in 22-24 s (38-40 s), and one given a **prepared file**
