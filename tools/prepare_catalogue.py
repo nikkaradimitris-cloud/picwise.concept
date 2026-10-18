@@ -20,6 +20,10 @@ files and refuses to deploy it empty, so the tool writes `prepared.json` there, 
 note of what this build prepared: counts, the time, and how fresh the feed's listings
 are (`picwise_providers.feed_freshness`: listing age, stock quantities, per shop), never
 the feed's link.
+
+`--sample-shop-pages N` adds to that note what N products per shop show on the shop's
+own pages (`picwise_providers.shop_page_sample`: in stock, out of stock, gone...),
+opened by their direct link, never the Awin one, and as each shop's robots.txt allows.
 """
 from __future__ import annotations
 
@@ -50,6 +54,10 @@ def main(argv: list[str] | None = None) -> int:
         "--keep-going", action="store_true", help="exit 0 when the feed cannot be read or preparing it fails"
     )
     parser.add_argument("--static-dir", type=Path, help=f"write {STATIC_NOTE_NAME}, what this build prepared, here")
+    parser.add_argument(
+        "--sample-shop-pages", type=int, default=0, metavar="N",
+        help="with --static-dir, check N products per shop on the shop's own pages",
+    )
     args = parser.parse_args(argv)
     if args.feed_file is not None:
         if not args.feed_file.is_file():
@@ -90,9 +98,26 @@ def main(argv: list[str] | None = None) -> int:
                 "products": len(prepared.products),
                 "shops": prepared.shop_count,
                 "freshness": _freshness(prepared),
+                **({"shop_pages": _shop_pages(prepared, args.sample_shop_pages)} if args.sample_shop_pages > 0 else {}),
             },
         )
     return 0
+
+
+def _shop_pages(prepared, per_shop: int) -> dict[str, object]:
+    """What a sample of each shop's products shows on the shop's pages; a failure is noted."""
+    started = time.perf_counter()
+    try:
+        from picwise_providers.shop_page_sample import check_shop_pages
+
+        result = check_shop_pages(prepared.products, per_shop=per_shop, seed=prepared.prepared_at.date().isoformat())
+    except Exception as error:
+        return {"error": _where(error)}
+    print(
+        f"prepare_catalogue: {result['checked']} shop pages checked in "
+        f"{time.perf_counter() - started:.0f} s: {result['totals']}"
+    )
+    return result
 
 
 def _freshness(prepared) -> dict[str, object]:

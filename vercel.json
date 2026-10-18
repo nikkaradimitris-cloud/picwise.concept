@@ -2,7 +2,7 @@
   "version": 2,
   "framework": null,
   "installCommand": "",
-  "buildCommand": "python3 tools/prepare_catalogue.py --keep-going --static-dir public",
+  "buildCommand": "python3 tools/prepare_catalogue.py --keep-going --static-dir public --sample-shop-pages 20",
   "outputDirectory": "public",
   "crons": [
     {
