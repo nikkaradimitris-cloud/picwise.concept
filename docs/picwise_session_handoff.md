@@ -451,7 +451,14 @@ Vercel, every day), `docs/picwise_query_understanding.md`,
    create tables in them without the owner saying which; a new project may cost money,
    so ask first. The owner said on 2026-10-08 to decide this later: create nothing.
 4. Optional: allow `productdata.awin.com` in the cloud environment's network settings so
-   a session can check the real feed.
+   a session can check the real feed, and `picwise.subby.cloud` so a session can check
+   the live site itself (the owner asked on 2026-10-18 why Claude does not look itself:
+   this conversation could not reach the site, DNS refused by the network policy, and
+   had no Vercel connection). Steps: the cloud environment menu in the session's title
+   bar, Edit, Network access, Allowed domains
+   (https://code.claude.com/docs/en/cloud-environments#network-access). A Vercel
+   connection for SUBBY CLOUD (claude.ai/customize/connectors) may let a session read
+   the builds; both take effect in a new session.
 
 ## Next engineering steps, in order
 
