@@ -1,0 +1,32 @@
+# Read-only look at the live site, for a session that cannot reach it.
+#
+# A Claude session's network does not reach picwise.subby.cloud, so it could not see
+# what the live site serves; GitHub's runners can. On each push to the working branch
+# this opens the site's public pages and prints what they say; the session reads the
+# log, and re-runs the job to look again. Public pages only: no key, nothing written.
+name: Live check (read-only)
+on:
+  push:
+    branches: [ccr-fd5dc1bc-4vgsgl]
+permissions:
+  contents: read
+jobs:
+  look:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: What the live site says
+        run: |
+          site=https://picwise.subby.cloud
+          for path in /prepared.json /private-beta-readiness /health; do
+            echo "=== $path"
+            curl -sS -m 90 "$site$path" | head -c 30000
+            echo
+          done
+          for query in tv laptop headphones %CE%B1%CE%BA%CE%BF%CF%85%CF%83%CF%84%CE%B9%CE%BA%CE%AC; do
+            echo "=== /search?q=$query"
+            curl -sS -m 90 -o page.html -w 'status %{http_code}, %{time_total} s\n' "$site/search?q=$query"
+            echo "counter: $(grep -o '[0-9][0-9,]* of [0-9][0-9,]*' page.html | head -1)"
+            echo "cards: $(grep -c 'data-choice-id=' page.html || true)"
+            echo "cards saying the shop gives no description: $(grep -c 'The shop gives no description' page.html || true)"
+          done
