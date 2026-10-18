@@ -32,12 +32,7 @@ Current state for whoever picks the project up next. Updated 2026-10-17.
   the shop's page, old listings. Measuring first, by the owner's choice: the build
   writes listing ages and stock quantities into `/prepared.json` (`freshness`;
   `src/picwise_providers/feed_freshness.py`); the owner copies it, then chooses a rule.
-  Details in PROGRESS. Not a rule yet: nothing shown changes. The feed turned out to
-  carry no dates and no out-of-stock state at all, so each production build now also
-  checks 20 products per shop on the shop's own page (`shop_page_sample.py`,
-  `/prepared.json` `shop_pages`; never the Awin link). The live check workflow
-  (`.github/workflows/live-check.yml`, on each push to the branch; re-run to look
-  again) lets a session read the live site through GitHub.
+  Details in PROGRESS. Not a rule yet: nothing shown changes.
 - **Step 5 is begun** (2026-10-17, on the branch; nothing of steps 1 to 5 is on
   `main`). A search takes about 0.34 s (5 s before), a cold server reading the feed
   reaches the first page in 22-24 s (38-40 s), and one given a **prepared file**
