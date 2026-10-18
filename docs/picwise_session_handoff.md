@@ -27,7 +27,22 @@ Current state for whoever picks the project up next. Updated 2026-10-17.
   («Με τη Vercel, αργότερα»), and the site stays as it is until then. Offered instead
   and not chosen: a scheduled GitHub workflow making one small automatic commit to
   `main` each morning (no keys, no Vercel steps; a push to `main` makes Vercel build,
-  and the build prepares the feed). Do not build it unless the owner asks. On
+  and the build prepares the feed). Do not build it unless the owner asks.
+  **Later the same day the owner did it, guided screen by screen:** a Deploy Hook
+  `daily-feed` for `main`; `PICWISE_DEPLOY_HOOK_URL` and `CRON_SECRET`, both
+  Production and Secret (six variables now). Not done: `AWIN_FEED_URL` for Preview. A
+  Secret cannot be read back, and its Edit form shows the value empty, so saving it
+  with Preview added risked erasing the Production feed link: cancelled, and the test
+  ran without the feed. **Seen on Vercel by the owner:** the preview builds of the new
+  config (`e715771`, `f530240`, `cfbf683`) are all Ready, and `/prepared.json` on the
+  preview reads `prepared: false, reason: feed_not_readable` (right without the feed):
+  the build step runs on Vercel and its note is served. **Not checked:** the preview's
+  pages served by the Python function (`/`, `/private-beta-readiness`); the owner
+  stopped there («τελείωσα εγώ, κάνε εσύ»), and the session cannot reach Vercel or
+  the live site. **Left:** the owner's explicit yes for `main`, which puts steps 1 to 5
+  live, not only the prepared feed; then one look at `picwise.subby.cloud` and its
+  `/private-beta-readiness` (`prepared_feed`: `in_use`); then Settings, Cron Jobs, Run,
+  once. On
   Google Cloud Run, were PicWise moved there, the same tool and file serve
   (`PICWISE_PREPARED_CATALOGUE_FILE`); only the schedule and the hook are Vercel's.
   **Next after that:** the regular visit that keeps the server awake (below), its
