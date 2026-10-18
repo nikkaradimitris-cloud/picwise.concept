@@ -13,6 +13,20 @@ Current state for whoever picks the project up next. Updated 2026-10-17.
   and `/prepared.json`, then Settings, Cron Jobs, Run, once. If the site misbehaves:
   Vercel's Instant Rollback to the previous production deployment (`3b02aeb`), or a
   revert of the merge. The notes below that say "nothing is on `main`" predate this.
+  **Seen live by the owner the same day:** the home page opens with the new box
+  ("What are you looking for?"); `/prepared.json` reads `prepared: true`, 9,935
+  products, 25 shops, prepared 10:32:56 UTC (the production build read the real feed
+  and prepared it); `/private-beta-readiness` reports `provider_feed_ready`; a search
+  "was fast" (owner). Not checked, and the owner asked not to be asked again: the
+  `prepared_feed` line, and a run of the daily job (it runs by itself each morning).
+  A later session can tell from `/prepared.json`: a `prepared_at` of that morning means
+  the renewal works. The session itself cannot open the site.
+- **2026-10-18, after the merge: products without a description are shown, with a
+  note** (owner: «Ναι, με σημείωση»; Decision Contract, "What a product must carry to
+  be shown"). "tv" found nothing live because the feed's televisions come only from
+  shops that send no description. On the branch (`7a08642`); `main` waits for the
+  owner's word. The microphone is hidden in Firefox (no speech recognition there);
+  the owner uses Firefox.
 - **Step 5 is begun** (2026-10-17, on the branch; nothing of steps 1 to 5 is on
   `main`). A search takes about 0.34 s (5 s before), a cold server reading the feed
   reaches the first page in 22-24 s (38-40 s), and one given a **prepared file**
@@ -443,7 +457,14 @@ Vercel, every day), `docs/picwise_query_understanding.md`,
    create tables in them without the owner saying which; a new project may cost money,
    so ask first. The owner said on 2026-10-08 to decide this later: create nothing.
 4. Optional: allow `productdata.awin.com` in the cloud environment's network settings so
-   a session can check the real feed.
+   a session can check the real feed, and `picwise.subby.cloud` so a session can check
+   the live site itself (the owner asked on 2026-10-18 why Claude does not look itself:
+   this conversation could not reach the site, DNS refused by the network policy, and
+   had no Vercel connection). Steps: the cloud environment menu in the session's title
+   bar, Edit, Network access, Allowed domains
+   (https://code.claude.com/docs/en/cloud-environments#network-access). A Vercel
+   connection for SUBBY CLOUD (claude.ai/customize/connectors) may let a session read
+   the builds; both take effect in a new session.
 
 ## Next engineering steps, in order
 

@@ -31,6 +31,7 @@ from picwise_taxonomy.comparison_rules import comparison_rule
 from .contracts import FeedAvailabilityContext, OfferHealth, ProviderProduct
 from .normalization import extract_merchant_name
 from .decision_labels import parse_price_amount
+from .product_description import has_sufficient_description
 from .product_specs import read_product_specs
 from .product_identity import same_product_key
 from .product_condition import (
@@ -589,6 +590,9 @@ def provider_product_to_backend_dict(
         "currency": currency or None,
         "merchant_name": extract_merchant_name(raw) or None,
         "condition": _feed_condition(raw) or None,
+        # Whether the shop sent a description; a card without one says so (owner,
+        # 2026-10-18), since it is shown all the same.
+        "has_description": has_sufficient_description(raw, title=product.title),
         "verified_purchasable": False,
     }
     if product_type:
