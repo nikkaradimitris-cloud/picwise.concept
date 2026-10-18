@@ -22,7 +22,12 @@ Current state for whoever picks the project up next. Updated 2026-10-17.
   (Greek steps: `docs/vercel_daily_feed_setup_el.md`): the Deploy Hook, the two keys,
   `AWIN_FEED_URL` for Preview on this branch for the test, a look at the test
   deployment, then the word for `main`. This conversation had no Vercel connection
-  either; none is needed for these steps, the owner does them in the dashboard. On
+  either; none is needed for these steps, the owner does them in the dashboard.
+  **Owner, 2026-10-18:** the steps are hard to do now; the Vercel way stays, later
+  («Με τη Vercel, αργότερα»), and the site stays as it is until then. Offered instead
+  and not chosen: a scheduled GitHub workflow making one small automatic commit to
+  `main` each morning (no keys, no Vercel steps; a push to `main` makes Vercel build,
+  and the build prepares the feed). Do not build it unless the owner asks. On
   Google Cloud Run, were PicWise moved there, the same tool and file serve
   (`PICWISE_PREPARED_CATALOGUE_FILE`); only the schedule and the hook are Vercel's.
   **Next after that:** the regular visit that keeps the server awake (below), its
