@@ -366,24 +366,6 @@ class PrepareToolTests(_PreparedMixin, unittest.TestCase):
         note = json.loads((empty / "prepared.json").read_text(encoding="utf-8"))
         self.assertEqual((note["prepared"], note["reason"]), (False, "feed_not_readable"))
 
-    def test_the_shop_page_sample_stops_after_its_last_day(self) -> None:
-        # A measurement for a few days, not a lasting mechanism (owner, 2026-10-18).
-        feed = self._write_feed(_feed_rows())
-        for until, expected in (("2000-01-01", {"ended": "2000-01-01"}), ("2999-12-31", None)):
-            with self.subTest(until=until):
-                static = self.folder / f"public-{until}"
-                result = self._run(
-                    "--feed-file", str(feed), "--out", str(self.prepared_path), "--keep-going",
-                    "--static-dir", str(static), "--sample-shop-pages", "2", "--sample-until", until,
-                )
-                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                pages = json.loads((static / "prepared.json").read_text(encoding="utf-8"))["shop_pages"]
-                if expected is not None:
-                    self.assertEqual(pages, expected)
-                else:
-                    # The fixture rows carry no direct shop link, so nothing is opened.
-                    self.assertEqual(pages["totals"], {"no_direct_link": 2})
-
     def test_a_failure_while_preparing_never_fails_the_build_nor_shows_its_text(self) -> None:
         # An error's own text can quote the feed's link, which holds the API key.
         tool = _load_prepare_tool()

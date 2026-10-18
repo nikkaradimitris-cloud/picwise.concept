@@ -77,14 +77,6 @@ class VercelConfigTests(unittest.TestCase):
         # Vercel refuses an empty static folder; the build writes its note there.
         self.assertEqual(command[command.index("--static-dir") + 1], self.config["outputDirectory"])
 
-    def test_the_shop_page_sample_has_a_last_day(self) -> None:
-        # Checking shops' pages is a measurement for a few days (owner, 2026-10-18):
-        # whenever the build asks for it, it also names the day it stops.
-        command = shlex.split(self.config["buildCommand"])
-        if "--sample-shop-pages" in command:
-            until = command[command.index("--sample-until") + 1]
-            self.assertRegex(until, r"^\d{4}-\d{2}-\d{2}$")
-
     def test_one_scheduled_renewal_a_day(self) -> None:
         crons = self.config["crons"]
         self.assertEqual(len(crons), 1)

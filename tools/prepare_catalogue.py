@@ -24,9 +24,6 @@ the feed's link.
 `--sample-shop-pages N` adds to that note what N products per shop show on the shop's
 own pages (`picwise_providers.shop_page_sample`: in stock, out of stock, gone...),
 opened by their direct link, never the Awin one, and as each shop's robots.txt allows.
-It is a measurement for a few days, not a lasting mechanism (owner, 2026-10-18):
-`--sample-until YYYY-MM-DD` is its last day, after which builds stop checking by
-themselves.
 """
 from __future__ import annotations
 
@@ -60,10 +57,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--sample-shop-pages", type=int, default=0, metavar="N",
         help="with --static-dir, check N products per shop on the shop's own pages",
-    )
-    parser.add_argument(
-        "--sample-until", metavar="YYYY-MM-DD",
-        help="the last day (UTC) --sample-shop-pages runs; later builds skip it",
     )
     args = parser.parse_args(argv)
     if args.feed_file is not None:
@@ -105,20 +98,10 @@ def main(argv: list[str] | None = None) -> int:
                 "products": len(prepared.products),
                 "shops": prepared.shop_count,
                 "freshness": _freshness(prepared),
-                **_shop_pages_note(prepared, args.sample_shop_pages, args.sample_until),
+                **({"shop_pages": _shop_pages(prepared, args.sample_shop_pages)} if args.sample_shop_pages > 0 else {}),
             },
         )
     return 0
-
-
-def _shop_pages_note(prepared, per_shop: int, until: str | None) -> dict[str, object]:
-    """The note's "shop_pages", when the sample is asked for and not past its last day."""
-    if per_shop <= 0:
-        return {}
-    today = prepared.prepared_at.date().isoformat()
-    if until and today > until:
-        return {"shop_pages": {"ended": until}}
-    return {"shop_pages": _shop_pages(prepared, per_shop)}
 
 
 def _shop_pages(prepared, per_shop: int) -> dict[str, object]:
