@@ -4,10 +4,12 @@ import sys
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
+for path in (HERE, SRC):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
 
 from picwise_providers.contracts import ProviderProduct  # noqa: E402
 from picwise_providers.normalization import normalize_feed_row_to_provider_product  # noqa: E402
@@ -18,6 +20,7 @@ from picwise_providers.search_selection import (  # noqa: E402
     select_provider_products_for_query,
 )
 from picwise_search.live_search_resolver import resolve_live_search  # noqa: E402
+from fixture_support import fixture_description  # noqa: E402
 
 
 def _sample_product(**overrides) -> ProviderProduct:
@@ -35,6 +38,12 @@ def _sample_product(**overrides) -> ProviderProduct:
         "raw": {},
     }
     base.update(overrides)
+    # Every fixture product carries a description, whatever else a test overrides:
+    # without one it is not a product PicWise would show, so a test built on it would
+    # pin behaviour the owner's rule makes impossible (see `tests/fixture_support`).
+    raw = dict(base.get("raw") or {})
+    raw.setdefault("description", fixture_description())
+    base["raw"] = raw
     return ProviderProduct(**base)
 
 

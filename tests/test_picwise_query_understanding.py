@@ -11,6 +11,11 @@ satisfy, and states the rest. These tests pin the three properties that make tha
 1. a word the inventory can be filtered by is never silently dropped
 2. relaxing never changes which product family answers the query
 3. whatever could not be matched is reported, never quietly ignored
+
+Price first (owner, 2026-10-16) changed what "can be filtered by" means for a search
+whose product is understood: a word is kept while even one product carries it, and the
+answer is the products that do, "1 of 1" if one. Fewer and right beats more and wrong.
+A word no product carries is dropped and reported, so it still never empties the page.
 """
 from __future__ import annotations
 
@@ -95,12 +100,19 @@ class QualifiedQueriesStillDeliverTests(_FeedTestCase):
         ("coffee machine for office", "Coffee Machines", ("office",)),
     )
 
+    # The words some product carries, which price first keeps as filters: the answer
+    # is then the products carrying them, however few (owner, 2026-10-16).
+    HONOURED = {
+        "power bank 20000mah for iphone": ("20000mah",),
+        "bicycle helmet for kids": ("kids",),
+    }
+
     def test_a_qualifier_no_longer_empties_the_result_set(self) -> None:
         for query, _family, _unmatched in self.QUALIFIED:
             with self.subTest(query=query):
                 selection = self._select(query)
                 self.assertEqual(selection.status, "selected", query)
-                self.assertEqual(len(selection.selected_products), 4, query)
+                self.assertGreaterEqual(len(selection.selected_products), 1, query)
 
     def test_relaxing_never_changes_the_product_family(self) -> None:
         for query, family, _unmatched in self.QUALIFIED:
@@ -108,21 +120,25 @@ class QualifiedQueriesStillDeliverTests(_FeedTestCase):
                 self.assertEqual(self._families(self._select(query)), {family})
 
     def test_the_unmatched_words_are_reported(self) -> None:
-        # Each word is reported either as not matched at all, or as matched by only
-        # some of the four ("20000mah": 1 of 4) -- never silently dropped.
-        for query, _family, unmatched in self.QUALIFIED:
+        # Each word is either a filter every shown product carries, or reported as not
+        # matched -- never silently dropped.
+        for query, _family, words in self.QUALIFIED:
             with self.subTest(query=query):
                 selection = self._select(query)
+                honoured = set(self.HONOURED.get(query, ()))
                 reported = set(selection.unmatched_query_terms) | {
                     term for term, _count in selection.partially_matched_terms
                 }
-                self.assertEqual(reported, set(unmatched), query)
+                self.assertEqual(set(selection.required_filter_terms), honoured, query)
+                self.assertEqual(reported, set(words) - honoured, query)
 
-    def test_a_filter_some_of_the_four_carry_is_counted_not_called_unmatched(self) -> None:
+    def test_a_filter_one_product_carries_is_the_answer(self) -> None:
+        # Price first: "20000mah" is carried by one power bank, so that one is the
+        # answer, "1 of 1", rather than three that are not 20000mAh beside it.
         selection = self._select("power bank 20000mah for iphone")
-        self.assertEqual(selection.partially_matched_terms, (("20000mah", 1),))
+        self.assertEqual(selection.required_filter_terms, ("20000mah",))
         self.assertEqual(selection.unmatched_query_terms, ("iphone",))
-        # The one product that carries it is ranked first.
+        self.assertEqual(len(selection.selected_products), 1)
         self.assertIn("20000mAh", selection.selected_products[0].title)
 
     def test_a_qualified_query_still_gets_a_recommendation(self) -> None:
@@ -133,6 +149,12 @@ class QualifiedQueriesStillDeliverTests(_FeedTestCase):
                         query=query
                     )
                 )
+                if query in self.HONOURED:
+                    # One product has no middle price to recommend.
+                    self.assertEqual(
+                        decision.decision_status, "no_recommendation_too_few_products"
+                    )
+                    continue
                 self.assertEqual(decision.decision_status, "recommended", query)
                 selected_ids = {
                     product.provider_product_id
@@ -183,12 +205,13 @@ class AccessoryProtectionTests(_FeedTestCase):
 
     def test_an_accessory_query_is_never_answered_with_the_main_product(self) -> None:
         # The fixture holds one laptop bag and six laptops. Relaxing "laptop bag" to
-        # "laptop" would answer with laptops, which is not what was asked.
+        # "laptop" would answer with laptops, which is not what was asked. Price first
+        # shows the one bag as it is.
         for query in ("laptop bag", "laptop case"):
             with self.subTest(query=query):
                 selection = self._select(query)
-                self.assertNotEqual(selection.status, "selected")
-                self.assertEqual(selection.selected_products, tuple())
+                ids = [product.provider_product_id for product in selection.selected_products]
+                self.assertEqual(ids, ["fx-laptop-bag"])
 
     def test_the_main_product_query_still_excludes_the_accessory(self) -> None:
         selection = self._select("laptop")
@@ -286,11 +309,12 @@ class SurfaceStatesWhatItCouldNotMatchTests(_FeedTestCase):
         )
 
     def test_the_page_names_the_words_it_could_not_match(self) -> None:
+        # One power bank carries "20000mah", so it is the answer; no product carries
+        # "iphone", and the page says so.
         cards, query_line, _notice = self._page("power bank 20000mah for iphone")
-        self.assertEqual(cards, 4)
-        self.assertIn("could not match", query_line)
-        self.assertIn("20000mah", query_line)
-        self.assertIn("iphone", query_line)
+        self.assertEqual(cards, 1)
+        self.assertIn("PicWise could not match: iphone", query_line)
+        self.assertNotIn("could not match: 20000mah", query_line)
 
     def test_a_fully_matched_query_carries_no_such_note(self) -> None:
         cards, query_line, _notice = self._page("coffee machine")
@@ -310,7 +334,7 @@ class SurfaceStatesWhatItCouldNotMatchTests(_FeedTestCase):
     def test_the_flagship_concept_example_returns_a_decision(self) -> None:
         # The concept's own example and the README's documented demo query.
         cards, query_line, _notice = self._page("power bank 20000mah for iphone")
-        self.assertEqual(cards, 4)
+        self.assertGreaterEqual(cards, 1)
         self.assertIn("power bank 20000mah for iphone", query_line)
 
 

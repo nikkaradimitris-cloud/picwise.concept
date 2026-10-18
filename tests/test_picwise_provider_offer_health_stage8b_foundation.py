@@ -364,8 +364,13 @@ class BackToOfficeSelectionRegressionStage8BTests(unittest.TestCase):
             products,
             max_products=4,
         )
-        self.assertEqual(selection.status, "insufficient_relevant_products")
-        self.assertEqual(len(selection.selected_products), 0)
+        # Price first shows fewer than four as they are (owner, 2026-10-16): the three
+        # that can be shown, never the one without a price.
+        self.assertEqual(selection.status, "selected")
+        self.assertEqual(
+            sorted(product.provider_product_id for product in selection.selected_products),
+            ["STRONG-0", "STRONG-1", "STRONG-2"],
+        )
 
 
 if __name__ == "__main__":

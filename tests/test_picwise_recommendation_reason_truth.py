@@ -21,9 +21,10 @@ import unittest
 from pathlib import Path
 from urllib.parse import urlencode
 
-ROOT = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 SRC = ROOT / "src"
-for path in (ROOT, SRC):
+for path in (HERE, ROOT, SRC):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
@@ -36,6 +37,7 @@ from picwise_providers.search_selection import (  # noqa: E402
     decide_recommended_provider_product,
 )
 from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
+from fixture_support import fixture_description  # noqa: E402
 
 _PRICE_DECIDED = "Lowest price among the choices that match your search equally"
 
@@ -52,7 +54,11 @@ def _product(pid: str, title: str, price: str, currency: str = "GBP") -> Provide
         price_text=price,
         availability_text="in stock",
         currency=currency,
-        raw={"product_type": "Refrigerators", "in_stock": "in stock"},
+        raw={
+            "product_type": "Refrigerators",
+            "in_stock": "in stock",
+            "description": fixture_description(),
+        },
     )
 
 
@@ -195,14 +201,14 @@ class TypeWordThroughDeployedAppTests(unittest.TestCase):
             writer.writerow(
                 ["aw_product_id", "product_name", "brand_name", "product_type", "merchant_category",
                  "aw_deep_link", "aw_image_url", "search_price", "currency", "in_stock",
-                 "merchant_name", "data_provenance"]
+                 "merchant_name", "description", "data_provenance"]
             )
             for pid, title, price in rows:
                 writer.writerow(
                     [pid, title, title.split()[0], "Coffee Machines", "Coffee Machines",
                      f"https://fixture.example.invalid/out/{pid}",
                      f"https://fixture.example.invalid/img/{pid}.jpg", price, "GBP", "1",
-                     "Fixture Store One", "local_test_fixture"]
+                     "Fixture Store One", fixture_description(), "local_test_fixture"]
                 )
         previous = os.environ.get("AWIN_FEED_FILE")
         os.environ["AWIN_FEED_FILE"] = str(path)
@@ -238,12 +244,13 @@ class TypeWordThroughDeployedAppTests(unittest.TestCase):
         cards = re.findall(r'<article class="pw-card([^"]*)" data-choice-id="([^"]+)"', body)
         shown = [pid for _classes, pid in cards]
         recommended = [pid for classes, pid in cards if "recommended" in classes]
-        # Five equivalent machines spread over their range (cheapest, two between,
-        # dearest); the filter pack is never one of them. The penalty for the word
-        # "filter" used to leave c10 out of the four altogether.
-        self.assertEqual(shown, ["c10", "c20", "c40", "c50"])
-        self.assertEqual(recommended, ["c10"])
-        self.assertIn(_PRICE_DECIDED, body)
+        # Price first (owner, 2026-10-16): the four cheapest machines, and the filter
+        # pack, cheaper than all of them, is never one. The penalty for the word
+        # "filter" used to leave c10 out of the four altogether. No machine carries a
+        # barcode, so none is recommended.
+        self.assertEqual(shown, ["c10", "c20", "c30", "c40"])
+        self.assertNotIn("a05", shown)
+        self.assertEqual(recommended, [])
 
 
 class RenderedRecommendationReasonTests(unittest.TestCase):
@@ -253,24 +260,24 @@ class RenderedRecommendationReasonTests(unittest.TestCase):
         directory = tempfile.mkdtemp()
         path = Path(directory) / "feed.csv"
         rows = [
-            ("eu1", "Fixturon Frost Refrigerator 300L", "1.299,00"),
-            ("eu2", "Testline Frost Refrigerator 250L", "899,00"),
-            ("eu3", "Sampleworks Frost Refrigerator 350L", "1.099,00"),
-            ("eu4", "Fixturon Cool Refrigerator 200L", "649,00"),
+            ("eu1", "Fixturon Frost Refrigerator 300L", "1.299,00", "5000000005017"),
+            ("eu2", "Testline Frost Refrigerator 250L", "899,00", "5000000005024"),
+            ("eu3", "Sampleworks Frost Refrigerator 350L", "1.099,00", "5000000005031"),
+            ("eu4", "Fixturon Cool Refrigerator 200L", "649,00", "5000000005048"),
         ]
         with path.open("w", newline="", encoding="utf-8") as handle:
             writer = csv.writer(handle)
             writer.writerow(
                 ["aw_product_id", "product_name", "brand_name", "product_type", "merchant_category",
                  "aw_deep_link", "aw_image_url", "search_price", "currency", "in_stock",
-                 "merchant_name", "data_provenance"]
+                 "merchant_name", "description", "data_provenance", "ean"]
             )
-            for pid, title, price in rows:
+            for pid, title, price, ean in rows:
                 writer.writerow(
                     [pid, title, title.split()[0], "Refrigerators", "Refrigerators",
                      f"https://fixture.example.invalid/out/{pid}",
                      f"https://fixture.example.invalid/img/{pid}.jpg", price, "EUR", "1",
-                     "Fixture Store One", "local_test_fixture"]
+                     "Fixture Store One", fixture_description(), "local_test_fixture", ean]
                 )
         previous = os.environ.get("AWIN_FEED_FILE")
         os.environ["AWIN_FEED_FILE"] = str(path)
@@ -310,17 +317,16 @@ class RenderedRecommendationReasonTests(unittest.TestCase):
         )
         self.assertIsNotNone(recommended)
         choice_id, inner = recommended.groups()
-        self.assertEqual(choice_id, "eu4")
+        # Price first (owner, 2026-10-16): the middle product by price. Read as 1.099
+        # and 1.299, the two dearest would sort first and the middle would move.
+        self.assertEqual(choice_id, "eu2")
         role = html.unescape(re.search(r'<p class="pw-role-label">(.*?)</p>', inner, re.S).group(1))
-        self.assertEqual(role, "Lowest price of these four")
-        bullets = [
-            html.unescape(re.sub(r"<[^>]+>", "", item)).strip()
-            for item in re.findall(r'<li class="pw-feature-item">(.*?)</li>', inner, re.S)
-        ]
-        # The fact-derived key reasons come first, then the recommendation's own reasons.
-        recommendation_reasons = bullets[3:]
-        self.assertEqual(recommendation_reasons[0], _PRICE_DECIDED)
-        self.assertIn("then by price when they match equally", html.unescape(body))
+        self.assertEqual(role, "Mid-priced for this category")
+        place = html.unescape(
+            re.search(r'<p class="pw-card-description">(.*?)</p>', inner, re.S).group(1)
+        )
+        self.assertEqual(place, "2nd cheapest of 4")
+        self.assertIn("The Recommended is mid-priced for this category.", html.unescape(body))
 
 
 if __name__ == "__main__":

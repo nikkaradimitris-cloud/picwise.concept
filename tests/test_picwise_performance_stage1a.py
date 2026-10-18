@@ -33,7 +33,7 @@ def _assert_landing_shell(test_case: unittest.TestCase, body: str) -> None:
     )
     for href, label in expected_links:
         test_case.assertIn(f'class="pw-footer-link" href="{href}">{label}<', body)
-    test_case.assertIn("See the 4 best products before you buy", body)
+    test_case.assertIn("What are you looking for?", body)
     test_case.assertIn("Live safe mode", body)
     test_case.assertIn('action="/search"', body)
     test_case.assertIn('method="get"', body)
@@ -67,7 +67,8 @@ class PicwisePerformanceStage1ATests(unittest.TestCase):
     def test_non_empty_reference_query_still_calls_resolve_live_search(self) -> None:
         with patch("picwise_app.app.resolve_live_search", wraps=resolve_live_search) as resolve_mock:
             html = self.app.picwise_reference_html("power bank")
-        resolve_mock.assert_called_once_with("power bank")
+        # The first page: "More" has opened nothing yet.
+        resolve_mock.assert_called_once_with("power bank", shown=0)
         # The point of this test is that a non-empty query is resolved rather than
         # short-circuited. It used to assert the Amazon CTA as a proxy for that;
         # Amazon has been removed from the decision path, so assert the resolved

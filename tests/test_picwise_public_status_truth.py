@@ -30,6 +30,7 @@ from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: 
 FIXTURE_CSV = ROOT / "tests" / "fixtures" / "provider_feed_local_test_fixture.csv"
 _NOT_CONNECTED = "PicWise understood this search, but no safe provider is connected yet."
 _CONNECTED_NO_FOUR = "the connected product feed has no four products it can show for it"
+_CONNECTED_NO_PRODUCTS = "the connected product feed has no products it can show for it"
 
 
 def _get(path: str, query: dict[str, str] | None = None) -> tuple[str, str]:
@@ -111,10 +112,12 @@ class WithConnectedFeedTests(_FeedEnv):
         self.assertIn("provider_feed_ready", source["details"])
 
     def test_too_few_matches_is_not_described_as_no_provider(self) -> None:
-        # The fixture holds one laptop bag: the feed is connected, it has no four bags.
-        _status, body = _get("/search", {"q": "laptop bag"})
+        # The fixture holds no office chair: the feed is connected, it has none to show.
+        # (Price first shows fewer than four as they are, so only an empty answer says
+        # it has nothing.)
+        _status, body = _get("/search", {"q": "office chair"})
         self.assertNotIn(_NOT_CONNECTED, body)
-        self.assertIn(_CONNECTED_NO_FOUR, body)
+        self.assertIn(_CONNECTED_NO_PRODUCTS, body)
 
 
 if __name__ == "__main__":

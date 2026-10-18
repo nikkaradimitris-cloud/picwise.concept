@@ -18,9 +18,10 @@ import unittest
 from pathlib import Path
 from urllib.parse import urlencode
 
-ROOT = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 SRC = ROOT / "src"
-for path in (ROOT, SRC):
+for path in (HERE, ROOT, SRC):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
@@ -33,11 +34,12 @@ from picwise_providers.search_selection import (  # noqa: E402
     resolve_query_token_plan,
 )
 from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
+from fixture_support import fixture_description  # noqa: E402
 
 _COLUMNS = (
     "aw_product_id", "product_name", "brand_name", "merchant_category", "product_type",
     "aw_deep_link", "aw_image_url", "search_price", "currency", "in_stock", "merchant_name",
-    "ean", "mpn", "data_provenance",
+    "ean", "mpn", "description", "data_provenance",
 )
 
 
@@ -53,7 +55,11 @@ def _offer(pid: str, title: str, price: str, **raw: str) -> ProviderProduct:
         price_text=price,
         availability_text="in stock",
         currency=raw.pop("currency", "GBP"),
-        raw={"product_type": "Mobile Phones", **raw},
+        raw={
+            "product_type": "Mobile Phones",
+            "description": fixture_description(),
+            **raw,
+        },
     )
 
 
@@ -106,14 +112,17 @@ class ProductIdentityTests(unittest.TestCase):
 
 class DeployedSurfaceIdentityTests(unittest.TestCase):
     def setUp(self) -> None:
+        # Valid EAN-13s: offers are joined only on a code whose check digit agrees
+        # (`product_identity.same_product_key`), so that a SKU written into a code
+        # column never merges two different products.
         rows = [
-            ("ph-a", "Fixturon Nova 12 Smartphone 128GB Black", "499.00", "Fixture Store One", "5000000000017"),
-            ("ph-b", "Fixturon Nova 12 128GB Smartphone - Black", "479.00", "Fixture Store Two", "5000000000017"),
-            ("ph-c", "Fixturon Nova 12 Smartphone (128GB, Black)", "489.00", "Fixture Store Three", "5000000000017"),
-            ("ph-d", "FIXTURON Nova 12 Smartphone 128 GB Black", "509.00", "Fixture Store Four", "5000000000017"),
-            ("ph-e", "Testline Orbit 5 Smartphone 256GB", "599.00", "Fixture Store One", "5000000000024"),
-            ("ph-f", "Sampleworks Edge Smartphone 64GB", "199.00", "Fixture Store Two", "5000000000031"),
-            ("ph-g", "Testline Wave 3 Smartphone 128GB", "349.00", "Fixture Store Three", "5000000000062"),
+            ("ph-a", "Fixturon Nova 12 Smartphone 128GB Black", "499.00", "Fixture Store One", "5000000000012"),
+            ("ph-b", "Fixturon Nova 12 128GB Smartphone - Black", "479.00", "Fixture Store Two", "5000000000012"),
+            ("ph-c", "Fixturon Nova 12 Smartphone (128GB, Black)", "489.00", "Fixture Store Three", "5000000000012"),
+            ("ph-d", "FIXTURON Nova 12 Smartphone 128 GB Black", "509.00", "Fixture Store Four", "5000000000012"),
+            ("ph-e", "Testline Orbit 5 Smartphone 256GB", "599.00", "Fixture Store One", "5000000000029"),
+            ("ph-f", "Sampleworks Edge Smartphone 64GB", "199.00", "Fixture Store Two", "5000000000036"),
+            ("ph-g", "Testline Wave 3 Smartphone 128GB", "349.00", "Fixture Store Three", "5000000000067"),
         ]
         path = Path(tempfile.mkdtemp()) / "feed.csv"
         with path.open("w", newline="", encoding="utf-8") as handle:
@@ -126,6 +135,7 @@ class DeployedSurfaceIdentityTests(unittest.TestCase):
                         "merchant_category": "Mobile Phones", "product_type": "Mobile Phones",
                         "aw_deep_link": f"https://fixture.example.invalid/out/{pid}",
                         "aw_image_url": f"https://fixture.example.invalid/img/{pid}.jpg",
+                        "description": fixture_description(),
                         "search_price": price, "currency": "GBP", "in_stock": "1",
                         "merchant_name": merchant, "ean": ean, "mpn": "", "data_provenance": "local_test_fixture",
                     }

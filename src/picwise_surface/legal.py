@@ -174,6 +174,11 @@ def render_privacy_page() -> str:
         "<p>If you email PicWise, your email address and message content may be used to reply.</p>"
         "<h2>Search/demo interactions</h2>"
         "<p>Search and demo interactions may be processed to show website responses. No purchase, subscription, application, or checkout is completed on PicWise.</p>"
+        "<h2>Voice search (microphone)</h2>"
+        "<p>Where your browser can turn speech into text, the search box shows a microphone button. Nothing is recorded unless you press it. "
+        "Your browser does the listening with its own speech service, not PicWise: in Google Chrome the audio is sent to Google to be turned into text, "
+        "and in Microsoft Edge and Apple Safari to Microsoft's or Apple's service, under their own privacy policies. "
+        "PicWise receives only the words, as a typed search, and never the audio.</p>"
         "<h2>What PicWise does not currently process</h2>"
         "<p>PicWise does not process checkout payments, card details, shipping fulfillment, seller customer support, direct product orders, direct SaaS subscriptions, or direct credit/insurance applications unless explicitly implemented later.</p>"
         "<h2>Hosting and technical providers</h2>"
@@ -205,7 +210,7 @@ def render_privacy_page() -> str:
         "<h2>Changes and contact</h2>"
         "<p>PicWise may update this policy as the service evolves.</p>"
         f"<p>Email: {PUBLIC_CONTACT_EMAIL}</p>"
-        "<p>Last updated: May 2026</p>"
+        "<p>Last updated: October 2026</p>"
     )
     return _render_legal_page(
         title="Privacy Policy — PicWise",

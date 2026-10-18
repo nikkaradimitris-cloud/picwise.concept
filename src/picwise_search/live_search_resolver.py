@@ -98,10 +98,25 @@ class LiveSearchResolution:
     provider_feed_matched_count: int = 0
     provider_feed_selected_count: int = 0
     provider_feed_selected_products: tuple[dict[str, Any], ...] = field(default_factory=tuple)
+    # A second four, for the kinds of product that carry no "best" and are chosen by
+    # taste or fit. Empty for every other kind. See `picwise_taxonomy.comparison_rules`.
+    provider_feed_more_products: tuple[dict[str, Any], ...] = field(default_factory=tuple)
     provider_feed_decision_status: str | None = None
     provider_feed_recommended_product_id: str | None = None
     provider_feed_recommendation_reason_codes: tuple[str, ...] = field(default_factory=tuple)
     provider_feed_recommendation_confidence: str | None = None
+    # Price first (owner, 2026-10-15 and 2026-10-16): the products are listed cheapest
+    # first, `provider_feed_selected_products` is the first page and
+    # `provider_feed_more_products` what "More" has opened after it. `total_count` is
+    # the whole answer, for the counter "4 of 45".
+    provider_feed_price_first: bool = False
+    provider_feed_total_count: int = 0
+    # First-page products that are the cheap end of the answer ("Lowest price").
+    provider_feed_cheapest_product_ids: tuple[str, ...] = field(default_factory=tuple)
+    # (product id, shops) for shown products sold by more than one shop.
+    provider_feed_shop_counts: tuple[tuple[str, int], ...] = field(default_factory=tuple)
+    # (product id, place in the whole answer by price, 1 = cheapest; equal prices share)
+    provider_feed_price_ranks: tuple[tuple[str, int], ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -151,6 +166,18 @@ class LiveSearchResolution:
             payload["provider_feed_matched_count"] = self.provider_feed_matched_count
             payload["provider_feed_selected_count"] = self.provider_feed_selected_count
             payload["provider_feed_selected_products"] = list(self.provider_feed_selected_products)
+            payload["provider_feed_more_products"] = list(self.provider_feed_more_products)
+            payload["provider_feed_price_first"] = self.provider_feed_price_first
+            payload["provider_feed_total_count"] = self.provider_feed_total_count
+            payload["provider_feed_cheapest_product_ids"] = list(
+                self.provider_feed_cheapest_product_ids
+            )
+            payload["provider_feed_shop_counts"] = [
+                list(row) for row in self.provider_feed_shop_counts
+            ]
+            payload["provider_feed_price_ranks"] = [
+                list(row) for row in self.provider_feed_price_ranks
+            ]
             if self.provider_feed_decision_status is not None:
                 payload["provider_feed_decision_status"] = self.provider_feed_decision_status
                 payload["provider_feed_recommended_product_id"] = self.provider_feed_recommended_product_id
@@ -162,6 +189,27 @@ class LiveSearchResolution:
                         self.provider_feed_recommendation_confidence
                     )
         return payload
+
+
+# "More" opens four products at a time, and the page holds every product opened so
+# far. The cap bounds one page against a hand-typed URL: 100 presses of "More".
+MAX_SHOWN_PRODUCTS = 400
+
+
+def parse_shown_count(value: Any) -> int:
+    """How many products the page should hold, from the `shown` URL parameter.
+
+    Anything that is not a whole number in the digits 0-9 means the first page (0).
+    The value comes from a typed address: "²" passes `str.isdigit` and breaks `int`,
+    and Python refuses to read a number of more than 4,300 digits.
+    """
+    text = str(value or "").strip()
+    if not text or not (text.isascii() and text.isdigit()):
+        return 0
+    digits = text.lstrip("0")
+    if len(digits) > len(str(MAX_SHOWN_PRODUCTS)):
+        return MAX_SHOWN_PRODUCTS
+    return min(int(digits or "0"), MAX_SHOWN_PRODUCTS)
 
 
 def _normalized_text(value: Any) -> str:
@@ -236,7 +284,9 @@ def _query_eligible_for_feed_opportunity_attempt(
     return True
 
 
-def resolve_live_search(query: str) -> LiveSearchResolution:
+def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
+    """Resolve one search. `shown` is how many products of a price-first answer the
+    page holds: 4, then 8, 12 and so on as "More" is pressed. 0 means the first page."""
     raw_query = str(query or "")
     display_query = raw_query
     normalized_query = normalize_query(raw_query)
@@ -414,10 +464,16 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
     provider_feed_matched_count = 0
     provider_feed_selected_count = 0
     provider_feed_selected_products: tuple[dict[str, Any], ...] = ()
+    provider_feed_more_products: tuple[dict[str, Any], ...] = ()
     provider_feed_decision_status: str | None = None
     provider_feed_recommended_product_id: str | None = None
     provider_feed_recommendation_reason_codes: tuple[str, ...] = ()
     provider_feed_recommendation_confidence: str | None = None
+    provider_feed_price_first = False
+    provider_feed_total_count = 0
+    provider_feed_cheapest_product_ids: tuple[str, ...] = ()
+    provider_feed_shop_counts: tuple[tuple[str, int], ...] = ()
+    provider_feed_price_ranks: tuple[tuple[str, int], ...] = ()
     selection_query = canonicalized_query or normalized_query or raw_query
     standard_provider_feed_path = bool(
         mega_category_id
@@ -466,13 +522,17 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
                 selection = resolve_search_provider_feed_product_selection(
                     query=selection_query,
                     reading=concept_reading,
+                    shown=shown,
                 )
                 expose_selection = recognized_product_search or is_strong_feed_opportunity_selection(
                     selection
                 )
+                # An ambiguous answer is reported too, so the page can ask which product
+                # is meant ("switch": network, KVM or video switch); nothing is shown.
                 report_feed_opportunity_selection = bool(
                     feed_opportunity_search
-                    and selection.status in {"selected", "insufficient_relevant_products"}
+                    and selection.status
+                    in {"selected", "insufficient_relevant_products", "ambiguous_product_family"}
                 )
                 if expose_selection or report_feed_opportunity_selection:
                     provider_feed_selection_status = selection.status
@@ -484,6 +544,8 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
                     )
                     provider_feed_matched_count = selection.matched_count
                     provider_feed_selected_count = len(selection.selected_products)
+                    provider_feed_price_first = selection.price_first
+                    provider_feed_total_count = selection.total_count
                     recommendation = resolve_search_provider_feed_recommendation_decision(
                         query=selection_query,
                         selection=selection,
@@ -500,6 +562,17 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
                             )
                             for product in selection.selected_products
                         )
+                        # What "More" opened rides with the first page: it is the
+                        # same answer, so it is never exposed when the page is not.
+                        provider_feed_more_products = tuple(
+                            provider_product_to_backend_dict(
+                                product, feed_ctx=selection.feed_availability_context
+                            )
+                            for product in selection.more_products
+                        )
+                        provider_feed_cheapest_product_ids = selection.cheapest_product_ids
+                        provider_feed_shop_counts = selection.shop_counts
+                        provider_feed_price_ranks = selection.price_ranks
                     if recommendation.decision_status == "recommended" and not products_exposed:
                         # A weak feed-opportunity selection is reported but not exposed.
                         # Claiming "recommended" with zero exposed products contradicts
@@ -594,8 +667,14 @@ def resolve_live_search(query: str) -> LiveSearchResolution:
         provider_feed_matched_count=provider_feed_matched_count,
         provider_feed_selected_count=provider_feed_selected_count,
         provider_feed_selected_products=provider_feed_selected_products,
+        provider_feed_more_products=provider_feed_more_products,
         provider_feed_decision_status=provider_feed_decision_status,
         provider_feed_recommended_product_id=provider_feed_recommended_product_id,
         provider_feed_recommendation_reason_codes=provider_feed_recommendation_reason_codes,
         provider_feed_recommendation_confidence=provider_feed_recommendation_confidence,
+        provider_feed_price_first=provider_feed_price_first,
+        provider_feed_total_count=provider_feed_total_count,
+        provider_feed_cheapest_product_ids=provider_feed_cheapest_product_ids,
+        provider_feed_shop_counts=provider_feed_shop_counts,
+        provider_feed_price_ranks=provider_feed_price_ranks,
     )

@@ -22,20 +22,22 @@ import unittest
 from pathlib import Path
 from urllib.parse import urlencode
 
-ROOT = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 SRC = ROOT / "src"
-for path in (ROOT, SRC):
+for path in (HERE, ROOT, SRC):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
 from api.index import app as wsgi_app  # noqa: E402
 from picwise_providers.awin_adapter import clear_awin_feed_parse_cache  # noqa: E402
 from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
+from fixture_support import fixture_description  # noqa: E402
 
 _COLUMNS = (
     "aw_product_id", "product_name", "brand_name", "product_type", "merchant_category",
     "aw_deep_link", "aw_image_url", "search_price", "currency", "in_stock", "merchant_name",
-    "data_provenance",
+    "description", "data_provenance",
 )
 
 
@@ -50,7 +52,7 @@ class ProductKindReadingTests(unittest.TestCase):
                     [pid, title, title.split()[0], kind, kind,
                      f"https://fixture.example.invalid/out/{pid}",
                      f"https://fixture.example.invalid/img/{pid}.jpg", price, "GBP", "1",
-                     "Fixture Store One", "local_test_fixture"]
+                     "Fixture Store One", fixture_description(), "local_test_fixture"]
                 )
         previous = os.environ.get("AWIN_FEED_FILE")
         os.environ["AWIN_FEED_FILE"] = str(path)
@@ -98,11 +100,11 @@ class ProductKindReadingTests(unittest.TestCase):
         for query in ("laptop", "λάπτοπ"):
             with self.subTest(query=query):
                 shown, body = self._shown(query)
-                # Three laptops cannot make four, and the sleeve does not make up the
-                # number: the page says so instead.
+                # Three laptops are shown as they are (price first, owner 2026-10-16),
+                # and the sleeve does not make up the number.
                 self.assertNotIn("s1", shown)
-                self.assertEqual(shown, [])
-                self.assertIn("has no four products it can show for it", body)
+                self.assertEqual(sorted(shown), ["l1", "l2", "l3"])
+                self.assertIn('<p class="pw-counter">3 of 3</p>', body)
 
     def test_what_comes_with_a_product_does_not_hide_it(self) -> None:
         self._serve(

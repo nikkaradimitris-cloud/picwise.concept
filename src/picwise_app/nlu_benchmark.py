@@ -3,12 +3,13 @@
 The question this answers is the product's own promise: a buyer types a product the way
 people really type -- in Greek without accents, in greeklish, with a wrong vowel, with
 the wrong keyboard layout on, in English with a slipped key -- and PicWise must still
-return four suitable products of the right kind, with one recommended.
+return suitable products of the right kind.
 
 Each case is run through the real resolver and the real render gate, then classified:
 
-- ``pass``: four cards render, one is recommended, and every card is the expected kind
-  of product
+- ``pass``: cards render and every card is the expected kind of product. Since the
+  owner's price-first plan (2026-10-16) fewer than four are shown as they are, "2 of
+  2", and a Recommended only where there is a middle price, so neither is required
 - ``wrong_family``: cards render but at least one is the wrong kind of product. This is
   the worst outcome -- a confident wrong answer -- and must stay at zero
 - ``ambiguous``: PicWise refused because the words pointed at two kinds of product
@@ -341,7 +342,7 @@ def evaluate_benchmark_case(
 
     if case.source == "negative":
         outcome = "pass" if not rendered else "wrong_family"
-    elif rendered and len(products) == 4 and resolution.provider_feed_recommended_product_id:
+    elif rendered and products:
         outcome = (
             "pass"
             if all(kind == case.expected_product_type for kind in rendered_types)

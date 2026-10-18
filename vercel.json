@@ -1,24 +1,27 @@
 {
   "version": 2,
-  "builds": [
+  "framework": null,
+  "installCommand": "",
+  "buildCommand": "python3 tools/prepare_catalogue.py --keep-going --static-dir public",
+  "outputDirectory": "public",
+  "crons": [
     {
-      "src": "api/index.py",
-      "use": "@vercel/python"
+      "path": "/cron/renew-prepared-feed",
+      "schedule": "17 4 * * *"
     }
   ],
   "rewrites": [
     {
       "source": "/health",
-      "destination": "/api/index.py"
+      "destination": "/api/index"
     },
     {
       "source": "/demo",
-      "destination": "/api/index.py"
+      "destination": "/api/index"
     },
     {
       "source": "/(.*)",
-      "destination": "/api/index.py"
+      "destination": "/api/index"
     }
   ]
 }
-
