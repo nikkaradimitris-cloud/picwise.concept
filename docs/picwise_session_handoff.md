@@ -35,8 +35,11 @@ Current state for whoever picks the project up next. Updated 2026-10-17.
   Details in PROGRESS. Not a rule yet: nothing shown changes. The feed carries no
   dates and no out-of-stock state at all. **Owner decision, 2026-10-18: no checking of
   shops' pages**, not even a few-day sample (built, then reverted on the branch,
-  never on `main`); do not propose it again unless the owner raises it. Left: which
-  shops to keep (Boxed2me fills the cheapest-first pages for several kinds). The
+  never on `main`); do not propose it again unless the owner raises it. **The
+  owner's order, the same day:** first many more shops; then an evaluation mechanism
+  at set hours, 200 checks per shop, giving a list of reliable and unreliable shops
+  (constraints in PROGRESS). Left meanwhile: which shops to keep (Boxed2me fills the
+  cheapest-first pages for several kinds); the wrong-kind cases wait for more shops. The
   live check (`.github/workflows/live-check.yml`, on each push to the branch; re-run
   to look again) reads PicWise's own public pages through GitHub, no shop's.
 - **Step 5 is begun** (2026-10-17, on the branch; nothing of steps 1 to 5 is on
