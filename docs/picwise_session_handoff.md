@@ -32,7 +32,13 @@ Current state for whoever picks the project up next. Updated 2026-10-17.
   the shop's page, old listings. Measuring first, by the owner's choice: the build
   writes listing ages and stock quantities into `/prepared.json` (`freshness`;
   `src/picwise_providers/feed_freshness.py`); the owner copies it, then chooses a rule.
-  Details in PROGRESS. Not a rule yet: nothing shown changes.
+  Details in PROGRESS. Not a rule yet: nothing shown changes. The feed carries no
+  dates and no out-of-stock state at all. **Owner decision, 2026-10-18: no checking of
+  shops' pages**, not even a few-day sample (built, then reverted on the branch,
+  never on `main`); do not propose it again unless the owner raises it. Left: which
+  shops to keep (Boxed2me fills the cheapest-first pages for several kinds). The
+  live check (`.github/workflows/live-check.yml`, on each push to the branch; re-run
+  to look again) reads PicWise's own public pages through GitHub, no shop's.
 - **Step 5 is begun** (2026-10-17, on the branch; nothing of steps 1 to 5 is on
   `main`). A search takes about 0.34 s (5 s before), a cold server reading the feed
   reaches the first page in 22-24 s (38-40 s), and one given a **prepared file**
