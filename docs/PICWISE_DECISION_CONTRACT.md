@@ -190,7 +190,17 @@ Implemented in `search_selection` (`_non_new_condition`,
 
 ## What a product must carry to be shown, decided by the owner, 2026-10-12
 
-Owner rule, in their words: "Τα προϊόντα που παρουσιάζει η πλατφόρμα πρέπει πάντα να
+**Changed by the owner on 2026-10-18: a description is no longer required.** On the
+live feed, "tv" found nothing, because the only televisions came from shops that send
+no description. Asked whether products without one should appear, the owner chose «Ναι,
+με σημείωση»: they are shown, and the card's limitation line opens with "The shop gives
+no description of this product." (`decision_labels.NO_DESCRIPTION_NOTE`, read from
+`product_description.has_sufficient_description`). Availability, a price, an image, a
+readable currency and a product type or category are still required. The rest of this
+section is the rule of 2026-10-12, kept as the record. Pinned by
+`tests/test_picwise_product_description_rule.py`.
+
+Owner rule of 2026-10-12, in their words: "Τα προϊόντα που παρουσιάζει η πλατφόρμα πρέπει πάντα να
 έχουν διαθεσιμότητα τιμή επαρκή περιγραφή ... καθώς και εικόνα" -- the products the
 platform presents must **always** have availability, a price, a sufficient description
 and an image. The description is named partly for the buyer and partly so the pages

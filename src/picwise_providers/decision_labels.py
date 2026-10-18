@@ -11,6 +11,7 @@ verifier already established:
 - price rank within the four, which is arithmetic over the prices themselves
 - whether purchase availability was verified, or only claimed by the feed
 - brand or product type, copied from the row
+- that the shop sent no description, when it did not
 
 There is deliberately no "best for", "great value" or "premium" vocabulary: PicWise holds
 no reviews, benchmarks or fitness data that could support such a claim, so making one
@@ -42,6 +43,9 @@ UNVERIFIED_RISK = (
     "PicWise has not verified that this purchase can be completed. "
     "Availability comes from the provider feed only."
 )
+# A product whose shop sends no description is shown all the same (owner, 2026-10-18),
+# and its card says so, first in its limitation line.
+NO_DESCRIPTION_NOTE = "The shop gives no description of this product."
 
 
 @dataclass(frozen=True)
@@ -265,6 +269,8 @@ def build_fact_based_choice_labels(
         risk = VERIFIED_RISK if _is_verified_purchasable(row) else UNVERIFIED_RISK
         if condition:
             risk = f"Listed by the feed as {condition}, not new. {risk}"
+        if row.get("has_description") is False:
+            risk = f"{NO_DESCRIPTION_NOTE} {risk}"
         labels.append(
             ChoiceDecisionLabels(
                 choice_id=str(row.get("provider_product_id") or "").strip(),

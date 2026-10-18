@@ -6,8 +6,8 @@
 
 Reports what the site will actually be able to do with the feed:
 
-- how many rows parse, how many products are card-eligible (in stock, priced, linked,
-  described) and which merchants send no description, so are never shown
+- how many rows parse, how many products are card-eligible (in stock, priced, linked)
+  and which merchants send no description, so are shown with a note saying so
 - what each shop actually fills in, which is the choice the feed leaves its owner:
   Awin passes a merchant's own upload through, so a shop that sends no description or
   no specifications cannot be made to by any feed setting -- only by dropping it
@@ -129,10 +129,10 @@ def main() -> None:
     for code, count in blocked.most_common(8):
         print(f"    {count:6d}  {code}")
 
-    # The description rule (owner, 2026-10-12): nothing is shown without one, so the
-    # shops that send none lose every product they have. Reported per merchant because
-    # that is the level the owner can act on -- a shop that describes nothing can be
-    # dropped from the feed, or asked to fill the column.
+    # Products without a description are shown with a note saying so (owner,
+    # 2026-10-18; until then they were hidden). Reported per merchant because that is
+    # the level the owner can act on -- a shop that describes nothing can be asked to
+    # fill the column, or dropped from the feed.
     thin = Counter()
     per_merchant = Counter()
     for product in feed_eligible:
@@ -142,7 +142,7 @@ def main() -> None:
             thin[merchant] += 1
     total_thin = sum(thin.values())
     print(
-        f"No usable description (never shown, {DESCRIPTION_MIN_CHARS}+ characters needed): "
+        f"No usable description (shown with a note, {DESCRIPTION_MIN_CHARS}+ characters count as one): "
         f"{total_thin} of {len(feed_eligible)} feed-eligible products"
     )
     for merchant, count in thin.most_common(8):

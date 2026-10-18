@@ -1,19 +1,14 @@
-"""A product PicWise shows always carries a description.
+"""A product whose shop sends no description is shown, and its card says so.
 
-Owner rule, 2026-10-12: "Τα προϊόντα που παρουσιάζει η πλατφόρμα πρέπει πάντα να
-έχουν διαθεσιμότητα τιμή επαρκή περιγραφή ... καθώς και εικόνα" -- the products the
-platform presents must always have availability, a price, a sufficient description and
-an image, the description partly so the pages built from them are not thin content.
+Owner decision, 2026-10-18 («Ναι, με σημείωση»), replacing the rule of 2026-10-12 under
+which a product needed a sufficient description to be shown at all. On the live feed
+that rule hid whole kinds: the only televisions came from shops that send no
+description (Geekbuying, 877 products, and Xiaomi RO, 66), so "tv" found nothing.
 
-Availability, price and image were already required for a card. These tests pin the
-description: what counts as one, what does not, and that a feed row without one is
-never shown, counted or recommended.
-
-Measured on the first real feed the day the rule was taken: it costs 1,495 of 11,573
-products, and the cost falls on shops rather than kinds -- Geekbuying (877 products)
-and Xiaomi RO (66) send no descriptions at all, every other shop fills them on 88% to
-100% of its rows. `tools/check_awin_feed.py` reports that per shop so the owner can
-see which shops it silences.
+These tests pin what counts as a description, that a product without one is a
+candidate like any other, and that its card opens its limitation line with
+`NO_DESCRIPTION_NOTE` -- and only its card. `tools/check_awin_feed.py` still reports
+per shop how many products have none.
 
 All rows here are local test data: fictional brands, `.invalid` URLs.
 """
@@ -41,6 +36,7 @@ from api.index import app as wsgi_app  # noqa: E402
 from fixture_support import fixture_description  # noqa: E402
 from picwise_providers.awin_adapter import clear_awin_feed_parse_cache  # noqa: E402
 from picwise_providers.contracts import ProviderProduct  # noqa: E402
+from picwise_providers.decision_labels import NO_DESCRIPTION_NOTE  # noqa: E402
 from picwise_providers.offer_health import evaluate_product_eligibility  # noqa: E402
 from picwise_providers.product_description import (  # noqa: E402
     DESCRIPTION_MIN_CHARS,
@@ -164,26 +160,15 @@ class WhatCountsAsADescriptionTests(unittest.TestCase):
 
 
 class CardGateTests(unittest.TestCase):
-    def test_a_product_without_a_description_is_not_card_eligible(self) -> None:
-        result = _card_result(_product("k1", description=""))
-        self.assertFalse(result.card_eligible)
-        self.assertIn("missing_product_description", result.reason_codes)
+    def test_a_product_without_a_description_is_card_eligible(self) -> None:
+        for description in ("", "Kettle.", "<br/>"):
+            with self.subTest(description=description):
+                result = _card_result(_product("k1", description=description))
+                self.assertTrue(result.card_eligible, result.reason_codes)
 
     def test_a_product_with_one_is_card_eligible(self) -> None:
         result = _card_result(_product("k2", description=_LONG_ENOUGH))
         self.assertTrue(result.card_eligible, result.reason_codes)
-        self.assertNotIn("missing_product_description", result.reason_codes)
-
-    def test_the_gate_and_the_rule_never_disagree(self) -> None:
-        # One source of truth: whatever `has_sufficient_description` says about a row
-        # is what the card gate does with it. A second copy of the rule would let the
-        # feed audit report one thing and the site do another.
-        for description in ("", "Kettle.", "<br/>", _LONG_ENOUGH, fixture_description(greek=True)):
-            with self.subTest(description=description[:20]):
-                product = _product("k3", description=description)
-                expected = has_sufficient_description(product.raw, title=product.title)
-                blocked = "missing_product_description" in _card_result(product).reason_codes
-                self.assertEqual(expected, not blocked)
 
 
 class DeployedSearchTests(unittest.TestCase):
@@ -233,26 +218,49 @@ class DeployedSearchTests(unittest.TestCase):
         shown = re.findall(r'<article class="pw-card[^"]*" data-choice-id="([^"]+)">', body)
         return shown, " ".join(html.unescape(re.sub(r"<[^>]+>", " ", body)).split())
 
-    def test_undescribed_products_never_take_a_slot(self) -> None:
-        # Six kettles, the last two undescribed: the four shown are all from the four
-        # that are described, so no undescribed row can reach a card.
-        self._serve(_kettles(6, described=4))
-        shown, _body = self._cards("kettle")
-        self.assertEqual(len(shown), 4)
-        self.assertEqual(set(shown), {"k0", "k1", "k2", "k3"})
+    def test_undescribed_products_take_their_place_by_price_with_the_note(self) -> None:
+        # Six kettles, the two cheapest undescribed: price first shows the four
+        # cheapest as before, and only the two undescribed cards carry the note.
+        rows = _kettles(6)
+        for row in rows[:2]:
+            row["description"] = ""
+        self._serve(rows)
+        shown, body = self._cards("kettle")
+        self.assertEqual(shown, ["k0", "k1", "k2", "k3"])
+        self.assertEqual(body.count(NO_DESCRIPTION_NOTE), 2)
 
-    def test_a_kind_with_fewer_than_four_described_products_shows_only_those(self) -> None:
-        # Six kettles but only three described. Price first shows fewer than four as
-        # they are (owner, 2026-10-16): the three, never an undescribed one to make up
-        # the number.
-        self._serve(_kettles(6, described=3))
-        shown, _body = self._cards("kettle")
-        self.assertEqual(sorted(shown), ["k0", "k1", "k2"])
+    def test_a_kind_whose_shop_describes_nothing_is_found(self) -> None:
+        # The live feed's televisions: no shop that sells them sends a description.
+        # Under the rule of 2026-10-12 the search found nothing; now it finds them all.
+        self._serve(_kettles(6, described=0))
+        shown, body = self._cards("kettle")
+        self.assertEqual(len(shown), 4)
+        self.assertIn("4 of 6", body)
+        self.assertEqual(body.count(NO_DESCRIPTION_NOTE), 4)
+
+    def test_the_note_follows_the_rule_exactly(self) -> None:
+        # One source of truth: a card carries the note exactly when
+        # `has_sufficient_description` says the row has none.
+        descriptions = ("", "Kettle.", "<br/>", _LONG_ENOUGH, fixture_description(greek=True), "")
+        rows = _kettles(6)
+        for row, description in zip(rows, descriptions):
+            row["description"] = description
+        self._serve(rows)
+        shown, body = self._cards("kettle")
+        expected = sum(
+            not has_sufficient_description(row, title=row["product_name"])
+            for row in rows
+            if row["aw_product_id"] in shown
+        )
+        self.assertEqual(len(shown), 4)
+        self.assertEqual(body.count(NO_DESCRIPTION_NOTE), expected)
+        self.assertEqual(expected, 3)
 
     def test_a_fully_described_feed_is_unaffected(self) -> None:
         self._serve(_kettles(6))
-        shown, _body = self._cards("kettle")
+        shown, body = self._cards("kettle")
         self.assertEqual(len(shown), 4)
+        self.assertNotIn(NO_DESCRIPTION_NOTE, body)
 
 
 if __name__ == "__main__":

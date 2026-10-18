@@ -1,11 +1,12 @@
 """Whether the feed sent a description worth showing, and the text it sent.
 
-Owner rule (2026-10-12): every product PicWise shows must always carry availability,
-a price, an image **and a sufficient description** -- the last one partly so the
-published pages are not thin content. Availability, price and image were already
-required for a card (`offer_health.evaluate_product_eligibility`); the description is
-what this module adds, and both the gate and the feed audit tool read it from here so
-what is required and what is reported cannot drift apart.
+Owner decision (2026-10-18): a product whose shop sends no description is shown, and
+its card says "The shop gives no description of this product."
+(`decision_labels.NO_DESCRIPTION_NOTE`). It replaces the rule of 2026-10-12, under
+which every product shown had to carry a sufficient description and those without one
+were hidden; on the live feed that hid whole kinds, televisions first ("tv" found
+nothing). The card note and the feed audit tool both read the answer from here, so
+what the card says and what is reported cannot drift apart.
 
 "Sufficient" is a length of real text, nothing more: this module never judges how good
 a description is, only that the merchant sent one. Three things are deliberate.
@@ -19,15 +20,13 @@ a description is, only that the merchant sent one. Three things are deliberate.
 - **The longest of the description columns is taken**, not the first: a feed may leave
   `description` empty and write the real text in `product_short_description`.
 
-Measured on the first real feed (11,573 products, 2026-10-12): the rule costs 13% of
-the feed, and the cost is not spread over kinds but over shops. Two merchants send no
-descriptions at all -- Geekbuying (877 products) and Xiaomi RO (66) -- and every other
-shop fills them on 88% to 100% of its rows. Those two shops carry whole kinds that
-therefore stop appearing: televisions, TV boxes, vacuum cleaners, robot vacuums and
-treadmills entirely, and all but a handful of watches, smartwatches and projectors.
-That is the rule working as asked, not a defect, and it is recorded here because the
-next person to read a search that returns nothing for "television" needs to find the
-reason in one place.
+Measured on the first real feed (11,573 products, 2026-10-12): 13% of the feed has no
+usable description, and it is not spread over kinds but over shops. Two merchants send
+no descriptions at all -- Geekbuying (877 products) and Xiaomi RO (66) -- and every
+other shop fills them on 88% to 100% of its rows. Those two shops carry whole kinds:
+televisions, TV boxes, vacuum cleaners, robot vacuums and treadmills entirely, and
+nearly all watches, smartwatches and projectors. Under the old rule those kinds found
+nothing; now they are shown with the note.
 """
 from __future__ import annotations
 
@@ -86,5 +85,5 @@ def product_description_text(row: Mapping[str, Any] | None, *, title: str = "") 
 
 
 def has_sufficient_description(row: Mapping[str, Any] | None, *, title: str = "") -> bool:
-    """Did the feed send enough description for this product to be shown?"""
+    """Did the feed send enough description to count as one? (Shown either way.)"""
     return len(product_description_text(row, title=title)) >= DESCRIPTION_MIN_CHARS
