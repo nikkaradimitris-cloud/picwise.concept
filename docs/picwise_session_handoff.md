@@ -13,6 +13,12 @@ Current state for whoever picks the project up next. Updated 2026-10-17.
   and `/prepared.json`, then Settings, Cron Jobs, Run, once. If the site misbehaves:
   Vercel's Instant Rollback to the previous production deployment (`3b02aeb`), or a
   revert of the merge. The notes below that say "nothing is on `main`" predate this.
+  **Seen live by the owner the same day:** the home page opens with the new box
+  ("What are you looking for?"); `/prepared.json` reads `prepared: true`, 9,935
+  products, 25 shops, prepared 10:32:56 UTC (the production build read the real feed
+  and prepared it); `/private-beta-readiness` reports `provider_feed_ready`. Asked of
+  the owner and not yet reported: `prepared_feed` (should be `in_use`), the time of a
+  first search, and whether Cron Jobs, Run, gave a newer `prepared_at`.
 - **Step 5 is begun** (2026-10-17, on the branch; nothing of steps 1 to 5 is on
   `main`). A search takes about 0.34 s (5 s before), a cold server reading the feed
   reaches the first page in 22-24 s (38-40 s), and one given a **prepared file**
