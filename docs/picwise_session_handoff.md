@@ -1,7 +1,93 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-17.
+Current state for whoever picks the project up next. Updated 2026-10-20.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
+
+## Now (2026-10-20) -- read this first
+
+- **Start here: Google-format feeds (owner decision, 20/10).** «Θα εστιάσουμε στα
+  google feed δεν θα ξανασχοληθούμε με awin feed». The reading put to the owner, not
+  contradicted, to confirm first: Awin stays as the network (links, commission), and
+  only Awin's Google-format feeds are used (a publisher gets them only through
+  Create-a-Feed). **First step:** the owner uploads a Google-format file (the file,
+  never the link); measure it (columns, how many say `out_of_stock`, the price with its
+  currency, the category columns, whether the product link is Awin's tracked link),
+  then build the reader on it. PicWise does not read the format yet; until it does,
+  the live site runs on its current Awin-format link. Details in PROGRESS, 20/10.
+- **Branch:** this conversation works on `ccr-9015e891-xt29ld`, which holds `main`,
+  the notes of 18/10 from `ccr-fd5dc1bc-4vgsgl` (a fast-forward) and the work below.
+  Nothing of it is on `main`; that waits for the owner's explicit yes. A new
+  conversation that starts from `main` does not see these notes: read this branch.
+- **The owner's update of 18/10** (sent 20/10) restates the direction recorded on
+  18/10: no checks of shops' pages now; first many shops, with whatever each feed
+  sends; then the evaluation mechanism (set hours, 200 checks per shop, the shop's own
+  link only, robots.txt, a gentle pace, one Vercel job a day, the feed link only in
+  Vercel). Nothing of the mechanism is built.
+- **Live** (through GitHub, 20/10 09:47 UTC): the morning renewal works (prepared 04:59
+  UTC); 11,048 products, 25 shops; Boxed2me still fills the cheapest pages; one shop is
+  "Monsterpub Sex Toy" (the link takes in adult content).
+- **Built for many shops, on the branch** (details in the plan file, "Many shops: what
+  the free plan carries"): the feed read as a stream, a lean prepared file (format 2,
+  `LEFT_OUT_COLUMNS`), and per shop what each feed brings in (`/prepared.json`,
+  `intake`). The server's ceiling on Vercel's free plan moves from about 110,000 real
+  products to about 250,000 (measured on fictional feeds); 0 of the 118 pages changed.
+  A cold server's first search still grows with the catalogue (about 11 s on Vercel at
+  92,000 products): the regular visit that keeps the server awake (owner's idea,
+  2026-10-17) is the answer, not built.
+- **The owner's steps for many shops** are in `docs/awin_feed_setup_el.md`, first
+  section (Greek): join programmes; one new link by category with every category;
+  all columns kept, `merchant_deep_link` above all; watch `products` in
+  `/prepared.json` against about 250,000.
+- **Not decided (20/10): whether the catalogue may be held in the server's memory.**
+  The owner said never, then withdrew it the same day («Άκυρο θα συζητηθεί άλλη
+  φορά»). Nothing changes until it is discussed. Options put for that discussion: (A)
+  SQLite inside each deployment, free, about 150,000 to 250,000 products (Vercel's 500
+  MB per Python function); (B) a hosted database. Also proposed, not decided: a daily
+  check of what the first pages show (about 2,600 product pages a day) next to the 200
+  checks per shop; no production jobs on GitHub (its terms, as remembered; check them
+  before stage 2).
+- **Open, the owner's:** the yes for `main`; keep or drop Boxed2me; adult content in or
+  out; which shops to join. For a later discussion: the catalogue in memory or in a store.
+
+## Before (end of the conversation of 2026-10-17/18)
+
+- **Live = `main`:** price first (steps 1-4), the search page, and step 5: every
+  deployment's build prepares the feed (`vercel.json` build command), a Vercel
+  scheduled job a day (`17 4 * * *` UTC) asks for a new deployment through the Deploy
+  Hook, so each day has its own prepared feed. The owner set the keys in Vercel on
+  2026-10-18 (`PICWISE_DEPLOY_HOOK_URL`, `CRON_SECRET`; Production, Secret). Also live:
+  products without a description are shown with a note (owner), and `/prepared.json`
+  carries `freshness` (listing ages, stock columns, per shop).
+- **Seen live** (through GitHub, below, 2026-10-18 11:59 UTC): `prepared_feed`
+  `in_use`; 11,423 products, 25 shops; searches 0.3-0.9 s; "tv" 4 of 23.
+  **Not seen yet:** the first morning renewal. Look on 2026-10-19 after about 05:00
+  UTC: `/prepared.json` `prepared_at` of that morning means it works.
+- **How a session sees the live site:** its own network cannot reach
+  `picwise.subby.cloud`. A push to `ccr-fd5dc1bc-4vgsgl` runs
+  `.github/workflows/live-check.yml`, which prints `/prepared.json`,
+  `/private-beta-readiness` and the cards of 12 searches; or re-run its last run with
+  the GitHub tools (`actions_run_trigger`, `rerun_workflow_run`) and read the log
+  (`get_job_logs`). Never ask the owner to copy pages by hand if this works.
+- **The branch** is ahead of `main` only by notes and that workflow; its code is the
+  same as `main` (the shop-page sample was reverted).
+- **Owner decisions of 2026-10-18:** a description is not required (note on the
+  card); no checking of shops' pages now; the order from here: (1) many more shops,
+  (2) then an evaluation mechanism at set hours, 200 checks per shop, giving a list
+  of reliable and unreliable shops (constraints in PROGRESS). **Code first:** that
+  mechanism and the fix of the kind rule are written in plain code; an AI system is
+  discussed with the owner only if code is shown not to reach the results wanted,
+  and is not proposed before that.
+- **Open, the owner's:** keep or drop Boxed2me (3,474 products, a clearance shop that
+  fills the cheapest-first pages for headphones, chargers, cameras, speakers, at
+  prices such as £0.99, the likeliest "ghosts"); which shops to add in Awin.
+- **Open, engineering, held until more shops are in:** the rule that reads a
+  product's kind lets wrong kinds onto first pages ("camera": a chime, a siren, a
+  shotgun microphone; "phone charger": an IEC plug), to be fixed once on all cases;
+  Xiaomi RO's TVs priced "EUR" 849-3,799 (likely Romanian lei); Geekbuying prices
+  shown with three decimals ("14.990 USD"); laptop, kettle, mouse and keyboard find
+  nothing in this feed (data, not understanding).
+- **Rules:** nothing to `main` without the owner's explicit yes; keys only in Vercel;
+  nothing changed in Supabase without asking; Greek, short, plain words.
 
 ## Start here (2026-10-17)
 
@@ -32,7 +118,16 @@ Current state for whoever picks the project up next. Updated 2026-10-17.
   the shop's page, old listings. Measuring first, by the owner's choice: the build
   writes listing ages and stock quantities into `/prepared.json` (`freshness`;
   `src/picwise_providers/feed_freshness.py`); the owner copies it, then chooses a rule.
-  Details in PROGRESS. Not a rule yet: nothing shown changes.
+  Details in PROGRESS. Not a rule yet: nothing shown changes. The feed carries no
+  dates and no out-of-stock state at all. **Owner decision, 2026-10-18: no checking of
+  shops' pages**, not even a few-day sample (built, then reverted on the branch,
+  never on `main`); do not propose it again unless the owner raises it. **The
+  owner's order, the same day:** first many more shops; then an evaluation mechanism
+  at set hours, 200 checks per shop, giving a list of reliable and unreliable shops
+  (constraints in PROGRESS). Left meanwhile: which shops to keep (Boxed2me fills the
+  cheapest-first pages for several kinds); the wrong-kind cases wait for more shops. The
+  live check (`.github/workflows/live-check.yml`, on each push to the branch; re-run
+  to look again) reads PicWise's own public pages through GitHub, no shop's.
 - **Step 5 is begun** (2026-10-17, on the branch; nothing of steps 1 to 5 is on
   `main`). A search takes about 0.34 s (5 s before), a cold server reading the feed
   reaches the first page in 22-24 s (38-40 s), and one given a **prepared file**
@@ -303,6 +398,7 @@ In short:
 | The prepared feed: written by `tools/prepare_catalogue.py`, read instead of the feed when fresh and written by the same code | `src/picwise_providers/prepared_catalogue.py`, `state.py` (`prepare_feed_catalogue`, `_active_prepared_catalogue`, `prepared_catalogue_status`) |
 | On Vercel: the build that prepares the feed, the daily scheduled job, the renewal route (`CRON_SECRET`, Deploy Hook) | `vercel.json`, `src/picwise_app/prepared_renewal.py`, `api/index.py` |
 | Whether the feed says a product is not new (one rule for the gate and the cards) | `src/picwise_providers/product_condition.py` |
+| Per shop, what each feed brings in and why the rest is held back (the build's note, `intake`) | `src/picwise_providers/feed_intake.py`, `state.measure_configured_feed_intake` |
 | Resolver | `src/picwise_search/live_search_resolver.py` |
 | Page text ("Understood as", "Only some of the four match: X (n of 4)", "could not match") | `src/picwise_surface/reference.py` |
 | Did-you-mean / broad-suggestion injection, impression events, query log hook | `src/picwise_app/app.py` (`api/index.py` delegates to it) |
@@ -556,6 +652,11 @@ files: correcting the phase wording is the owner's decision, not the engineer's.
 
 - Run tests **per module**, a few in parallel; never the whole suite in one process
   (out of memory, hours).
+- The prepared file leaves out the Awin columns no rule reads
+  (`prepared_catalogue.LEFT_OUT_COLUMNS`). A rule that comes to read one of them must
+  take it off that list: answered from the file, it would see the column empty. A test
+  in `tests/test_picwise_prepared_catalogue.py` fails while a listed column is named in
+  the code that reads feed products.
 - A prepared feed file is tied to the code that wrote it: any change to a file under
   `src/picwise_providers` or `src/picwise_nlu` makes old files unusable (the server then
   reads the feed). Prepare again after such a change. Outside Vercel a server reads one

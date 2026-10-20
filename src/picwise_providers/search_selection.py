@@ -2225,13 +2225,14 @@ def build_search_catalogue(
     feed_ctx: FeedAvailabilityContext | None = None,
     card_eligible: tuple[bool, ...] | None = None,
     non_new: tuple[str, ...] | None = None,
+    fields: tuple[dict[str, str], ...] | None = None,
 ) -> SearchCatalogue:
     """Judge each product once: can a card show it, and is it new.
 
     `card_eligible`, when given, is that judgement already made for each product, in
     order, against `feed_ctx`: the feed pipeline makes it as it loads the feed.
-    `non_new`, when given, is `product_non_new_condition` of each product, in order: a
-    prepared feed carries it.
+    `non_new` and `fields`, when given, are `product_non_new_condition` and
+    `_product_search_fields` of each product, in order: a prepared feed carries them.
     """
     if card_eligible is None:
         if feed_ctx is None:
@@ -2245,15 +2246,18 @@ def build_search_catalogue(
         conditions = tuple(product_non_new_condition(product) for product in eligible)
     else:
         conditions = tuple(condition for condition, shown in zip(non_new, card_eligible) if shown)
-    fields = tuple(_product_search_fields(product) for product in eligible)
+    if fields is None:
+        eligible_fields = tuple(_product_search_fields(product) for product in eligible)
+    else:
+        eligible_fields = tuple(row for row, shown in zip(fields, card_eligible) if shown)
     new_rows = tuple(
         (product, product_fields)
-        for product, product_fields, condition in zip(eligible, fields, conditions)
+        for product, product_fields, condition in zip(eligible, eligible_fields, conditions)
         if not condition
     )
     return SearchCatalogue(
         products=eligible,
-        fields=fields,
+        fields=eligible_fields,
         new_products=tuple(product for product, _fields in new_rows),
         new_fields=tuple(product_fields for _product, product_fields in new_rows),
     )

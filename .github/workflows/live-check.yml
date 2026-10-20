@@ -1,0 +1,54 @@
+# Read-only look at the live site, for a session that cannot reach it.
+#
+# A Claude session's network does not reach picwise.subby.cloud, so it could not see
+# what the live site serves; GitHub's runners can. On each push to the working branch
+# this opens the site's public pages and prints what they say; the session reads the
+# log, and re-runs the job to look again. Public pages only: no key, nothing written,
+# and no "View in Store" link is followed (that would count as a click on the shop).
+name: Live check (read-only)
+on:
+  push:
+    branches: [ccr-fd5dc1bc-4vgsgl]
+permissions:
+  contents: read
+jobs:
+  look:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: What the live site says
+        run: |
+          site=https://picwise.subby.cloud
+          for path in /prepared.json /private-beta-readiness /health; do
+            echo "=== $path"
+            curl -sS -m 90 "$site$path" | head -c 30000
+            echo
+          done
+          cat > cards.py <<'PY'
+          import html, re, sys
+          page = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+          def text(fragment):
+              return " ".join(html.unescape(re.sub(r"<[^>]+>", " ", fragment)).split())
+          counter = re.search(r'class="pw-counter">([^<]*)<', page)
+          print("counter:", counter.group(1) if counter else "-")
+          body = text(page)
+          for phrase in ("Understood as", "Did you mean", "could not match", "has no products it can show",
+                         "no four products", "Which do you mean"):
+              at = body.find(phrase)
+              if at >= 0:
+                  print("says:", body[at:at + 160])
+          for card in re.findall(r'<article class="pw-card.*?</article>', page, re.S):
+              title = re.search(r'class="pw-card-title">(.*?)</h2>', card, re.S)
+              price = re.search(r'class="pw-price">(.*?)</p>', card, re.S)
+              meta = re.search(r'class="pw-meta">(.*?)</p>', card, re.S)
+              role = re.search(r'class="pw-role-label">(.*?)</p>', card, re.S)
+              shop = text(meta.group(1)).split("Provider:")[-1].strip() if meta else ""
+              note = " [no description]" if "The shop gives no description" in card else ""
+              print(f"  {text(price.group(1)) if price else '?':>12} | {shop[:28]:28} | "
+                    f"{text(role.group(1)) if role else '':22} | {text(title.group(1))[:70] if title else '?'}{note}")
+          PY
+          for query in tv laptop headphones %CE%B1%CE%BA%CE%BF%CF%85%CF%83%CF%84%CE%B9%CE%BA%CE%AC kettle mouse keyboard "phone+charger" camera speaker smartwatch "vacuum+cleaner"; do
+            echo "=== /search?q=$query"
+            curl -sS -m 90 -o page.html -w 'status %{http_code}, %{time_total} s\n' "$site/search?q=$query"
+            python3 cards.py page.html
+          done

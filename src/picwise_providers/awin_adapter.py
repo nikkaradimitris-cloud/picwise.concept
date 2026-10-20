@@ -8,7 +8,8 @@ import json
 import os
 import tempfile
 import time
-from typing import Any, Mapping
+import zlib
+from typing import IO, Any, Mapping
 from urllib.error import URLError
 from urllib.request import urlopen
 
@@ -143,77 +144,98 @@ def awin_feed_config_from_env() -> ProviderFeedConfig:
     )
 
 
-def _load_feed_bytes(*, feed_file: str | None, feed_url: str | None) -> tuple[bytes | None, tuple[str, ...]]:
-    errors: list[str] = []
+def _feed_path(*, feed_file: str | None, feed_url: str | None) -> tuple[str | None, tuple[str, ...]]:
+    """The local file holding the feed: the one configured, or the link's download."""
     file_path = str(feed_file or "").strip()
-    if file_path:
-        try:
-            with open(file_path, "rb") as handle:
-                return handle.read(), tuple()
-        except OSError as exc:
-            errors.append(f"feed_file_read_failed:{exc.__class__.__name__}")
-            return None, tuple(errors)
-
-    url = str(feed_url or "").strip()
-    if url:
+    if not file_path:
+        url = str(feed_url or "").strip()
+        if not url:
+            return None, tuple()
         cached, fetch_errors = materialize_feed_url(url)
         if cached is None:
             return None, tuple(fetch_errors or ("feed_url_fetch_failed",))
-        try:
-            with open(cached, "rb") as handle:
-                return handle.read(), tuple()
-        except OSError as exc:
-            return None, (f"feed_file_read_failed:{exc.__class__.__name__}",)
-
-    return None, tuple(errors)
-
-
-def _is_gzip_payload(payload: bytes, *, feed_file: str | None = None) -> bool:
-    file_path = str(feed_file or "").strip().lower()
-    if file_path.endswith(".gz"):
-        return True
-    return len(payload) >= 2 and payload[:2] == _GZIP_MAGIC
-
-
-def _decompress_gzip_payload(
-    payload: bytes,
-    *,
-    feed_file: str | None = None,
-) -> tuple[bytes | None, tuple[str, ...]]:
-    if not _is_gzip_payload(payload, feed_file=feed_file):
-        return payload, tuple()
+        file_path = cached
     try:
-        return gzip.decompress(payload), tuple()
+        with open(file_path, "rb"):
+            pass
     except OSError as exc:
-        return None, (f"gzip_decompress_failed:{exc.__class__.__name__}",)
+        return None, (f"feed_file_read_failed:{exc.__class__.__name__}",)
+    return file_path, tuple()
 
 
-def _decode_feed_payload(payload: bytes) -> tuple[str | None, tuple[str, ...]]:
-    for encoding in ("utf-8-sig", "utf-8", "latin-1"):
+def _is_gzip_file(path: str) -> bool:
+    if path.strip().lower().endswith(".gz"):
+        return True
+    with open(path, "rb") as handle:
+        return handle.read(2) == _GZIP_MAGIC
+
+
+# A feed is read as a stream, row by row, and never held whole. Held whole, a feed of
+# many shops costs its compressed bytes, its decompressed bytes, its text and every
+# row with all 149 columns at once (owner, 2026-10-18: many shops first): about 21 KB a
+# row on a fictional Awin-shaped feed (2026-10-20), so the 8 GB of a Vercel build would
+# run out near 380,000 rows. A row keeps only its filled columns: no rule reads an
+# empty column differently from a missing one, and a row of a real feed leaves about
+# 70% of its columns empty.
+_PEEK_CHARS = 4096
+
+
+def _open_feed_text(path: str, *, gzipped: bool, encoding: str) -> IO[str]:
+    binary = gzip.open(path, "rb") if gzipped else open(path, "rb")
+    # newline="\n": lines end at "\n" only and keep their endings, as the whole text
+    # read through `io.StringIO` did; the csv reader takes the "\r\n" itself.
+    return io.TextIOWrapper(binary, encoding=encoding, newline="\n")
+
+
+def _read_feed_rows(path: str) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
+    try:
+        gzipped = _is_gzip_file(path)
+    except OSError as exc:
+        return [], (f"feed_file_read_failed:{exc.__class__.__name__}",)
+    # UTF-8 first, else the whole feed as Latin-1, which decodes any bytes.
+    for encoding in ("utf-8-sig", "latin-1"):
         try:
-            return payload.decode(encoding), tuple()
+            with _open_feed_text(path, gzipped=gzipped, encoding=encoding) as text:
+                head = text.read(_PEEK_CHARS)
+                while head and not head.strip():
+                    more = text.read(_PEEK_CHARS)
+                    if not more:
+                        break
+                    head += more
+            if not head.strip():
+                return [], ("feed_empty",)
+            with _open_feed_text(path, gzipped=gzipped, encoding=encoding) as text:
+                if head.lstrip()[0] in "{[":
+                    return _parse_json_rows(text.read())
+                return _parse_csv_stream(text)
         except UnicodeDecodeError:
             continue
-    return None, ("feed_decode_failed",)
+        except (OSError, EOFError, zlib.error) as exc:
+            reason = "gzip_decompress_failed" if gzipped else "feed_file_read_failed"
+            return [], (f"{reason}:{exc.__class__.__name__}",)
+        except Exception as exc:
+            return [], (f"feed_parse_failed:{exc.__class__.__name__}",)
+    return [], ("feed_decode_failed",)
 
 
-def _parse_csv_rows(text: str) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
-    # Read as `csv.DictReader` reads it -- blank lines skipped, a short row's missing
-    # fields None, a long row's extra fields dropped -- but each row is made in one
-    # step: on a 42,000-row feed of 149 columns that saves about 4 seconds.
+def _parse_csv_stream(text: IO[str]) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
+    # Read as `csv.DictReader` reads it -- blank lines skipped, a long row's extra
+    # fields dropped, a repeated column name taking its last value -- with only the
+    # filled fields kept, and each row made in one step.
     try:
-        reader = csv.reader(io.StringIO(text))
+        reader = csv.reader(text)
         header = next(reader, None)
         if header is None:
             return [], ("csv_missing_header",)
-        width = len(header)
+        repeated_names = len(set(header)) != len(header)
         rows: list[dict[str, Any]] = []
         for row in reader:
             if not row:
                 continue
-            if len(row) < width:
-                row = row + [None] * (width - len(row))
-            rows.append(dict(zip(header, row)))
+            if repeated_names:
+                rows.append({key: value for key, value in dict(zip(header, row)).items() if value})
+            else:
+                rows.append({key: value for key, value in zip(header, row) if value})
         return rows, tuple()
     except csv.Error as exc:
         return [], (f"csv_parse_failed:{exc.__class__.__name__}",)
@@ -240,18 +262,6 @@ def _parse_json_rows(text: str) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
         return [dict(payload)], tuple()
 
     return [], ("json_unsupported_shape",)
-
-
-def _parse_feed_text(text: str) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
-    try:
-        stripped = text.lstrip()
-        if not stripped:
-            return [], ("feed_empty",)
-        if stripped.startswith("{") or stripped.startswith("["):
-            return _parse_json_rows(text)
-        return _parse_csv_rows(text)
-    except Exception as exc:
-        return [], (f"feed_parse_failed:{exc.__class__.__name__}",)
 
 
 def feed_file_cache_key(feed_file: str | None) -> tuple[str, int, int] | None:
@@ -294,37 +304,18 @@ def _load_awin_provider_feed_uncached(resolved: ProviderFeedConfig) -> ProviderP
             reason_codes=("no_feed_file_or_url",),
         )
 
-    payload, load_errors = _load_feed_bytes(
+    path, load_errors = _feed_path(
         feed_file=resolved.feed_file,
         feed_url=resolved.feed_url,
     )
-    if payload is None:
+    if path is None:
         return ProviderParseResult(
             status="provider_feed_parse_failed",
             reason_codes=tuple(load_errors or ("feed_load_failed",)),
             parse_errors=tuple(load_errors or ("feed_load_failed",)),
         )
 
-    payload, decompress_errors = _decompress_gzip_payload(
-        payload,
-        feed_file=resolved.feed_file,
-    )
-    if payload is None:
-        return ProviderParseResult(
-            status="provider_feed_parse_failed",
-            reason_codes=decompress_errors,
-            parse_errors=decompress_errors,
-        )
-
-    text, decode_errors = _decode_feed_payload(payload)
-    if text is None:
-        return ProviderParseResult(
-            status="provider_feed_parse_failed",
-            reason_codes=decode_errors,
-            parse_errors=decode_errors,
-        )
-
-    rows, parse_errors = _parse_feed_text(text)
+    rows, parse_errors = _read_feed_rows(path)
     if parse_errors:
         return ProviderParseResult(
             status="provider_feed_parse_failed",

@@ -296,12 +296,16 @@ def offer_validity_reason_codes(
     raw = product.raw if isinstance(product.raw, dict) else {}
     reasons: list[str] = []
     current = today or datetime.now(timezone.utc).date()
+    # Most offers have no window: nothing is parsed for them, which on a cold server
+    # loading 100,000 products is half a second.
     for key in _VALID_TO_KEYS:
-        valid_to = _parse_feed_date(raw.get(key))
+        value = raw.get(key)
+        valid_to = _parse_feed_date(value) if value else None
         if valid_to is not None and valid_to < current:
             reasons.append("offer_expired")
     for key in _VALID_FROM_KEYS:
-        valid_from = _parse_feed_date(raw.get(key))
+        value = raw.get(key)
+        valid_from = _parse_feed_date(value) if value else None
         if valid_from is not None and valid_from > current:
             reasons.append("offer_not_yet_valid")
     return tuple(reasons)

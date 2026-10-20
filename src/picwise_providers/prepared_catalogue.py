@@ -10,12 +10,18 @@ judged by the code that wrote it:
 
 - the products a card can show, each as the feed gave it less its empty fields (no
   rule reads an empty field differently from a missing one, and on the third feed 72%
-  of the fields are empty), with what the feed says to call it not new and what kind
-  it is;
+  of the fields are empty) and less the Awin columns no rule reads
+  (`LEFT_OUT_COLUMNS`), with what the feed says to call it not new and what kind it
+  is;
 - the feed-wide availability context those judgements were made against;
 - the feed's status, the counts the scanning screen names, and the search suggestions.
 
 It never holds the feed's link, which carries the account's API key.
+
+Its size is what a server holds in memory, and Vercel's free plan gives a server 2 GB
+(owner, 2026-10-18: many shops first). So a text is written once: one that occurs more
+than once in the file goes into a table of texts, and a product's own fields (its
+title, link, price...) point at the feed column they were read from.
 
 A file is not used, and the server reads the feed itself as before, when it was written
 by other code (a change to any rule it froze), in another format, or longer ago than its
@@ -28,6 +34,7 @@ import hashlib
 import json
 import os
 import tempfile
+from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -45,8 +52,34 @@ DEFAULT_MAX_AGE_HOURS = 30.0
 DEFAULT_PREPARED_PATH = Path("prepared") / "catalogue.json.gz"
 
 _FORMAT = "picwise-prepared-catalogue"
-_VERSION = 1
+_VERSION = 2
 _REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# Awin columns no rule of PicWise reads, left out of the file: Awin's own ids and
+# bookkeeping, the prices other than the one compared, delivery (left out of the price
+# by the owner), the extra images and links (a card shows one image and links through
+# `aw_deep_link`), and the free columns. On the fictional Awin-shaped feed of the
+# measurement of 2026-10-20 they were 14 of a row's 35 filled fields, most of their
+# text long links. A rule that comes to read one takes it off this list;
+# `tests/test_picwise_prepared_catalogue.py` fails while a listed column is named
+# anywhere a feed product is read.
+LEFT_OUT_COLUMNS = frozenset(
+    {
+        "category_id", "brand_id", "data_feed_id", "commission_group", "language",
+        "store_price", "display_price", "rrp_price", "saving", "savings_percent",
+        "base_price", "base_price_amount", "base_price_text", "product_price_old",
+        "delivery_cost", "delivery_restrictions", "delivery_weight", "delivery_time",
+        "terms_of_contract", "web_offer", "size_stock_status", "size_stock_amount",
+        "number_available", "parent_product_id", "dimensions", "promotional_text",
+        "warranty", "colour",
+        "merchant_thumb_url", "aw_thumb_url", "large_image", "alternate_image",
+        "alternate_image_two", "alternate_image_three", "alternate_image_four", "basket_link",
+        "custom_1", "custom_2", "custom_3", "custom_4", "custom_5", "custom_6", "custom_7",
+        "custom_8", "custom_9",
+        "Fashion:suitable_for", "Fashion:category", "Fashion:size", "Fashion:material",
+        "Fashion:pattern", "Fashion:swatch",
+    }
+)
 # The packages whose rules the file freezes: reading the feed, judging a product,
 # reading its kind, the suggestions. A change to any of their files makes a file
 # written before it stale.
@@ -67,6 +100,10 @@ class PreparedCatalogue:
     eligible_count: int
     shop_count: int
     suggestions: tuple[SearchSuggestion, ...]
+    # Each product's search fields as the search reads them (`_product_search_fields`),
+    # so a server loading the file does not work them out again for every product.
+    # Empty when not given; the search then works them out itself.
+    search_fields: tuple[dict[str, str], ...] = ()
 
 
 def code_fingerprint(*, repo_root: Path | None = None) -> str:
@@ -101,37 +138,94 @@ def prepared_catalogue_age_limit() -> timedelta:
     return timedelta(hours=max(0.0, hours))
 
 
+def _product_fields(product: ProviderProduct) -> tuple[Any, ...]:
+    return (
+        product.provider_key,
+        product.provider_product_id,
+        product.title,
+        product.brand,
+        product.category_text,
+        product.product_url,
+        product.image_url,
+        product.price_text,
+        product.availability_text,
+        product.currency,
+    )
+
+
+def _kept_raw(product: ProviderProduct) -> dict[str, Any]:
+    return {
+        key: value
+        for key, value in (product.raw or {}).items()
+        if value is not None and value != "" and key not in LEFT_OUT_COLUMNS
+    }
+
+
 def write_prepared_catalogue(prepared: PreparedCatalogue, path: Path) -> int:
     """Write the file, whole or not at all, and return its size in bytes.
 
     Products are stored as lists, and the names of their filled fields once for every
     product that has the same ones: a feed's column names repeated for 40,000 products
-    would double the file.
+    would double the file. Each text is written once. In a product's row a text is the
+    text itself when it occurs only there; a number from 0 up when it is in the file's
+    table of texts (`strings`); and, for the product's own fields, a number below 0
+    when it is the row's own column value at that place (-1 the first). A value that is
+    not text, which only a JSON feed can carry, is written inside a list of one.
     """
+    raws = [_kept_raw(product) for product in prepared.products]
+    search_fields = prepared.search_fields or tuple({} for _product in prepared.products)
+    field_names = tuple(search_fields[0]) if search_fields else ()
+    if any(tuple(fields) != field_names for fields in search_fields):
+        raise ValueError("search fields differ between products")
+    counts: Counter = Counter()
+    for product, raw, non_new, kinds, fields in zip(
+        prepared.products, raws, prepared.non_new, prepared.kinds, search_fields
+    ):
+        texts = [value for value in raw.values() if isinstance(value, str)]
+        own = set(texts)
+        counts.update(texts)
+        counts.update(
+            value
+            for value in (*_product_fields(product), *fields.values())
+            if isinstance(value, str) and value not in own
+        )
+        counts.update(sorted(kinds))
+        counts[non_new] += 1
+    table: dict[str, int] = {}
+    for text, count in counts.items():
+        # The empty text stays itself: read back, it is the one empty text anyway.
+        if count > 1 and text:
+            table[text] = len(table)
+
+    def slot(value: Any) -> Any:
+        if not isinstance(value, str):
+            return [value]
+        return table.get(value, value)
+
     columns: dict[tuple[str, ...], int] = {}
     rows = []
-    for product, non_new, kinds in zip(prepared.products, prepared.non_new, prepared.kinds):
-        raw = {
-            key: value for key, value in (product.raw or {}).items() if value is not None and value != ""
-        }
+    for product, raw, non_new, kinds, fields in zip(
+        prepared.products, raws, prepared.non_new, prepared.kinds, search_fields
+    ):
         keys = tuple(raw)
         index = columns.setdefault(keys, len(columns))
+        values = [raw[key] for key in keys]
+        place: dict[str, int] = {}
+        for position, value in enumerate(values):
+            if isinstance(value, str):
+                place.setdefault(value, -1 - position)
+
+        def own_or_slot(value: Any) -> Any:
+            return place[value] if isinstance(value, str) and value in place else slot(value)
+
         rows.append(
             [
-                product.provider_key,
-                product.provider_product_id,
-                product.title,
-                product.brand,
-                product.category_text,
-                product.product_url,
-                product.image_url,
-                product.price_text,
-                product.availability_text,
-                product.currency,
+                *(own_or_slot(value) for value in _product_fields(product)),
                 index,
-                [raw[key] for key in keys],
-                non_new,
-                sorted(kinds),
+                [slot(value) for value in values],
+                slot(non_new),
+                [slot(kind) for kind in sorted(kinds)],
+                [own_or_slot(fields[name]) for name in field_names],
             ]
         )
     payload = {
@@ -144,10 +238,14 @@ def write_prepared_catalogue(prepared: PreparedCatalogue, path: Path) -> int:
         "eligible_count": prepared.eligible_count,
         "shop_count": prepared.shop_count,
         "suggestions": [[row.text, row.products] for row in prepared.suggestions],
+        "strings": list(table),
+        "search_fields": list(field_names),
         "raw_columns": [list(keys) for keys in columns],
         "products": rows,
     }
-    data = gzip.compress(json.dumps(payload, ensure_ascii=False).encode("utf-8"), 6)
+    # ASCII text: read back, a text holding one character beyond Latin-1 ("€", "’")
+    # takes two or four bytes for every character, and the file is read whole.
+    data = gzip.compress(json.dumps(payload, ensure_ascii=True).encode("ascii"), 6)
     path.parent.mkdir(parents=True, exist_ok=True)
     handle, partial = tempfile.mkstemp(dir=path.parent, prefix=path.name, suffix=".partial")
     try:
@@ -177,7 +275,7 @@ class PreparedFileCheck:
 def check_prepared_catalogue(path: Path, *, now: datetime | None = None) -> PreparedFileCheck:
     """The prepared file at `path`, read and checked."""
     try:
-        payload = json.loads(gzip.decompress(path.read_bytes()))
+        payload = _read_payload(path)
     except (OSError, EOFError, ValueError):
         return PreparedFileCheck("unreadable")
     if not isinstance(payload, dict):
@@ -197,6 +295,13 @@ def check_prepared_catalogue(path: Path, *, now: datetime | None = None) -> Prep
         return PreparedFileCheck("unreadable")
 
 
+def _read_payload(path: Path) -> Any:
+    # One copy of the file at a time: the compressed bytes go once decompressed, those
+    # once decoded, and the text once read.
+    text = gzip.decompress(path.read_bytes()).decode("utf-8")
+    return json.loads(text)
+
+
 def read_prepared_catalogue(path: Path, *, now: datetime | None = None) -> PreparedCatalogue | None:
     """The prepared file at `path`, or None when it cannot stand in for the feed."""
     return check_prepared_catalogue(path, now=now).catalogue
@@ -206,32 +311,57 @@ def _catalogue_from_payload(payload: dict[str, Any], prepared_at: datetime) -> P
     status = payload["feed_status"]
     context = payload["availability_context"]
     columns = [tuple(keys) for keys in payload["raw_columns"]]
+    strings = payload["strings"]
     products = []
     non_new = []
     kinds = []
-    for row in payload["products"]:
-        (
-            provider_key, product_id, title, brand, category_text, product_url,
-            image_url, price_text, availability_text, currency, index, values,
-            condition, row_kinds,
-        ) = row
+    # Products of one kind share one set of kinds.
+    kind_sets: dict[tuple[str, ...], frozenset[str]] = {}
+
+    def resolve(slot: Any, values: list[Any]) -> Any:
+        if slot.__class__ is str:
+            return slot
+        if slot.__class__ is int:
+            return values[-1 - slot] if slot < 0 else strings[slot]
+        return slot[0]
+
+    field_names = tuple(payload["search_fields"])
+    search_fields = []
+    # Each row is let go once read, so the file's rows and the products made from them
+    # are not all held at once.
+    rows = payload.pop("products")
+    rows.reverse()
+    while rows:
+        row = rows.pop()
+        index, row_values, condition, row_kinds, row_fields = row[10:]
+        values = [
+            value if value.__class__ is str else (strings[value] if value.__class__ is int else value[0])
+            for value in row_values
+        ]
+        fields = [resolve(slot, values) for slot in row[:10]]
         products.append(
             ProviderProduct(
-                provider_key=provider_key,
-                provider_product_id=product_id,
-                title=title,
-                brand=brand,
-                category_text=category_text,
-                product_url=product_url,
-                image_url=image_url,
-                price_text=price_text,
-                availability_text=availability_text,
-                currency=currency,
+                provider_key=fields[0],
+                provider_product_id=fields[1],
+                title=fields[2],
+                brand=fields[3],
+                category_text=fields[4],
+                product_url=fields[5],
+                image_url=fields[6],
+                price_text=fields[7],
+                availability_text=fields[8],
+                currency=fields[9],
                 raw=dict(zip(columns[index], values)),
             )
         )
-        non_new.append(str(condition))
-        kinds.append(frozenset(row_kinds))
+        non_new.append(str(resolve(condition, values)))
+        names = tuple(resolve(slot, values) for slot in row_kinds)
+        kind_set = kind_sets.get(names)
+        if kind_set is None:
+            kind_set = kind_sets[names] = frozenset(names)
+        kinds.append(kind_set)
+        if field_names:
+            search_fields.append(dict(zip(field_names, (resolve(slot, values) for slot in row_fields))))
     return PreparedCatalogue(
         prepared_at=prepared_at,
         feed_status=ProviderFeedStatus(
@@ -258,4 +388,5 @@ def _catalogue_from_payload(payload: dict[str, Any], prepared_at: datetime) -> P
             SearchSuggestion(text=str(text), products=int(count))
             for text, count in payload["suggestions"]
         ),
+        search_fields=tuple(search_fields),
     )
