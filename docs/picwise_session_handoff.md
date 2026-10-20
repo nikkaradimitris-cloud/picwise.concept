@@ -28,8 +28,17 @@ Current state for whoever picks the project up next. Updated 2026-10-20.
   section (Greek): join programmes; one new link by category with every category;
   all columns kept, `merchant_deep_link` above all; watch `products` in
   `/prepared.json` against about 250,000.
+- **Owner decision, 20/10: the catalogue is never held in the server's memory.** Today
+  it is (step 5: every server loads the whole prepared file). Next engineering step,
+  once the owner chooses the store: the daily build writes the catalogue into a store
+  and a search reads only its kind's products (or those carrying its words), the rules
+  unchanged. Proposed: (A) SQLite inside each deployment, free, about 150,000 to
+  250,000 products (Vercel's 500 MB per Python function); (B) a hosted database later.
+  Also proposed, not decided: a daily check of what the first pages show (about 2,600
+  product pages a day) next to the 200 checks per shop; no production jobs on GitHub
+  (its terms, as remembered; check them before stage 2).
 - **Open, the owner's:** the yes for `main`; keep or drop Boxed2me; adult content in or
-  out; which shops to join.
+  out; which shops to join; (A) or (B) for the store.
 
 ## Before (end of the conversation of 2026-10-17/18)
 
