@@ -22,6 +22,7 @@ from .contracts import (
     SearchProviderFeedMetadata,
 )
 from .eligibility import evaluate_provider_product_eligibility
+from .feed_intake import measure_feed_intake
 from .graph_projection import project_provider_products_to_graph
 from .offer_health import (
     build_feed_availability_context,
@@ -368,7 +369,27 @@ def prepare_feed_catalogue(
         eligible_count=eligible_count,
         shop_count=shop_count,
         suggestions=build_search_suggestions(catalogue.new_products),
+        search_fields=catalogue.fields,
     )
+
+
+def measure_configured_feed_intake(feed_config: ProviderFeedConfig | None = None) -> dict[str, Any] | None:
+    """Per shop, what the configured feed brings in and why the rest is held back
+    (`feed_intake`), for the build's public note; None when the feed cannot be read.
+    Reads the feed as `prepare_feed_catalogue` did, from the same cache."""
+    config = feed_config or awin_feed_config_from_env()
+    pipeline = resolve_provider_feed_pipeline(config, include_graph_projection=False)
+    if pipeline.feed_status.status != "provider_feed_ready":
+        return None
+    not_new = {
+        id(row.product)
+        for row in pipeline.eligibility_results
+        if row.status == "eligible"
+        and row.product_eligibility is not None
+        and row.product_eligibility.card_eligible
+        and product_non_new_condition(row.product)
+    }
+    return measure_feed_intake(pipeline.eligibility_results, not_new_products=not_new)
 
 
 def _today() -> date:
@@ -457,6 +478,7 @@ def _prepared_search_catalogue(prepared: PreparedCatalogue) -> SearchCatalogue:
         feed_ctx=prepared.availability_context,
         card_eligible=open_today,
         non_new=prepared.non_new,
+        fields=prepared.search_fields or None,
     )
     kinds_of = {id(product): kinds for product, kinds in zip(prepared.products, prepared.kinds)}
     remember_product_kinds(

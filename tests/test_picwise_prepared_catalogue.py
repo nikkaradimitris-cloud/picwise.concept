@@ -70,6 +70,8 @@ _COLUMNS = (
     "aw_product_id", "product_name", "brand_name", "product_type", "merchant_category",
     "aw_deep_link", "aw_image_url", "search_price", "currency", "in_stock", "merchant_name",
     "description", "data_provenance", "ean", "condition", "valid_to",
+    # Two columns no rule reads, which the prepared file leaves out (LEFT_OUT_COLUMNS).
+    "aw_thumb_url", "delivery_cost",
 )
 
 
@@ -80,6 +82,7 @@ def _row(pid: str, title: str, price: float, *, kind: str = "Kettles", condition
         f"https://fixture.example.invalid/out/{pid}", f"https://fixture.example.invalid/img/{pid}.jpg",
         f"{price:.2f}", "GBP", "1", "Fixture Store One", fixture_description(), "local_test_fixture",
         _ean(500000006000 + code) if code else "", condition, valid_to,
+        f"https://fixture.example.invalid/thumb/{pid}.jpg", "3.95",
     ]
 
 
@@ -159,14 +162,25 @@ class PreparedFileTests(_PreparedMixin, unittest.TestCase):
             [replace(product, raw={}) for product in again.products],
             [replace(product, raw={}) for product in prepared.products],
         )
+        # Less its empty fields, and less the columns no rule reads.
         self.assertEqual(
             [dict(product.raw) for product in again.products],
-            [{key: value for key, value in product.raw.items() if value not in ("", None)}
+            [{key: value for key, value in product.raw.items()
+              if value not in ("", None) and key not in prepared_catalogue.LEFT_OUT_COLUMNS}
              for product in prepared.products],
         )
         self.assertNotIn("condition", again.products[0].raw)
+        self.assertEqual(prepared.products[0].raw["aw_thumb_url"], "https://fixture.example.invalid/thumb/k1.jpg")
+        for product in again.products:
+            self.assertNotIn("aw_thumb_url", product.raw)
+            self.assertNotIn("delivery_cost", product.raw)
+            self.assertEqual(product.raw["data_provenance"], "local_test_fixture")
         self.assertEqual(again.non_new, prepared.non_new)
         self.assertEqual(again.kinds, prepared.kinds)
+        # The search fields too, so a cold server does not read every product again.
+        self.assertEqual(len(again.search_fields), len(prepared.products))
+        self.assertEqual(again.search_fields, prepared.search_fields)
+        self.assertEqual(again.search_fields[0]["title"], "fixturon electric kettle 1 1.7l")
         self.assertEqual(again.feed_status, prepared.feed_status)
         self.assertEqual(again.availability_context, prepared.availability_context)
         self.assertEqual((again.eligible_count, again.shop_count), (prepared.eligible_count, prepared.shop_count))
@@ -178,6 +192,45 @@ class PreparedFileTests(_PreparedMixin, unittest.TestCase):
         self.assertEqual(again.non_new[ids.index("k1")], "")
         self.assertIn("kettle", again.kinds[ids.index("k1")])
         self.assertIn("laptop", again.kinds[ids.index("l1")])
+
+    def test_each_text_is_written_once(self) -> None:
+        # A server holds the file in memory (2 GB on Vercel's free plan), so a text that
+        # occurs on every product, the shop's name, is written once, and a product's
+        # own title points at the feed column it was read from.
+        self._write_feed(_feed_rows())
+        self._prepare()
+        text = gzip.decompress(self.prepared_path.read_bytes()).decode("utf-8")
+        self.assertEqual(text.count('"Fixture Store One"'), 1)
+        payload = json.loads(text)
+        self.assertIn("Fixture Store One", payload["strings"])
+        for row in payload["products"]:
+            self.assertIsInstance(row[2], int)
+            self.assertLess(row[2], 0)
+        self.assertEqual(text.count('"Fixturon Electric Kettle 1 1.7L"'), 1)
+
+    def test_values_that_are_not_text_come_back_as_they_were(self) -> None:
+        # Only a JSON feed carries them: a number must never be read as a place in the
+        # table of texts, nor a true as a 1.
+        rows = []
+        for index in range(1, 5):
+            row = dict(zip(_COLUMNS, _row(f"j{index}", f"Fixturon Electric Kettle {index} 1.7L", 20.0 + index)))
+            row.update({"stock_quantity": index - 1, "reviews": 0, "average_rating": 4.5, "custom_flag": True})
+            rows.append(row)
+        path = self.folder / "feed.json"
+        path.write_text(json.dumps(rows), encoding="utf-8")
+        os.environ["AWIN_FEED_FILE"] = str(path)
+        clear_awin_feed_parse_cache()
+        clear_provider_feed_pipeline_cache()
+        prepared = prepare_feed_catalogue()
+        self.assertEqual(len(prepared.products), 4)
+        write_prepared_catalogue(prepared, self.prepared_path)
+        again = read_prepared_catalogue(self.prepared_path)
+        for before, after in zip(prepared.products, again.products):
+            self.assertEqual(replace(after, raw={}), replace(before, raw={}))
+            for key in ("stock_quantity", "reviews", "average_rating", "custom_flag"):
+                self.assertEqual(after.raw[key], before.raw[key])
+                self.assertIs(type(after.raw[key]), type(before.raw[key]))
+        self.assertEqual([product.raw["stock_quantity"] for product in again.products], [0, 1, 2, 3])
 
     def test_the_file_holds_no_feed_link(self) -> None:
         self._write_feed(_feed_rows())
@@ -243,7 +296,8 @@ class PreparedPagesTests(_PreparedMixin, unittest.TestCase):
         cases = {
             "too old": written(lambda body: body.update(prepared_at=old)),
             "other code": written(lambda body: body.update(code="0" * 64)),
-            "other version": written(lambda body: body.update(version=2)),
+            "other version": written(lambda body: body.update(version=prepared_catalogue._VERSION + 1)),
+            "the first version": written(lambda body: body.update(version=1)),
             "broken": good[: len(good) // 2],
             "not gzip": b"not a prepared file",
         }
@@ -297,6 +351,33 @@ class PreparedPagesTests(_PreparedMixin, unittest.TestCase):
         configure_purchasability_cache(str(self.folder / "checked.json"))
         self.assertIsNone(state._active_prepared_catalogue())
         self.assertEqual(self._counter(self._page("kettle")), "4 of 10")
+
+
+class LeftOutColumnsTests(unittest.TestCase):
+    # Where a feed product's columns are read: the rules, the pages and the redirect.
+    _READERS = ("src/picwise_providers", "src/picwise_app", "src/picwise_surface", "src/picwise_search", "api")
+
+    def test_no_rule_reads_a_column_the_file_leaves_out(self) -> None:
+        # Answered from the prepared file, a rule reading a left-out column would see
+        # it empty, while a server reading the feed itself sees it filled: the pages
+        # would differ. A rule that comes to read one takes it off the list.
+        found = []
+        for folder in self._READERS:
+            for path in sorted((ROOT / folder).rglob("*.py")):
+                if path.name == "prepared_catalogue.py":
+                    continue
+                source = path.read_text(encoding="utf-8")
+                for column in sorted(prepared_catalogue.LEFT_OUT_COLUMNS):
+                    if f'"{column}"' in source or f"'{column}'" in source:
+                        found.append(f"{path.relative_to(ROOT)} reads {column}")
+        self.assertEqual(found, [])
+
+    def test_the_columns_every_card_needs_are_kept(self) -> None:
+        kept = ("aw_deep_link", "merchant_deep_link", "product_name", "search_price", "currency",
+                "merchant_name", "aw_image_url", "merchant_image_url", "description", "in_stock",
+                "stock_status", "condition", "ean", "mpn", "product_type", "category_name",
+                "merchant_category", "last_updated", "stock_quantity")
+        self.assertEqual([column for column in kept if column in prepared_catalogue.LEFT_OUT_COLUMNS], [])
 
 
 class WhichFileTests(_PreparedMixin, unittest.TestCase):
@@ -353,11 +434,18 @@ class PrepareToolTests(_PreparedMixin, unittest.TestCase):
         prepared_at = read_prepared_catalogue(self.prepared_path).prepared_at
         self.assertLess(abs((datetime.fromisoformat(note["prepared_at"]) - prepared_at).total_seconds()), 1)
         self.assertEqual(
-            set(note), {"prepared", "prepared_at", "products", "shops", "freshness", "written_at"}
+            set(note), {"prepared", "prepared_at", "products", "shops", "freshness", "intake", "written_at"}
         )
         # How fresh the listings are (owner, 2026-10-18: "we show ghosts"), measured only.
         self.assertEqual(note["freshness"]["products"], 16)
         self.assertEqual(note["freshness"]["last_updated"]["no_date"], 16)
+        # What each shop's feed brings in (owner, 2026-10-18: many shops first): the
+        # refurbished kettle is shown only when asked for.
+        self.assertEqual(
+            {key: note["intake"][key] for key in ("rows", "shown", "not_new", "held")},
+            {"rows": 16, "shown": 15, "not_new": 1, "held": 0},
+        )
+        self.assertEqual([shop["shop"] for shop in note["intake"]["shops"]], ["Fixture Store One"])
         self.assertNotIn("fixture.example.invalid", json.dumps(note))
 
         empty = self.folder / "public-without-feed"
@@ -434,7 +522,9 @@ class PreparedStatusTests(_PreparedMixin, unittest.TestCase):
         payload = json.loads(gzip.decompress(good))
         cases = {
             "other_code": gzip.compress(json.dumps({**payload, "code": "0" * 64}).encode("utf-8")),
-            "other_format": gzip.compress(json.dumps({**payload, "version": 2}).encode("utf-8")),
+            "other_format": gzip.compress(
+                json.dumps({**payload, "version": prepared_catalogue._VERSION + 1}).encode("utf-8")
+            ),
             "unreadable": good[: len(good) // 2],
         }
         for state_name, data in cases.items():

@@ -17,9 +17,10 @@ feed's link.
 
 `--static-dir` is for the same build: Vercel serves that folder as the site's static
 files and refuses to deploy it empty, so the tool writes `prepared.json` there, a public
-note of what this build prepared: counts, the time, and how fresh the feed's listings
-are (`picwise_providers.feed_freshness`: listing age, stock quantities, per shop), never
-the feed's link.
+note of what this build prepared: counts, the time, how fresh the feed's listings are
+(`picwise_providers.feed_freshness`: listing age, stock quantities, per shop), and what
+each shop's feed brings in (`picwise_providers.feed_intake`: rows, shown, shown only
+when asked for, held back and why), never the feed's link.
 """
 from __future__ import annotations
 
@@ -90,6 +91,7 @@ def main(argv: list[str] | None = None) -> int:
                 "products": len(prepared.products),
                 "shops": prepared.shop_count,
                 "freshness": _freshness(prepared),
+                "intake": _intake(),
             },
         )
     return 0
@@ -101,6 +103,16 @@ def _freshness(prepared) -> dict[str, object]:
         from picwise_providers.feed_freshness import measure_feed_freshness
 
         return measure_feed_freshness(prepared.products, today=prepared.prepared_at.date())
+    except Exception as error:
+        return {"error": _where(error)}
+
+
+def _intake() -> dict[str, object] | None:
+    """What each shop's feed brings in and why the rest is held; a failure is only noted."""
+    try:
+        from picwise_providers.state import measure_configured_feed_intake
+
+        return measure_configured_feed_intake()
     except Exception as error:
         return {"error": _where(error)}
 
