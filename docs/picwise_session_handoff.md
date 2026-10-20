@@ -14,10 +14,12 @@ Current state for whoever picks the project up next. Updated 2026-10-20.
   currency, the category columns, whether the product link is Awin's tracked link),
   then build the reader on it. PicWise does not read the format yet; until it does,
   the live site runs on its current Awin-format link. Details in PROGRESS, 20/10.
-- **Branch:** this conversation works on `ccr-9015e891-xt29ld`, which holds `main`,
-  the notes of 18/10 from `ccr-fd5dc1bc-4vgsgl` (a fast-forward) and the work below.
-  Nothing of it is on `main`; that waits for the owner's explicit yes. A new
-  conversation that starts from `main` does not see these notes: read this branch.
+- **On `main` since 20/10** (merge `3c2c4cd`, the owner's «Πέρασε το στο main»): the
+  work of this conversation (`ccr-9015e891-xt29ld`) and the notes of 18/10. **Seen
+  live** through GitHub at 12:52 UTC: the feed prepared by the new code at 12:48 UTC,
+  `prepared_feed` `in_use`, the 12 searches of the live check showing the same cards
+  as in the morning, and the per-shop intake in `/prepared.json` (143 of 11,191 rows
+  held back as not for sale; 4x4 Predator's 109 rows all held).
 - **The owner's update of 18/10** (sent 20/10) restates the direction recorded on
   18/10: no checks of shops' pages now; first many shops, with whatever each feed
   sends; then the evaluation mechanism (set hours, 200 checks per shop, the shop's own
