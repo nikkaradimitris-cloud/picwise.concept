@@ -1046,6 +1046,87 @@ owner's word for `main`. After the merge: Settings, Cron Jobs, Run, once.
 Not built: the regular visit that keeps the server awake (the owner's idea, above). It
 is the next part, and its interval is to be measured on the live site.
 
+## Many shops: what the free plan carries, measured 2026-10-20
+
+The owner's order of 2026-10-18, restated in their update of 2026-10-20: first many more
+shops, "with whatever each one's feed sends"; then the shop evaluation. Before shops are
+added, how many products PicWise can carry on Vercel's free plan and what breaks first.
+The plan's limits as Vercel's documentation gives them (read through a web search;
+vercel.com itself is blocked from the session): a function has 2 GB of memory and 300 s,
+a Python function 500 MB of files, a build 8 GB and 45 minutes.
+
+Measured on fictional feeds shaped like Awin's: 149 columns, about 35 filled on a row,
+descriptions of 400 to 1,200 characters with "£", "€" and "’" in them. A real row fills
+about 42 columns, so real figures are somewhat higher. Measured on the session's
+machine; Vercel's processor is slower (the live site took about 4 s for its first page
+after a cold start at 11,048 products, where this machine takes 1.5 s), so times there
+are about 2.5 times these.
+
+| Products | Build, before / after | Server memory, before / after | First search, cold server, before / after |
+| --- | --- | --- | --- |
+| 11,000 | 7 s, 0.3 GB / 5 s, 0.2 GB | 0.29 / 0.25 GB | 1.5 / 1.3 s |
+| 50,000 | 29 s, 1.1 GB / 21 s, 0.7 GB | 0.74 / 0.45 GB | 6.2 / 3.2 s |
+| 100,000 | 56 s, 2.2 GB / 49 s, 1.3 GB | 1.40 / 0.68 GB | 11.7 / 5.0 s |
+| 200,000 | 112 s, 4.3 GB / 102 s, 2.5 GB | 2.66 (over the 2 GB) / 1.21 GB | 20.7 / 9.7 s |
+
+The first two rows are from feeds without those characters. Searches once loaded did not
+change: 0.2 to 0.8 s at 100,000 and 0.4 to 1.6 s at 200,000, the slowest a search
+answered by its words, which reads every product.
+
+What it means:
+
+- Before, the server ran out of its 2 GB at about 150,000 fictional products, about
+  110,000 real ones; now, leaving room for the requests themselves, at about 300,000
+  fictional, about 250,000 real (a real row's links are longer). The build is no longer
+  the limit: its 8 GB now hold about 600,000 rows.
+- The shops the owner has joined whose products are not in today's link (Back to the
+  Office about 30,000, Tyres UK about 39,000, Aosom UK about 10,000, Living and Home
+  about 2,000) would make about 92,000 products: before, near the edge; now, about a
+  third of the server's memory.
+- The first search after a cold start still grows with the catalogue: about 11 s on
+  Vercel at 92,000 products. The regular visit that keeps the server awake (the owner's
+  idea, 2026-10-17, not built) answers that; an index by kind would keep searches fast
+  past a few hundred thousand products; beyond that, a paid plan or another host.
+
+What changed; nothing shown changes:
+
+1. **The feed is read as a stream** (`awin_adapter.py`), row by row, and a row keeps
+   only its filled columns. Held whole, a feed cost its compressed bytes, its text and
+   every row with all 149 columns at once, about 21 KB a row. No rule reads an empty
+   column differently from a missing one; the prepared file already left them out.
+   A cut or broken gzip file is now a feed that failed to parse (it used to raise).
+2. **The prepared file is leaner** (`prepared_catalogue.py`, format version 2): the
+   Awin columns no rule reads are left out (`LEFT_OUT_COLUMNS`: Awin's ids, the other
+   prices, delivery, the extra images and links, the free `custom_*` columns; a test
+   fails while any of them is named where a feed product is read); a text is written
+   once (a table of the texts that repeat, and a product's own title, link and price
+   point at the column they were read from); the text is ASCII, since read back a text
+   holding one character beyond Latin-1 takes two or four bytes for each of its
+   characters; each row is let go once read; and each product's search fields are
+   stored, so a cold server does not work them out again.
+3. **An offer with no validity window parses no date**, half a second on a cold server
+   at 100,000 products.
+
+How it was checked: the old and the new reader give the same products (raw less its
+empty columns) on 17 edge-case files (a UTF-8 mark, Latin-1 far down a file, CRLF and a
+quoted line break, short, long and blank rows, a repeated column name, JSON, broken gzip),
+the three fixture feeds and fictional feeds of 11,000 and 50,000 rows; the 118 searches
+of `tools/price_first_eval.py`, old code against new on a 100,000-row fictional feed:
+**0 of 118 pages changed**, from the feed and from the prepared file (106 with
+products). New tests: `tests/test_picwise_feed_stream_reading.py` (4),
+`tests/test_picwise_prepared_catalogue.py` (22, from 18). Not measured on a real feed:
+none was uploaded.
+
+**Per shop, what each feed brings in** (`src/picwise_providers/feed_intake.py`, in
+`/prepared.json` under `intake`): for each shop the rows in the feed, how many a search
+shows, how many only when asked for (not new), how many are held back and why, in the
+gates' own codes (`missing_category_text`, `missing_image_url`,
+`availability_out_of_stock`...). Measurement only. Why now: shops send different things,
+and the rules apply to all alike; a shop that sends no category (Living and Home, 2,255
+rows on the second feed) loses every row at the feed gate. With many shops coming in,
+the owner should see that per shop before any rule changes.
+`tests/test_picwise_feed_intake.py` (3).
+
 ## The owner's additions, 2026-10-16
 
 Decided by the owner after the understanding test, each with what it means in

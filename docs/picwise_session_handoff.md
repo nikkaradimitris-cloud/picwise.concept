@@ -1,9 +1,37 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-18.
+Current state for whoever picks the project up next. Updated 2026-10-20.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Now (end of the conversation of 2026-10-17/18) -- read this first
+## Now (2026-10-20) -- read this first
+
+- **Branch:** this conversation works on `ccr-9015e891-xt29ld`, which holds `main`,
+  the notes of 18/10 from `ccr-fd5dc1bc-4vgsgl` (a fast-forward) and the work below.
+  Nothing of it is on `main`; that waits for the owner's explicit yes.
+- **The owner's update of 18/10** (sent 20/10) restates the direction recorded on
+  18/10: no checks of shops' pages now; first many shops, with whatever each feed
+  sends; then the evaluation mechanism (set hours, 200 checks per shop, the shop's own
+  link only, robots.txt, a gentle pace, one Vercel job a day, the feed link only in
+  Vercel). Nothing of the mechanism is built.
+- **Live** (through GitHub, 20/10 09:47 UTC): the morning renewal works (prepared 04:59
+  UTC); 11,048 products, 25 shops; Boxed2me still fills the cheapest pages; one shop is
+  "Monsterpub Sex Toy" (the link takes in adult content).
+- **Built for many shops, on the branch** (details in the plan file, "Many shops: what
+  the free plan carries"): the feed read as a stream, a lean prepared file (format 2,
+  `LEFT_OUT_COLUMNS`), and per shop what each feed brings in (`/prepared.json`,
+  `intake`). The server's ceiling on Vercel's free plan moves from about 110,000 real
+  products to about 250,000 (measured on fictional feeds); 0 of the 118 pages changed.
+  A cold server's first search still grows with the catalogue (about 11 s on Vercel at
+  92,000 products): the regular visit that keeps the server awake (owner's idea,
+  2026-10-17) is the answer, not built.
+- **The owner's steps for many shops** are in `docs/awin_feed_setup_el.md`, first
+  section (Greek): join programmes; one new link by category with every category;
+  all columns kept, `merchant_deep_link` above all; watch `products` in
+  `/prepared.json` against about 250,000.
+- **Open, the owner's:** the yes for `main`; keep or drop Boxed2me; adult content in or
+  out; which shops to join.
+
+## Before (end of the conversation of 2026-10-17/18)
 
 - **Live = `main`:** price first (steps 1-4), the search page, and step 5: every
   deployment's build prepares the feed (`vercel.json` build command), a Vercel
@@ -352,6 +380,7 @@ In short:
 | The prepared feed: written by `tools/prepare_catalogue.py`, read instead of the feed when fresh and written by the same code | `src/picwise_providers/prepared_catalogue.py`, `state.py` (`prepare_feed_catalogue`, `_active_prepared_catalogue`, `prepared_catalogue_status`) |
 | On Vercel: the build that prepares the feed, the daily scheduled job, the renewal route (`CRON_SECRET`, Deploy Hook) | `vercel.json`, `src/picwise_app/prepared_renewal.py`, `api/index.py` |
 | Whether the feed says a product is not new (one rule for the gate and the cards) | `src/picwise_providers/product_condition.py` |
+| Per shop, what each feed brings in and why the rest is held back (the build's note, `intake`) | `src/picwise_providers/feed_intake.py`, `state.measure_configured_feed_intake` |
 | Resolver | `src/picwise_search/live_search_resolver.py` |
 | Page text ("Understood as", "Only some of the four match: X (n of 4)", "could not match") | `src/picwise_surface/reference.py` |
 | Did-you-mean / broad-suggestion injection, impression events, query log hook | `src/picwise_app/app.py` (`api/index.py` delegates to it) |
@@ -605,6 +634,11 @@ files: correcting the phase wording is the owner's decision, not the engineer's.
 
 - Run tests **per module**, a few in parallel; never the whole suite in one process
   (out of memory, hours).
+- The prepared file leaves out the Awin columns no rule reads
+  (`prepared_catalogue.LEFT_OUT_COLUMNS`). A rule that comes to read one of them must
+  take it off that list: answered from the file, it would see the column empty. A test
+  in `tests/test_picwise_prepared_catalogue.py` fails while a listed column is named in
+  the code that reads feed products.
 - A prepared feed file is tied to the code that wrote it: any change to a file under
   `src/picwise_providers` or `src/picwise_nlu` makes old files unusable (the server then
   reads the feed). Prepare again after such a change. Outside Vercel a server reads one
