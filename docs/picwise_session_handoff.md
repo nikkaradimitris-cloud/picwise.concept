@@ -5,9 +5,19 @@ Current state for whoever picks the project up next. Updated 2026-10-20.
 
 ## Now (2026-10-20) -- read this first
 
+- **Start here: Google-format feeds (owner decision, 20/10).** «Θα εστιάσουμε στα
+  google feed δεν θα ξανασχοληθούμε με awin feed». The reading put to the owner, not
+  contradicted, to confirm first: Awin stays as the network (links, commission), and
+  only Awin's Google-format feeds are used (a publisher gets them only through
+  Create-a-Feed). **First step:** the owner uploads a Google-format file (the file,
+  never the link); measure it (columns, how many say `out_of_stock`, the price with its
+  currency, the category columns, whether the product link is Awin's tracked link),
+  then build the reader on it. PicWise does not read the format yet; until it does,
+  the live site runs on its current Awin-format link. Details in PROGRESS, 20/10.
 - **Branch:** this conversation works on `ccr-9015e891-xt29ld`, which holds `main`,
   the notes of 18/10 from `ccr-fd5dc1bc-4vgsgl` (a fast-forward) and the work below.
-  Nothing of it is on `main`; that waits for the owner's explicit yes.
+  Nothing of it is on `main`; that waits for the owner's explicit yes. A new
+  conversation that starts from `main` does not see these notes: read this branch.
 - **The owner's update of 18/10** (sent 20/10) restates the direction recorded on
   18/10: no checks of shops' pages now; first many shops, with whatever each feed
   sends; then the evaluation mechanism (set hours, 200 checks per shop, the shop's own
