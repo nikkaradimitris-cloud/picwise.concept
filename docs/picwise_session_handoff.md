@@ -10,7 +10,8 @@ Current state for whoever picks the project up next. Updated 2026-10-22.
   `google_product_category`, the currency split off the price ("39.99 GBP"), and a price
   of 0 or below never shown (`price_zero_or_negative`). On the owner's third
   Google-format file: 4,621 products shown of 13,071, 6 shops; on fictional Awin-format
-  feeds 0 of the 118 search pages change. Details in PROGRESS, 22/10. **Open, the
+  feeds 0 of the 118 search pages change; full run 242 of 244 modules pass (the two
+  known failures). Details in PROGRESS, 22/10. **Open, the
   owner's: the yes for `main`.** Then the owner makes the final Create-a-Feed link
   (advertiser-based, no categories, no AKKO UK) and puts it in Vercel (`AWIN_FEED_URL`);
   the steps are in `docs/awin_feed_setup_el.md`, "Feed σε μορφή Google". Until then the
