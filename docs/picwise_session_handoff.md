@@ -1,9 +1,43 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-20.
+Current state for whoever picks the project up next. Updated 2026-10-22.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Now (2026-10-20) -- read this first
+## Now (2026-10-22) -- read this first
+
+- **Google-format reading is built, on the branch `claude/tender-einstein-6nbbs8`, not
+  on `main`** (owner's yes for the branch, 22/10): the category from
+  `google_product_category`, the currency split off the price ("39.99 GBP"), and a price
+  of 0 or below never shown (`price_zero_or_negative`). On the owner's third
+  Google-format file: 4,621 products shown of 13,071, 6 shops; on fictional Awin-format
+  feeds 0 of the 118 search pages change; full run 242 of 244 modules pass (the two
+  known failures). Details in PROGRESS, 22/10. **Open, the
+  owner's: the yes for `main`.** Then the owner makes the final Create-a-Feed link
+  (advertiser-based, no categories, no AKKO UK) and puts it in Vercel (`AWIN_FEED_URL`);
+  the steps are in `docs/awin_feed_setup_el.md`, "Feed σε μορφή Google". Until then the
+  live site runs on the Awin-format link, and a Google-format link there would show 0.
+- **Owner decisions of 22/10:** AKKO UK out (prices in EUR; done in the feed selection,
+  not in code); the truth test (what the feed says against the shop's own page) is done
+  by a bot, never by the user by hand. Nothing of the bot is built; where it runs is
+  open (not on Vercel: its fair-use page lists scrapers as never allowed, a function
+  stops at 300 s, Hobby runs a scheduled job once a day).
+- **Shops (owner's screenshots, 22/10):** joined Living and Home, Back to the Office,
+  Game Over, PCHUB.UK, Tyres UK, Gardenista, Aosom UK, brickzonehub (no feed). With a
+  Google-format feed: Living and Home, Game Over, Gardenista, Back to the Office (about
+  88,000 products; its file did not download); Tyres UK has none; Aosom UK does not show.
+  Open advertisers (not joined, yet in Create-a-Feed) are credited for sales through
+  their feed, per Awin's help pages ("soft membership", auto-join): Geepas and Homespace
+  Direct were in the third file; Car Audio Centre was not shown in the selector on
+  22/10. PCHUB.UK's format is not known yet. Missing kinds: TV and audio, tools. Every
+  search page has one shop's products today: no real comparison yet.
+- **Flagged to the owner, not decided:** Vercel's Hobby plan is for non-commercial use
+  only, and Vercel names a site whose primary purpose is affiliate links as commercial;
+  this applies to the live site now. Ask Vercel, or plan for Pro.
+- **The Google format has no listing date** (the Awin format had `last_updated`), so
+  stale listings cannot be told by date; `product_type` and `sale_price` were empty in
+  all three files and are not read.
+
+## Before (2026-10-20)
 
 - **Start here: Google-format feeds (owner decision, 20/10).** «Θα εστιάσουμε στα
   google feed δεν θα ξανασχοληθούμε με awin feed». The reading put to the owner, not
