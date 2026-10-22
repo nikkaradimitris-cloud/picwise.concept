@@ -486,6 +486,8 @@ network gives it. Its products appear once.
    buyer sees no difference.
 
 Put to the owner in these two steps and accepted («Ναι, γράψ' το στους κανόνες»).
-Not set yet (TODO, flagged): what "freshest" reads when a network gives no date for
-its feed. Not built: PicWise reads one network today; this applies when a
+**Freshest** is the most recent update date the network states for the feed (owner,
+2026-10-22: «Η πιο πρόσφατη ημερομηνία ενημέρωσης που γράφει το δίκτυο»). Reading put
+to the owner: a network that states no date never counts as fresher than one that
+does (an unknown date is not a fresh one). Not built: PicWise reads one network today; this applies when a
 second one comes in.
