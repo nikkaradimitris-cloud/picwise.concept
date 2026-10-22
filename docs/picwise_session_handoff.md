@@ -25,6 +25,11 @@ Current state for whoever picks the project up next. Updated 2026-10-22.
   the owner reads its Product Count (about 250,000 is what was measured to fit; the
   download stops at 300 MB), leaves adult content out. **The UK for now** (owner, 22/10);
   a GBP-only rule in the site was put to the owner, not decided. Proposed, not built: each shop's categories in `/prepared.json`.
+- **Live since 22/10 13:34 UTC: the Google-format link** (20 UK shops, 119,720 rows):
+  12,204 products shown from 19 shops. Back to the Office shows 771 of 95,075: 93,639
+  of its rows carry no `google_product_category` (whether they carry `product_type` is
+  not seen yet). First pages show wrong kinds ("phone charger": charging safes;
+  "camera": propellers, lenses): the kind rule, held until more shops were in, is due.
 - **New rule (owner, 22/10): one shop in several networks** is one shop, known by its
   site's domain; its price and stock from the freshest feed (the latest update date
   the network states) with a real stock state,
