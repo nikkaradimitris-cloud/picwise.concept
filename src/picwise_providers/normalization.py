@@ -10,12 +10,21 @@ _HTTP_URL_RE = re.compile(r"^https?://[a-z0-9.-]+\.[a-z]{2,}(?:[/?#].*)?$", flag
 
 _TITLE_KEYS = ("title", "product_name", "name", "product_title")
 _BRAND_KEYS = ("brand", "manufacturer", "merchant_brand", "brand_name")
-_CATEGORY_KEYS = ("category", "category_name", "product_category", "merchant_category")
+# `google_product_category` is the category column of a Google-format feed (Awin's
+# "Enhanced" feeds; owner, 2026-10-20: PicWise reads Google-format feeds). Last, so an
+# Awin-format row reads its category as before.
+_CATEGORY_KEYS = (
+    "category", "category_name", "product_category", "merchant_category", "google_product_category"
+)
 _URL_KEYS = ("product_url", "url", "deeplink", "aw_deep_link", "merchant_deep_link", "link")
 _IMAGE_KEYS = ("image_url", "image", "aw_image_url", "merchant_image_url", "image_link")
 _PRICE_KEYS = ("price", "current_price", "search_price", "sale_price", "price_text")
 _AVAILABILITY_KEYS = ("availability", "in_stock", "stock_status", "availability_text")
 _CURRENCY_KEYS = ("currency", "currency_code")
+# A Google-format feed has no currency column: its price carries the currency, "39.99
+# GBP" (Google's own form; "GBP 39.99" read too). Only a three-letter code standing
+# apart from the amount is taken.
+_PRICE_WITH_CODE_RE = re.compile(r"^(?:([A-Z]{3})\s+(\S+)|(\S+)\s+([A-Z]{3}))$")
 _MERCHANT_KEYS = (
     "merchant_name",
     "merchant",
@@ -53,6 +62,23 @@ def _first_non_empty(payload: Mapping[str, Any], keys: tuple[str, ...]) -> str:
 
 def _normalize_text(value: Any) -> str:
     return " ".join(str(value or "").split()).strip()
+
+
+def _price_and_currency(payload: Mapping[str, Any]) -> tuple[str, str]:
+    """The row's price and currency. Without a currency column, a code written with
+    the price is split off it, so a Google-format row reads as an Awin row does
+    ("39.99", "GBP"); a price without one stays as the feed wrote it."""
+    price_text = _first_non_empty(payload, _PRICE_KEYS)
+    currency = _first_non_empty(payload, _CURRENCY_KEYS)
+    if currency:
+        return price_text, currency
+    match = _PRICE_WITH_CODE_RE.match(price_text)
+    if match is None:
+        return price_text, ""
+    code_first, amount_after, amount_first, code_after = match.groups()
+    if code_first:
+        return amount_after, code_first
+    return amount_first, code_after
 
 
 def derive_stable_provider_product_id(*, product_url: str, title: str, raw: Mapping[str, Any]) -> str:
@@ -100,6 +126,7 @@ def normalize_feed_row_to_provider_product(
         title=title,
         raw=payload,
     )
+    price_text, currency = _price_and_currency(payload)
 
     return ProviderProduct(
         provider_key=str(provider_key or "").strip(),
@@ -109,8 +136,8 @@ def normalize_feed_row_to_provider_product(
         category_text=_first_non_empty(payload, _CATEGORY_KEYS),
         product_url=product_url,
         image_url=_first_non_empty(payload, _IMAGE_KEYS),
-        price_text=_first_non_empty(payload, _PRICE_KEYS),
+        price_text=price_text,
         availability_text=_first_non_empty(payload, _AVAILABILITY_KEYS),
-        currency=_first_non_empty(payload, _CURRENCY_KEYS),
+        currency=currency,
         raw=payload,
     )

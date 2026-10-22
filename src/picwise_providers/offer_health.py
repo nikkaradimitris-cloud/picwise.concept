@@ -12,6 +12,7 @@ from .contracts import (
     PurchasabilityVerification,
     RECOMMENDATION_CONFIDENCE_LEVELS,
 )
+from .decision_labels import parse_price_amount
 from .normalization import is_valid_http_url
 
 _AFFILIATE_URL_KEYS = (
@@ -536,6 +537,12 @@ def evaluate_product_eligibility(
         reason_codes.append("missing_image_url")
     if _parse_price_text(product.price_text) is None:
         reason_codes.append("missing_or_unparseable_price")
+    elif parse_price_amount(product.price_text) is None:
+        # A price of 0 or below is not an offer (owner, 2026-10-22: hide them). Living
+        # and Home's Google-format feed lists 159 products in stock at £0.00, "(100%
+        # off)". Price first already skipped them (`parse_price_amount`); now no card,
+        # count or redirect takes them either.
+        reason_codes.append("price_zero_or_negative")
     if not str(product.currency or "").strip():
         reason_codes.append("missing_currency")
     if not _has_product_type_or_category_evidence(product):
@@ -570,6 +577,7 @@ def evaluate_product_eligibility(
             "missing_product_url",
             "missing_image_url",
             "missing_or_unparseable_price",
+            "price_zero_or_negative",
             "missing_currency",
             "missing_product_type_or_category_evidence",
             "availability_out_of_stock",
