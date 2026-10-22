@@ -466,3 +466,26 @@ type and brand. The owner accepted these readings on 2026-10-17 («Οκ σε ό�
 decided that without a Recommended "Lowest price" goes, the same way, only on cards
 priced at or below the middle price («Ως τη μεσαία τιμή»): of three standing desks, a
 £630.99 one is not the lowest price.
+
+## One shop in several networks, decided by the owner, 2026-10-22
+
+A shop listed in two or more networks (Awin, CJ and the others to come) is one shop,
+known by the domain of its own site (for example geepas.co.uk), never by the name a
+network gives it. Its products appear once.
+
+1. **The data first.** The offer shown is the one from the network whose feed is the
+   freshest (the most recent update) and states a real stock state. The price and the
+   availability always come from that offer. When the networks give different prices,
+   the choice is never made by commission: that would put the commission above the
+   buyer ("Recommended Choice Rules" above; `concept.picwise.txt`, Revenue Rule).
+2. **The link only when the offer is the same.** Only when the networks give the same
+   offer (the same price in the same currency, the same availability) is the link
+   taken from the network that pays the owner best for it: where the owner is
+   approved, with the highest commission or the surest payment. The buyer sees no
+   difference.
+
+Put to the owner in these two steps and accepted («Ναι, γράψ' το στους κανόνες»).
+Not set yet (TODO, flagged): which comes first when the highest commission and the
+surest payment point to different networks; what "freshest" reads when a network gives
+no date for its feed. Not built: PicWise reads one network today; this applies when a
+second one comes in.

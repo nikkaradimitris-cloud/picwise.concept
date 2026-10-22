@@ -25,6 +25,11 @@ Current state for whoever picks the project up next. Updated 2026-10-22.
   the owner reads its Product Count (about 250,000 is what was measured to fit; the
   download stops at 300 MB), leaves adult content out. **The UK for now** (owner, 22/10);
   a GBP-only rule in the site was put to the owner, not decided. Proposed, not built: each shop's categories in `/prepared.json`.
+- **New rule (owner, 22/10): one shop in several networks** is one shop, known by its
+  site's domain; its price and stock from the freshest feed with a real stock state,
+  never chosen by commission; only for the same offer is the link taken from the
+  network that pays best. In `PROJECT_RULES.md` section 5, the decision contract and the
+  concept (Revenue Rule). Not built (one network today).
 - **Owner decisions of 22/10:** AKKO UK out (prices in EUR; done in the feed selection,
   not in code); the truth test (what the feed says against the shop's own page) is done
   by a bot, never by the user by hand. Nothing of the bot is built; where it runs is
