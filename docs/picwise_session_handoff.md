@@ -23,8 +23,8 @@ Current state for whoever picks the project up next. Updated 2026-10-22.
   the volume; then the truth-test bot (the owner pays a subscription; **80 checks per
   shop**, not 200); then Awin closes and CJ opens. **Before that link goes into Vercel:**
   the owner reads its Product Count (about 250,000 is what was measured to fit; the
-  download stops at 300 MB), chooses UK and GBP only or not, and leaves adult content
-  out. Proposed, not built: each shop's categories in `/prepared.json`.
+  download stops at 300 MB), leaves adult content out. **The UK for now** (owner, 22/10);
+  a GBP-only rule in the site was put to the owner, not decided. Proposed, not built: each shop's categories in `/prepared.json`.
 - **Owner decisions of 22/10:** AKKO UK out (prices in EUR; done in the feed selection,
   not in code); the truth test (what the feed says against the shop's own page) is done
   by a bot, never by the user by hand. Nothing of the bot is built; where it runs is
