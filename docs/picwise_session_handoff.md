@@ -28,8 +28,17 @@ Current state for whoever picks the project up next. Updated 2026-10-22.
 - **Live since 22/10 13:34 UTC: the Google-format link** (20 UK shops, 119,720 rows):
   12,204 products shown from 19 shops. Back to the Office shows 771 of 95,075: 93,639
   of its rows carry no `google_product_category` (whether they carry `product_type` is
-  not seen yet). First pages show wrong kinds ("phone charger": charging safes;
-  "camera": propellers, lenses): the kind rule, held until more shops were in, is due.
+  not seen yet). First pages showed wrong kinds ("phone charger": charging safes;
+  "camera": propellers, lenses).
+- **The kind rule, reworked on the branch `claude/tender-einstein-6nbbs8`** (owner's
+  yes, 22/10; not on `main`): the noun a title's lead ends with is read against the
+  product nouns of Google's taxonomy, and a shelf no longer gives its kind to a lens, a
+  safe, a stool or a keyboard plate. Measured: 19 of 118 pages change on the owner's
+  Google file, each by wrong kinds leaving; 0 on fictional Awin-format feeds; full run
+  243 of 245 modules (the two known failures). **Open, the owner's: the yes for
+  `main`.** Not fixed: a title that names no product ("Batteryguard S-6 ... KEY
+  LOCK") and the lexicon's "charger" = phone charger; qualifiers inside a kind ("dining
+  table" shows a dressing table). Details in PROGRESS, 22/10.
 - **New rule (owner, 22/10): one shop in several networks** is one shop, known by its
   site's domain; its price and stock from the freshest feed (the latest update date
   the network states) with a real stock state,
