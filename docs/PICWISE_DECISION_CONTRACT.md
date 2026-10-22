@@ -480,12 +480,12 @@ network gives it. Its products appear once.
    buyer ("Recommended Choice Rules" above; `concept.picwise.txt`, Revenue Rule).
 2. **The link only when the offer is the same.** Only when the networks give the same
    offer (the same price in the same currency, the same availability) is the link
-   taken from the network that pays the owner best for it: where the owner is
-   approved, with the highest commission or the surest payment. The buyer sees no
-   difference.
+   taken from the network that pays the owner best for it: among the networks where
+   the owner is approved, the highest commission first, and the surest payment only
+   between equal commissions (owner, 2026-10-22: «Πρώτα η μεγαλύτερη προμήθεια»). The
+   buyer sees no difference.
 
 Put to the owner in these two steps and accepted («Ναι, γράψ' το στους κανόνες»).
-Not set yet (TODO, flagged): which comes first when the highest commission and the
-surest payment point to different networks; what "freshest" reads when a network gives
-no date for its feed. Not built: PicWise reads one network today; this applies when a
+Not set yet (TODO, flagged): what "freshest" reads when a network gives no date for
+its feed. Not built: PicWise reads one network today; this applies when a
 second one comes in.

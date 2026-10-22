@@ -28,7 +28,7 @@ Current state for whoever picks the project up next. Updated 2026-10-22.
 - **New rule (owner, 22/10): one shop in several networks** is one shop, known by its
   site's domain; its price and stock from the freshest feed with a real stock state,
   never chosen by commission; only for the same offer is the link taken from the
-  network that pays best. In `PROJECT_RULES.md` section 5, the decision contract and the
+  network that pays best (the highest commission first, owner 22/10). In `PROJECT_RULES.md` section 5, the decision contract and the
   concept (Revenue Rule). Not built (one network today).
 - **Owner decisions of 22/10:** AKKO UK out (prices in EUR; done in the feed selection,
   not in code); the truth test (what the feed says against the shop's own page) is done

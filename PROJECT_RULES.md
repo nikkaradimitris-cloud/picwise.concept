@@ -51,7 +51,7 @@ The project must never:
 - Picwise may earn through affiliate/referral/lead/conversion models.
 - Commission is never part of recommendation logic.
 - The order is the price, after the kind asked for and availability. The Recommended is the middle product in price order, the median, with a dearest product costing at least twice the next one left out of the count (`docs/PICWISE_DECISION_CONTRACT.md`, "Price first"; changed on 2026-10-16 by the owner).
-- A shop in several networks is one shop, known by its own site's domain. Its price and availability come from the freshest feed with a real stock state, never chosen by commission; only when the networks give the same offer is the link taken from the network that pays best (`docs/PICWISE_DECISION_CONTRACT.md`, "One shop in several networks"; owner, 2026-10-22).
+- A shop in several networks is one shop, known by its own site's domain. Its price and availability come from the freshest feed with a real stock state, never chosen by commission; only when the networks give the same offer is the link taken from the network that pays best, the highest commission first (`docs/PICWISE_DECISION_CONTRACT.md`, "One shop in several networks"; owner, 2026-10-22).
 
 ## 6) Brain Model
 
