@@ -5,17 +5,18 @@ Current state for whoever picks the project up next. Updated 2026-10-22.
 
 ## Now (2026-10-22) -- read this first
 
-- **Google-format reading is built, on the branch `claude/tender-einstein-6nbbs8`, not
-  on `main`** (owner's yes for the branch, 22/10): the category from
+- **Google-format reading is built and on `main`** (merge `c147fda`, owner's
+  «πέρασε στο main», 22/10; seen live at 12:21 UTC, the Awin-format pages as before): the category from
   `google_product_category`, the currency split off the price ("39.99 GBP"), and a price
   of 0 or below never shown (`price_zero_or_negative`). On the owner's third
   Google-format file: 4,621 products shown of 13,071, 6 shops; on fictional Awin-format
   feeds 0 of the 118 search pages change; full run 242 of 244 modules pass (the two
-  known failures). Details in PROGRESS, 22/10. **Open, the
-  owner's: the yes for `main`.** Then the owner makes the final Create-a-Feed link
-  (advertiser-based, no categories, no AKKO UK) and puts it in Vercel (`AWIN_FEED_URL`);
-  the steps are in `docs/awin_feed_setup_el.md`, "Feed σε μορφή Google". Until then the
-  live site runs on the Awin-format link, and a Google-format link there would show 0.
+  known failures). Details in PROGRESS, 22/10. **Open, the owner's:** make the final
+  Create-a-Feed link (advertiser-based, no categories, no AKKO UK) and put it in Vercel
+  (`AWIN_FEED_URL`);
+  the steps are in `docs/awin_feed_setup_el.md`, "Feed σε μορφή Google". Only the owner
+  can paste it (it holds the API key). Until then the live site runs on the
+  Awin-format link.
 - **Owner decisions of 22/10:** AKKO UK out (prices in EUR; done in the feed selection,
   not in code); the truth test (what the feed says against the shop's own page) is done
   by a bot, never by the user by hand. Nothing of the bot is built; where it runs is
