@@ -3,8 +3,9 @@
 `src/picwise_providers/kind_check.py`. Owner, 2026-10-23: «Ναι, φτιάξ' το», to a list
 the build writes every morning, so new ways of writing titles show up from every shop
 without a file. Pinned here: what counts as naming a kind (a noun of its names, either
-number, English or Greek), what is not counted (markers, no kind), the most suspects
-first, the cheapest examples, and nothing of a link.
+number, English or Greek, a word joined by a slash, a narrower kind's noun), what is not
+counted (markers, no kind), the most suspects first, the cheapest examples with their
+narrowest shelf, and nothing of a link.
 
 Every row is local test data: fictional brands, `.invalid` URLs.
 """
@@ -24,13 +25,15 @@ from picwise_providers.contracts import ProviderProduct  # noqa: E402
 from picwise_providers.kind_check import measure_kind_titles  # noqa: E402
 
 
-def _product(pid: str, title: str, price: str, shop: str = "Fixture Store One") -> ProviderProduct:
+def _product(
+    pid: str, title: str, price: str, shop: str = "Fixture Store One", category: str = "Fixture Shelf"
+) -> ProviderProduct:
     return ProviderProduct(
         provider_key="awin",
         provider_product_id=pid,
         title=title,
         brand="Fixturon",
-        category_text="Fixture Shelf",
+        category_text=category,
         product_url=f"https://fixture.example.invalid/out/{pid}",
         image_url=f"https://fixture.example.invalid/img/{pid}.jpg",
         price_text=price,
@@ -82,9 +85,9 @@ class KindTitleCheckTests(unittest.TestCase):
         self.assertEqual(
             note["by_kind"][0]["cheapest"],
             [
-                "99.00 GBP | Fixture Store One | Fixturon 35mm f/1.8G Lens",
-                "141.00 GBP | Fixture Lens Shop | Fixturon 50mm f/1.8 STM Lens",
-                "163.00 GBP | Fixture Store One | Fixturon 24mm f/2.8 Lens",
+                "99.00 GBP | Fixture Store One | Fixturon 35mm f/1.8G Lens | Fixture Shelf",
+                "141.00 GBP | Fixture Lens Shop | Fixturon 50mm f/1.8 STM Lens | Fixture Shelf",
+                "163.00 GBP | Fixture Store One | Fixturon 24mm f/2.8 Lens | Fixture Shelf",
             ],
         )
 
@@ -92,10 +95,39 @@ class KindTitleCheckTests(unittest.TestCase):
         rows = [(_product("l4", "Fixturon 85mm f/1.4 Lens " + "Extra Long Name " * 6, "500.00"), {"camera"})]
         note = measure_kind_titles([row[0] for row in rows], [frozenset(row[1]) for row in rows])
         example = note["by_kind"][0]["cheapest"][0]
-        title = example.split(" | ")[-1]
+        title = example.split(" | ")[2]
         self.assertEqual(len(title), 70)
         self.assertTrue(title.endswith("..."))
         self.assertNotIn("fixture.example.invalid", repr(_measure()))
+
+    def test_a_slash_a_narrower_kind_and_the_shelf_shown(self) -> None:
+        rows = [
+            # Words joined by a slash are two words.
+            (_product("h1", "Fixturon AUD9 headphones/headset Wireless", "36.99"), {"headphones"}),
+            # A narrower kind's noun names the broader kind too.
+            (_product("b1", "Fixturon Oak Bookcase", "120.00"), {"bookcase", "shelving"}),
+            # The shelf a suspect sits on is its category's narrowest.
+            (
+                _product(
+                    "m1", "Fixturon Noodle Mats - 40x60cm / Black", "6.99",
+                    category="Home & Garden > Bathroom Accessories > Bath Mats & Rugs",
+                ),
+                {"rug"},
+            ),
+        ]
+        note = measure_kind_titles([row[0] for row in rows], [frozenset(row[1]) for row in rows])
+        self.assertEqual((note["products"], note["title_names_no_kind"]), (3, 1))
+        self.assertEqual(
+            note["by_kind"],
+            [
+                {
+                    "kind": "rug",
+                    "products": 1,
+                    "title_without_kind": 1,
+                    "cheapest": ["6.99 GBP | Fixture Store One | Fixturon Noodle Mats - 40x60cm / Black | Bath Mats & Rugs"],
+                }
+            ],
+        )
 
     def test_at_most_twenty_five_kinds(self) -> None:
         kinds = ("kettle", "toaster", "laptop", "tablet", "monitor", "mouse", "keyboard", "printer", "camera",

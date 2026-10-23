@@ -16,21 +16,26 @@ prices, never a link.
 """
 from __future__ import annotations
 
+import re
 from functools import lru_cache
 from typing import Any, Collection, Sequence
 
 from picwise_nlu.concept_understanding import normalize_understanding_text
-from picwise_nlu.product_concepts import get_product_concepts_by_id
+from picwise_nlu.product_concepts import broader_concepts, get_product_concepts_by_id
 
 from .contracts import ProviderProduct
 from .decision_labels import parse_price_amount
 from .normalization import extract_merchant_name
 
 # The kinds with the most such products, how many of each the note shows (the
-# cheapest), and how long a title may be there.
+# cheapest), and how long a title and its shelf may be there.
 _KINDS_LISTED = 25
 _EXAMPLES = 3
 _TITLE_LENGTH = 70
+_SHELF_LENGTH = 40
+# "headphones/headset", "CPU/Processor": a slash in a title joins two words.
+_TITLE_WORD_SPLIT_RE = re.compile(r"[\s/]+")
+_SHELF_SPLIT_RE = re.compile(r"\s*(?:>|\|\|)\s*")
 
 
 def _forms(word: str) -> set[str]:
@@ -65,21 +70,28 @@ def _kind_nouns(kind: str) -> frozenset[str]:
 
 def _title_words(title: str) -> set[str]:
     words: set[str] = set()
-    for word in normalize_understanding_text(title).split():
-        words |= _forms(word)
+    for word in _TITLE_WORD_SPLIT_RE.split(normalize_understanding_text(title)):
+        if word:
+            words |= _forms(word)
     return words
 
 
+def _cut(text: str, length: int) -> str:
+    text = " ".join(str(text or "").split())
+    return text if len(text) <= length else text[: length - 3] + "..."
+
+
 def _example(product: ProviderProduct) -> str:
-    title = " ".join(str(product.title or "").split())
-    if len(title) > _TITLE_LENGTH:
-        title = title[: _TITLE_LENGTH - 3] + "..."
+    """"price | shop | title | shelf": the shelf is the category's narrowest, which says
+    where the product's kind most likely came from."""
     price = " ".join(
         part for part in (str(product.price_text or "").strip(), str(product.currency or "").strip()) if part
     )
     raw = product.raw if isinstance(product.raw, dict) else {}
     shop = " ".join(str(extract_merchant_name(raw) or "?").split())
-    return f"{price} | {shop} | {title}"
+    shelves = [shelf for shelf in _SHELF_SPLIT_RE.split(str(product.category_text or "")) if shelf.strip()]
+    shelf = _cut(shelves[-1], _SHELF_LENGTH) if shelves else "-"
+    return f"{price} | {shop} | {_cut(product.title, _TITLE_LENGTH)} | {shelf}"
 
 
 def _cheapest(products: list[ProviderProduct]) -> list[ProviderProduct]:
@@ -108,8 +120,12 @@ def measure_kind_titles(
             continue
         counted += 1
         words = _title_words(str(product.title or ""))
-        missing = {kind for kind in real if not words & _kind_nouns(kind)}
-        if len(missing) == len(real):
+        # A title naming a narrower kind names the broader ones too: a "Bookcase" is
+        # shelving.
+        named = {kind for kind in real if words & _kind_nouns(kind)}
+        covered = {wider for kind in named for wider in broader_concepts(kind)}
+        missing = {kind for kind in real if kind not in covered}
+        if not named:
             names_none += 1
         for kind in real:
             entry = by_kind.setdefault(kind, {"products": 0, "suspects": []})

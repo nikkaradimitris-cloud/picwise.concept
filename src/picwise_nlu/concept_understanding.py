@@ -1813,6 +1813,16 @@ def _narrowest_shelf(category: str) -> str:
     return ""
 
 
+def _narrowest_shelves(category: str) -> str:
+    """The last shelf of every category field, joined."""
+    shelves = []
+    for crumb in str(category or "").split(CATEGORY_FIELD_SEPARATOR.strip()):
+        segments = [segment for segment in _BREADCRUMB_SPLIT_RE.split(crumb) if segment.strip()]
+        if segments:
+            shelves.append(segments[-1])
+    return " ".join(shelves)
+
+
 # The noun an English title ends its lead with is what the product is: "Lenovo Tab 11\"
 # Folio Case" is a case, "Safety Bed Rail" a rail, "Sandbox Cover" a cover, "Trampoline
 # Anchor Kit" anchors. Measured on the third feed, where each of these was the cheapest
@@ -1871,8 +1881,12 @@ _NOT_PRODUCT_NOUNS = frozenset(
     aluminium aluminum iron leather
     """.split()
 )
-# Product nouns the taxonomy has no shelf for, read off the live feed.
-_EXTRA_PRODUCT_NOUNS = frozenset("siren sirens keycap keycaps".split())
+# Product nouns the taxonomy has no shelf for, read off the live feed: a "Rocket Club
+# Subscription" on the coffee machines shelf and a "Crakl Bonfire" on a heaters one
+# (the build's list of 2026-10-23) are neither.
+_EXTRA_PRODUCT_NOUNS = frozenset(
+    "siren sirens keycap keycaps subscription subscriptions bonfire bonfires".split()
+)
 # Words that close a title's lead after its noun without being the product: a colour
 # ("All White"), a pair, a pack. "Dishwasher Safe" is said of a product, not a safe.
 _LEAD_CLOSING_WORDS = frozenset("all pair pairs".split())
@@ -1948,10 +1962,12 @@ def _is_product_noun_of_another_kind(
     if forms & own:
         return False
     # The shelf names it too ("Sunloungers" for a "Sun Lounger", "Espresso Pots" for an
-    # "Espresso Pot"): the shelf holds it.
+    # "Espresso Pot"): the shelf holds it. Only the narrowest shelf of each path: the
+    # aisles above it say where a product is sold, and "Home & Garden" holds no "Family
+    # Garden Set" on a heaters shelf (the build's list of 2026-10-23).
     shelf_forms = {
         shelf_form
-        for shelf_word in normalize_understanding_text(category).split()
+        for shelf_word in normalize_understanding_text(_narrowest_shelves(category)).split()
         for shelf_form in _noun_forms(shelf_word)
     }
     return not any(shelf_form.endswith(form) for shelf_form in shelf_forms for form in forms)
