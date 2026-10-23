@@ -8,11 +8,10 @@ Current state for whoever picks the project up next. Updated 2026-10-23.
 The owner moves the work on product kinds (a search that shows a product of another
 kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσουμε σε άλλη συζήτηση».
 
-- **Where the work is:** the branch `claude/tender-einstein-6nbbs8`, commit `964fbdf`
-  ("Read a product's kind against the noun its title ends with"), one commit ahead of
-  `main` (`f86f4e4`, the live site). **Not on `main`, not live:** the owner's explicit
-  «ναι» is still needed. A new session's own branch starts from `main`, so bring this
-  one in first: `git fetch origin claude/tender-einstein-6nbbs8 && git merge FETCH_HEAD`.
+- **Where the work is:** commit `964fbdf` ("Read a product's kind against the noun its
+  title ends with"), **on `main` since 2026-10-23** (owner: «Ναι για το main»; merged
+  from the branch `claude/tender-einstein-6nbbs8`), so a new session has it. What the
+  live site shows since: PROGRESS, 23/10.
 - **What it does:** the kind-rule bullet of "Now (2026-10-22)" below, and PROGRESS
   22/10. Code: `src/picwise_nlu/concept_understanding.py` (`_product_nouns`,
   `_lead_noun_index`, `_lead_names_another_product`, `_noun_after_kind`,
@@ -25,9 +24,10 @@ kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσο
      price`. With no link or image column no row passes the shown gate, so read each
      row's kinds the way the search does: `normalize_feed_row_to_provider_product`,
      then `search_selection._product_concepts(product, _product_search_fields(product))`,
-     once on `main`'s code and once on the branch's. List the rows whose kind changes
-     and the wrong kinds left, by shop and by search; look for SafeFort's safes on
-     "phone charger" and Pro-Camera's lenses and propellers on "camera".
+     once on the code before the rule (`f86f4e4`) and once on today's. List the rows
+     whose kind changes and the wrong kinds left, by shop and by search; look for
+     SafeFort's safes on "phone charger" and Pro-Camera's lenses and propellers on
+     "camera".
   2. **A title that names no product** ("Batteryguard S-6 HE VDMA 24994 230V - UK -
      KEY LOCK"): its shelf still decides. Nothing decided; the shop's `product_type` or
      description may say what it is.
@@ -87,13 +87,12 @@ kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσο
   of its rows carry no `google_product_category` (whether they carry `product_type` is
   not seen yet). First pages showed wrong kinds ("phone charger": charging safes;
   "camera": propellers, lenses).
-- **The kind rule, reworked on the branch `claude/tender-einstein-6nbbs8`** (owner's
-  yes, 22/10; not on `main`): the noun a title's lead ends with is read against the
+- **The kind rule, reworked** (owner's yes, 22/10; **on `main` since 23/10**, owner:
+  «Ναι για το main»): the noun a title's lead ends with is read against the
   product nouns of Google's taxonomy, and a shelf no longer gives its kind to a lens, a
   safe, a stool or a keyboard plate. Measured: 19 of 118 pages change on the owner's
   Google file, each by wrong kinds leaving; 0 on fictional Awin-format feeds; full run
-  243 of 245 modules (the two known failures). **Open, the owner's: the yes for
-  `main`.** Not fixed: a title that names no product ("Batteryguard S-6 ... KEY
+  243 of 245 modules (the two known failures). Not fixed: a title that names no product ("Batteryguard S-6 ... KEY
   LOCK") and the lexicon's "charger" = phone charger; qualifiers inside a kind ("dining
   table" shows a dressing table). Details in PROGRESS, 22/10.
 - **New rule (owner, 22/10): one shop in several networks** is one shop, known by its
