@@ -50,8 +50,11 @@ file was then stopped by the owner's rule below.
   night shop by shop, added, updated, or marked gone; deleted with its text and page
   after a number of days (30 proposed); a failed or much smaller feed deletes nothing;
   room only for live products, about 6-10 KB each with everything; a morning report
-  against the plan's limit. Two decisions are the owner's: the days, and whether a
-  product's page stays meanwhile as "unavailable for now".
+  against the plan's limit. **Decided by the owner the same day:** 30 days, and
+  meanwhile the product's page stays, says it is temporarily unavailable and suggests
+  similar products, as Google advises («30μερες»; «η σελίδα δείχνει προσωρινά μη
+  διαθέσιμο και προτείνει άλλα παρόμοια προϊόντα όπως προτείνει ο κανονισμός της
+  google»). The rest of the mechanism is not decided yet.
 - **The smaller kept file: stopped, nothing built** (PROGRESS, 23/10, "The smaller kept
   file stopped"). It would have left out the 46 Google-format columns no rule reads and
   descriptions over 500 characters (the search never matches them), with the same
