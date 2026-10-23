@@ -75,12 +75,17 @@ kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσο
   owner's file of Pro-Camera and SafeFort (PROGRESS, 23/10): lenses are cameras by
   Pro-Camera's type "... DSLR Lenses ..." (43), 111 of its 224 real cameras are hidden
   (63 "+ mount adapter" types, 35 "Body", 13 "Camera Kit"), and 6 safes stay on "phone
-  charger" by their title's bar. **Fixed on the branch `ccr-c30938cf-v749ay` (`5de684e`,
-  owner's «Ναι»), not on `main`:** "Body", a type's "+", "Camera Kit", a type naming a
+  charger" by their title's bar. **Fixed (`5de684e`, owner's «Ναι»), on `main` since
+  23/10 12:49 UTC (merge `9429bca`; live: "camera" 4 of 226, all cameras; "phone
+  charger" no products):** "Body", a type's "+", "Camera Kit", a type naming a
   kind only before another product's noun, a title read on after a bar; on the file 160
   rows change as intended (PROGRESS, 23/10). Left: "camera lens" reads as camera (no
   lens kind), the "1.8G" weight reading, item 2 ("... 230V - UK - KEY LOCK", no bar), the
   lexicon's plain "case" (lock cases on "phone case") and the "Document Wallet".
+- **Since 23/10 the build lists suspects by itself** (branch `ccr-c30938cf-v749ay`, for
+  `main` on the owner's yes): `/prepared.json` `kinds`, per kind the shown products whose
+  title does not name it, the cheapest first. Read it after each morning's build to find
+  new title patterns from every shop without asking for a file.
 - **How to measure, before and after any change:** `tools/price_first_eval.py <feed>
   <out.json> --compare <before.json>` (the 118 searches: 19 pages changed on the owner's
   third Google file, each by wrong kinds leaving; 0 on fictional Awin-format feeds); the
