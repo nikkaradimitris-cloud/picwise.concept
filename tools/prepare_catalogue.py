@@ -20,7 +20,8 @@ files and refuses to deploy it empty, so the tool writes `prepared.json` there, 
 note of what this build prepared: counts, the time, how fresh the feed's listings are
 (`picwise_providers.feed_freshness`: listing age, stock quantities, per shop), and what
 each shop's feed brings in (`picwise_providers.feed_intake`: rows, shown, shown only
-when asked for, held back and why), never the feed's link.
+when asked for, held back and why, and what its `product_type` column carries), never
+the feed's link.
 """
 from __future__ import annotations
 

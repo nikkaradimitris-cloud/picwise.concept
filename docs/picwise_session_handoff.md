@@ -12,6 +12,17 @@ kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσο
   title ends with"), **on `main` since 2026-10-23** (owner: «Ναι για το main»; merged
   from the branch `claude/tender-einstein-6nbbs8`), so a new session has it. What the
   live site shows since: PROGRESS, 23/10.
+- **Live since 23/10 08:09 UTC, and not enough.** The live check at 08:16 shows "camera"
+  4 of 159 (196 before) and "phone charger" 4 of 6 (29 before), yet both first pages
+  are still the wrong kind: four Canon and Nikon lenses, and SafeFort's Batteryguard
+  charging safes. Three causes, read locally on the live titles: (1) SafeFort names
+  the product only after a bar ("Batteryguard L-10 HE VDMA 24994 Certified |
+  Lithium-Ion Battery Charging Safe") and the lead before it names none, so the shelf
+  decides; (2) in "Nikon AF-S DX 35mm f/1.8G Lens" the number before "Lens" reads as a
+  count of lenses (like "11-Fin"), so the noun is passed over; (3) the Canon lenses
+  read doubtful on a cameras shelf, so their live rows carry something else, most
+  likely a `product_type` that names cameras, whose authority the rule keeps by design.
+  These come first; the 7-column file below shows (3).
 - **What it does:** the kind-rule bullet of "Now (2026-10-22)" below, and PROGRESS
   22/10. Code: `src/picwise_nlu/concept_understanding.py` (`_product_nouns`,
   `_lead_noun_index`, `_lead_names_another_product`, `_noun_after_kind`,
@@ -40,6 +51,9 @@ kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσο
      `google_product_category` and are held. The same file shows whether
      `product_type` carries their category; reading it as the category when the Google
      one is empty is a change in `normalization._CATEGORY_KEYS`, for the owner to approve.
+     Since 23/10 `/prepared.json` shows it for every shop (owner's yes for `main`):
+     `intake.shops[].product_type` gives the rows that write one, how many of them have
+     no category, and the five most frequent values. Measured only.
 
   Accepted loss of the rule: 42 cushions on a throw-pillow shelf no longer answer
   "pillow" (they still answer "cushion").
