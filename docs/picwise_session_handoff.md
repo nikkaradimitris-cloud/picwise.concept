@@ -51,6 +51,9 @@ kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσο
      `google_product_category` and are held. The same file shows whether
      `product_type` carries their category; reading it as the category when the Google
      one is empty is a change in `normalization._CATEGORY_KEYS`, for the owner to approve.
+     Since 23/10 `/prepared.json` shows it for every shop (owner's yes for `main`):
+     `intake.shops[].product_type` gives the rows that write one, how many of them have
+     no category, and the five most frequent values. Measured only.
 
   Accepted loss of the rule: 42 cushions on a throw-pillow shelf no longer answer
   "pillow" (they still answer "cushion").

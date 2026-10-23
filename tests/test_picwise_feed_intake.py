@@ -5,7 +5,8 @@
 that keep a product off the page apply to all alike, so the build says per shop how
 many rows a search can show, how many only when asked for, and why the others are held
 back. Pinned here: the counts per shop and in all, every reason counted, and that the
-note carries them without anything of the feed's link.
+note carries them without anything of the feed's link. Owner, 2026-10-23: also what
+each shop writes in `product_type`, and how much of it on rows with no category.
 
 Every row is local test data: fictional brands, `.invalid` URLs.
 """
@@ -33,18 +34,21 @@ from picwise_providers.state import (  # noqa: E402
 _COLUMNS = (
     "aw_product_id", "product_name", "brand_name", "merchant_category", "aw_deep_link",
     "aw_image_url", "search_price", "currency", "in_stock", "stock_status", "merchant_name",
-    "condition",
+    "condition", "product_type",
 )
 
 
 def _row(pid: str, shop: str, *, category: str = "Kettles", image: bool = True, url: str = "",
-         stock: str = "", condition: str = "", price: str = "20.00") -> list[str]:
+         stock: str = "", condition: str = "", price: str = "20.00", product_type: str = "") -> list[str]:
     return [
         pid, f"Fixturon Electric Kettle {pid}", "Fixturon", category,
         url or f"https://fixture.example.invalid/out/{pid}",
         f"https://fixture.example.invalid/img/{pid}.jpg" if image else "",
-        price, "GBP", "1", stock, shop, condition,
+        price, "GBP", "1", stock, shop, condition, product_type,
     ]
+
+
+_LONG_TYPE = "Office Supplies > " + " > ".join(f"Shelf {number}" for number in range(1, 20))
 
 
 class FeedIntakeTests(unittest.TestCase):
@@ -52,16 +56,16 @@ class FeedIntakeTests(unittest.TestCase):
         folder = Path(tempfile.mkdtemp())
         self.feed = folder / "feed.csv"
         rows = [
-            _row("a1", "Fixture Store One"),
-            _row("a2", "Fixture Store One"),
+            _row("a1", "Fixture Store One", product_type="Small Appliances > Kettles"),
+            _row("a2", "Fixture Store One", product_type="Small Appliances > Kettles"),
             _row("a3", "Fixture Store One", condition="Refurbished"),
-            _row("a4", "Fixture Store One", stock="Out of stock"),
-            _row("b1", "Fixture Store Two", category=""),
+            _row("a4", "Fixture Store One", stock="Out of stock", product_type="Kettles"),
+            _row("b1", "Fixture Store Two", category="", product_type="Office > Kettles"),
             _row("b2", "Fixture Store Two", category=""),
-            _row("b3", "Fixture Store Two", image=False),
+            _row("b3", "Fixture Store Two", image=False, product_type=_LONG_TYPE),
             _row("b4", "Fixture Store Two", url="not-a-link"),
-            _row("b5", "Fixture Store Two", category="", image=False),
-            _row("b6", "Fixture Store Two"),
+            _row("b5", "Fixture Store Two", category="", image=False, product_type="Office > Kettles"),
+            _row("b6", "Fixture Store Two", product_type="  Office   >  Kettles "),
         ]
         with self.feed.open("w", newline="", encoding="utf-8") as handle:
             writer = csv.writer(handle)
@@ -116,6 +120,32 @@ class FeedIntakeTests(unittest.TestCase):
             self.assertEqual(shop["shown"] + shop["not_new"] + shop["held"], shop["rows"])
         self.assertEqual(intake["held_reasons"]["missing_category_text"], 3)
         self.assertNotIn("fixture.example.invalid", repr(intake))
+
+    def test_each_shop_says_what_its_product_type_carries(self) -> None:
+        # Measured, not read: a row with no category stays held whatever its type says.
+        intake = measure_configured_feed_intake()
+        one, two = intake["shops"][1], intake["shops"][0]
+        self.assertEqual(
+            one["product_type"],
+            {
+                "filled": 3,
+                "filled_without_category": 0,
+                "examples": [
+                    {"value": "Small Appliances > Kettles", "rows": 2},
+                    {"value": "Kettles", "rows": 1},
+                ],
+            },
+        )
+        # The most frequent value first, spaces as one, a long value cut to 100.
+        self.assertEqual(two["product_type"]["filled"], 4)
+        self.assertEqual(two["product_type"]["filled_without_category"], 2)
+        self.assertEqual(two["held_reasons"]["missing_category_text"], 3)
+        examples = two["product_type"]["examples"]
+        self.assertEqual(examples[0], {"value": "Office > Kettles", "rows": 3})
+        self.assertEqual(examples[1]["rows"], 1)
+        self.assertEqual(len(examples[1]["value"]), 100)
+        self.assertTrue(examples[1]["value"].endswith("..."))
+        self.assertTrue(_LONG_TYPE.startswith(examples[1]["value"][:-3]))
 
     def test_no_feed_no_intake(self) -> None:
         os.environ["AWIN_FEED_FILE"] = str(self.feed.parent / "no-such-feed.csv")
