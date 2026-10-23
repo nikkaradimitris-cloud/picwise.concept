@@ -22,19 +22,20 @@ kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσο
   count of lenses (like "11-Fin"), so the noun is passed over; (3) the Canon lenses
   read doubtful on a cameras shelf, so their live rows carry something else, most
   likely a `product_type` that names cameras, whose authority the rule keeps by design.
-  These come first; the 7-column file below shows (3).
+  These come first; the file of the 19 shops (item 1 below) shows (3).
 - **What it does:** the kind-rule bullet of "Now (2026-10-22)" below, and PROGRESS
   22/10. Code: `src/picwise_nlu/concept_understanding.py` (`_product_nouns`,
   `_lead_noun_index`, `_lead_names_another_product`, `_noun_after_kind`,
   `_kind_named_before_another_product`, used by `_title_lead_verdict` when the kind
   comes from a category shelf). Tests: `tests/test_picwise_title_names_another_product.py`.
 - **Open, in this order.** Each is measured and told to the owner first, then built.
-  1. **The rule on every live product.** No session holds the live rows. The owner was
-     asked for a Create-a-Feed file of the same 20 shops with 7 columns only:
-     `advertiser_name, id, title, google_product_category, product_type, availability,
-     price`. With no link or image column no row passes the shown gate, so read each
-     row's kinds the way the search does: `normalize_feed_row_to_provider_product`,
-     then `search_selection._product_concepts(product, _product_search_fields(product))`,
+  1. **The rule on every live product.** No session holds the live rows. Create-a-Feed's
+     Google format lets no column be chosen, and Back to the Office's file is too large
+     to download (owner, 23/10), so the file asked for is a normal Google-format
+     download of the other 19 live shops (about 24,700 rows; the first such file,
+     24,759 rows, was 6.2 MB). Read each row's kinds the way the search does:
+     `normalize_feed_row_to_provider_product`, then
+     `search_selection._product_concepts(product, _product_search_fields(product))`,
      once on the code before the rule (`f86f4e4`) and once on today's. List the rows
      whose kind changes and the wrong kinds left, by shop and by search; look for
      SafeFort's safes on "phone charger" and Pro-Camera's lenses and propellers on
@@ -47,10 +48,13 @@ kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσο
   4. **The kind within a kind:** "dining table" still shows a dressing table, a kitchen
      prep table and a shop press's "Working Table": the answer is the kind (table), not
      the table asked for.
-  5. **Back to the Office:** 93,639 of its 95,075 live rows carry no
-     `google_product_category` and are held. The same file shows whether
-     `product_type` carries their category; reading it as the category when the Google
-     one is empty is a change in `normalization._CATEGORY_KEYS`, for the owner to approve.
+  5. **Back to the Office:** 93,726 of its 95,161 live rows (23/10) carry no
+     `google_product_category` and are held. Its file cannot be had, so whether
+     `product_type` carries their category can be counted only where the whole feed is
+     read, in the Vercel build (say, the rows with `product_type` per shop in the
+     `intake` of `/prepared.json`): a change to the live site, so the owner's yes first.
+     Reading `product_type` as the category when the Google one is empty is a change in
+     `normalization._CATEGORY_KEYS`, for the owner to approve too.
 
   Accepted loss of the rule: 42 cushions on a throw-pillow shelf no longer answer
   "pillow" (they still answer "cushion").
