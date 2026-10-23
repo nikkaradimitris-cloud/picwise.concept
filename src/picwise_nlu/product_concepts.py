@@ -119,6 +119,7 @@ wardrobe|FU||wardrobe,wardrobes|ντουλάπα,ντουλάπες
 shelving|FU||shelving unit,shelving units,shelf,shelves,shelving|ραφιέρα,ραφιέρες,ράφι,ράφια
 bookcase|FU|shelving|bookcase,bookcases,~bookshelf,~bookshelves|βιβλιοθήκη,βιβλιοθήκες
 table|FU||table,tables|τραπέζι,τραπέζια,τραπεζάκι,τραπεζαρία
+bedside_table|FU||bedside table,bedside tables,bedside cabinet,bedside cabinets,bedside,bedsides,nightstand,nightstands,night stand,night stands|κομοδίνο,κομοδίνα
 lamp|FU||lamp,lamps,desk lamp,ceiling light,ceiling lights,pendant light,pendant lights,wall light,wall lights,chandelier,chandeliers,light fitting,light fittings|φωτιστικό,φωτιστικά,πορτατίφ,φωτιστικό οροφής
 light_bulb|FU||light bulb,light bulbs,led bulb,smart bulb|λάμπα,λάμπες,λαμπτήρας,λαμπτήρες
 smart_plug|FU||smart plug,smart plugs|έξυπνη πρίζα,έξυπνες πρίζες
@@ -249,6 +250,7 @@ baby_monitor|BK||baby monitor,baby monitors|ενδοεπικοινωνία μω�
 cot|BK||cot,cots,crib,travel cot|κούνια μωρού,κούνια,παρκοκρέβατο
 nappies|BK||nappies,diapers|πάνες,πάνες μωρού
 toy|BK||toy,toys|παιχνίδι,παιχνίδια
+punching_bag|BK||punching bag,punching bags,punch bag,punch bags,punchbag,punchbags,boxing bag,boxing bags|σάκος πυγμαχίας,σάκοι πυγμαχίας
 dog_food|BK||dog food|τροφή σκύλου,τροφή για σκύλους
 cat_food|BK||cat food|τροφή γάτας,τροφή για γάτες
 treadmill|BK||treadmill,treadmills|διάδρομος γυμναστικής,διάδρομος
@@ -306,7 +308,7 @@ tablet|CO||tablet,tablets,android tablet,ipad|τάμπλετ,ταμπλέτα υ
 e_reader|CO||e reader,ebook reader,kindle|ηλεκτρονικός αναγνώστης βιβλίων
 graphics_card|CO||graphics card,graphics cards,video card,gpu|κάρτα γραφικών,κάρτες γραφικών
 processor|CO||processor,processors,cpu|επεξεργαστής,επεξεργαστές
-ram_memory|CO||ram memory,ram module,ram modules,memory module,memory modules,ddr4 ram,ddr5 ram|μνήμη ram,μνήμες ram
+ram_memory|CO||ram memory,ram module,ram modules,memory module,memory modules,ddr4 ram,ddr5 ram,dimm,dimms|μνήμη ram,μνήμες ram
 motherboard|CO||motherboard,motherboards|μητρική,μητρική κάρτα,μητρικές
 power_supply|CO||power supply unit,psu,pc power supply|τροφοδοτικό,τροφοδοτικά
 pc_case|CO||pc case,pc cases,computer case,computer cases,tower case|κουτί υπολογιστή
@@ -339,8 +341,10 @@ towels|FU||towel,towels,bath towel,beach towel|πετσέτα,πετσέτες,�
 bed_linen|FU||bed sheets,bed linen,duvet cover,~sheets|σεντόνια,σετ σεντόνια,παπλωματοθήκη
 pillow|FU||pillow,pillows|μαξιλάρι,μαξιλάρια
 duvet|FU||duvet,duvets,quilt,comforter|πάπλωμα,παπλώματα,κουβέρτα
+bedspread|FU||bedspread,bedspreads,coverlet,coverlets|κουβερλί
 curtains|FU||curtains,curtain,blinds|κουρτίνες,κουρτίνα,στόρια
 rug|FU||rug,rugs,carpet|χαλί,χαλιά
+bath_mat|FU||bath mat,bath mats,bathmat,bathmats,bath rug,bath rugs,shower mat,shower mats|πατάκι μπάνιου,πατάκια μπάνιου
 mirror|FU||mirror,mirrors,wall mirror|καθρέφτης,καθρέφτες
 wall_clock|FU||wall clock,alarm clock|ρολόι τοίχου,ξυπνητήρι
 baby_bottle|BK||baby bottle,baby bottles,feeding bottle|μπιμπερό
