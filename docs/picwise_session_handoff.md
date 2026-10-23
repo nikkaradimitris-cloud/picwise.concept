@@ -45,6 +45,19 @@ file was then stopped by the owner's rule below.
   robots tag of each page and the JSON routes' header. Next, from the specification:
   `Disallow: /search` once Google has dropped those pages (needs Search Console to see
   it), then the catalogue on the server.
+- **The server's architecture: `docs/PICWISE_SERVER_ARCHITECTURE.md`** (owner's request
+  of 23/10, in English: database and search for 0.8-1M products, URLs and markets, the
+  store validation bot, text from the data). Nothing built. In short: PostgreSQL only (no
+  Meilisearch, no Redis), PicWise's own understanding and price-first rules kept as they
+  are; pages rendered each night and cached at Cloudflare; `/uk/` and `/us/` on one
+  domain with `hreflang`, no redirect by country; the bot visits only the shop's own
+  `link` (never `aw_deep_link`), keeps `robots.txt`, never evades a block, writes its own
+  tables, runs by a systemd timer after the load; text only from computed facts. It
+  corrects the brief: Hetzner US East is about three times dearer since June and its
+  cheap plans are not sold; 1M products and the bot need 16 GB at least (OVHcloud VPS-4,
+  24 GB, about $23 a month, put to the owner); 80 or 200 checks per shop is the owner's
+  setting; a domain of PicWise's own before indexing. Open, the owner's: provider and
+  size, domain, the checks per shop, what a shop's score changes.
 - **Owner's direction (2026-10-23): the business runs on Google.** «Η αρχιτεκτονική
   πρέπει να τηρεί αυστηρά την υψηλότερη ποιότητα και απαιτήσεις της google... Το
   business τρέχει γύρω από το seo... adwords ή διάδοση μέσα από social media
