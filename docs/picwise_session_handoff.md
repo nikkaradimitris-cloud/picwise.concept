@@ -3,49 +3,63 @@
 Current state for whoever picks the project up next. Updated 2026-10-23.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation: a smaller kept file, then the server (owner, 2026-10-23) -- start here
+## Next conversation: the server; nothing left out of what is kept (owner, 2026-10-23) -- start here
 
-The owner opens a new conversation for this («Θέλω να ανοίξουμε νέα συζήτηση γιατί
-αυτή έχει βαρύνει και το φτιάχνουμε εκεί»).
+The owner opened a new conversation for a smaller kept file, then the server («Θέλω να
+ανοίξουμε νέα συζήτηση γιατί αυτή έχει βαρύνει και το φτιάχνουμε εκεί»). The smaller
+file was then stopped by the owner's rule below.
 
-- **Where the work is:** the branch `ccr-c30938cf-v749ay`. Its code is `main`'s (last
-  merge `7b9624c`, 23/10 16:08 UTC); it is ahead only by notes (PROGRESS and this file).
-  Bring it into the new session's branch first, as this session did with
-  `claude/tender-einstein-6nbbs8`.
-- **First task, asked by the owner:** make the file the site keeps smaller, with the
-  same searches. Measured on the owner's Google-format file of Pro-Camera and SafeFort
-  (PROGRESS, 23/10, "What makes the file big"): the description is 81% of a feed row;
-  photos are never stored, only their links; the prepared file holds 309 bytes a shown
-  product gzipped, 149 with descriptions cut to 500 characters and only the columns read.
-  Proposed, not built: the prepared file (`src/picwise_providers/prepared_catalogue.py`)
-  keeps only what the rules read: a description over 500 characters is never matched
-  (`search_selection._DESCRIPTION_MAX_LEN`), so keep it only as the facts read from it
-  (it exists, for the card's note, `product_description.has_sufficient_description`; its
-  specs, `product_specs`; its condition words, `product_condition`); and leave out the
-  Google-format columns no rule reads (`additional_image_link`, `mobile_link`,
-  `shipping`, `product_detail` and the like; `LEFT_OUT_COLUMNS` holds Awin names only).
-  Measure before and after: the 118 searches (0 pages change, three fixture feeds and a
-  Google-format file), the kinds of every product, the prepared file's size, the full
-  run, the misspelling benchmark. Told to the owner first, then built; `main` on the
-  owner's yes.
+- **Where the work is:** the branch `ccr-baaad713-r3uvvs`, which took in
+  `ccr-c30938cf-v749ay`'s notes. Its code is `main`'s (last merge `7b9624c`, 23/10 16:08
+  UTC); it is ahead only by notes (PROGRESS and this file). Bring it into the next
+  session's branch first.
+- **Owner's rule (2026-10-23): nothing that may serve the pages Google indexes is left
+  out of what PicWise keeps.** In their words: «Δεν πρέπει να διαγράψεις τίποτα που θα
+  επηρεάσει την ποιότητα χαρακτηριστικά seo ... Τα προϊόντα που θα καλούνται από την
+  google μέσω λέξεων κλειδιών θα πρέπει να χτίζουν ένα πεδίο το οποίο να είναι πλήρες
+  και να προσθέτει υπεραξία στη σελίδα με βάση τα δεδομένα και τα κριτήρια που έχει η
+  google ... Δεν πρέπει να υπάρχουν επιπτώσεις στην κατάταξη ... αν αυτή η ενέργεια που
+  ετοιμάζεσαι να κάνεις θα φέρει κακά αποτελέσματα στο μέλλον τότε σταμάτησε την».
+- **The smaller kept file: stopped, nothing built** (PROGRESS, 23/10, "The smaller kept
+  file stopped"). It would have left out the 46 Google-format columns no rule reads and
+  descriptions over 500 characters (the search never matches them), with the same
+  searches. Google calls affiliate pages that copy the shop's description "thin
+  affiliation" and names price information, comparisons, testing and navigation as the
+  value; the future pages for Google need exactly those columns (specs, sizes, colours,
+  dimensions, energy class, extra images, delivery cost, unit price, pack size, the adult
+  flag, variants) and the full description as material to read facts from, never to
+  copy. Today's pages show none of them, so what Google sees today would not have
+  changed. Instead (put to the owner, not decided): keep everything, and solve the size
+  on the server, with every product's full row on disk and in memory only what the
+  search reads.
 - **Then the server** (not decided, nothing bought or built): the owner will bring in
   every Awin shop (a Product Count of about 1,300,000, from memory) for the UK and the US
   first, later every euro country, on a server the owner buys. Put to the owner: one VPS
-  near London (8 GB of memory and 80 GB of disk are enough to start; the kept file for
-  1.3 million rows is about 20-90 MB), a free CDN in front; the site served by the same
-  server; each night the feed downloaded and read row by row (about 0.4 GB gzipped, never
-  kept), the shown products written to a database file by kind; the bot on the same
-  server later. The same workflow: the session's branch, the owner's yes, `main`, a
-  GitHub workflow that deploys to the server with a key the owner keeps in GitHub's
-  secrets (never in the chat); the live site checked through GitHub, or directly if the
-  owner adds the server's address to the environment's allowed domains. A catalogue
-  per market (GBP, USD, EUR). The site stays on Vercel until the server is ready.
+  near London (8 GB of memory and 80 GB of disk to start; the full rows of 150,000-600,000
+  shown products are about 0.6-2.5 GB unpacked at the owner's file's 4.1 KB a row, the
+  20-90 MB said before assumed the smaller file), a free CDN in front; the site served by
+  the same server; each night the feed downloaded and read row by row (about 0.4 GB
+  gzipped), every shown product's full row written to a database on disk, by kind, and
+  only what the search reads held in memory; the bot on the same server later. Memory
+  is to be measured when this is built. The same workflow: the session's branch, the
+  owner's yes, `main`, a GitHub workflow that deploys to the server with a key the owner
+  keeps in GitHub's secrets (never in the chat); the live site checked through GitHub,
+  or directly if the owner adds the server's address to the environment's allowed
+  domains. A catalogue per market (GBP, USD, EUR). The site stays on Vercel until the
+  server is ready.
+- **Open, put to the owner on 23/10, not decided:** (1) the Awin-format
+  `LEFT_OUT_COLUMNS` (on `main` since 20/10: RRP and savings, delivery cost and time,
+  extra images, colour, dimensions, warranty...) leaves out columns of the kind the rule
+  above keeps; it does nothing on today's Google-format feed. (2) The `/search` pages
+  carry no `noindex` and the site has no `robots.txt`, while Google advises keeping URLs
+  that generate search results from being crawled; the pages meant for Google are the
+  `/best/...` buying pages behind their quality gate, which publish nothing yet.
 - **The kind work** is on `main` (merges `9429bca`, `95d0961`, `7b9624c`), and the owner
   stopped it here («Δεν θέλω να ασχοληθώ άλλο με αυτή τη διαδικασία»). The build's own
   list of suspects (`/prepared.json`, `kinds`) is how to comb later; its open points are
   in PROGRESS, 23/10 ("The fixes from the first list to `main`").
 - **The owner's files** of 23/10 (Pro-Camera and SafeFort, Google format) reached only
-  this session: ask for a file again when one is needed, never for the link. A Google-format
+  the earlier session: ask for a file again when one is needed, never for the link. A Google-format
   feed cannot be made with chosen columns in Create-a-Feed, and a file of Back to the
   Office is too large to upload.
 
@@ -602,6 +616,9 @@ In short:
 - stages 23–25 stay `NEEDS_*` until real live proof exists; local fixtures are never live
   proof
 - **Amazon is permanently removed** — do not reintroduce it. Awin is the affiliate network.
+- nothing that may serve the pages Google indexes is left out of what PicWise keeps, and
+  nothing may hurt their quality or ranking (owner, 2026-10-23; first section above); a
+  change that would, is stopped and told to the owner
 
 ## Map of the code that matters now
 
