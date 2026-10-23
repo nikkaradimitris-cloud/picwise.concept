@@ -4,6 +4,7 @@ from html import escape
 
 from picwise_contracts import ContractValidationError, DecisionOutput
 from .legal import render_public_footer
+from .seo import NOINDEX_META
 
 
 def render_review_safe_landing_page() -> str:
@@ -70,12 +71,16 @@ def render_review_safe_landing_page() -> str:
 
 
 def render_demo_info_page() -> str:
-    """Render a review-safe informational demo page without commerce cards."""
+    """Render a review-safe informational demo page without commerce cards.
+
+    A preview, so Google is told not to index it (owner, 2026-10-23).
+    """
     return (
         "<!doctype html>"
         '<html lang="en"><head>'
         '<meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
+        f"{NOINDEX_META}"
         "<title>PicWise Demo — Buying Decision Preview</title>"
         '<meta name="description" content="Preview how PicWise supports product comparison and buying decisions while provider integrations are being configured.">'
         "<style>"

@@ -3,7 +3,124 @@
 Current state for whoever picks the project up next. Updated 2026-10-23.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation: the kind problem (owner, 2026-10-23) -- start here
+## Next conversation: the server; nothing left out of what is kept (owner, 2026-10-23) -- start here
+
+The owner opened a new conversation for a smaller kept file, then the server («Θέλω να
+ανοίξουμε νέα συζήτηση γιατί αυτή έχει βαρύνει και το φτιάχνουμε εκεί»). The smaller
+file was then stopped by the owner's rule below.
+
+- **Where the work is:** the branch `ccr-baaad713-r3uvvs`, which took in
+  `ccr-c30938cf-v749ay`'s notes. Its code is `main`'s (last merge `7b9624c`, 23/10 16:08
+  UTC); it is ahead only by notes (PROGRESS and this file). Bring it into the next
+  session's branch first.
+- **Owner's rule (2026-10-23): nothing that may serve the pages Google indexes is left
+  out of what PicWise keeps.** In their words: «Δεν πρέπει να διαγράψεις τίποτα που θα
+  επηρεάσει την ποιότητα χαρακτηριστικά seo ... Τα προϊόντα που θα καλούνται από την
+  google μέσω λέξεων κλειδιών θα πρέπει να χτίζουν ένα πεδίο το οποίο να είναι πλήρες
+  και να προσθέτει υπεραξία στη σελίδα με βάση τα δεδομένα και τα κριτήρια που έχει η
+  google ... Δεν πρέπει να υπάρχουν επιπτώσεις στην κατάταξη ... αν αυτή η ενέργεια που
+  ετοιμάζεσαι να κάνεις θα φέρει κακά αποτελέσματα στο μέλλον τότε σταμάτησε την».
+- **The specification: `docs/PICWISE_GOOGLE_PAGES_SPEC.md`** (owner, 23/10: «Ναι,
+  γράψ' το ως προδιαγραφή μόνο εάν είναι ο βέλτιστος τρόπος ... μόνο εάν αυτό είναι
+  πλήρως συμβατό με τις προδιαγραφές της google»). Written after checking each part
+  against Google's published rules; nothing in it is built. One correction to what was
+  put to the owner before: no page per keyword. Google's guide of May 2026 calls
+  separate content for every wording of a search scaled content abuse, so a page stands
+  for one distinct set of products (category, kind, kind with a property) or one
+  product, and a keyword's variations map to that page. That conflicts with the
+  founding documents' long-tail landings (raised; "Known doc conflict" below). Read the
+  specification first.
+- **Its first step, built on the branch, not on `main`** (owner: «Ναι, βάλε το noindex
+  στο /search και προστάτεψε το site από την google όσο το χτίζουμε»): `noindex` on
+  every page that shows a search (`/search`, `/results`, `/picwise-reference`, `/?q=`;
+  the home page without a search stays indexable) and on `/demo`; a `robots.txt`
+  keeping crawlers off `/out/` (the redirect to the shops records a click),
+  `/subby-proof` and `/cron/`, not off `/search` yet (Google reads `noindex` only on a
+  page it may fetch); `X-Robots-Tag: noindex` on the JSON routes. Both route tables;
+  `tests/test_picwise_google_protection.py`. `main` waits for the owner's yes (PROGRESS,
+  23/10, "The site's own search kept out of Google"). After the merge: check live
+  that the search pages carry the tag and `/robots.txt` answers.
+- **Owner's direction (2026-10-23): the business runs on Google.** «Η αρχιτεκτονική
+  πρέπει να τηρεί αυστηρά την υψηλότερη ποιότητα και απαιτήσεις της google... Το
+  business τρέχει γύρω από το seo... adwords ή διάδοση μέσα από social media
+  δευτερεύουσας σημασίας... στοχεύει κυρίως σε χαμηλής επισκεψιμότητας keyword εκεί που
+  ανταγωνισμός είναι μικρός... σε μεγάλες αγορές με μεγάλο όγκο προϊόντων... ένας
+  χρήστης ζητάει μία λέξη κλειδί θα δώσει μία σελίδα όπου θα δει 4 προϊόντα κι όλα τα
+  υπόλοιπα στοιχεία που ζητάει η google». Put to the owner the same day, not decided
+  (PROGRESS, 23/10, "The page for a Google keyword, put to the owner"): `/search` kept
+  out of Google; one fixed page per chosen keyword, in a browseable hierarchy, indexed
+  only past a quality gate; its contents; Google's three risks (doorways, scaled
+  content, thin affiliation); and, since Google gives product rich results only to a
+  page about one product, a page per product with every shop's price.
+- **Owner's decision (2026-10-23): every product gets a page, not only those two shops
+  sell.** «Άν ενα προϊόν δεν μπορεί να συγκριθεί με άλλον πωλητή τότε θα εμφανίζεται
+  μόνο του σε αυτή την περίπτωση θα έχει πιο πλούσια περιγραφή η οποία θα προστίθεται
+  από κάποιο σύστημα Ai το οποίο θα επιμελείται το περιεχόμενο.. η σελίδα θα έχει
+  διαφορετική δομή... Σε κάθε άλλη περίπτωση θα χάσουμε τεράστιο όγκο προϊόντων». So an
+  AI system curates the content of a one-shop product page (the owner's call, which the
+  earlier "code first, AI only if code cannot" leaves to them). Put to the owner, not
+  decided: the conditions Google's guidance sets (PROGRESS, 23/10, "A page for every
+  product").
+- **Owner's requirement for the server's catalogue (2026-10-23):** «το αρχείο που
+  μαζεύεται στο server με τα προϊόντα θα πρέπει να έχει τέτοιο μηχανισμό έτσι ώστε
+  τμηματικά να κρατάει αυτά που πρέπει να διαγράφει αυτά που πρέπει και τελικά η
+  χωρητικότητα να υπολογίζεται με βάση τα ζωντανά πραγματικά είδη ώστε να μπορέσουμε να
+  παραμείνουμε στο version εννοείται σε κάποιο πακέτο του». Put to the owner, not
+  decided (PROGRESS, 23/10, "The server's catalogue keeps only live products"): each
+  night shop by shop, added, updated, or marked gone; deleted with its text and page
+  after a number of days (30 proposed); a failed or much smaller feed deletes nothing;
+  room only for live products, about 6-10 KB each with everything; a morning report
+  against the plan's limit. **Decided by the owner the same day:** 30 days, and
+  meanwhile the product's page stays, says it is temporarily unavailable and suggests
+  similar products, as Google advises («30μερες»; «η σελίδα δείχνει προσωρινά μη
+  διαθέσιμο και προτείνει άλλα παρόμοια προϊόντα όπως προτείνει ο κανονισμός της
+  google»). The rest of the mechanism is not decided yet.
+- **The smaller kept file: stopped, nothing built** (PROGRESS, 23/10, "The smaller kept
+  file stopped"). It would have left out the 46 Google-format columns no rule reads and
+  descriptions over 500 characters (the search never matches them), with the same
+  searches. Google calls affiliate pages that copy the shop's description "thin
+  affiliation" and names price information, comparisons, testing and navigation as the
+  value; the future pages for Google need exactly those columns (specs, sizes, colours,
+  dimensions, energy class, extra images, delivery cost, unit price, pack size, the adult
+  flag, variants) and the full description as material to read facts from, never to
+  copy. Today's pages show none of them, so what Google sees today would not have
+  changed. Instead (put to the owner, not decided): keep everything, and solve the size
+  on the server, with every product's full row on disk and in memory only what the
+  search reads.
+- **Then the server** (not decided, nothing bought or built): the owner will bring in
+  every Awin shop (a Product Count of about 1,300,000, from memory) for the UK and the US
+  first, later every euro country, on a server the owner buys. Put to the owner: one VPS
+  near London (8 GB of memory and 80 GB of disk to start; the full rows of 150,000-600,000
+  shown products are about 0.6-2.5 GB unpacked at the owner's file's 4.1 KB a row, the
+  20-90 MB said before assumed the smaller file), a free CDN in front; the site served by
+  the same server; each night the feed downloaded and read row by row (about 0.4 GB
+  gzipped), every shown product's full row written to a database on disk, by kind, and
+  only what the search reads held in memory; the bot on the same server later. Memory
+  is to be measured when this is built. The same workflow: the session's branch, the
+  owner's yes, `main`, a GitHub workflow that deploys to the server with a key the owner
+  keeps in GitHub's secrets (never in the chat); the live site checked through GitHub,
+  or directly if the owner adds the server's address to the environment's allowed
+  domains. A catalogue per market (GBP, USD, EUR). The site stays on Vercel until the
+  server is ready.
+- **Answered 23/10: the Awin format does not matter** (owner: «Εμείς δουλεύουμε με
+  google feed... Awin feed δεν μας ενδιαφέρει και αν πιάνει χώρο πέτα το»). The
+  Awin-format `LEFT_OUT_COLUMNS` (on `main` since 20/10) stays as it is: none of its
+  names is one of the 62 Google-format columns, so it leaves nothing of the Google feed
+  out, and nothing of the Awin format takes room in what the live site keeps (its feed
+  is Google-format). Nothing was changed.
+- **Answered 23/10:** the `/search` pages carried no `noindex` and the site had no
+  `robots.txt` (`/robots.txt` answered 404); the owner said to keep the search out of
+  Google, built on the branch (above).
+- **The kind work** is on `main` (merges `9429bca`, `95d0961`, `7b9624c`), and the owner
+  stopped it here («Δεν θέλω να ασχοληθώ άλλο με αυτή τη διαδικασία»). The build's own
+  list of suspects (`/prepared.json`, `kinds`) is how to comb later; its open points are
+  in PROGRESS, 23/10 ("The fixes from the first list to `main`").
+- **The owner's files** of 23/10 (Pro-Camera and SafeFort, Google format) reached only
+  the earlier session: ask for a file again when one is needed, never for the link. A Google-format
+  feed cannot be made with chosen columns in Create-a-Feed, and a file of Back to the
+  Office is too large to upload.
+
+## Before: the kind problem (owner, 2026-10-23)
 
 The owner moves the work on product kinds (a search that shows a product of another
 kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσουμε σε άλλη συζήτηση».
@@ -88,7 +205,10 @@ kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσο
   shop without asking for a file. The first list (PROGRESS, 23/10) shows wrong kinds (RAM
   as a processor, a punchbag as a bag, a garden set as a heater, a subscription as a coffee
   machine, bedspreads as duvets) and look-alikes first (bath mats as rugs, bedside cabinets
-  as tables, stools as chairs); the check reads "a/b" as one word, to fix.
+  as tables, stools as chairs); fixed the same day (merge `7b9624c`): 290 suspects left
+  of 438. Next, from the list of 16:09: bedside tables under "Tables > Bedside Tables"
+  (the first shelf wins), PVC flooring as a rug; stools, ventilation units and changing
+  units wait for the owner's word.
 - **How to measure, before and after any change:** `tools/price_first_eval.py <feed>
   <out.json> --compare <before.json>` (the 118 searches: 19 pages changed on the owner's
   third Google file, each by wrong kinds leaving; 0 on fictional Awin-format feeds); the
@@ -553,6 +673,12 @@ In short:
 - stages 23–25 stay `NEEDS_*` until real live proof exists; local fixtures are never live
   proof
 - **Amazon is permanently removed** — do not reintroduce it. Awin is the affiliate network.
+- nothing that may serve the pages Google indexes is left out of what PicWise keeps, and
+  nothing may hurt their quality or ranking (owner, 2026-10-23; first section above); a
+  change that would, is stopped and told to the owner
+- the business runs on Google search, Ads and social media second (owner, 2026-10-23):
+  low-volume, low-competition keywords in large markets with many products; every page
+  meant for Google meets Google's own published requirements end to end
 
 ## Map of the code that matters now
 
@@ -584,7 +710,8 @@ Tools:
 - `python tools/nlu_mistake_report.py queries.txt` or `--from-query-log` — lexicon review queue
 - `python tools/build_picwise_search_artifact.py` — rebuild the search artifact
 
-Docs: `docs/picwise_misspelling_understanding.md`, `docs/awin_feed_setup_el.md` (Greek
+Docs: `docs/PICWISE_GOOGLE_PAGES_SPEC.md` (the pages for Google, the index, the server's
+catalogue; 2026-10-23), `docs/picwise_misspelling_understanding.md`, `docs/awin_feed_setup_el.md` (Greek
 guide for the owner), `docs/vercel_daily_feed_setup_el.md` (Greek: the prepared feed on
 Vercel, every day), `docs/picwise_query_understanding.md`,
 `docs/picwise_mission_decision_delivery.md`.
@@ -799,6 +926,14 @@ Vercel, every day), `docs/picwise_query_understanding.md`,
 **Settled on 2026-10-16:** the price-first plan contradicted `concept.picwise.txt`,
 `docs/MISSION.md` and `PROJECT_RULES.md`; the owner chose to change them, and they
 were changed (details in `docs/picwise_price_first_plan_2026-10-15.md`).
+
+**Raised on 2026-10-23, the owner's call:** `concept.picwise.txt` section 17 ("SEO
+Strategy — Waves Model") and `docs/SEO_WAVES_SPEC.md` ("Each landing targets a specific
+purchase-intent query") speak of thousands of landings, one per long-tail query.
+Google's guide to generative AI features (May 2026) calls separate content for every
+wording of a search scaled content abuse. `docs/PICWISE_GOOGLE_PAGES_SPEC.md` follows
+Google: one page per distinct set of products, never per wording. The two files are
+unchanged until the owner says so.
 
 Older, and still open:
 

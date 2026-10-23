@@ -66,7 +66,17 @@ LOCAL_AVAILABLE_ROUTES = (
     "/private-beta-readiness",
     "/best/{slug}",
     "/sitemap-buying-pages.xml",
+    "/robots.txt",
 )
+
+# What crawlers may fetch while the site is built (owner, 2026-10-23: «προστάτεψε το
+# site από την google όσο το χτίζουμε»). Kept off: the redirect to the shops, which
+# records a click, and two routes that act when called. The search is not blocked here:
+# its pages carry `noindex`, which Google reads only on a page it may fetch, so it is
+# blocked once Google has dropped them (docs/PICWISE_GOOGLE_PAGES_SPEC.md, section 2).
+ROBOTS_TXT = "User-agent: *\nDisallow: /out/\nDisallow: /subby-proof\nDisallow: /cron/\n"
+# Answers that are not pages, such as the JSON routes, carry this header instead.
+NOINDEX_HEADER = ("X-Robots-Tag", "noindex")
 
 
 class PicwiseLocalApp:
@@ -108,14 +118,21 @@ class PicwiseLocalApp:
         The mission requires that a visitor arriving from Google on
         `/?q=<purchase intent>` sees the decision result immediately instead of an
         empty search page, so the query is resolved here exactly as on /search.
-        With no query this stays the plain landing page.
+        With no query this stays the plain landing page, the one page here Google may
+        index; with one it is a search page like any other.
         """
-        return self.picwise_reference_html(query, source_page="search", shown=shown)
+        return self.picwise_reference_html(
+            query, source_page="search", shown=shown, indexable=is_empty_search_query(query)
+        )
 
     def picwise_reference_html(
-        self, query: str = "", *, source_page: str = "search", shown: int = 0
+        self, query: str = "", *, source_page: str = "search", shown: int = 0, indexable: bool = False
     ) -> str:
-        """The search page. `shown` is how many products "More" has opened the page to."""
+        """The search page. `shown` is how many products "More" has opened the page to.
+
+        Not `indexable` unless it is the home page without a search: Google is told not
+        to index the site's own search (owner, 2026-10-23).
+        """
         if is_empty_search_query(query):
             resolution = empty_landing_search_resolution(query)
         else:
@@ -125,6 +142,7 @@ class PicwiseLocalApp:
             resolution=resolution,
             source_page=source_page,
             catalogue=peek_search_catalogue_counts(),
+            indexable=indexable,
         )
         self.record_decision_impression(
             query=query,
@@ -739,6 +757,15 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "public, max-age=3600")
+            self.send_header(*NOINDEX_HEADER)
+            self.end_headers()
+            self.wfile.write(body)
+            return
+        if parsed.path == "/robots.txt":
+            body = ROBOTS_TXT.encode("utf-8")
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
             return
@@ -887,6 +914,7 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
+        self.send_header(*NOINDEX_HEADER)
         self.end_headers()
         self.wfile.write(body)
 

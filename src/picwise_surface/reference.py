@@ -11,6 +11,7 @@ from picwise_providers.decision_labels import (
 from picwise_search import LiveSearchResolution
 from picwise_search.live_search_resolver import MAX_SHOWN_PRODUCTS
 from .legal import render_public_footer
+from .seo import NOINDEX_META
 
 
 _SAFE_DISCLAIMER_BY_STATE = {
@@ -816,9 +817,16 @@ def render_picwise_reference_surface(
     resolution: LiveSearchResolution | None = None,
     source_page: str = "search",
     catalogue: tuple[int, int] | None = None,
+    indexable: bool = False,
 ) -> str:
     """The search page. `catalogue` is (products, shops) a search reads, when the server
-    has the feed loaded, for the scanning screen; None makes it name no number."""
+    has the feed loaded, for the scanning screen; None makes it name no number.
+
+    Only the home page without a search is `indexable`. Every other page this draws is
+    the site's own search, which Google is told not to index (owner, 2026-10-23: «βάλε
+    το noindex στο /search και προστάτεψε το site από την google όσο το χτίζουμε»);
+    the pages meant for Google are in `docs/PICWISE_GOOGLE_PAGES_SPEC.md`.
+    """
     display_query = str(query or "")
     query_line = ""
     disclaimer_line = (
@@ -997,6 +1005,7 @@ def render_picwise_reference_surface(
         '<html lang="en"><head>'
         '<meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
+        f"{'' if indexable else NOINDEX_META}"
         "<title>PicWise Reference — Buying Decision Preview</title>"
         '<meta name="description" content="Preview how PicWise supports product comparison and buying decisions while provider integrations are being configured.">'
         "<style>"
