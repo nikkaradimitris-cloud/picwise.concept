@@ -47,13 +47,17 @@ file was then stopped by the owner's rule below.
   or directly if the owner adds the server's address to the environment's allowed
   domains. A catalogue per market (GBP, USD, EUR). The site stays on Vercel until the
   server is ready.
-- **Open, put to the owner on 23/10, not decided:** (1) the Awin-format
-  `LEFT_OUT_COLUMNS` (on `main` since 20/10: RRP and savings, delivery cost and time,
-  extra images, colour, dimensions, warranty...) leaves out columns of the kind the rule
-  above keeps; it does nothing on today's Google-format feed. (2) The `/search` pages
-  carry no `noindex` and the site has no `robots.txt`, while Google advises keeping URLs
-  that generate search results from being crawled; the pages meant for Google are the
-  `/best/...` buying pages behind their quality gate, which publish nothing yet.
+- **Answered 23/10: the Awin format does not matter** (owner: «Εμείς δουλεύουμε με
+  google feed... Awin feed δεν μας ενδιαφέρει και αν πιάνει χώρο πέτα το»). The
+  Awin-format `LEFT_OUT_COLUMNS` (on `main` since 20/10) stays as it is: none of its
+  names is one of the 62 Google-format columns, so it leaves nothing of the Google feed
+  out, and nothing of the Awin format takes room in what the live site keeps (its feed
+  is Google-format). Nothing was changed.
+- **Open, put to the owner on 23/10, not decided:** the `/search` pages carry no
+  `noindex` and the site has no `robots.txt` (`/robots.txt` answers 404), while Google
+  advises keeping URLs that generate search results from being crawled; the pages meant
+  for Google are the `/best/...` buying pages behind their quality gate, which publish
+  nothing yet.
 - **The kind work** is on `main` (merges `9429bca`, `95d0961`, `7b9624c`), and the owner
   stopped it here («Δεν θέλω να ασχοληθώ άλλο με αυτή τη διαδικασία»). The build's own
   list of suspects (`/prepared.json`, `kinds`) is how to comb later; its open points are
