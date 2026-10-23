@@ -20,6 +20,16 @@ file was then stopped by the owner's rule below.
   και να προσθέτει υπεραξία στη σελίδα με βάση τα δεδομένα και τα κριτήρια που έχει η
   google ... Δεν πρέπει να υπάρχουν επιπτώσεις στην κατάταξη ... αν αυτή η ενέργεια που
   ετοιμάζεσαι να κάνεις θα φέρει κακά αποτελέσματα στο μέλλον τότε σταμάτησε την».
+- **The specification: `docs/PICWISE_GOOGLE_PAGES_SPEC.md`** (owner, 23/10: «Ναι,
+  γράψ' το ως προδιαγραφή μόνο εάν είναι ο βέλτιστος τρόπος ... μόνο εάν αυτό είναι
+  πλήρως συμβατό με τις προδιαγραφές της google»). Written after checking each part
+  against Google's published rules; nothing in it is built. One correction to what was
+  put to the owner before: no page per keyword. Google's guide of May 2026 calls
+  separate content for every wording of a search scaled content abuse, so a page stands
+  for one distinct set of products (category, kind, kind with a property) or one
+  product, and a keyword's variations map to that page. That conflicts with the
+  founding documents' long-tail landings (raised; "Known doc conflict" below). Read the
+  specification first. Its first step, proposed: `noindex` on `/search`.
 - **Owner's direction (2026-10-23): the business runs on Google.** «Η αρχιτεκτονική
   πρέπει να τηρεί αυστηρά την υψηλότερη ποιότητα και απαιτήσεις της google... Το
   business τρέχει γύρω από το seo... adwords ή διάδοση μέσα από social media
@@ -692,7 +702,8 @@ Tools:
 - `python tools/nlu_mistake_report.py queries.txt` or `--from-query-log` — lexicon review queue
 - `python tools/build_picwise_search_artifact.py` — rebuild the search artifact
 
-Docs: `docs/picwise_misspelling_understanding.md`, `docs/awin_feed_setup_el.md` (Greek
+Docs: `docs/PICWISE_GOOGLE_PAGES_SPEC.md` (the pages for Google, the index, the server's
+catalogue; 2026-10-23), `docs/picwise_misspelling_understanding.md`, `docs/awin_feed_setup_el.md` (Greek
 guide for the owner), `docs/vercel_daily_feed_setup_el.md` (Greek: the prepared feed on
 Vercel, every day), `docs/picwise_query_understanding.md`,
 `docs/picwise_mission_decision_delivery.md`.
@@ -907,6 +918,14 @@ Vercel, every day), `docs/picwise_query_understanding.md`,
 **Settled on 2026-10-16:** the price-first plan contradicted `concept.picwise.txt`,
 `docs/MISSION.md` and `PROJECT_RULES.md`; the owner chose to change them, and they
 were changed (details in `docs/picwise_price_first_plan_2026-10-15.md`).
+
+**Raised on 2026-10-23, the owner's call:** `concept.picwise.txt` section 17 ("SEO
+Strategy — Waves Model") and `docs/SEO_WAVES_SPEC.md` ("Each landing targets a specific
+purchase-intent query") speak of thousands of landings, one per long-tail query.
+Google's guide to generative AI features (May 2026) calls separate content for every
+wording of a search scaled content abuse. `docs/PICWISE_GOOGLE_PAGES_SPEC.md` follows
+Google: one page per distinct set of products, never per wording. The two files are
+unchanged until the owner says so.
 
 Older, and still open:
 
