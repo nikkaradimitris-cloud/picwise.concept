@@ -3,7 +3,17 @@
 Current state for whoever picks the project up next. Updated 2026-10-23.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation: the kind problem (owner, 2026-10-23) -- start here
+## Now (2026-10-23, evening) -- start here
+
+- **The owner stops the kind work and turns to the catalogue:** every Awin shop, then
+  combing right from wrong, on a server the owner will buy (PROGRESS, 23/10, last entry).
+  Waiting on the owner: the Product Count of Create-a-Feed with every Google-format
+  advertiser selected; with it, the server and the plan (catalogue on disk, not in one
+  function's memory; the bot on the same server). Nothing of it is built.
+- The kind work below is on `main` (merges `9429bca`, `95d0961`, `7b9624c`); its open
+  points stay as written.
+
+## Next conversation: the kind problem (owner, 2026-10-23)
 
 The owner moves the work on product kinds (a search that shows a product of another
 kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσουμε σε άλλη συζήτηση».
