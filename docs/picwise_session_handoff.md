@@ -7,9 +7,10 @@ Current state for whoever picks the project up next. Updated 2026-10-23.
 
 - **The owner stops the kind work and turns to the catalogue:** every Awin shop, then
   combing right from wrong, on a server the owner will buy (PROGRESS, 23/10, last entry).
-  Waiting on the owner: the Product Count of Create-a-Feed with every Google-format
-  advertiser selected; with it, the server and the plan (catalogue on disk, not in one
-  function's memory; the bot on the same server). Nothing of it is built.
+  The owner remembers a Product Count of about 1,300,000 for every Google-format
+  advertiser. Put to the owner: one VPS (4 cores, 8 GB, 80-160 GB) for the site, the
+  nightly download read row by row into a database file by kind, and the bot (PROGRESS,
+  23/10). Nothing of it is decided or built.
 - The kind work below is on `main` (merges `9429bca`, `95d0961`, `7b9624c`); its open
   points stay as written.
 
