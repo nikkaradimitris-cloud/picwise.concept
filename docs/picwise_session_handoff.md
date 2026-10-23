@@ -45,7 +45,11 @@ The owner opens a new conversation for this («Θέλω να ανοίξουμε 
   list of suspects (`/prepared.json`, `kinds`) is how to comb later; its open points are
   in PROGRESS, 23/10 ("The fixes from the first list to `main`").
 - **The owner's files** of 23/10 (Pro-Camera and SafeFort, Google format) reached only
-  this session: ask for a file again when one is needed, never for the link. A Google-format
+  this session: ask for a file again when one is needed (for the first task, to measure
+  before and after), never for the link. Never commit one: the repository is public, and
+  a feed file holds the shops' data and every row's Awin tracked link with the owner's
+  publisher ID, which crawlers would follow as clicks (owner offered, 23/10; declined for
+  that reason). A Google-format
   feed cannot be made with chosen columns in Create-a-Feed, and a file of Back to the
   Office is too large to upload.
 
