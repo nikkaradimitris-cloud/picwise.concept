@@ -41,6 +41,17 @@ file was then stopped by the owner's rule below.
   earlier "code first, AI only if code cannot" leaves to them). Put to the owner, not
   decided: the conditions Google's guidance sets (PROGRESS, 23/10, "A page for every
   product").
+- **Owner's requirement for the server's catalogue (2026-10-23):** «το αρχείο που
+  μαζεύεται στο server με τα προϊόντα θα πρέπει να έχει τέτοιο μηχανισμό έτσι ώστε
+  τμηματικά να κρατάει αυτά που πρέπει να διαγράφει αυτά που πρέπει και τελικά η
+  χωρητικότητα να υπολογίζεται με βάση τα ζωντανά πραγματικά είδη ώστε να μπορέσουμε να
+  παραμείνουμε στο version εννοείται σε κάποιο πακέτο του». Put to the owner, not
+  decided (PROGRESS, 23/10, "The server's catalogue keeps only live products"): each
+  night shop by shop, added, updated, or marked gone; deleted with its text and page
+  after a number of days (30 proposed); a failed or much smaller feed deletes nothing;
+  room only for live products, about 6-10 KB each with everything; a morning report
+  against the plan's limit. Two decisions are the owner's: the days, and whether a
+  product's page stays meanwhile as "unavailable for now".
 - **The smaller kept file: stopped, nothing built** (PROGRESS, 23/10, "The smaller kept
   file stopped"). It would have left out the 46 Google-format columns no rule reads and
   descriptions over 500 characters (the search never matches them), with the same
