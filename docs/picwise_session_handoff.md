@@ -3,7 +3,53 @@
 Current state for whoever picks the project up next. Updated 2026-10-23.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation: the kind problem (owner, 2026-10-23) -- start here
+## Next conversation: a smaller kept file, then the server (owner, 2026-10-23) -- start here
+
+The owner opens a new conversation for this («Θέλω να ανοίξουμε νέα συζήτηση γιατί
+αυτή έχει βαρύνει και το φτιάχνουμε εκεί»).
+
+- **Where the work is:** the branch `ccr-c30938cf-v749ay`. Its code is `main`'s (last
+  merge `7b9624c`, 23/10 16:08 UTC); it is ahead only by notes (PROGRESS and this file).
+  Bring it into the new session's branch first, as this session did with
+  `claude/tender-einstein-6nbbs8`.
+- **First task, asked by the owner:** make the file the site keeps smaller, with the
+  same searches. Measured on the owner's Google-format file of Pro-Camera and SafeFort
+  (PROGRESS, 23/10, "What makes the file big"): the description is 81% of a feed row;
+  photos are never stored, only their links; the prepared file holds 309 bytes a shown
+  product gzipped, 149 with descriptions cut to 500 characters and only the columns read.
+  Proposed, not built: the prepared file (`src/picwise_providers/prepared_catalogue.py`)
+  keeps only what the rules read: a description over 500 characters is never matched
+  (`search_selection._DESCRIPTION_MAX_LEN`), so keep it only as the facts read from it
+  (it exists, for the card's note, `product_description.has_sufficient_description`; its
+  specs, `product_specs`; its condition words, `product_condition`); and leave out the
+  Google-format columns no rule reads (`additional_image_link`, `mobile_link`,
+  `shipping`, `product_detail` and the like; `LEFT_OUT_COLUMNS` holds Awin names only).
+  Measure before and after: the 118 searches (0 pages change, three fixture feeds and a
+  Google-format file), the kinds of every product, the prepared file's size, the full
+  run, the misspelling benchmark. Told to the owner first, then built; `main` on the
+  owner's yes.
+- **Then the server** (not decided, nothing bought or built): the owner will bring in
+  every Awin shop (a Product Count of about 1,300,000, from memory) for the UK and the US
+  first, later every euro country, on a server the owner buys. Put to the owner: one VPS
+  near London (8 GB of memory and 80 GB of disk are enough to start; the kept file for
+  1.3 million rows is about 20-90 MB), a free CDN in front; the site served by the same
+  server; each night the feed downloaded and read row by row (about 0.4 GB gzipped, never
+  kept), the shown products written to a database file by kind; the bot on the same
+  server later. The same workflow: the session's branch, the owner's yes, `main`, a
+  GitHub workflow that deploys to the server with a key the owner keeps in GitHub's
+  secrets (never in the chat); the live site checked through GitHub, or directly if the
+  owner adds the server's address to the environment's allowed domains. A catalogue
+  per market (GBP, USD, EUR). The site stays on Vercel until the server is ready.
+- **The kind work** is on `main` (merges `9429bca`, `95d0961`, `7b9624c`), and the owner
+  stopped it here («Δεν θέλω να ασχοληθώ άλλο με αυτή τη διαδικασία»). The build's own
+  list of suspects (`/prepared.json`, `kinds`) is how to comb later; its open points are
+  in PROGRESS, 23/10 ("The fixes from the first list to `main`").
+- **The owner's files** of 23/10 (Pro-Camera and SafeFort, Google format) reached only
+  this session: ask for a file again when one is needed, never for the link. A Google-format
+  feed cannot be made with chosen columns in Create-a-Feed, and a file of Back to the
+  Office is too large to upload.
+
+## Before: the kind problem (owner, 2026-10-23)
 
 The owner moves the work on product kinds (a search that shows a product of another
 kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσουμε σε άλλη συζήτηση».
@@ -88,7 +134,10 @@ kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσο
   shop without asking for a file. The first list (PROGRESS, 23/10) shows wrong kinds (RAM
   as a processor, a punchbag as a bag, a garden set as a heater, a subscription as a coffee
   machine, bedspreads as duvets) and look-alikes first (bath mats as rugs, bedside cabinets
-  as tables, stools as chairs); the check reads "a/b" as one word, to fix.
+  as tables, stools as chairs); fixed the same day (merge `7b9624c`): 290 suspects left
+  of 438. Next, from the list of 16:09: bedside tables under "Tables > Bedside Tables"
+  (the first shelf wins), PVC flooring as a rug; stools, ventilation units and changing
+  units wait for the owner's word.
 - **How to measure, before and after any change:** `tools/price_first_eval.py <feed>
   <out.json> --compare <before.json>` (the 118 searches: 19 pages changed on the owner's
   third Google file, each by wrong kinds leaving; 0 on fictional Awin-format feeds); the
