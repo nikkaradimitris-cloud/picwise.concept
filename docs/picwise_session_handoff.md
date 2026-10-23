@@ -32,6 +32,15 @@ file was then stopped by the owner's rule below.
   only past a quality gate; its contents; Google's three risks (doorways, scaled
   content, thin affiliation); and, since Google gives product rich results only to a
   page about one product, a page per product with every shop's price.
+- **Owner's decision (2026-10-23): every product gets a page, not only those two shops
+  sell.** «Άν ενα προϊόν δεν μπορεί να συγκριθεί με άλλον πωλητή τότε θα εμφανίζεται
+  μόνο του σε αυτή την περίπτωση θα έχει πιο πλούσια περιγραφή η οποία θα προστίθεται
+  από κάποιο σύστημα Ai το οποίο θα επιμελείται το περιεχόμενο.. η σελίδα θα έχει
+  διαφορετική δομή... Σε κάθε άλλη περίπτωση θα χάσουμε τεράστιο όγκο προϊόντων». So an
+  AI system curates the content of a one-shop product page (the owner's call, which the
+  earlier "code first, AI only if code cannot" leaves to them). Put to the owner, not
+  decided: the conditions Google's guidance sets (PROGRESS, 23/10, "A page for every
+  product").
 - **The smaller kept file: stopped, nothing built** (PROGRESS, 23/10, "The smaller kept
   file stopped"). It would have left out the 46 Google-format columns no rule reads and
   descriptions over 500 characters (the search never matches them), with the same
