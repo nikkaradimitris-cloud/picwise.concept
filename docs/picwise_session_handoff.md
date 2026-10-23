@@ -88,7 +88,10 @@ kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσο
   shop without asking for a file. The first list (PROGRESS, 23/10) shows wrong kinds (RAM
   as a processor, a punchbag as a bag, a garden set as a heater, a subscription as a coffee
   machine, bedspreads as duvets) and look-alikes first (bath mats as rugs, bedside cabinets
-  as tables, stools as chairs); the check reads "a/b" as one word, to fix.
+  as tables, stools as chairs); fixed the same day (merge `7b9624c`): 290 suspects left
+  of 438. Next, from the list of 16:09: bedside tables under "Tables > Bedside Tables"
+  (the first shelf wins), PVC flooring as a rug; stools, ventilation units and changing
+  units wait for the owner's word.
 - **How to measure, before and after any change:** `tools/price_first_eval.py <feed>
   <out.json> --compare <before.json>` (the 118 searches: 19 pages changed on the owner's
   third Google file, each by wrong kinds leaving; 0 on fictional Awin-format feeds); the
