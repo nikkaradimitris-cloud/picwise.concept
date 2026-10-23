@@ -1210,6 +1210,10 @@ def annotate_product_concepts(product_type: str, category: str, title: str) -> f
 
 
 def _annotate_kinds(product_type: str, category: str, title: str) -> frozenset[str]:
+    # What follows a spaced "+" in a type comes with the product, as in a title:
+    # Pro-Camera's "... > Canon EOS R5 + EF-EOS R mount adapter" is the camera (owner's
+    # file, 2026-10-23: 63 cameras were read as adapters).
+    product_type = _TYPE_WITH_RE.split(str(product_type or ""), maxsplit=1)[0]
     # The whole type first: "Mobile Phone Screen & Back Protectors" are protectors, and
     # "Laptop Docks & Port Replicators" docks, which splitting at "&" would hide.
     if str(product_type or "").strip() and _head_of_text(
@@ -1244,6 +1248,18 @@ def _annotate_kinds(product_type: str, category: str, title: str) -> frozenset[s
         if len(confirmed) != 1:
             return frozenset({UNCERTAIN_MARKER})
         bases = confirmed
+    if bases and all(_type_names_kind_only_before_another_product(product_type, base) for base in bases):
+        # "Lenses > Canon > Canon DSLR Lenses > ...": the type names the kind only to say
+        # which other product it is, so a category that says otherwise decides -- an
+        # accessory shelf ("Camera Lenses"), or another kind (owner's file, 2026-10-23:
+        # 43 lenses of Pro-Camera were cameras). A category naming nothing, or the same
+        # kind, leaves the type its kind.
+        category_heads, category_says_accessory = _category_heads(category, title)
+        if category_says_accessory or (
+            category_heads
+            and not any(head == base or _related(head, base) for head in category_heads for base in bases)
+        ):
+            bases = []
     from_category = not bases
     if not bases:
         bases, category_says_accessory = _category_heads(category, title)
@@ -1427,6 +1443,10 @@ _CAMPING_WORDS = frozenset(
 # lists what comes in the box: "USB-C Headset +USB-C/A Adapter" is a headset. Between
 # two digits it is a spec: "4+1 Burner Gas BBQ Grill".
 _TITLE_LEAD_RE = re.compile(r"[(,;:]|(?<!\d)\+|\+(?!\d)|\s[-–—|]\s")
+# A bar between the parts of a title, and a spaced "+" in a feed's type: what follows
+# it comes with the product ("... > Canon EOS R5 + EF-EOS R mount adapter").
+_TITLE_BAR_RE = re.compile(r"\s\|\s")
+_TYPE_WITH_RE = re.compile(r"\s\+\s")
 
 _UNINFORMATIVE_TYPES = frozenset(
     {
@@ -1829,7 +1849,10 @@ _TAXONOMY_PATH = (
 # Shelf words that say what a product is for, where it is sold or how it comes rather
 # than what it is ("Speaker System", "Fireplace Suite", "Steam Cleaner Machine"), and
 # words that end a title as a brand, a colour or a material more often than as a
-# product ("Accent Chair Fabric", "Cushion in ... Cotton Linen").
+# product ("Accent Chair Fabric", "Cushion in ... Cotton Linen"). A "Body" is the
+# product itself, sold bare: "Canon EOS R6 Mark II Mirrorless Camera Body" is the camera
+# without a lens; the word comes in only by Google's "Bath & Body" aisle (owner's file,
+# 2026-10-23: 35 cameras were doubtful).
 _NOT_PRODUCT_NOUNS = frozenset(
     """
     accessories accessory parts part supplies supply products product equipment gear
@@ -1838,6 +1861,7 @@ _NOT_PRODUCT_NOUNS = frozenset(
     machines machine units unit suites suite appliances appliance models model series
     range combos combo packages package extractors extractor materials essentials
     decor decorations paraphernalia manuals mixes feed hunting boxing hockey baseball
+    body bodies
     apple apples orange oranges cream creams charcoal sand stone stones slate copper
     bronze brass chrome ivory natural oak walnut walnuts pine rose roses mint olive
     olives lime limes peach peaches plum plums cherry cherries navy teal coral lilac
@@ -1981,13 +2005,42 @@ def _lead_names_another_product(title: str, kinds: list[str], category: str = ""
     "MonsGeek M2 Plate - POM" on the keyboards shelf is a plate, "Pine Bench All White"
     on the tables shelf a bench. A lead that ends in a model name ("Dyson V15 Detect",
     "My Sweet Piano 3108RF"), a brand or a spec says nothing, and the shelf still
-    decides.
+    decides -- unless the part after a bar names the product: "Batteryguard L-10 HE
+    VDMA 24994 Certified | Lithium-Ion Battery Charging Safe" is a safe (owner's file,
+    2026-10-23: 6 safes were phone chargers).
     """
     tokens = _lead_noun_tokens(title)
     if not tokens:
         return False
     index = _lead_noun_index(tokens, len(tokens))
-    return index >= 0 and _is_product_noun_of_another_kind(tokens, index, kinds, category)
+    if index >= 0 and tokens[index] in _product_nouns():
+        return _is_product_noun_of_another_kind(tokens, index, kinds, category)
+    after_bar = _TITLE_BAR_RE.split(str(title or ""), maxsplit=1)[1:]
+    return bool(after_bar) and _lead_names_another_product(after_bar[0], kinds, category)
+
+
+def _type_names_kind_only_before_another_product(product_type: str, kind: str) -> bool:
+    """Does every part of a type that names this kind name it only before another
+    product's noun? Pro-Camera's "Lenses > Canon > Canon DSLR Lenses > Canon DSLR
+    Standard Prime Lenses > ..." holds lenses, which "DSLR" describes; its "Cameras >
+    Canon > Canon DSLR Cameras > ..." holds cameras."""
+    described = False
+    for segment in _BREADCRUMB_SPLIT_RE.split(str(product_type or "")):
+        spans = _concepts_in_text(segment)
+        named = [span for span in spans if span.concept_id == kind or _related(span.concept_id, kind)]
+        if not named:
+            continue
+        tokens = tuple(normalize_understanding_text(segment).split())
+        index = _lead_noun_index(tokens, len(tokens))
+        if (
+            index < 0
+            or any(span.end > index for span in named)
+            or any(span.start <= index < span.end for span in spans)
+            or not _is_product_noun_of_another_kind(tokens, index, [kind])
+        ):
+            return False
+        described = True
+    return described
 
 
 def _noun_after_kind(title: str, spans: list[_Span]) -> tuple[tuple[str, ...], int] | None:
@@ -2274,6 +2327,11 @@ def _head_of_text(
     )
     for index, token in enumerate(tokens[:cut]):
         if index in head_words or token not in accessory_words or token in own_words:
+            continue
+        if token in _GROUP_NOUNS and index - 1 in head_words:
+            # "Camera Kit" is the camera and what comes with it, as an "Anchor Kit" is
+            # anchors; a "Cleaning Kit" stays an accessory (owner's file, 2026-10-23:
+            # 13 camera kits were read as accessories).
             continue
         if head.kind == "en" and index >= list_at:
             continue

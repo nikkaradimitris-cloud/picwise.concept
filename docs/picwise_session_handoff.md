@@ -51,12 +51,36 @@ kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσο
      `google_product_category` and are held. The same file shows whether
      `product_type` carries their category; reading it as the category when the Google
      one is empty is a change in `normalization._CATEGORY_KEYS`, for the owner to approve.
-     Since 23/10 `/prepared.json` shows it for every shop (owner's yes for `main`):
-     `intake.shops[].product_type` gives the rows that write one, how many of them have
-     no category, and the five most frequent values. Measured only.
+     Since 23/10 `/prepared.json` shows it for every shop (owner's yes for `main`, merge
+     `27dd1a1`): `intake.shops[].product_type` gives the rows that write one, how many of
+     them have no category, and the five most frequent values. Measured only. **Answered
+     live (09:38 UTC): Back to the Office sends no `product_type`** (1 of 95,161 rows,
+     "French"; none of the 93,726 without a category), so reading it would bring none in.
+     Only Pro-Camera fills it, on all 433 rows: its own path ending in the product's name
+     ("Accessories > Flashes > Canon > Canon MR-14EX II Macro Ring Lite Flash"), which
+     bears on (3) above.
 
   Accepted loss of the rule: 42 cushions on a throw-pillow shelf no longer answer
   "pillow" (they still answer "cushion").
+
+  Found on 23/10 (second conversation), on titles with plausible shelves, nothing built:
+  (a) "body" is a product noun (Google's "Bath & Body"), so since `964fbdf` a camera body
+  on a cameras shelf with no product type ("Canon EOS R6 Mark II Body") is doubtful: a
+  real camera lost; (b) in the Nikon case "1.8G" reads as a weight (`_MEASUREMENT_RE`);
+  (c) a product type "Camera Lenses" or "DSLR Lenses" makes a lens a camera (the type's
+  own noun is not read); (d) a product type is split at "/" (`_TYPE_LIST_SPLIT_RE`), so a
+  Pro-Camera path ending in "f/1.4L II USM Lens" reads "Lens" as a kind label of its
+  own; (e) every charger shelf, battery chargers included, is the lexicon's phone
+  charger (item 3). Which of these the live rows meet: measured the same day on the
+  owner's file of Pro-Camera and SafeFort (PROGRESS, 23/10): lenses are cameras by
+  Pro-Camera's type "... DSLR Lenses ..." (43), 111 of its 224 real cameras are hidden
+  (63 "+ mount adapter" types, 35 "Body", 13 "Camera Kit"), and 6 safes stay on "phone
+  charger" by their title's bar. **Fixed on the branch `ccr-c30938cf-v749ay` (`5de684e`,
+  owner's «Ναι»), not on `main`:** "Body", a type's "+", "Camera Kit", a type naming a
+  kind only before another product's noun, a title read on after a bar; on the file 160
+  rows change as intended (PROGRESS, 23/10). Left: "camera lens" reads as camera (no
+  lens kind), the "1.8G" weight reading, item 2 ("... 230V - UK - KEY LOCK", no bar), the
+  lexicon's plain "case" (lock cases on "phone case") and the "Document Wallet".
 - **How to measure, before and after any change:** `tools/price_first_eval.py <feed>
   <out.json> --compare <before.json>` (the 118 searches: 19 pages changed on the owner's
   third Google file, each by wrong kinds leaving; 0 on fictional Awin-format feeds); the
