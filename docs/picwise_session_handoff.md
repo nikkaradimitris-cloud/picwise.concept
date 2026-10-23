@@ -20,6 +20,18 @@ file was then stopped by the owner's rule below.
   και να προσθέτει υπεραξία στη σελίδα με βάση τα δεδομένα και τα κριτήρια που έχει η
   google ... Δεν πρέπει να υπάρχουν επιπτώσεις στην κατάταξη ... αν αυτή η ενέργεια που
   ετοιμάζεσαι να κάνεις θα φέρει κακά αποτελέσματα στο μέλλον τότε σταμάτησε την».
+- **Owner's direction (2026-10-23): the business runs on Google.** «Η αρχιτεκτονική
+  πρέπει να τηρεί αυστηρά την υψηλότερη ποιότητα και απαιτήσεις της google... Το
+  business τρέχει γύρω από το seo... adwords ή διάδοση μέσα από social media
+  δευτερεύουσας σημασίας... στοχεύει κυρίως σε χαμηλής επισκεψιμότητας keyword εκεί που
+  ανταγωνισμός είναι μικρός... σε μεγάλες αγορές με μεγάλο όγκο προϊόντων... ένας
+  χρήστης ζητάει μία λέξη κλειδί θα δώσει μία σελίδα όπου θα δει 4 προϊόντα κι όλα τα
+  υπόλοιπα στοιχεία που ζητάει η google». Put to the owner the same day, not decided
+  (PROGRESS, 23/10, "The page for a Google keyword, put to the owner"): `/search` kept
+  out of Google; one fixed page per chosen keyword, in a browseable hierarchy, indexed
+  only past a quality gate; its contents; Google's three risks (doorways, scaled
+  content, thin affiliation); and, since Google gives product rich results only to a
+  page about one product, a page per product with every shop's price.
 - **The smaller kept file: stopped, nothing built** (PROGRESS, 23/10, "The smaller kept
   file stopped"). It would have left out the 46 Google-format columns no rule reads and
   descriptions over 500 characters (the search never matches them), with the same
@@ -623,6 +635,9 @@ In short:
 - nothing that may serve the pages Google indexes is left out of what PicWise keeps, and
   nothing may hurt their quality or ranking (owner, 2026-10-23; first section above); a
   change that would, is stopped and told to the owner
+- the business runs on Google search, Ads and social media second (owner, 2026-10-23):
+  low-volume, low-competition keywords in large markets with many products; every page
+  meant for Google meets Google's own published requirements end to end
 
 ## Map of the code that matters now
 
