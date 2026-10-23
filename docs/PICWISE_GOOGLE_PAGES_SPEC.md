@@ -69,8 +69,10 @@ never one wording. The wording of those files changes only on the owner's yes.
 | Product | `/uk/p/<name>-<id>/` | indexed once past the gate |
 | Product unavailable (up to 30 days) | the same address | indexed, marked unavailable |
 | Product gone (after 30 days) | the same address | 410 |
-| The site's own search | `/search?q=...` | `noindex`; `Disallow` too, once Google has dropped them |
-| The redirect to the shop | `/out/...` | `Disallow` in `robots.txt` |
+| The site's own search | `/search?q=...`, `/results`, `/picwise-reference`, `/?q=...` | `noindex`; `Disallow` too, once Google has dropped them |
+| The demo (a preview) | `/demo` | `noindex` |
+| The redirect to the shop, and routes that act when called | `/out/...`, `/subby-proof`, `/cron/...` | `Disallow` in `robots.txt` |
+| JSON routes | `/health`, `/suggest.json`, `/private-beta-readiness` | `X-Robots-Tag: noindex` |
 | Sorted or filtered variants | address parameters | canonical to the page without them; never in a sitemap |
 | A facet or kind with no products | — | 404, never an empty page with 200 (a soft 404) |
 
@@ -275,9 +277,13 @@ Console, which is why section 9 exists.
 ## 11. Open, the owner's
 
 - The wording of the founding documents on long-tail landings (section 1).
-- The first step to build. Proposed order:
-  1. the site's own search out of Google (`noindex` on `/search`), the smallest step
-     and the one that protects the site today;
+- The steps to build, in order:
+  1. the site's own search out of Google, the smallest step and the one that protects
+     the site today. **Built on the branch on 23/10** (owner: «Ναι, βάλε το noindex στο
+     /search και προστάτεψε το site από την google όσο το χτίζουμε»): the rows of
+     section 2 for the search, the demo, `robots.txt` and the JSON routes
+     (`tests/test_picwise_google_protection.py`); live once on `main`, on the owner's
+     yes;
   2. the catalogue on the server;
   3. the pages.
 - The AI system and its cost, measured on a sample.

@@ -5,6 +5,11 @@ from dataclasses import dataclass
 
 from picwise_contracts import DecisionOutput
 
+# Tells search engines not to index a page: the site's own search and its demo stay out
+# of Google while the pages meant for it are built (owner, 2026-10-23;
+# docs/PICWISE_GOOGLE_PAGES_SPEC.md, section 2).
+NOINDEX_META = '<meta name="robots" content="noindex">'
+
 
 @dataclass(frozen=True)
 class SeoLandingBundle:

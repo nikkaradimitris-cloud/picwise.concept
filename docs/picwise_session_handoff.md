@@ -29,7 +29,17 @@ file was then stopped by the owner's rule below.
   for one distinct set of products (category, kind, kind with a property) or one
   product, and a keyword's variations map to that page. That conflicts with the
   founding documents' long-tail landings (raised; "Known doc conflict" below). Read the
-  specification first. Its first step, proposed: `noindex` on `/search`.
+  specification first.
+- **Its first step, built on the branch, not on `main`** (owner: «Ναι, βάλε το noindex
+  στο /search και προστάτεψε το site από την google όσο το χτίζουμε»): `noindex` on
+  every page that shows a search (`/search`, `/results`, `/picwise-reference`, `/?q=`;
+  the home page without a search stays indexable) and on `/demo`; a `robots.txt`
+  keeping crawlers off `/out/` (the redirect to the shops records a click),
+  `/subby-proof` and `/cron/`, not off `/search` yet (Google reads `noindex` only on a
+  page it may fetch); `X-Robots-Tag: noindex` on the JSON routes. Both route tables;
+  `tests/test_picwise_google_protection.py`. `main` waits for the owner's yes (PROGRESS,
+  23/10, "The site's own search kept out of Google"). After the merge: check live
+  that the search pages carry the tag and `/robots.txt` answers.
 - **Owner's direction (2026-10-23): the business runs on Google.** «Η αρχιτεκτονική
   πρέπει να τηρεί αυστηρά την υψηλότερη ποιότητα και απαιτήσεις της google... Το
   business τρέχει γύρω από το seo... adwords ή διάδοση μέσα από social media
@@ -98,11 +108,9 @@ file was then stopped by the owner's rule below.
   names is one of the 62 Google-format columns, so it leaves nothing of the Google feed
   out, and nothing of the Awin format takes room in what the live site keeps (its feed
   is Google-format). Nothing was changed.
-- **Open, put to the owner on 23/10, not decided:** the `/search` pages carry no
-  `noindex` and the site has no `robots.txt` (`/robots.txt` answers 404), while Google
-  advises keeping URLs that generate search results from being crawled; the pages meant
-  for Google are the `/best/...` buying pages behind their quality gate, which publish
-  nothing yet.
+- **Answered 23/10:** the `/search` pages carried no `noindex` and the site had no
+  `robots.txt` (`/robots.txt` answered 404); the owner said to keep the search out of
+  Google, built on the branch (above).
 - **The kind work** is on `main` (merges `9429bca`, `95d0961`, `7b9624c`), and the owner
   stopped it here («Δεν θέλω να ασχοληθώ άλλο με αυτή τη διαδικασία»). The build's own
   list of suspects (`/prepared.json`, `kinds`) is how to comb later; its open points are
