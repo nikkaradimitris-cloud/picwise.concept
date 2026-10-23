@@ -75,7 +75,12 @@ kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσο
   owner's file of Pro-Camera and SafeFort (PROGRESS, 23/10): lenses are cameras by
   Pro-Camera's type "... DSLR Lenses ..." (43), 111 of its 224 real cameras are hidden
   (63 "+ mount adapter" types, 35 "Body", 13 "Camera Kit"), and 6 safes stay on "phone
-  charger" by their title's bar. Fixes proposed to the owner, none built.
+  charger" by their title's bar. **Fixed on the branch `ccr-c30938cf-v749ay` (`5de684e`,
+  owner's «Ναι»), not on `main`:** "Body", a type's "+", "Camera Kit", a type naming a
+  kind only before another product's noun, a title read on after a bar; on the file 160
+  rows change as intended (PROGRESS, 23/10). Left: "camera lens" reads as camera (no
+  lens kind), the "1.8G" weight reading, item 2 ("... 230V - UK - KEY LOCK", no bar), the
+  lexicon's plain "case" (lock cases on "phone case") and the "Document Wallet".
 - **How to measure, before and after any change:** `tools/price_first_eval.py <feed>
   <out.json> --compare <before.json>` (the 118 searches: 19 pages changed on the owner's
   third Google file, each by wrong kinds leaving; 0 on fictional Awin-format feeds); the
