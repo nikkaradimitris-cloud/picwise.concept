@@ -14,11 +14,31 @@ permissions:
 jobs:
   look:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: What the live site says
         run: |
           site=https://picwise.subby.cloud
+          # What Google is told (owner, 2026-10-23: the site's own search kept out of
+          # Google). A deployment that serves /robots.txt is waited for, up to 10 minutes.
+          for try in $(seq 1 40); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -m 30 "$site/robots.txt" || true)
+            echo "try $try: /robots.txt answers $code"
+            [ "$code" = "200" ] && break
+            sleep 15
+          done
+          echo "=== /robots.txt"
+          curl -sS -m 90 "$site/robots.txt" | head -c 2000
+          echo "=== the robots tag of each page (none: Google may index it)"
+          for path in "/" "/?q=kettle" "/search" "/search?q=kettle" "/search?q=kettle&shown=8" "/results?q=kettle" "/picwise-reference?q=kettle" "/demo" "/terms"; do
+            tag=$(curl -sS -m 90 "$site$path" | grep -o '<meta name="robots"[^>]*>' || true)
+            echo "$path -> ${tag:-none}"
+          done
+          echo "=== the X-Robots-Tag header of the JSON routes"
+          for path in /health /suggest.json /private-beta-readiness; do
+            header=$(curl -sS -m 90 -D - -o /dev/null "$site$path" | grep -i '^x-robots-tag' | tr -d '\r' || true)
+            echo "$path -> ${header:-none}"
+          done
           for path in /prepared.json /private-beta-readiness /health; do
             echo "=== $path"
             curl -sS -m 90 "$site$path" | head -c 30000
