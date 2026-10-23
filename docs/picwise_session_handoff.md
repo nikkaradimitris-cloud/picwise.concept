@@ -82,6 +82,10 @@ kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσο
   rows change as intended (PROGRESS, 23/10). Left: "camera lens" reads as camera (no
   lens kind), the "1.8G" weight reading, item 2 ("... 230V - UK - KEY LOCK", no bar), the
   lexicon's plain "case" (lock cases on "phone case") and the "Document Wallet".
+- **Since 23/10 the build lists suspects by itself** (branch `ccr-c30938cf-v749ay`, for
+  `main` on the owner's yes): `/prepared.json` `kinds`, per kind the shown products whose
+  title does not name it, the cheapest first. Read it after each morning's build to find
+  new title patterns from every shop without asking for a file.
 - **How to measure, before and after any change:** `tools/price_first_eval.py <feed>
   <out.json> --compare <before.json>` (the 118 searches: 19 pages changed on the owner's
   third Google file, each by wrong kinds leaving; 0 on fictional Awin-format feeds); the

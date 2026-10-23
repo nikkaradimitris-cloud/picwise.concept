@@ -20,8 +20,9 @@ files and refuses to deploy it empty, so the tool writes `prepared.json` there, 
 note of what this build prepared: counts, the time, how fresh the feed's listings are
 (`picwise_providers.feed_freshness`: listing age, stock quantities, per shop), and what
 each shop's feed brings in (`picwise_providers.feed_intake`: rows, shown, shown only
-when asked for, held back and why, and what its `product_type` column carries), never
-the feed's link.
+when asked for, held back and why, and what its `product_type` column carries), and per
+kind the products shown as it whose title does not name it (`picwise_providers.kind_check`),
+never the feed's link.
 """
 from __future__ import annotations
 
@@ -93,6 +94,7 @@ def main(argv: list[str] | None = None) -> int:
                 "shops": prepared.shop_count,
                 "freshness": _freshness(prepared),
                 "intake": _intake(),
+                "kinds": _kinds(prepared),
             },
         )
     return 0
@@ -114,6 +116,17 @@ def _intake() -> dict[str, object] | None:
         from picwise_providers.state import measure_configured_feed_intake
 
         return measure_configured_feed_intake()
+    except Exception as error:
+        return {"error": _where(error)}
+
+
+def _kinds(prepared) -> dict[str, object]:
+    """Per kind, the products shown as it whose title does not name it; a failure is only
+    noted."""
+    try:
+        from picwise_providers.kind_check import measure_kind_titles
+
+        return measure_kind_titles(prepared.products, prepared.kinds)
     except Exception as error:
         return {"error": _where(error)}
 
