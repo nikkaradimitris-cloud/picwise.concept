@@ -92,7 +92,7 @@ def _feed_rows(valid_to: str = "") -> list[list[str]]:
         for index in range(1, 10)
     ]
     rows.append(_row("r1", "Fixturon Electric Kettle Refurbished", 9.0, condition="Refurbished", code=20))
-    rows.append(_row("w1", "Fixturon Electric Kettle Window", 12.0, valid_to=valid_to, code=21))
+    rows.append(_row("w1", "Fixturon Electric Kettle 21 1.7L", 12.0, valid_to=valid_to, code=21))
     rows += [
         _row(f"l{index}", f"Fixturon Notebook Laptop {index} 15 inch", 300.0 + 25 * index,
              kind="Laptops", code=40 + index)

@@ -46,6 +46,7 @@ import re
 import unicodedata
 from dataclasses import dataclass, field
 from functools import lru_cache
+from pathlib import Path
 
 from .misspelling_variants import english_layout_text_to_greek
 from .product_concepts import (
@@ -1291,7 +1292,7 @@ def _annotate_kinds(product_type: str, category: str, title: str) -> frozenset[s
             return frozenset()
         bases = [head]
     else:
-        verdict = _title_lead_verdict(title, bases, trust_title=from_category)
+        verdict = _title_lead_verdict(title, bases, trust_title=from_category, category=category)
         if verdict in (ACCESSORY_MARKER, UNCERTAIN_MARKER):
             return frozenset({verdict})
         if verdict is not None:
@@ -1623,7 +1624,9 @@ def _tail_concept_and_size(text: str) -> tuple[str | None, int]:
 _AISLE_KINDS = frozenset({"toy", "garden_furniture"})
 
 
-def _title_lead_verdict(title: str, bases: list[str], *, trust_title: bool = False) -> str | None:
+def _title_lead_verdict(
+    title: str, bases: list[str], *, trust_title: bool = False, category: str = ""
+) -> str | None:
     """Does the title's own lead contradict the kind the feed classified it as?
 
     None when it agrees or says nothing; ACCESSORY_MARKER when the lead reads as an
@@ -1652,6 +1655,15 @@ def _title_lead_verdict(title: str, bases: list[str], *, trust_title: bool = Fal
     if not names_a_base and _lead_ends_in_accessory(title, bases):
         return ACCESSORY_MARKER
     if not spans:
+        # The lead names no kind PicWise knows. A shelf's kind holds unless the lead
+        # ends in another product's noun: a lens or a pair of propellers on a camera
+        # shelf. A product type keeps its authority, as below.
+        if (
+            trust_title
+            and not all(base in _AISLE_KINDS for base in bases)
+            and _lead_names_another_product(title, bases, category)
+        ):
+            return UNCERTAIN_MARKER
         return None
     # The first product a title names is the product; English titles go on to list
     # parts and specs ("... Laptop Intel Celeron 64GB SSD").
@@ -1689,6 +1701,14 @@ def _title_lead_verdict(title: str, bases: list[str], *, trust_title: bool = Fal
         # chairs shelf. Another department is context, not a contradiction: a kids'
         # scooter on the toy shelf is a toy, a rattan sofa set is garden furniture.
         if any(_same_department(head, base) for base in bases):
+            if trust_title:
+                # The other kind's name may only describe the noun the lead ends with:
+                # a "Dressing Table Stool" on the stools shelf is a stool, the shelf's
+                # own product; on a shelf that does not name stools it is doubtful.
+                noun = _noun_after_kind(title, [span for span in spans if span.concept_id == head])
+                if noun is not None and _is_product_noun_of_another_kind(*noun, [head]):
+                    shelf_holds_it = not _is_product_noun_of_another_kind(*noun, [head], category)
+                    return None if shelf_holds_it else UNCERTAIN_MARKER
             return head if trust_title else UNCERTAIN_MARKER
         if trust_title and not all(base in _AISLE_KINDS for base in bases):
             # A shelf of one kind holding a product of another department is a shop's
@@ -1702,6 +1722,12 @@ def _title_lead_verdict(title: str, bases: list[str], *, trust_title: bool = Fal
             following = tokens[span.end]
             # "Chandelier Lamp" names the same kind twice.
             if following in _OTHER_PRODUCT_TAIL_WORDS and following not in _own_name_words(span.concept_id):
+                return UNCERTAIN_MARKER
+            # The kind's name followed by the noun the lead ends with names that other
+            # product: "Dressing Table Stool" is a stool.
+            if span.concept_id not in _AISLE_KINDS and _kind_named_before_another_product(
+                title, span, category
+            ):
                 return UNCERTAIN_MARKER
     return None
 
@@ -1783,11 +1809,208 @@ _LEAD_ACCESSORY_NOUNS = frozenset(
     organisers organizer organizers anchor anchors refill refills replacement
     replacements spare spares filter filters nozzle nozzles brush brushes attachment
     attachments companion companions guard guards accessory accessories part parts
-    cleaning repair maintenance
+    cleaning repair maintenance pad pads
     """.split()
 )
 # Words that name a group of the noun before them: "Anchor Kit", "Cleaning Kit".
 _GROUP_NOUNS = frozenset("kit kits bundle bundles".split())
+
+
+# The nouns that name products: the last word of every shelf in Google's product
+# taxonomy ("Camera Lenses", "Safes", "Stools", "Plates", "Knee Pads"). A title whose
+# lead ends in one of them names that product. On the live feed of 2026-10-22 a shelf
+# gave a kind to titles that named another product in words PicWise had no kind for:
+# "Canon EF 50mm f/1.8 STM Lens" and "DJI Flip Propellers (Pair)" on camera shelves, a
+# "Battery Charging Safe" on a chargers shelf, a keyboard "Plate" on the keyboards shelf
+# (owner, 2026-10-22: work the rule that reads the kinds).
+_TAXONOMY_PATH = (
+    Path(__file__).resolve().parents[2] / "data" / "taxonomy_sources" / "google" / "taxonomy.en-US.txt"
+)
+# Shelf words that say what a product is for, where it is sold or how it comes rather
+# than what it is ("Speaker System", "Fireplace Suite", "Steam Cleaner Machine"), and
+# words that end a title as a brand, a colour or a material more often than as a
+# product ("Accent Chair Fabric", "Cushion in ... Cotton Linen").
+_NOT_PRODUCT_NOUNS = frozenset(
+    """
+    accessories accessory parts part supplies supply products product equipment gear
+    care cleaning kits kit sets set items item goods clothing furniture hardware
+    lighting food audio baby art games components devices device systems system
+    machines machine units unit suites suite appliances appliance models model series
+    range combos combo packages package extractors extractor materials essentials
+    decor decorations paraphernalia manuals mixes feed hunting boxing hockey baseball
+    apple apples orange oranges cream creams charcoal sand stone stones slate copper
+    bronze brass chrome ivory natural oak walnut walnuts pine rose roses mint olive
+    olives lime limes peach peaches plum plums cherry cherries navy teal coral lilac
+    lavender mustard taupe khaki burgundy champagne caramel
+    fabric fabrics velvet linen linens cotton wood wooden metal steel glass plastic
+    rattan wicker bamboo marble ceramic acrylic wool silk polyester vinyl foam mesh
+    aluminium aluminum iron leather
+    """.split()
+)
+# Product nouns the taxonomy has no shelf for, read off the live feed.
+_EXTRA_PRODUCT_NOUNS = frozenset("siren sirens keycap keycaps".split())
+# Words that close a title's lead after its noun without being the product: a colour
+# ("All White"), a pair, a pack. "Dishwasher Safe" is said of a product, not a safe.
+_LEAD_CLOSING_WORDS = frozenset("all pair pairs".split())
+_SAFE_FOR_WORDS = frozenset(
+    "dishwasher microwave oven freezer fridge child food pet baby skin eco".split()
+)
+# A measurement or a count closes a lead without naming anything: "250V", "45x45cm",
+# "4K", "2". A model code does name the product, by its maker's name for it: a lead that
+# ends "My Sweet Piano 3108RF" or "Piggy Party 5108 V5" is a keyboard called that.
+_MEASUREMENT_RE = re.compile(
+    r"^\d+(?:[.,]\d+)?(?:x\d+(?:[.,]\d+)?)*"
+    r"(?:mm|cm|m|km|in|inch|inches|ft|w|kw|v|a|ah|mah|wh|gb|tb|mb|l|ml|kg|g|lb|lbs|oz"
+    r"|hz|khz|mhz|ghz|db|pcs|pc|p|k|th|st|nd|rd)?$"
+)
+# Words after which a title describes its product instead of naming it, besides the
+# purpose words: "Cushion in Taupe Striped Cotton Linen".
+_LEAD_DESCRIPTION_WORDS = frozenset({"in"})
+# Joins that make a lead a list of names for one product: "Juice Maker & Citrus Squeezer".
+_LEAD_LIST_RE = re.compile(r"&|\+|\band\b", flags=re.IGNORECASE)
+_LEAD_PURPOSE_RE = re.compile(r"\s(?:with|for|without|incl\.?|including|in)\s", flags=re.IGNORECASE)
+# A lead cut off at the first item of a list: "4-Piece Tea, Coffee, Sugar and Bread Bin
+# Canister Set" goes on to the product after the list.
+_LIST_AFTER_LEAD_RE = re.compile(r"^\s*,\s*[\w'’-]+(?:\s+[\w'’-]+)?\s*(?:,|&|\band\b)", flags=re.IGNORECASE)
+
+
+def _noun_forms(word: str) -> frozenset[str]:
+    forms = {word}
+    if word.endswith("s") and not word.endswith("ss"):
+        forms.add(word[:-1])
+    if word.endswith("es"):
+        forms.add(word[:-2])
+    if len(word) > 4 and word.endswith("ies"):
+        forms.add(word[:-3] + "y")
+    return frozenset(forms)
+
+
+@lru_cache(maxsize=1)
+def _product_nouns() -> frozenset[str]:
+    """The taxonomy's product nouns; empty when the taxonomy file is not there, and then
+    no title is read against them."""
+    try:
+        lines = _TAXONOMY_PATH.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return frozenset()
+    nouns: set[str] = set()
+    for line in lines:
+        if not line.strip() or line.startswith("#"):
+            continue
+        for item in re.split(r"\s*(?:&|,|\band\b)\s*", line.split(">")[-1]):
+            words = normalize_understanding_text(item).split()
+            if words and len(words[-1]) > 2 and words[-1].isalpha():
+                nouns.update(_noun_forms(words[-1]))
+    nouns.update(_EXTRA_PRODUCT_NOUNS)
+    return frozenset(nouns - _NOT_PRODUCT_NOUN_FORMS)
+
+
+_NOT_PRODUCT_NOUN_FORMS = frozenset(form for word in _NOT_PRODUCT_NOUNS for form in _noun_forms(word))
+
+
+def _is_product_noun_of_another_kind(
+    tokens: tuple[str, ...], index: int, kinds: list[str], category: str = ""
+) -> bool:
+    """Is the word at `index` a product noun that is none of these kinds' own words, and
+    that the product's own category shelves do not name either?"""
+    word = tokens[index]
+    if word not in _product_nouns() or _is_descriptor_word(word):
+        return False
+    if index > 0 and _MEASUREMENT_RE.match(tokens[index - 1]):
+        # "7-Fin", "4-Seater", "2 Slice": a count of the noun is a spec of the product.
+        return False
+    forms = _noun_forms(word)
+    own = {form for kind in kinds for name in _own_name_words(kind) for form in _noun_forms(name)}
+    if forms & own:
+        return False
+    # The shelf names it too ("Sunloungers" for a "Sun Lounger", "Espresso Pots" for an
+    # "Espresso Pot"): the shelf holds it.
+    shelf_forms = {
+        shelf_form
+        for shelf_word in normalize_understanding_text(category).split()
+        for shelf_form in _noun_forms(shelf_word)
+    }
+    return not any(shelf_form.endswith(form) for shelf_form in shelf_forms for form in forms)
+
+
+def _lead_noun_index(tokens: tuple[str, ...], end: int) -> int:
+    """Where the lead's own noun stands: the last word before `end` that is not a
+    descriptor ("Grey", "250V", "Pair"), a material or a group noun ("Kit"); -1 when
+    there is none, or when the lead ends in a model code instead ("3108RF")."""
+    index = end - 1
+    while index >= 0:
+        token = tokens[index]
+        if any(ch.isdigit() for ch in token) and not _MEASUREMENT_RE.match(token):
+            return -1
+        if token.isdigit() and len(token) > 2:
+            return -1
+        if token in {"safe", "proof"} and index > 0 and tokens[index - 1] in _SAFE_FOR_WORDS:
+            # "Dishwasher Safe" is said of the product before it.
+            index -= 2
+            continue
+        if not (
+            token in _GROUP_NOUNS
+            or token in _LEAD_CLOSING_WORDS
+            or token in _NOT_PRODUCT_NOUN_FORMS
+            or _is_descriptor_word(token)
+        ):
+            return index
+        index -= 1
+    return -1
+
+
+def _lead_noun_tokens(title: str) -> tuple[str, ...] | None:
+    """The lead's words up to where it starts describing its product, or None when the
+    lead lists several names for it ("Juice Maker & Citrus Squeezer")."""
+    lead = _title_lead(title)
+    if _LEAD_LIST_RE.search(_LEAD_PURPOSE_RE.split(lead, maxsplit=1)[0]):
+        return None
+    if _LIST_AFTER_LEAD_RE.match(str(title or "")[len(lead):]):
+        return None
+    tokens = tuple(normalize_understanding_text(lead).split())
+    cut = next(
+        (i for i, token in enumerate(tokens) if token in _PURPOSE_WORDS or token in _LEAD_DESCRIPTION_WORDS),
+        len(tokens),
+    )
+    return tokens[:cut]
+
+
+def _lead_names_another_product(title: str, kinds: list[str], category: str = "") -> bool:
+    """Does a title's lead that names no known kind end in another product's noun?
+
+    "MonsGeek M2 Plate - POM" on the keyboards shelf is a plate, "Pine Bench All White"
+    on the tables shelf a bench. A lead that ends in a model name ("Dyson V15 Detect",
+    "My Sweet Piano 3108RF"), a brand or a spec says nothing, and the shelf still
+    decides.
+    """
+    tokens = _lead_noun_tokens(title)
+    if not tokens:
+        return False
+    index = _lead_noun_index(tokens, len(tokens))
+    return index >= 0 and _is_product_noun_of_another_kind(tokens, index, kinds, category)
+
+
+def _noun_after_kind(title: str, spans: list[_Span]) -> tuple[tuple[str, ...], int] | None:
+    """The lead's words and where its own noun stands, when that noun comes right after
+    one of these names of a kind ("Dressing Table Stool"); None otherwise."""
+    tokens = _lead_noun_tokens(title)
+    if not tokens:
+        return None
+    index = _lead_noun_index(tokens, len(tokens))
+    if index < 0 or not any(span.end == index for span in spans):
+        return None
+    if any(span.start <= index < span.end for span in _concepts_in_text(" ".join(tokens))):
+        # The noun is itself a kind PicWise knows ("Fan Heater"): the names are read
+        # as a run, the last one the product, as before.
+        return None
+    return tokens, index
+
+
+def _kind_named_before_another_product(title: str, span: _Span, category: str = "") -> bool:
+    """Is the kind's name followed by the noun the lead ends with, another product's?
+    "Dressing Table Stool" is a stool, "Chaise Sofa Block" a block."""
+    noun = _noun_after_kind(title, [span])
+    return noun is not None and _is_product_noun_of_another_kind(*noun, [span.concept_id], category)
 
 
 def _lead_ends_in_accessory(title: str, kinds: list[str]) -> bool:

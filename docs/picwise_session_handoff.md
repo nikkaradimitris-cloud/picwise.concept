@@ -1,7 +1,64 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-22.
+Current state for whoever picks the project up next. Updated 2026-10-23.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
+
+## Next conversation: the kind problem (owner, 2026-10-23) -- start here
+
+The owner moves the work on product kinds (a search that shows a product of another
+kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσουμε σε άλλη συζήτηση».
+
+- **Where the work is:** commit `964fbdf` ("Read a product's kind against the noun its
+  title ends with"), **on `main` since 2026-10-23** (owner: «Ναι για το main»; merged
+  from the branch `claude/tender-einstein-6nbbs8`), so a new session has it. What the
+  live site shows since: PROGRESS, 23/10.
+- **What it does:** the kind-rule bullet of "Now (2026-10-22)" below, and PROGRESS
+  22/10. Code: `src/picwise_nlu/concept_understanding.py` (`_product_nouns`,
+  `_lead_noun_index`, `_lead_names_another_product`, `_noun_after_kind`,
+  `_kind_named_before_another_product`, used by `_title_lead_verdict` when the kind
+  comes from a category shelf). Tests: `tests/test_picwise_title_names_another_product.py`.
+- **Open, in this order.** Each is measured and told to the owner first, then built.
+  1. **The rule on every live product.** No session holds the live rows. The owner was
+     asked for a Create-a-Feed file of the same 20 shops with 7 columns only:
+     `advertiser_name, id, title, google_product_category, product_type, availability,
+     price`. With no link or image column no row passes the shown gate, so read each
+     row's kinds the way the search does: `normalize_feed_row_to_provider_product`,
+     then `search_selection._product_concepts(product, _product_search_fields(product))`,
+     once on the code before the rule (`f86f4e4`) and once on today's. List the rows
+     whose kind changes and the wrong kinds left, by shop and by search; look for
+     SafeFort's safes on "phone charger" and Pro-Camera's lenses and propellers on
+     "camera".
+  2. **A title that names no product** ("Batteryguard S-6 HE VDMA 24994 230V - UK -
+     KEY LOCK"): its shelf still decides. Nothing decided; the shop's `product_type` or
+     description may say what it is.
+  3. **"Charger":** the lexicon's `phone_charger` (`src/picwise_nlu/product_concepts.py`)
+     takes every charger, so a "Battery Chargers" shelf reads as phone chargers.
+  4. **The kind within a kind:** "dining table" still shows a dressing table, a kitchen
+     prep table and a shop press's "Working Table": the answer is the kind (table), not
+     the table asked for.
+  5. **Back to the Office:** 93,639 of its 95,075 live rows carry no
+     `google_product_category` and are held. The same file shows whether
+     `product_type` carries their category; reading it as the category when the Google
+     one is empty is a change in `normalization._CATEGORY_KEYS`, for the owner to approve.
+
+  Accepted loss of the rule: 42 cushions on a throw-pillow shelf no longer answer
+  "pillow" (they still answer "cushion").
+- **How to measure, before and after any change:** `tools/price_first_eval.py <feed>
+  <out.json> --compare <before.json>` (the 118 searches: 19 pages changed on the owner's
+  third Google file, each by wrong kinds leaving; 0 on fictional Awin-format feeds); the
+  kinds of every shown product (`prepare_feed_catalogue()`: `.products` with `.kinds`)
+  on both codes; `tools/nlu_misspelling_benchmark.py` (93.8%, 0 wrong, unchanged); the
+  full run per module (Working gotchas): 243 of 245 pass, the two known failures
+  `test_picwise_canonical_vocabulary_registry_stage2` and
+  `test_picwise_search_index_generated_blind_stage4`. The owner's files reached only the
+  old session: ask for a file again when one is needed, never for the link.
+- **The live site** is seen through the live check ("How a session sees the live site",
+  below); its last run is `39141651716`.
+- **The owner's words for this work** (2026-10-20): «Μην αλλάξεις τίποτα στο live site
+  και μη χτίσεις τίποτα πριν μου πεις τι βρήκες. Τίποτα στο main χωρίς το ρητό μου
+  «ναι». Μη μου ζητήσεις τον σύνδεσμο του feed, γιατί έχει το κλειδί. Γράψε μου στα
+  ελληνικά, σύντομα, με απλά λόγια.» Never open an Awin tracked link from a session (it
+  counts as a click). The truth test is a bot's, never the owner's by hand.
 
 ## Now (2026-10-22) -- read this first
 
@@ -28,8 +85,16 @@ Current state for whoever picks the project up next. Updated 2026-10-22.
 - **Live since 22/10 13:34 UTC: the Google-format link** (20 UK shops, 119,720 rows):
   12,204 products shown from 19 shops. Back to the Office shows 771 of 95,075: 93,639
   of its rows carry no `google_product_category` (whether they carry `product_type` is
-  not seen yet). First pages show wrong kinds ("phone charger": charging safes;
-  "camera": propellers, lenses): the kind rule, held until more shops were in, is due.
+  not seen yet). First pages showed wrong kinds ("phone charger": charging safes;
+  "camera": propellers, lenses).
+- **The kind rule, reworked** (owner's yes, 22/10; **on `main` since 23/10**, owner:
+  «Ναι για το main»): the noun a title's lead ends with is read against the
+  product nouns of Google's taxonomy, and a shelf no longer gives its kind to a lens, a
+  safe, a stool or a keyboard plate. Measured: 19 of 118 pages change on the owner's
+  Google file, each by wrong kinds leaving; 0 on fictional Awin-format feeds; full run
+  243 of 245 modules (the two known failures). Not fixed: a title that names no product ("Batteryguard S-6 ... KEY
+  LOCK") and the lexicon's "charger" = phone charger; qualifiers inside a kind ("dining
+  table" shows a dressing table). Details in PROGRESS, 22/10.
 - **New rule (owner, 22/10): one shop in several networks** is one shop, known by its
   site's domain; its price and stock from the freshest feed (the latest update date
   the network states) with a real stock state,
