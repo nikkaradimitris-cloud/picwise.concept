@@ -30,16 +30,21 @@ file was then stopped by the owner's rule below.
   product, and a keyword's variations map to that page. That conflicts with the
   founding documents' long-tail landings (raised; "Known doc conflict" below). Read the
   specification first.
-- **Its first step, built on the branch, not on `main`** (owner: «Ναι, βάλε το noindex
-  στο /search και προστάτεψε το site από την google όσο το χτίζουμε»): `noindex` on
+- **Its first step, on `main` since 23/10 18:15 UTC and seen live** (merge `47cd76b`,
+  owner: «Ναι, να μπει στο main και κάνε τον έλεγχο»; live check run `40001929114` at
+  18:16, PROGRESS 23/10). Built on the owner's «Ναι, βάλε το noindex
+  στο /search και προστάτεψε το site από την google όσο το χτίζουμε»: `noindex` on
   every page that shows a search (`/search`, `/results`, `/picwise-reference`, `/?q=`;
   the home page without a search stays indexable) and on `/demo`; a `robots.txt`
   keeping crawlers off `/out/` (the redirect to the shops records a click),
   `/subby-proof` and `/cron/`, not off `/search` yet (Google reads `noindex` only on a
   page it may fetch); `X-Robots-Tag: noindex` on the JSON routes. Both route tables;
-  `tests/test_picwise_google_protection.py`. `main` waits for the owner's yes (PROGRESS,
-  23/10, "The site's own search kept out of Google"). After the merge: check live
-  that the search pages carry the tag and `/robots.txt` answers.
+  `tests/test_picwise_google_protection.py`. The live check now prints all of this
+  (`.github/workflows/live-check.yml` on `ccr-fd5dc1bc-4vgsgl`, `39665da`, owner's
+  leave): it waits for a deployment that serves `/robots.txt`, then prints it, the
+  robots tag of each page and the JSON routes' header. Next, from the specification:
+  `Disallow: /search` once Google has dropped those pages (needs Search Console to see
+  it), then the catalogue on the server.
 - **Owner's direction (2026-10-23): the business runs on Google.** «Η αρχιτεκτονική
   πρέπει να τηρεί αυστηρά την υψηλότερη ποιότητα και απαιτήσεις της google... Το
   business τρέχει γύρω από το seo... adwords ή διάδοση μέσα από social media
@@ -219,7 +224,7 @@ kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσο
   `test_picwise_search_index_generated_blind_stage4`. The owner's files reached only the
   old session: ask for a file again when one is needed, never for the link.
 - **The live site** is seen through the live check ("How a session sees the live site",
-  below); its last run is `39141651716`.
+  below); its last run is `40001929114` (23/10 18:16 UTC; re-run it to look again).
 - **The owner's words for this work** (2026-10-20): «Μην αλλάξεις τίποτα στο live site
   και μη χτίσεις τίποτα πριν μου πεις τι βρήκες. Τίποτα στο main χωρίς το ρητό μου
   «ναι». Μη μου ζητήσεις τον σύνδεσμο του feed, γιατί έχει το κλειδί. Γράψε μου στα
