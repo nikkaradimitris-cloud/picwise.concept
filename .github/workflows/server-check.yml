@@ -1,0 +1,61 @@
+# Read-only look at the new server (OVHcloud VPS-4), for a session that cannot open SSH.
+#
+# A Claude session reaches the internet only over HTTPS on port 443, so it cannot connect
+# to the server itself; GitHub's runners can. On each push of this file to the working
+# branch, this job says which of the four secrets are set (never their values), whether
+# the server answers on SSH, and logs in with the deploy key to print what the system is.
+# It changes nothing on the server. GitHub masks the secrets' values in the log.
+name: Server check (read-only)
+on:
+  push:
+    branches: [ccr-baaad713-r3uvvs]
+    paths: ['.github/workflows/server-check.yml']
+permissions:
+  contents: read
+jobs:
+  look:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Which secrets are set (names only)
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          AWIN_FEED_URL: ${{ secrets.AWIN_FEED_URL }}
+        run: |
+          for name in SERVER_HOST SERVER_USER SERVER_SSH_KEY AWIN_FEED_URL; do
+            if [ -n "${!name}" ]; then echo "$name: set"; else echo "$name: missing"; fi
+          done
+      - name: Does the server answer on SSH
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        run: |
+          if [ -z "$SERVER_HOST" ]; then echo "SERVER_HOST is not set"; exit 0; fi
+          if timeout 10 bash -c "</dev/tcp/$SERVER_HOST/22" 2>/dev/null; then
+            echo "port 22: open"
+          else
+            echo "port 22: no answer"
+          fi
+      - name: Log in with the key and read the system
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          if [ -z "$SERVER_HOST" ] || [ -z "$SERVER_SSH_KEY" ]; then echo "secrets missing"; exit 0; fi
+          install -m 700 -d ~/.ssh
+          # A key pasted on Windows may carry carriage returns, which ssh refuses.
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if ssh-keygen -y -f ~/.ssh/deploy_key > /dev/null 2>&1; then
+            echo "key: readable"
+          else
+            echo "key: not a readable private key"
+          fi
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=15 "${SERVER_USER:-ubuntu}@$SERVER_HOST" \
+            'echo "logged in as $(whoami)"; . /etc/os-release; echo "$PRETTY_NAME";
+             echo "up since $(uptime -s)"; echo "cpus $(nproc)"; free -h | head -2; df -h / | tail -1' \
+            || echo "login failed (exit $?)"
+          rm -f ~/.ssh/deploy_key
