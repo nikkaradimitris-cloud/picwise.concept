@@ -52,10 +52,37 @@ bot's, never the owner's by hand; never open an Awin tracked link from a session
   "DEATH BY TV" hoody and Islamic digital learning packs; "speaker": banana plug
   connectors; "camera": a camera module among the cheapest. The kind problem of 23/10
   (section below), much larger with many shops.
-- **Next, put to the owner (waiting for their word):** measure the kind problem on this
-  catalogue (the public note's `kinds`: per kind, the products shown as it whose title
-  does not name it; and the 12 searches), tell the owner, then build. Code goes to
-  `main` only on their «ναι».
+- **The two measures, built and read (owner: «Να προχωρήσουμε τις δύο μετρήσεις», and
+  how not to lose so many products without a category; also: a feed may not tell the
+  truth about stock, «για αυτό χρειαζόμαστε τους ελέγχους»).** On the branch only, in the
+  public note and printed by the deployment (steps "Each shop of the prepared catalogue"
+  and "Kinds that may be wrong in the prepared catalogue"); run `40200815389`, release of
+  `85f0a4a`. Measured only: nothing shown changed.
+  - **Rows without a category: 532,610**, 532,593 held for that alone. **None carries the
+    shop's own category (`product_type`)**, so reading that column would bring in
+    nothing. Passing today's other checks (in stock by the feed's word, a price, an
+    image), **388,781 could be shown if the title alone gave the kind**: the title reads
+    204,124 as a kind, 22,350 as an accessory, 51,430 as doubtful, 110,877 as nothing.
+    InStock UK is 353,023 of them (193,233 with a kind), Back to the Office 23,807.
+  - **Kinds of the 518,041 shown** (411,717 with a kind): the title names none of its
+    kinds on 176,239, and **"watch" alone holds 169,271, of which 167,551 are not
+    watches** (piercing oil and ear expanders of MonsterPiercing on "Body Jewellery",
+    Finediam's jewellery). Most likely cause, reproduced locally, not yet seen in the
+    server's own category text: a shelf like "Jewellery & Watches > Body Jewellery"
+    whose narrowest part names no kind, so the code reads the parent "Jewellery &
+    Watches" as watches. The title alone names the kind, not the type or shelf, on
+    6,518: right for hoodies and jumpers, wrong for "Chocolate Mice" (mouse), "Giant
+    Apple Cable" sweets (charging cable), "Voice Tablets" sweets (tablet), a "Rat &
+    Mouse" bait (mouse), the book "Make Your Bed" (bed), a model paint's "Protective
+    Coat" (jacket), incontinence "Pants" (trousers).
+- **Next, put to the owner (waiting for their word):** (1) the watch error, the largest:
+  build on the branch, see it on the server, `main` on their «ναι»; (2) before any row
+  without a category is shown by its title, measure how often the title alone agrees
+  with the shelf on the rows that have one (per shop: InStock UK has both); (3) ask
+  Awin or the two largest shops (InStock UK, Back to the Office) for their categories;
+  (4) then the shop checks the owner planned (set hours, 200 checks per shop, the
+  shop's own link, robots.txt, a gentle pace), which say whether a feed's stock is
+  true. Code goes to `main` only on their «ναι».
 - **Open, the owner's:** HTTPS and the domain (own domain recommended before any
   indexing); the repository private (logs are public; nothing secret is in them);
   query logging to Supabase from the server (ask first); 80 or 200 bot checks per shop
