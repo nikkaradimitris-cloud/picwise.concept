@@ -22,10 +22,15 @@ file was then stopped by the owner's rule below.
   server's address never goes into it or into a log (GitHub masks secrets). The session
   cannot open SSH (only HTTPS on 443), so the server is worked through GitHub
   workflows; the read-only `.github/workflows/server-check.yml` (this branch only)
-  logged in on 25/10 (PROGRESS, 25/10). Next, each on the owner's yes: the first setup
-  (security updates, firewall, SSH by key only), then the site with today's code,
-  `noindex` everywhere, compared with Vercel; the domain moves only on the owner's word.
-  The owner's guide: `docs/ovhcloud_server_setup_el.md`.
+  logged in on 25/10 (PROGRESS, 25/10). **Set up for security on 25/10** (owner's
+  «ναι»): up to date (Ubuntu 24.04.5), daily security updates with a reboot at 03:30
+  UTC when needed, SSH by key only and no root login, ufw letting in 22, 80 and 443
+  only, fail2ban; `deployment/server/base_setup.sh`, run by
+  `.github/workflows/server-setup.yml` (this branch only; a rollback undoes SSH and
+  firewall in 10 minutes unless a fresh login cancels it; the log masks the server's
+  names), run `40187243206`. Next, each on the owner's yes: the site with today's code,
+  `noindex` everywhere, compared with Vercel; the domain moves only on the owner's
+  word. The owner's guide: `docs/ovhcloud_server_setup_el.md`.
 - **Owner's rule (2026-10-23): nothing that may serve the pages Google indexes is left
   out of what PicWise keeps.** In their words: «Δεν πρέπει να διαγράψεις τίποτα που θα
   επηρεάσει την ποιότητα χαρακτηριστικά seo ... Τα προϊόντα που θα καλούνται από την
