@@ -89,9 +89,33 @@ bot's, never the owner's by hand; never open an Awin tracked link from a session
   same list: titles alone giving a kind on another department's shelf, "barbell" 951
   (piercing barbells on "body jewellery", were watches), "bag" 448 (291 on "sweets &
   chocolate"), "bed" 212 (149 on "pet supplies"), chocolate mice as mice.
-- **Next, put to the owner (waiting for their word):** (1) the watch fix to `main`, on
-  their «ναι» (the branch also carries the server's files; bring only the fix if they
-  want only it); then a title alone giving a kind on another department's shelf; (2) before any row
+- **A title alone on another department's aisle, fixed on the branch** (owner: «ναι,
+  προχώρα στο επόμενο λάθος»; commits `55a5477`, `45ab1d7`, `772855b`, `00ebb22`; **not on
+  `main`**). When no shelf names a kind and the title decides
+  (`concept_understanding._title_fallback_head`), the title's kind is now doubtful if the
+  category is an aisle of Google's taxonomy whose shelves name no kind of that
+  department (`mega_category_id`, or a broader kind's: a smartwatch is a watch);
+  `_aisle_departments` gathers them once from `taxonomy.en-US.txt`, each shelf read as it
+  is and in the singular; the two-level aisle counts, or its top when it names no kind;
+  an aisle whose name names the kind holds it ("Toys & Games"); British aisle names map
+  to the US ones (`_BRITISH_AISLE_NAMES`). Doubtful products are still found by their
+  words. The note lists what the rule doubted (`kinds_before_the_aisle_rule`), and the
+  deployment's comparison prints each server card's shelf and kinds (it copies the
+  prepared catalogue to the runner). **On the server** (run `40216310561`): 1,860 shown
+  products doubted, nearly all rightly: 941 piercing barbells, 291 sweets as bags, 85
+  chocolate mice, sweets as cables, tablets, belts and watches, books (Colleen Hoover,
+  slow cooker and air fryer cookbooks), model kits ("Retro Scooter - Model Kit"), pet
+  clothes, incontinence pants, tumbler cases as phone cases. Wrongly: 6 smartwatches
+  InStock UK files under "Electronics > Video > Video Multiplexers", 8 baby hooded
+  towels, 2 baby brush sets. The first version (`55a5477`) also doubted dining sets, sofa
+  suites, futon beds, tote bags, toys and every electric massager (2,062 in all); the
+  last one keeps them. The 12 searches: "vacuum cleaner" shows real vacuum cleaners,
+  "mouse" no chocolate mice, "tv" no hoodie; still wrong on "mouse": a craft stamp set
+  "Squeak the Mouse" and a "Self Tan Mousse" (coarse departments; "mousse" read as
+  mouse).
+- **Next, put to the owner (waiting for their word):** (1) the watch fix and the aisle
+  rule to `main`, on their «ναι» (the branch also carries the server's files; bring only
+  the fixes if they want only them); (2) before any row
   without a category is shown by its title, measure how often the title alone agrees
   with the shelf on the rows that have one (per shop: InStock UK has both); (3) ask
   Awin or the two largest shops (InStock UK, Back to the Office) for their categories;
