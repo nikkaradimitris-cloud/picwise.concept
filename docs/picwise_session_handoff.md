@@ -3,7 +3,57 @@
 Current state for whoever picks the project up next. Updated 2026-10-25.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation: the server; nothing left out of what is kept (owner, 2026-10-23) -- start here
+## Next conversation (from 2026-10-25): the feed of every UK shop on the server -- start here
+
+The owner closed the conversation of 25/10 here («σου βαζω την λιστα και παμε σε αλλη
+συζητηση»). Owner's rules, unchanged: Greek, short, plain words; say what you found
+before building anything; nothing on `main` without their explicit «ναι»; never ask for
+the feed link (it holds the key); secrets only in GitHub's or Vercel's secrets, never in
+the repository, a log or the chat; nothing in Supabase without asking; the truth test is
+a bot's, never the owner's by hand; never open an Awin tracked link from a session.
+
+- **Where the work is:** the branch `ccr-baaad713-r3uvvs` (pushed; its code is `main`'s,
+  plus the server's files: `deployment/server/`, `.github/workflows/server-*.yml`,
+  `.github/scripts/host_key_pin.py`, `.github/server-host-key.pin`). Bring it in first.
+- **The server works** (OVHcloud VPS-4, London, Ubuntu 24.04.5, 8 vCores, 22 GiB usable,
+  191 GB free; renewal automatic monthly, next 24/11): secured (updates daily with a
+  reboot at 03:30 UTC when needed, SSH by key only, ufw 22/80/443, fail2ban); the site
+  with today's code under gunicorn on 127.0.0.1:8016 only (nothing from the internet,
+  so Google cannot see it); the catalogue prepared at each deployment and nightly at
+  04:17 UTC. A session cannot open SSH: everything goes through GitHub workflows that
+  run on each push to the branch (`server-setup.yml`, `server-deploy.yml`,
+  `server-check.yml`; read their logs with the GitHub tools). Secrets are sent only to a
+  server whose host key matches the pin. Details: PROGRESS, 25/10.
+- **Now on the server: the owner's small link** (2 feeds, 1,040 products; Pro-Camera
+  and one other). The site gets no feed link: it reads only the prepared file (else a
+  big feed would be loaded by each of 4 workers); the preparation reads the feed, with a
+  2 GB download cap, a 16 GB memory ceiling and a line with its peak memory (87 MB, 1.2 s
+  for 1,184 rows); the site has a 12 GB ceiling.
+- **The step in progress: a link with every Google-format shop** (owner chose «β»,
+  25/10). The owner was in Awin's Create-a-Feed (Toolbox; language «Any»;
+  advertiser-based only, since Google-format advertisers are not chosen by category or
+  brand): 90 Google-format advertisers selected, **Product Count 1,134,487** (the
+  owner's screenshot of the list). Of the 90, 87 show the UK flag. **To take out before
+  «Next», to put to the owner:** `AKKO UK` (prices in EUR, taken out on 22/10),
+  `EMOKO BIKE` (US flag), `Sinocare` (Spanish flag); ask about `World Businesses for
+  Sale` (businesses, not products). No adult shop is in the list. Then: all columns,
+  CSV, gzip, no adult content; the new link into GitHub's `AWIN_FEED_URL` (pencil →
+  Update secret, never in the chat); the owner says «έτοιμο».
+- **Then, the session:** re-run the last `server-deploy.yml` run (GitHub tools,
+  `rerun_workflow_run`: a re-run reads the updated secret) and read in its log: the
+  preparation's summary and peak memory, the prepared counts, the site's memory, the 12
+  searches against live. 1.1M rows may need 10-20 GB to prepare (the code keeps every
+  row in memory, filled columns only): if the preparation is stopped by its ceiling,
+  nothing breaks (the site keeps the last prepared file for 30 h); then put to the owner:
+  fewer shops, or the code change the architecture plans (`docs/PICWISE_SERVER_ARCHITECTURE.md`:
+  PostgreSQL, a row-by-row load), which is code and goes to `main` only on their «ναι».
+  If the site's 4 workers do not fit, fewer workers.
+- **Open, the owner's:** HTTPS and the domain (own domain recommended before any
+  indexing); the repository private (logs are public; nothing secret is in them);
+  query logging to Supabase from the server (ask first); 80 or 200 bot checks per shop
+  and what a low score does.
+
+## The conversation of 2026-10-23: the server; nothing left out of what is kept
 
 The owner opened a new conversation for a smaller kept file, then the server («Θέλω να
 ανοίξουμε νέα συζήτηση γιατί αυτή έχει βαρύνει και το φτιάχνουμε εκεί»). The smaller
