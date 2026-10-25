@@ -98,9 +98,17 @@ ssh-keygen -t ed25519 -C "picwise-github" -f ~/.ssh/picwise_github
 2. **Επανεγκατάσταση με το κλειδί:** άνοιξε τη σελίδα του VPS. Δίπλα στο
    «OS/Distribution» πάτα **«…» → Reinstall my VPS**.
    - Λειτουργικό: **Ubuntu 24.04**.
-   - Στο «SSH key to pre-install» διάλεξε το `picwise-github`.
-   - Τσέκαρε το «I do not wish to receive my VPS authentication codes by email».
-   - Επιβεβαίωσε. Σε λίγα λεπτά ο server είναι ξανά έτοιμος, με το κλειδί μέσα.
+   - Στο «SSH key to pre-install» διάλεξε το `picwise-github`, ή επικόλλησε το δημόσιο
+     κλειδί με Ctrl+V και διάλεξε **ED25519**.
+   - **Τσέκαρε** το «I do not wish to receive my VPS authentication codes by email».
+     Αν μείνει ξετσεκάριστο, η OVHcloud βάζει προσωρινό κωδικό που πρέπει να αλλάξει
+     στην πρώτη είσοδο, και μέχρι τότε καμία αυτόματη εργασία δεν μπαίνει (έτσι έγινε
+     στις 24/10).
+   - Επιβεβαίωσε. Σε περίπου 15 λεπτά ο server είναι ξανά έτοιμος, με το κλειδί μέσα.
+3. **Δοκιμή:** στο PowerShell τρέξε πρώτα `ssh-keygen -R <IPv4>`, γιατί μετά από κάθε
+   επανεγκατάσταση αλλάζει η «ταυτότητα» του server. Μετά τρέξε
+   `ssh -i "$env:USERPROFILE\.ssh\picwise_github" ubuntu@<IPv4> "lsb_release -d; uptime"`
+   και απάντησε «yes». Αν δείξει «Ubuntu 24.04» χωρίς να ζητήσει κωδικό, τελείωσε.
 
 Αν τα μενού λέγονται αλλιώς στην οθόνη σου, στείλε μου στιγμιότυπο.
 
