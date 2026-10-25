@@ -10,7 +10,9 @@ decides; now, when the category is an aisle of Google's whose shelves name no ki
 that department (`mega_category_id`), the title's kind is doubtful: the product is found
 by its words, never by its kind. Google's British aisle names count as its US ones. A
 category that is no aisle of Google's, or none at all, leaves the title to decide, and
-clothing on a clothing aisle, or a dog bed among pet supplies, keep their kinds.
+clothing on a clothing aisle, or a dog bed among pet supplies, keep their kinds; so
+does a kind whose broader kind's department the aisle holds: a smartwatch where watches
+are.
 
 The titles are the shops' own, from the server's list of 2026-10-25, or written in the
 same shape with fictional brands; the shelves are as the shops file them.
@@ -65,6 +67,16 @@ class ATitlesKindOnAnotherDepartmentsAisleTests(unittest.TestCase):
         ):
             with self.subTest(category=category, title=title):
                 self.assertIn(kind, _kinds(category, title))
+
+    def test_a_broader_kinds_department_counts_too(self) -> None:
+        # A smartwatch is a watch too: an aisle that holds watches may hold one (on the
+        # server, two real smartwatches had left the "smartwatch" page).
+        for category in ("Sporting Goods > Exercise & Fitness", "Clothing & Accessories > Clothing Accessories"):
+            with self.subTest(category=category):
+                self.assertIn(
+                    "smartwatch",
+                    _kinds(category, "V69 IP68 1.85-inch Bluetooth Smart Watch with Voice Calling - Black"),
+                )
 
     def test_no_aisle_of_googles_leaves_the_title_to_decide(self) -> None:
         # A shop's own shelf, and no category at all, as before.

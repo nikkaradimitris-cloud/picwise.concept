@@ -110,7 +110,11 @@ jobs:
       - name: Compare with the live site
         run: |
           ssh -f -N -M -S ~/.ssh/tunnel.sock -o ExitOnForwardFailure=yes -L 18016:127.0.0.1:8016 picwise
-          python3 deployment/server/compare_with_vercel.py --server http://127.0.0.1:18016
+          # The prepared catalogue, read here only to give each server card its shelf.
+          ssh -n picwise 'sudo cat /srv/picwise/shared/prepared/catalogue.json.gz' > "$RUNNER_TEMP/catalogue.json.gz" || true
+          python3 deployment/server/compare_with_vercel.py --server http://127.0.0.1:18016 \
+            --catalogue "$RUNNER_TEMP/catalogue.json.gz"
+          rm -f "$RUNNER_TEMP/catalogue.json.gz"
           ssh -S ~/.ssh/tunnel.sock -O exit picwise
       - name: What runs on the server
         if: always() && steps.connect.outcome == 'success'

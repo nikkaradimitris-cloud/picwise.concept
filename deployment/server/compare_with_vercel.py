@@ -9,6 +9,13 @@ nothing is written anywhere and no "/out/" link is opened, since that counts as 
 on the shop. Prints, per page, the answer of each site and how they differ; then, once
 the server has a prepared catalogue, the cards of the live check's 12 searches on each
 site (price, shop, role, title). Exits 1 only when the server fails to answer a page.
+
+    python3 deployment/server/compare_with_vercel.py --server ... --catalogue catalogue.json.gz
+
+With the server's prepared catalogue (owner, 2026-10-25, while fixing the kinds a title
+alone gives: a card shows no shelf, so a wrong card could not be traced), each server
+card also gets the shelf and the kinds it was read with, found by its title. The file
+stays on the runner; only those two are printed, never a link.
 """
 from __future__ import annotations
 
@@ -21,6 +28,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from pathlib import Path
 
 LIVE_SITE = "https://picwise.subby.cloud"
 LIVE_HOST = "picwise.subby.cloud"
@@ -57,6 +65,8 @@ SEARCHES = (
     "vacuum cleaner",
 )
 HEADERS = ("content-type", "x-robots-tag", "cache-control")
+# How much of a server card's shelf is printed.
+SHELF_LENGTH = 110
 USER_AGENT = "PicWise-server-compare/1 (GitHub Actions; the owner's own check)"
 DIFF_LINES = 12
 
@@ -97,6 +107,43 @@ def _text(fragment: str) -> str:
     return " ".join(html.unescape(re.sub(r"<[^>]+>", " ", fragment)).split())
 
 
+def card_titles(page: str) -> list[str]:
+    """The whole title of each card of a search page, in order."""
+    titles = []
+    for card in re.findall(r'<article class="pw-card.*?</article>', page, re.S):
+        title = re.search(r'class="pw-card-title">(.*?)</h2>', card, re.S)
+        titles.append(_text(title.group(1)) if title else "")
+    return titles
+
+
+def catalogue_shelves(path: str) -> dict[str, str]:
+    """Per product title of the prepared catalogue at `path`, the shelf and the kinds the
+    search read it with, the first product of a title for all; empty when the file
+    cannot be read with this checkout's code."""
+    root = Path(__file__).resolve().parents[2]
+    for folder in (root, root / "src"):
+        if str(folder) not in sys.path:
+            sys.path.insert(0, str(folder))
+    try:
+        from picwise_providers.prepared_catalogue import read_prepared_catalogue
+
+        prepared = read_prepared_catalogue(Path(path))
+    except Exception as error:  # a diagnosis only: the comparison goes on without it
+        print(f"=== no shelves for the cards: {type(error).__name__}")
+        return {}
+    if prepared is None:
+        print("=== no shelves for the cards: the prepared catalogue cannot be read with this code")
+        return {}
+    shelves: dict[str, str] = {}
+    fields = prepared.search_fields or tuple({} for _product in prepared.products)
+    for product, kinds, product_fields in zip(prepared.products, prepared.kinds, fields):
+        title = " ".join(str(product.title or "").split())
+        if title not in shelves:
+            shelf = str(product_fields.get("category") or product.category_text or "-")
+            shelves[title] = f"{shelf[:SHELF_LENGTH]} | {', '.join(sorted(kinds)) or '-'}"
+    return shelves
+
+
 def search_cards(page: str) -> list[str]:
     """The counter and one line per card of a search page, as the live check prints them."""
     counter = re.search(r'class="pw-counter">([^<]*)<', page)
@@ -114,32 +161,44 @@ def search_cards(page: str) -> list[str]:
     return lines
 
 
-def compare_searches(live_site: str, server_site: str, server_headers: dict[str, str]) -> int:
-    """Prints both sites' cards for each search; returns how many searches show the same."""
+def compare_searches(
+    live_site: str, server_site: str, server_headers: dict[str, str], shelves: dict[str, str] | None = None
+) -> int:
+    """Prints both sites' cards for each search, each server card with its shelf and kinds
+    when `shelves` has them; returns how many searches show the same."""
     same = 0
     for query in SEARCHES:
         path = "/search?q=" + urllib.parse.quote_plus(query)
         live = fetch(live_site + path, {})
         server = fetch(server_site + path, server_headers)
         live_cards, server_cards = search_cards(live[2]), search_cards(server[2])
+        server_shelves = [(shelves or {}).get(title, "-") for title in card_titles(server[2])] if shelves else []
         print(f"=== {path} ({query})")
         if live[0] == server[0] and live_cards == server_cards:
             same += 1
             print(f"  the same cards on both ({live[0]})")
-            for line in live_cards:
-                print("    " + line)
+            print_cards(live_cards, server_shelves)
             continue
-        for label, (status, _, _), lines in (("live  ", live, live_cards), ("server", server, server_cards)):
-            print(f"  {label} {status}")
-            for line in lines:
-                print("    " + line)
+        print(f"  live   {live[0]}")
+        print_cards(live_cards, [])
+        print(f"  server {server[0]}")
+        print_cards(server_cards, server_shelves)
     return same
+
+
+def print_cards(lines: list[str], shelves: list[str]) -> None:
+    """The counter, then each card, followed by its shelf and kinds when known."""
+    for index, line in enumerate(lines):
+        print("    " + line)
+        if 0 < index <= len(shelves):
+            print("        shelf: " + shelves[index - 1])
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--server", required=True, help="the server's site, e.g. http://127.0.0.1:18016")
     parser.add_argument("--live", default=LIVE_SITE)
+    parser.add_argument("--catalogue", help="the server's prepared catalogue, to give each server card its shelf")
     args = parser.parse_args(argv)
     server_headers = {"Host": LIVE_HOST, "X-Forwarded-Proto": "https"}
     same = 0
@@ -187,7 +246,8 @@ def main(argv: list[str] | None = None) -> int:
     if not prepared:
         print("=== the searches are not compared: the server has no prepared catalogue")
     else:
-        same_searches = compare_searches(args.live, args.server, server_headers)
+        shelves = catalogue_shelves(args.catalogue) if args.catalogue else None
+        same_searches = compare_searches(args.live, args.server, server_headers, shelves)
         print(f"=== {same_searches} of {len(SEARCHES)} searches show the same cards on both")
     return 1 if server_failed else 0
 

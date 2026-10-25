@@ -1887,13 +1887,15 @@ def _aisle_departments() -> dict[str, frozenset[str]]:
 
 def _aisle_may_hold(category: str, concept_id: str) -> bool:
     """Does the aisle a category starts with hold, on some shelf of Google's, a kind of
-    this kind's department? The first category field that is an aisle of Google's is
-    read, at its first two levels when Google has them, else at its top; true when no
-    field is one."""
-    concept = get_product_concepts_by_id().get(concept_id)
+    this kind's department, or of a broader kind's: a smartwatch is a watch too, so an
+    aisle of watches may hold one. The first category field that is an aisle of
+    Google's is read, at its first two levels when Google has them, else at its top;
+    true when no field is one."""
+    by_id = get_product_concepts_by_id()
     aisles = _aisle_departments()
-    if concept is None or not aisles:
+    if concept_id not in by_id or not aisles:
         return True
+    departments = {by_id[kind].mega_category_id for kind in broader_concepts(concept_id) if kind in by_id}
     for crumb in str(category or "").split(CATEGORY_FIELD_SEPARATOR.strip()):
         names = [
             _BRITISH_AISLE_NAMES.get(name, name)
@@ -1902,7 +1904,7 @@ def _aisle_may_hold(category: str, concept_id: str) -> bool:
         ]
         for aisle in (" > ".join(names[:2]) if len(names) > 1 else "", names[0] if names else ""):
             if aisle in aisles:
-                return concept.mega_category_id in aisles[aisle]
+                return bool(departments & aisles[aisle])
     return True
 
 
