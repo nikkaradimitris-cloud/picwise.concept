@@ -1799,6 +1799,22 @@ def _names_another_product_after(tokens: tuple[str, ...], end: int) -> bool:
 
 
 def _title_fallback_head(title: str, category: str) -> str | None:
+    """The kind a title names when neither its type nor its category names one
+    (`_title_named_head`), unless the category is an aisle of Google's whose shelves name
+    no kind of that department: "Chocolate Mice" under "Food, Beverages & Tobacco" are no
+    mice, a "Circular Barbell" under "Clothing & Accessories > Jewellery & Watches" is a
+    piercing, and the "Colleen Hoover" of a book under "Media > Books" no vacuum cleaner
+    (owner, 2026-10-25: «προχώρα στο επόμενο λάθος»). Such a kind is doubtful: the product
+    is still found by its words, never by its kind. A category that is no aisle of
+    Google's leaves the title to decide, as before.
+    """
+    head = _title_named_head(title, category)
+    if head not in (None, ACCESSORY_MARKER, UNCERTAIN_MARKER) and not _aisle_may_hold(category, head):
+        return UNCERTAIN_MARKER
+    return head
+
+
+def _title_named_head(title: str, category: str) -> str | None:
     """The kind a title names when neither its type nor its category names one.
 
     The lead is read first, and read strictly: a lead that names a kind only to
@@ -1832,6 +1848,62 @@ def _title_fallback_head(title: str, category: str) -> str | None:
     if shelf and _type_is_informative(shelf) and not _type_supports_concept(shelf, head):
         return UNCERTAIN_MARKER
     return head
+
+
+# Google's British names for its aisles where they differ from the US file the code
+# reads: the shops of the server's feed file their jewellery under "Clothing & Accessories
+# > Jewellery & Watches" (owner, 2026-10-25), Google's US file under "Apparel &
+# Accessories > Jewelry".
+_BRITISH_AISLE_NAMES = {
+    "clothing & accessories": "apparel & accessories",
+    "jewellery & watches": "jewelry",
+    "jewellery": "jewelry",
+    "jewellery cleaning & care": "jewelry cleaning & care",
+    "healthcare": "health care",
+}
+
+
+@lru_cache(maxsize=1)
+def _aisle_departments() -> dict[str, frozenset[str]]:
+    """Per aisle of Google's taxonomy, its top ("media") and its first two levels
+    ("media > books"), the departments (`mega_category_id`) of the kinds its shelves name.
+    Empty when the taxonomy file is not there, and then no aisle is read."""
+    try:
+        lines = _TAXONOMY_PATH.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return {}
+    by_id = get_product_concepts_by_id()
+    departments: dict[str, set[str]] = {}
+    for line in lines:
+        if not line.strip() or line.startswith("#"):
+            continue
+        names = [" ".join(name.lower().split()) for name in line.split(">")]
+        heads, _accessory = _category_heads(line.lower(), "")
+        found = {by_id[head].mega_category_id for head in heads if head in by_id}
+        for aisle in {names[0], " > ".join(names[:2])}:
+            departments.setdefault(aisle, set()).update(found)
+    return {aisle: frozenset(found) for aisle, found in departments.items()}
+
+
+def _aisle_may_hold(category: str, concept_id: str) -> bool:
+    """Does the aisle a category starts with hold, on some shelf of Google's, a kind of
+    this kind's department? The first category field that is an aisle of Google's is
+    read, at its first two levels when Google has them, else at its top; true when no
+    field is one."""
+    concept = get_product_concepts_by_id().get(concept_id)
+    aisles = _aisle_departments()
+    if concept is None or not aisles:
+        return True
+    for crumb in str(category or "").split(CATEGORY_FIELD_SEPARATOR.strip()):
+        names = [
+            _BRITISH_AISLE_NAMES.get(name, name)
+            for name in (" ".join(segment.lower().split()) for segment in _BREADCRUMB_SPLIT_RE.split(crumb))
+            if name
+        ]
+        for aisle in (" > ".join(names[:2]) if len(names) > 1 else "", names[0] if names else ""):
+            if aisle in aisles:
+                return concept.mega_category_id in aisles[aisle]
+    return True
 
 
 def _narrowest_shelf(category: str) -> str:
