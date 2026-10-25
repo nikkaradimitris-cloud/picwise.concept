@@ -43,6 +43,7 @@ from .search_selection import (
     ProviderProductSelectionResult,
     SearchCatalogue,
     _product_concepts,
+    _product_search_fields,
     build_search_catalogue,
     decide_recommended_provider_product,
     is_strong_feed_opportunity_selection,
@@ -389,7 +390,11 @@ def measure_configured_feed_intake(feed_config: ProviderFeedConfig | None = None
         and row.product_eligibility.card_eligible
         and product_non_new_condition(row.product)
     }
-    return measure_feed_intake(pipeline.eligibility_results, not_new_products=not_new)
+    return measure_feed_intake(
+        pipeline.eligibility_results,
+        not_new_products=not_new,
+        read_kinds=lambda product: _product_concepts(product, _product_search_fields(product)),
+    )
 
 
 def _today() -> date:

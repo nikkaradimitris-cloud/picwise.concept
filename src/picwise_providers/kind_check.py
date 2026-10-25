@@ -10,6 +10,15 @@ these. A product listed is a suspect, not a mistake: "Samsung Galaxy S24" names 
 and is one, and a wrong product whose title holds the kind's word ("Camera Lens") is not
 listed. Nothing shown changes.
 
+Owner, 2026-10-25, with every Google-format shop on the server: the 12 searches showed
+the other way round too. "Colleen Hoover 6 Book Collection Set" on a books shelf answers
+"vacuum cleaner", "Chocolate Mice" on a sweets shelf answers "mouse", "DEATH BY TV -
+Hoody" answers "tv": a shelf naming no kind PicWise knows leaves the title to decide,
+and the title names the kind's word for something else. So the note also lists, per
+kind, the shown products whose title names the kind while neither their product type
+nor their shelf does: suspects again, not mistakes ("Kitchen Appliances" names no
+kettle and holds kettles).
+
 The deployment's build writes it into its public note (`tools/prepare_catalogue.py
 --static-dir`), next to `intake`: counts, kinds, and a few product titles, shops and
 prices, never a link.
@@ -102,11 +111,30 @@ def _cheapest(products: list[ProviderProduct]) -> list[ProviderProduct]:
     return sorted(products, key=lambda product: (price(product), str(product.title or "")))[:_EXAMPLES]
 
 
+def _listed(by_kind: dict[str, dict[str, Any]], suspects: str, count_name: str) -> list[dict[str, Any]]:
+    """The kinds with the most suspects of this list, each with its cheapest."""
+    listed = sorted(
+        ((kind, entry) for kind, entry in by_kind.items() if entry[suspects]),
+        key=lambda item: (-len(item[1][suspects]), item[0]),
+    )[:_KINDS_LISTED]
+    return [
+        {
+            "kind": kind,
+            "products": entry["products"],
+            count_name: len(entry[suspects]),
+            "cheapest": [_example(product) for product in _cheapest(entry[suspects])],
+        }
+        for kind, entry in listed
+    ]
+
+
 def measure_kind_titles(
     products: Sequence[ProviderProduct], kinds: Sequence[Collection[str]]
 ) -> dict[str, Any]:
     """Per kind: the shown products of that kind, how many of them have a title naming
-    none of the kind's nouns, and the cheapest of those.
+    none of the kind's nouns, and the cheapest of those; and how many have a title
+    naming one of their kinds while neither their product type nor their shelf names
+    any, and the cheapest of those.
 
     `products` and `kinds` are a prepared catalogue's, side by side. Only kinds a search
     can show a product by count: the markers (accessory, doubtful, pet, camping) do not.
@@ -114,6 +142,7 @@ def measure_kind_titles(
     by_kind: dict[str, dict[str, Any]] = {}
     counted = 0
     names_none = 0
+    only_title = 0
     for product, product_kinds in zip(products, kinds):
         real = sorted(kind for kind in product_kinds if not kind.startswith("__"))
         if not real:
@@ -127,25 +156,22 @@ def measure_kind_titles(
         missing = {kind for kind in real if kind not in covered}
         if not named:
             names_none += 1
+        raw = product.raw if isinstance(product.raw, dict) else {}
+        shelf_words = _title_words(f"{raw.get('product_type') or ''} {product.category_text or ''}")
+        title_alone = bool(named) and not any(shelf_words & _kind_nouns(kind) for kind in real)
+        if title_alone:
+            only_title += 1
         for kind in real:
-            entry = by_kind.setdefault(kind, {"products": 0, "suspects": []})
+            entry = by_kind.setdefault(kind, {"products": 0, "suspects": [], "title_alone": []})
             entry["products"] += 1
             if kind in missing:
                 entry["suspects"].append(product)
-    listed = sorted(
-        ((kind, entry) for kind, entry in by_kind.items() if entry["suspects"]),
-        key=lambda item: (-len(item[1]["suspects"]), item[0]),
-    )[:_KINDS_LISTED]
+            if title_alone:
+                entry["title_alone"].append(product)
     return {
         "products": counted,
         "title_names_no_kind": names_none,
-        "by_kind": [
-            {
-                "kind": kind,
-                "products": entry["products"],
-                "title_without_kind": len(entry["suspects"]),
-                "cheapest": [_example(product) for product in _cheapest(entry["suspects"])],
-            }
-            for kind, entry in listed
-        ],
+        "by_kind": _listed(by_kind, "suspects", "title_without_kind"),
+        "only_title_names_kind": only_title,
+        "by_kind_only_title": _listed(by_kind, "title_alone", "only_title_names_it"),
     }

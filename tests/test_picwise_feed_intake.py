@@ -8,6 +8,11 @@ back. Pinned here: the counts per shop and in all, every reason counted, and tha
 note carries them without anything of the feed's link. Owner, 2026-10-23: also what
 each shop writes in `product_type`, and how much of it on rows with no category.
 
+Owner, 2026-10-25, with every Google-format shop on the server (about 532,000 of
+1,123,857 rows with no category): of the rows held for that alone, how many could be
+shown by their own product type, or by their title alone, and read as what kind; pinned
+too.
+
 Every row is local test data: fictional brands, `.invalid` URLs.
 """
 from __future__ import annotations
@@ -39,9 +44,10 @@ _COLUMNS = (
 
 
 def _row(pid: str, shop: str, *, category: str = "Kettles", image: bool = True, url: str = "",
-         stock: str = "", condition: str = "", price: str = "20.00", product_type: str = "") -> list[str]:
+         stock: str = "", condition: str = "", price: str = "20.00", product_type: str = "",
+         title: str = "") -> list[str]:
     return [
-        pid, f"Fixturon Electric Kettle {pid}", "Fixturon", category,
+        pid, title or f"Fixturon Electric Kettle {pid}", "Fixturon", category,
         url or f"https://fixture.example.invalid/out/{pid}",
         f"https://fixture.example.invalid/img/{pid}.jpg" if image else "",
         price, "GBP", "1", stock, shop, condition, product_type,
@@ -51,10 +57,32 @@ def _row(pid: str, shop: str, *, category: str = "Kettles", image: bool = True, 
 _LONG_TYPE = "Office Supplies > " + " > ".join(f"Shelf {number}" for number in range(1, 20))
 
 
+def _use_feed(case: unittest.TestCase, rows: list[list[str]]) -> Path:
+    """Write the rows as the configured feed for this test, and restore after it."""
+    feed = Path(tempfile.mkdtemp()) / "feed.csv"
+    with feed.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(_COLUMNS)
+        writer.writerows(rows)
+    saved = os.environ.get("AWIN_FEED_FILE")
+    os.environ["AWIN_FEED_FILE"] = str(feed)
+    clear_awin_feed_parse_cache()
+    clear_provider_feed_pipeline_cache()
+
+    def restore() -> None:
+        if saved is None:
+            os.environ.pop("AWIN_FEED_FILE", None)
+        else:
+            os.environ["AWIN_FEED_FILE"] = saved
+        clear_awin_feed_parse_cache()
+        clear_provider_feed_pipeline_cache()
+
+    case.addCleanup(restore)
+    return feed
+
+
 class FeedIntakeTests(unittest.TestCase):
     def setUp(self) -> None:
-        folder = Path(tempfile.mkdtemp())
-        self.feed = folder / "feed.csv"
         rows = [
             _row("a1", "Fixture Store One", product_type="Small Appliances > Kettles"),
             _row("a2", "Fixture Store One", product_type="Small Appliances > Kettles"),
@@ -67,24 +95,7 @@ class FeedIntakeTests(unittest.TestCase):
             _row("b5", "Fixture Store Two", category="", image=False, product_type="Office > Kettles"),
             _row("b6", "Fixture Store Two", product_type="  Office   >  Kettles "),
         ]
-        with self.feed.open("w", newline="", encoding="utf-8") as handle:
-            writer = csv.writer(handle)
-            writer.writerow(_COLUMNS)
-            writer.writerows(rows)
-        saved = os.environ.get("AWIN_FEED_FILE")
-        os.environ["AWIN_FEED_FILE"] = str(self.feed)
-        clear_awin_feed_parse_cache()
-        clear_provider_feed_pipeline_cache()
-
-        def restore() -> None:
-            if saved is None:
-                os.environ.pop("AWIN_FEED_FILE", None)
-            else:
-                os.environ["AWIN_FEED_FILE"] = saved
-            clear_awin_feed_parse_cache()
-            clear_provider_feed_pipeline_cache()
-
-        self.addCleanup(restore)
+        self.feed = _use_feed(self, rows)
 
     def test_each_shop_says_what_it_brings_and_why_the_rest_is_held(self) -> None:
         intake = measure_configured_feed_intake()
@@ -152,6 +163,75 @@ class FeedIntakeTests(unittest.TestCase):
         clear_awin_feed_parse_cache()
         clear_provider_feed_pipeline_cache()
         self.assertIsNone(measure_configured_feed_intake())
+
+
+class RowsWithoutCategoryTests(unittest.TestCase):
+    def setUp(self) -> None:
+        shop = "Fixture Store Three"
+        _use_feed(
+            self,
+            [
+                # Its own type names a kind, and the card gate passes it.
+                _row("c1", shop, category="", product_type="Kitchen > Kettles"),
+                # Out of stock: held anyway.
+                _row("c2", shop, category="", product_type="Kitchen > Kettles", stock="Out of stock"),
+                # No type: the title alone, a kind, nothing, an accessory, doubtful.
+                _row("c3", shop, category=""),
+                _row("c4", shop, category="", title="Fixturon Thing 4"),
+                _row("c5", shop, category="", stock="Out of stock"),
+                # Held for a missing image too: not counted as held for the category alone.
+                _row("c6", shop, category="", image=False),
+                # A type naming no kind PicWise knows: doubtful.
+                _row("c7", shop, category="", product_type="Gift Ideas"),
+                _row("c8", shop, category="", title="Fixturon Chocolate Mice 225g"),
+                _row("c9", shop, category="", title="Fixturon Kettle Descaler Tablets"),
+                _row("c10", shop, category="", title="Fixturon Hoover Paperback"),
+                _row("d1", "Fixture Store Four"),
+            ],
+        )
+
+    def test_how_many_could_be_shown_by_type_or_title_and_read_as_what(self) -> None:
+        intake = measure_configured_feed_intake()
+        three = next(shop for shop in intake["shops"] if shop["shop"] == "Fixture Store Three")
+        self.assertEqual(
+            three["without_category"],
+            {
+                "rows": 10,
+                "only_this": 9,
+                "with_product_type": 3,
+                "shown_by_type": 2,
+                "shown_by_title": 5,
+                "kinds_by_type": {"kind": 1, "accessory": 0, "doubtful": 1, "none": 0},
+                "kinds_by_title": {"kind": 2, "accessory": 1, "doubtful": 1, "none": 1},
+                "types": [{"value": "Gift Ideas", "rows": 1}, {"value": "Kitchen > Kettles", "rows": 1}],
+                # A title read as a kind by itself is the search's risk: chocolate mice.
+                "titles": ["Fixturon Electric Kettle c3 -> kettle", "Fixturon Chocolate Mice 225g -> mouse"],
+            },
+        )
+        # Still held: measured, not read.
+        self.assertEqual(three["shown"], 0)
+
+    def test_a_shop_with_a_category_on_every_row_and_the_totals(self) -> None:
+        intake = measure_configured_feed_intake()
+        four = next(shop for shop in intake["shops"] if shop["shop"] == "Fixture Store Four")
+        self.assertEqual(
+            {key: four["without_category"][key] for key in ("rows", "only_this", "shown_by_type", "shown_by_title")},
+            {"rows": 0, "only_this": 0, "shown_by_type": 0, "shown_by_title": 0},
+        )
+        self.assertEqual(four["without_category"]["types"], [])
+        self.assertEqual(
+            intake["without_category"],
+            {
+                "rows": 10,
+                "only_this": 9,
+                "with_product_type": 3,
+                "shown_by_type": 2,
+                "shown_by_title": 5,
+                "kinds_by_type": {"kind": 1, "accessory": 0, "doubtful": 1, "none": 0},
+                "kinds_by_title": {"kind": 2, "accessory": 1, "doubtful": 1, "none": 1},
+            },
+        )
+        self.assertNotIn("fixture.example.invalid", repr(intake))
 
 
 if __name__ == "__main__":

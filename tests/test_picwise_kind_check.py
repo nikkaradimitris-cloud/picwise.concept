@@ -5,7 +5,10 @@ the build writes every morning, so new ways of writing titles show up from every
 without a file. Pinned here: what counts as naming a kind (a noun of its names, either
 number, English or Greek, a word joined by a slash, a narrower kind's noun), what is not
 counted (markers, no kind), the most suspects first, the cheapest examples with their
-narrowest shelf, and nothing of a link.
+narrowest shelf, and nothing of a link. Owner, 2026-10-25, with every Google-format shop
+on the server: also the products whose title names their kind while neither their
+product type nor their shelf does ("Colleen Hoover" books answering "vacuum cleaner",
+"Chocolate Mice" answering "mouse"); pinned too.
 
 Every row is local test data: fictional brands, `.invalid` URLs.
 """
@@ -26,8 +29,16 @@ from picwise_providers.kind_check import measure_kind_titles  # noqa: E402
 
 
 def _product(
-    pid: str, title: str, price: str, shop: str = "Fixture Store One", category: str = "Fixture Shelf"
+    pid: str,
+    title: str,
+    price: str,
+    shop: str = "Fixture Store One",
+    category: str = "Fixture Shelf",
+    product_type: str = "",
 ) -> ProviderProduct:
+    raw = {"merchant_name": shop, "title": title}
+    if product_type:
+        raw["product_type"] = product_type
     return ProviderProduct(
         provider_key="awin",
         provider_product_id=pid,
@@ -39,7 +50,7 @@ def _product(
         price_text=price,
         availability_text="in_stock",
         currency="GBP",
-        raw={"merchant_name": shop, "title": title},
+        raw=raw,
     )
 
 
@@ -137,6 +148,60 @@ class KindTitleCheckTests(unittest.TestCase):
         note = measure_kind_titles([row[0] for row in rows], [frozenset(row[1]) for row in rows])
         self.assertEqual(note["title_names_no_kind"], len(kinds))
         self.assertEqual(len(note["by_kind"]), 25)
+
+    def test_a_title_naming_the_kind_its_type_and_shelf_do_not(self) -> None:
+        rows = [
+            # The shelf names nothing PicWise knows, and the title names the kind's word
+            # for something else.
+            (_product("h1", "Fixturon Hoover 6 Book Collection Set", "8.99", category="Media > Books"),
+             {"vacuum_cleaner"}),
+            (_product("h2", "Fixturon Hoover Paperback", "2.99", category="Media > Books"), {"vacuum_cleaner"}),
+            (_product("m1", "Fixturon Chocolate Mice 225g", "3.75", category="Food Items > Candy & Chocolate"),
+             {"mouse"}),
+            # A suspect, not a mistake: a broad shelf names no kettle and holds kettles.
+            (_product("k1", "Fixturon Electric Kettle", "19.99", category="Home > Kitchen Appliances"),
+             {"kettle"}),
+            # The shelf, or the product type, names the kind: not listed.
+            (_product("k2", "Fixturon Glass Kettle", "24.99", category="Small Appliances > Kettles"), {"kettle"}),
+            (_product("k3", "Fixturon Steel Kettle", "29.99", product_type="Kitchen > Kettles"), {"kettle"}),
+            (_product("v1", "Fixturon S8 Robot Vacuum", "399.00", category="Floor Care > Vacuums"),
+             {"robot_vacuum", "vacuum_cleaner"}),
+            # A title naming no kind is the other list's.
+            (_product("s1", "Fixturon Mesh Seat", "89.00"), {"office_chair", "chair"}),
+        ]
+        note = measure_kind_titles([row[0] for row in rows], [frozenset(row[1]) for row in rows])
+        self.assertEqual(note["only_title_names_kind"], 4)
+        self.assertEqual(
+            note["by_kind_only_title"],
+            [
+                {
+                    "kind": "vacuum_cleaner",
+                    "products": 3,
+                    "only_title_names_it": 2,
+                    "cheapest": [
+                        "2.99 GBP | Fixture Store One | Fixturon Hoover Paperback | Books",
+                        "8.99 GBP | Fixture Store One | Fixturon Hoover 6 Book Collection Set | Books",
+                    ],
+                },
+                {
+                    "kind": "kettle",
+                    "products": 3,
+                    "only_title_names_it": 1,
+                    "cheapest": ["19.99 GBP | Fixture Store One | Fixturon Electric Kettle | Kitchen Appliances"],
+                },
+                {
+                    "kind": "mouse",
+                    "products": 1,
+                    "only_title_names_it": 1,
+                    "cheapest": [
+                        "3.75 GBP | Fixture Store One | Fixturon Chocolate Mice 225g | Candy & Chocolate"
+                    ],
+                },
+            ],
+        )
+        # The first list is unchanged by the second.
+        self.assertEqual(note["title_names_no_kind"], 1)
+        self.assertEqual([entry["kind"] for entry in note["by_kind"]], ["chair", "office_chair"])
 
 
 if __name__ == "__main__":

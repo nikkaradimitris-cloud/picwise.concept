@@ -128,6 +128,9 @@ jobs:
       - name: Each shop of the prepared catalogue
         if: always() && steps.connect.outcome == 'success'
         run: ssh -n picwise 'sudo cat /srv/picwise/shared/public/prepared.json' | python3 deployment/server/print_shops.py
+      - name: Kinds that may be wrong in the prepared catalogue
+        if: always() && steps.connect.outcome == 'success'
+        run: ssh -n picwise 'sudo cat /srv/picwise/shared/public/prepared.json' | python3 deployment/server/print_kinds.py
       - name: Remove the key from the runner
         if: always()
         run: rm -f ~/.ssh/deploy_key ~/.ssh/config
