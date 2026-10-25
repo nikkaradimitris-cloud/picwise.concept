@@ -75,8 +75,23 @@ bot's, never the owner's by hand; never open an Awin tracked link from a session
     Apple Cable" sweets (charging cable), "Voice Tablets" sweets (tablet), a "Rat &
     Mouse" bait (mouse), the book "Make Your Bed" (bed), a model paint's "Protective
     Coat" (jacket), incontinence "Pants" (trousers).
-- **Next, put to the owner (waiting for their word):** (1) the watch error, the largest:
-  build on the branch, see it on the server, `main` on their «ναι»; (2) before any row
+- **The watch error fixed on the branch** (owner: «ναι, ξεκίνα με το ρολόι»; commit
+  `6aff4fe`, run `40205899827`; **not on `main`**). The server's shelves are Google's
+  British taxonomy: "clothing & accessories > jewellery & watches > body jewellery".
+  An aisle listing a kind with something PicWise has no kind for now gives that kind
+  only when the title names it, otherwise the narrower shelf decides; the narrowest
+  shelf keeps its kind ("Skillets & Frying Pans" stay cookware). Of Google's 5,595
+  shelves read with no title, two change (access points and network bridges under
+  "Bridges & Routers" are no routers). On the server: products shown as a kind
+  411,717 -> 243,908, titles naming none of their kinds 176,239 -> 10,865, "watch"
+  169,271 -> 1,751 products (31 suspects); the 12 searches show the same cards as
+  before. The kind lists now give each kind's three whole shelves. Left, seen in the
+  same list: titles alone giving a kind on another department's shelf, "barbell" 951
+  (piercing barbells on "body jewellery", were watches), "bag" 448 (291 on "sweets &
+  chocolate"), "bed" 212 (149 on "pet supplies"), chocolate mice as mice.
+- **Next, put to the owner (waiting for their word):** (1) the watch fix to `main`, on
+  their «ναι» (the branch also carries the server's files; bring only the fix if they
+  want only it); then a title alone giving a kind on another department's shelf; (2) before any row
   without a category is shown by its title, measure how often the title alone agrees
   with the shelf on the rows that have one (per shop: InStock UK has both); (3) ask
   Awin or the two largest shops (InStock UK, Back to the Office) for their categories;
