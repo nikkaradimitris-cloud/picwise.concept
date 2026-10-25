@@ -33,8 +33,11 @@ def main() -> int:
         print(f"no shop list in the note: {intake}")
         return 0
     shops = intake["shops"]
+    # The note's own `shops` counts the shops with a row past the feed's checks, also one
+    # whose rows are all out of stock; this counts the shops a search can show.
+    showing = sum(1 for shop in shops if shop["shown"] or shop["not_new"])
     print(
-        f"{len(shops)} shops in the feed, {note.get('shops')} with a card; {intake['rows']:,} rows: "
+        f"{len(shops)} shops in the feed, {showing} with a product shown; {intake['rows']:,} rows: "
         f"shown {intake['shown']:,}, only when asked for {intake['not_new']:,}, held {intake['held']:,}"
     )
     print(f"{'rows':>9} {'shown':>9} {'asked':>7} {'held':>9}  shop: why held (rows)")

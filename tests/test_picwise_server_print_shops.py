@@ -5,8 +5,10 @@ how many shops its feed link brought (82), not which, so whether the shops taken
 Awin's Create-a-Feed were out could not be read from its log. Pinned here: on the note
 `tools/prepare_catalogue.py --static-dir` writes, every shop of the feed is printed with
 its rows, shown, only when asked for and held, and why held, also a shop none of whose
-rows is shown; and on a missing or failed note the script says so and exits 0, so a
-deployment never fails because of the list.
+rows is shown, which the count of shops with a product shown leaves out (the note's own
+82 counted shops whose rows were all out of stock: 77 showed something); and on a
+missing or failed note the script says so and exits 0, so a deployment never fails
+because of the list.
 
 Every row is local test data (`tests/fixtures`): fictional shops, `.invalid` URLs.
 """
@@ -50,7 +52,7 @@ class PrintShopsTests(unittest.TestCase):
         lines = result.stdout.splitlines()
         self.assertEqual(
             lines[0],
-            "4 shops in the feed, 3 with a card; 19 rows: shown 15, only when asked for 0, held 4",
+            "4 shops in the feed, 4 with a product shown; 19 rows: shown 15, only when asked for 0, held 4",
         )
         self.assertEqual(len(lines), 2 + 4)
         self.assertIn(
@@ -76,9 +78,11 @@ class PrintShopsTests(unittest.TestCase):
         }
         result = _print_shops(json.dumps(note))
         self.assertEqual(result.returncode, 0)
+        lines = result.stdout.splitlines()
         self.assertEqual(
-            result.stdout.splitlines()[-1], "      250         0       0       250  Euro Shop: a 250, b 20, c 3"
+            lines[0], "2 shops in the feed, 1 with a product shown; 1,250 rows: shown 1,000, only when asked for 0, held 250"
         )
+        self.assertEqual(lines[-1], "      250         0       0       250  Euro Shop: a 250, b 20, c 3")
         self.assertIn("    1,000     1,000       0         0  Kept Shop", result.stdout)
 
     def test_no_note_or_no_list_says_so_and_never_fails(self) -> None:
