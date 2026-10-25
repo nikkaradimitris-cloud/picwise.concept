@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-23.
+Current state for whoever picks the project up next. Updated 2026-10-25.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
 ## Next conversation: the server; nothing left out of what is kept (owner, 2026-10-23) -- start here
@@ -13,6 +13,19 @@ file was then stopped by the owner's rule below.
   `ccr-c30938cf-v749ay`'s notes. Its code is `main`'s (last merge `7b9624c`, 23/10 16:08
   UTC); it is ahead only by notes (PROGRESS and this file). Bring it into the next
   session's branch first.
+- **The server: bought, reachable, checked (25/10).** OVHcloud VPS-4 2027 in London
+  (Erith): Ubuntu 24.04.4, 8 vCores, 24 GB, 200 GB NVMe, €23.49 a month, monthly; its
+  renewal is still "Manual", due 24/11 (the owner turns it to automatic). Login by the
+  owner's ed25519 key only, user `ubuntu`. The owner set the GitHub Actions secrets
+  `SERVER_HOST`, `SERVER_USER` and `SERVER_SSH_KEY`; `AWIN_FEED_URL` not yet (made
+  again in Awin's Create-a-Feed when the site moves). The repository is public: the
+  server's address never goes into it or into a log (GitHub masks secrets). The session
+  cannot open SSH (only HTTPS on 443), so the server is worked through GitHub
+  workflows; the read-only `.github/workflows/server-check.yml` (this branch only)
+  logged in on 25/10 (PROGRESS, 25/10). Next, each on the owner's yes: the first setup
+  (security updates, firewall, SSH by key only), then the site with today's code,
+  `noindex` everywhere, compared with Vercel; the domain moves only on the owner's word.
+  The owner's guide: `docs/ovhcloud_server_setup_el.md`.
 - **Owner's rule (2026-10-23): nothing that may serve the pages Google indexes is left
   out of what PicWise keeps.** In their words: «Δεν πρέπει να διαγράψεις τίποτα που θα
   επηρεάσει την ποιότητα χαρακτηριστικά seo ... Τα προϊόντα που θα καλούνται από την

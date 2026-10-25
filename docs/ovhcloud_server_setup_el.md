@@ -127,8 +127,10 @@ ssh-keygen -t ed25519 -C "picwise-github" -f ~/.ssh/picwise_github
 
 ## Βήμα 5: τα «μυστικά» στο GitHub
 
-Στο GitHub, άνοιξε το αποθετήριο `picwise.concept` και πήγαινε **Settings → Secrets
-and variables → Actions → New repository secret**. Πρόσθεσε τέσσερα, ένα ένα:
+Στο GitHub μπες με τον λογαριασμό **nikkaradimitris-cloud**, τον κάτοχο του αποθετηρίου
+(όχι με το email του Subby). Άνοιξε το αποθετήριο `picwise.concept` και πήγαινε
+**Settings → Secrets and variables → Actions → New repository secret**. Πρόσθεσε
+τέσσερα, ένα ένα:
 
 | Όνομα (ακριβώς έτσι) | Τιμή |
 |---|---|
@@ -150,6 +152,11 @@ and variables → Actions → New repository secret**. Πρόσθεσε τέσσ
   ```
 
 Πρέπει να περιλαμβάνει και τις γραμμές `-----BEGIN` και `-----END`.
+
+**Κατάσταση 25/10:** μπήκαν τα τρία πρώτα, και ο έλεγχος από το GitHub μπήκε στον
+server με το κλειδί. Το `AWIN_FEED_URL` μπαίνει όταν μεταφέρουμε το site στον server.
+Δεν φαίνεται ξανά ούτε στη Vercel ούτε στο Awin, οπότε τότε τον φτιάχνεις ξανά στο
+Create-a-Feed.
 
 ## Βήμα 6: πες μου «έτοιμο»
 
