@@ -1121,10 +1121,15 @@ def _breadcrumb_heads(category: str, title: str) -> tuple[list[str], bool]:
     of a product decides for the whole crumb: "Cameras > Camera Accessories" is not a
     camera. A shelf must name its product as its head ("Surveillance Cameras"), not in
     passing ("Power banks and batteries"), and a shelf holding two kinds only counts
-    when the product's own title says which of them it is.
+    when the product's own title says which of them it is. So does an aisle holding a
+    kind together with something PicWise has no kind for, above a narrower shelf
+    ("Jewellery & Watches > Body Jewellery"): its kind counts only when the title names
+    it, and otherwise the narrower shelf decides. The narrowest shelf keeps its kind:
+    "Skillets & Frying Pans" are cookware, though PicWise knows no skillet.
     """
     heads: list[str] = []
-    for segment in _BREADCRUMB_SPLIT_RE.split(str(category or "")):
+    segments = [segment for segment in _BREADCRUMB_SPLIT_RE.split(str(category or "")) if segment.strip()]
+    for position, segment in enumerate(segments):
         # "Garden Planters & Stands" is a shelf of two things, planters and stands, not
         # planter stands: after a plural, "&" is a list, as "and" is. After a singular
         # it shares the noun that follows: "Camera & Optic Accessories" are accessories.
@@ -1163,8 +1168,33 @@ def _breadcrumb_heads(category: str, title: str) -> tuple[list[str], bool]:
         if head is not None:
             # None here means the shelf names a product only in passing ("Power banks
             # and batteries" holds both, and a coin cell is not a power bank).
+            if (
+                position < len(segments) - 1
+                and _shelf_lists_an_unknown_kind(segment)
+                and head not in {span.concept_id for span in _concepts_in_text(title)}
+            ):
+                # "Jewellery & Watches > Body Jewellery": the aisle holds jewellery as well
+                # as watches, so its piercing aftercare oil is no watch. On the server's
+                # feed of every Google-format shop (owner, 2026-10-25) 167,551 of 169,271
+                # products read as watches had titles naming no watch.
+                continue
             heads.append(head)
     return heads, False
+
+
+# A shelf's list of what it holds: "Jewellery & Watches", "Handbags, Wallets & Cases".
+# Not at "/", which joins two names for one thing on a shelf ("Laptops/Notebooks").
+_SHELF_LIST_SPLIT_RE = re.compile(r"\s*(?:&|,|\band\b|\bκαι\b)\s*", flags=re.IGNORECASE)
+
+
+def _shelf_lists_an_unknown_kind(segment: str) -> bool:
+    """Does this shelf list, besides what it names, something PicWise has no kind for?
+    "Jewellery & Watches" lists jewellery; "Fans & Heaters" lists two known kinds, and
+    "Tea & Coffee Makers" names one product."""
+    parts = [part for part in _SHELF_LIST_SPLIT_RE.split(segment) if part.strip()]
+    return len(parts) > 1 and any(
+        _head_of_text(part, strict_tail=True) is None and _type_is_informative(part) for part in parts
+    )
 
 
 @lru_cache(maxsize=65536)
@@ -1203,13 +1233,25 @@ def annotate_product_concepts(product_type: str, category: str, title: str) -> f
     products carry a context marker (`PET_MARKER`, `CAMPING_MARKER`) that the search
     reads against the buyer's words: a dog bed answers "dog bed", not "bed".
     """
-    kinds = _annotate_kinds(product_type, category, title)
+    return _with_context_markers(_annotate_kinds(product_type, category, title), category, title)
+
+
+def kinds_before_the_aisle_rule(product_type: str, category: str, title: str) -> frozenset[str]:
+    """The kinds `annotate_product_concepts` gave before a title's kind was read against
+    its aisle's departments (`_aisle_may_hold`, owner, 2026-10-25), so the build's note
+    can say which products that rule made doubtful. Measured only: no search reads it."""
+    return _with_context_markers(
+        _annotate_kinds(product_type, category, title, aisle_rule=False), category, title
+    )
+
+
+def _with_context_markers(kinds: frozenset[str], category: str, title: str) -> frozenset[str]:
     if not kinds or kinds & {ACCESSORY_MARKER, UNCERTAIN_MARKER}:
         return kinds
     return kinds | _product_context_markers(category, title)
 
 
-def _annotate_kinds(product_type: str, category: str, title: str) -> frozenset[str]:
+def _annotate_kinds(product_type: str, category: str, title: str, *, aisle_rule: bool = True) -> frozenset[str]:
     # What follows a spaced "+" in a type comes with the product, as in a title:
     # Pro-Camera's "... > Canon EOS R5 + EF-EOS R mount adapter" is the camera (owner's
     # file, 2026-10-23: 63 cameras were read as adapters).
@@ -1301,7 +1343,7 @@ def _annotate_kinds(product_type: str, category: str, title: str) -> frozenset[s
             return frozenset({UNCERTAIN_MARKER})
         if not title_spans:
             return frozenset()
-        head = _title_fallback_head(title, category)
+        head = _title_fallback_head(title, category) if aisle_rule else _title_named_head(title, category)
         if head in (ACCESSORY_MARKER, UNCERTAIN_MARKER):
             return frozenset({head})
         if head is None:
@@ -1769,6 +1811,22 @@ def _names_another_product_after(tokens: tuple[str, ...], end: int) -> bool:
 
 
 def _title_fallback_head(title: str, category: str) -> str | None:
+    """The kind a title names when neither its type nor its category names one
+    (`_title_named_head`), unless the category is an aisle of Google's whose shelves name
+    no kind of that department: "Chocolate Mice" under "Food, Beverages & Tobacco" are no
+    mice, a "Circular Barbell" under "Clothing & Accessories > Jewellery & Watches" is a
+    piercing, and the "Colleen Hoover" of a book under "Media > Books" no vacuum cleaner
+    (owner, 2026-10-25: «προχώρα στο επόμενο λάθος»). Such a kind is doubtful: the product
+    is still found by its words, never by its kind. A category that is no aisle of
+    Google's leaves the title to decide, as before.
+    """
+    head = _title_named_head(title, category)
+    if head not in (None, ACCESSORY_MARKER, UNCERTAIN_MARKER) and not _aisle_may_hold(category, head):
+        return UNCERTAIN_MARKER
+    return head
+
+
+def _title_named_head(title: str, category: str) -> str | None:
     """The kind a title names when neither its type nor its category names one.
 
     The lead is read first, and read strictly: a lead that names a kind only to
@@ -1802,6 +1860,78 @@ def _title_fallback_head(title: str, category: str) -> str | None:
     if shelf and _type_is_informative(shelf) and not _type_supports_concept(shelf, head):
         return UNCERTAIN_MARKER
     return head
+
+
+# Google's British names for its aisles where they differ from the US file the code
+# reads: the shops of the server's feed file their jewellery under "Clothing & Accessories
+# > Jewellery & Watches" (owner, 2026-10-25), Google's US file under "Apparel &
+# Accessories > Jewelry".
+_BRITISH_AISLE_NAMES = {
+    "clothing & accessories": "apparel & accessories",
+    "jewellery & watches": "jewelry",
+    "jewellery": "jewelry",
+    "jewellery cleaning & care": "jewelry cleaning & care",
+    "healthcare": "health care",
+}
+
+
+def _in_the_singular(text: str) -> str:
+    return " ".join(_singular(word) for word in str(text or "").lower().split())
+
+
+@lru_cache(maxsize=1)
+def _aisle_departments() -> dict[str, frozenset[str]]:
+    """Per aisle of Google's taxonomy, its top ("media") and its first two levels
+    ("media > books"), the departments (`mega_category_id`) of the kinds its shelves name,
+    each shelf read as it is and in the singular: the lexicon knows a "massager" but no
+    "massagers", so "Electric Massagers" says nothing as it is. Empty when the taxonomy
+    file is not there, and then no aisle is read."""
+    try:
+        lines = _TAXONOMY_PATH.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return {}
+    by_id = get_product_concepts_by_id()
+    departments: dict[str, set[str]] = {}
+    for line in lines:
+        if not line.strip() or line.startswith("#"):
+            continue
+        names = [" ".join(name.lower().split()) for name in line.split(">")]
+        heads, _accessory = _category_heads(line.lower(), "")
+        singular_heads, _accessory = _category_heads(" > ".join(_in_the_singular(name) for name in names), "")
+        found = {by_id[head].mega_category_id for head in (*heads, *singular_heads) if head in by_id}
+        for aisle in {names[0], " > ".join(names[:2])}:
+            departments.setdefault(aisle, set()).update(found)
+    return {aisle: frozenset(found) for aisle, found in departments.items()}
+
+
+def _aisle_may_hold(category: str, concept_id: str) -> bool:
+    """Does the aisle a category starts with hold, on some shelf of Google's, a kind of
+    this kind's department, or of a broader kind's: a smartwatch is a watch too, so an
+    aisle of watches may hold one. The first category field that is an aisle of
+    Google's is read at its first two levels, or at its top when Google's shelves there
+    name no kind at all ("Furniture > Furniture Sets" holds sofas the lexicon cannot
+    read off its shelves); an aisle whose own name names the kind holds it ("Toys &
+    Games", a toy). True when no field is an aisle of Google's."""
+    by_id = get_product_concepts_by_id()
+    aisles = _aisle_departments()
+    if concept_id not in by_id or not aisles:
+        return True
+    kinds = set(broader_concepts(concept_id))
+    departments = {by_id[kind].mega_category_id for kind in kinds if kind in by_id}
+    for crumb in str(category or "").split(CATEGORY_FIELD_SEPARATOR.strip()):
+        names = [
+            _BRITISH_AISLE_NAMES.get(name, name)
+            for name in (" ".join(segment.lower().split()) for segment in _BREADCRUMB_SPLIT_RE.split(crumb))
+            if name
+        ]
+        if not names or names[0] not in aisles:
+            continue
+        if any(span.concept_id in kinds for name in names[:2] for span in _concepts_in_text(_in_the_singular(name))):
+            return True
+        two = " > ".join(names[:2])
+        held = aisles.get(two) if len(names) > 1 and aisles.get(two) else aisles[names[0]]
+        return bool(departments & held)
+    return True
 
 
 def _narrowest_shelf(category: str) -> str:
