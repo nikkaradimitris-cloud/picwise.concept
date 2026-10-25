@@ -14,8 +14,8 @@ file was then stopped by the owner's rule below.
   UTC); it is ahead only by notes (PROGRESS and this file). Bring it into the next
   session's branch first.
 - **The server: bought, reachable, checked (25/10).** OVHcloud VPS-4 2027 in London
-  (Erith): Ubuntu 24.04.4, 8 vCores, 24 GB, 200 GB NVMe, €23.49 a month, monthly; its
-  renewal is still "Manual", due 24/11 (the owner turns it to automatic). Login by the
+  (Erith): Ubuntu 24.04.4, 8 vCores, 24 GB, 200 GB NVMe, €23.49 a month, no
+  commitment; renewal automatic every month (set 25/10; next 24/11). Login by the
   owner's ed25519 key only, user `ubuntu`. The owner set the GitHub Actions secrets
   `SERVER_HOST`, `SERVER_USER` and `SERVER_SSH_KEY`; `AWIN_FEED_URL` not yet (made
   again in Awin's Create-a-Feed when the site moves). The repository is public: the
