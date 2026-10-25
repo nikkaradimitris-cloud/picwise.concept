@@ -126,7 +126,7 @@ def _kinds(prepared) -> dict[str, object]:
     try:
         from picwise_providers.kind_check import measure_kind_titles
 
-        return measure_kind_titles(prepared.products, prepared.kinds)
+        return measure_kind_titles(prepared.products, prepared.kinds, prepared.search_fields or None)
     except Exception as error:
         return {"error": _where(error)}
 

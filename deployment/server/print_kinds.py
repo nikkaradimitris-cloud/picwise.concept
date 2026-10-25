@@ -7,7 +7,8 @@ note's `kinds` (`picwise_providers.kind_check`) on stdin: per kind, how many of 
 products have a title naming none of the kind's nouns, and how many have a title naming
 it while neither their product type nor their shelf does (owner, 2026-10-25: "Colleen
 Hoover" books answering "vacuum cleaner"), with the cheapest three of each (price, shop,
-title, shelf), since price first puts the cheapest at the top of a page. Suspects, not
+title, shelf), since price first puts the cheapest at the top of a page, and the
+shelves they most often sit on, whole, as the kind reader saw them. Suspects, not
 mistakes. The note holds no link. Always exits 0: a deployment never fails because of
 this list.
 """
@@ -53,6 +54,10 @@ def print_list(heading: str, entries: list[dict], count: str) -> None:
         print(f"{entry['kind']}: {entry[count]:,} of {entry['products']:,}")
         for example in entry["cheapest"]:
             print(f"    {example}")
+        # The shelves its suspects most often sit on, whole, as the kind reader saw them.
+        if entry.get("shelves"):
+            shelves = "; ".join(f"{shelf['shelf']} ({shelf['products']:,})" for shelf in entry["shelves"])
+            print(f"    shelves: {shelves}")
 
 
 if __name__ == "__main__":

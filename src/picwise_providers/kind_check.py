@@ -19,15 +19,23 @@ kind, the shown products whose title names the kind while neither their product 
 nor their shelf does: suspects again, not mistakes ("Kitchen Appliances" names no
 kettle and holds kettles).
 
+Owner, 2026-10-25, «ναι, ξεκίνα με το ρολόι»: the cheapest three showed piercing oil
+read as a watch on "Body Jewellery", which named no watch; the whole shelf, as the kind
+reader saw it, did ("jewellery & watches > body jewellery"). So each kind listed also
+gives the three shelves its suspects most often sit on, whole, with their counts: where
+a wrong kind comes from, not only what it looks like.
+
 The deployment's build writes it into its public note (`tools/prepare_catalogue.py
---static-dir`), next to `intake`: counts, kinds, and a few product titles, shops and
-prices, never a link.
+--static-dir`), next to `intake`: counts, kinds, shelves, and a few product titles,
+shops and prices, never a link.
 """
 from __future__ import annotations
 
+import heapq
 import re
+from collections import Counter
 from functools import lru_cache
-from typing import Any, Collection, Sequence
+from typing import Any, Collection, Mapping, Sequence
 
 from picwise_nlu.concept_understanding import normalize_understanding_text
 from picwise_nlu.product_concepts import broader_concepts, get_product_concepts_by_id
@@ -42,6 +50,9 @@ _KINDS_LISTED = 25
 _EXAMPLES = 3
 _TITLE_LENGTH = 70
 _SHELF_LENGTH = 40
+# How many whole shelves of a kind's suspects the note shows, and how long each may be.
+_SHELVES = 3
+_WHOLE_SHELF_LENGTH = 100
 # "headphones/headset", "CPU/Processor": a slash in a title joins two words.
 _TITLE_WORD_SPLIT_RE = re.compile(r"[\s/]+")
 _SHELF_SPLIT_RE = re.compile(r"\s*(?:>|\|\|)\s*")
@@ -111,8 +122,16 @@ def _cheapest(products: list[ProviderProduct]) -> list[ProviderProduct]:
     return sorted(products, key=lambda product: (price(product), str(product.title or "")))[:_EXAMPLES]
 
 
+def _top_shelves(shelves: Counter) -> list[dict[str, Any]]:
+    return [
+        {"shelf": _cut(shelf, _WHOLE_SHELF_LENGTH) if shelf else "-", "products": count}
+        for shelf, count in heapq.nsmallest(_SHELVES, shelves.items(), key=lambda item: (-item[1], item[0]))
+    ]
+
+
 def _listed(by_kind: dict[str, dict[str, Any]], suspects: str, count_name: str) -> list[dict[str, Any]]:
-    """The kinds with the most suspects of this list, each with its cheapest."""
+    """The kinds with the most suspects of this list, each with its cheapest and the
+    shelves they most often sit on."""
     listed = sorted(
         ((kind, entry) for kind, entry in by_kind.items() if entry[suspects]),
         key=lambda item: (-len(item[1][suspects]), item[0]),
@@ -123,27 +142,32 @@ def _listed(by_kind: dict[str, dict[str, Any]], suspects: str, count_name: str) 
             "products": entry["products"],
             count_name: len(entry[suspects]),
             "cheapest": [_example(product) for product in _cheapest(entry[suspects])],
+            "shelves": _top_shelves(entry[f"{suspects}_shelves"]),
         }
         for kind, entry in listed
     ]
 
 
 def measure_kind_titles(
-    products: Sequence[ProviderProduct], kinds: Sequence[Collection[str]]
+    products: Sequence[ProviderProduct],
+    kinds: Sequence[Collection[str]],
+    fields: Sequence[Mapping[str, str]] | None = None,
 ) -> dict[str, Any]:
     """Per kind: the shown products of that kind, how many of them have a title naming
     none of the kind's nouns, and the cheapest of those; and how many have a title
     naming one of their kinds while neither their product type nor their shelf names
-    any, and the cheapest of those.
+    any, and the cheapest of those; for each, the shelves they most often sit on.
 
-    `products` and `kinds` are a prepared catalogue's, side by side. Only kinds a search
-    can show a product by count: the markers (accessory, doubtful, pet, camping) do not.
+    `products` and `kinds` are a prepared catalogue's, side by side, and `fields` its
+    search fields, whose `category` is the whole shelf the kind reader saw; without
+    them, a product's own category stands for it. Only kinds a search can show a
+    product by count: the markers (accessory, doubtful, pet, camping) do not.
     """
     by_kind: dict[str, dict[str, Any]] = {}
     counted = 0
     names_none = 0
     only_title = 0
-    for product, product_kinds in zip(products, kinds):
+    for index, (product, product_kinds) in enumerate(zip(products, kinds)):
         real = sorted(kind for kind in product_kinds if not kind.startswith("__"))
         if not real:
             continue
@@ -161,13 +185,22 @@ def measure_kind_titles(
         title_alone = bool(named) and not any(shelf_words & _kind_nouns(kind) for kind in real)
         if title_alone:
             only_title += 1
+        shelf = (
+            str(fields[index].get("category") or "") if fields is not None else str(product.category_text or "")
+        )
         for kind in real:
-            entry = by_kind.setdefault(kind, {"products": 0, "suspects": [], "title_alone": []})
+            entry = by_kind.setdefault(
+                kind,
+                {"products": 0, "suspects": [], "title_alone": [],
+                 "suspects_shelves": Counter(), "title_alone_shelves": Counter()},
+            )
             entry["products"] += 1
             if kind in missing:
                 entry["suspects"].append(product)
+                entry["suspects_shelves"][shelf] += 1
             if title_alone:
                 entry["title_alone"].append(product)
+                entry["title_alone_shelves"][shelf] += 1
     return {
         "products": counted,
         "title_names_no_kind": names_none,

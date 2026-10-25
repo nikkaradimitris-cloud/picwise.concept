@@ -8,7 +8,9 @@ counted (markers, no kind), the most suspects first, the cheapest examples with 
 narrowest shelf, and nothing of a link. Owner, 2026-10-25, with every Google-format shop
 on the server: also the products whose title names their kind while neither their
 product type nor their shelf does ("Colleen Hoover" books answering "vacuum cleaner",
-"Chocolate Mice" answering "mouse"); pinned too.
+"Chocolate Mice" answering "mouse"); pinned too. And for each kind listed, the shelves
+its suspects most often sit on, whole as the kind reader saw them ("jewellery & watches
+> body jewellery", where the cheapest example shows only "Body Jewellery").
 
 Every row is local test data: fictional brands, `.invalid` URLs.
 """
@@ -136,6 +138,7 @@ class KindTitleCheckTests(unittest.TestCase):
                     "products": 1,
                     "title_without_kind": 1,
                     "cheapest": ["6.99 GBP | Fixture Store One | Fixturon Noodle Mats - 40x60cm / Black | Bath Mats & Rugs"],
+                    "shelves": [{"shelf": "Home & Garden > Bathroom Accessories > Bath Mats & Rugs", "products": 1}],
                 }
             ],
         )
@@ -182,12 +185,14 @@ class KindTitleCheckTests(unittest.TestCase):
                         "2.99 GBP | Fixture Store One | Fixturon Hoover Paperback | Books",
                         "8.99 GBP | Fixture Store One | Fixturon Hoover 6 Book Collection Set | Books",
                     ],
+                    "shelves": [{"shelf": "Media > Books", "products": 2}],
                 },
                 {
                     "kind": "kettle",
                     "products": 3,
                     "only_title_names_it": 1,
                     "cheapest": ["19.99 GBP | Fixture Store One | Fixturon Electric Kettle | Kitchen Appliances"],
+                    "shelves": [{"shelf": "Home > Kitchen Appliances", "products": 1}],
                 },
                 {
                     "kind": "mouse",
@@ -196,12 +201,39 @@ class KindTitleCheckTests(unittest.TestCase):
                     "cheapest": [
                         "3.75 GBP | Fixture Store One | Fixturon Chocolate Mice 225g | Candy & Chocolate"
                     ],
+                    "shelves": [{"shelf": "Food Items > Candy & Chocolate", "products": 1}],
                 },
             ],
         )
         # The first list is unchanged by the second.
         self.assertEqual(note["title_names_no_kind"], 1)
         self.assertEqual([entry["kind"] for entry in note["by_kind"]], ["chair", "office_chair"])
+
+    def test_the_whole_shelf_the_kind_reader_saw_and_the_most_frequent_first(self) -> None:
+        rows = [
+            (_product("w1", "Jojoba Healing Oil Roll-On", "3.49", category="Body Jewellery"), {"watch"}),
+            (_product("w2", "316L Ear Expander - 3mm", "4.99", category="Body Jewellery"), {"watch"}),
+            (_product("w3", "Fixturon Heart Pendant", "49.00", category="Pendants"), {"watch"}),
+            (_product("w4", "Fixturon F-91W Classic Watch", "15.00", category="Watches"), {"watch"}),
+        ]
+        fields = [
+            {"category": "jewellery & watches > body jewellery"},
+            {"category": "jewellery & watches > body jewellery"},
+            {"category": "jewellery & watches > pendants"},
+            {"category": "jewellery & watches > watches"},
+        ]
+        note = measure_kind_titles([row[0] for row in rows], [frozenset(row[1]) for row in rows], fields)
+        (watch,) = note["by_kind"]
+        self.assertEqual((watch["products"], watch["title_without_kind"]), (4, 3))
+        self.assertEqual(
+            watch["shelves"],
+            [
+                {"shelf": "jewellery & watches > body jewellery", "products": 2},
+                {"shelf": "jewellery & watches > pendants", "products": 1},
+            ],
+        )
+        # The cheapest still name the narrowest shelf of the product's own category.
+        self.assertEqual(watch["cheapest"][0], "3.49 GBP | Fixture Store One | Jojoba Healing Oil Roll-On | Body Jewellery")
 
 
 if __name__ == "__main__":

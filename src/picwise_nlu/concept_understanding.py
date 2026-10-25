@@ -1121,10 +1121,15 @@ def _breadcrumb_heads(category: str, title: str) -> tuple[list[str], bool]:
     of a product decides for the whole crumb: "Cameras > Camera Accessories" is not a
     camera. A shelf must name its product as its head ("Surveillance Cameras"), not in
     passing ("Power banks and batteries"), and a shelf holding two kinds only counts
-    when the product's own title says which of them it is.
+    when the product's own title says which of them it is. So does an aisle holding a
+    kind together with something PicWise has no kind for, above a narrower shelf
+    ("Jewellery & Watches > Body Jewellery"): its kind counts only when the title names
+    it, and otherwise the narrower shelf decides. The narrowest shelf keeps its kind:
+    "Skillets & Frying Pans" are cookware, though PicWise knows no skillet.
     """
     heads: list[str] = []
-    for segment in _BREADCRUMB_SPLIT_RE.split(str(category or "")):
+    segments = [segment for segment in _BREADCRUMB_SPLIT_RE.split(str(category or "")) if segment.strip()]
+    for position, segment in enumerate(segments):
         # "Garden Planters & Stands" is a shelf of two things, planters and stands, not
         # planter stands: after a plural, "&" is a list, as "and" is. After a singular
         # it shares the noun that follows: "Camera & Optic Accessories" are accessories.
@@ -1163,8 +1168,33 @@ def _breadcrumb_heads(category: str, title: str) -> tuple[list[str], bool]:
         if head is not None:
             # None here means the shelf names a product only in passing ("Power banks
             # and batteries" holds both, and a coin cell is not a power bank).
+            if (
+                position < len(segments) - 1
+                and _shelf_lists_an_unknown_kind(segment)
+                and head not in {span.concept_id for span in _concepts_in_text(title)}
+            ):
+                # "Jewellery & Watches > Body Jewellery": the aisle holds jewellery as well
+                # as watches, so its piercing aftercare oil is no watch. On the server's
+                # feed of every Google-format shop (owner, 2026-10-25) 167,551 of 169,271
+                # products read as watches had titles naming no watch.
+                continue
             heads.append(head)
     return heads, False
+
+
+# A shelf's list of what it holds: "Jewellery & Watches", "Handbags, Wallets & Cases".
+# Not at "/", which joins two names for one thing on a shelf ("Laptops/Notebooks").
+_SHELF_LIST_SPLIT_RE = re.compile(r"\s*(?:&|,|\band\b|\bκαι\b)\s*", flags=re.IGNORECASE)
+
+
+def _shelf_lists_an_unknown_kind(segment: str) -> bool:
+    """Does this shelf list, besides what it names, something PicWise has no kind for?
+    "Jewellery & Watches" lists jewellery; "Fans & Heaters" lists two known kinds, and
+    "Tea & Coffee Makers" names one product."""
+    parts = [part for part in _SHELF_LIST_SPLIT_RE.split(segment) if part.strip()]
+    return len(parts) > 1 and any(
+        _head_of_text(part, strict_tail=True) is None and _type_is_informative(part) for part in parts
+    )
 
 
 @lru_cache(maxsize=65536)

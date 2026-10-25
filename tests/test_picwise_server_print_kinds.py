@@ -4,9 +4,11 @@
 the server, the 12 searches showed products of another kind ("Colleen Hoover" books for
 "vacuum cleaner", "Chocolate Mice" for "mouse"), so the deployment prints the note's two
 lists per kind, the products whose title names none of the kind's words and those whose
-title alone names it, each with its cheapest three. Pinned here: both lists as the note
-gives them, a note written before the second list, and on a missing or failed note a
-line that says so and exit 0, so a deployment never fails because of the list.
+title alone names it, each with its cheapest three and, since the same day, the shelves
+they most often sit on. Pinned here: both lists as the note gives them, a kind written
+before its shelves were, a note written before the second list, and on a missing or
+failed note a line that says so and exit 0, so a deployment never fails because of the
+list.
 
 Every row is local test data: fictional brands and shops.
 """
@@ -39,6 +41,10 @@ _KINDS = {
             "cheapest": [
                 "5.50 GBP | Fixture Store One | Fixturon OV7670 Module | Electronic Components",
                 "9.99 GBP | Fixture Store One | Fixturon 50mm Lens | Camera Lenses",
+            ],
+            "shelves": [
+                {"shelf": "electronics > electronic components", "products": 30},
+                {"shelf": "cameras & optics > camera lenses", "products": 10},
             ],
         }
     ],
@@ -73,6 +79,7 @@ class PrintKindsTests(unittest.TestCase):
                 "camera: 40 of 377",
                 "    5.50 GBP | Fixture Store One | Fixturon OV7670 Module | Electronic Components",
                 "    9.99 GBP | Fixture Store One | Fixturon 50mm Lens | Camera Lenses",
+                "    shelves: electronics > electronic components (30); cameras & optics > camera lenses (10)",
                 "",
                 (
                     "== only the title names the kind, neither the type nor the shelf: the kinds with the most, "
@@ -84,7 +91,11 @@ class PrintKindsTests(unittest.TestCase):
         )
 
     def test_a_note_written_before_the_second_list(self) -> None:
-        kinds = {key: value for key, value in _KINDS.items() if key in ("products", "title_names_no_kind", "by_kind")}
+        # Written before the second list, and before each kind gave its shelves.
+        kinds = {key: value for key, value in _KINDS.items() if key in ("products", "title_names_no_kind")}
+        kinds["by_kind"] = [
+            {key: value for key, value in entry.items() if key != "shelves"} for entry in _KINDS["by_kind"]
+        ]
         lines = _print_kinds(json.dumps({"prepared": True, "kinds": kinds})).stdout.splitlines()
         self.assertTrue(lines[0].endswith("only the title names one: not measured"))
         self.assertEqual(lines[-1], "    9.99 GBP | Fixture Store One | Fixturon 50mm Lens | Camera Lenses")
