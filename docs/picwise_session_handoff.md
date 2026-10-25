@@ -113,9 +113,28 @@ bot's, never the owner's by hand; never open an Awin tracked link from a session
   "mouse" no chocolate mice, "tv" no hoodie; still wrong on "mouse": a craft stamp set
   "Squeak the Mouse" and a "Self Tan Mousse" (coarse departments; "mousse" read as
   mouse).
-- **Next, put to the owner (waiting for their word):** (1) the watch fix and the aisle
-  rule to `main`, on their «ναι» (the branch also carries the server's files; bring only
-  the fixes if they want only them); (2) before any row
+- **Both fixes on `main` and live** (owner: «Ναι», 25/10): commit `3608da0` on `main`
+  holds only `concept_understanding.py` and the two test files, not the server's files;
+  the 107 related test modules (1,138 tests) pass on `main` but the two failing there
+  before. Vercel deployed it ("Deployment has completed"); the live site prepared at
+  18:50:06 UTC, and its 12 searches show the same cards as before (the errors were in
+  the server's larger feed, not in the live 20 shops). `main` is merged into this branch.
+- **The title alone against the shelf, measured** (owner: «Ναι»; commit `62fbf93`, run
+  `40223470414`; note key `title_alone`, printed by `print_kinds.py`): of 81,601 shown
+  products whose type and shelf alone give a kind, the title alone gives one to 52,024
+  (63.8%), **the shelf's own kind for 50,445 (97.0% of those)**, another for 1,579; none
+  for the rest (doubtful 11,681, nothing 17,174, an accessory 722). **InStock UK: 70.0%
+  get a kind, 94.6% of them the shelf's**; Finediam 100%; "Shopping Ads: Google & Bing"
+  (it sells Nike trainers) 1.6%: "Iron Grey" read as an iron, "Football Grey" as a
+  football. Of the disagreements, about half are the title being right where the
+  lexicon links no two kinds (bedside tables on "Bedside Tables" read as tables, dash
+  cams, heat pumps, lunch boxes, bracelets on InStock UK's bare "Jewellery & Watches"
+  shelf), half title errors (suit -> trousers 623, mattress -> bed 176 by the brand
+  "Starlight Beds", boxer shorts -> shorts, bean bag chairs -> bag, mixer grinder ->
+  angle grinder). For the 388,781 rows without a category this means about 204,000
+  could get a kind from their title, most of them right, a few thousand wrong, and
+  about 185,000 none (found by their words only).
+- **Next, put to the owner (waiting for their word):** (2) before any row
   without a category is shown by its title, measure how often the title alone agrees
   with the shelf on the rows that have one (per shop: InStock UK has both); (3) ask
   Awin or the two largest shops (InStock UK, Back to the Office) for their categories;
