@@ -1875,11 +1875,17 @@ _BRITISH_AISLE_NAMES = {
 }
 
 
+def _in_the_singular(text: str) -> str:
+    return " ".join(_singular(word) for word in str(text or "").lower().split())
+
+
 @lru_cache(maxsize=1)
 def _aisle_departments() -> dict[str, frozenset[str]]:
     """Per aisle of Google's taxonomy, its top ("media") and its first two levels
-    ("media > books"), the departments (`mega_category_id`) of the kinds its shelves name.
-    Empty when the taxonomy file is not there, and then no aisle is read."""
+    ("media > books"), the departments (`mega_category_id`) of the kinds its shelves name,
+    each shelf read as it is and in the singular: the lexicon knows a "massager" but no
+    "massagers", so "Electric Massagers" says nothing as it is. Empty when the taxonomy
+    file is not there, and then no aisle is read."""
     try:
         lines = _TAXONOMY_PATH.read_text(encoding="utf-8").splitlines()
     except OSError:
@@ -1891,7 +1897,8 @@ def _aisle_departments() -> dict[str, frozenset[str]]:
             continue
         names = [" ".join(name.lower().split()) for name in line.split(">")]
         heads, _accessory = _category_heads(line.lower(), "")
-        found = {by_id[head].mega_category_id for head in heads if head in by_id}
+        singular_heads, _accessory = _category_heads(" > ".join(_in_the_singular(name) for name in names), "")
+        found = {by_id[head].mega_category_id for head in (*heads, *singular_heads) if head in by_id}
         for aisle in {names[0], " > ".join(names[:2])}:
             departments.setdefault(aisle, set()).update(found)
     return {aisle: frozenset(found) for aisle, found in departments.items()}
@@ -1901,22 +1908,29 @@ def _aisle_may_hold(category: str, concept_id: str) -> bool:
     """Does the aisle a category starts with hold, on some shelf of Google's, a kind of
     this kind's department, or of a broader kind's: a smartwatch is a watch too, so an
     aisle of watches may hold one. The first category field that is an aisle of
-    Google's is read, at its first two levels when Google has them, else at its top;
-    true when no field is one."""
+    Google's is read at its first two levels, or at its top when Google's shelves there
+    name no kind at all ("Furniture > Furniture Sets" holds sofas the lexicon cannot
+    read off its shelves); an aisle whose own name names the kind holds it ("Toys &
+    Games", a toy). True when no field is an aisle of Google's."""
     by_id = get_product_concepts_by_id()
     aisles = _aisle_departments()
     if concept_id not in by_id or not aisles:
         return True
-    departments = {by_id[kind].mega_category_id for kind in broader_concepts(concept_id) if kind in by_id}
+    kinds = set(broader_concepts(concept_id))
+    departments = {by_id[kind].mega_category_id for kind in kinds if kind in by_id}
     for crumb in str(category or "").split(CATEGORY_FIELD_SEPARATOR.strip()):
         names = [
             _BRITISH_AISLE_NAMES.get(name, name)
             for name in (" ".join(segment.lower().split()) for segment in _BREADCRUMB_SPLIT_RE.split(crumb))
             if name
         ]
-        for aisle in (" > ".join(names[:2]) if len(names) > 1 else "", names[0] if names else ""):
-            if aisle in aisles:
-                return bool(departments & aisles[aisle])
+        if not names or names[0] not in aisles:
+            continue
+        if any(span.concept_id in kinds for name in names[:2] for span in _concepts_in_text(_in_the_singular(name))):
+            return True
+        two = " > ".join(names[:2])
+        held = aisles.get(two) if len(names) > 1 and aisles.get(two) else aisles[names[0]]
+        return bool(departments & held)
     return True
 
 
