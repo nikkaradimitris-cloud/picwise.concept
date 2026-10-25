@@ -36,9 +36,14 @@ a bot's, never the owner's by hand; never open an Awin tracked link from a sessi
   owner's screenshot of the list). Of the 90, 87 show the UK flag. **To take out before
   «Next», to put to the owner:** `AKKO UK` (prices in EUR, taken out on 22/10),
   `EMOKO BIKE` (US flag), `Sinocare` (Spanish flag); ask about `World Businesses for
-  Sale` (businesses, not products). No adult shop is in the list. Then: all columns,
-  CSV, gzip, no adult content; the new link into GitHub's `AWIN_FEED_URL` (pencil →
-  Update secret, never in the chat); the owner says «έτοιμο».
+  Sale` (businesses, not products). No adult shop is in the list; `Affiliates - Spoiled
+  Brat (UK)` is a Glasgow clothing shop, kept (Companies House showed overdue accounts
+  and a strike-off proposal: for the shop checks later). **Last seen:** the owner past
+  «Next», on «Configure and download your datafeed» (CSV, comma, gzip already set; the
+  Google format offers no column choice); whether the three were taken out first is
+  not confirmed: ask, and if not, «Go Back». Then the «manual download URL» into
+  GitHub's `AWIN_FEED_URL` (pencil → Update secret, never in the chat; not «Download
+  Datafeed»); the owner says «έτοιμο».
 - **Then, the session:** re-run the last `server-deploy.yml` run (GitHub tools,
   `rerun_workflow_run`: a re-run reads the updated secret) and read in its log: the
   preparation's summary and peak memory, the prepared counts, the site's memory, the 12
