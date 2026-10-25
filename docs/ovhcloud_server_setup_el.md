@@ -183,6 +183,11 @@ OVHcloud είναι αυτόματη, κάθε μήνα.
 Οι 4 διαφέρουν μόνο επειδή λείπει το feed. **Όταν έχεις τον σύνδεσμο:** βάλ' τον στο
 GitHub ως `AWIN_FEED_URL` (βήμα 5) και γράψε μου «έτοιμο».
 
+**Κατάσταση 25/10, με το feed:** ο σύνδεσμος μπήκε στο GitHub και στέλνεται μόνο στον
+δικό μας server, αφού το GitHub ελέγξει την ταυτότητά του. Ο server κατέβασε το feed
+και ετοίμασε 1.040 προϊόντα από 2 καταστήματα (η Vercel έχει 20). Οι αναζητήσεις
+δουλεύουν: στις κάμερες, οι 3 από τις 4 κάρτες είναι ίδιες με τη Vercel.
+
 ## Πηγές
 
 - [OVHcloud: Getting started with a VPS](https://docs.ovhcloud.com/en/guides/bare-metal-cloud/virtual-private-servers/starting-with-a-vps)

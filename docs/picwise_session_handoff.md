@@ -34,10 +34,14 @@ file was then stopped by the owner's rule below.
   each deployment and nightly at 04:17 UTC; `deployment/server/deploy.sh` by
   `.github/workflows/server-deploy.yml` (this branch only), which then compares 15
   pages with the live site: 11 the same, the 4 others differ only by the feed (run
-  `40188479854`). Next: `AWIN_FEED_URL` in GitHub's secrets, sent to the server only
-  once its host key is pinned (not published: the repository is public), then the 12
-  searches compared card by card; HTTPS and the domain only on the owner's word. The
-  owner's guide: `docs/ovhcloud_server_setup_el.md`.
+  `40188479854`). **With a feed since 25/10:** the owner's `AWIN_FEED_URL` (a
+  new-style Awin link with 2 feeds; Vercel reads 20 shops), sent only to the server
+  whose host key matches `.github/server-host-key.pin` (an HMAC under the deploy key,
+  `.github/scripts/host_key_pin.py`); 1,040 products prepared; of the 12 searches,
+  `camera` shares three of four cards with live, the rest differ by the shops (run
+  `40189276811`, PROGRESS 25/10). Next, the owner's: the same 20 shops or a larger
+  link; then HTTPS and the domain, only on the owner's word. The owner's guide:
+  `docs/ovhcloud_server_setup_el.md`.
 - **Owner's rule (2026-10-23): nothing that may serve the pages Google indexes is left
   out of what PicWise keeps.** In their words: «Δεν πρέπει να διαγράψεις τίποτα που θα
   επηρεάσει την ποιότητα χαρακτηριστικά seo ... Τα προϊόντα που θα καλούνται από την
