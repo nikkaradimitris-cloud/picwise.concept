@@ -177,6 +177,12 @@ Create-a-Feed.
 την είσοδο και για το site. Όποιος δοκιμάζει κωδικούς μπλοκάρεται. Η ανανέωση στην
 OVHcloud είναι αυτόματη, κάθε μήνα.
 
+**Κατάσταση 25/10, αργότερα:** το site τρέχει στον server με τον σημερινό κώδικα, χωρίς
+προϊόντα ακόμα, γιατί λείπει ο σύνδεσμος του feed. Δεν φαίνεται από το internet, άρα
+ούτε από την Google. Από τις 15 σελίδες που συγκρίθηκαν με τη Vercel, οι 11 είναι ίδιες.
+Οι 4 διαφέρουν μόνο επειδή λείπει το feed. **Όταν έχεις τον σύνδεσμο:** βάλ' τον στο
+GitHub ως `AWIN_FEED_URL` (βήμα 5) και γράψε μου «έτοιμο».
+
 ## Πηγές
 
 - [OVHcloud: Getting started with a VPS](https://docs.ovhcloud.com/en/guides/bare-metal-cloud/virtual-private-servers/starting-with-a-vps)

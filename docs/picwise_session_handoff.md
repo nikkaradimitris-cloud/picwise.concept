@@ -28,9 +28,16 @@ file was then stopped by the owner's rule below.
   only, fail2ban; `deployment/server/base_setup.sh`, run by
   `.github/workflows/server-setup.yml` (this branch only; a rollback undoes SSH and
   firewall in 10 minutes unless a fresh login cancels it; the log masks the server's
-  names), run `40187243206`. Next, each on the owner's yes: the site with today's code,
-  `noindex` everywhere, compared with Vercel; the domain moves only on the owner's
-  word. The owner's guide: `docs/ovhcloud_server_setup_el.md`.
+  names), run `40187243206`. **The site runs there since 25/10** (owner's «ναι»), with
+  today's code and no feed yet (the owner has no link ready): gunicorn on 127.0.0.1:8016
+  only (nothing from the internet, so Google cannot see it), the catalogue prepared at
+  each deployment and nightly at 04:17 UTC; `deployment/server/deploy.sh` by
+  `.github/workflows/server-deploy.yml` (this branch only), which then compares 15
+  pages with the live site: 11 the same, the 4 others differ only by the feed (run
+  `40188479854`). Next: `AWIN_FEED_URL` in GitHub's secrets, sent to the server only
+  once its host key is pinned (not published: the repository is public), then the 12
+  searches compared card by card; HTTPS and the domain only on the owner's word. The
+  owner's guide: `docs/ovhcloud_server_setup_el.md`.
 - **Owner's rule (2026-10-23): nothing that may serve the pages Google indexes is left
   out of what PicWise keeps.** In their words: «Δεν πρέπει να διαγράψεις τίποτα που θα
   επηρεάσει την ποιότητα χαρακτηριστικά seo ... Τα προϊόντα που θα καλούνται από την
