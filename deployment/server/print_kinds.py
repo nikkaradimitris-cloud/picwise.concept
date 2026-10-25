@@ -8,9 +8,10 @@ products have a title naming none of the kind's nouns, and how many have a title
 it while neither their product type nor their shelf does (owner, 2026-10-25: "Colleen
 Hoover" books answering "vacuum cleaner"), with the cheapest three of each (price, shop,
 title, shelf), since price first puts the cheapest at the top of a page, and the
-shelves they most often sit on, whole, as the kind reader saw them. Suspects, not
-mistakes. The note holds no link. Always exits 0: a deployment never fails because of
-this list.
+shelves they most often sit on, whole, as the kind reader saw them; then the products a
+title's kind on another department's aisle made doubtful, per kind they were read as
+before. Suspects, not mistakes. The note holds no link. Always exits 0: a deployment
+never fails because of this list.
 """
 from __future__ import annotations
 
@@ -32,10 +33,11 @@ def main() -> int:
         print(f"no kinds in the note: {kinds}")
         return 0
     only_title = kinds.get("only_title_names_kind")
+    doubted = kinds.get("doubted_by_aisle")
     print(
         f"{kinds['products']:,} products shown as a kind; the title names none of its kinds: "
-        f"{kinds['title_names_no_kind']:,}; only the title names one: "
-        f"{'not measured' if only_title is None else format(only_title, ',')}"
+        f"{kinds['title_names_no_kind']:,}; only the title names one: {_count(only_title)}; "
+        f"made doubtful by their aisle: {_count(doubted)}"
     )
     print_list("the title names none of the kind's words", kinds["by_kind"], "title_without_kind")
     if "by_kind_only_title" in kinds:
@@ -44,14 +46,25 @@ def main() -> int:
             kinds["by_kind_only_title"],
             "only_title_names_it",
         )
+    if doubted is not None:
+        print_list(
+            "made doubtful by their aisle, per kind they were read as before",
+            kinds.get("by_kind_doubted_by_aisle") or [],
+            "doubted_by_its_aisle",
+            of="doubted; still of the kind:",
+        )
     return 0
 
 
-def print_list(heading: str, entries: list[dict], count: str) -> None:
+def _count(value: int | None) -> str:
+    return "not measured" if value is None else format(value, ",")
+
+
+def print_list(heading: str, entries: list[dict], count: str, of: str = "of") -> None:
     print()
     print(f"== {heading}: the kinds with the most, each with its cheapest (price | shop | title | shelf)")
     for entry in entries:
-        print(f"{entry['kind']}: {entry[count]:,} of {entry['products']:,}")
+        print(f"{entry['kind']}: {entry[count]:,} {of} {entry['products']:,}")
         for example in entry["cheapest"]:
             print(f"    {example}")
         # The shelves its suspects most often sit on, whole, as the kind reader saw them.

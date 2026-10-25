@@ -48,6 +48,16 @@ _KINDS = {
             ],
         }
     ],
+    "doubted_by_aisle": 85,
+    "by_kind_doubted_by_aisle": [
+        {
+            "kind": "mouse",
+            "products": 27,
+            "doubted_by_its_aisle": 85,
+            "cheapest": ["1.49 GBP | Fixture Sweets | Fixturon Chocolate Mice | Sweets & Chocolate"],
+            "shelves": [{"shelf": "food, beverages & tobacco > food items > sweets & chocolate", "products": 85}],
+        }
+    ],
     "only_title_names_kind": 300,
     "by_kind_only_title": [
         {
@@ -69,7 +79,7 @@ class PrintKindsTests(unittest.TestCase):
             [
                 (
                     "12,500 products shown as a kind; the title names none of its kinds: 1,200; "
-                    "only the title names one: 300"
+                    "only the title names one: 300; made doubtful by their aisle: 85"
                 ),
                 "",
                 (
@@ -87,6 +97,14 @@ class PrintKindsTests(unittest.TestCase):
                 ),
                 "vacuum_cleaner: 12 of 16",
                 "    2.99 GBP | Fixture Books | Fixturon Hoover Paperback | Books",
+                "",
+                (
+                    "== made doubtful by their aisle, per kind they were read as before: "
+                    "the kinds with the most, each with its cheapest (price | shop | title | shelf)"
+                ),
+                "mouse: 85 doubted; still of the kind: 27",
+                "    1.49 GBP | Fixture Sweets | Fixturon Chocolate Mice | Sweets & Chocolate",
+                "    shelves: food, beverages & tobacco > food items > sweets & chocolate (85)",
             ],
         )
 
@@ -97,7 +115,7 @@ class PrintKindsTests(unittest.TestCase):
             {key: value for key, value in entry.items() if key != "shelves"} for entry in _KINDS["by_kind"]
         ]
         lines = _print_kinds(json.dumps({"prepared": True, "kinds": kinds})).stdout.splitlines()
-        self.assertTrue(lines[0].endswith("only the title names one: not measured"))
+        self.assertTrue(lines[0].endswith("only the title names one: not measured; made doubtful by their aisle: not measured"))
         self.assertEqual(lines[-1], "    9.99 GBP | Fixture Store One | Fixturon 50mm Lens | Camera Lenses")
 
     def test_no_note_or_no_kinds_says_so_and_never_fails(self) -> None:

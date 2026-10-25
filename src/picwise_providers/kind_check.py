@@ -25,6 +25,12 @@ reader saw it, did ("jewellery & watches > body jewellery"). So each kind listed
 gives the three shelves its suspects most often sit on, whole, with their counts: where
 a wrong kind comes from, not only what it looks like.
 
+Owner, 2026-10-25, «προχώρα στο επόμενο λάθος»: a title's kind on an aisle of Google's
+that holds no kind of that department is doubtful now (chocolate mice under "Food,
+Beverages & Tobacco"), and two real smartwatches left the "smartwatch" page with it. So
+the note also lists, per kind, the shown products that rule made doubtful, read as
+before it (`kinds_before_the_aisle_rule`): what it took away, right or wrong.
+
 The deployment's build writes it into its public note (`tools/prepare_catalogue.py
 --static-dir`), next to `intake`: counts, kinds, shelves, and a few product titles,
 shops and prices, never a link.
@@ -37,7 +43,11 @@ from collections import Counter
 from functools import lru_cache
 from typing import Any, Collection, Mapping, Sequence
 
-from picwise_nlu.concept_understanding import normalize_understanding_text
+from picwise_nlu.concept_understanding import (
+    UNCERTAIN_MARKER,
+    kinds_before_the_aisle_rule,
+    normalize_understanding_text,
+)
 from picwise_nlu.product_concepts import broader_concepts, get_product_concepts_by_id
 
 from .contracts import ProviderProduct
@@ -160,16 +170,37 @@ def measure_kind_titles(
 
     `products` and `kinds` are a prepared catalogue's, side by side, and `fields` its
     search fields, whose `category` is the whole shelf the kind reader saw; without
-    them, a product's own category stands for it. Only kinds a search can show a
-    product by count: the markers (accessory, doubtful, pet, camping) do not.
+    them, a product's own category stands for it, and the products made doubtful by
+    their aisle are not measured. Only kinds a search can show a product by count: the
+    markers (accessory, doubtful, pet, camping) do not.
     """
     by_kind: dict[str, dict[str, Any]] = {}
     counted = 0
     names_none = 0
     only_title = 0
+    doubted = 0
+
+    def entry_of(kind: str) -> dict[str, Any]:
+        return by_kind.setdefault(
+            kind,
+            {"products": 0, "suspects": [], "title_alone": [], "doubted": [],
+             "suspects_shelves": Counter(), "title_alone_shelves": Counter(), "doubted_shelves": Counter()},
+        )
+
     for index, (product, product_kinds) in enumerate(zip(products, kinds)):
         real = sorted(kind for kind in product_kinds if not kind.startswith("__"))
         if not real:
+            if fields is not None and UNCERTAIN_MARKER in product_kinds:
+                raw = product.raw if isinstance(product.raw, dict) else {}
+                shelf = str(fields[index].get("category") or "")
+                before = kinds_before_the_aisle_rule(str(raw.get("product_type") or ""), shelf, str(product.title or ""))
+                before_real = sorted(kind for kind in before if not kind.startswith("__"))
+                if before_real:
+                    doubted += 1
+                for kind in before_real:
+                    entry = entry_of(kind)
+                    entry["doubted"].append(product)
+                    entry["doubted_shelves"][shelf] += 1
             continue
         counted += 1
         words = _title_words(str(product.title or ""))
@@ -189,11 +220,7 @@ def measure_kind_titles(
             str(fields[index].get("category") or "") if fields is not None else str(product.category_text or "")
         )
         for kind in real:
-            entry = by_kind.setdefault(
-                kind,
-                {"products": 0, "suspects": [], "title_alone": [],
-                 "suspects_shelves": Counter(), "title_alone_shelves": Counter()},
-            )
+            entry = entry_of(kind)
             entry["products"] += 1
             if kind in missing:
                 entry["suspects"].append(product)
@@ -207,4 +234,6 @@ def measure_kind_titles(
         "by_kind": _listed(by_kind, "suspects", "title_without_kind"),
         "only_title_names_kind": only_title,
         "by_kind_only_title": _listed(by_kind, "title_alone", "only_title_names_it"),
+        "doubted_by_aisle": doubted if fields is not None else None,
+        "by_kind_doubted_by_aisle": _listed(by_kind, "doubted", "doubted_by_its_aisle"),
     }

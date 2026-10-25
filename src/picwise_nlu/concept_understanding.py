@@ -1233,13 +1233,25 @@ def annotate_product_concepts(product_type: str, category: str, title: str) -> f
     products carry a context marker (`PET_MARKER`, `CAMPING_MARKER`) that the search
     reads against the buyer's words: a dog bed answers "dog bed", not "bed".
     """
-    kinds = _annotate_kinds(product_type, category, title)
+    return _with_context_markers(_annotate_kinds(product_type, category, title), category, title)
+
+
+def kinds_before_the_aisle_rule(product_type: str, category: str, title: str) -> frozenset[str]:
+    """The kinds `annotate_product_concepts` gave before a title's kind was read against
+    its aisle's departments (`_aisle_may_hold`, owner, 2026-10-25), so the build's note
+    can say which products that rule made doubtful. Measured only: no search reads it."""
+    return _with_context_markers(
+        _annotate_kinds(product_type, category, title, aisle_rule=False), category, title
+    )
+
+
+def _with_context_markers(kinds: frozenset[str], category: str, title: str) -> frozenset[str]:
     if not kinds or kinds & {ACCESSORY_MARKER, UNCERTAIN_MARKER}:
         return kinds
     return kinds | _product_context_markers(category, title)
 
 
-def _annotate_kinds(product_type: str, category: str, title: str) -> frozenset[str]:
+def _annotate_kinds(product_type: str, category: str, title: str, *, aisle_rule: bool = True) -> frozenset[str]:
     # What follows a spaced "+" in a type comes with the product, as in a title:
     # Pro-Camera's "... > Canon EOS R5 + EF-EOS R mount adapter" is the camera (owner's
     # file, 2026-10-23: 63 cameras were read as adapters).
@@ -1331,7 +1343,7 @@ def _annotate_kinds(product_type: str, category: str, title: str) -> frozenset[s
             return frozenset({UNCERTAIN_MARKER})
         if not title_spans:
             return frozenset()
-        head = _title_fallback_head(title, category)
+        head = _title_fallback_head(title, category) if aisle_rule else _title_named_head(title, category)
         if head in (ACCESSORY_MARKER, UNCERTAIN_MARKER):
             return frozenset({head})
         if head is None:

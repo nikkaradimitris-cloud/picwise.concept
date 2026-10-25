@@ -437,8 +437,9 @@ class PrepareToolTests(_PreparedMixin, unittest.TestCase):
             set(note), {"prepared", "prepared_at", "products", "shops", "freshness", "intake", "kinds", "written_at"}
         )
         # Per kind, the products whose title does not name it (owner, 2026-10-23): every
-        # fixture title names its kettle or laptop; and those whose title alone names it
-        # (owner, 2026-10-25): every fixture shelf names it too.
+        # fixture title names its kettle or laptop; those whose title alone names it, and
+        # those their aisle made doubtful (owner, 2026-10-25): every fixture shelf names
+        # its kind.
         self.assertEqual(
             note["kinds"],
             {
@@ -447,6 +448,8 @@ class PrepareToolTests(_PreparedMixin, unittest.TestCase):
                 "by_kind": [],
                 "only_title_names_kind": 0,
                 "by_kind_only_title": [],
+                "doubted_by_aisle": 0,
+                "by_kind_doubted_by_aisle": [],
             },
         )
         # How fresh the listings are (owner, 2026-10-18: "we show ghosts"), measured only.

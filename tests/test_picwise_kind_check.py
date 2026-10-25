@@ -10,7 +10,8 @@ on the server: also the products whose title names their kind while neither thei
 product type nor their shelf does ("Colleen Hoover" books answering "vacuum cleaner",
 "Chocolate Mice" answering "mouse"); pinned too. And for each kind listed, the shelves
 its suspects most often sit on, whole as the kind reader saw them ("jewellery & watches
-> body jewellery", where the cheapest example shows only "Body Jewellery").
+> body jewellery", where the cheapest example shows only "Body Jewellery"); and the
+products a title's kind on another department's aisle made doubtful, read as before.
 
 Every row is local test data: fictional brands, `.invalid` URLs.
 """
@@ -234,6 +235,40 @@ class KindTitleCheckTests(unittest.TestCase):
         )
         # The cheapest still name the narrowest shelf of the product's own category.
         self.assertEqual(watch["cheapest"][0], "3.49 GBP | Fixture Store One | Jojoba Healing Oil Roll-On | Body Jewellery")
+
+    def test_the_products_their_aisle_made_doubtful(self) -> None:
+        sweets = "food, beverages & tobacco > food items > sweets & chocolate"
+        rows = [
+            # Doubtful by its aisle: read as a mouse before the rule.
+            (_product("d1", "Fixturon Chocolate Mice - 225g Sweet Pouch", "3.75"), {"__uncertain_kind__"}, sweets),
+            (_product("d2", "Fixturon Pink Mice - 100g", "1.49"), {"__uncertain_kind__"}, sweets),
+            # Doubtful for another reason: its type names no kind PicWise knows.
+            (_product("d3", "Fixturon Thing", "2.00", product_type="Temperature & Humidity Sensors"),
+             {"__uncertain_kind__"}, ""),
+            (_product("m1", "Fixturon M100 Wireless Mouse", "9.99"), {"mouse"}, "electronics > computer accessories"),
+        ]
+        fields = [{"category": row[2]} for row in rows]
+        note = measure_kind_titles([row[0] for row in rows], [frozenset(row[1]) for row in rows], fields)
+        self.assertEqual(note["doubted_by_aisle"], 2)
+        self.assertEqual(
+            note["by_kind_doubted_by_aisle"],
+            [
+                {
+                    "kind": "mouse",
+                    "products": 1,
+                    "doubted_by_its_aisle": 2,
+                    "cheapest": [
+                        "1.49 GBP | Fixture Store One | Fixturon Pink Mice - 100g | Fixture Shelf",
+                        "3.75 GBP | Fixture Store One | Fixturon Chocolate Mice - 225g Sweet Pouch | Fixture Shelf",
+                    ],
+                    "shelves": [{"shelf": sweets, "products": 2}],
+                }
+            ],
+        )
+        # Without the search fields, not measured.
+        self.assertIsNone(measure_kind_titles([row[0] for row in rows], [frozenset(row[1]) for row in rows])[
+            "doubted_by_aisle"
+        ])
 
 
 if __name__ == "__main__":
