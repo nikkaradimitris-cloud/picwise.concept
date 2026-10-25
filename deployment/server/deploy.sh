@@ -78,8 +78,10 @@ ln -sfn "releases/$RELEASE_ID" "$APP/current.new"
 mv -T "$APP/current.new" "$APP/current"
 
 echo "== the catalogue, prepared as a Vercel build prepares it"
-systemctl start picwise-prepare.service || echo "preparing failed; the site reads the feed itself"
-journalctl -u picwise-prepare.service -n 3 -o cat --no-pager | grep 'prepare_catalogue' || true
+systemctl start picwise-prepare.service || echo "preparing failed; the site keeps the last prepared file (30 h)"
+# The summary line and systemd's own (time, memory peak) of this run.
+journalctl -u picwise-prepare.service -n 20 -o cat --no-pager --since "-65min" \
+  | grep -E 'prepare_catalogue|Consumed' | tail -n 2 || true
 systemctl enable --now picwise-prepare.timer
 
 echo "== the site"
@@ -87,7 +89,7 @@ systemctl enable picwise-web.service
 systemctl restart picwise-web.service
 healthy=no
 for _ in $(seq 1 30); do
-  if curl -fsS -m 5 -o /dev/null "$HEALTH_URL"; then healthy=yes; break; fi
+  if curl -fs -m 5 -o /dev/null "$HEALTH_URL"; then healthy=yes; break; fi
   sleep 1
 done
 if [ "$healthy" != yes ]; then

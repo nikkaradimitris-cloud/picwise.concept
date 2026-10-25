@@ -10,21 +10,24 @@ Wants=network-online.target
 [Service]
 User=picwise
 Group=picwise
-# The secrets, written by the deployment from GitHub's secrets; never in the repository.
-EnvironmentFile=-/etc/picwise/picwise.env
+# The site answers from the prepared catalogue only. It is not given the feed link
+# (only picwise-prepare.service is), so it never downloads the feed itself, as a Vercel
+# function would with no prepared file: with a feed of hundreds of thousands of products,
+# each worker loading it would exhaust the memory. Without a fresh prepared file (30 h)
+# it shows no products, as with no feed.
 Environment=PICWISE_PREPARED_CATALOGUE_FILE=/srv/picwise/shared/prepared/catalogue.json.gz
 Environment=PICWISE_STATIC_DIR=/srv/picwise/shared/public
-Environment=AWIN_FEED_CACHE_DIR=/srv/picwise/shared/cache
 Environment=PYTHONDONTWRITEBYTECODE=1
 # The release in use is resolved once, at start: a worker gunicorn starts again later
 # loads the same code, even after a deployment has pointed `current` to a newer one.
-# A cold worker with no prepared file reads the feed itself, which can take minutes, as
-# a Vercel function may.
 ExecStart=/bin/sh -c 'release=$$(readlink -f /srv/picwise/current) && exec /srv/picwise/venv/bin/gunicorn \
     --chdir "$$release" --pythonpath "$$release/deployment/server" --bind 127.0.0.1:8016 \
     --workers 4 --timeout 300 --graceful-timeout 30 --access-logfile - --no-control-socket wsgi_server:app'
 Restart=always
 RestartSec=2
+# A ceiling, so that the site can never take the memory sshd and the rest need.
+MemoryHigh=11G
+MemoryMax=12G
 UMask=0027
 NoNewPrivileges=yes
 PrivateTmp=yes

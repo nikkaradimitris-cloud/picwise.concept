@@ -12,13 +12,19 @@ Type=oneshot
 User=picwise
 Group=picwise
 WorkingDirectory=/srv/picwise/current
+# The feed link, written by the deployment from GitHub's secrets; never in the repository.
 EnvironmentFile=-/etc/picwise/picwise.env
 Environment=AWIN_FEED_CACHE_DIR=/srv/picwise/shared/cache
+# The code's 300 MB cap is a Vercel-sized one; the server takes a feed of every shop.
+Environment=AWIN_FEED_MAX_BYTES=2147483648
 Environment=PYTHONDONTWRITEBYTECODE=1
 ExecStart=/usr/bin/python3 tools/prepare_catalogue.py --keep-going \
     --static-dir /srv/picwise/shared/public --out /srv/picwise/shared/prepared/catalogue.json.gz
 TimeoutStartSec=60min
 Nice=10
+# A ceiling, so that reading a large feed can never take the memory the site needs.
+MemoryHigh=14G
+MemoryMax=16G
 UMask=0027
 NoNewPrivileges=yes
 PrivateTmp=yes
