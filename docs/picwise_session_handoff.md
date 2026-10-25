@@ -32,8 +32,10 @@ bot's, never the owner's by hand; never open an Awin tracked link from a session
   and run `40192893502`, both success): **1,123,857 rows from 85 shops; 518,041 products
   shown, from 77 shops; 605,816 rows held** (mostly no category: InStock UK 384,393,
   Back to the Office 93,662; then out of stock). The preparation: peak memory 7.4 GB
-  (ceiling 16 GB), 6.8-8.5 min, a 47.5 MB file; the site 3.1-4.5 GB (ceiling 12 GB). So it
-  fits without the PostgreSQL change. **`AKKO UK`, `EMOKO BIKE`, `Sinocare` and `World
+  (ceiling 16 GB), 6.8-8.5 min, a 47.5 MB file; the site 3.1, 4.5 and 5.8 GB after three
+  deployments (ceiling 12 GB; likely each worker that served a search holds the
+  catalogue, about 1.3 GB each, not measured per worker: to watch after a nightly
+  reload). So it fits without the PostgreSQL change. **`AKKO UK`, `EMOKO BIKE`, `Sinocare` and `World
   Businesses for Sale` are not in the feed** (read by the bot in the shop list:
   `deployment/server/print_shops.py`, step "Each shop of the prepared catalogue").
   `Finediam` (jewellery) has 360,067 of the 518,041 shown (70%), so the suggestions are
