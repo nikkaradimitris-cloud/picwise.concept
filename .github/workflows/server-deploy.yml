@@ -3,14 +3,16 @@
 #
 # Each push to the working branch that changes the site or these files deploys the
 # pushed commit. The site listens on the server's 127.0.0.1:8016 only, so Google cannot
-# see it; the comparison reaches it through an SSH tunnel. The repository is public and
-# so is this log: the server's names and addresses are masked before anything is printed.
+# see it; the comparison reaches it through an SSH tunnel. Secrets go only to the server
+# whose host key matches the pin kept in the repository. The repository is public and so
+# is this log: the server's names and addresses are masked before anything is printed.
 name: Server deploy
 on:
   push:
     branches: [ccr-baaad713-r3uvvs]
     paths:
       - '.github/workflows/server-deploy.yml'
+      - '.github/server-host-key.pin'
       - 'deployment/server/**'
       - '!deployment/server/base_setup.sh'
       - 'api/**'
@@ -34,7 +36,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
-      - name: Connect with the key, and mask the server's names
+      - name: Connect with the key, check the server's identity, mask its names
         id: connect
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
@@ -44,16 +46,31 @@ jobs:
           # A key pasted on Windows may carry carriage returns, which ssh refuses.
           printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
+          # The server must show the host key pinned in .github/server-host-key.pin (an
+          # HMAC under the deploy key: .github/scripts/host_key_pin.py), and every
+          # connection below accepts that key only, so the secrets sent can only reach it.
+          host_key=$(ssh-keyscan -T 15 -t ed25519 "$SERVER_HOST" 2>/dev/null | awk 'NF >= 3 {print $2, $3; exit}')
+          [ -n "$host_key" ] || { echo "the server gave no host key"; exit 1; }
+          pin=$(HOST_KEY="$host_key" python3 .github/scripts/host_key_pin.py)
+          expected=$( (grep -v '^#' .github/server-host-key.pin || true) | tr -d '[:space:]')
+          if [ "$pin" != "$expected" ]; then
+            echo "the server does NOT match the pin (reinstalled, or not our server); its pin: $pin"
+            exit 1
+          fi
+          echo "the server matches the pin"
+          echo "picwise-server $host_key" > ~/.ssh/known_hosts_picwise
           # The user is OVHcloud's for Ubuntu, written here rather than read from the
           # SERVER_USER secret: GitHub masks a secret's value all over the log.
           cat > ~/.ssh/config <<EOF
           Host picwise
             HostName $SERVER_HOST
+            HostKeyAlias picwise-server
+            UserKnownHostsFile ~/.ssh/known_hosts_picwise
+            StrictHostKeyChecking yes
             User ubuntu
             IdentityFile ~/.ssh/deploy_key
             IdentitiesOnly yes
             BatchMode yes
-            StrictHostKeyChecking accept-new
             ConnectTimeout 15
             ServerAliveInterval 15
             ServerAliveCountMax 8
@@ -65,15 +82,23 @@ jobs:
           for name in $names; do echo "::add-mask::$name"; done
           echo "connected"
       - name: Send the release
+        env:
+          AWIN_FEED_URL: ${{ secrets.AWIN_FEED_URL }}
         run: |
           release_id="$(date -u +%Y%m%dT%H%M%SZ)-${GITHUB_SHA::7}"
           echo "RELEASE_ID=$release_id" >> "$GITHUB_ENV"
           echo "release $release_id"
           git archive --format=tar.gz -o "$RUNNER_TEMP/release.tar.gz" HEAD
-          # No secret goes to the server yet: the feed link waits until the server's key
-          # is pinned here, so that it can only reach this server.
-          printf '%s\n' "# The site's secrets, written by each deployment; never in the repository." \
-            > "$RUNNER_TEMP/picwise.env"
+          # The site's secrets, from GitHub's secrets, to the server that matched the pin.
+          # Single quotes keep the link as it is in systemd's environment file.
+          feed=$(printf '%s' "$AWIN_FEED_URL" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+          case "$feed" in *"'"*) echo "the feed link holds a quote, which the file cannot carry"; exit 1 ;; esac
+          umask 077
+          {
+            echo "# The site's secrets, written by each deployment from GitHub's secrets; never in the repository."
+            if [ -n "$feed" ]; then printf "AWIN_FEED_URL='%s'\n" "$feed"; fi
+          } > "$RUNNER_TEMP/picwise.env"
+          if [ -n "$feed" ]; then echo "feed link: sent"; else echo "feed link: not in GitHub's secrets"; fi
           ssh picwise 'cat > ~/picwise-release.tar.gz' < "$RUNNER_TEMP/release.tar.gz"
           ssh picwise 'umask 077; cat > ~/picwise.env' < "$RUNNER_TEMP/picwise.env"
           ssh picwise 'cat > ~/picwise-deploy.sh' < deployment/server/deploy.sh
