@@ -9,7 +9,7 @@
 name: Server deploy
 on:
   push:
-    branches: [ccr-baaad713-r3uvvs]
+    branches: [claude/bold-allen-ljj9d7]
     paths:
       - '.github/workflows/server-deploy.yml'
       - '.github/server-host-key.pin'
@@ -125,6 +125,9 @@ jobs:
             sudo python3 -c "import json; d = json.load(open(\"/srv/picwise/shared/public/prepared.json\")); print(\"prepared:\", d.get(\"prepared\"), d.get(\"prepared_at\", d.get(\"reason\")), d.get(\"products\"), \"products,\", d.get(\"shops\"), \"shops\")"
             echo "disk: $(sudo du -sh /srv/picwise | cut -f1) in /srv/picwise; $(df -h --output=avail / | tail -1 | tr -d " ") free"
           '
+      - name: Each shop of the prepared catalogue
+        if: always() && steps.connect.outcome == 'success'
+        run: ssh -n picwise 'sudo cat /srv/picwise/shared/public/prepared.json' | python3 deployment/server/print_shops.py
       - name: Remove the key from the runner
         if: always()
         run: rm -f ~/.ssh/deploy_key ~/.ssh/config
