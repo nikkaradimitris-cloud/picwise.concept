@@ -3,8 +3,9 @@
 # A Claude session reaches the internet only over HTTPS on port 443, so it cannot connect
 # to the server itself; GitHub's runners can. On each push of this file to the working
 # branch, this job says which of the four secrets are set (never their values), whether
-# the server answers on SSH, and logs in with the deploy key to print what the system is.
-# It changes nothing on the server. GitHub masks the secrets' values in the log.
+# the server answers on SSH, whether its host key matches the pin kept in the repository
+# (.github/scripts/host_key_pin.py), and logs in with the deploy key to print what the
+# system is. It changes nothing on the server. GitHub masks the secrets' values in the log.
 name: Server check (read-only)
 on:
   push:
@@ -17,6 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - name: Which secrets are set (names only)
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
@@ -37,6 +41,19 @@ jobs:
           else
             echo "port 22: no answer"
           fi
+      - name: The server's identity, against the pin kept in the repository
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          if [ -z "$SERVER_HOST" ] || [ -z "$SERVER_SSH_KEY" ]; then echo "secrets missing"; exit 0; fi
+          host_key=$(ssh-keyscan -T 15 -t ed25519 "$SERVER_HOST" 2>/dev/null | awk 'NF >= 3 {print $2, $3; exit}')
+          if [ -z "$host_key" ]; then echo "the server gave no host key"; exit 0; fi
+          pin=$(HOST_KEY="$host_key" python3 .github/scripts/host_key_pin.py)
+          expected=$( (grep -v '^#' .github/server-host-key.pin 2>/dev/null || true) | tr -d '[:space:]')
+          if [ -z "$expected" ]; then echo "no pin kept yet; this server's pin: $pin"
+          elif [ "$pin" = "$expected" ]; then echo "the server matches the pin"
+          else echo "the server does NOT match the pin (reinstalled, or not our server); its pin: $pin"; fi
       - name: Log in with the key and read the system
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
