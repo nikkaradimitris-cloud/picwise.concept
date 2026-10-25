@@ -3,56 +3,57 @@
 Current state for whoever picks the project up next. Updated 2026-10-25.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation (from 2026-10-25): the feed of every UK shop on the server -- start here
+## Next conversation (from 2026-10-25, later): every Google-format shop on the server; the kind problem on it -- start here
 
-The owner closed the conversation of 25/10 here («σου βαζω την λιστα και παμε σε αλλη
-συζητηση»). Owner's rules, unchanged: Greek, short, plain words; say what you found
-before building anything; nothing on `main` without their explicit «ναι»; never ask for
-the feed link (it holds the key); secrets only in GitHub's or Vercel's secrets, never in
-the repository, a log or the chat; nothing in Supabase without asking; the truth test is
-a bot's, never the owner's by hand; never open an Awin tracked link from a session.
+The owner put the link with every Google-format shop in GitHub's secrets («ετοιμο»,
+25/10); the server reads it, and the deployment now names each shop of the feed. Owner's
+rules, unchanged: Greek, short, plain words; say what you found before building
+anything; nothing on `main` without their explicit «ναι»; never ask for the feed link
+(it holds the key); secrets only in GitHub's or Vercel's secrets, never in the
+repository, a log or the chat; nothing in Supabase without asking; the truth test is a
+bot's, never the owner's by hand; never open an Awin tracked link from a session.
 
-- **Where the work is:** the branch `ccr-baaad713-r3uvvs` (pushed; its code is `main`'s,
-  plus the server's files: `deployment/server/`, `.github/workflows/server-*.yml`,
-  `.github/scripts/host_key_pin.py`, `.github/server-host-key.pin`). Bring it in first.
+- **Where the work is:** the branch `claude/bold-allen-ljj9d7` (pushed): the branch
+  `ccr-baaad713-r3uvvs` brought in, plus this conversation's commits. Bring it in first.
+  `server-deploy.yml` now runs on pushes to this branch; a session on another branch
+  moves that trigger to its own. `server-setup.yml` and `server-check.yml` still name
+  `ccr-baaad713-r3uvvs`: move their trigger only when they are needed (moving setup's
+  runs the setup, which may reboot). The pull request from `ccr-baaad713-r3uvvs` to
+  `main` (#11) is open and lacks this branch's commits; nothing goes to `main` without
+  the owner's «ναι».
 - **The server works** (OVHcloud VPS-4, London, Ubuntu 24.04.5, 8 vCores, 22 GiB usable,
   191 GB free; renewal automatic monthly, next 24/11): secured (updates daily with a
   reboot at 03:30 UTC when needed, SSH by key only, ufw 22/80/443, fail2ban); the site
-  with today's code under gunicorn on 127.0.0.1:8016 only (nothing from the internet,
-  so Google cannot see it); the catalogue prepared at each deployment and nightly at
-  04:17 UTC. A session cannot open SSH: everything goes through GitHub workflows that
-  run on each push to the branch (`server-setup.yml`, `server-deploy.yml`,
-  `server-check.yml`; read their logs with the GitHub tools). Secrets are sent only to a
-  server whose host key matches the pin. Details: PROGRESS, 25/10.
-- **Now on the server: the owner's small link** (2 feeds, 1,040 products; Pro-Camera
-  and one other). The site gets no feed link: it reads only the prepared file (else a
-  big feed would be loaded by each of 4 workers); the preparation reads the feed, with a
-  2 GB download cap, a 16 GB memory ceiling and a line with its peak memory (87 MB, 1.2 s
-  for 1,184 rows); the site has a 12 GB ceiling.
-- **The step in progress: a link with every Google-format shop** (owner chose «β»,
-  25/10). The owner was in Awin's Create-a-Feed (Toolbox; language «Any»;
-  advertiser-based only, since Google-format advertisers are not chosen by category or
-  brand): 90 Google-format advertisers selected, **Product Count 1,134,487** (the
-  owner's screenshot of the list). Of the 90, 87 show the UK flag. **To take out before
-  «Next», to put to the owner:** `AKKO UK` (prices in EUR, taken out on 22/10),
-  `EMOKO BIKE` (US flag), `Sinocare` (Spanish flag); ask about `World Businesses for
-  Sale` (businesses, not products). No adult shop is in the list; `Affiliates - Spoiled
-  Brat (UK)` is a Glasgow clothing shop, kept (Companies House showed overdue accounts
-  and a strike-off proposal: for the shop checks later). **Last seen:** the owner past
-  «Next», on «Configure and download your datafeed» (CSV, comma, gzip already set; the
-  Google format offers no column choice); whether the three were taken out first is
-  not confirmed: ask, and if not, «Go Back». Then the «manual download URL» into
-  GitHub's `AWIN_FEED_URL` (pencil → Update secret, never in the chat; not «Download
-  Datafeed»); the owner says «έτοιμο».
-- **Then, the session:** re-run the last `server-deploy.yml` run (GitHub tools,
-  `rerun_workflow_run`: a re-run reads the updated secret) and read in its log: the
-  preparation's summary and peak memory, the prepared counts, the site's memory, the 12
-  searches against live. 1.1M rows may need 10-20 GB to prepare (the code keeps every
-  row in memory, filled columns only): if the preparation is stopped by its ceiling,
-  nothing breaks (the site keeps the last prepared file for 30 h); then put to the owner:
-  fewer shops, or the code change the architecture plans (`docs/PICWISE_SERVER_ARCHITECTURE.md`:
-  PostgreSQL, a row-by-row load), which is code and goes to `main` only on their «ναι».
-  If the site's 4 workers do not fit, fewer workers.
+  under gunicorn on 127.0.0.1:8016 only (nothing from the internet, so Google cannot
+  see it); the catalogue prepared at each deployment and nightly at 04:17 UTC. A session
+  cannot open SSH: everything goes through GitHub workflows (read their logs with the
+  GitHub tools). Secrets are sent only to a server whose host key matches the pin.
+- **Now on the server: every Google-format shop** (re-run of run `40189917132`, attempt 2,
+  and run `40192893502`, both success): **1,123,857 rows from 85 shops; 518,041 products
+  shown, from 77 shops; 605,816 rows held** (mostly no category: InStock UK 384,393,
+  Back to the Office 93,662; then out of stock). The preparation: peak memory 7.4 GB
+  (ceiling 16 GB), 6.8-8.5 min, a 47.5 MB file; the site 3.1-4.5 GB (ceiling 12 GB). So it
+  fits without the PostgreSQL change. **`AKKO UK`, `EMOKO BIKE`, `Sinocare` and `World
+  Businesses for Sale` are not in the feed** (read by the bot in the shop list:
+  `deployment/server/print_shops.py`, step "Each shop of the prepared catalogue").
+  `Finediam` (jewellery) has 360,067 of the 518,041 shown (70%), so the suggestions are
+  full of rings and watches; `InStock UK` brings 509,939 rows (45% of the feed). 8 shops
+  show nothing: NORVEXA ADVISORY LTD, Frenzy Clothings, Beauti Outlet, myCord | Bracelet
+  Lab, Handbags Infinity Fashion, Purr and Mutt, Bluebells Flora Florist, Wilna Kitchen.
+  Two names do not read as shops, for a bot to check what they sell: `Shopping Ads:
+  Google & Bing` (6,798 shown) and `NORVEXA ADVISORY LTD` (13,227 rows, none shown).
+  No adult shop; `Affiliates - Spoiled Brat` is a Glasgow clothing shop, kept
+  (Companies House showed overdue accounts and a strike-off proposal: for the shop
+  checks later).
+- **The 12 searches against live: 0 of 12 the same, many the wrong kind.** "vacuum
+  cleaner": Colleen Hoover books (Lets Buy Books); "mouse": chocolate mice; "tv": a
+  "DEATH BY TV" hoody and Islamic digital learning packs; "speaker": banana plug
+  connectors; "camera": a camera module among the cheapest. The kind problem of 23/10
+  (section below), much larger with many shops.
+- **Next, put to the owner (waiting for their word):** measure the kind problem on this
+  catalogue (the public note's `kinds`: per kind, the products shown as it whose title
+  does not name it; and the 12 searches), tell the owner, then build. Code goes to
+  `main` only on their «ναι».
 - **Open, the owner's:** HTTPS and the domain (own domain recommended before any
   indexing); the repository private (logs are public; nothing secret is in them);
   query logging to Supabase from the server (ask first); 80 or 200 bot checks per shop
