@@ -31,6 +31,13 @@ Beverages & Tobacco"), and two real smartwatches left the "smartwatch" page with
 the note also lists, per kind, the shown products that rule made doubtful, read as
 before it (`kinds_before_the_aisle_rule`): what it took away, right or wrong.
 
+Owner, 2026-10-25, «Ναι», to a measure of how often a title alone finds the right kind:
+about 389,000 rows of the server's feed have no category, so only their title could give
+them a kind, and nothing tells how far to trust it. `measure_title_alone` reads each
+shown product twice, by its type and shelf alone and by its title alone, and counts how
+often the two agree, per shop (InStock UK has rows with and without a category), with
+the most frequent disagreements and their cheapest products.
+
 The deployment's build writes it into its public note (`tools/prepare_catalogue.py
 --static-dir`), next to `intake`: counts, kinds, shelves, and a few product titles,
 shops and prices, never a link.
@@ -44,7 +51,9 @@ from functools import lru_cache
 from typing import Any, Collection, Mapping, Sequence
 
 from picwise_nlu.concept_understanding import (
+    ACCESSORY_MARKER,
     UNCERTAIN_MARKER,
+    annotate_product_concepts,
     kinds_before_the_aisle_rule,
     normalize_understanding_text,
 )
@@ -236,4 +245,84 @@ def measure_kind_titles(
         "by_kind_only_title": _listed(by_kind, "title_alone", "only_title_names_it"),
         "doubted_by_aisle": doubted if fields is not None else None,
         "by_kind_doubted_by_aisle": _listed(by_kind, "doubted", "doubted_by_its_aisle"),
+    }
+
+
+# How many shops, and pairs of a shelf's kind and a title's other kind, the note lists.
+_SHOPS_LISTED = 20
+_PAIRS_LISTED = 25
+
+
+def _narrowest(kinds: Collection[str]) -> str:
+    """The narrowest of a product's kinds: the one with the longest chain of broader ones."""
+    return max(sorted(kinds), key=lambda kind: len(broader_concepts(kind)))
+
+
+def _related(left: Collection[str], right: Collection[str]) -> bool:
+    """Do two readings share a kind, or a kind and a broader or narrower one?"""
+    return any(a == b or a in broader_concepts(b) or b in broader_concepts(a) for a in left for b in right)
+
+
+def measure_title_alone(
+    products: Sequence[ProviderProduct], fields: Sequence[Mapping[str, str]] | None = None
+) -> dict[str, Any]:
+    """Of the shown products that their type and shelf alone give a kind, how many their
+    title alone gives a kind too, how many of those agree with the shelf (the same kind,
+    a broader or a narrower one) and how many do not, and why the rest get none: an
+    accessory, doubtful, nothing. In all, per shop (the most products first), and per
+    pair of the shelf's kind and the title's other kind, with the cheapest of each.
+
+    The shelf is the whole category the search read (`fields`, else the product's own),
+    the title is read with no type and no category, as a row without a category would
+    be. Measured only: nothing shown changes.
+    """
+    totals = {"products": 0, "agrees": 0, "differs": 0, "accessory": 0, "doubtful": 0, "none": 0}
+    shops: dict[str, dict[str, int]] = {}
+    pairs: dict[tuple[str, str], list[ProviderProduct]] = {}
+    for index, product in enumerate(products):
+        raw = product.raw if isinstance(product.raw, dict) else {}
+        shelf = str(fields[index].get("category") or "") if fields is not None else str(product.category_text or "")
+        by_shelf = [
+            kind
+            for kind in annotate_product_concepts(str(raw.get("product_type") or ""), shelf, "")
+            if not kind.startswith("__")
+        ]
+        if not by_shelf:
+            continue
+        by_title = annotate_product_concepts("", "", str(product.title or ""))
+        real = [kind for kind in by_title if not kind.startswith("__")]
+        if real:
+            outcome = "agrees" if _related(by_shelf, real) else "differs"
+        elif ACCESSORY_MARKER in by_title:
+            outcome = "accessory"
+        elif UNCERTAIN_MARKER in by_title:
+            outcome = "doubtful"
+        else:
+            outcome = "none"
+        shop = shops.setdefault(
+            " ".join(str(extract_merchant_name(raw) or "?").split()), {key: 0 for key in totals}
+        )
+        for bucket in (totals, shop):
+            bucket["products"] += 1
+            bucket[outcome] += 1
+        if outcome == "differs":
+            pairs.setdefault((_narrowest(by_shelf), _narrowest(real)), []).append(product)
+    listed_pairs = sorted(pairs.items(), key=lambda item: (-len(item[1]), item[0]))[:_PAIRS_LISTED]
+    return {
+        **totals,
+        "by_shop": [
+            {"shop": name, **counts}
+            for name, counts in sorted(shops.items(), key=lambda item: (-item[1]["products"], item[0]))[
+                :_SHOPS_LISTED
+            ]
+        ],
+        "differs_by_pair": [
+            {
+                "shelf_kind": shelf_kind,
+                "title_kind": title_kind,
+                "products": len(found),
+                "cheapest": [_example(product) for product in _cheapest(found)],
+            }
+            for (shelf_kind, title_kind), found in listed_pairs
+        ],
     }

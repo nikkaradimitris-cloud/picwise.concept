@@ -22,7 +22,8 @@ note of what this build prepared: counts, the time, how fresh the feed's listing
 each shop's feed brings in (`picwise_providers.feed_intake`: rows, shown, shown only
 when asked for, held back and why, and what its `product_type` column carries), and per
 kind the products shown as it whose title does not name it (`picwise_providers.kind_check`),
-never the feed's link.
+and how often a title alone gives the kind its shelf gives (`title_alone`), never the
+feed's link.
 """
 from __future__ import annotations
 
@@ -95,6 +96,7 @@ def main(argv: list[str] | None = None) -> int:
                 "freshness": _freshness(prepared),
                 "intake": _intake(),
                 "kinds": _kinds(prepared),
+                "title_alone": _title_alone(prepared),
             },
         )
     return 0
@@ -127,6 +129,17 @@ def _kinds(prepared) -> dict[str, object]:
         from picwise_providers.kind_check import measure_kind_titles
 
         return measure_kind_titles(prepared.products, prepared.kinds, prepared.search_fields or None)
+    except Exception as error:
+        return {"error": _where(error)}
+
+
+def _title_alone(prepared) -> dict[str, object]:
+    """How often a shown product's title alone gives the kind its shelf gives; a failure
+    is only noted."""
+    try:
+        from picwise_providers.kind_check import measure_title_alone
+
+        return measure_title_alone(prepared.products, prepared.search_fields or None)
     except Exception as error:
         return {"error": _where(error)}
 

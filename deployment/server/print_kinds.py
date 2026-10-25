@@ -10,8 +10,10 @@ Hoover" books answering "vacuum cleaner"), with the cheapest three of each (pric
 title, shelf), since price first puts the cheapest at the top of a page, and the
 shelves they most often sit on, whole, as the kind reader saw them; then the products a
 title's kind on another department's aisle made doubtful, per kind they were read as
-before. Suspects, not mistakes. The note holds no link. Always exits 0: a deployment
-never fails because of this list.
+before; and how often a title alone gives the kind the shelf gives (`title_alone`, owner,
+2026-10-25: before any row without a category is shown by its title). Suspects, not
+mistakes. The note holds no link. Always exits 0: a deployment never fails because of
+this list.
 """
 from __future__ import annotations
 
@@ -53,7 +55,41 @@ def main() -> int:
             "doubted_by_its_aisle",
             of="doubted; still of the kind:",
         )
+    print_title_alone(note.get("title_alone"))
     return 0
+
+
+def _share(part: int, whole: int) -> str:
+    return f"{100 * part / whole:.1f}%" if whole else "-"
+
+
+def print_title_alone(title_alone: object) -> None:
+    """How often a title alone gives the kind the shelf gives: in all, per shop, and the
+    most frequent pairs of the shelf's kind and the title's other kind."""
+    print()
+    if not isinstance(title_alone, dict) or "products" not in title_alone:
+        print(f"== the title alone against the shelf: not measured ({title_alone})")
+        return
+    gives = title_alone["agrees"] + title_alone["differs"]
+    print(
+        f"== the title alone against the shelf: {title_alone['products']:,} products with a kind from their "
+        f"shelf; the title alone gives one to {gives:,} ({_share(gives, title_alone['products'])}), "
+        f"the shelf's {title_alone['agrees']:,} ({_share(title_alone['agrees'], gives)} of those), another "
+        f"{title_alone['differs']:,}; none: an accessory {title_alone['accessory']:,}, doubtful "
+        f"{title_alone['doubtful']:,}, nothing {title_alone['none']:,}"
+    )
+    print(f"{'products':>9} {'a kind':>7} {'agrees':>7}  shop")
+    for shop in title_alone["by_shop"]:
+        shop_gives = shop["agrees"] + shop["differs"]
+        print(
+            f"{shop['products']:>9,} {_share(shop_gives, shop['products']):>7} "
+            f"{_share(shop['agrees'], shop_gives):>7}  {shop['shop']}"
+        )
+    print("-- the shelf's kind -> the title's other kind, the most frequent, each with its cheapest")
+    for pair in title_alone["differs_by_pair"]:
+        print(f"{pair['shelf_kind']} -> {pair['title_kind']}: {pair['products']:,}")
+        for example in pair["cheapest"]:
+            print(f"    {example}")
 
 
 def _count(value: int | None) -> str:

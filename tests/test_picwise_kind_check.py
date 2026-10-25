@@ -28,7 +28,7 @@ for path in (ROOT, SRC):
         sys.path.insert(0, str(path))
 
 from picwise_providers.contracts import ProviderProduct  # noqa: E402
-from picwise_providers.kind_check import measure_kind_titles  # noqa: E402
+from picwise_providers.kind_check import measure_kind_titles, measure_title_alone  # noqa: E402
 
 
 def _product(
@@ -269,6 +269,58 @@ class KindTitleCheckTests(unittest.TestCase):
         self.assertIsNone(measure_kind_titles([row[0] for row in rows], [frozenset(row[1]) for row in rows])[
             "doubted_by_aisle"
         ])
+
+
+class TitleAloneTests(unittest.TestCase):
+    """Owner, 2026-10-25, «Ναι»: how often a title alone gives the kind its shelf gives,
+    before any row without a category is shown by its title."""
+
+    def test_the_title_alone_against_the_shelf(self) -> None:
+        rows = [
+            # The title names the shelf's kind.
+            _product("k1", "Fixturon Glass Electric Kettle 1.7L", "24.99", category="Kettles"),
+            # The title names another kind: a mouse on a kettles shelf.
+            _product("k2", "Fixturon Wireless Optical Mouse", "9.99", category="Kettles"),
+            _product("k3", "Fixturon Gaming Mouse", "14.99", shop="Fixture Store Two", category="Kettles"),
+            # The title names an accessory, or nothing.
+            _product("k4", "Fixturon Kettle Descaler Tablets", "4.99", category="Kettles"),
+            _product("k5", "Fixturon Rapid Boil 1.7L", "19.99", shop="Fixture Store Two", category="Kettles"),
+            # The shelf names no kind: not counted.
+            _product("x1", "Fixturon Glass Electric Kettle", "24.99", category="Gift Ideas"),
+        ]
+        note = measure_title_alone(rows, [{"category": row.category_text.lower()} for row in rows])
+        self.assertEqual(
+            {key: note[key] for key in ("products", "agrees", "differs", "accessory", "doubtful", "none")},
+            {"products": 5, "agrees": 1, "differs": 2, "accessory": 1, "doubtful": 0, "none": 1},
+        )
+        self.assertEqual(
+            note["by_shop"],
+            [
+                {"shop": "Fixture Store One", "products": 3, "agrees": 1, "differs": 1, "accessory": 1,
+                 "doubtful": 0, "none": 0},
+                {"shop": "Fixture Store Two", "products": 2, "agrees": 0, "differs": 1, "accessory": 0,
+                 "doubtful": 0, "none": 1},
+            ],
+        )
+        self.assertEqual(
+            note["differs_by_pair"],
+            [
+                {
+                    "shelf_kind": "kettle",
+                    "title_kind": "mouse",
+                    "products": 2,
+                    "cheapest": [
+                        "9.99 GBP | Fixture Store One | Fixturon Wireless Optical Mouse | Kettles",
+                        "14.99 GBP | Fixture Store Two | Fixturon Gaming Mouse | Kettles",
+                    ],
+                }
+            ],
+        )
+
+    def test_a_broader_or_narrower_kind_agrees(self) -> None:
+        rows = [_product("v1", "Fixturon S8 Robot Vacuum Cleaner", "199.00", category="Vacuums")]
+        note = measure_title_alone(rows)
+        self.assertEqual((note["products"], note["agrees"], note["differs"]), (1, 1, 0))
 
 
 if __name__ == "__main__":

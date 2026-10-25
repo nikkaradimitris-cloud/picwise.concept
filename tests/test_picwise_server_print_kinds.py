@@ -105,6 +105,39 @@ class PrintKindsTests(unittest.TestCase):
                 "mouse: 85 doubted; still of the kind: 27",
                 "    1.49 GBP | Fixture Sweets | Fixturon Chocolate Mice | Sweets & Chocolate",
                 "    shelves: food, beverages & tobacco > food items > sweets & chocolate (85)",
+                "",
+                "== the title alone against the shelf: not measured (None)",
+            ],
+        )
+
+    def test_the_title_alone_against_the_shelf(self) -> None:
+        title_alone = {
+            "products": 1_000, "agrees": 720, "differs": 80, "accessory": 50, "doubtful": 100, "none": 50,
+            "by_shop": [
+                {"shop": "Fixture Store One", "products": 900, "agrees": 700, "differs": 50, "accessory": 50,
+                 "doubtful": 50, "none": 50},
+                {"shop": "Fixture Store Two", "products": 100, "agrees": 20, "differs": 30, "accessory": 0,
+                 "doubtful": 50, "none": 0},
+            ],
+            "differs_by_pair": [
+                {"shelf_kind": "kettle", "title_kind": "mouse", "products": 40,
+                 "cheapest": ["9.99 GBP | Fixture Store Two | Fixturon Wireless Optical Mouse | Kettles"]},
+            ],
+        }
+        lines = _print_kinds(json.dumps({"prepared": True, "kinds": _KINDS, "title_alone": title_alone})).stdout
+        self.assertEqual(
+            lines.split("== the title alone against the shelf")[1].splitlines(),
+            [
+                (
+                    ": 1,000 products with a kind from their shelf; the title alone gives one to 800 (80.0%), "
+                    "the shelf's 720 (90.0% of those), another 80; none: an accessory 50, doubtful 100, nothing 50"
+                ),
+                " products  a kind  agrees  shop",
+                "      900   83.3%   93.3%  Fixture Store One",
+                "      100   50.0%   40.0%  Fixture Store Two",
+                "-- the shelf's kind -> the title's other kind, the most frequent, each with its cheapest",
+                "kettle -> mouse: 40",
+                "    9.99 GBP | Fixture Store Two | Fixturon Wireless Optical Mouse | Kettles",
             ],
         )
 
@@ -116,7 +149,14 @@ class PrintKindsTests(unittest.TestCase):
         ]
         lines = _print_kinds(json.dumps({"prepared": True, "kinds": kinds})).stdout.splitlines()
         self.assertTrue(lines[0].endswith("only the title names one: not measured; made doubtful by their aisle: not measured"))
-        self.assertEqual(lines[-1], "    9.99 GBP | Fixture Store One | Fixturon 50mm Lens | Camera Lenses")
+        self.assertEqual(
+            lines[-3:],
+            [
+                "    9.99 GBP | Fixture Store One | Fixturon 50mm Lens | Camera Lenses",
+                "",
+                "== the title alone against the shelf: not measured (None)",
+            ],
+        )
 
     def test_no_note_or_no_kinds_says_so_and_never_fails(self) -> None:
         for note_text, said in (

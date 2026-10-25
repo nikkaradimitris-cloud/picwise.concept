@@ -434,7 +434,14 @@ class PrepareToolTests(_PreparedMixin, unittest.TestCase):
         prepared_at = read_prepared_catalogue(self.prepared_path).prepared_at
         self.assertLess(abs((datetime.fromisoformat(note["prepared_at"]) - prepared_at).total_seconds()), 1)
         self.assertEqual(
-            set(note), {"prepared", "prepared_at", "products", "shops", "freshness", "intake", "kinds", "written_at"}
+            set(note),
+            {"prepared", "prepared_at", "products", "shops", "freshness", "intake", "kinds", "title_alone", "written_at"},
+        )
+        # How often a title alone gives the kind its shelf gives (owner, 2026-10-25): of the
+        # 16 fixture products, 15 titles give the shelf's kind and one is doubtful alone.
+        self.assertEqual(
+            {key: note["title_alone"][key] for key in ("products", "agrees", "differs", "doubtful")},
+            {"products": 16, "agrees": 15, "differs": 0, "doubtful": 1},
         )
         # Per kind, the products whose title does not name it (owner, 2026-10-23): every
         # fixture title names its kettle or laptop; those whose title alone names it, and
