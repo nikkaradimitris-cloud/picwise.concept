@@ -18,7 +18,9 @@ Environment=AWIN_FEED_CACHE_DIR=/srv/picwise/shared/cache
 # The code's 300 MB cap is a Vercel-sized one; the server takes a feed of every shop.
 Environment=AWIN_FEED_MAX_BYTES=2147483648
 Environment=PYTHONDONTWRITEBYTECODE=1
-ExecStart=/usr/bin/python3 tools/prepare_catalogue.py --keep-going \
+# GNU time adds one line with the run's peak memory and length, for sizing the server.
+ExecStart=/usr/bin/time -f "prepare_catalogue: peak memory %%M KB, %%e s" /usr/bin/python3 \
+    tools/prepare_catalogue.py --keep-going \
     --static-dir /srv/picwise/shared/public --out /srv/picwise/shared/prepared/catalogue.json.gz
 TimeoutStartSec=60min
 Nice=10

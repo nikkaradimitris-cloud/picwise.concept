@@ -26,7 +26,7 @@ HEALTH_URL=http://127.0.0.1:8016/health
 export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l
 
 echo "== packages"
-apt-get -q -y -o DPkg::Lock::Timeout=600 install python3-venv curl > /dev/null
+apt-get -q -y -o DPkg::Lock::Timeout=600 install python3-venv curl time > /dev/null
 
 echo "== user and folders"
 id picwise > /dev/null 2>&1 || useradd --system --user-group --home-dir "$APP" --no-create-home \
@@ -79,9 +79,9 @@ mv -T "$APP/current.new" "$APP/current"
 
 echo "== the catalogue, prepared as a Vercel build prepares it"
 systemctl start picwise-prepare.service || echo "preparing failed; the site keeps the last prepared file (30 h)"
-# The summary line and systemd's own (time, memory peak) of this run.
+# The summary line, the peak memory and length, and systemd's own line, of this run.
 journalctl -u picwise-prepare.service -n 20 -o cat --no-pager --since "-65min" \
-  | grep -E 'prepare_catalogue|Consumed' | tail -n 2 || true
+  | grep -E 'prepare_catalogue|Consumed' | tail -n 3 || true
 systemctl enable --now picwise-prepare.timer
 
 echo "== the site"
