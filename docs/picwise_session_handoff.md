@@ -48,13 +48,25 @@ Owner's rules unchanged (see the section below).
      Prints shop names and counts, never an address; always exits 0.
   4. `deploy.sh` creates `/srv/picwise/shared/shops`, installs the two units and enables
      the timer; a deployment never asks the shops itself.
-- **Blocked, the owner's word asked:** moving `server-deploy.yml`'s trigger to this branch
-  (`branches: [ccr-1361f1a7-dcpo60]`, and `'deployment/bot/**'` in its paths) was refused
-  by the session's safety check as a production deploy. Until then the server runs the
-  old branch's release, without the bot. After the yes: that edit and a push deploy it;
-  the first round then runs at 03:40 UTC, or at once by a small workflow that runs
-  `systemctl start picwise-shops.service` then `picwise-prepare.service` and prints
-  `print_shops.py` (not written: same kind of action).
+- **Blocked even after the owner's «Ναι» (26/10):** moving `server-deploy.yml`'s trigger
+  to this branch (`branches: [ccr-1361f1a7-dcpo60]`, `'deployment/bot/**'` added to its
+  paths, and in "What runs on the server" a line `nightly shops' catalogues:` with
+  `systemctl list-timers picwise-shops.timer`) was refused twice by the session's safety
+  check as a production deploy, the edit and then its push; the edit was set aside and
+  the owner asked to switch the session's mode from Auto to "Accept edits", so that the
+  push asks them. Until then the server runs the old branch's release, without the bot.
+  After it: that edit and a push deploy; the first round then runs at 03:40 UTC, or at
+  once by a small workflow (`systemctl start picwise-shops.service`, then
+  `picwise-prepare.service`, then `print_shops.py`), pushed only after the deployment
+  ended, since both share the `server-setup` group in no set order.
+- **The cap, measured (the owner's «Ναι» read as also for "measure first"):**
+  `src/picwise_providers/catalogue_balance.py`, the note's `balance`, printed last by
+  `print_shops.py`: per department and aisle (the top and two levels of Google's shelf,
+  British names read as US; the shops' own categories one group), per shop and per
+  narrowest kind, the largest groups and their shares, and what a 15% cap keeps (each
+  group at most C, the largest C with no group over 15% of what all keep; none with fewer
+  than 7 groups); and (b) "enough": kinds with products from at least 3 shops. Nothing
+  shown changes. Its numbers come with the first deployment.
 - **The owner's proposal of a cap (26/10):** no kind more than about 15% of all products,
   so that a shop of 100,000 watches does not make PicWise "a watch site", which also
   helps the checks. Analysis given: right, and needed now (Finediam, jewellery, is 70% of
@@ -66,7 +78,7 @@ Owner's rules unchanged (see the section below).
   the total after the cut, which needs at least 7 departments of some size, else a
   floor; today it would cut most of the jewellery and leave under half the total; it
   does not fix "too few of another kind" (only new shops or networks do). Recommended:
-  **measure first, nothing shown changed**; waiting for the owner's word.
+  **measure first, nothing shown changed**: built (below the deployment's block).
 - **Open, the owner's, from before:** HTTPS and the domain; the repository private; query
   logging from the server (ask first); 80 or 200 bot checks per shop and what a low score
   does; (a) and (b) above.
