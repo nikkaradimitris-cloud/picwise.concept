@@ -436,8 +436,12 @@ class PrepareToolTests(_PreparedMixin, unittest.TestCase):
         self.assertEqual(
             set(note),
             {"prepared", "prepared_at", "products", "shops", "freshness", "intake", "kinds", "title_alone",
-             "shop_catalogues", "written_at"},
+             "shop_catalogues", "balance", "written_at"},
         )
+        # The shares of the shown products and what a cap would cut (owner, 2026-10-26),
+        # measured only: one shop, so no cap holds by shop.
+        self.assertEqual(note["balance"]["products"], 16)
+        self.assertIsNone(note["balance"]["shop"]["cap"])
         # What the shops' own catalogues and the barcodes gave (owner, 2026-10-26): no bot's
         # file here, and every fixture row has its category.
         self.assertEqual(

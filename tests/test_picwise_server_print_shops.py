@@ -79,9 +79,14 @@ class PrintShopsTests(unittest.TestCase):
         )
         # The table of the 4 shops, then the rows without a category: none here.
         self.assertEqual(lines[6:8], ["", "rows without a category: 0; held for that alone 0, 0 of them with the shop's own type"])
-        # Then what the shops' catalogues and the barcodes gave: no bot's file here.
-        self.assertEqual(len(lines), 2 + 4 + 1 + 7 + 3)
-        self.assertEqual(lines[-2], "the shops' catalogues: the bot's file none; 0 shops in it")
+        # Then what the shops' catalogues and the barcodes gave (no bot's file here), and the
+        # shares of the shown products with what a cap would cut.
+        self.assertEqual(len(lines), 2 + 4 + 1 + 7 + 3 + 11)
+        self.assertEqual(lines[15], "the shops' catalogues: the bot's file none; 0 shops in it")
+        self.assertEqual(
+            lines[18],
+            "the shares of the 15 products shown, and a cap of 15% on each (measured only; nothing shown changes):",
+        )
         self.assertIn(
             "        4         2       0         2  Fixture Store Two: availability_discontinued 1, "
             "purchasability_discontinued 1, missing_price_text 1",
@@ -244,6 +249,42 @@ class PrintShopsTests(unittest.TestCase):
             "     rows     found  sold out    no cat   by type   no kind   no type not found  shop: the bot's last round",
             "    1,200     1,100        40       900       700       120        30        50  Office Shop: read, goes on "
             "next round, 1,100 products known",
+        ])
+
+    def test_the_shares_and_what_a_cap_would_cut(self) -> None:
+        # Owner, 2026-10-26: no kind over about 15% of all products; measured first.
+        def view(groups: int, largest: list, cap, kept, cut, cut_by_group: list, over: int) -> dict:
+            return {"groups": groups, "products": 1_000, "largest": largest, "over": over, "cap": cap,
+                    "kept": kept, "cut": cut, "cut_by_group": cut_by_group}
+
+        note = {
+            "prepared": True,
+            "intake": {"rows": 1_000, "shown": 1_000, "not_new": 0, "held": 0, "shops": []},
+            "balance": {
+                "share": 0.15, "products": 1_000,
+                "department": view(8, [{"name": "apparel & accessories", "products": 700, "share": 0.7}], 52, 352, 648,
+                                   [{"name": "apparel & accessories", "cut": 648, "kept": 52}], 1),
+                "aisle": view(3, [{"name": "home & garden > kitchen & dining", "products": 500, "share": 0.5}], None,
+                              None, None, [], 2),
+                "shop": view(10, [{"name": "Shop A", "products": 100, "share": 0.1}], 100, 1_000, 0, [], 0),
+                "kind": view(20, [{"name": "kettle", "products": 90, "share": 0.09}], 90, 1_000, 0, [], 0),
+                "no_kind": 0,
+                "kinds_by_shops": {"kinds": 20, "one_shop": 15, "two_shops": 3, "three_or_more": 2},
+            },
+        }
+        lines = _print_shops(json.dumps(note)).stdout.splitlines()
+        start = lines.index("the shares of the 1,000 products shown, and a cap of 15% on each (measured only; nothing "
+                            "shown changes):")
+        self.assertEqual(lines[start + 1:], [
+            "  by department: 8 groups, 1 over 15%; the largest: apparel & accessories 700 (70.0%)",
+            "    capped at 52 a group: 352 kept, 648 cut: apparel & accessories -648",
+            "  by aisle: 3 groups, 2 over 15%; the largest: home & garden > kitchen & dining 500 (50.0%)",
+            "    a cap of 15% cannot hold: too few groups of products",
+            "  by shop: 10 groups, 0 over 15%; the largest: Shop A 100 (10.0%)",
+            "    capped at 100 a group: 1,000 kept, 0 cut",
+            "  by kind: 20 groups, of the 1,000 with a kind, 0 over 15%; the largest: kettle 90 (9.0%)",
+            "    capped at 90 a group: 1,000 kept, 0 cut",
+            "  kinds with products from at least 3 shops: 2 of 20 (from one shop 15, from two 3); shown with no kind 0",
         ])
 
     def test_no_note_or_no_list_says_so_and_never_fails(self) -> None:

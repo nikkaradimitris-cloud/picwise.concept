@@ -61,6 +61,7 @@ def main() -> int:
     print()
     print_without_category(intake)
     print_shop_catalogues(note)
+    print_balance(note)
     return 0
 
 
@@ -188,6 +189,51 @@ def print_shop_catalogues(note: dict) -> None:
             f"{shop['by_type']:>9,} {shop['type_no_kind']:>9,} {shop['no_type']:>9,} {shop['not_found']:>9,}  "
             f"{shop['shop']}: {shop['status'] or '-'}, {shop['products']:,} products known"
         )
+
+
+# How many of the largest groups, and of those a cap cuts most, are printed per grouping.
+BALANCE_LISTED = 5
+
+
+def print_balance(note: dict) -> None:
+    """How the shown products spread over departments, aisles, shops and kinds, and what
+    a cap on a share would cut, measured only (owner, 2026-10-26: no kind over about 15%;
+    «Ναι» to measuring it first; `picwise_providers.catalogue_balance`)."""
+    found = note.get("balance")
+    if not isinstance(found, dict):
+        # A note written before the shares were measured.
+        return
+    print()
+    if "error" in found:
+        print(f"the shares of the shown products: not measured ({found['error']})")
+        return
+    share = f"{100 * found['share']:g}%"
+    print(
+        f"the shares of the {found['products']:,} products shown, and a cap of {share} on each "
+        f"(measured only; nothing shown changes):"
+    )
+    for key, label in (("department", "department"), ("aisle", "aisle"), ("shop", "shop"), ("kind", "kind")):
+        view = found[key]
+        named = "; ".join(
+            f"{entry['name']} {entry['products']:,} ({100 * entry['share']:.1f}%)"
+            for entry in view["largest"][:BALANCE_LISTED]
+        )
+        extra = f", of the {view['products']:,} with a kind" if key == "kind" else ""
+        print(f"  by {label}: {view['groups']:,} groups{extra}, {view['over']:,} over {share}; the largest: {named}")
+        if view["cap"] is None:
+            print(f"    a cap of {share} cannot hold: too few groups of products")
+            continue
+        cuts = "; ".join(f"{entry['name']} -{entry['cut']:,}" for entry in view["cut_by_group"][:BALANCE_LISTED])
+        print(
+            f"    capped at {view['cap']:,} a group: {view['kept']:,} kept, {view['cut']:,} cut"
+            + (f": {cuts}" if cuts else "")
+        )
+    spread = found["kinds_by_shops"]
+    print(
+        f"  kinds with products from at least 3 shops: {spread['three_or_more']:,} of {spread['kinds']:,} "
+        f"(from one shop {spread['one_shop']:,}, from two {spread['two_shops']:,}); shown with no kind "
+        f"{found['no_kind']:,}"
+    )
 
 
 def print_hints(hints: dict | None) -> None:

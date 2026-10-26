@@ -22,9 +22,11 @@ note of what this build prepared: counts, the time, how fresh the feed's listing
 each shop's feed brings in (`picwise_providers.feed_intake`: rows, shown, shown only
 when asked for, held back and why, and what its `product_type` column carries), and per
 kind the products shown as it whose title does not name it (`picwise_providers.kind_check`),
-how often a title alone gives the kind its shelf gives (`title_alone`), and what the
-shops' own catalogues and the rows' barcodes gave (`shop_catalogues`,
-`picwise_providers.shop_catalogue`), never the feed's link.
+how often a title alone gives the kind its shelf gives (`title_alone`), what the shops'
+own catalogues and the rows' barcodes gave (`shop_catalogues`,
+`picwise_providers.shop_catalogue`), and how the shown products spread and what a cap
+on a share would cut (`balance`, `picwise_providers.catalogue_balance`), never the
+feed's link.
 """
 from __future__ import annotations
 
@@ -99,6 +101,7 @@ def main(argv: list[str] | None = None) -> int:
                 "kinds": _kinds(prepared),
                 "title_alone": _title_alone(prepared),
                 "shop_catalogues": _shop_catalogues(),
+                "balance": _balance(prepared),
             },
         )
     return 0
@@ -153,6 +156,18 @@ def _shop_catalogues() -> dict[str, object] | None:
         from picwise_providers.shop_catalogue import last_shop_catalogue_note
 
         return last_shop_catalogue_note()
+    except Exception as error:
+        return {"error": _where(error)}
+
+
+def _balance(prepared) -> dict[str, object]:
+    """How the shown products spread over departments, aisles, shops and kinds, and what
+    a cap would cut (`picwise_providers.catalogue_balance`); measured only, and a
+    failure here is only noted."""
+    try:
+        from picwise_providers.catalogue_balance import measure_catalogue_balance
+
+        return measure_catalogue_balance(prepared.products, prepared.kinds)
     except Exception as error:
         return {"error": _where(error)}
 
