@@ -9,12 +9,13 @@
 name: Server deploy
 on:
   push:
-    branches: [claude/bold-allen-ljj9d7]
+    branches: [ccr-1361f1a7-dcpo60]
     paths:
       - '.github/workflows/server-deploy.yml'
       - '.github/server-host-key.pin'
       - 'deployment/server/**'
       - '!deployment/server/base_setup.sh'
+      - 'deployment/bot/**'
       - 'api/**'
       - 'src/**'
       - 'tools/**'
@@ -125,6 +126,7 @@ jobs:
             echo "listening (8016 inside the server only; nothing on 80 or 443):"
             sudo ss -ltnH "( sport = :8016 or sport = :80 or sport = :443 )" | awk "{print \"  \" \$4}"
             echo "nightly preparation: $(systemctl list-timers picwise-prepare.timer --no-legend | awk "{print \$1, \$2, \$3, \$4}")"
+            echo "nightly shops' catalogues: $(systemctl list-timers picwise-shops.timer --no-legend | awk "{print \$1, \$2, \$3, \$4}")"
             echo "memory of the site: $(ps -o rss= -u picwise | awk "{s+=\$1} END {printf \"%.0f MB\", s/1024}")"
             sudo python3 -c "import json; d = json.load(open(\"/srv/picwise/shared/public/prepared.json\")); print(\"prepared:\", d.get(\"prepared\"), d.get(\"prepared_at\", d.get(\"reason\")), d.get(\"products\"), \"products,\", d.get(\"shops\"), \"shops\")"
             echo "disk: $(sudo du -sh /srv/picwise | cut -f1) in /srv/picwise; $(df -h --output=avail / | tail -1 | tr -d " ") free"
