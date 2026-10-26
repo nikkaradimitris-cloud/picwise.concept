@@ -61,6 +61,50 @@ class ShopTypesTests(unittest.TestCase):
         self.assertEqual(set(annotate_product_concepts("", "", "Nintendo Switch OLED Console")), set())
         self.assertEqual(set(annotate_product_concepts("", "", "Fixturon Software Engineering Handbook")), set())
 
+    def test_the_second_list_of_types_gives_its_kinds(self) -> None:
+        # Owner, 2026-10-26: «Ναι παίρνω και αυτά τα είδη», after the note's longer list
+        # (run 40351335007).
+        for product_type, title, kinds in (
+            ("Memory Cards", "Fixturon 128GB microSD Card with Adapter", {"memory_card"}),
+            ("Servers", "Fixturon PowerEdge T150 Tower Server", {"server"}),
+            ("Console Servers", "Fixturon 16-Port Console Server", {"server"}),
+            ("Hardware Firewalls", "Fixturon 40F Firewall", {"firewall"}),
+            ("Wireless Access Points", "Fixturon U6 Access Point", {"access_point"}),
+            ("Industrial Rechargeable Batteries", "Fixturon 12V 7Ah Rechargeable Battery", {"battery"}),
+            ("Household Batteries", "Fixturon AA Batteries 24 Pack", {"battery"}),
+            ("Bedding", "Fixturon Duvet 10.5 Tog Double", {"bedding", "duvet"}),
+            ("Bedding", "Fixturon Fitted Sheet Double", {"bedding"}),
+            ("Sweatshirts", "Fixturon Crew Neck Sweatshirt Grey", {"hoodie"}),
+            ("Ballpoint Pens", "Fixturon Ballpoint Pen Blue 50 Pack", {"pen"}),
+            ("Markers", "Fixturon Whiteboard Markers 4 Pack", {"marker"}),
+            ("Ring Binders", "Fixturon A4 Ring Binder 2 Ring", {"folder"}),
+            ("Folders", "Fixturon A4 Document Folder", {"folder"}),
+            ("Power Supply Units", "Fixturon 650W Power Supply Unit", {"power_supply"}),
+        ):
+            with self.subTest(product_type=product_type, title=title):
+                self.assertEqual(_kinds(product_type, title), kinds)
+
+    def test_the_second_lists_look_alikes_stay_what_they_were(self) -> None:
+        self.assertEqual(
+            _kinds("", "Fixturon Salad Servers Bamboo",
+                   "Home & Garden > Kitchen & Dining > Tableware > Serveware > Serving Utensils"),
+            {UNCERTAIN_MARKER},
+        )
+        self.assertEqual(
+            _kinds("", "Fixturon Plant Markers 50 Pack", "Home & Garden > Lawn & Garden > Gardening > Plant Labels"),
+            {UNCERTAIN_MARKER},
+        )
+        for title, kinds in (
+            ("Fixturon Pen Drive 64GB", {"usb_flash_drive"}),
+            ("Fixturon Battery Lawn Mower 40V", {"lawn_mower"}),
+            ("Fixturon Car Battery 12V 70Ah", {"car_battery"}),
+            ("Fixturon External Battery 10000mAh", {"power_bank"}),
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(set(annotate_product_concepts("", "", title)), kinds)
+        # A Greek "μπαταρία κουζίνας" is still a tap, not a battery.
+        self.assertEqual(set(annotate_product_concepts("", "", "μπαταρία κουζίνας")), {"tap"})
+
     def test_types_naming_no_product_stay_so(self) -> None:
         for product_type in ("Sold Out", "Made-to-Measure"):
             with self.subTest(product_type=product_type):

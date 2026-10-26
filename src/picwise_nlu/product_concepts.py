@@ -143,6 +143,14 @@ label_printer|CO||label printer,label printers,label maker,label makers|ετικ
 toner|CO||toner,toners,toner cartridge,toner cartridges|τόνερ
 ink_cartridge|CO||ink cartridge,ink cartridges,printer ink,ink|μελάνι,μελάνια,μελάνι εκτυπωτή,μελάνια εκτυπωτή,φυσίγγιο μελανιού,αμπούλα,αμπούλες
 router|CO||router,routers,wifi router,network router,network routers,modem,modems|ρούτερ,μόντεμ
+access_point|CO||access point,access points,wireless access point,wireless access points,wifi access point,wifi access points|σημείο πρόσβασης,σημεία πρόσβασης
+firewall|CO||firewall,firewalls,hardware firewall,hardware firewalls,network firewall,network firewalls|τείχος προστασίας
+server|CO||server,servers,rack server,rack servers,tower server,tower servers,console server,console servers|διακομιστής,διακομιστές
+memory_card|CO||memory card,memory cards,sd card,sd cards,micro sd card,micro sd cards,microsd card,microsd cards,compactflash card,compactflash cards|κάρτα μνήμης,κάρτες μνήμης
+battery|CO||household battery,household batteries,rechargeable battery,rechargeable batteries,alkaline battery,alkaline batteries,aa battery,aa batteries,aaa battery,aaa batteries,~battery,~batteries|επαναφορτιζόμενη μπαταρία,επαναφορτιζόμενες μπαταρίες,αλκαλική μπαταρία,αλκαλικές μπαταρίες
+pen|CO||ballpoint pen,ballpoint pens,ballpoint,ballpoints,gel pen,gel pens,rollerball pen,rollerball pens,fountain pen,fountain pens,~pen,~pens|στυλό,στιλό
+marker|CO||marker,markers,marker pen,marker pens,permanent marker,permanent markers,whiteboard marker,whiteboard markers,highlighter,highlighters|μαρκαδόρος,μαρκαδόροι,υπογραμμιστής,υπογραμμιστές
+folder|CO||folder,folders,ring binder,ring binders,lever arch file,lever arch files,document folder,document folders|ντοσιέ,φάκελος εγγράφων,φάκελοι εγγράφων,κλασέρ
 network_switch|CO||network switch,network switches,ethernet switch,ethernet switches|μεταγωγέας δικτύου,μεταγωγείς δικτύου,switch δικτύου
 media_converter|CO||media converter,media converters,fibre media converter,fibre media converters,fiber media converter,fiber media converters|μετατροπέας μέσων,μετατροπείς μέσων
 network_card|CO||network card,network cards,network interface card,network interface cards|κάρτα δικτύου,κάρτες δικτύου
@@ -273,7 +281,7 @@ jeans|CL||jeans|τζιν
 jacket|CL||jacket,jackets,coat,coats|μπουφάν,παλτό,μπουφάν χειμερινό
 t_shirt|CL||t shirt,t shirts,tshirt,tee|μπλουζάκι,μπλουζάκια,κοντομάνικο,μπλούζα
 shirt|CL||shirt,shirts|πουκάμισο,πουκάμισα
-hoodie|CL||hoodie,hoodies,sweatshirt|φούτερ
+hoodie|CL||hoodie,hoodies,sweatshirt,sweatshirts|φούτερ
 sweater|CL||sweater,sweaters,jumper,cardigan|πουλόβερ,ζακέτα
 dress|CL||dress,dresses|φόρεμα,φορέματα
 skirt|CL||skirt,skirts|φούστα,φούστες
@@ -316,7 +324,7 @@ graphics_card|CO||graphics card,graphics cards,video card,gpu|κάρτα γρα�
 processor|CO||processor,processors,cpu|επεξεργαστής,επεξεργαστές
 ram_memory|CO||ram memory,ram module,ram modules,memory module,memory modules,ddr4 ram,ddr5 ram,dimm,dimms|μνήμη ram,μνήμες ram
 motherboard|CO||motherboard,motherboards|μητρική,μητρική κάρτα,μητρικές
-power_supply|CO||power supply unit,psu,pc power supply|τροφοδοτικό,τροφοδοτικά
+power_supply|CO||power supply unit,power supply units,psu,psus,pc power supply|τροφοδοτικό,τροφοδοτικά
 pc_case|CO||pc case,pc cases,computer case,computer cases,tower case|κουτί υπολογιστή
 pc_cooling|CO||case fan,case fans,pc fan,pc fans,cpu cooler,cpu coolers,computer cooling system,computer cooling systems,liquid cooler|ανεμιστήρας υπολογιστή,ψύκτρα,ψύξη υπολογιστή
 printer_paper|CO||printer paper,copy paper,a4 paper|χαρτί εκτυπωτή,χαρτί φωτοτυπικού,χαρτί a4
@@ -344,10 +352,11 @@ pool|GA||swimming pool,above ground pool,paddling pool|πισίνα,φουσκω
 flower_pot|GA||flower pot,flower pots,plant pot,plant pots,planter,planters,planter box,planter boxes,planter bed,planter beds,raised garden bed,raised garden beds,raised bed,raised beds,garden bed,garden beds,flower bed,flower beds,raised flower bed,raised flower beds|γλάστρα,γλάστρες,ζαρντινιέρα,ζαρντινιέρες
 greenhouse|GA||greenhouse,greenhouses,grow tent,grow tents,polytunnel,polytunnels,cold frame,cold frames|θερμοκήπιο,θερμοκήπια
 towels|FU||towel,towels,bath towel,beach towel|πετσέτα,πετσέτες,πετσέτα μπάνιου,πετσέτα θαλάσσης
-bed_linen|FU||bed sheets,bed linen,duvet cover,~sheets|σεντόνια,σετ σεντόνια,παπλωματοθήκη
-pillow|FU||pillow,pillows|μαξιλάρι,μαξιλάρια
-duvet|FU||duvet,duvets,quilt,comforter|πάπλωμα,παπλώματα,κουβέρτα
-bedspread|FU||bedspread,bedspreads,coverlet,coverlets|κουβερλί
+bedding|FU||bedding,bedding set,bedding sets|κλινοσκεπάσματα,είδη κρεβατιού
+bed_linen|FU|bedding|bed sheets,bed linen,duvet cover,~sheets|σεντόνια,σετ σεντόνια,παπλωματοθήκη
+pillow|FU|bedding|pillow,pillows|μαξιλάρι,μαξιλάρια
+duvet|FU|bedding|duvet,duvets,quilt,comforter|πάπλωμα,παπλώματα,κουβέρτα
+bedspread|FU|bedding|bedspread,bedspreads,coverlet,coverlets|κουβερλί
 curtains|FU||curtains,curtain,blinds|κουρτίνες,κουρτίνα,στόρια
 rug|FU||rug,rugs,carpet|χαλί,χαλιά
 bath_mat|FU||bath mat,bath mats,bathmat,bathmats,bath rug,bath rugs,shower mat,shower mats|πατάκι μπάνιου,πατάκια μπάνιου
