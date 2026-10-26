@@ -152,15 +152,24 @@ bot's, never the owner's by hand; never open an Awin tracked link from a session
   none (on rows with a shelf: 5.5%, 93.3% agreeing). So from the feed only the title
   maps them: about 204,000, of which about 95% right (InStock UK 94.6%); about 185,000
   cannot be mapped from the feed.
-- **Next, put to the owner (waiting for their word):** (1) the rows without a category
-  on the server, **outside the price logic** («Βρέθηκαν επίσης»: found by exact words
-  only, no price role, never the recommendation), in a lean list apart from the
-  catalogue so the site's memory holds, behind a setting only the server sets; (2) the
-  bot: first per shop its robots.txt and one test of whether it publishes its
-  catalogue for machines (Shopify's `products.json`: 250 products a request, with the
-  shop's product type and each variant's availability; 200 requests a shop, up to
-  50,000 products a round), never an Awin link; (3) rows the bot confirms join the
-  comparison. (2) asks pages of the shops' sites: only on the owner's «ναι».
+- **The owner's proposal (26/10), replacing «Βρέθηκαν επίσης»:** rows that can be mapped
+  safely and sorted rightly in search join the catalogue; rows no category can be
+  given, also after the bot's check, are dropped («πόσες μετατροπές μπορείς να κάνεις
+  σε προϊόντα τα οποία είναι κρυφά ... το μόνο που κάνουν είναι να πιάνουν χώρο»); if
+  the products left are not enough, another network joins (CJ or any other);
+  «Αρκετά ασχοληθήκαμε». So **«Βρέθηκαν επίσης» is dropped**, nothing to build for it.
+  Asked for an evaluation; given: right, and today's state already (rows held for no
+  category are not in the prepared catalogue, only counted in the note; each night's
+  preparation lets a shop's row in once it has a category); three additions put to
+  the owner, **waiting for their word**: (a) "safe" as a number: a title's kind
+  accepted alone only for the kinds whose title reading measured right nearly always
+  (99%) on rows with a shelf, the rest only when the bot confirms them; (b) "enough"
+  measured in comparisons, not products: how many kinds have products from at least 3
+  shops (Finediam is 70% of what is shown); a new network passes the same gates by
+  itself; (c) the rule is for rows with **no category from the shop** only: the about
+  275,000 shown with a shelf but no PicWise kind yet (more than half jewellery: "ring"
+  gives none) stay, and the vocabulary grows. The bot (stock and category, 200 checks a
+  shop, never an Awin link) asks pages of the shops' sites: only on the owner's «ναι».
 - **Before, put to the owner:** (2) before any row
   without a category is shown by its title, measure how often the title alone agrees
   with the shelf on the rows that have one (per shop: InStock UK has both); (3) ask
