@@ -1,9 +1,47 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-26 (later).
+Current state for whoever picks the project up next. Updated 2026-10-26 (evening).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation (from 2026-10-26, later): the bot and So Divine built, not yet on the server -- start here
+## Next conversation (from 2026-10-27): the bot runs each night on the server -- start here
+
+The owner ended the conversation of 26/10 with «Πάμε σε άλλη συζήτηση». Owner's rules,
+unchanged: Greek, short, plain words; say what you found before building anything;
+nothing on `main` without their explicit «ναι»; never ask for the feed link (it holds the
+key); secrets only in GitHub's or Vercel's secrets; nothing in Supabase without asking;
+never open an Awin tracked link from a session or a bot; never propose contacting the
+shops.
+
+- **Where the work is:** the branch `ccr-1361f1a7-dcpo60` (pushed, last `a6d4318`): bring it
+  in first. `main` is still at `3608da0`: nothing of 25-26/10's server work is on it; pull
+  requests #13 (this branch), #12 and #11 to `main` are open; merge none without the
+  owner's «ναι».
+- **The server deploys from this branch** (`server-deploy.yml`, on a push touching the
+  site, the server files or `deployment/bot/**`). A session on another branch moves that
+  trigger to its own; in the session's Auto mode the safety check refuses that change and
+  its push as a production deploy, so ask the owner to switch the mode to "Accept edits"
+  (the menu under the message box) and approve the push.
+- **On the server now** (run `40355492889`, `9872f42` code): 523,450 products shown; So
+  Divine out; the barcode brings in about 1,100 rows (InStock UK about 1,050); the bot
+  (`picwise-shops.timer`, 03:40 UTC) feeds the preparation (`picwise-prepare.timer`, 04:17
+  UTC) the shops' types and stock; Back to the Office 5,252 shown (782 before); 20,402 rows
+  given their shop's type with its kind.
+- **First thing to do:** read the night's round of 27/10, the first to read Back to the
+  Office by its collections. Nothing prints it by itself: a deployment prints
+  `print_shops.py` (the note's `shop_catalogues`, `balance`); the bot's own lines are in
+  the server's journal (`journalctl -u picwise-shops.service --since today`), read
+  through a small read-only workflow (as `server-shops.yml`, without starting a round) or
+  by editing `server-shops.yml` to only print. Do not run a second round the same day
+  without the owner's word.
+- **Waiting for the owner's word:** the cap (measured only: by shop Finediam 68.9%, by
+  aisle jewellery 72.9%; a 15% cap would keep about 97,000-162,000 of 523,450; the owner
+  has not chosen a number or a grouping); the next kinds the shops' types name (mattresses,
+  whiteboards, safety footwear, handheld mobile computers); HTTPS and the domain; the
+  repository private; query logging from the server; 80 or 200 bot checks per shop.
+  Decided: InStock UK only with its right rows (no second look); (a) "safe" as a number not
+  needed (no title decides alone); Gigbain cancelled.
+
+## Before (2026-10-26, later): the bot and So Divine built, then put on the server
 
 The owner's answers to the three changes (26/10, later): «Γ ο κανόνας ισχύει μόνο για
 προϊόντα που το κατάστημα δεν τους έδωσε καμία κατηγορία» (addition (c) agreed: the 275,000
