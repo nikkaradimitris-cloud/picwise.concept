@@ -93,7 +93,19 @@ Owner's rules unchanged (see the section below).
   `sauna`. Tests: `tests/test_picwise_kinds_from_the_shops_types.py`;
   `test_picwise_strict_kind_reading`'s unknown label "Networking Software" became "KVM
   Switches". Misspelling benchmark unchanged (93.8%, 0 wrong). The note now lists 30
-  types naming no kind.
+  types naming no kind. **On the server** (run `40351335007`, `a701306`, the bot's file of
+  13:27): 522,733 shown (+1,035); given their shop's type with its kind 18,325 (+3,930),
+  naming none 14,246; Back to the Office 4,572 shown (782 in the morning). The types left
+  naming no kind, the most first: "Sold Out" 2,209, "Made-to-Measure" 454, "Bedding" 274,
+  "Smart Wearable Accessories" 262, "Power Distribution Units (PDUs)" 195, "Power Adapters &
+  Inverters" 194, "Console Servers" 193, "Labret Lip Rings" 190, "Servers" 184, "Video Cable
+  Adapters" 178, "Ring Binders" 175, "PCs/Workstations" 168 (titles naming another kind),
+  "Network Switch Components" 145, "TV Mounts & Stands" 138, "Monitor Mounts & Stands"
+  135, "Hardware Firewalls" 129, "Wireless Access Points" 128, "Memory Cards" 112, "Tablet
+  Cases" 111, then folders, power supplies, batteries, "Carbon Offset", sweatshirts, pens,
+  privacy filters, markers. Mounts, cases and parts are accessories and stay out; memory
+  cards, servers, access points, firewalls, batteries, bedding, sweatshirts and pens are
+  kinds the vocabulary could learn next (put to the owner).
 - **Why so few electronics (owner, 26/10):** the feed holds only the 85 programmes the
   owner joined and was accepted to, mostly small fashion, jewellery and home shops; no
   large electronics shop. Electronics shown: 9,087 (1.8%), plus what Back to the Office's
