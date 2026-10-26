@@ -1,0 +1,130 @@
+# The site on the new server, with today's code, then compared with the live site on
+# Vercel (owner's «ναι», 2026-10-25). The work on the server is deployment/server/deploy.sh.
+#
+# Each push to the working branch that changes the site or these files deploys the
+# pushed commit. The site listens on the server's 127.0.0.1:8016 only, so Google cannot
+# see it; the comparison reaches it through an SSH tunnel. Secrets go only to the server
+# whose host key matches the pin kept in the repository. The repository is public and so
+# is this log: the server's names and addresses are masked before anything is printed.
+name: Server deploy
+on:
+  push:
+    branches: [ccr-baaad713-r3uvvs]
+    paths:
+      - '.github/workflows/server-deploy.yml'
+      - '.github/server-host-key.pin'
+      - 'deployment/server/**'
+      - '!deployment/server/base_setup.sh'
+      - 'api/**'
+      - 'src/**'
+      - 'tools/**'
+      - 'assets/**'
+      - 'data/**'
+      - 'wsgi.py'
+permissions:
+  contents: read
+# Shared with server-setup.yml, so a setup (which may reboot) and a deployment never
+# run at the same time.
+concurrency:
+  group: server-setup
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Connect with the key, check the server's identity, mask its names
+        id: connect
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          # A key pasted on Windows may carry carriage returns, which ssh refuses.
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # The server must show the host key pinned in .github/server-host-key.pin (an
+          # HMAC under the deploy key: .github/scripts/host_key_pin.py), and every
+          # connection below accepts that key only, so the secrets sent can only reach it.
+          host_key=$(ssh-keyscan -T 15 -t ed25519 "$SERVER_HOST" 2>/dev/null | awk 'NF >= 3 {print $2, $3; exit}')
+          [ -n "$host_key" ] || { echo "the server gave no host key"; exit 1; }
+          pin=$(HOST_KEY="$host_key" python3 .github/scripts/host_key_pin.py)
+          expected=$( (grep -v '^#' .github/server-host-key.pin || true) | tr -d '[:space:]')
+          if [ "$pin" != "$expected" ]; then
+            echo "the server does NOT match the pin (reinstalled, or not our server); its pin: $pin"
+            exit 1
+          fi
+          echo "the server matches the pin"
+          echo "picwise-server $host_key" > ~/.ssh/known_hosts_picwise
+          # The user is OVHcloud's for Ubuntu, written here rather than read from the
+          # SERVER_USER secret: GitHub masks a secret's value all over the log.
+          cat > ~/.ssh/config <<EOF
+          Host picwise
+            HostName $SERVER_HOST
+            HostKeyAlias picwise-server
+            UserKnownHostsFile ~/.ssh/known_hosts_picwise
+            StrictHostKeyChecking yes
+            User ubuntu
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            BatchMode yes
+            ConnectTimeout 15
+            ServerAliveInterval 15
+            ServerAliveCountMax 8
+            LogLevel ERROR
+          EOF
+          chmod 600 ~/.ssh/config
+          # The host name resolves to the address, so it is masked like the address.
+          names=$(ssh -n picwise 'hostname; hostname -f; hostname -I')
+          for name in $names; do echo "::add-mask::$name"; done
+          echo "connected"
+      - name: Send the release
+        env:
+          AWIN_FEED_URL: ${{ secrets.AWIN_FEED_URL }}
+        run: |
+          release_id="$(date -u +%Y%m%dT%H%M%SZ)-${GITHUB_SHA::7}"
+          echo "RELEASE_ID=$release_id" >> "$GITHUB_ENV"
+          echo "release $release_id"
+          git archive --format=tar.gz -o "$RUNNER_TEMP/release.tar.gz" HEAD
+          # The site's secrets, from GitHub's secrets, to the server that matched the pin.
+          # Single quotes keep the link as it is in systemd's environment file.
+          feed=$(printf '%s' "$AWIN_FEED_URL" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+          case "$feed" in *"'"*) echo "the feed link holds a quote, which the file cannot carry"; exit 1 ;; esac
+          umask 077
+          {
+            echo "# The site's secrets, written by each deployment from GitHub's secrets; never in the repository."
+            if [ -n "$feed" ]; then printf "AWIN_FEED_URL='%s'\n" "$feed"; fi
+          } > "$RUNNER_TEMP/picwise.env"
+          if [ -n "$feed" ]; then echo "feed link: sent"; else echo "feed link: not in GitHub's secrets"; fi
+          ssh picwise 'cat > ~/picwise-release.tar.gz' < "$RUNNER_TEMP/release.tar.gz"
+          ssh picwise 'umask 077; cat > ~/picwise.env' < "$RUNNER_TEMP/picwise.env"
+          ssh picwise 'cat > ~/picwise-deploy.sh' < deployment/server/deploy.sh
+          rm -f "$RUNNER_TEMP/picwise.env"
+      - name: Deploy on the server
+        run: |
+          ssh -n picwise "sudo bash ~/picwise-deploy.sh '$RELEASE_ID' ~/picwise-release.tar.gz ~/picwise.env;
+            status=\$?; rm -f ~/picwise-deploy.sh ~/picwise-release.tar.gz ~/picwise.env; exit \$status"
+      - name: Compare with the live site
+        run: |
+          ssh -f -N -M -S ~/.ssh/tunnel.sock -o ExitOnForwardFailure=yes -L 18016:127.0.0.1:8016 picwise
+          python3 deployment/server/compare_with_vercel.py --server http://127.0.0.1:18016
+          ssh -S ~/.ssh/tunnel.sock -O exit picwise
+      - name: What runs on the server
+        if: always() && steps.connect.outcome == 'success'
+        run: |
+          ssh -n picwise '
+            echo "release in use: $(basename "$(readlink -f /srv/picwise/current)")"
+            echo "site: $(systemctl is-active picwise-web), since $(systemctl show -p ActiveEnterTimestamp --value picwise-web)"
+            echo "listening (8016 inside the server only; nothing on 80 or 443):"
+            sudo ss -ltnH "( sport = :8016 or sport = :80 or sport = :443 )" | awk "{print \"  \" \$4}"
+            echo "nightly preparation: $(systemctl list-timers picwise-prepare.timer --no-legend | awk "{print \$1, \$2, \$3, \$4}")"
+            echo "memory of the site: $(ps -o rss= -u picwise | awk "{s+=\$1} END {printf \"%.0f MB\", s/1024}")"
+            sudo python3 -c "import json; d = json.load(open(\"/srv/picwise/shared/public/prepared.json\")); print(\"prepared:\", d.get(\"prepared\"), d.get(\"prepared_at\", d.get(\"reason\")), d.get(\"products\"), \"products,\", d.get(\"shops\"), \"shops\")"
+            echo "disk: $(sudo du -sh /srv/picwise | cut -f1) in /srv/picwise; $(df -h --output=avail / | tail -1 | tr -d " ") free"
+          '
+      - name: Remove the key from the runner
+        if: always()
+        run: rm -f ~/.ssh/deploy_key ~/.ssh/config

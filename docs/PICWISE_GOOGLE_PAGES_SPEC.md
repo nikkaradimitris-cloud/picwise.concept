@@ -282,8 +282,9 @@ Console, which is why section 9 exists.
      the site today. **Built on the branch on 23/10** (owner: «Ναι, βάλε το noindex στο
      /search και προστάτεψε το site από την google όσο το χτίζουμε»): the rows of
      section 2 for the search, the demo, `robots.txt` and the JSON routes
-     (`tests/test_picwise_google_protection.py`); live once on `main`, on the owner's
-     yes;
+     (`tests/test_picwise_google_protection.py`). **On `main` and live since 23/10
+     18:15 UTC** (merge `47cd76b`, owner: «Ναι, να μπει στο main και κάνε τον
+     έλεγχο»), seen by the live check at 18:16;
   2. the catalogue on the server;
   3. the pages.
 - The AI system and its cost, measured on a sample.

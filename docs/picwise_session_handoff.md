@@ -1,9 +1,64 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-23.
+Current state for whoever picks the project up next. Updated 2026-10-25.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation: the server; nothing left out of what is kept (owner, 2026-10-23) -- start here
+## Next conversation (from 2026-10-25): the feed of every UK shop on the server -- start here
+
+The owner closed the conversation of 25/10 here («σου βαζω την λιστα και παμε σε αλλη
+συζητηση»). Owner's rules, unchanged: Greek, short, plain words; say what you found
+before building anything; nothing on `main` without their explicit «ναι»; never ask for
+the feed link (it holds the key); secrets only in GitHub's or Vercel's secrets, never in
+the repository, a log or the chat; nothing in Supabase without asking; the truth test is
+a bot's, never the owner's by hand; never open an Awin tracked link from a session.
+
+- **Where the work is:** the branch `ccr-baaad713-r3uvvs` (pushed; its code is `main`'s,
+  plus the server's files: `deployment/server/`, `.github/workflows/server-*.yml`,
+  `.github/scripts/host_key_pin.py`, `.github/server-host-key.pin`). Bring it in first.
+- **The server works** (OVHcloud VPS-4, London, Ubuntu 24.04.5, 8 vCores, 22 GiB usable,
+  191 GB free; renewal automatic monthly, next 24/11): secured (updates daily with a
+  reboot at 03:30 UTC when needed, SSH by key only, ufw 22/80/443, fail2ban); the site
+  with today's code under gunicorn on 127.0.0.1:8016 only (nothing from the internet,
+  so Google cannot see it); the catalogue prepared at each deployment and nightly at
+  04:17 UTC. A session cannot open SSH: everything goes through GitHub workflows that
+  run on each push to the branch (`server-setup.yml`, `server-deploy.yml`,
+  `server-check.yml`; read their logs with the GitHub tools). Secrets are sent only to a
+  server whose host key matches the pin. Details: PROGRESS, 25/10.
+- **Now on the server: the owner's small link** (2 feeds, 1,040 products; Pro-Camera
+  and one other). The site gets no feed link: it reads only the prepared file (else a
+  big feed would be loaded by each of 4 workers); the preparation reads the feed, with a
+  2 GB download cap, a 16 GB memory ceiling and a line with its peak memory (87 MB, 1.2 s
+  for 1,184 rows); the site has a 12 GB ceiling.
+- **The step in progress: a link with every Google-format shop** (owner chose «β»,
+  25/10). The owner was in Awin's Create-a-Feed (Toolbox; language «Any»;
+  advertiser-based only, since Google-format advertisers are not chosen by category or
+  brand): 90 Google-format advertisers selected, **Product Count 1,134,487** (the
+  owner's screenshot of the list). Of the 90, 87 show the UK flag. **To take out before
+  «Next», to put to the owner:** `AKKO UK` (prices in EUR, taken out on 22/10),
+  `EMOKO BIKE` (US flag), `Sinocare` (Spanish flag); ask about `World Businesses for
+  Sale` (businesses, not products). No adult shop is in the list; `Affiliates - Spoiled
+  Brat (UK)` is a Glasgow clothing shop, kept (Companies House showed overdue accounts
+  and a strike-off proposal: for the shop checks later). **Last seen:** the owner past
+  «Next», on «Configure and download your datafeed» (CSV, comma, gzip already set; the
+  Google format offers no column choice); whether the three were taken out first is
+  not confirmed: ask, and if not, «Go Back». Then the «manual download URL» into
+  GitHub's `AWIN_FEED_URL` (pencil → Update secret, never in the chat; not «Download
+  Datafeed»); the owner says «έτοιμο».
+- **Then, the session:** re-run the last `server-deploy.yml` run (GitHub tools,
+  `rerun_workflow_run`: a re-run reads the updated secret) and read in its log: the
+  preparation's summary and peak memory, the prepared counts, the site's memory, the 12
+  searches against live. 1.1M rows may need 10-20 GB to prepare (the code keeps every
+  row in memory, filled columns only): if the preparation is stopped by its ceiling,
+  nothing breaks (the site keeps the last prepared file for 30 h); then put to the owner:
+  fewer shops, or the code change the architecture plans (`docs/PICWISE_SERVER_ARCHITECTURE.md`:
+  PostgreSQL, a row-by-row load), which is code and goes to `main` only on their «ναι».
+  If the site's 4 workers do not fit, fewer workers.
+- **Open, the owner's:** HTTPS and the domain (own domain recommended before any
+  indexing); the repository private (logs are public; nothing secret is in them);
+  query logging to Supabase from the server (ask first); 80 or 200 bot checks per shop
+  and what a low score does.
+
+## The conversation of 2026-10-23: the server; nothing left out of what is kept
 
 The owner opened a new conversation for a smaller kept file, then the server («Θέλω να
 ανοίξουμε νέα συζήτηση γιατί αυτή έχει βαρύνει και το φτιάχνουμε εκεί»). The smaller
@@ -13,6 +68,35 @@ file was then stopped by the owner's rule below.
   `ccr-c30938cf-v749ay`'s notes. Its code is `main`'s (last merge `7b9624c`, 23/10 16:08
   UTC); it is ahead only by notes (PROGRESS and this file). Bring it into the next
   session's branch first.
+- **The server: bought, reachable, checked (25/10).** OVHcloud VPS-4 2027 in London
+  (Erith): Ubuntu 24.04.4, 8 vCores, 24 GB, 200 GB NVMe, €23.49 a month, no
+  commitment; renewal automatic every month (set 25/10; next 24/11). Login by the
+  owner's ed25519 key only, user `ubuntu`. The owner set the GitHub Actions secrets
+  `SERVER_HOST`, `SERVER_USER` and `SERVER_SSH_KEY`; `AWIN_FEED_URL` not yet (made
+  again in Awin's Create-a-Feed when the site moves). The repository is public: the
+  server's address never goes into it or into a log (GitHub masks secrets). The session
+  cannot open SSH (only HTTPS on 443), so the server is worked through GitHub
+  workflows; the read-only `.github/workflows/server-check.yml` (this branch only)
+  logged in on 25/10 (PROGRESS, 25/10). **Set up for security on 25/10** (owner's
+  «ναι»): up to date (Ubuntu 24.04.5), daily security updates with a reboot at 03:30
+  UTC when needed, SSH by key only and no root login, ufw letting in 22, 80 and 443
+  only, fail2ban; `deployment/server/base_setup.sh`, run by
+  `.github/workflows/server-setup.yml` (this branch only; a rollback undoes SSH and
+  firewall in 10 minutes unless a fresh login cancels it; the log masks the server's
+  names), run `40187243206`. **The site runs there since 25/10** (owner's «ναι»), with
+  today's code and no feed yet (the owner has no link ready): gunicorn on 127.0.0.1:8016
+  only (nothing from the internet, so Google cannot see it), the catalogue prepared at
+  each deployment and nightly at 04:17 UTC; `deployment/server/deploy.sh` by
+  `.github/workflows/server-deploy.yml` (this branch only), which then compares 15
+  pages with the live site: 11 the same, the 4 others differ only by the feed (run
+  `40188479854`). **With a feed since 25/10:** the owner's `AWIN_FEED_URL` (a
+  new-style Awin link with 2 feeds; Vercel reads 20 shops), sent only to the server
+  whose host key matches `.github/server-host-key.pin` (an HMAC under the deploy key,
+  `.github/scripts/host_key_pin.py`); 1,040 products prepared; of the 12 searches,
+  `camera` shares three of four cards with live, the rest differ by the shops (run
+  `40189276811`, PROGRESS 25/10). Next, the owner's: the same 20 shops or a larger
+  link; then HTTPS and the domain, only on the owner's word. The owner's guide:
+  `docs/ovhcloud_server_setup_el.md`.
 - **Owner's rule (2026-10-23): nothing that may serve the pages Google indexes is left
   out of what PicWise keeps.** In their words: «Δεν πρέπει να διαγράψεις τίποτα που θα
   επηρεάσει την ποιότητα χαρακτηριστικά seo ... Τα προϊόντα που θα καλούνται από την
@@ -30,16 +114,34 @@ file was then stopped by the owner's rule below.
   product, and a keyword's variations map to that page. That conflicts with the
   founding documents' long-tail landings (raised; "Known doc conflict" below). Read the
   specification first.
-- **Its first step, built on the branch, not on `main`** (owner: «Ναι, βάλε το noindex
-  στο /search και προστάτεψε το site από την google όσο το χτίζουμε»): `noindex` on
+- **Its first step, on `main` since 23/10 18:15 UTC and seen live** (merge `47cd76b`,
+  owner: «Ναι, να μπει στο main και κάνε τον έλεγχο»; live check run `40001929114` at
+  18:16, PROGRESS 23/10). Built on the owner's «Ναι, βάλε το noindex
+  στο /search και προστάτεψε το site από την google όσο το χτίζουμε»: `noindex` on
   every page that shows a search (`/search`, `/results`, `/picwise-reference`, `/?q=`;
   the home page without a search stays indexable) and on `/demo`; a `robots.txt`
   keeping crawlers off `/out/` (the redirect to the shops records a click),
   `/subby-proof` and `/cron/`, not off `/search` yet (Google reads `noindex` only on a
   page it may fetch); `X-Robots-Tag: noindex` on the JSON routes. Both route tables;
-  `tests/test_picwise_google_protection.py`. `main` waits for the owner's yes (PROGRESS,
-  23/10, "The site's own search kept out of Google"). After the merge: check live
-  that the search pages carry the tag and `/robots.txt` answers.
+  `tests/test_picwise_google_protection.py`. The live check now prints all of this
+  (`.github/workflows/live-check.yml` on `ccr-fd5dc1bc-4vgsgl`, `39665da`, owner's
+  leave): it waits for a deployment that serves `/robots.txt`, then prints it, the
+  robots tag of each page and the JSON routes' header. Next, from the specification:
+  `Disallow: /search` once Google has dropped those pages (needs Search Console to see
+  it), then the catalogue on the server.
+- **The server's architecture: `docs/PICWISE_SERVER_ARCHITECTURE.md`** (owner's request
+  of 23/10, in English: database and search for 0.8-1M products, URLs and markets, the
+  store validation bot, text from the data). Nothing built. In short: PostgreSQL only (no
+  Meilisearch, no Redis), PicWise's own understanding and price-first rules kept as they
+  are; pages rendered each night and cached at Cloudflare; `/uk/` and `/us/` on one
+  domain with `hreflang`, no redirect by country; the bot visits only the shop's own
+  `link` (never `aw_deep_link`), keeps `robots.txt`, never evades a block, writes its own
+  tables, runs by a systemd timer after the load; text only from computed facts. It
+  corrects the brief: Hetzner US East is about three times dearer since June and its
+  cheap plans are not sold; 1M products and the bot need 16 GB at least (OVHcloud VPS-4,
+  24 GB, about $23 a month, put to the owner); 80 or 200 checks per shop is the owner's
+  setting; a domain of PicWise's own before indexing. Open, the owner's: provider and
+  size, domain, the checks per shop, what a shop's score changes.
 - **Owner's direction (2026-10-23): the business runs on Google.** «Η αρχιτεκτονική
   πρέπει να τηρεί αυστηρά την υψηλότερη ποιότητα και απαιτήσεις της google... Το
   business τρέχει γύρω από το seo... adwords ή διάδοση μέσα από social media
@@ -219,7 +321,7 @@ kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσο
   `test_picwise_search_index_generated_blind_stage4`. The owner's files reached only the
   old session: ask for a file again when one is needed, never for the link.
 - **The live site** is seen through the live check ("How a session sees the live site",
-  below); its last run is `39141651716`.
+  below); its last run is `40001929114` (23/10 18:16 UTC; re-run it to look again).
 - **The owner's words for this work** (2026-10-20): «Μην αλλάξεις τίποτα στο live site
   και μη χτίσεις τίποτα πριν μου πεις τι βρήκες. Τίποτα στο main χωρίς το ρητό μου
   «ναι». Μη μου ζητήσεις τον σύνδεσμο του feed, γιατί έχει το κλειδί. Γράψε μου στα

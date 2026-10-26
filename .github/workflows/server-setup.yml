@@ -1,0 +1,108 @@
+# First setup of the new server (OVHcloud VPS-4): security only, on the owner's «ναι»
+# of 2026-10-25. The work itself is deployment/server/base_setup.sh.
+#
+# A Claude session reaches the internet only over HTTPS on port 443, so GitHub's
+# runners do the work over SSH, with the key the owner keeps in GitHub's secrets.
+# Each push of this file or of the script to the working branch runs the setup
+# again; the script leaves the same state each time. The repository is public and so
+# is this log: the server's names and addresses are masked before anything is printed.
+name: Server setup (security)
+on:
+  push:
+    branches: [ccr-baaad713-r3uvvs]
+    paths:
+      - '.github/workflows/server-setup.yml'
+      - 'deployment/server/base_setup.sh'
+permissions:
+  contents: read
+concurrency:
+  group: server-setup
+  cancel-in-progress: false
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Connect with the key, and mask the server's names
+        id: connect
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          # A key pasted on Windows may carry carriage returns, which ssh refuses.
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # The user is OVHcloud's for Ubuntu, written here rather than read from the
+          # SERVER_USER secret: GitHub masks a secret's value all over the log.
+          cat > ~/.ssh/config <<EOF
+          Host picwise
+            HostName $SERVER_HOST
+            User ubuntu
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            BatchMode yes
+            StrictHostKeyChecking accept-new
+            ConnectTimeout 15
+            ServerAliveInterval 15
+            ServerAliveCountMax 8
+            LogLevel ERROR
+          EOF
+          chmod 600 ~/.ssh/config
+          # The host name resolves to the address, so it is masked like the address.
+          names=$(ssh -n picwise 'hostname; hostname -f; hostname -I')
+          for name in $names; do echo "::add-mask::$name"; done
+          echo "connected"
+      - name: Set the server up (updates, SSH by key only, firewall, fail2ban)
+        run: |
+          ssh picwise 'cat > ~/picwise-base-setup.sh' < deployment/server/base_setup.sh
+          ssh -n picwise 'sudo bash ~/picwise-base-setup.sh; status=$?; rm -f ~/picwise-base-setup.sh; exit $status'
+      - name: Log in afresh, then cancel the rollback
+        if: always() && steps.connect.outcome == 'success'
+        run: |
+          ssh -n picwise 'if sudo systemctl stop picwise-rollback.timer 2>/dev/null; then
+            echo "a fresh login works; rollback cancelled"
+          else
+            echo "a fresh login works; no rollback was pending"
+          fi'
+      - name: Reboot if an update asks for it
+        run: |
+          if ! ssh -n picwise 'test -f /var/run/reboot-required'; then
+            echo "reboot required: no"; exit 0
+          fi
+          echo "reboot required: yes; rebooting"
+          ssh -n picwise 'sudo systemd-run --quiet --on-active=3 /bin/systemctl reboot'
+          sleep 45
+          for attempt in $(seq 1 30); do
+            if ssh -n -o ConnectTimeout=10 picwise true 2>/dev/null; then
+              echo "back after the reboot (attempt $attempt)"; exit 0
+            fi
+            sleep 10
+          done
+          echo "the server did not come back within about 10 minutes"; exit 1
+      - name: What the server is now
+        if: always() && steps.connect.outcome == 'success'
+        run: |
+          ssh -n picwise '
+            . /etc/os-release
+            echo "$PRETTY_NAME, kernel $(uname -r), up since $(uptime -s) $(date +%Z)"
+            echo "-- SSH, the settings in force"
+            sudo sshd -T 2>/dev/null | grep -Ei "^(passwordauthentication|kbdinteractiveauthentication|permitrootlogin|pubkeyauthentication|x11forwarding) "
+            echo "-- firewall"
+            sudo ufw status verbose
+            echo "-- fail2ban: $(systemctl is-active fail2ban)"
+            sudo fail2ban-client status sshd | grep -E "Currently|Total"
+            echo "-- automatic security updates"
+            apt-config dump | grep -E "^(APT::Periodic::(Update-Package-Lists|Unattended-Upgrade)|Unattended-Upgrade::Automatic-Reboot(-Time)?) "
+            echo "timers: $(systemctl is-enabled apt-daily.timer apt-daily-upgrade.timer | tr "\n" " ")"
+            echo "-- still to do"
+            echo "packages with an update: $(apt list --upgradable 2>/dev/null | grep -c "upgradable from")"
+            if [ -f /var/run/reboot-required ]; then echo "reboot required: yes"; else echo "reboot required: no"; fi
+            if systemctl is-active --quiet picwise-rollback.timer; then echo "rollback: STILL ARMED"; else echo "rollback: none armed"; fi
+          '
+      - name: Remove the key from the runner
+        if: always()
+        run: rm -f ~/.ssh/deploy_key ~/.ssh/config
