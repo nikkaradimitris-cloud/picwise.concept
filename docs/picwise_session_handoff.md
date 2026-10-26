@@ -170,6 +170,32 @@ bot's, never the owner's by hand; never open an Awin tracked link from a session
   275,000 shown with a shelf but no PicWise kind yet (more than half jewellery: "ring"
   gives none) stay, and the vocabulary grows. The bot (stock and category, 200 checks a
   shop, never an Awin link) asks pages of the shops' sites: only on the owner's «ναι».
+- **The shop catalogue test, run once** (owner: «ναι, ξεκίνα τη δοκιμή στα 56
+  καταστήματα»; commit `364654e`, run `40309611314`, 11 minutes, 217 requests from the
+  server as `PicWiseBot/0.1`; `deployment/bot/shop_catalogue_test.py`, run by
+  `.github/workflows/server-shop-test.yml` on a push of either file; it reads the
+  feed's copy in the download cache, so no key). Of the 56 shops with rows a search
+  could show but for a category: **53 publish Shopify's catalogue** (`/products.json`);
+  every robots.txt allowed what was asked, none set a crawl-delay; the catalogue says
+  each product's stock, and its product names match the feed's addresses (Back to the
+  Office: 239 of 250 in the feed). **Paging past 5,000 works** (Back to the Office and
+  Finediam gave 250 products on page 21). **Back to the Office** (23,825 rows): a type
+  on every product, real ones ("Windows Laptops", "Chromebooks", "Televisions", "Toner
+  Cartridges"); a kind from type and title for 70.4% against 52.4% from the title
+  alone. 33 shops (32,306 rows) give a type to at least 80% of their first page; some
+  types name no kind ("Designer", "Everyday", "Consumable", "Crystal Art"), so a type
+  that gives none must leave the title to decide (Finediam: 54.0% with its type, 72.4%
+  from the title alone). **InStock UK (353,023 rows, 91%) is not solved by it**: Shopify
+  (its product page answered), but its catalogue answers 500 (pages 1 and 21), and the
+  one row asked has no type (a mirror, which its title names). Not asked: Juicy Couture
+  UK (no shop address in its rows), Pro Espresso (its robots.txt redirects to another
+  site). **Seen by the way: So Divine sells adult products** (vibrators, bondage), and
+  the server shows 72 of its 81 rows: the site has no adult rule, the Google spec wants
+  none on Google's pages, and the owner's plan of 22/10 left adult content out of the
+  feed link (the handoff's "no adult shop" above was read from names only). Put to the
+  owner, **waiting for their word**: (1) a second, small look at InStock UK only (its
+  collections and a few more rows); (2) the bot for the 55 other shops (category and
+  stock from their catalogues); (3) So Divine out.
 - **Before, put to the owner:** (2) before any row
   without a category is shown by its title, measure how often the title alone agrees
   with the shelf on the rows that have one (per shop: InStock UK has both); (3) ask
