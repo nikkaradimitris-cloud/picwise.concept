@@ -129,7 +129,9 @@ Owner's rules unchanged (see the section below).
   large electronics shop. Electronics shown: 9,087 (1.8%), plus what Back to the Office's
   types now bring. Gigbain accepted the owner, but it is not in the feed: the link keeps
   the shops chosen when it was made (`docs/awin_feed_setup_el.md`), so a new link with it
-  goes into the `AWIN_FEED_URL` secret, then a deployment; asked of the owner.
+  would go into the `AWIN_FEED_URL` secret, then a deployment. **The owner cancelled it
+  («Άκυρο για το συγκεκριμένο κατάστημα gigbain», 26/10): Gigbain stays out; do not ask
+  again.**
 - **The cap, measured (the owner's «Ναι» read as also for "measure first"):**
   `src/picwise_providers/catalogue_balance.py`, the note's `balance`, printed last by
   `print_shops.py`: per department and aisle (the top and two levels of Google's shelf,
