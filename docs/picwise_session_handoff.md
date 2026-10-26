@@ -118,6 +118,12 @@ Owner's rules unchanged (see the section below).
   `tests/test_picwise_kinds_from_the_shops_types.py` (5);
   `test_picwise_kinds_from_the_build_list` expects a duvet and a bedspread to be bedding
   too. Full run: only the two that failed before fail; misspelling benchmark unchanged.
+  On the server (run `40355492889`, `9872f42`): **523,450 shown** (+717); Back to the
+  Office **5,252** (782 in the morning); given their shop's type with its kind 20,402
+  (+2,077), naming none 12,169; kinds with products from at least 3 shops 94 of 257 (84 in
+  the morning). Left naming no kind, besides accessories and parts: "Safety Footwear" 90,
+  "Handheld Mobile Computers" 87, "Diamond Ring" 84, "Mattresses" 83, "Whiteboards" 83,
+  "UPS Batteries" 81, "Laptops" 76 (titles naming another kind), "Electric Converters" 75.
 - **Why so few electronics (owner, 26/10):** the feed holds only the 85 programmes the
   owner joined and was accepted to, mostly small fashion, jewellery and home shops; no
   large electronics shop. Electronics shown: 9,087 (1.8%), plus what Back to the Office's
