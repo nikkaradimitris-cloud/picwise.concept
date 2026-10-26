@@ -106,6 +106,18 @@ Owner's rules unchanged (see the section below).
   privacy filters, markers. Mounts, cases and parts are accessories and stay out; memory
   cards, servers, access points, firewalls, batteries, bedding, sweatshirts and pens are
   kinds the vocabulary could learn next (put to the owner).
+- **The second list of kinds (owner: «Ναι παίρνω και αυτά τα είδη», 26/10):** new kinds
+  `memory_card`, `server` (a bare "server" too; "Salad Servers" on a kitchen shelf stay
+  doubtful by the aisle rule), `access_point`, `firewall`, `battery` (full names; a bare
+  "battery" is weak, and no bare Greek "μπαταρία", which is also a tap), `pen` (a bare
+  "pen" is weak: "pen drive"), `marker`, `folder`, and `bedding`, now broader than bed
+  linen, duvets, pillows and bedspreads ("bedding" finds them all); "sweatshirts" and
+  "power supply units" added to their kinds. Why they were out, told to the owner: their
+  shops send no category to Awin, a row without one is not shown, and the type the bot
+  found named a kind the vocabulary did not know. Tests:
+  `tests/test_picwise_kinds_from_the_shops_types.py` (5);
+  `test_picwise_kinds_from_the_build_list` expects a duvet and a bedspread to be bedding
+  too. Full run: only the two that failed before fail; misspelling benchmark unchanged.
 - **Why so few electronics (owner, 26/10):** the feed holds only the 85 programmes the
   owner joined and was accepted to, mostly small fashion, jewellery and home shops; no
   large electronics shop. Electronics shown: 9,087 (1.8%), plus what Back to the Office's
