@@ -77,9 +77,23 @@ Owner's rules unchanged (see the section below).
   catalogue 85,742. **Back to the Office: Shopify pages a catalogue only to page 100**
   (25,000 products; page 101 answered 400), so 24,739 of its 95,050 products were read and
   69,205 rows not found; the bot now ends the catalogue there and starts again from page 1
-  (`b4ba417`). Finediam's catalogue answered 500 at page 20 (goes on tonight). Put to the
-  owner: read Back to the Office by its collections (each paged to 100), and add the
-  kinds its types name to the vocabulary.
+  (`b4ba417`). Finediam's catalogue answered 500 at page 20 (goes on tonight).
+- **The owner's «Ναι» to both proposals (26/10, read as one yes for the two):** (1) a shop
+  whose catalogue stops at Shopify's page limit is read on by its collections
+  (`deployment/bot/shop_catalogue_bot.py`: `page_limit` kept, so the catalogue is paged
+  only that far again; then `/collections.json` and each collection's
+  `/collections/<name>/products.json`, one after another from a cursor kept across rounds,
+  within the same 200 requests, 3 s and robots.txt; "all" and a collection said to hold more
+  than 25,000 products are skipped; the list is read again after each whole pass). The
+  first collections come with the night's round, 03:40 UTC. (2) The vocabulary
+  (`src/picwise_nlu/product_concepts.py`): "workstation" a desktop PC; new kinds
+  `network_switch`, `media_converter`, `network_card`, `software` (only its full names,
+  "security software", "antivirus", "networking software", ...: a bare "software" stays
+  not understood, as `test_live_search_resolver` pins "accounting software"), `video_game`,
+  `sauna`. Tests: `tests/test_picwise_kinds_from_the_shops_types.py`;
+  `test_picwise_strict_kind_reading`'s unknown label "Networking Software" became "KVM
+  Switches". Misspelling benchmark unchanged (93.8%, 0 wrong). The note now lists 30
+  types naming no kind.
 - **Why so few electronics (owner, 26/10):** the feed holds only the 85 programmes the
   owner joined and was accepted to, mostly small fashion, jewellery and home shops; no
   large electronics shop. Electronics shown: 9,087 (1.8%), plus what Back to the Office's
