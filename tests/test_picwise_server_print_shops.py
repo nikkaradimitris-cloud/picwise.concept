@@ -79,7 +79,9 @@ class PrintShopsTests(unittest.TestCase):
         )
         # The table of the 4 shops, then the rows without a category: none here.
         self.assertEqual(lines[6:8], ["", "rows without a category: 0; held for that alone 0, 0 of them with the shop's own type"])
-        self.assertEqual(len(lines), 2 + 4 + 1 + 7)
+        # Then what the shops' catalogues and the barcodes gave: no bot's file here.
+        self.assertEqual(len(lines), 2 + 4 + 1 + 7 + 3)
+        self.assertEqual(lines[-2], "the shops' catalogues: the bot's file none; 0 shops in it")
         self.assertIn(
             "        4         2       0         2  Fixture Store Two: availability_discontinued 1, "
             "purchasability_discontinued 1, missing_price_text 1",
@@ -131,7 +133,7 @@ class PrintShopsTests(unittest.TestCase):
         lines = result.stdout.splitlines()
         start = lines.index("rows without a category: 3; held for that alone 3, 1 of them with the shop's own type")
         self.assertEqual(
-            lines[start + 1:],
+            lines[start + 1:lines.index("", start)],
             [
                 "  could be shown by their own type: 1 (kind 1, accessory 0, doubtful 0, none 0)",
                 "  could be shown by their title alone: 2 (kind 1, accessory 0, doubtful 0, none 1)",
@@ -206,6 +208,43 @@ class PrintShopsTests(unittest.TestCase):
         ])
         self.assertNotIn("Shop With Categories", "\n".join(table))
         self.assertIn("  could be shown by their title alone: 34 (kinds not read)", lines)
+
+    def test_what_the_shops_catalogues_and_the_barcodes_gave(self) -> None:
+        # Owner, 2026-10-26: «Θα κάνεις το 2 και το 3»: the bot's round, per shop.
+        note = {
+            "prepared": True,
+            "intake": {"rows": 10, "shown": 10, "not_new": 0, "held": 0, "shops": []},
+            "shop_catalogues": {
+                "file": "read", "written_at": "2026-10-27T03:58:00+00:00", "shops_known": 1,
+                "rows": 1_200, "matched": 1_100, "sold_out": 40, "sold_out_feed_in_stock": 35, "stock_too_old": 0,
+                "without_category": 900, "by_type": 700, "type_no_kind": 120, "no_type": 30, "not_found": 50,
+                "types_no_kind": [{"value": "Designer", "rows": 100}, {"value": "Everyday", "rows": 20}],
+                "barcode": {"without_category": 5_000, "with_barcode": 800, "too_common": 3, "found": 60,
+                            "joined": 25, "no_kind": 35},
+                "barcode_shops": [{"shop": "Big Shop", "joined": 25}],
+                "shops": [{"shop": "Office Shop", "status": "read, goes on next round", "read_at": "", "products": 1_100,
+                           "rows": 1_200, "matched": 1_100, "sold_out": 40, "sold_out_feed_in_stock": 35,
+                           "stock_too_old": 0, "without_category": 900, "by_type": 700, "type_no_kind": 120,
+                           "no_type": 30, "not_found": 50}],
+            },
+        }
+        result = _print_shops(json.dumps(note))
+        self.assertEqual(result.returncode, 0)
+        lines = result.stdout.splitlines()
+        start = lines.index("the shops' catalogues: the bot's file read, written 2026-10-27T03:58:00+00:00; 1 shops in it")
+        self.assertEqual(lines[start + 1:], [
+            "  their rows: 1,200, found in their shop's catalogue 1,100; the shop says sold out 40 (the feed called 35 "
+            "of them in stock), held; stock seen too long ago 0",
+            "  without a category from the feed 900: given their shop's type, with the kind it names, 700; the type "
+            "names no kind 120; no type 30; not in the catalogue 50",
+            "  types naming no kind: Designer (100); Everyday (20)",
+            "  by barcode, of the 5,000 rows then without a category: a barcode on 800 (3 on too many rows), another "
+            "row's category for 60; joined with its kind 25, no kind 35",
+            "  joined by barcode: Big Shop 25",
+            "     rows     found  sold out    no cat   by type   no kind   no type not found  shop: the bot's last round",
+            "    1,200     1,100        40       900       700       120        30        50  Office Shop: read, goes on "
+            "next round, 1,100 products known",
+        ])
 
     def test_no_note_or_no_list_says_so_and_never_fails(self) -> None:
         for note_text, said in (

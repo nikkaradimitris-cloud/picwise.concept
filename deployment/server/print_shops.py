@@ -12,7 +12,8 @@ category (owner, 2026-10-25: about 532,000 of 1,123,857): how many for that alon
 many could be shown by the shop's own product type or by the title alone, read as a
 kind, and for the shops with the most, a few of their types and titles; and (owner,
 2026-10-26) where else their category may hide: their filled columns, the values of
-those named like a category, and the shelves their shop's address names. Counts, shop
+those named like a category, and the shelves their shop's address names; then what the
+shops' own catalogues and the rows' barcodes gave them (`shop_catalogues`). Counts, shop
 names, types, titles and words only; the note never holds a link. Always exits 0: a
 deployment never fails because of this list.
 """
@@ -59,6 +60,7 @@ def main() -> int:
         )
     print()
     print_without_category(intake)
+    print_shop_catalogues(note)
     return 0
 
 
@@ -137,6 +139,55 @@ def _description(counts: dict) -> str:
         f"where the title gives no kind ({counts['title_gives_none']:,}), the description's first sentence "
         f"gives one to {counts['description_gives']:,}"
     )
+
+
+def print_shop_catalogues(note: dict) -> None:
+    """What the shops' own catalogues and the rows' barcodes gave the feed's rows
+    (owner, 2026-10-26: «Θα κάνεις το 2 και το 3»; `picwise_providers.shop_catalogue`)."""
+    found = note.get("shop_catalogues")
+    if not isinstance(found, dict):
+        # A note written before the shops' catalogues were read.
+        return
+    print()
+    if "error" in found:
+        print(f"the shops' catalogues: not applied ({found['error']})")
+        return
+    written = f", written {found['written_at']}" if found.get("written_at") else ""
+    print(f"the shops' catalogues: the bot's file {found['file']}{written}; {found['shops_known']} shops in it")
+    if found["shops_known"]:
+        print(
+            f"  their rows: {found['rows']:,}, found in their shop's catalogue {found['matched']:,}; the shop says "
+            f"sold out {found['sold_out']:,} (the feed called {found['sold_out_feed_in_stock']:,} of them in stock), "
+            f"held; stock seen too long ago {found['stock_too_old']:,}"
+        )
+        print(
+            f"  without a category from the feed {found['without_category']:,}: given their shop's type, with the "
+            f"kind it names, {found['by_type']:,}; the type names no kind {found['type_no_kind']:,}; no type "
+            f"{found['no_type']:,}; not in the catalogue {found['not_found']:,}"
+        )
+    if found.get("types_no_kind"):
+        print("  types naming no kind: " + "; ".join(f"{entry['value']} ({entry['rows']:,})" for entry in found["types_no_kind"]))
+    barcode = found.get("barcode") or {}
+    if barcode:
+        print(
+            f"  by barcode, of the {barcode['without_category']:,} rows then without a category: a barcode on "
+            f"{barcode['with_barcode']:,} ({barcode['too_common']:,} on too many rows), another row's category for "
+            f"{barcode['found']:,}; joined with its kind {barcode['joined']:,}, no kind {barcode['no_kind']:,}"
+        )
+    if found.get("barcode_shops"):
+        print("  joined by barcode: " + "; ".join(f"{entry['shop']} {entry['joined']:,}" for entry in found["barcode_shops"][:10]))
+    if not found.get("shops"):
+        return
+    print(
+        f"{'rows':>9} {'found':>9} {'sold out':>9} {'no cat':>9} {'by type':>9} {'no kind':>9} {'no type':>9} "
+        f"{'not found':>9}  shop: the bot's last round"
+    )
+    for shop in found["shops"]:
+        print(
+            f"{shop['rows']:>9,} {shop['matched']:>9,} {shop['sold_out']:>9,} {shop['without_category']:>9,} "
+            f"{shop['by_type']:>9,} {shop['type_no_kind']:>9,} {shop['no_type']:>9,} {shop['not_found']:>9,}  "
+            f"{shop['shop']}: {shop['status'] or '-'}, {shop['products']:,} products known"
+        )
 
 
 def print_hints(hints: dict | None) -> None:

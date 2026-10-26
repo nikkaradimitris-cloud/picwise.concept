@@ -435,8 +435,16 @@ class PrepareToolTests(_PreparedMixin, unittest.TestCase):
         self.assertLess(abs((datetime.fromisoformat(note["prepared_at"]) - prepared_at).total_seconds()), 1)
         self.assertEqual(
             set(note),
-            {"prepared", "prepared_at", "products", "shops", "freshness", "intake", "kinds", "title_alone", "written_at"},
+            {"prepared", "prepared_at", "products", "shops", "freshness", "intake", "kinds", "title_alone",
+             "shop_catalogues", "written_at"},
         )
+        # What the shops' own catalogues and the barcodes gave (owner, 2026-10-26): no bot's
+        # file here, and every fixture row has its category.
+        self.assertEqual(
+            {key: note["shop_catalogues"][key] for key in ("file", "shops_known", "by_type", "sold_out")},
+            {"file": "none", "shops_known": 0, "by_type": 0, "sold_out": 0},
+        )
+        self.assertEqual(note["shop_catalogues"]["barcode"]["joined"], 0)
         # How often a title alone gives the kind its shelf gives (owner, 2026-10-25): of the
         # 16 fixture products, 15 titles give the shelf's kind and one is doubtful alone.
         self.assertEqual(

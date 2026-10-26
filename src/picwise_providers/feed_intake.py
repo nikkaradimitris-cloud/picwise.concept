@@ -63,6 +63,7 @@ _FEED_GATE_HOLDS = frozenset(
         "missing_product_url",
         "invalid_product_url",
         "missing_provider_product_id",
+        "shop_left_out",
         "missing_category_text",
         "missing_image_url",
         "missing_price_text",

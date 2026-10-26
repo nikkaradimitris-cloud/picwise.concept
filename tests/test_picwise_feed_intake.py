@@ -34,6 +34,7 @@ from picwise_providers.awin_adapter import clear_awin_feed_parse_cache  # noqa: 
 from picwise_providers.state import (  # noqa: E402
     clear_provider_feed_pipeline_cache,
     measure_configured_feed_intake,
+    prepare_feed_catalogue,
 )
 
 _COLUMNS = (
@@ -280,14 +281,17 @@ class HintsTests(unittest.TestCase):
                     # With a category: not counted.
                     _google_row("g4", "Fixturon Toaster", "https://shop.example.invalid/kitchen/toasters/t",
                                 category="Kitchen Appliances > Toasters"),
-                    # Its barcode is sold by another shop with a category; its title names nothing,
-                    # its description's first sentence does.
+                    # Its barcode is sold by another shop with a category: since 2026-10-26 it takes
+                    # that category (`shop_catalogue.py`), so it is no longer among these rows.
                     _google_row("g5", "Fixturon Rapid Boil 1.7L", "https://shop.example.invalid/products/rb",
                                 gtin="05012345678900",
                                 description="<p>This glass electric kettle boils 1.7 litres fast.</p> Free delivery."),
                     _google_row("o1", "Fixturon Rapid Boil 1.7L Glass Kettle", "https://other.example.invalid/k/o1",
                                 category="Kitchen Appliances > Kettles", gtin="5012345678900",
                                 shop="Fixture Store Six"),
+                    # No barcode; its title names nothing, its description's first sentence does.
+                    _google_row("g6", "Fixturon Rapid Boil 1.5L", "https://shop.example.invalid/products/rb6",
+                                description="<p>This glass electric kettle boils 1.5 litres fast.</p> Free delivery."),
                 ]
             )
         saved = os.environ.get("AWIN_FEED_FILE")
@@ -329,13 +333,18 @@ class HintsTests(unittest.TestCase):
         intake = measure_configured_feed_intake()
         five = next(shop for shop in intake["shops"] if shop["shop"] == "Fixture Store Five")
         hints = five["without_category"]["hints"]
-        # g5's barcode, read without its leading zeros, is o1's, filed under kettles.
+        # g5's barcode, read without its leading zeros, is o1's, filed under kettles: g5 takes
+        # that category and is shown, so none of the rows left without one has a barcode.
         self.assertEqual(
             hints["barcode"],
-            {"rows": 4, "with_barcode": 1, "found_with_category": 1, "a_kind": 1, "title_kind_too": 0,
-             "agrees": 0, "title_gives_none": 1},
+            {"rows": 4, "with_barcode": 0, "found_with_category": 0, "a_kind": 0, "title_kind_too": 0,
+             "agrees": 0, "title_gives_none": 0},
         )
-        # g5's title names nothing; its description's first sentence names a kettle.
+        # g4, with its own category, and now g5.
+        self.assertEqual(five["shown"], 2)
+        shown = {product.provider_product_id: product for product in prepare_feed_catalogue().products}
+        self.assertEqual(shown["g5"].category_text, "Kitchen Appliances > Kettles")
+        # g6's title names nothing; its description's first sentence names a kettle.
         self.assertEqual(hints["description"], {"title_gives_none": 1, "description_gives": 1})
         # Words only: no address, no Awin link, in the note.
         self.assertNotIn("example.invalid", repr(intake))

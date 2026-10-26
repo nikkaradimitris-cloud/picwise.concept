@@ -22,8 +22,9 @@ note of what this build prepared: counts, the time, how fresh the feed's listing
 each shop's feed brings in (`picwise_providers.feed_intake`: rows, shown, shown only
 when asked for, held back and why, and what its `product_type` column carries), and per
 kind the products shown as it whose title does not name it (`picwise_providers.kind_check`),
-and how often a title alone gives the kind its shelf gives (`title_alone`), never the
-feed's link.
+how often a title alone gives the kind its shelf gives (`title_alone`), and what the
+shops' own catalogues and the rows' barcodes gave (`shop_catalogues`,
+`picwise_providers.shop_catalogue`), never the feed's link.
 """
 from __future__ import annotations
 
@@ -97,6 +98,7 @@ def main(argv: list[str] | None = None) -> int:
                 "intake": _intake(),
                 "kinds": _kinds(prepared),
                 "title_alone": _title_alone(prepared),
+                "shop_catalogues": _shop_catalogues(),
             },
         )
     return 0
@@ -140,6 +142,17 @@ def _title_alone(prepared) -> dict[str, object]:
         from picwise_providers.kind_check import measure_title_alone
 
         return measure_title_alone(prepared.products, prepared.search_fields or None)
+    except Exception as error:
+        return {"error": _where(error)}
+
+
+def _shop_catalogues() -> dict[str, object] | None:
+    """What the shops' own catalogues and the rows' barcodes gave the feed's rows
+    (`picwise_providers.shop_catalogue`); a failure here is only noted."""
+    try:
+        from picwise_providers.shop_catalogue import last_shop_catalogue_note
+
+        return last_shop_catalogue_note()
     except Exception as error:
         return {"error": _where(error)}
 

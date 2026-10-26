@@ -37,6 +37,7 @@ from .prepared_catalogue import (
 )
 from .normalization import extract_merchant_name
 from .purchasability_cache import enrich_provider_products_with_cache, resolve_purchasability_cache
+from .shop_catalogue import apply_shop_catalogues
 from .suggestions import SearchSuggestion, build_search_suggestions
 from .search_selection import (
     ProviderFeedRecommendationDecision,
@@ -232,6 +233,9 @@ def _resolve_provider_feed_pipeline_uncached(
             parse_result=parse_result,
         )
 
+    # What the shops' own catalogues and the rows' barcodes say, before any row is
+    # judged (`shop_catalogue.py`, owner, 2026-10-26).
+    parse_result = replace(parse_result, products=apply_shop_catalogues(parse_result.products))
     feed_availability_context = build_feed_availability_context(parse_result.products)
     eligibility_results = tuple(
         _enrich_provider_eligibility_result(product, feed_ctx=feed_availability_context)

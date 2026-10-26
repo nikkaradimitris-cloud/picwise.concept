@@ -32,7 +32,8 @@ echo "== user and folders"
 id picwise > /dev/null 2>&1 || useradd --system --user-group --home-dir "$APP" --no-create-home \
   --shell /usr/sbin/nologin picwise
 install -d -o root -g root -m 755 "$APP" "$APP/releases" "$APP/venvs"
-install -d -o picwise -g picwise -m 750 "$SHARED" "$SHARED/prepared" "$SHARED/public" "$SHARED/cache"
+install -d -o picwise -g picwise -m 750 "$SHARED" "$SHARED/prepared" "$SHARED/public" "$SHARED/cache" \
+  "$SHARED/shops"
 install -d -o root -g picwise -m 750 /etc/picwise
 
 echo "== release $RELEASE_ID"
@@ -68,7 +69,8 @@ rm -f "$ENV_FILE"
 if grep -q '^AWIN_FEED_URL=' /etc/picwise/picwise.env; then echo "feed link: set"; else echo "feed link: not set"; fi
 
 echo "== services"
-for unit in picwise-web.service picwise-prepare.service picwise-prepare.timer; do
+for unit in picwise-web.service picwise-prepare.service picwise-prepare.timer picwise-shops.service \
+  picwise-shops.timer; do
   install -m 644 "$RELEASE/deployment/server/$unit" /etc/systemd/system/
 done
 systemctl daemon-reload
@@ -83,6 +85,9 @@ systemctl start picwise-prepare.service || echo "preparing failed; the site keep
 journalctl -u picwise-prepare.service -n 20 -o cat --no-pager --since "-65min" \
   | grep -E 'prepare_catalogue|Consumed' | tail -n 3 || true
 systemctl enable --now picwise-prepare.timer
+# The shops' catalogues each night before the preparation (owner, 2026-10-26); a
+# deployment never asks them itself.
+systemctl enable --now picwise-shops.timer
 
 echo "== the site"
 systemctl enable picwise-web.service

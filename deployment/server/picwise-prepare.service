@@ -4,7 +4,8 @@
 # Installed by deployment/server/deploy.sh.
 [Unit]
 Description=PicWise: prepare the catalogue from the feed
-After=network-online.target
+# A round of the shops' catalogues still running is waited for: it is read here.
+After=network-online.target picwise-shops.service
 Wants=network-online.target
 
 [Service]
@@ -17,6 +18,9 @@ EnvironmentFile=-/etc/picwise/picwise.env
 Environment=AWIN_FEED_CACHE_DIR=/srv/picwise/shared/cache
 # The code's 300 MB cap is a Vercel-sized one; the server takes a feed of every shop.
 Environment=AWIN_FEED_MAX_BYTES=2147483648
+# What the shops' own catalogues say, written by picwise-shops.service
+# (`picwise_providers.shop_catalogue`).
+Environment=PICWISE_SHOP_CATALOGUES=/srv/picwise/shared/shops/catalogues.json.gz
 Environment=PYTHONDONTWRITEBYTECODE=1
 # GNU time adds one line with the run's peak memory and length, for sizing the server.
 ExecStart=/usr/bin/time -f "prepare_catalogue: peak memory %%M KB, %%e s" /usr/bin/python3 \
