@@ -251,6 +251,34 @@ def measure_kind_titles(
 # How many shops, and pairs of a shelf's kind and a title's other kind, the note lists.
 _SHOPS_LISTED = 20
 _PAIRS_LISTED = 25
+# A description's first sentence, read as a title would be: how long it may be.
+_DESCRIPTION_LEAD_LENGTH = 200
+_TAG_RE = re.compile(r"<[^>]+>")
+_SENTENCE_RE = re.compile(r"(.{20,200}?[.!?])(?:\s|$)")
+
+
+# A crude cut of a sentence to the words before its verb, so it reads as a title would:
+# "This glass electric kettle boils fast." is "glass electric kettle". The words that end
+# the cut, and those dropped from its start.
+_LEAD_END_RE = re.compile(
+    r"[,;:!?.\u2013\u2014(]|\s-\s|\b(?:is|are|was|were|be|has|have|had|will|can|could|may|that|which|who|"
+    r"features?|offers?|makes?|comes?|boils?|provides?|lets?|keeps?|gives?|helps?|allows?|delivers?|"
+    r"brings?|adds?|holds?|fits?|works?|uses?|includes?|combines?|designed|made|perfect|ideal)\b",
+    flags=re.IGNORECASE,
+)
+_LEAD_START_RE = re.compile(r"^(?:(?:this|these|that|our|the|a|an|new|introducing|meet)\s+)+", flags=re.IGNORECASE)
+
+
+def description_lead(description: str) -> str:
+    """A description's first sentence, without markup, cut to the words before its verb
+    and without its opening article, read as a title would be: "<p>This glass electric
+    kettle boils fast.</p>" is "glass electric kettle". A crude cut, measured against
+    the shelf (`measure_title_alone`) before anything reads it."""
+    text = " ".join(_TAG_RE.sub(" ", str(description or "")).split())
+    found = _SENTENCE_RE.match(text)
+    sentence = found.group(1) if found else text[:_DESCRIPTION_LEAD_LENGTH]
+    lead = _LEAD_END_RE.split(sentence, maxsplit=1)[0]
+    return _LEAD_START_RE.sub("", lead.strip()).strip()
 
 
 def _narrowest(kinds: Collection[str]) -> str:
@@ -270,13 +298,16 @@ def measure_title_alone(
     title alone gives a kind too, how many of those agree with the shelf (the same kind,
     a broader or a narrower one) and how many do not, and why the rest get none: an
     accessory, doubtful, nothing. In all, per shop (the most products first), and per
-    pair of the shelf's kind and the title's other kind, with the cheapest of each.
+    pair of the shelf's kind and the title's other kind, with the cheapest of each. And
+    where the title gives none, how often its description's first sentence gives one,
+    and agrees (owner, 2026-10-26: the feed holds no other category for those rows).
 
     The shelf is the whole category the search read (`fields`, else the product's own),
     the title is read with no type and no category, as a row without a category would
     be. Measured only: nothing shown changes.
     """
-    totals = {"products": 0, "agrees": 0, "differs": 0, "accessory": 0, "doubtful": 0, "none": 0}
+    totals = {"products": 0, "agrees": 0, "differs": 0, "accessory": 0, "doubtful": 0, "none": 0,
+              "title_gives_none": 0, "description_gives": 0, "description_agrees": 0}
     shops: dict[str, dict[str, int]] = {}
     pairs: dict[tuple[str, str], list[ProviderProduct]] = {}
     for index, product in enumerate(products):
@@ -307,6 +338,19 @@ def measure_title_alone(
             bucket[outcome] += 1
         if outcome == "differs":
             pairs.setdefault((_narrowest(by_shelf), _narrowest(real)), []).append(product)
+        if not real:
+            # Where the title gives no kind, does the description's first sentence?
+            by_description = [
+                kind
+                for kind in annotate_product_concepts("", "", description_lead(str(raw.get("description") or "")))
+                if not kind.startswith("__")
+            ]
+            for bucket in (totals, shop):
+                bucket["title_gives_none"] += 1
+                if by_description:
+                    bucket["description_gives"] += 1
+                    if _related(by_shelf, by_description):
+                        bucket["description_agrees"] += 1
     listed_pairs = sorted(pairs.items(), key=lambda item: (-len(item[1]), item[0]))[:_PAIRS_LISTED]
     return {
         **totals,

@@ -223,7 +223,9 @@ class RowsWithoutCategoryTests(unittest.TestCase):
         )
         self.assertEqual(four["without_category"]["types"], [])
         totals = dict(intake["without_category"])
-        self.assertEqual(totals.pop("address")["rows"], 5)
+        for place in ("address", "barcode"):
+            self.assertEqual(totals.pop(place)["rows"], 5)
+        self.assertEqual(totals.pop("description")["title_gives_none"], 3)
         self.assertEqual(
             totals,
             {
@@ -241,14 +243,15 @@ class RowsWithoutCategoryTests(unittest.TestCase):
 
 _GOOGLE_COLUMNS = (
     "id", "title", "link", "image_link", "price", "availability", "google_product_category",
-    "custom_label_0", "advertiser_name",
+    "custom_label_0", "advertiser_name", "gtin", "description",
 )
 
 
-def _google_row(pid: str, title: str, link: str, label: str = "", category: str = "") -> list[str]:
+def _google_row(pid: str, title: str, link: str, label: str = "", category: str = "", gtin: str = "",
+                description: str = "", shop: str = "Fixture Store Five") -> list[str]:
     return [
         pid, title, link, f"https://fixture.example.invalid/img/{pid}.jpg", "20.00 GBP", "in stock", category,
-        label, "Fixture Store Five",
+        label, shop, gtin, description,
     ]
 
 
@@ -277,6 +280,14 @@ class HintsTests(unittest.TestCase):
                     # With a category: not counted.
                     _google_row("g4", "Fixturon Toaster", "https://shop.example.invalid/kitchen/toasters/t",
                                 category="Kitchen Appliances > Toasters"),
+                    # Its barcode is sold by another shop with a category; its title names nothing,
+                    # its description's first sentence does.
+                    _google_row("g5", "Fixturon Rapid Boil 1.7L", "https://shop.example.invalid/products/rb",
+                                gtin="05012345678900",
+                                description="<p>This glass electric kettle boils 1.7 litres fast.</p> Free delivery."),
+                    _google_row("o1", "Fixturon Rapid Boil 1.7L Glass Kettle", "https://other.example.invalid/k/o1",
+                                category="Kitchen Appliances > Kettles", gtin="5012345678900",
+                                shop="Fixture Store Six"),
                 ]
             )
         saved = os.environ.get("AWIN_FEED_FILE")
@@ -296,7 +307,7 @@ class HintsTests(unittest.TestCase):
 
     def test_columns_labels_and_the_shops_address(self) -> None:
         intake = measure_configured_feed_intake()
-        (five,) = intake["shops"]
+        five = next(shop for shop in intake["shops"] if shop["shop"] == "Fixture Store Five")
         hints = five["without_category"]["hints"]
         self.assertEqual(
             {entry["column"]: entry["rows"] for entry in hints["columns"]}["custom_label_0"], 3
@@ -306,12 +317,26 @@ class HintsTests(unittest.TestCase):
             [{"value": "Kettles", "rows": 2}, {"value": "Sweets", "rows": 1}],
         )
         self.assertEqual(
-            hints["address"], {"rows": 3, "names_shelves": 2, "a_kind": 1, "title_kind_too": 1, "agrees": 1}
+            hints["address"], {"rows": 4, "names_shelves": 3, "a_kind": 1, "title_kind_too": 1, "agrees": 1}
         )
         self.assertEqual(
-            hints["address_shelves"], [{"value": "kitchen > kettles", "rows": 1}, {"value": "sweets", "rows": 1}]
+            hints["address_shelves"],
+            [{"value": "kitchen > kettles", "rows": 1}, {"value": "products", "rows": 1}, {"value": "sweets", "rows": 1}],
         )
         self.assertEqual(intake["without_category"]["address"], hints["address"])
+
+    def test_another_rows_category_for_the_barcode_and_the_description(self) -> None:
+        intake = measure_configured_feed_intake()
+        five = next(shop for shop in intake["shops"] if shop["shop"] == "Fixture Store Five")
+        hints = five["without_category"]["hints"]
+        # g5's barcode, read without its leading zeros, is o1's, filed under kettles.
+        self.assertEqual(
+            hints["barcode"],
+            {"rows": 4, "with_barcode": 1, "found_with_category": 1, "a_kind": 1, "title_kind_too": 0,
+             "agrees": 0, "title_gives_none": 1},
+        )
+        # g5's title names nothing; its description's first sentence names a kettle.
+        self.assertEqual(hints["description"], {"title_gives_none": 1, "description_gives": 1})
         # Words only: no address, no Awin link, in the note.
         self.assertNotIn("example.invalid", repr(intake))
         self.assertNotIn("awin1", repr(intake))

@@ -79,7 +79,7 @@ class PrintShopsTests(unittest.TestCase):
         )
         # The table of the 4 shops, then the rows without a category: none here.
         self.assertEqual(lines[6:8], ["", "rows without a category: 0; held for that alone 0, 0 of them with the shop's own type"])
-        self.assertEqual(len(lines), 2 + 4 + 1 + 5)
+        self.assertEqual(len(lines), 2 + 4 + 1 + 7)
         self.assertIn(
             "        4         2       0         2  Fixture Store Two: availability_discontinued 1, "
             "purchasability_discontinued 1, missing_price_text 1",
@@ -139,6 +139,11 @@ class PrintShopsTests(unittest.TestCase):
                     "  of those, the shop's address names shelves for 2 of 2, a kind for 0; with the title's kind "
                     "too 0, agreeing 0"
                 ),
+                (
+                    "  of those, another shop's category for the same barcode: a barcode on 0 of 2, a category "
+                    "found for 0, a kind for 0 (0 where the title gives none); with the title's kind too 0, agreeing 0"
+                ),
+                "  of those, where the title gives no kind (1), the description's first sentence gives one to 0",
                 "   no cat     alone  own type   by type    a kind  by title    a kind  shop",
                 "        3         3         1         1         1         2         1  Fixture Store Two",
                 "      types: Kitchen > Kettles (1)",
@@ -152,6 +157,11 @@ class PrintShopsTests(unittest.TestCase):
                     "agreeing 0"
                 ),
                 "      address shelves: out (2)",
+                (
+                    "      another shop's category for the same barcode: a barcode on 0 of 2, a category found for 0, "
+                    "a kind for 0 (0 where the title gives none); with the title's kind too 0, agreeing 0"
+                ),
+                "      where the title gives no kind (1), the description's first sentence gives one to 0",
             ],
         )
 

@@ -297,9 +297,11 @@ class TitleAloneTests(unittest.TestCase):
             note["by_shop"],
             [
                 {"shop": "Fixture Store One", "products": 3, "agrees": 1, "differs": 1, "accessory": 1,
-                 "doubtful": 0, "none": 0},
+                 "doubtful": 0, "none": 0, "title_gives_none": 1, "description_gives": 0,
+                 "description_agrees": 0},
                 {"shop": "Fixture Store Two", "products": 2, "agrees": 0, "differs": 1, "accessory": 0,
-                 "doubtful": 0, "none": 1},
+                 "doubtful": 0, "none": 1, "title_gives_none": 1, "description_gives": 0,
+                 "description_agrees": 0},
             ],
         )
         self.assertEqual(
@@ -315,6 +317,23 @@ class TitleAloneTests(unittest.TestCase):
                     ],
                 }
             ],
+        )
+
+    def test_where_the_title_gives_none_the_descriptions_first_sentence(self) -> None:
+        def with_description(pid: str, title: str, description: str) -> ProviderProduct:
+            product = _product(pid, title, "19.99", category="Kettles")
+            product.raw["description"] = description
+            return product
+
+        rows = [
+            with_description("k1", "Fixturon Rapid Boil 1.7L", "<p>This glass electric kettle boils fast.</p> More."),
+            with_description("k2", "Fixturon Rapid Boil 2L", "A wireless optical mouse for the desk. More text."),
+            with_description("k3", "Fixturon Rapid Boil 3L", ""),
+        ]
+        note = measure_title_alone(rows)
+        self.assertEqual(
+            {key: note[key] for key in ("title_gives_none", "description_gives", "description_agrees")},
+            {"title_gives_none": 3, "description_gives": 2, "description_agrees": 1},
         )
 
     def test_a_broader_or_narrower_kind_agrees(self) -> None:

@@ -78,12 +78,22 @@ def print_title_alone(title_alone: object) -> None:
         f"{title_alone['differs']:,}; none: an accessory {title_alone['accessory']:,}, doubtful "
         f"{title_alone['doubtful']:,}, nothing {title_alone['none']:,}"
     )
-    print(f"{'products':>9} {'a kind':>7} {'agrees':>7}  shop")
+    if "title_gives_none" in title_alone:
+        print(
+            f"-- where the title gives none ({title_alone['title_gives_none']:,}), the description's first "
+            f"sentence gives a kind to {title_alone['description_gives']:,} "
+            f"({_share(title_alone['description_gives'], title_alone['title_gives_none'])}), the shelf's for "
+            f"{title_alone['description_agrees']:,} "
+            f"({_share(title_alone['description_agrees'], title_alone['description_gives'])} of those)"
+        )
+    print(f"{'products':>9} {'a kind':>7} {'agrees':>7} {'desc':>7} {'agrees':>7}  shop")
     for shop in title_alone["by_shop"]:
         shop_gives = shop["agrees"] + shop["differs"]
         print(
             f"{shop['products']:>9,} {_share(shop_gives, shop['products']):>7} "
-            f"{_share(shop['agrees'], shop_gives):>7}  {shop['shop']}"
+            f"{_share(shop['agrees'], shop_gives):>7} "
+            f"{_share(shop.get('description_gives', 0), shop.get('title_gives_none', 0)):>7} "
+            f"{_share(shop.get('description_agrees', 0), shop.get('description_gives', 0)):>7}  {shop['shop']}"
         )
     print("-- the shelf's kind -> the title's other kind, the most frequent, each with its cheapest")
     for pair in title_alone["differs_by_pair"]:

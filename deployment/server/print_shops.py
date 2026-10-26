@@ -88,6 +88,9 @@ def print_without_category(intake: dict) -> None:
     )
     if "address" in total:
         print("  of those, " + _address(total["address"]))
+    if "barcode" in total:
+        print("  of those, " + _barcode(total["barcode"]))
+        print("  of those, " + _description(total["description"]))
     print(
         f"{'no cat':>9} {'alone':>9} {'own type':>9} {'by type':>9} {'a kind':>9} {'by title':>9} "
         f"{'a kind':>9}  shop"
@@ -120,6 +123,22 @@ def _address(counts: dict) -> str:
     )
 
 
+def _barcode(counts: dict) -> str:
+    return (
+        f"another shop's category for the same barcode: a barcode on {counts['with_barcode']:,} of "
+        f"{counts['rows']:,}, a category found for {counts['found_with_category']:,}, a kind for "
+        f"{counts['a_kind']:,} ({counts['title_gives_none']:,} where the title gives none); with the title's kind "
+        f"too {counts['title_kind_too']:,}, agreeing {counts['agrees']:,}"
+    )
+
+
+def _description(counts: dict) -> str:
+    return (
+        f"where the title gives no kind ({counts['title_gives_none']:,}), the description's first sentence "
+        f"gives one to {counts['description_gives']:,}"
+    )
+
+
 def print_hints(hints: dict | None) -> None:
     """Where else a shop's rows without a category may name one: their filled columns,
     the values of the columns named like a category, and their address's shelves."""
@@ -132,6 +151,9 @@ def print_hints(hints: dict | None) -> None:
     if hints["address_shelves"]:
         shelves = "; ".join(f"{entry['value']} ({entry['rows']:,})" for entry in hints["address_shelves"])
         print(f"      address shelves: {shelves}")
+    if "barcode" in hints:
+        print("      " + _barcode(hints["barcode"]))
+        print("      " + _description(hints["description"]))
 
 
 if __name__ == "__main__":

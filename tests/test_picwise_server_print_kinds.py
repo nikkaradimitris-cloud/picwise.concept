@@ -132,9 +132,9 @@ class PrintKindsTests(unittest.TestCase):
                     ": 1,000 products with a kind from their shelf; the title alone gives one to 800 (80.0%), "
                     "the shelf's 720 (90.0% of those), another 80; none: an accessory 50, doubtful 100, nothing 50"
                 ),
-                " products  a kind  agrees  shop",
-                "      900   83.3%   93.3%  Fixture Store One",
-                "      100   50.0%   40.0%  Fixture Store Two",
+                " products  a kind  agrees    desc  agrees  shop",
+                "      900   83.3%   93.3%       -       -  Fixture Store One",
+                "      100   50.0%   40.0%       -       -  Fixture Store Two",
                 "-- the shelf's kind -> the title's other kind, the most frequent, each with its cheapest",
                 "kettle -> mouse: 40",
                 "    9.99 GBP | Fixture Store Two | Fixturon Wireless Optical Mouse | Kettles",
@@ -172,6 +172,25 @@ class PrintKindsTests(unittest.TestCase):
                 result = _print_kinds(note_text)
                 self.assertEqual(result.returncode, 0)
                 self.assertEqual(result.stdout.strip(), said)
+
+    def test_where_the_title_gives_none_the_description(self) -> None:
+        title_alone = {
+            "products": 100, "agrees": 60, "differs": 5, "accessory": 5, "doubtful": 10, "none": 20,
+            "title_gives_none": 35, "description_gives": 20, "description_agrees": 18,
+            "by_shop": [
+                {"shop": "Fixture Store One", "products": 100, "agrees": 60, "differs": 5, "accessory": 5,
+                 "doubtful": 10, "none": 20, "title_gives_none": 35, "description_gives": 20,
+                 "description_agrees": 18},
+            ],
+            "differs_by_pair": [],
+        }
+        out = _print_kinds(json.dumps({"prepared": True, "kinds": _KINDS, "title_alone": title_alone})).stdout
+        self.assertIn(
+            "-- where the title gives none (35), the description's first sentence gives a kind to 20 (57.1%), "
+            "the shelf's for 18 (90.0% of those)",
+            out,
+        )
+        self.assertIn("      100   65.0%   92.3%   57.1%   90.0%  Fixture Store One", out)
 
 
 if __name__ == "__main__":

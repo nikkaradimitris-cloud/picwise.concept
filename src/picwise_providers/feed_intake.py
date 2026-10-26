@@ -51,6 +51,7 @@ from picwise_nlu.concept_understanding import (
 from picwise_nlu.product_concepts import broader_concepts
 
 from .contracts import ProviderEligibilityResult, ProviderProduct
+from .kind_check import description_lead
 from .normalization import extract_merchant_name
 
 # The feed gate (`eligibility.py`) holds a row back for these; its other codes only
@@ -89,6 +90,8 @@ _HINT_COLUMNS = 6
 _HINT_VALUES = 3
 _HINT_VALUE_LENGTH = 60
 _ADDRESS_PATHS = 5
+# The columns a feed writes a product's barcode in.
+_BARCODE_COLUMNS = ("gtin", "ean", "upc", "barcode", "isbn")
 
 
 def _shop_name(raw: Mapping[str, Any]) -> str:
@@ -181,6 +184,16 @@ def _address_shelves(url: str) -> str:
     return " > ".join(shelf for shelf in shelves if shelf)
 
 
+def _barcode(raw: Mapping[str, Any]) -> str:
+    """A row's barcode as digits without leading zeros, so a GTIN-14 meets its GTIN-13;
+    "" when it writes none of at least 8 digits."""
+    for column in _BARCODE_COLUMNS:
+        digits = re.sub(r"\D", "", str(raw.get(column) or ""))
+        if len(digits) >= 8:
+            return digits.lstrip("0")
+    return ""
+
+
 def _related(left: Collection[str], right: Collection[str]) -> bool:
     return any(a == b or a in broader_concepts(b) or b in broader_concepts(a) for a in left for b in right)
 
@@ -200,6 +213,8 @@ def _hint_note(hints: dict[str, Any]) -> dict[str, Any]:
         },
         "address": dict(hints["address"]),
         "address_shelves": _top_values(hints["paths"], _ADDRESS_PATHS, _HINT_VALUE_LENGTH),
+        "barcode": dict(hints["barcode"]),
+        "description": dict(hints["description"]),
     }
 
 
@@ -214,15 +229,37 @@ def _hold_reasons(row: ProviderEligibilityResult) -> tuple[str, ...]:
     return tuple(card.reason_codes) or ("not_card_eligible",)
 
 
+# What each other place a category may hide in gave, per row a search could show by its
+# title: the shop's address, another row's category for the same barcode, the
+# description's first sentence where the title gives no kind.
+_ADDRESS_KEYS = ("rows", "names_shelves", "a_kind", "title_kind_too", "agrees")
+_BARCODE_KEYS = ("rows", "with_barcode", "found_with_category", "a_kind", "title_kind_too", "agrees", "title_gives_none")
+_DESCRIPTION_KEYS = ("title_gives_none", "description_gives")
+
+
+def _empty_hint_counts() -> dict[str, dict[str, int]]:
+    return {
+        "address": dict.fromkeys(_ADDRESS_KEYS, 0),
+        "barcode": dict.fromkeys(_BARCODE_KEYS, 0),
+        "description": dict.fromkeys(_DESCRIPTION_KEYS, 0),
+    }
+
+
+def _real(kinds: Collection[str]) -> list[str]:
+    return [kind for kind in kinds if not kind.startswith("__")]
+
+
 def _count_hints(
     hints: dict[str, Any],
-    address_totals: dict[str, int],
+    totals: dict[str, dict[str, int]],
     raw: Mapping[str, Any],
     product: ProviderProduct,
     title_kinds: Collection[str],
+    categories_by_barcode: Mapping[str, str],
 ) -> None:
     """Where else a row a search could show by its title may name its category: its
-    filled columns, the values of those named like a category, and its shop's address."""
+    filled columns, the values of those named like a category, its shop's address, the
+    category another row with its barcode has, and its description's first sentence."""
     for column, value in raw.items():
         text = " ".join(str(value or "").split())
         if not text:
@@ -230,23 +267,42 @@ def _count_hints(
         hints["columns"][column] += 1
         if _HINT_COLUMN_RE.search(str(column)) and "://" not in text and not text.lower().startswith("www."):
             hints["values"].setdefault(column, Counter())[text] += 1
+
+    def count(place: str, key: str) -> None:
+        for counts in (hints[place], totals[place]):
+            counts[key] += 1
+
+    by_title = _real(title_kinds)
+
+    def count_kinds(place: str, kinds: list[str]) -> None:
+        if not kinds:
+            return
+        count(place, "a_kind")
+        if by_title:
+            count(place, "title_kind_too")
+            if _related(kinds, by_title):
+                count(place, "agrees")
+        elif place == "barcode":
+            count(place, "title_gives_none")
+
+    count("address", "rows")
     shelves = _address_shelves(product.product_url)
-    counts = hints["address"]
-    for bucket in (counts, address_totals):
-        bucket["rows"] += 1
-    if not shelves:
-        return
-    hints["paths"][shelves] += 1
-    by_address = [kind for kind in annotate_product_concepts("", shelves, "") if not kind.startswith("__")]
-    by_title = [kind for kind in title_kinds if not kind.startswith("__")]
-    for bucket in (counts, address_totals):
-        bucket["names_shelves"] += 1
-        if by_address:
-            bucket["a_kind"] += 1
-            if by_title:
-                bucket["title_kind_too"] += 1
-                if _related(by_address, by_title):
-                    bucket["agrees"] += 1
+    if shelves:
+        hints["paths"][shelves] += 1
+        count("address", "names_shelves")
+        count_kinds("address", _real(annotate_product_concepts("", shelves, "")))
+    count("barcode", "rows")
+    barcode = _barcode(raw)
+    if barcode:
+        count("barcode", "with_barcode")
+        borrowed = categories_by_barcode.get(barcode, "")
+        if borrowed:
+            count("barcode", "found_with_category")
+            count_kinds("barcode", _real(annotate_product_concepts("", borrowed.lower(), str(product.title or ""))))
+    if not by_title:
+        count("description", "title_gives_none")
+        if _real(annotate_product_concepts("", "", description_lead(str(raw.get("description") or "")))):
+            count("description", "description_gives")
 
 
 def measure_feed_intake(
@@ -270,10 +326,14 @@ def measure_feed_intake(
     held_reasons: Counter = Counter()
     without_totals = {"rows": 0, "only_this": 0, "with_product_type": 0, "shown_by_type": 0, "shown_by_title": 0}
     kinds_totals = {"type": Counter(), "title": Counter()}
-    # Of the rows a search could show by their title: those whose shop's address names
-    # shelves, those shelves read as a kind, those whose title gives a kind too, and
-    # those where the two agree.
-    address_totals = {"rows": 0, "names_shelves": 0, "a_kind": 0, "title_kind_too": 0, "agrees": 0}
+    hint_totals = _empty_hint_counts()
+    # Another row's category for the same barcode: the first category written for it.
+    categories_by_barcode: dict[str, str] = {}
+    for row in rows:
+        category = str(row.product.category_text or "").strip()
+        barcode = _barcode(row.product.raw) if category and isinstance(row.product.raw, Mapping) else ""
+        if barcode:
+            categories_by_barcode.setdefault(barcode, category)
     for row in rows:
         raw = row.product.raw if isinstance(row.product.raw, Mapping) else {}
         shop = shops.setdefault(
@@ -283,8 +343,7 @@ def measure_feed_intake(
                 "product_types": Counter(), "product_type_without_category": 0,
                 "without_category": {key: 0 for key in without_totals},
                 "kinds": {"type": Counter(), "title": Counter()}, "types_shown": Counter(), "titles": [],
-                "hints": {"columns": Counter(), "values": {}, "paths": Counter(),
-                          "address": {key: 0 for key in address_totals}},
+                "hints": {"columns": Counter(), "values": {}, "paths": Counter(), **_empty_hint_counts()},
             },
         )
         shop["rows"] += 1
@@ -322,7 +381,7 @@ def measure_feed_intake(
                                 f" -> {named}"
                             )
                     if way == "title":
-                        _count_hints(shop["hints"], address_totals, raw, row.product, kinds)
+                        _count_hints(shop["hints"], hint_totals, raw, row.product, kinds, categories_by_barcode)
         reasons = _hold_reasons(row)
         if reasons:
             for bucket in (shop, totals):
@@ -343,7 +402,7 @@ def measure_feed_intake(
             **without_totals,
             "kinds_by_type": _buckets(kinds_totals["type"] if read else None),
             "kinds_by_title": _buckets(kinds_totals["title"] if read else None),
-            "address": address_totals,
+            **hint_totals,
         },
         "shops": [
             {
