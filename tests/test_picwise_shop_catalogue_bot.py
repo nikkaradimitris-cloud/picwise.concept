@@ -84,7 +84,7 @@ class _Shops:
         self.slept.append(seconds)
 
 
-def _setup(case: unittest.TestCase, *, extra_note_shops: tuple[str, ...] = ()) -> Path:
+def _setup(case: unittest.TestCase, *, extra_note_shops: tuple[str, ...] = (), more_products: int = 0) -> Path:
     folder = Path(tempfile.mkdtemp())
     (folder / "cache").mkdir()
     rows = [
@@ -92,6 +92,8 @@ def _setup(case: unittest.TestCase, *, extra_note_shops: tuple[str, ...] = ()) -
         _row("p2", "Fixture Office Shop", _awin(f"{OFFICE}/products/p2?variant=22")),
         _row("p3", "Fixture Office Shop", f"{OFFICE}/products/p3", category="Kettles"),
         _row("p4", "Fixture Office Shop", f"{OFFICE}/products/p4"),
+        *(_row(f"p{number}", "Fixture Office Shop", f"{OFFICE}/products/p{number}")
+          for number in range(5, 5 + more_products)),
         _row("l1", "Fixture Locked Shop", "https://locked.example.invalid/products/l1"),
         _row("n1", "Fixture Plain Shop", "https://plain.example.invalid/item/n1"),
         _row("a1", "Fixture Awin Shop", "https://www.awin1.com/pclick.php?p=1&a=2&m=3"),
@@ -219,7 +221,10 @@ class RoundTests(unittest.TestCase):
         shops = _Shops(answers)
         _round(folder, shops)
         office = _file(folder)["shops"]["Fixture Office Shop"]
-        self.assertEqual((office["status"], office["next_page"], office["pages"]), ("read to the shop's page limit", 1, 2))
+        self.assertEqual(
+            (office["status"], office["next_page"], office["pages"], office["page_limit"]),
+            ("read to the shop's page limit; its collections not listed (error 404)", 1, 2, 2),
+        )
         self.assertEqual(office["complete_at"], NOW.isoformat(timespec="seconds"))
         # A round that went on from page 3 starts again from page 1, once.
         bot.write(str(folder / "shops" / "catalogues.json.gz"), {"version": 1, "shops": {
@@ -232,8 +237,53 @@ class RoundTests(unittest.TestCase):
             [f"{OFFICE}/products.json?limit=2&page={page}" for page in (3, 1, 2, 3)],
         )
         office = _file(folder)["shops"]["Fixture Office Shop"]
-        self.assertEqual((office["status"], office["next_page"], office["requests"]), ("read to the shop's page limit", 1, 5))
+        self.assertEqual((office["next_page"], office["requests"]), (1, 6))
         self.assertEqual(sorted(office["products"]), ["p1", "p2", "p3"])
+
+    def test_a_large_catalogue_is_read_on_by_its_collections(self) -> None:
+        # Owner, 2026-10-26: «Ναι» to reading Back to the Office by its collections.
+        folder = _setup(self, more_products=3)
+        answers = _answers()
+        answers.update({
+            f"{OFFICE}/products.json?limit=2&page=3": (400, b""),
+            f"{OFFICE}/collections.json?limit=2&page=1": (200, json.dumps({"collections": [
+                {"handle": "kettles", "products_count": 3}, {"handle": "all", "products_count": 9}]}).encode()),
+            f"{OFFICE}/collections.json?limit=2&page=2": (200, json.dumps({"collections": [
+                {"handle": "toasters", "products_count": 1}, {"handle": "huge", "products_count": 30_000}]}).encode()),
+            f"{OFFICE}/collections.json?limit=2&page=3": (200, b'{"collections": []}'),
+            f"{OFFICE}/collections/kettles/products.json?limit=2&page=1": (
+                200, _products(("p4", "Toasters", [True]), ("p5", "Kettles", [True]))),
+            f"{OFFICE}/collections/kettles/products.json?limit=2&page=2": (200, _products(("p6", "Kettles", [False]))),
+            f"{OFFICE}/collections/toasters/products.json?limit=2&page=1": (200, _products(("p7", "Toasters", [True]))),
+        })
+        shops = _Shops(answers)
+        _round(folder, shops)
+        office = _file(folder)["shops"]["Fixture Office Shop"]
+        self.assertEqual(office["status"], "read to the shop's page limit; its 4 collections read")
+        self.assertEqual(sorted(office["products"]), ["p1", "p2", "p3", "p4", "p5", "p6", "p7"])
+        self.assertEqual(office["products"]["p6"][1], 0)
+        self.assertEqual((office["requests"], office["collections"], office["collection_cursor"]), (10, [], [0, 1]))
+        for url in shops.asked:
+            self.assertNotIn("/collections/all/", url)
+            self.assertNotIn("/collections/huge/", url)
+        # The next round pages the catalogue only to its limit, lists the collections
+        # again, and stops at its cap...
+        shops = _Shops(answers)
+        _round(folder, shops, max_requests=6)
+        self.assertNotIn(f"{OFFICE}/products.json?limit=2&page=3", shops.asked)
+        office = _file(folder)["shops"]["Fixture Office Shop"]
+        self.assertEqual(office["status"], "read to the shop's page limit; its collections read to 0 of 4, goes on next round")
+        self.assertEqual(office["collection_cursor"], [0, 1])
+        # ...and the one after goes on with the collections, without listing them again.
+        shops = _Shops(answers)
+        _round(folder, shops, max_requests=10)
+        self.assertEqual(
+            [url[len(OFFICE):] for url in shops.asked if "/collections" in url],
+            ["/collections/kettles/products.json?limit=2&page=1", "/collections/kettles/products.json?limit=2&page=2",
+             "/collections/toasters/products.json?limit=2&page=1"],
+        )
+        office = _file(folder)["shops"]["Fixture Office Shop"]
+        self.assertEqual(office["status"], "read to the shop's page limit; its 4 collections read")
 
     def test_out_of_time_no_shop_is_started(self) -> None:
         folder = _setup(self)

@@ -66,7 +66,7 @@ SOLD_OUT = "sold out"
 STOCK_DAYS = 3
 MAX_BARCODE_ROWS = 50
 # How many of the types that gave no kind the note lists, the most frequent first.
-_TYPES_LISTED = 10
+_TYPES_LISTED = 30
 _TYPE_LENGTH = 60
 
 _LAST_NOTE: dict[str, Any] | None = None

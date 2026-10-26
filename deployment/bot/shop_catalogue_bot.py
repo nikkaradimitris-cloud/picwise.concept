@@ -43,7 +43,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -66,6 +66,13 @@ WORKERS = 4
 KEEP_DAYS = 30
 # Shops never asked (owner, 2026-10-26), as `eligibility.shop_key` reads a name.
 LEFT_ALONE = frozenset({"instock uk"})
+# A collection said to hold more products than Shopify pages (100 pages of 250) is left
+# for the catalogue itself, as is "all", every product's (owner's «Ναι», 26/10: read a
+# large catalogue by its collections).
+MAX_COLLECTION = 25_000
+SKIPPED_COLLECTIONS = frozenset({"all"})
+# The most pages of a shop's list of collections asked in a round.
+COLLECTION_LIST_PAGES = 10
 _TYPE_LENGTH = 120
 
 Fetch = Callable[[str, int], "look.Answer"]
@@ -136,11 +143,89 @@ def _product_entry(product: Mapping[str, Any], today: str) -> list[Any]:
     return [product_type, in_stock, today, sold_out]
 
 
+class _Asker:
+    """One shop's requests in one round: never past its cap or the round's time, only
+    what robots.txt allows, and the pause before each."""
+
+    def __init__(self, base: str, rules: list, wait: float, *, max_requests: int, deadline: float, fetch: Fetch,
+                 sleep: Callable[[float], None], clock: Callable[[], float], result: dict[str, Any]) -> None:
+        self.base, self.rules, self.wait = base, rules, wait
+        self.max_requests, self.deadline = max_requests, deadline
+        self.fetch, self.sleep, self.clock, self.result = fetch, sleep, clock, result
+
+    def __call__(self, path: str) -> "look.Answer | str":
+        """The shop's answer, or why it was not asked: "cap", "time" or "robots"."""
+        if self.result["requests"] >= self.max_requests:
+            return "cap"
+        if self.clock() >= self.deadline:
+            return "time"
+        if not look.robots_allows(self.rules, path):
+            return "robots"
+        self.sleep(self.wait)
+        self.result["requests"] += 1
+        return self.fetch(self.base + path, look.MAX_BYTES)
+
+
+def _read_listing(ask: _Asker, path_of: Callable[[int], str], page: int, page_size: int,
+                  record: Callable[[list], list[str]], *, last_page: int | None = None) -> tuple[int, str, int]:
+    """Read the pages of one listing of products, the catalogue or a collection, from
+    `page` on. Returns the page the next round goes on from (1 once it is read), how it
+    ended -- "end" (its last page read), "limit" (the shop pages it no further: Shopify
+    answers 400 past page 100), "cap", "time", "robots", or "error <what it answered>"
+    -- and the last page read."""
+    seen: set[str] = set()
+    last_read = 0
+    while True:
+        if last_page is not None and page > last_page:
+            return 1, "limit", last_read
+        answer = ask(path_of(page))
+        if isinstance(answer, str):
+            return page, answer, last_read
+        data = look._json(answer)
+        listed = data.get("products") if isinstance(data, dict) else None
+        if not isinstance(listed, list):
+            if answer.status == 400 and page > 1:
+                return 1, "limit", last_read
+            return page, f"error {look._said(answer) if answer.status != 200 or answer.error else 'not JSON'}", last_read
+        last_read = page
+        handles = record(listed)
+        if page > 1 and handles and all(handle in seen for handle in handles):
+            # The shop answers every page with the same products: the listing is read.
+            return 1, "end", last_read
+        seen.update(handles)
+        if len(listed) < page_size:
+            return 1, "end", last_read
+        page += 1
+
+
+def _read_collections(ask: _Asker, page_size: int) -> list[list[Any]] | str:
+    """The shop's collections, as [name, how many products it says each holds or None],
+    or why they could not be read."""
+    found: list[list[Any]] = []
+    for page in range(1, COLLECTION_LIST_PAGES + 1):
+        answer = ask(f"/collections.json?limit={page_size}&page={page}")
+        if isinstance(answer, str):
+            return found or answer
+        data = look._json(answer)
+        listed = data.get("collections") if isinstance(data, dict) else None
+        if not isinstance(listed, list):
+            return found or f"error {look._said(answer) if answer.status != 200 or answer.error else 'not JSON'}"
+        for collection in listed:
+            if isinstance(collection, dict) and str(collection.get("handle") or "").strip():
+                count = collection.get("products_count")
+                found.append([str(collection["handle"]).strip(), count if isinstance(count, int) else None])
+        if len(listed) < page_size:
+            break
+    return found
+
+
 def ask_shop(shop: FeedShop, entry: Mapping[str, Any], *, scheme: str = "https", pause: float = PAUSE,
              max_requests: int = MAX_REQUESTS, page_size: int = PAGE, deadline: float, fetch: Fetch,
              sleep: Callable[[float], None], clock: Callable[[], float], now: datetime) -> dict[str, Any]:
     """One round of one shop: its robots.txt, then its catalogue's pages from where the
-    last round stopped. Returns the shop's new entry for the file."""
+    last round stopped; for a catalogue the shop pages no further than page 100, then its
+    collections, one after another, from where the last round stopped. Returns the
+    shop's new entry for the file."""
     today = now.date().isoformat()
     products: dict[str, list[Any]] = {
         handle: known for handle, known in (entry.get("products") or {}).items() if handle in shop.names
@@ -150,6 +235,9 @@ def ask_shop(shop: FeedShop, entry: Mapping[str, Any], *, scheme: str = "https",
         "complete_at": str(entry.get("complete_at") or ""), "pages": 0, "requests": 0, "seen": 0,
         "products": products,
     }
+    for key in ("page_limit", "collections", "collection_cursor", "collections_complete_at"):
+        if entry.get(key) is not None:
+            result[key] = entry[key]
     if clock() >= deadline:
         result["status"] = "not asked, out of time"
         return result
@@ -174,41 +262,11 @@ def ask_shop(shop: FeedShop, entry: Mapping[str, Any], *, scheme: str = "https",
     if wait > MAX_CRAWL_DELAY:
         result["status"] = "crawl-delay too long"
         return result
-    page = max(1, result["next_page"])
-    # A round that went on from an earlier one starts again from page 1 once, when the
-    # shop will not page further.
-    restarted = page == 1
+    ask = _Asker(base, rules, wait, max_requests=max_requests, deadline=deadline, fetch=fetch, sleep=sleep,
+                 clock=clock, result=result)
     seen_now: set[str] = set()
-    status = "read"
-    while True:
-        if result["requests"] >= max_requests:
-            status = "read, goes on next round"
-            break
-        if clock() >= deadline:
-            status = "read, out of time"
-            break
-        path = f"/products.json?limit={page_size}&page={page}"
-        if not look.robots_allows(rules, path):
-            status = "robots.txt disallows the catalogue"
-            break
-        sleep(wait)
-        answer = fetch(base + path, look.MAX_BYTES)
-        result["requests"] += 1
-        data = look._json(answer)
-        listed = data.get("products") if isinstance(data, dict) else None
-        if not isinstance(listed, list):
-            if answer.status == 400 and page > 1:
-                # Shopify pages a catalogue up to page 100 (25,000 products) and answers 400
-                # past it (Back to the Office, 26/10): what it lets be read is read.
-                page = 1
-                if not restarted:
-                    restarted = True
-                    continue
-                result["complete_at"] = result["read_at"]
-                status = "read to the shop's page limit"
-                break
-            status = f"catalogue {look._said(answer) if answer.status != 200 or answer.error else 'not JSON'}"
-            break
+
+    def record(listed: list) -> list[str]:
         result["pages"] += 1
         handles = []
         for product in listed:
@@ -218,21 +276,75 @@ def ask_shop(shop: FeedShop, entry: Mapping[str, Any], *, scheme: str = "https",
             if not handle:
                 continue
             handles.append(handle)
+            seen_now.add(handle)
             if handle in shop.names:
                 products[handle] = _product_entry(product, today)
-        if page > 1 and handles and all(handle in seen_now for handle in handles):
-            # The shop answers every page with the same products: its catalogue is read.
-            listed = []
-        seen_now.update(handles)
-        if len(listed) < page_size:
-            page = 1
-            result["complete_at"] = result["read_at"]
-            break
-        page += 1
-    result["status"] = status
+        return handles
+
+    def catalogue_path(page: int) -> str:
+        return f"/products.json?limit={page_size}&page={page}"
+
+    page_limit = result.get("page_limit")
+    start = max(1, result["next_page"])
+    page, ended, last_read = _read_listing(ask, catalogue_path, start, page_size, record, last_page=page_limit)
+    if ended == "limit" and start > 1:
+        # A round that went on from an earlier one starts again from page 1, once.
+        page, ended, last_read = _read_listing(ask, catalogue_path, 1, page_size, record, last_page=page_limit)
+    if ended == "limit" and page_limit is None and last_read:
+        # Shopify pages a catalogue up to page 100 (25,000 products) and answers 400 past
+        # it (Back to the Office, 95,050 products, run 40329354654): page that far again.
+        result["page_limit"] = page_limit = last_read
     result["next_page"] = page
+    if ended in ("end", "limit"):
+        result["complete_at"] = result["read_at"]
+    status = {
+        "end": "read", "limit": "read to the shop's page limit", "cap": "read, goes on next round",
+        "time": "read, out of time", "robots": "robots.txt disallows the catalogue",
+    }.get(ended, ended.replace("error", "catalogue", 1))
+    if ended == "limit" and page_limit:
+        status += "; " + _read_shop_collections(ask, result, page_size, record)
+    result["status"] = status
     result["seen"] = len(seen_now & shop.names)
     return result
+
+
+def _read_shop_collections(ask: _Asker, result: dict[str, Any], page_size: int,
+                           record: Callable[[list], list[str]]) -> str:
+    """The products of a shop's collections, one after another, from where the last
+    round stopped, with what the round has left; the collections are listed again after
+    each whole pass. Returns how far it went, for the status."""
+    collections = result.get("collections") or []
+    index, page = (list(result.get("collection_cursor") or [0, 1]) + [0, 1])[:2]
+    if not collections or index >= len(collections):
+        listed = _read_collections(ask, page_size)
+        if isinstance(listed, str):
+            return f"its collections not listed ({listed})"
+        collections, index, page = listed, 0, 1
+    ended = ""
+    while index < len(collections):
+        name, count = collections[index]
+        if name.lower() in SKIPPED_COLLECTIONS or count == 0 or (count is not None and count > MAX_COLLECTION):
+            index, page = index + 1, 1
+            continue
+
+        def collection_path(number: int, name: str = name) -> str:
+            return f"/collections/{quote(name, safe='')}/products.json?limit={page_size}&page={number}"
+
+        page, ended, _last = _read_listing(ask, collection_path, page, page_size, record)
+        if ended in ("cap", "time"):
+            break
+        index, page = index + 1, 1
+    if index >= len(collections):
+        # Listed again next round, so a new collection is read too.
+        result["collections"] = []
+        result["collection_cursor"] = [0, 1]
+        result["collections_complete_at"] = result["read_at"]
+        return f"its {len(collections)} collections read"
+    result["collections"] = collections
+    result["collection_cursor"] = [index, page]
+    return f"its collections read to {index} of {len(collections)}, " + (
+        "goes on next round" if ended == "cap" else "out of time"
+    )
 
 
 def _old(day: Any, today: date) -> bool:
