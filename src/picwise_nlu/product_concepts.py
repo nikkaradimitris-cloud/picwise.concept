@@ -83,6 +83,7 @@ air_conditioner|HA||air conditioner,air conditioners,air conditioning unit,airco
 dehumidifier|HA||dehumidifier,dehumidifiers|αφυγραντήρας,αφυγραντήρες
 air_purifier|HA||air purifier,air purifiers|καθαριστής αέρα,καθαριστές αέρα,ιονιστής
 fire_pit|GA||fire pit,fire pits,firepit,firepits,fire bowl,fire bowls,chiminea,chimineas|εστία φωτιάς,εστίες φωτιάς
+sauna|GA||sauna,saunas,outdoor sauna,outdoor saunas,infrared sauna,infrared saunas,sauna cabin,sauna cabins|σάουνα,σάουνες
 heater|HA||heater,heaters,electric heater,electric heaters,radiator heater,electric fire,electric fires,electric fireplace,electric fireplaces,fireplace,fireplaces,fireplace stove,fireplace stoves,log burner,log burners,wood burner,wood burners|θερμάστρα,θερμάστρες,καλοριφέρ λαδιού,αερόθερμο,τζάκι,ηλεκτρικό τζάκι
 fan|HA||fan,fans,electric fan|ανεμιστήρας,ανεμιστήρες
 heat_pump|HA||heat pump,heat pumps|αντλία θερμότητας,αντλίες θερμότητας
@@ -135,13 +136,17 @@ screen_protector|PH||screen protector,screen protectors,screen back protector,sc
 car_phone_holder|PH||car phone holder,car phone mount,phone holder|βάση κινητού αυτοκινήτου,βάση κινητού
 smartwatch|PH|watch|smartwatch,smartwatches,smart watch,fitness tracker,fitness trackers|έξυπνο ρολόι,έξυπνα ρολόγια
 laptop|CO||laptop,laptops,notebook computer,notebook computers|λάπτοπ,φορητός υπολογιστής,φορητοί υπολογιστές,φορητό
-desktop_pc|CO||desktop pc,desktop pcs,desktop computer,desktop computers,~desktop,~pc|υπολογιστής,υπολογιστές,σταθερός υπολογιστής,κομπιούτερ
+desktop_pc|CO||desktop pc,desktop pcs,desktop computer,desktop computers,workstation,workstations,~desktop,~pc|υπολογιστής,υπολογιστές,σταθερός υπολογιστής,κομπιούτερ,σταθμός εργασίας,σταθμοί εργασίας
 monitor|CO||monitor,monitors,computer monitor,computer monitors,pc monitor,pc monitors,pc screen,pc screens,computer screen,computer screens,~screen|οθόνη υπολογιστή,οθόνες υπολογιστή,οθόνη,οθόνες,μόνιτορ
 printer|CO||printer,printers,multifunction printer,multifunction printers,all in one printer|εκτυπωτής,εκτυπωτές,πολυμηχάνημα,πολυμηχανήματα
 label_printer|CO||label printer,label printers,label maker,label makers|ετικετογράφος,ετικετογράφοι,εκτυπωτής ετικετών
 toner|CO||toner,toners,toner cartridge,toner cartridges|τόνερ
 ink_cartridge|CO||ink cartridge,ink cartridges,printer ink,ink|μελάνι,μελάνια,μελάνι εκτυπωτή,μελάνια εκτυπωτή,φυσίγγιο μελανιού,αμπούλα,αμπούλες
 router|CO||router,routers,wifi router,network router,network routers,modem,modems|ρούτερ,μόντεμ
+network_switch|CO||network switch,network switches,ethernet switch,ethernet switches|μεταγωγέας δικτύου,μεταγωγείς δικτύου,switch δικτύου
+media_converter|CO||media converter,media converters,fibre media converter,fibre media converters,fiber media converter,fiber media converters|μετατροπέας μέσων,μετατροπείς μέσων
+network_card|CO||network card,network cards,network interface card,network interface cards|κάρτα δικτύου,κάρτες δικτύου
+software|CO||security software,antivirus software,antivirus,networking software,office software,operating system,operating systems|λογισμικό προστασίας,αντιικό πρόγραμμα,λειτουργικό σύστημα
 keyboard|CO||keyboard,keyboards|πληκτρολόγιο,πληκτρολόγια
 mouse|CO||mouse,mice,computer mouse|ποντίκι,ποντίκια
 webcam|CO||webcam,webcams,web camera,web cam|κάμερα υπολογιστή,κάμερες υπολογιστή,κάμερα web
@@ -155,6 +160,7 @@ soundbar|AV||soundbar,soundbars,sound bar|μπάρα ήχου
 headphones|AV||headphones,headphone,headset,headsets,earphones,earbuds|ακουστικά,ακουστικό,ακουστικά κεφαλής,ψείρες
 game_console|AV||games console,game console,gaming console,games consoles,game consoles|κονσόλα,κονσόλες,κονσόλα παιχνιδιών
 game_controller|AV||~controller,~controllers,gamepad,joystick,game controller,game controllers,gaming controller,gaming controllers|χειριστήριο,χειριστήρια
+video_game|AV||video game,video games,pc game,pc games,console game,console games|βιντεοπαιχνίδι,βιντεοπαιχνίδια,ηλεκτρονικό παιχνίδι,ηλεκτρονικά παιχνίδια
 camera|AV||camera,cameras,digital camera,mirrorless camera,dslr|φωτογραφική μηχανή,φωτογραφικές μηχανές,κάμερα,κάμερες
 action_camera|AV|camera|action camera,action cameras,action cam|κάμερα δράσης
 microphone|AV||microphone,microphones,mic|μικρόφωνο,μικρόφωνα
