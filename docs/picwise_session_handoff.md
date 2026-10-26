@@ -1,17 +1,63 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-25.
+Current state for whoever picks the project up next. Updated 2026-10-26.
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation (from 2026-10-25, later): every Google-format shop on the server; the kind problem on it -- start here
+## Next conversation (from 2026-10-26): the rows without a category, after the shop test -- start here
 
-The owner put the link with every Google-format shop in GitHub's secrets («ετοιμο»,
-25/10); the server reads it, and the deployment now names each shop of the feed. Owner's
+The owner ended the conversation of 25-26/10 with «Θα προχωρήσουμε αυτές τις αλλαγές σε
+άλλη συζήτηση»: the three changes below wait for their «ναι», each on its own. Owner's
 rules, unchanged: Greek, short, plain words; say what you found before building
 anything; nothing on `main` without their explicit «ναι»; never ask for the feed link
 (it holds the key); secrets only in GitHub's or Vercel's secrets, never in the
 repository, a log or the chat; nothing in Supabase without asking; the truth test is a
-bot's, never the owner's by hand; never open an Awin tracked link from a session.
+bot's, never the owner's by hand; never open an Awin tracked link from a session or a
+bot; never propose contacting the shops («δεν στηρίζομαι σε αυτούς»).
+
+- **Where the work is:** the branch `claude/bold-allen-ljj9d7` (pushed; bring it in
+  first). `main` is at `3608da0` (the two kind fixes, live); the branch's server files,
+  measurements and the shop test are not on `main`. Pull requests #12 (this branch) and
+  #11 (`ccr-baaad713-r3uvvs`) to `main` are open; nothing goes to `main` without the
+  owner's «ναι». `server-shop-test.yml`, like `server-deploy.yml`, runs on pushes to
+  this branch; a session on another branch moves those triggers to its own.
+- **The owner's direction (26/10):** rows that can be mapped safely and sorted rightly
+  join the catalogue; rows no category can be given, also after the bot's check, stay
+  out (today's state already: the prepared catalogue keeps only the feed's eligible
+  rows); if too few products are left, another network joins (CJ or any other).
+  «Βρέθηκαν επίσης» is dropped. Three additions wait for their word: "safe" as a number
+  (a title's kind alone only for the kinds measured right 99% on rows with a shelf),
+  "enough" counted as kinds with products from at least 3 shops, and the rule only for
+  rows with no category from the shop (the about 275,000 shown with a shelf but no kind
+  yet stay).
+- **What the shop test found** (run `40309611314`; details in the bullet "The shop
+  catalogue test, run once" below): 53 of the 56 shops publish Shopify's catalogue,
+  with each product's stock and, for 33 shops (32,306 rows), a type on nearly every
+  product; paging past 5,000 works; **InStock UK (353,023 of the 388,813 rows) answers
+  500** on its catalogue, and the one row of it asked has no type.
+- **The three changes put to the owner (each on its own «ναι»):**
+  1. **A second, small look at InStock UK only** (about 10 requests, under the same
+     script's rules: robots.txt first, 3 s apart, never an Awin link): its
+     `/collections.json`, one or two collections' `/collections/<name>/products.json`,
+     and a few more of its rows' `/products/<name>.js`, to see whether a category is
+     anywhere. If none, its rows have the title only, under the "safe" rule above.
+  2. **The bot for the 55 other shops**, each night after the feed: per shop its
+     robots.txt, then its Shopify catalogue (250 products a request, at most 200
+     requests a shop a round): the shop's own type and each product's stock, matched
+     to the feed's rows by the product name in the address; what it learned kept on
+     the server (never in Supabase), so a round asks only for what is new; a row whose
+     type reads as a kind joins the catalogue, else the title decides (Finediam reads
+     worse with its type), else it stays out. User agent `PicWiseBot/0.1
+     (+https://picwise.subby.cloud)`.
+  3. **So Divine out:** it sells adult products and the server shows 72 of its 81
+     rows; the site has no adult rule.
+- **Open, the owner's, from before:** HTTPS and the domain (own domain recommended
+  before any indexing); the repository private; query logging from the server (ask
+  first); 80 or 200 bot checks per shop and what a low score does.
+
+## Before (2026-10-25, later, to 2026-10-26): every Google-format shop on the server; the kind problem on it
+
+The owner put the link with every Google-format shop in GitHub's secrets («ετοιμο»,
+25/10); the server reads it, and the deployment now names each shop of the feed.
 
 - **Where the work is:** the branch `claude/bold-allen-ljj9d7` (pushed): the branch
   `ccr-baaad713-r3uvvs` brought in, plus this conversation's commits. Bring it in first.
