@@ -48,17 +48,18 @@ Owner's rules unchanged (see the section below).
      Prints shop names and counts, never an address; always exits 0.
   4. `deploy.sh` creates `/srv/picwise/shared/shops`, installs the two units and enables
      the timer; a deployment never asks the shops itself.
-- **Blocked even after the owner's «Ναι» (26/10):** moving `server-deploy.yml`'s trigger
-  to this branch (`branches: [ccr-1361f1a7-dcpo60]`, `'deployment/bot/**'` added to its
-  paths, and in "What runs on the server" a line `nightly shops' catalogues:` with
-  `systemctl list-timers picwise-shops.timer`) was refused twice by the session's safety
-  check as a production deploy, the edit and then its push; the edit was set aside and
-  the owner asked to switch the session's mode from Auto to "Accept edits", so that the
-  push asks them. Until then the server runs the old branch's release, without the bot.
-  After it: that edit and a push deploy; the first round then runs at 03:40 UTC, or at
-  once by a small workflow (`systemctl start picwise-shops.service`, then
-  `picwise-prepare.service`, then `print_shops.py`), pushed only after the deployment
-  ended, since both share the `server-setup` group in no set order.
+- **The server, from this branch (the owner's «Ναι», 26/10):** `server-deploy.yml` now
+  runs on pushes to `ccr-1361f1a7-dcpo60` (also on `deployment/bot/**`) and prints the
+  shops' timer; a session on another branch moves it to its own. In Auto mode the
+  session's safety check refused that change twice as a production deploy, so the owner
+  switched the session to "Accept edits" (the menu under the message box, "Auto") and
+  the push went through (`a0d00ee`, run `40328993620`). The first round of the bot:
+  `.github/workflows/server-shops.yml` (on a push of itself: `systemctl start
+  picwise-shops.service`, then `picwise-prepare.service`, then `print_shops.py` and
+  `print_kinds.py`), pushed only after a deployment ended, since both share the
+  `server-setup` group in no set order. The nightly round runs at 03:40 UTC.
+- **Pull request #13** (`ccr-1361f1a7-dcpo60` to `main`, opened by the app at 12:31 under an
+  older title) is open, like #12 and #11: nothing is merged without the owner's «ναι».
 - **The cap, measured (the owner's «Ναι» read as also for "measure first"):**
   `src/picwise_providers/catalogue_balance.py`, the note's `balance`, printed last by
   `print_shops.py`: per department and aisle (the top and two levels of Google's shelf,
