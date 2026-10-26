@@ -26,14 +26,29 @@ shop's own `product_type`, or, with none, from the title alone; and what a searc
 read them as, a kind, an accessory, doubtful or nothing, with a few of their types and
 titles. Measured only: whether a feed tells the truth about stock is the shop checks' to
 say.
+
+Owner, 2026-10-26: «Ο στόχος είναι να λύσεις αυτό το πρόβλημα», without the shops' help
+(«δεν στηρίζομαι σε αυτούς»). So, of those rows a search could show by their title, the
+note also says where else a category may hide: which columns the rows fill, the most
+frequent values of the columns named like a label, a category, a type, a department, a
+section, a collection or a tag, and what the shop's own address of the product names
+before the product (`/kitchen/kettles/...`), read as a shelf, and whether it agrees with
+the title. An Awin link is read as text for the address it carries, never opened.
 """
 from __future__ import annotations
 
 import heapq
+import re
 from collections import Counter
 from typing import Any, Callable, Collection, Mapping, Sequence
+from urllib.parse import parse_qs, unquote, urlsplit
 
-from picwise_nlu.concept_understanding import ACCESSORY_MARKER, UNCERTAIN_MARKER
+from picwise_nlu.concept_understanding import (
+    ACCESSORY_MARKER,
+    UNCERTAIN_MARKER,
+    annotate_product_concepts,
+)
+from picwise_nlu.product_concepts import broader_concepts
 
 from .contracts import ProviderEligibilityResult, ProviderProduct
 from .normalization import extract_merchant_name
@@ -66,6 +81,14 @@ _WITHOUT_CATEGORY_TITLES = 3
 _TITLE_EXAMPLE_LENGTH = 70
 # What a search would read a product as.
 _KIND_BUCKETS = ("kind", "accessory", "doubtful", "none")
+# Where else a row without a category may name one: columns named like these, and the
+# shop's own address. How many columns, values and address shelves the note shows.
+_HINT_COLUMN_RE = re.compile(r"label|categ|type|department|section|collection|tag", flags=re.IGNORECASE)
+_COLUMNS_LISTED = 15
+_HINT_COLUMNS = 6
+_HINT_VALUES = 3
+_HINT_VALUE_LENGTH = 60
+_ADDRESS_PATHS = 5
 
 
 def _shop_name(raw: Mapping[str, Any]) -> str:
@@ -132,6 +155,54 @@ def _way_without_category(row: ProviderEligibilityResult, product_type: str) -> 
     return "title" if set(card.reason_codes) == {"missing_product_type_or_category_evidence"} else ""
 
 
+def _shop_address(url: str) -> str:
+    """The shop's own address of a product: the link itself, or the address an Awin link
+    carries in its query ("ued", "p"), read as text; "" when it carries none ("pclick.php")."""
+    parts = urlsplit(str(url or "").strip())
+    if "awin1.com" not in parts.netloc.lower():
+        return str(url or "").strip()
+    query = parse_qs(parts.query)
+    for key in ("ued", "p"):
+        for value in query.get(key, ()):
+            if value.lower().startswith("http"):
+                return value
+    return ""
+
+
+def _address_shelves(url: str) -> str:
+    """The shelves a shop's address names before its product, as a breadcrumb: ".../
+    kitchen/kettles/fixturon-glass-kettle" is "kitchen > kettles"; "" when it names
+    none. Words only, never the address: the note holds no link."""
+    address = _shop_address(url)
+    if not address:
+        return ""
+    segments = [segment for segment in urlsplit(address).path.lower().split("/") if segment]
+    shelves = [" ".join(re.split(r"[-_+]+", unquote(segment))).strip() for segment in segments[:-1]]
+    return " > ".join(shelf for shelf in shelves if shelf)
+
+
+def _related(left: Collection[str], right: Collection[str]) -> bool:
+    return any(a == b or a in broader_concepts(b) or b in broader_concepts(a) for a in left for b in right)
+
+
+def _hint_note(hints: dict[str, Any]) -> dict[str, Any]:
+    columns = hints["columns"]
+    named = sorted((column for column in columns if _HINT_COLUMN_RE.search(column)), key=lambda c: (-columns[c], c))
+    return {
+        "columns": [
+            {"column": column, "rows": rows}
+            for column, rows in heapq.nsmallest(_COLUMNS_LISTED, columns.items(), key=lambda item: (-item[1], item[0]))
+        ],
+        "values": {
+            column: _top_values(hints["values"][column], _HINT_VALUES, _HINT_VALUE_LENGTH)
+            for column in named[:_HINT_COLUMNS]
+            if column in hints["values"]
+        },
+        "address": dict(hints["address"]),
+        "address_shelves": _top_values(hints["paths"], _ADDRESS_PATHS, _HINT_VALUE_LENGTH),
+    }
+
+
 def _hold_reasons(row: ProviderEligibilityResult) -> tuple[str, ...]:
     """Why a search cannot show this row, or () when it can."""
     if row.status != "eligible":
@@ -141,6 +212,41 @@ def _hold_reasons(row: ProviderEligibilityResult) -> tuple[str, ...]:
     if card is None or card.card_eligible:
         return ()
     return tuple(card.reason_codes) or ("not_card_eligible",)
+
+
+def _count_hints(
+    hints: dict[str, Any],
+    address_totals: dict[str, int],
+    raw: Mapping[str, Any],
+    product: ProviderProduct,
+    title_kinds: Collection[str],
+) -> None:
+    """Where else a row a search could show by its title may name its category: its
+    filled columns, the values of those named like a category, and its shop's address."""
+    for column, value in raw.items():
+        text = " ".join(str(value or "").split())
+        if not text:
+            continue
+        hints["columns"][column] += 1
+        if _HINT_COLUMN_RE.search(str(column)) and "://" not in text and not text.lower().startswith("www."):
+            hints["values"].setdefault(column, Counter())[text] += 1
+    shelves = _address_shelves(product.product_url)
+    counts = hints["address"]
+    for bucket in (counts, address_totals):
+        bucket["rows"] += 1
+    if not shelves:
+        return
+    hints["paths"][shelves] += 1
+    by_address = [kind for kind in annotate_product_concepts("", shelves, "") if not kind.startswith("__")]
+    by_title = [kind for kind in title_kinds if not kind.startswith("__")]
+    for bucket in (counts, address_totals):
+        bucket["names_shelves"] += 1
+        if by_address:
+            bucket["a_kind"] += 1
+            if by_title:
+                bucket["title_kind_too"] += 1
+                if _related(by_address, by_title):
+                    bucket["agrees"] += 1
 
 
 def measure_feed_intake(
@@ -164,6 +270,10 @@ def measure_feed_intake(
     held_reasons: Counter = Counter()
     without_totals = {"rows": 0, "only_this": 0, "with_product_type": 0, "shown_by_type": 0, "shown_by_title": 0}
     kinds_totals = {"type": Counter(), "title": Counter()}
+    # Of the rows a search could show by their title: those whose shop's address names
+    # shelves, those shelves read as a kind, those whose title gives a kind too, and
+    # those where the two agree.
+    address_totals = {"rows": 0, "names_shelves": 0, "a_kind": 0, "title_kind_too": 0, "agrees": 0}
     for row in rows:
         raw = row.product.raw if isinstance(row.product.raw, Mapping) else {}
         shop = shops.setdefault(
@@ -173,6 +283,8 @@ def measure_feed_intake(
                 "product_types": Counter(), "product_type_without_category": 0,
                 "without_category": {key: 0 for key in without_totals},
                 "kinds": {"type": Counter(), "title": Counter()}, "types_shown": Counter(), "titles": [],
+                "hints": {"columns": Counter(), "values": {}, "paths": Counter(),
+                          "address": {key: 0 for key in address_totals}},
             },
         )
         shop["rows"] += 1
@@ -197,6 +309,7 @@ def measure_feed_intake(
                         bucket[f"shown_by_{way}"] += 1
                     if way == "type":
                         shop["types_shown"][product_type] += 1
+                    kinds: Collection[str] = ()
                     if read_kinds is not None:
                         kinds = read_kinds(row.product)
                         kind = _kind_bucket(kinds)
@@ -208,6 +321,8 @@ def measure_feed_intake(
                                 f"{_cut(' '.join(str(row.product.title or '').split()), _TITLE_EXAMPLE_LENGTH)}"
                                 f" -> {named}"
                             )
+                    if way == "title":
+                        _count_hints(shop["hints"], address_totals, raw, row.product, kinds)
         reasons = _hold_reasons(row)
         if reasons:
             for bucket in (shop, totals):
@@ -228,6 +343,7 @@ def measure_feed_intake(
             **without_totals,
             "kinds_by_type": _buckets(kinds_totals["type"] if read else None),
             "kinds_by_title": _buckets(kinds_totals["title"] if read else None),
+            "address": address_totals,
         },
         "shops": [
             {
@@ -246,6 +362,7 @@ def measure_feed_intake(
                     "kinds_by_title": _buckets(shop["kinds"]["title"] if read else None),
                     "types": _top_values(shop["types_shown"], _WITHOUT_CATEGORY_TYPES, _PRODUCT_TYPE_EXAMPLE_LENGTH),
                     "titles": shop["titles"],
+                    "hints": _hint_note(shop["hints"]),
                 },
             }
             for name, shop in sorted(shops.items(), key=lambda item: (-item[1]["rows"], item[0]))

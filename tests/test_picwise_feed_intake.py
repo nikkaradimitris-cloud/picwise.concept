@@ -193,8 +193,11 @@ class RowsWithoutCategoryTests(unittest.TestCase):
     def test_how_many_could_be_shown_by_type_or_title_and_read_as_what(self) -> None:
         intake = measure_configured_feed_intake()
         three = next(shop for shop in intake["shops"] if shop["shop"] == "Fixture Store Three")
+        without = dict(three["without_category"])
+        # Where else a category may hide: `HintsTests` below.
+        self.assertEqual(without.pop("hints")["address"]["rows"], 5)
         self.assertEqual(
-            three["without_category"],
+            without,
             {
                 "rows": 10,
                 "only_this": 9,
@@ -219,8 +222,10 @@ class RowsWithoutCategoryTests(unittest.TestCase):
             {"rows": 0, "only_this": 0, "shown_by_type": 0, "shown_by_title": 0},
         )
         self.assertEqual(four["without_category"]["types"], [])
+        totals = dict(intake["without_category"])
+        self.assertEqual(totals.pop("address")["rows"], 5)
         self.assertEqual(
-            intake["without_category"],
+            totals,
             {
                 "rows": 10,
                 "only_this": 9,
@@ -232,6 +237,84 @@ class RowsWithoutCategoryTests(unittest.TestCase):
             },
         )
         self.assertNotIn("fixture.example.invalid", repr(intake))
+
+
+_GOOGLE_COLUMNS = (
+    "id", "title", "link", "image_link", "price", "availability", "google_product_category",
+    "custom_label_0", "advertiser_name",
+)
+
+
+def _google_row(pid: str, title: str, link: str, label: str = "", category: str = "") -> list[str]:
+    return [
+        pid, title, link, f"https://fixture.example.invalid/img/{pid}.jpg", "20.00 GBP", "in stock", category,
+        label, "Fixture Store Five",
+    ]
+
+
+class HintsTests(unittest.TestCase):
+    """Owner, 2026-10-26: «Ο στόχος είναι να λύσεις αυτό το πρόβλημα», without the shops:
+    where else a row without a category may name one."""
+
+    def setUp(self) -> None:
+        cread = "https://www.awin1.com/cread.php?awinmid=1&awinaffid=2&ued="
+        feed = Path(tempfile.mkdtemp()) / "feed.csv"
+        with feed.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(_GOOGLE_COLUMNS)
+            writer.writerows(
+                [
+                    # An Awin link carrying the shop's address, which names a kettles shelf.
+                    _google_row("g1", "Fixturon Glass Electric Kettle",
+                                cread + "https%3A%2F%2Fshop.example.invalid%2Fkitchen%2Fkettles%2Ffixturon-glass-kettle",
+                                label="Kettles"),
+                    # An Awin link carrying no address.
+                    _google_row("g2", "Fixturon Steel Electric Kettle",
+                                "https://www.awin1.com/pclick.php?p=123&a=2&m=1", label="Kettles"),
+                    # The shop's own address, naming a shelf that is no kind.
+                    _google_row("g3", "Fixturon Chocolate Mice 225g",
+                                "https://shop.example.invalid/sweets/chocolate-mice-225g", label="Sweets"),
+                    # With a category: not counted.
+                    _google_row("g4", "Fixturon Toaster", "https://shop.example.invalid/kitchen/toasters/t",
+                                category="Kitchen Appliances > Toasters"),
+                ]
+            )
+        saved = os.environ.get("AWIN_FEED_FILE")
+        os.environ["AWIN_FEED_FILE"] = str(feed)
+        clear_awin_feed_parse_cache()
+        clear_provider_feed_pipeline_cache()
+
+        def restore() -> None:
+            if saved is None:
+                os.environ.pop("AWIN_FEED_FILE", None)
+            else:
+                os.environ["AWIN_FEED_FILE"] = saved
+            clear_awin_feed_parse_cache()
+            clear_provider_feed_pipeline_cache()
+
+        self.addCleanup(restore)
+
+    def test_columns_labels_and_the_shops_address(self) -> None:
+        intake = measure_configured_feed_intake()
+        (five,) = intake["shops"]
+        hints = five["without_category"]["hints"]
+        self.assertEqual(
+            {entry["column"]: entry["rows"] for entry in hints["columns"]}["custom_label_0"], 3
+        )
+        self.assertEqual(
+            hints["values"]["custom_label_0"],
+            [{"value": "Kettles", "rows": 2}, {"value": "Sweets", "rows": 1}],
+        )
+        self.assertEqual(
+            hints["address"], {"rows": 3, "names_shelves": 2, "a_kind": 1, "title_kind_too": 1, "agrees": 1}
+        )
+        self.assertEqual(
+            hints["address_shelves"], [{"value": "kitchen > kettles", "rows": 1}, {"value": "sweets", "rows": 1}]
+        )
+        self.assertEqual(intake["without_category"]["address"], hints["address"])
+        # Words only: no address, no Awin link, in the note.
+        self.assertNotIn("example.invalid", repr(intake))
+        self.assertNotIn("awin1", repr(intake))
 
 
 if __name__ == "__main__":

@@ -79,7 +79,7 @@ class PrintShopsTests(unittest.TestCase):
         )
         # The table of the 4 shops, then the rows without a category: none here.
         self.assertEqual(lines[6:8], ["", "rows without a category: 0; held for that alone 0, 0 of them with the shop's own type"])
-        self.assertEqual(len(lines), 2 + 4 + 1 + 4)
+        self.assertEqual(len(lines), 2 + 4 + 1 + 5)
         self.assertIn(
             "        4         2       0         2  Fixture Store Two: availability_discontinued 1, "
             "purchasability_discontinued 1, missing_price_text 1",
@@ -135,10 +135,23 @@ class PrintShopsTests(unittest.TestCase):
             [
                 "  could be shown by their own type: 1 (kind 1, accessory 0, doubtful 0, none 0)",
                 "  could be shown by their title alone: 2 (kind 1, accessory 0, doubtful 0, none 1)",
+                (
+                    "  of those, the shop's address names shelves for 2 of 2, a kind for 0; with the title's kind "
+                    "too 0, agreeing 0"
+                ),
                 "   no cat     alone  own type   by type    a kind  by title    a kind  shop",
                 "        3         3         1         1         1         2         1  Fixture Store Two",
                 "      types: Kitchen > Kettles (1)",
                 "      titles: Fixturon Chocolate Mice 225g -> mouse",
+                (
+                    "      columns: aw_deep_link (2); aw_image_url (2); aw_product_id (2); brand_name (2); "
+                    "currency (2); in_stock (2); merchant_name (2); product_name (2); search_price (2)"
+                ),
+                (
+                    "      the shop's address names shelves for 2 of 2, a kind for 0; with the title's kind too 0, "
+                    "agreeing 0"
+                ),
+                "      address shelves: out (2)",
             ],
         )
 

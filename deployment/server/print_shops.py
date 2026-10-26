@@ -10,8 +10,10 @@ feed, also one whose rows are all held back. So the log says which shops the fee
 carries, not only how many. Then, per shop, its rows the feed gate holds for having no
 category (owner, 2026-10-25: about 532,000 of 1,123,857): how many for that alone, how
 many could be shown by the shop's own product type or by the title alone, read as a
-kind, and for the shops with the most, a few of their types and titles. Counts, shop
-names, types and titles only; the note never holds the feed's link. Always exits 0: a
+kind, and for the shops with the most, a few of their types and titles; and (owner,
+2026-10-26) where else their category may hide: their filled columns, the values of
+those named like a category, and the shelves their shop's address names. Counts, shop
+names, types, titles and words only; the note never holds a link. Always exits 0: a
 deployment never fails because of this list.
 """
 from __future__ import annotations
@@ -84,6 +86,8 @@ def print_without_category(intake: dict) -> None:
         f"  could be shown by their title alone: {total['shown_by_title']:,} "
         f"({_kinds(total['kinds_by_title'])})"
     )
+    if "address" in total:
+        print("  of those, " + _address(total["address"]))
     print(
         f"{'no cat':>9} {'alone':>9} {'own type':>9} {'by type':>9} {'a kind':>9} {'by title':>9} "
         f"{'a kind':>9}  shop"
@@ -105,6 +109,29 @@ def print_without_category(intake: dict) -> None:
             print("      types: " + "; ".join(f"{entry['value']} ({entry['rows']:,})" for entry in rows["types"]))
         if rows["titles"]:
             print("      titles: " + "; ".join(rows["titles"]))
+        print_hints(rows.get("hints"))
+
+
+def _address(counts: dict) -> str:
+    return (
+        f"the shop's address names shelves for {counts['names_shelves']:,} of {counts['rows']:,}, "
+        f"a kind for {counts['a_kind']:,}; with the title's kind too {counts['title_kind_too']:,}, "
+        f"agreeing {counts['agrees']:,}"
+    )
+
+
+def print_hints(hints: dict | None) -> None:
+    """Where else a shop's rows without a category may name one: their filled columns,
+    the values of the columns named like a category, and their address's shelves."""
+    if not hints:
+        return
+    print("      columns: " + "; ".join(f"{entry['column']} ({entry['rows']:,})" for entry in hints["columns"]))
+    for column, values in hints["values"].items():
+        print(f"      {column}: " + "; ".join(f"{entry['value']} ({entry['rows']:,})" for entry in values))
+    print("      " + _address(hints["address"]))
+    if hints["address_shelves"]:
+        shelves = "; ".join(f"{entry['value']} ({entry['rows']:,})" for entry in hints["address_shelves"])
+        print(f"      address shelves: {shelves}")
 
 
 if __name__ == "__main__":
