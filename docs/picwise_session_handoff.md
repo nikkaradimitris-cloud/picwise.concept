@@ -134,7 +134,34 @@ bot's, never the owner's by hand; never open an Awin tracked link from a session
   angle grinder). For the 388,781 rows without a category this means about 204,000
   could get a kind from their title, most of them right, a few thousand wrong, and
   about 185,000 none (found by their words only).
-- **Next, put to the owner (waiting for their word):** (2) before any row
+- **Rows without a category: the owner's direction (26/10)** «Ο στόχος είναι να λύσεις
+  αυτό το πρόβλημα»; **no contact with the shops** («δεν στηρίζομαι σε αυτούς»; never
+  propose it again); rows that cannot be mapped stay **outside the price logic** (shown,
+  not compared); the shop-check bot has a **double role**: check the feed's stock and
+  give category information, within its 200 checks per shop. The owner cancelled
+  showing them on the server with the title's kind («Σταμάτα», «Ακυρώ») before that.
+- **Where else a category hides, measured** (commits `d5693cb`, `bb0d8f8`; runs
+  `40298361738`, `40300435259`): of the 388,813 rows a search could show by their title,
+  **no column names a category** (they fill advertiser_id, advertiser_name,
+  availability, aw_deep_link, brand, condition, description, id, image_link, link,
+  price, title, identifier_exists, mpn, gtin: no custom label, no product type); **the
+  shop's address names only "products"** (`.../products/<name>`, Shopify's form; read
+  from the Awin link's `ued` as text, never opened); **a barcode** on 63,359, another row
+  with a category for only 620 (a kind for 137, 28 where the title gives none); **the
+  description's first sentence** gives a kind to 2,424 of the 184,675 the title gives
+  none (on rows with a shelf: 5.5%, 93.3% agreeing). So from the feed only the title
+  maps them: about 204,000, of which about 95% right (InStock UK 94.6%); about 185,000
+  cannot be mapped from the feed.
+- **Next, put to the owner (waiting for their word):** (1) the rows without a category
+  on the server, **outside the price logic** («Βρέθηκαν επίσης»: found by exact words
+  only, no price role, never the recommendation), in a lean list apart from the
+  catalogue so the site's memory holds, behind a setting only the server sets; (2) the
+  bot: first per shop its robots.txt and one test of whether it publishes its
+  catalogue for machines (Shopify's `products.json`: 250 products a request, with the
+  shop's product type and each variant's availability; 200 requests a shop, up to
+  50,000 products a round), never an Awin link; (3) rows the bot confirms join the
+  comparison. (2) asks pages of the shops' sites: only on the owner's «ναι».
+- **Before, put to the owner:** (2) before any row
   without a category is shown by its title, measure how often the title alone agrees
   with the shelf on the rows that have one (per shop: InStock UK has both); (3) ask
   Awin or the two largest shops (InStock UK, Back to the Office) for their categories;
