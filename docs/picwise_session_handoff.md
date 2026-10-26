@@ -60,6 +60,32 @@ Owner's rules unchanged (see the section below).
   `server-setup` group in no set order. The nightly round runs at 03:40 UTC.
 - **Pull request #13** (`ccr-1361f1a7-dcpo60` to `main`, opened by the app at 12:31 under an
   older title) is open, like #12 and #11: nothing is merged without the owner's «ναι».
+- **On the server (26/10, 13:15-13:45 UTC):** deployment run `40328993620` (`a0d00ee`; its
+  step "What runs on the server" failed on an apostrophe inside the quoted command, fixed
+  in `1b2c4d9`): 1,123,995 rows, **518,108 shown**; So Divine 0 of 81 (`shop_left_out`);
+  **the barcode brought in 1,081 rows** (InStock UK 1,041); peak memory 7.8 GB. **First
+  round**, run `40329354654`: 54 shops, 331 requests, 8 minutes; the file knows 58,728
+  products (53,699 with a type, 25,041 sold out). Then the preparation: **521,698 shown**
+  (+3,590); Back to the Office 782 -> 3,973 shown. Of the 574,171 rows of those shops,
+  124,265 found in their catalogue; **sold out by the shop 39,072, and the feed already said
+  so for all but 188**: these shops' feed stock is nearly always right. Without a category
+  121,574: **given their shop's type with its kind 14,395** (Back to the Office 11,651,
+  Viaduct Clothing 2,148), many of them sold out; the type names no kind 18,176 ("Sold
+  Out" 2,209, "PCs/Workstations" 795, "Network Switches" 708, "Network Media Converters"
+  590, "Made-to-Measure" 454, "Network Cards" 378, "Security Software" 361, "Outdoor
+  Sauna" 336, "Networking Software" 328, "Video Games" 291); no type 3,261; not in the
+  catalogue 85,742. **Back to the Office: Shopify pages a catalogue only to page 100**
+  (25,000 products; page 101 answered 400), so 24,739 of its 95,050 products were read and
+  69,205 rows not found; the bot now ends the catalogue there and starts again from page 1
+  (`b4ba417`). Finediam's catalogue answered 500 at page 20 (goes on tonight). Put to the
+  owner: read Back to the Office by its collections (each paged to 100), and add the
+  kinds its types name to the vocabulary.
+- **Why so few electronics (owner, 26/10):** the feed holds only the 85 programmes the
+  owner joined and was accepted to, mostly small fashion, jewellery and home shops; no
+  large electronics shop. Electronics shown: 9,087 (1.8%), plus what Back to the Office's
+  types now bring. Gigbain accepted the owner, but it is not in the feed: the link keeps
+  the shops chosen when it was made (`docs/awin_feed_setup_el.md`), so a new link with it
+  goes into the `AWIN_FEED_URL` secret, then a deployment; asked of the owner.
 - **The cap, measured (the owner's «Ναι» read as also for "measure first"):**
   `src/picwise_providers/catalogue_balance.py`, the note's `balance`, printed last by
   `print_shops.py`: per department and aisle (the top and two levels of Google's shelf,
