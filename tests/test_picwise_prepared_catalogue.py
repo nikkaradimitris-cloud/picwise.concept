@@ -434,12 +434,30 @@ class PrepareToolTests(_PreparedMixin, unittest.TestCase):
         prepared_at = read_prepared_catalogue(self.prepared_path).prepared_at
         self.assertLess(abs((datetime.fromisoformat(note["prepared_at"]) - prepared_at).total_seconds()), 1)
         self.assertEqual(
-            set(note), {"prepared", "prepared_at", "products", "shops", "freshness", "intake", "kinds", "written_at"}
+            set(note),
+            {"prepared", "prepared_at", "products", "shops", "freshness", "intake", "kinds", "title_alone", "written_at"},
+        )
+        # How often a title alone gives the kind its shelf gives (owner, 2026-10-25): of the
+        # 16 fixture products, 15 titles give the shelf's kind and one is doubtful alone.
+        self.assertEqual(
+            {key: note["title_alone"][key] for key in ("products", "agrees", "differs", "doubtful")},
+            {"products": 16, "agrees": 15, "differs": 0, "doubtful": 1},
         )
         # Per kind, the products whose title does not name it (owner, 2026-10-23): every
-        # fixture title names its kettle or laptop.
+        # fixture title names its kettle or laptop; those whose title alone names it, and
+        # those their aisle made doubtful (owner, 2026-10-25): every fixture shelf names
+        # its kind.
         self.assertEqual(
-            note["kinds"], {"products": 16, "title_names_no_kind": 0, "by_kind": []}
+            note["kinds"],
+            {
+                "products": 16,
+                "title_names_no_kind": 0,
+                "by_kind": [],
+                "only_title_names_kind": 0,
+                "by_kind_only_title": [],
+                "doubted_by_aisle": 0,
+                "by_kind_doubted_by_aisle": [],
+            },
         )
         # How fresh the listings are (owner, 2026-10-18: "we show ghosts"), measured only.
         self.assertEqual(note["freshness"]["products"], 16)
