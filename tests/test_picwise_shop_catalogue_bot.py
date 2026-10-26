@@ -211,6 +211,30 @@ class RoundTests(unittest.TestCase):
         self.assertEqual((office["status"], office["next_page"]), ("read", 1))
         self.assertEqual(sorted(office["products"]), ["p1", "p2", "p3", "p4"])
 
+    def test_a_shop_that_pages_no_further_is_read_as_far_as_it_lets(self) -> None:
+        # Shopify answers 400 past page 100 (Back to the Office, run 40329354654).
+        folder = _setup(self)
+        answers = _answers()
+        answers[f"{OFFICE}/products.json?limit=2&page=3"] = (400, b"")
+        shops = _Shops(answers)
+        _round(folder, shops)
+        office = _file(folder)["shops"]["Fixture Office Shop"]
+        self.assertEqual((office["status"], office["next_page"], office["pages"]), ("read to the shop's page limit", 1, 2))
+        self.assertEqual(office["complete_at"], NOW.isoformat(timespec="seconds"))
+        # A round that went on from page 3 starts again from page 1, once.
+        bot.write(str(folder / "shops" / "catalogues.json.gz"), {"version": 1, "shops": {
+            "Fixture Office Shop": {"read_at": NOW.isoformat(), "next_page": 3, "products": {}},
+        }})
+        shops = _Shops(answers)
+        _round(folder, shops)
+        self.assertEqual(
+            [url for url in shops.asked if url.startswith(f"{OFFICE}/products.json")],
+            [f"{OFFICE}/products.json?limit=2&page={page}" for page in (3, 1, 2, 3)],
+        )
+        office = _file(folder)["shops"]["Fixture Office Shop"]
+        self.assertEqual((office["status"], office["next_page"], office["requests"]), ("read to the shop's page limit", 1, 5))
+        self.assertEqual(sorted(office["products"]), ["p1", "p2", "p3"])
+
     def test_out_of_time_no_shop_is_started(self) -> None:
         folder = _setup(self)
         shops = _Shops(_answers())

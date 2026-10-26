@@ -175,6 +175,9 @@ def ask_shop(shop: FeedShop, entry: Mapping[str, Any], *, scheme: str = "https",
         result["status"] = "crawl-delay too long"
         return result
     page = max(1, result["next_page"])
+    # A round that went on from an earlier one starts again from page 1 once, when the
+    # shop will not page further.
+    restarted = page == 1
     seen_now: set[str] = set()
     status = "read"
     while True:
@@ -194,6 +197,16 @@ def ask_shop(shop: FeedShop, entry: Mapping[str, Any], *, scheme: str = "https",
         data = look._json(answer)
         listed = data.get("products") if isinstance(data, dict) else None
         if not isinstance(listed, list):
+            if answer.status == 400 and page > 1:
+                # Shopify pages a catalogue up to page 100 (25,000 products) and answers 400
+                # past it (Back to the Office, 26/10): what it lets be read is read.
+                page = 1
+                if not restarted:
+                    restarted = True
+                    continue
+                result["complete_at"] = result["read_at"]
+                status = "read to the shop's page limit"
+                break
             status = f"catalogue {look._said(answer) if answer.status != 200 or answer.error else 'not JSON'}"
             break
         result["pages"] += 1
