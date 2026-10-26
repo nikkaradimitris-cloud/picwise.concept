@@ -1,0 +1,110 @@
+# Read-only look at what the server did in the night (owner's «Ναι», 2026-10-26): the
+# shops' round (picwise-shops.timer, 03:40 UTC) and the preparation after it
+# (picwise-prepare.timer, 04:17 UTC), each read from its timer's last start, then each
+# shop of the prepared catalogue. It starts no round and changes nothing on the server.
+#
+# Runs when this file is pushed to the working branch; to read another night, change the
+# date below and push. The repository is public and so is this log: the server's names
+# and addresses are masked, and the bot prints shop names and counts, never an address.
+#
+# Night read: 2026-10-27
+name: Server night (read-only)
+on:
+  push:
+    branches: [ccr-1361f1a7-dcpo60]
+    paths:
+      - '.github/workflows/server-night.yml'
+permissions:
+  contents: read
+# Shared with the deployment, the setup and the shops' round, so nothing is read while
+# one of them runs.
+concurrency:
+  group: server-setup
+  cancel-in-progress: false
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Connect with the key, check the server's identity, mask its names
+        id: connect
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          # A key pasted on Windows may carry carriage returns, which ssh refuses.
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # The server must show the host key pinned in .github/server-host-key.pin (an
+          # HMAC under the deploy key: .github/scripts/host_key_pin.py), and every
+          # connection below accepts that key only.
+          host_key=$(ssh-keyscan -T 15 -t ed25519 "$SERVER_HOST" 2>/dev/null | awk 'NF >= 3 {print $2, $3; exit}')
+          [ -n "$host_key" ] || { echo "the server gave no host key"; exit 1; }
+          pin=$(HOST_KEY="$host_key" python3 .github/scripts/host_key_pin.py)
+          expected=$( (grep -v '^#' .github/server-host-key.pin || true) | tr -d '[:space:]')
+          if [ "$pin" != "$expected" ]; then
+            echo "the server does NOT match the pin (reinstalled, or not our server); its pin: $pin"
+            exit 1
+          fi
+          echo "the server matches the pin"
+          echo "picwise-server $host_key" > ~/.ssh/known_hosts_picwise
+          # The user is OVHcloud's for Ubuntu, written here rather than read from the
+          # SERVER_USER secret: GitHub masks a secret's value all over the log.
+          cat > ~/.ssh/config <<EOF
+          Host picwise
+            HostName $SERVER_HOST
+            HostKeyAlias picwise-server
+            UserKnownHostsFile ~/.ssh/known_hosts_picwise
+            StrictHostKeyChecking yes
+            User ubuntu
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            BatchMode yes
+            ConnectTimeout 15
+            ServerAliveInterval 15
+            ServerAliveCountMax 8
+            LogLevel ERROR
+          EOF
+          chmod 600 ~/.ssh/config
+          # The host name resolves to the address, so it is masked like the address.
+          names=$(ssh -n picwise 'hostname; hostname -f; hostname -I')
+          for name in $names; do echo "::add-mask::$name"; done
+          echo "connected"
+      - name: The night's round of the shops, then the preparation
+        # The script goes to the server on stdin, so no quote inside it can close the
+        # command, as an apostrophe did in run 40328993620.
+        run: |
+          ssh picwise 'bash -s' <<'EOF'
+          echo "release in use: $(basename "$(readlink -f /srv/picwise/current)")"
+          for unit in shops prepare; do
+            # A timer's last start is kept on disk (Persistent=true), so it outlives a reboot.
+            since=$(systemctl show -p LastTriggerUSec --value "picwise-$unit.timer")
+            echo
+            case "$since" in "" | n/a) echo "== picwise-$unit.timer has not started its service yet"; continue ;; esac
+            echo "== picwise-$unit.timer started its service at $since"
+            systemctl show -p Result -p ExecMainStartTimestamp -p ExecMainExitTimestamp "picwise-$unit.service"
+            if [ "$unit" = shops ]; then
+              sudo journalctl -u picwise-shops.service -o cat --no-pager --since "$since"
+            else
+              # The summary lines of each run since then, the timer's and any deployment's.
+              sudo journalctl -u picwise-prepare.service -o cat --no-pager --since "$since" \
+                | grep -E 'prepare_catalogue|Consumed' || true
+            fi
+          done
+          echo
+          systemctl list-timers picwise-shops.timer picwise-prepare.timer --no-legend
+          sudo python3 -c "import json; d = json.load(open('/srv/picwise/shared/public/prepared.json')); print('prepared:', d.get('prepared'), d.get('prepared_at', d.get('reason')), d.get('products'), 'products,', d.get('shops'), 'shops')"
+          EOF
+      - name: Each shop of the prepared catalogue
+        if: always() && steps.connect.outcome == 'success'
+        run: ssh -n picwise 'sudo cat /srv/picwise/shared/public/prepared.json' | python3 deployment/server/print_shops.py
+      - name: Kinds that may be wrong in the prepared catalogue
+        if: always() && steps.connect.outcome == 'success'
+        run: ssh -n picwise 'sudo cat /srv/picwise/shared/public/prepared.json' | python3 deployment/server/print_kinds.py
+      - name: Remove the key from the runner
+        if: always()
+        run: rm -f ~/.ssh/deploy_key ~/.ssh/config
