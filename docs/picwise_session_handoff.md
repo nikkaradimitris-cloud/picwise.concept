@@ -1,9 +1,77 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-26.
+Current state for whoever picks the project up next. Updated 2026-10-26 (later).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation (from 2026-10-26): the rows without a category, after the shop test -- start here
+## Next conversation (from 2026-10-26, later): the bot and So Divine built, not yet on the server -- start here
+
+The owner's answers to the three changes (26/10, later): «Γ ο κανόνας ισχύει μόνο για
+προϊόντα που το κατάστημα δεν τους έδωσε καμία κατηγορία» (addition (c) agreed: the 275,000
+shown with a shelf but no kind stay); «Θα κάνεις το 2 και το 3» (the bot for the shops
+without a category, So Divine out); «το in stock συμμετέχει μόνο με τα προϊόντα που έχει
+σωστά» (change 1, the second look at InStock UK, dropped: its rows without a category stay
+out unless a barcode gives them one, and the bot never asks it); «Στα θέματα αντιστοίχισης
+είχες αναφέρει για barcode ... για shopify φτιάξε τους μηχανισμούς σε αυτή τη βάση και ό,τι
+έρθει σωστό ήρθε». Additions (a) "safe" as a number and (b) "enough" were not answered.
+Owner's rules unchanged (see the section below).
+
+- **Where the work is:** the branch `ccr-1361f1a7-dcpo60` (pushed): `claude/bold-allen-ljj9d7`
+  brought in, plus this conversation's commits. `main` is at `3608da0`; nothing of this is
+  on `main`, nor on the server.
+- **Built and tested on the branch:**
+  1. **So Divine out:** `eligibility.LEFT_OUT_SHOPS` (by the rows' merchant name, spaces
+     and case aside); the feed gate blocks every row (`shop_left_out`, in the note per shop).
+  2. **The shops' catalogues and the barcodes, applied** (`src/picwise_providers/shop_catalogue.py`,
+     in `state._resolve_provider_feed_pipeline_uncached` before any row is judged): for a
+     shop the bot's file knows (`PICWISE_SHOP_CATALOGUES`), its sold-out (all variants, or
+     the one the address names; seen at most `STOCK_DAYS` = 3 days ago) holds a row as out
+     of stock (`shop_stock`, read by `offer_health` with the feed's columns), never the
+     other way; a row with no category from the feed takes its shop's type as type and
+     category **only when the reading gives a kind the type names by itself** (the title
+     may narrow it, "Vacuum Cleaners" + "Robot Vacuum Cleaner"; it never decides alone:
+     "Designer", a type naming no kind, a title contradicting the type all leave the row
+     held, as before). Then any row still without a category takes the category most
+     rows with its barcode write, under the same rule (a barcode on more than 50 rows is
+     ignored); this needs no file. Counted per shop in the note (`shop_catalogues`),
+     printed by `print_shops.py`. A row with a category keeps its own.
+  3. **The bot** (`deployment/bot/shop_catalogue_bot.py`, reusing the test's robots.txt
+     reading and asking): `picwise-shops.service` by `picwise-shops.timer` at 03:40 UTC;
+     `picwise-prepare.service` is ordered after it and reads its file. Shops: the note's
+     with rows showable but for a category, plus those its file knows (so a shop whose
+     rows got a category is asked again), never InStock UK or a left-out shop. Per shop:
+     robots.txt, then `/products.json?limit=250&page=N`, 3 s apart or its crawl-delay, at
+     most 200 requests a shop a round, 4 shops at a time, 25 minutes; a larger catalogue
+     goes on next round where it stopped (a catalogue as large as Finediam's ~367,000 rows
+     takes about 7 nights, Back to the Office's ~95,000 two). Kept on the server only
+     (`/srv/picwise/shared/shops/catalogues.json.gz`, never Supabase), for the feed's
+     products only: type, stock, sold-out variants, day seen; forgotten after 30 days.
+     Prints shop names and counts, never an address; always exits 0.
+  4. `deploy.sh` creates `/srv/picwise/shared/shops`, installs the two units and enables
+     the timer; a deployment never asks the shops itself.
+- **Blocked, the owner's word asked:** moving `server-deploy.yml`'s trigger to this branch
+  (`branches: [ccr-1361f1a7-dcpo60]`, and `'deployment/bot/**'` in its paths) was refused
+  by the session's safety check as a production deploy. Until then the server runs the
+  old branch's release, without the bot. After the yes: that edit and a push deploy it;
+  the first round then runs at 03:40 UTC, or at once by a small workflow that runs
+  `systemctl start picwise-shops.service` then `picwise-prepare.service` and prints
+  `print_shops.py` (not written: same kind of action).
+- **The owner's proposal of a cap (26/10):** no kind more than about 15% of all products,
+  so that a shop of 100,000 watches does not make PicWise "a watch site", which also
+  helps the checks. Analysis given: right, and needed now (Finediam, jewellery, is 70% of
+  the server's 518,041 shown); count it **per department** (from the shop's shelf: most
+  jewellery has no PicWise kind, so a per-kind cap would not see it) **and per shop**;
+  when cutting keep first the products sold in more than one shop, then a fair share per
+  kind and per price band, cheapest first within each (not only the cheapest, or an
+  expensive search finds nothing); stable from night to night (Google); the share is of
+  the total after the cut, which needs at least 7 departments of some size, else a
+  floor; today it would cut most of the jewellery and leave under half the total; it
+  does not fix "too few of another kind" (only new shops or networks do). Recommended:
+  **measure first, nothing shown changed**; waiting for the owner's word.
+- **Open, the owner's, from before:** HTTPS and the domain; the repository private; query
+  logging from the server (ask first); 80 or 200 bot checks per shop and what a low score
+  does; (a) and (b) above.
+
+## Before (2026-10-26): the rows without a category, after the shop test
 
 The owner ended the conversation of 25-26/10 with «Θα προχωρήσουμε αυτές τις αλλαγές σε
 άλλη συζήτηση»: the three changes below wait for their «ναι», each on its own. Owner's
