@@ -37,7 +37,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Collection, Mapping, Sequence
 
-from .catalogue_balance import CAP_SHARE, NO_SHOP, OWN_CATEGORIES, _narrowest_kind, _shelf_groups, capped_size
+from .catalogue_balance import CAP_SHARE, NO_SHOP, _narrowest_kind, _shelf_groups, capped_size
 from .contracts import FeedAvailabilityContext, ProviderProduct
 from .decision_labels import parse_price_amount
 from .normalization import extract_merchant_name
@@ -86,13 +86,24 @@ def row_key(product: ProviderProduct) -> str:
     return f"{product.provider_key}:{own}"
 
 
-def _shop(product: ProviderProduct) -> str:
+def shop_of(product: ProviderProduct) -> str:
     raw = product.raw if isinstance(product.raw, Mapping) else {}
     return " ".join(str(extract_merchant_name(raw) or "").split()) or NO_SHOP
 
 
 def _shelf(category: str) -> str:
     return " > ".join(part.strip().lower() for part in str(category or "").split(">") if part.strip())
+
+
+def category_of(product: ProviderProduct) -> str:
+    """The category a cap counts a product in: the first two levels of its shelf."""
+    return _shelf_groups(product.category_text)[1]
+
+
+def part_of(product: ProviderProduct, kinds: Collection[str]) -> str:
+    """Where inside its category a product's place is shared: its kind, else its shelf."""
+    kind = _narrowest_kind(kinds)
+    return kind if kind else f"shelf: {_shelf(product.category_text) or '(none)'}"
 
 
 def fair_quotas(sizes: Mapping[str, int], places: int) -> dict[str, int]:
@@ -165,16 +176,11 @@ def cap_catalogue(
     `share` a category keeps (module docstring); `kept_before` holds the row keys the
     previous night kept."""
     keys = [row_key(product) for product in products]
-    categories: list[str] = []
-    parts: list[str] = []
-    for product, product_kinds in zip(products, kinds):
-        _department, category = _shelf_groups(product.category_text)
-        categories.append(category)
-        kind = _narrowest_kind(product_kinds)
-        parts.append(kind if kind else f"shelf: {_shelf(product.category_text) or '(none)'}")
+    categories = [category_of(product) for product in products]
+    parts = [part_of(product, product_kinds) for product, product_kinds in zip(products, kinds)]
     sizes = Counter(categories)
     size = capped_size(list(sizes.values()), share)
-    shops = [_shop(product) for product in products]
+    shops = [shop_of(product) for product in products]
     keep = [True] * len(products)
     over = {name for name, count in sizes.items() if size is not None and count > size}
 
