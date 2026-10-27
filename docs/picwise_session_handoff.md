@@ -101,6 +101,19 @@ read-only look at the night's round. Owner's rules unchanged (section below).
   measured: by shop Finediam 68.7%, InStock UK 17.8%; by aisle jewellery 72.7%; by kind
   ring 57.7%; kinds from at least 3 shops 94 of 256. The kinds' check: of 249,225
   products shown as a kind, the title names none of its kinds for 12,731.
+- **The owner's word (27/10, afternoon):** the deployment, the round and the setup stay
+  as they are for now («Το αφήνουμε όπως είναι»); no 400 requests for Back to the Office
+  («δεν θέλω αυτή τη στιγμή 400 ελέγχους»). **The cap, decided in its aim:** a kind of
+  like products (rings, watches) never more than 15% of all products, so that no shop
+  makes the site look like one kind of shop to Google, the server's room is not spent
+  on a few kinds but spreads to others little by little, and each search looks complete;
+  «πρώτα από όλα να έχει καθαρή και ποιοτική πληροφορία», a satisfying volume, not a
+  huge one. Put to the owner how it counts: each product under its kind, or its shop's
+  narrowest shelf when it has none (275,110 shown have no kind, most jewellery among
+  them); within a group over the cap the clean rows first (barcode or brand + model code,
+  an image, real stock), those sold by more than one shop first, spread over the price
+  range, the same ones each night; measured with that rule before anything is cut. It
+  reaches the server only by a deployment, which needs the change the owner left for now.
 - **Rules that hold:** the pin stays as it is (our server still holds that key; no new
   pin is needed); a workflow logs in only after a login's first step showed the pinned
   key; `server-check.yml` logs in with `accept-new` whatever the pin, so it is not run;
