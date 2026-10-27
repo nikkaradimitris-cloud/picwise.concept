@@ -114,6 +114,38 @@ read-only look at the night's round. Owner's rules unchanged (section below).
   an image, real stock), those sold by more than one shop first, spread over the price
   range, the same ones each night; measured with that rule before anything is cut. It
   reaches the server only by a deployment, which needs the change the owner left for now.
+- **The cap, chosen (owner, 27/10, after «βοήθησέ με γιατί έχω μπερδευτεί»):** 15% **per
+  category**, the first two levels of the shop's Google shelf ("apparel & accessories >
+  jewelry", watches included), not per department (too coarse: it would cut clothes and
+  shoes with the jewellery) nor per kind (many jewellery kinds of 15% each could still
+  make the site half jewellery). The size is worked out at once so that no category
+  keeps more than 15% of what all keep, each night from every product a card can show
+  (the owner asked whether it would keep cutting: it does not); the night before's kept
+  ones are the next night's starting point (owner: «κοιτώντας πάντα το χθεσινό σαν
+  αφετηρία»), more products a larger cap, fewer a smaller one in proportion. Built:
+  `src/picwise_providers/catalogue_cap.py` (inside a category its places shared fairly
+  over its kinds, a shelf for a product without one; inside a kind the clean ones first,
+  those in more than one shop first, spread over the prices; tests
+  `tests/test_picwise_catalogue_cap.py`, 12), `deployment/server/print_cap.py` (tests
+  `tests/test_picwise_server_print_cap.py`, 3), `read_prepared_catalogue_to_measure`, and
+  `.github/workflows/server-cap.yml`, which measures a copy of the server's catalogue on
+  GitHub's runner. **Not called by the preparation: nothing shown changes.** The code was
+  pushed with `[skip actions]` (commit `efc5ac0`), since `src/**` and
+  `deployment/server/**` would start a deployment, which the owner left as it is.
+- **What the cap would keep (run `40511286783`, the catalogue of 27/10 04:21 UTC):** of
+  524,335 in 171 categories, **164,176**, at most **24,626** a category; over it only
+  jewellery (380,984) and clothing (28,427). After it: clothing 15.0%, jewellery 15.0%,
+  decor 6.6%, food 5.3%, shoes 4.7%, vehicle parts 4.3%, hobbies 4.1%, the shops' own
+  categories 3.9%. Inside jewellery about 3,185 each for the shelf "rings" (products with
+  no kind), ring, earrings, the shelf "body jewellery", bracelet, necklace and the shelf
+  "charms & pendants"; all 1,725 watches; prices kept 0.99-109,787.50 (all 0.50-112,137.50),
+  middle 1,108.50 (1,566.43). Clothing: t-shirts 7,266 -> 4,142, socks 4,818 -> 4,141, the
+  rest whole. Of the 49,252 kept in the two, 48,796 with an identity, an image and a stock
+  state that varies; 218 sold by more than one shop. By shop: Finediam 360,127 -> 18,891
+  (11.5%), **InStock UK 93,406 -> 91,219, 55.6% of what is kept**, MonsterPiercing 16,030
+  -> 3,278. Found: rings count twice (the kind and the shelf of rings the kind reading
+  leaves without one), so they take two shares; to be one group before the cap is
+  applied. Put to the owner: a limit per shop as well (InStock UK would be over half).
 - **Rules that hold:** the pin stays as it is (our server still holds that key; no new
   pin is needed); a workflow logs in only after a login's first step showed the pinned
   key; `server-check.yml` logs in with `accept-new` whatever the pin, so it is not run;
