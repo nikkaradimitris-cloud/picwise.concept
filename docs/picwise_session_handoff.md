@@ -1,9 +1,50 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-26 (evening).
+Current state for whoever picks the project up next. Updated 2026-10-27 (morning).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation (from 2026-10-27): the bot runs each night on the server -- start here
+## Now (2026-10-27, morning): the server shows another host key -- start here
+
+The owner's «Ναι» (26/10, evening) to two things: writing straight to `ccr-1361f1a7-dcpo60`
+(this session's own branch, `ccr-8eb9b420-958wtr`, is kept equal to it), and a small
+read-only look at the night's round. Owner's rules unchanged (section below).
+
+- **The look, built:** `.github/workflows/server-night.yml`, run when it is pushed to
+  `ccr-1361f1a7-dcpo60`: from each timer's last start (`LastTriggerUSec`, kept across a
+  reboot), the result and times of `picwise-shops.service` and `picwise-prepare.service`,
+  the bot's own lines and the preparation's summary; then `print_shops.py` and
+  `print_kinds.py`, as after a deployment. It starts no round and changes nothing. Its
+  script goes to the server on stdin (`ssh picwise 'bash -s' <<'EOF'`), so no quote in it
+  can close the command. Checked here: `actionlint` 1.7.12, `bash -n`, a dry run with
+  stand-in commands; its connection step and its last three are `server-shops.yml`'s,
+  unchanged. To read another night: change its "Night read" date line and push.
+- **What it found (the owner's «στείλτο», 27/10 09:00 UTC, commit `bde4cdd`, run
+  `40477603160`): nothing of the night.** Its first step stopped at the identity check:
+  "the server does NOT match the pin (reinstalled, or not our server)". The pin it
+  computed is not `.github/server-host-key.pin` (taken 25/10); the deployment of 26/10
+  (run `40355492889`, connected at 16:04 UTC, done 16:16) still matched it. The step
+  stopped before any login: nothing was sent to the server. The night's round of 27/10
+  is unread, and whether it ran is not known.
+- **What it can be:** the VPS reinstalled, or booted in rescue mode (both change the host
+  key); the `SERVER_SSH_KEY` secret changed (the pin is an HMAC under a key derived from
+  it, so a new deploy key changes the pin of the same host key); `SERVER_HOST` changed;
+  or another machine at the address. Put to the owner: did they do any of these since
+  26/10 16:16 UTC (18:16 in Greece); if not, what the VPS's page in the OVHcloud panel
+  says (state, rescue, a reinstall) and any OVHcloud email since then, without the
+  address.
+- **Until the owner answers:** the pin stays; nothing logs in to the server
+  (`server-check.yml` logs in with `accept-new` whatever the pin, so it is not run
+  either); no deployment and no round (each would stop at the same check anyway). A new
+  pin is taken only once the owner says why the key changed. After a reinstall the
+  server is empty: the setup, the deployment, the feed and the bot again
+  (`server-setup.yml`, `server-deploy.yml`).
+- **Not affected:** the live site on Vercel (`picwise.subby.cloud`) does not depend on the
+  server; the server's own site listens on 127.0.0.1 only.
+- **Still waiting for the owner's word, as before:** the cap; the next kinds (mattresses,
+  whiteboards, safety footwear, handheld mobile computers); HTTPS and the domain; the
+  repository private; query logging from the server; 80 or 200 bot checks per shop.
+
+## Before (2026-10-26, evening): the bot runs each night on the server
 
 The owner ended the conversation of 26/10 with «Πάμε σε άλλη συζήτηση». Owner's rules,
 unchanged: Greek, short, plain words; say what you found before building anything;
