@@ -101,12 +101,11 @@ read-only look at the night's round. Owner's rules unchanged (section below).
   measured: by shop Finediam 68.7%, InStock UK 17.8%; by aisle jewellery 72.7%; by kind
   ring 57.7%; kinds from at least 3 shops 94 of 256. The kinds' check: of 249,225
   products shown as a kind, the title names none of its kinds for 12,731.
-- **Until it is clear:** the pin stays; nothing logs in to the server except to be shown
-  its key (`server-check.yml` logs in with `accept-new` whatever the pin, so it is not
-  run); no deployment and no round (each would stop at the same check anyway). A new
-  pin is taken only once the owner says why the key changed. After a reinstall the
-  server is empty: the setup, the deployment, the feed and the bot again
-  (`server-setup.yml`, `server-deploy.yml`).
+- **Rules that hold:** the pin stays as it is (our server still holds that key; no new
+  pin is needed); a workflow logs in only after a login's first step showed the pinned
+  key; `server-check.yml` logs in with `accept-new` whatever the pin, so it is not run;
+  the deployment, the round and the setup stop at their first step until they take the
+  key from a login's first step too (the owner's word first).
 - **Not affected:** the live site on Vercel (`picwise.subby.cloud`) does not depend on the
   server; the server's own site listens on 127.0.0.1 only.
 - **Still waiting for the owner's word, as before:** the cap; the next kinds (mattresses,
