@@ -18,9 +18,10 @@ are one group. Then:
   others, and when there are fewer places than those, the ones that stay are chosen as
   below, so they keep their spread;
 - inside a category, its places are shared fairly over its kinds (a product without
-  one under its narrowest shelf): a kind with fewer products than an equal share keeps
-  them all and leaves the rest to the others, so a search for earrings on a shelf full
-  of rings still finds earrings;
+  one under its narrowest shelf, or under the kind that shelf names: "... > rings" with
+  "ring", so rings never take two shares): a kind with fewer products than an equal
+  share keeps them all and leaves the rest to the others, so a search for earrings on a
+  shelf full of rings still finds earrings;
 - inside a kind, the clean ones first (a barcode, or a brand and a part number; an
   image; a stock state that varies across the feed), among them those sold by more than
   one shop first, and each such tier spread over its price range from the cheapest to
@@ -106,6 +107,32 @@ def part_of(product: ProviderProduct, kinds: Collection[str]) -> str:
     return kind if kind else f"shelf: {_shelf(product.category_text) or '(none)'}"
 
 
+def _leaf_names(part: str) -> tuple[str, ...]:
+    leaf = part.rsplit(">", 1)[-1].strip().replace(" ", "_").replace("-", "_")
+    names = [leaf]
+    if leaf.endswith("es"):
+        names.append(leaf[:-2])
+    if leaf.endswith("s"):
+        names.append(leaf[:-1])
+    return tuple(names)
+
+
+def joined_parts(categories: Sequence[str], parts: Sequence[str]) -> list[str]:
+    """`parts` with a shelf whose last level names a kind of the same category put under
+    that kind (a "... > rings" shelf with "ring"), so that one kind never takes two
+    shares: the kind reading leaves many rings on a shelf of rings without a kind."""
+    kinds_in: dict[str, set[str]] = defaultdict(set)
+    for category, part in zip(categories, parts):
+        if not part.startswith("shelf: "):
+            kinds_in[category].add(part)
+    joined: list[str] = []
+    for category, part in zip(categories, parts):
+        if part.startswith("shelf: "):
+            part = next((name for name in _leaf_names(part) if name in kinds_in[category]), part)
+        joined.append(part)
+    return joined
+
+
 def fair_quotas(sizes: Mapping[str, int], places: int) -> dict[str, int]:
     """Each part's share of `places`: equal shares, a part smaller than its share keeping
     all it has and leaving the rest to the others; the places an equal split leaves over
@@ -177,7 +204,7 @@ def cap_catalogue(
     previous night kept."""
     keys = [row_key(product) for product in products]
     categories = [category_of(product) for product in products]
-    parts = [part_of(product, product_kinds) for product, product_kinds in zip(products, kinds)]
+    parts = joined_parts(categories, [part_of(product, product_kinds) for product, product_kinds in zip(products, kinds)])
     sizes = Counter(categories)
     size = capped_size(list(sizes.values()), share)
     shops = [shop_of(product) for product in products]

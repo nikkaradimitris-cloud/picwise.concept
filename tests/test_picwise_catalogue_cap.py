@@ -25,7 +25,7 @@ if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
 from picwise_providers.catalogue_balance import capped_size  # noqa: E402
-from picwise_providers.catalogue_cap import cap_catalogue, fair_quotas, row_key  # noqa: E402
+from picwise_providers.catalogue_cap import cap_catalogue, fair_quotas, joined_parts, row_key  # noqa: E402
 from picwise_providers.contracts import ProviderProduct  # noqa: E402
 from picwise_providers.offer_health import build_feed_availability_context  # noqa: E402
 
@@ -120,6 +120,31 @@ class FairShareTests(unittest.TestCase):
         quotas = fair_quotas({"ring": 80, "earrings": 15, "necklace": 5}, 30)
         self.assertEqual(quotas, {"necklace": 5, "ring": 13, "earrings": 12})
         self.assertEqual(sum(quotas.values()), 30)
+
+    def test_a_shelf_naming_a_kind_of_its_category_joins_that_kind(self) -> None:
+        categories = ["apparel & accessories > jewelry"] * 4 + ["apparel & accessories > clothing"] * 2 + ["home & garden > decor"]
+        parts = [
+            "ring",
+            "watch",
+            "shelf: clothing & accessories > jewellery & watches > rings",
+            "shelf: clothing & accessories > jewellery & watches > watches",
+            "t_shirt",
+            "shelf: clothing & accessories > clothing > t-shirts",
+            "shelf: home & garden > decor > rings",
+        ]
+        self.assertEqual(
+            joined_parts(categories, parts),
+            ["ring", "watch", "ring", "watch", "t_shirt", "t_shirt", "shelf: home & garden > decor > rings"],
+        )
+
+    def test_rings_on_a_shelf_of_rings_take_no_second_share(self) -> None:
+        rings = [_product(index, JEWELLERY, gtin=_gtin(index)) for index in range(300)]
+        products = rings + [
+            _product(10_000 + index, name, gtin=_gtin(10_000 + index)) for index, name in enumerate(SMALL * 20)
+        ]
+        kinds = [frozenset({"ring"}) if index < 150 else frozenset() for index in range(len(products))]
+        result = cap_catalogue(products, kinds, feed_ctx=_context(products))
+        self.assertEqual(result.inside["apparel & accessories > jewelry"], {"ring": (300, result.size)})
 
     def test_inside_a_category_its_kinds_share_its_places(self) -> None:
         products = _catalogue({JEWELLERY: 300, **{name: 20 for name in SMALL}})

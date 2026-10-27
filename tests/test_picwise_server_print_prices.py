@@ -4,9 +4,10 @@
 of the server's file (owner, 2026-10-27: 99 pence may be poor or a piece of a pack, about
 100,000 is too much; «Κάνε τη μέτρηση»). Pinned here: the bands (under 1 and 2, 10,000
 and 50,000 and over) with their categories, shops and cheapest or dearest titles; the
-cheap titles naming a pack; the products far under or over their kind's middle price;
-the cheapest and dearest 2% of each kind in a category over the cap; an unreadable file
-says so; nothing printed holds a link; every case exits 0.
+cheap titles naming a pack; the products priced far outside their kind's usual prices
+(the check for wrong kinds the owner said yes to), a shelf naming a kind joining it; no
+trim of each kind's ends; an unreadable file says so; nothing printed holds a link;
+every case exits 0.
 
 Every row is local test data: fictional brands and shops, `.invalid` addresses.
 """
@@ -99,12 +100,15 @@ class PrintPricesTests(unittest.TestCase):
         self.assertIn("0.50 GBP | Fictional Bits | Fictional Earring Backs Pack of 10", out)
         self.assertIn("the dearest 2:", out)
         self.assertIn("60,000.00 GBP | Fictional Diamonds | Fictional Diamond Ring Eternity", out)
-        # The toe ring and the midi ring; the earring backs are no ring, so their shelf has no middle.
-        self.assertIn("under a tenth of it: 2", out)
-        self.assertIn("over ten times it: 2", out)
-        self.assertIn("in the categories over the cap:", out)
-        self.assertIn("apparel & accessories > jewelry:", out)
-        self.assertIn("cheapest 2% up to", out)
+        # Far outside the usual prices of rings: the toe and midi rings, the two diamond
+        # rings, and the earring backs, which sit on the shelf of rings and so join "ring":
+        # the kind of product the check is there to find.
+        self.assertIn("priced far outside the usual prices of their kind (or shelf): 5, in 1 of the 11", out)
+        self.assertIn("of     305 (usual", out)
+        self.assertIn("0.50 GBP | ring (middle 169.00) | Fictional Bits | Fictional Earring Backs Pack of 10", out)
+        self.assertNotIn("Fictional Silver Ring 150", out)
+        # The trim of each kind's ends was dropped (owner, 2026-10-27).
+        self.assertNotIn("cheapest 2%", out)
         self.assertNotIn("shop.invalid", out)
 
     def test_an_unreadable_file_says_so(self) -> None:

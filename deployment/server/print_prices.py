@@ -7,16 +7,19 @@ Owner, 2026-10-27, on the cap of 15% a category: products at 99 pence may be poo
 sold by the piece of a pack, and one at about 100,000 is too much; «Κάνε τη μέτρηση»
 (measure first, never by the commission a product leaves). Prints how many products
 cost under 1 and 2 and 10,000 and 50,000 or more, each in its own currency, by category
-and shop with the cheapest and dearest titles; how many cheap ones name a pack, a set or
-a number of pieces in their title; how many are under a tenth or over ten times the
-middle price of their kind; and, in the categories over the cap, the prices below and
-above which the cheapest and dearest 2% of each kind lie. Run by
-.github/workflows/server-cap.yml on GitHub's runner, from a copy of the server's file;
-nothing on the server or shown changes. Counts, names, titles and prices only; the
-file's links are never printed. Always exits 0.
+and shop with the cheapest and dearest titles; and how many cheap ones name a pack, a
+set or a number of pieces in their title. Measured: the ends are few and real, so no
+price rule and no trim of each kind's ends (owner's «Ναι», 2026-10-27). Then, as a check
+the owner said yes to, the products priced far outside the usual prices of their kind
+(a shelf naming a kind joins it, as in the cap), most often products read as the wrong
+kind: a list to read, nothing hidden. Run by .github/workflows/server-cap.yml on
+GitHub's runner, from a copy of the server's file; nothing on the server or shown
+changes. Counts, names, titles and prices only; the file's links are never printed.
+Always exits 0.
 """
 from __future__ import annotations
 
+import math
 import re
 import statistics
 import sys
@@ -25,9 +28,12 @@ from pathlib import Path
 
 LISTED = 8
 EXAMPLES = 10
-# Kinds with fewer products have no middle price worth comparing with.
+# Kinds with fewer products have no usual prices worth comparing with.
 MIN_KIND = 20
-TRIM = 0.02
+# Outside the usual prices: beyond the middle half's spread taken this many times, on a
+# ratio scale, and this many times off the middle price besides.
+FENCE = 1.5
+FAR = 10
 PACK = re.compile(
     r"\b(?:pack|packs|multipack|multi-pack|set of|sets of|bundle|pcs|pieces|pairs?)\b"
     r"|\b\d+\s*(?:x|pk|pcs|pack)\b|\bx\s*\d+\b",
@@ -60,8 +66,7 @@ def main(argv: list[str]) -> int:
         if str(folder) not in sys.path:
             sys.path.insert(0, str(folder))
     try:
-        from picwise_providers.catalogue_balance import CAP_SHARE, capped_size
-        from picwise_providers.catalogue_cap import category_of, part_of, shop_of
+        from picwise_providers.catalogue_cap import category_of, joined_parts, part_of, shop_of
         from picwise_providers.decision_labels import parse_price_amount
         from picwise_providers.prepared_catalogue import read_prepared_catalogue_to_measure
 
@@ -69,18 +74,19 @@ def main(argv: list[str]) -> int:
         if prepared is None:
             print("no prepared catalogue could be read")
             return 0
-        rows = []
-        for product, kinds in zip(prepared.products, prepared.kinds):
-            rows.append(
-                (
-                    parse_price_amount(product.price_text),
-                    str(product.currency or "").strip().upper() or "?",
-                    category_of(product),
-                    part_of(product, kinds),
-                    shop_of(product),
-                    _short(product.title),
-                )
+        categories = [category_of(product) for product in prepared.products]
+        parts = joined_parts(categories, [part_of(product, kinds) for product, kinds in zip(prepared.products, prepared.kinds)])
+        rows = [
+            (
+                parse_price_amount(product.price_text),
+                str(product.currency or "").strip().upper() or "?",
+                category,
+                part,
+                shop_of(product),
+                _short(product.title),
             )
+            for product, category, part in zip(prepared.products, categories, parts)
+        ]
     except Exception as error:  # a measure only: the run goes on without it
         print(f"the prices could not be measured: {type(error).__name__}")
         return 0
@@ -126,41 +132,46 @@ def main(argv: list[str]) -> int:
         for price, currency, category, _part, shop, title in ordered[:EXAMPLES]:
             print(f"    {_money(price):>12} {currency} | {shop} | {title} | {category}")
 
+    # Far outside the usual prices of their kind: beyond the middle half's spread, taken
+    # FENCE times on a ratio scale, and FAR times off the middle price besides. Such a
+    # price is most often a product read as the wrong kind (owner, 2026-10-27: «Ναι» to
+    # using it as a check), sometimes a pack or a luxury piece: a list to read, nothing hidden.
     by_part: dict[str, list[float]] = defaultdict(list)
     for price, _currency, _category, part, _shop, _title in priced:
-        by_part[part].append(price)
-    middles = {part: statistics.median(prices) for part, prices in by_part.items() if len(prices) >= MIN_KIND}
-    low = [(row[0] / middles[row[3]], row) for row in priced if row[3] in middles and row[0] < middles[row[3]] / 10]
-    high = [(row[0] / middles[row[3]], row) for row in priced if row[3] in middles and row[0] > middles[row[3]] * 10]
-    print(f"== far from the middle price of their kind (or shelf), of the {len(middles):,} with at least {MIN_KIND} products:")
-    for label, found, furthest_first in (
-        ("under a tenth of it", low, lambda item: (item[0], item[1][5])),
-        ("over ten times it", high, lambda item: (-item[0], item[1][5])),
-    ):
-        print(f"  {label}: {len(found):,}")
-        for _ratio, (price, currency, category, part, shop, title) in sorted(found, key=furthest_first)[:LISTED]:
-            print(f"    {_money(price):>12} {currency} (middle {_money(middles[part])}) | {part} | {shop} | {title}")
-
-    sizes = Counter(row[2] for row in rows)
-    cap = capped_size(list(sizes.values()), CAP_SHARE)
-    over = sorted((name for name, count in sizes.items() if cap is not None and count > cap), key=lambda name: -sizes[name])
-    print(f"== the cheapest and dearest {TRIM:.0%} of each kind (or shelf), in the categories over the cap:")
-    if not over:
-        print("  no category is over the cap")
-    for category in over:
-        parts: dict[str, list[float]] = defaultdict(list)
-        for price, _currency, row_category, part, _shop, _title in priced:
-            if row_category == category:
-                parts[part].append(price)
-        print(f"  {category}:")
-        for part, prices in sorted(parts.items(), key=lambda item: (-len(item[1]), item[0]))[:LISTED]:
-            prices.sort()
-            last = len(prices) - 1
-            below, above = prices[int(TRIM * last)], prices[int((1 - TRIM) * last)]
-            print(
-                f"    {len(prices):>9,}  cheapest {TRIM:.0%} up to {_money(below)}, dearest {TRIM:.0%} from {_money(above)}"
-                f" (all {_money(prices[0])} to {_money(prices[-1])})  {part}"
-            )
+        if price > 0:
+            by_part[part].append(price)
+    usual: dict[str, tuple[float, float, float]] = {}
+    for part, prices in by_part.items():
+        if len(prices) < MIN_KIND:
+            continue
+        logs = sorted(math.log10(price) for price in prices)
+        last = len(logs) - 1
+        low, high = logs[last // 4], logs[(3 * last) // 4]
+        spread = high - low
+        usual[part] = (10 ** (low - FENCE * spread), 10 ** (high + FENCE * spread), statistics.median(prices))
+    far = []
+    for row in priced:
+        price, part = row[0], row[3]
+        if part not in usual or price <= 0:
+            continue
+        bottom, top, middle = usual[part]
+        if price < bottom and price < middle / FAR:
+            far.append((math.log10(bottom / price), row))
+        elif price > top and price > middle * FAR:
+            far.append((math.log10(price / top), row))
+    flagged = Counter(row[3] for _distance, row in far)
+    print(
+        f"== priced far outside the usual prices of their kind (or shelf): {len(far):,}, in {len(flagged):,} of the"
+        f" {len(usual):,} with at least {MIN_KIND} products; a list to find products read as the wrong kind"
+    )
+    for part, count in sorted(flagged.items(), key=lambda item: (-item[1], item[0]))[: 2 * LISTED]:
+        bottom, top, middle = usual[part]
+        print(
+            f"    {count:>7,} of {len(by_part[part]):>7,} (usual {_money(bottom)} to {_money(top)}, middle {_money(middle)})  {part}"
+        )
+    print(f"  the furthest {min(2 * EXAMPLES, len(far))}:")
+    for _distance, (price, currency, category, part, shop, title) in sorted(far, key=lambda item: (-item[0], item[1][5]))[: 2 * EXAMPLES]:
+        print(f"    {_money(price):>12} {currency} | {part} (middle {_money(usual[part][2])}) | {shop} | {title} | {category}")
     return 0
 
 
