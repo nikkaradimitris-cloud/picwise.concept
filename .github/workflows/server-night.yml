@@ -4,18 +4,21 @@
 # shop of the prepared catalogue. It starts no round and changes nothing on the server.
 #
 # The server's identity is its host key against .github/server-host-key.pin, as in every
-# workflow. When the key no longer matches (27/10), this one, which sends the server no
-# secret, asks for a proof instead (owner's «Ναι», 2026-10-27): the server seals a random
-# nonce under the feed link (.github/scripts/feed_seal.py), which only it and GitHub
-# hold, and the link never travels. Only a server whose seal is GitHub's is read, and then
-# also why its key changed and who logged in since the deployment of 26/10.
+# workflow, but taken from a login's first step rather than a key scan: since the night
+# of 26-27/10 a key scan is shown another key while logins are shown the pinned one
+# (server-keys.yml, run 40501323803; owner's «ναι», 2026-10-27). When even that key does
+# not match, this workflow, which sends the server no secret, asks for a proof instead:
+# the server seals a random nonce under the feed link (.github/scripts/feed_seal.py),
+# which only it and GitHub hold, and the link never travels. When the key scan's key
+# differs, or the pin does not match, the server is also asked what answers a key scan,
+# why its key changed, and who logged in since the deployment of 26/10.
 #
 # Runs when this file is pushed to the working branch; to read another night, change the
 # date below and push. The repository is public and so is this log: the server's names
 # and addresses are masked, no address or host key is printed, and the bot prints shop
 # names and counts.
 #
-# Night read: 2026-10-27, with the proof
+# Night read: 2026-10-27, the key from a login's first step
 name: Server night (read-only)
 on:
   push:
@@ -48,11 +51,21 @@ jobs:
           # A key pasted on Windows may carry carriage returns, which ssh refuses.
           printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          # The server must show the host key pinned in .github/server-host-key.pin (an
-          # HMAC under the deploy key: .github/scripts/host_key_pin.py), or prove below
+          # The server must show a login the host key pinned in .github/server-host-key.pin
+          # (an HMAC under the deploy key: .github/scripts/host_key_pin.py), or prove below
           # that it holds the feed link; every connection accepts the key it showed only.
-          host_key=$(ssh-keyscan -T 15 -t ed25519 "$SERVER_HOST" 2>/dev/null | awk 'NF >= 3 {print $2, $3; exit}')
-          [ -n "$host_key" ] || { echo "the server gave no host key"; exit 1; }
+          # The key is the one a login's first step is shown: an ssh client offering no
+          # key or password writes it down, and the login ends there.
+          seen="$RUNNER_TEMP/seen"
+          : > "$seen"
+          ssh -F /dev/null -o BatchMode=yes -o ConnectTimeout=15 -o HostKeyAlgorithms=ssh-ed25519 \
+            -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$seen" -o GlobalKnownHostsFile=/dev/null \
+            -o PubkeyAuthentication=no -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no \
+            -o HostbasedAuthentication=no -o GSSAPIAuthentication=no -o LogLevel=QUIET \
+            "ubuntu@$SERVER_HOST" true 2>/dev/null || true
+          host_key=$(awk 'NF >= 3 {print $2, $3; exit}' "$seen")
+          rm -f "$seen"
+          [ -n "$host_key" ] || { echo "the server showed a login no host key"; exit 1; }
           pin=$(HOST_KEY="$host_key" python3 .github/scripts/host_key_pin.py)
           expected=$( (grep -v '^#' .github/server-host-key.pin || true) | tr -d '[:space:]')
           if [ "$pin" = "$expected" ]; then
@@ -61,6 +74,18 @@ jobs:
           else
             echo "the server does NOT match the pin (reinstalled, or not our server); its pin: $pin"
             echo "pinned=no" >> "$GITHUB_OUTPUT"
+          fi
+          # What a key scan is shown, only to report it.
+          scanned=$(ssh-keyscan -T 15 -t ed25519 "$SERVER_HOST" 2>/dev/null | awk 'NF >= 3 {print $2, $3; exit}')
+          scan_pin=""
+          if [ -n "$scanned" ]; then scan_pin=$(HOST_KEY="$scanned" python3 .github/scripts/host_key_pin.py); fi
+          if [ "$scan_pin" = "$pin" ]; then
+            echo "a key scan is shown the same key"
+            echo "scan_differs=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "a key scan is shown another key (pin ${scan_pin:-none})"
+            echo "scan_differs=yes" >> "$GITHUB_OUTPUT"
+            echo "scan_pin=$scan_pin" >> "$GITHUB_OUTPUT"
           fi
           echo "picwise-server $host_key" > ~/.ssh/known_hosts_picwise
           # The user is OVHcloud's for Ubuntu, written here rather than read from the
@@ -115,9 +140,22 @@ jobs:
           names=$(ssh -n picwise 'hostname; hostname -f; hostname -I')
           for name in $names; do echo "::add-mask::$name"; done
           echo "connected"
-      - name: Why the server's host key changed, and who logged in since 26/10
-        if: steps.connect.outputs.pinned == 'no'
+      - name: What answers a key scan with another key, why, and who logged in since 26/10
+        if: steps.connect.outputs.scan_differs == 'yes' || steps.connect.outputs.pinned == 'no'
+        env:
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          SCAN_PIN: ${{ steps.connect.outputs.scan_pin }}
         run: |
+          # The ed25519 host key the server keeps on disk, named by its pin.
+          pinned=$( (grep -v '^#' .github/server-host-key.pin || true) | tr -d '[:space:]')
+          on_disk=$(ssh -n picwise 'cat /etc/ssh/ssh_host_ed25519_key.pub' | awk 'NF >= 2 {print $1, $2; exit}')
+          disk_pin=""
+          if [ -n "$on_disk" ]; then disk_pin=$(HOST_KEY="$on_disk" python3 .github/scripts/host_key_pin.py); fi
+          if [ -z "$disk_pin" ]; then echo "the ed25519 host key on the server's disk: none read"
+          elif [ "$disk_pin" = "$pinned" ]; then echo "the ed25519 host key on the server's disk: the pinned one"
+          elif [ "$disk_pin" = "$SCAN_PIN" ]; then echo "the ed25519 host key on the server's disk: the one a key scan is shown"
+          else echo "the ed25519 host key on the server's disk: another (pin ${disk_pin:0:8})"
+          fi
           # The deploy key's fingerprint, to tell its logins from any other's.
           deploy_fp=$(ssh-keygen -lf ~/.ssh/deploy_key | awk '{print $2}')
           [ -n "$deploy_fp" ] || echo "the deploy key's fingerprint could not be read: each login below shows as another key"
@@ -125,6 +163,21 @@ jobs:
           echo "booted at $(uptime -s) $(date +%Z)"
           echo "the last boots in the journal:"
           sudo journalctl --list-boots --no-pager | tail -n 4
+          echo "listening on port 22, and by whom:"
+          sudo ss -ltnpH 'sport = :22'
+          echo "ssh's socket: $(systemctl is-active ssh.socket); ssh's service: $(systemctl is-active ssh.service)"
+          echo "sshd processes:"
+          pgrep -a sshd | cut -c1-120
+          echo "sshd's own settings for its host keys and where it listens:"
+          sudo sshd -T 2>/dev/null | grep -iE '^(hostkey|port|listenaddress) ' | cut -c1-160
+          echo "/etc/ssh and its drop-ins, last written:"
+          sudo ls -l --time-style=+%Y-%m-%dT%H:%M /etc/ssh /etc/ssh/sshd_config.d | cut -c1-160
+          echo "port 22 rewritten to elsewhere (none expected):"
+          sudo iptables -t nat -S 2>/dev/null | grep -- '--dport 22' || echo "  none in iptables"
+          sudo nft list ruleset 2>/dev/null | grep -E 'dport 22' || echo "  none in nftables"
+          echo "the updates of 26-27/10:"
+          grep -E '^(Start-Date|Upgrade|Install|Remove)' /var/log/apt/history.log 2>/dev/null \
+            | grep -A3 '^Start-Date: 2026-10-2[67]' | cut -c1-300 | tail -n 12
           echo "the host keys, last written:"
           sudo stat -c '%y %n' /etc/ssh/ssh_host_*_key.pub
           echo "cloud-init's instance: $(sudo cat /var/lib/cloud/data/instance-id 2>/dev/null || echo unknown);" \
