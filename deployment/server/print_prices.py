@@ -11,8 +11,9 @@ and shop with the cheapest and dearest titles; and how many cheap ones name a pa
 set or a number of pieces in their title. Measured: the ends are few and real, so no
 price rule and no trim of each kind's ends (owner's «Ναι», 2026-10-27). Then, as a check
 the owner said yes to, the products priced far outside the usual prices of their kind
-(a shelf naming a kind joins it, as in the cap), most often products read as the wrong
-kind: a list to read, nothing hidden. Run by .github/workflows/server-cap.yml on
+(a shelf naming a kind joins it, as in the cap) and of their own shop's for that kind,
+by kind and by shop and kind: most often products read as the wrong kind; a list to
+read, nothing hidden. Run by .github/workflows/server-cap.yml on
 GitHub's runner, from a copy of the server's file; nothing on the server or shown
 changes. Counts, names, titles and prices only; the file's links are never printed.
 Always exits 0.
@@ -30,6 +31,8 @@ LISTED = 8
 EXAMPLES = 10
 # Kinds with fewer products have no usual prices worth comparing with.
 MIN_KIND = 20
+# A shop's own usual prices for a kind count from this many of its products of it.
+MIN_SHOP = 10
 # Outside the usual prices: beyond the middle half's spread taken this many times, on a
 # ratio scale, and this many times off the middle price besides.
 FENCE = 1.5
@@ -55,6 +58,27 @@ def _count_lines(counts: Counter, total: int) -> list[str]:
         f"    {count:>9,}  {100 * count / total:5.1f}%  {name}"
         for name, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))[:LISTED]
     ]
+
+
+def _usual(prices: list[float]) -> tuple[float, float, float]:
+    """The usual prices of a group: the bounds beyond which a price is far (FENCE times
+    the middle half's spread, on a ratio scale), and the middle price."""
+    logs = sorted(math.log10(price) for price in prices)
+    last = len(logs) - 1
+    low, high = logs[last // 4], logs[(3 * last) // 4]
+    spread = high - low
+    return 10 ** (low - FENCE * spread), 10 ** (high + FENCE * spread), statistics.median(prices)
+
+
+def _distance(price: float, usual: tuple[float, float, float]) -> float:
+    """How far, on a ratio scale, `price` lies outside `usual` and FAR times off its
+    middle besides; 0 when it does not."""
+    bottom, top, middle = usual
+    if price < bottom and price < middle / FAR:
+        return math.log10(bottom / price)
+    if price > top and price > middle * FAR:
+        return math.log10(price / top)
+    return 0.0
 
 
 def main(argv: list[str]) -> int:
@@ -133,44 +157,49 @@ def main(argv: list[str]) -> int:
             print(f"    {_money(price):>12} {currency} | {shop} | {title} | {category}")
 
     # Far outside the usual prices of their kind: beyond the middle half's spread, taken
-    # FENCE times on a ratio scale, and FAR times off the middle price besides. Such a
-    # price is most often a product read as the wrong kind (owner, 2026-10-27: «Ναι» to
-    # using it as a check), sometimes a pack or a luxury piece: a list to read, nothing hidden.
+    # FENCE times on a ratio scale, and FAR times off the middle price besides; and far
+    # outside its own shop's usual prices for that kind too, when the shop has MIN_SHOP
+    # or more of it, so a shop's cheap rings are not doubted because another sells
+    # diamonds (owner, 2026-10-27: «Ναι» to using it as a check, then to comparing within
+    # the shop). Such a price is most often a product read as the wrong kind, sometimes a
+    # pack or a luxury piece: a list to read, nothing hidden.
     by_part: dict[str, list[float]] = defaultdict(list)
-    for price, _currency, _category, part, _shop, _title in priced:
+    by_shop_part: dict[tuple[str, str], list[float]] = defaultdict(list)
+    for price, _currency, _category, part, shop, _title in priced:
         if price > 0:
             by_part[part].append(price)
-    usual: dict[str, tuple[float, float, float]] = {}
-    for part, prices in by_part.items():
-        if len(prices) < MIN_KIND:
-            continue
-        logs = sorted(math.log10(price) for price in prices)
-        last = len(logs) - 1
-        low, high = logs[last // 4], logs[(3 * last) // 4]
-        spread = high - low
-        usual[part] = (10 ** (low - FENCE * spread), 10 ** (high + FENCE * spread), statistics.median(prices))
+            by_shop_part[(shop, part)].append(price)
+    usual = {part: _usual(prices) for part, prices in by_part.items() if len(prices) >= MIN_KIND}
+    own_usual = {key: _usual(prices) for key, prices in by_shop_part.items() if len(prices) >= MIN_SHOP}
     far = []
     for row in priced:
-        price, part = row[0], row[3]
+        price, part, shop = row[0], row[3], row[4]
         if part not in usual or price <= 0:
             continue
-        bottom, top, middle = usual[part]
-        if price < bottom and price < middle / FAR:
-            far.append((math.log10(bottom / price), row))
-        elif price > top and price > middle * FAR:
-            far.append((math.log10(price / top), row))
-    flagged = Counter(row[3] for _distance, row in far)
+        distance = _distance(price, usual[part])
+        own = own_usual.get((shop, part))
+        if distance and (own is None or _distance(price, own)):
+            far.append((distance, row))
+    flagged = Counter(row[3] for _distance_, row in far)
     print(
-        f"== priced far outside the usual prices of their kind (or shelf): {len(far):,}, in {len(flagged):,} of the"
-        f" {len(usual):,} with at least {MIN_KIND} products; a list to find products read as the wrong kind"
+        f"== priced far outside the usual prices of their kind (or shelf), and of their own shop's for it when it"
+        f" has {MIN_SHOP} or more: {len(far):,}, in {len(flagged):,} of the {len(usual):,} with at least {MIN_KIND}"
+        " products; a list to find products read as the wrong kind"
     )
     for part, count in sorted(flagged.items(), key=lambda item: (-item[1], item[0]))[: 2 * LISTED]:
         bottom, top, middle = usual[part]
         print(
             f"    {count:>7,} of {len(by_part[part]):>7,} (usual {_money(bottom)} to {_money(top)}, middle {_money(middle)})  {part}"
         )
+    groups: dict[tuple[str, str], list[tuple[float, tuple]]] = defaultdict(list)
+    for item in far:
+        groups[(item[1][4], item[1][3])].append(item)
+    print("  by shop and kind, the most first, each with its furthest:")
+    for (shop, part), items in sorted(groups.items(), key=lambda entry: (-len(entry[1]), entry[0]))[: 2 * LISTED]:
+        _distance_, (price, currency, _category, _part, _shop, title) = max(items, key=lambda item: (item[0], item[1][5]))
+        print(f"    {len(items):>7,}  {shop} | {part} | e.g. {_money(price)} {currency} {title}")
     print(f"  the furthest {min(2 * EXAMPLES, len(far))}:")
-    for _distance, (price, currency, category, part, shop, title) in sorted(far, key=lambda item: (-item[0], item[1][5]))[: 2 * EXAMPLES]:
+    for _distance_, (price, currency, category, part, shop, title) in sorted(far, key=lambda item: (-item[0], item[1][5]))[: 2 * EXAMPLES]:
         print(f"    {_money(price):>12} {currency} | {part} (middle {_money(usual[part][2])}) | {shop} | {title} | {category}")
     return 0
 

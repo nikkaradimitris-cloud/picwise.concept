@@ -57,6 +57,8 @@ def _write(path: Path) -> None:
         _product(1_004, "Fictional Diamond Ring", 12_000.00, shop="Fictional Diamonds"),
         _product(1_005, "Fictional Diamond Ring Eternity", 60_000.00, shop="Fictional Diamonds"),
     ]
+    # A shop of cheap fashion rings: far under the rings' usual prices, usual for its own.
+    products += [_product(3_000 + step, f"Fictional Fashion Ring {step}", 2.0 + 0.2 * step, shop="Fictional Fashion") for step in range(15)]
     number = 2_000
     for decor in range(10):
         for _ in range(20):
@@ -89,9 +91,9 @@ class PrintPricesTests(unittest.TestCase):
             result = _run(path)
         self.assertEqual(result.returncode, 0, result.stderr)
         out = result.stdout
-        self.assertIn("prices of the 505 products a card can show", out)
-        self.assertIn("GBP 505", out)
-        self.assertIn("under 1.00: 2 (0.40%)", out)
+        self.assertIn("prices of the 520 products a card can show", out)
+        self.assertIn("GBP 520", out)
+        self.assertIn("under 1.00: 2 (0.38%)", out)
         self.assertIn("1.00 to under 2.00: 1", out)
         self.assertIn("10,000 and over: 2", out)
         self.assertIn("50,000 and over: 1", out)
@@ -100,12 +102,16 @@ class PrintPricesTests(unittest.TestCase):
         self.assertIn("0.50 GBP | Fictional Bits | Fictional Earring Backs Pack of 10", out)
         self.assertIn("the dearest 2:", out)
         self.assertIn("60,000.00 GBP | Fictional Diamonds | Fictional Diamond Ring Eternity", out)
-        # Far outside the usual prices of rings: the toe and midi rings, the two diamond
-        # rings, and the earring backs, which sit on the shelf of rings and so join "ring":
-        # the kind of product the check is there to find.
-        self.assertIn("priced far outside the usual prices of their kind (or shelf): 5, in 1 of the 11", out)
-        self.assertIn("of     305 (usual", out)
-        self.assertIn("0.50 GBP | ring (middle 169.00) | Fictional Bits | Fictional Earring Backs Pack of 10", out)
+        # Far outside the usual prices of rings and of their own shop's: the toe and midi
+        # rings, the two diamond rings, and the earring backs, which sit on the shelf of
+        # rings and so join "ring": the kind of product the check is there to find. The
+        # fashion shop's cheap rings are usual for their shop, so none is doubted.
+        self.assertIn("when it has 10 or more: 5, in 1 of the 11", out)
+        self.assertIn("of     320 (usual", out)
+        self.assertRegex(out, r"0\.50 GBP \| ring \(middle [\d,.]+\) \| Fictional Bits \| Fictional Earring Backs Pack of 10")
+        self.assertIn("by shop and kind, the most first", out)
+        self.assertIn("2  Fictional Diamonds | ring | e.g. 60,000.00 GBP Fictional Diamond Ring Eternity", out)
+        self.assertNotIn("Fictional Fashion", out)
         self.assertNotIn("Fictional Silver Ring 150", out)
         # The trim of each kind's ends was dropped (owner, 2026-10-27).
         self.assertNotIn("cheapest 2%", out)
