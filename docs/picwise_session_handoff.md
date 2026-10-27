@@ -67,12 +67,40 @@ read-only look at the night's round. Owner's rules unchanged (section below).
   not explained yet (something on the server since the night's updates, or on the way).
   Every workflow takes the key to compare with the pin from `ssh-keyscan`, so each stops
   there although a login would reach our server.
-- **Next, put to the owner:** `server-night.yml` takes the key from a login's first step
-  instead and compares it with the same pin (as strict: every connection then accepts
-  that key only); then it reads the night, and from inside the server what answers a key
-  scan with another key (the SSH listeners and services, the host keys' files and
-  dates, the night's updates) and who logged in since 26/10. The deployment and the
-  round stay as they are until the cause is known.
+- **Built (owner's «ναι κάνε»):** `server-night.yml` takes the key from a login's first
+  step and compares it with the same pin (as strict: every connection then accepts that
+  key only); a key scan's key is only reported; when it differs, the server is asked what
+  answers a key scan. The deployment (`server-deploy.yml`), the round
+  (`server-shops.yml`) and the setup still compare `ssh-keyscan`'s key, so **they stop at
+  their first step until they take the key the same way** (put to the owner; editing
+  `server-deploy.yml` deploys).
+- **What it found (run `40504119821`, 12:29 UTC): our server is untouched.** It matched
+  the pin; a key scan was shown the morning's key again. From inside: up since
+  2026-10-25 11:04:58 UTC (no reboot since the setup); the host keys written 25/10 09:37
+  by cloud-init, the same instance-id since, no regeneration; the ed25519 key on disk is
+  the pinned one; one `sshd` (socket-activated) on 0.0.0.0:22 and [::]:22; no rewrite of
+  port 22 (nftables holds ufw's rules and fail2ban's reject set only); the night's only
+  update `libbrotli1` (27/10 06:23); since 26/10 16:00 UTC 13 SSH logins, all with the
+  deploy key, none on the console. So what shows a key scan another key is not on our
+  server: something on the way answers that kind of connection (not known what; it gets
+  no secret, and a login with any other key than the pinned one is refused by every
+  workflow). The server's nightly work does not need GitHub: the timers run on it.
+- **The night's round of 27/10 (the first by collections):** the bot 03:40:00-03:53:35
+  UTC, success: 54 shops, 413 requests; the file knows 65,031 products (59,996 with a
+  type, 29,460 sold out; 58,728 / 53,699 / 25,041 on 26/10). Back to the Office: its
+  catalogue to the page limit again (about 100 of its 200 requests), then **collections
+  38 of 1,338**: 30,282 of its 95,050 products known; at this pace a whole pass takes
+  about 35 nights (put to the owner: page the catalogue's first 25,000 less often, or
+  more requests for it). Finediam: Shopify answers 500 at page 23 again (5,500 known).
+  Juicy Couture UK: no shop address in its rows. Pro Espresso: its robots.txt redirects to
+  another site, so it is not read. The preparation 04:17:02-04:27:41 UTC, success:
+  1,124,205 rows, **524,335 shown** (+885), 81 shops, peak memory 7.9 GB, 640 s. Back to
+  the Office **6,135 shown** (5,252 on 26/10); rows given their shop's type with its kind
+  **24,974** (20,402), naming none 13,218; by barcode 1,128 (InStock UK 1,061); the
+  shop's sold-out holds 43,509 (the feed called 142 of them in stock). The cap,
+  measured: by shop Finediam 68.7%, InStock UK 17.8%; by aisle jewellery 72.7%; by kind
+  ring 57.7%; kinds from at least 3 shops 94 of 256. The kinds' check: of 249,225
+  products shown as a kind, the title names none of its kinds for 12,731.
 - **Until it is clear:** the pin stays; nothing logs in to the server except to be shown
   its key (`server-check.yml` logs in with `accept-new` whatever the pin, so it is not
   run); no deployment and no round (each would stop at the same check anyway). A new
