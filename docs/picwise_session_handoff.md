@@ -146,6 +146,27 @@ read-only look at the night's round. Owner's rules unchanged (section below).
   -> 3,278. Found: rings count twice (the kind and the shelf of rings the kind reading
   leaves without one), so they take two shares; to be one group before the cap is
   applied. Put to the owner: a limit per shop as well (InStock UK would be over half).
+- **No limit per shop (owner, 27/10: «Να μην εφαρμοστεί πλαφόν ανά κατάστημα»).** The owner
+  then asked about price: what commission a 99p product leaves, whether it is poor or a
+  piece of a pack, and that about 100,000 is too much. Answered: commission never enters
+  a choice (PROJECT_RULES §4, concept §14) and the cookie earns on the whole basket; no
+  price ban; proposed trimming each kind's cheapest and dearest 2% inside the cap, after
+  a measure. **The measure (owner: «Κάνε τη μέτρηση»; `deployment/server/print_prices.py`,
+  tests `tests/test_picwise_server_print_prices.py` (2), run `40533880205` in
+  `server-cap.yml`):** of 524,335 (GBP 523,978, EUR 327, USD 28, DKK 2), under 1.00: 220
+  (0.04%; hobbies 58, books 49, food 41; InStock UK 167, Lets Buy Books 48; 13 name a
+  pack; penny sweets "10p each", stickers); 1.00-2.00: 1,165 (InStock UK 1,121; party
+  invitations, mini bath bombs; 82 name a pack); 10,000 and over: 28,436 (5.4%; Finediam
+  28,212, then Steam & Oak 108, SafeFort 75, Back to the Office 33); 50,000 and over: 106
+  (diamond necklaces to 112,137.50; network software licences to 125,474.99). Far from
+  their kind's middle price (516 kinds and shelves of 20 or more): under a tenth 4,888
+  (cheap bracelets against a middle of 3,099 the diamonds set), over ten times 7,229,
+  among them wrong kinds ("Okemia Mirror" 1,929 read as a toy; "Satin Bag Diamond
+  Earring" read as a bag; a full pallet of AdBlue). Inside the cap the cheapest 2% of
+  rings run to 358.60 and of bracelets to 125: trimming them would cut the ordinary
+  affordable jewellery, since Finediam sets the prices. Put to the owner: no price rule
+  and no trim; the ends are few and real; a price far from the kind's middle used as a
+  check for wrong kinds.
 - **Rules that hold:** the pin stays as it is (our server still holds that key; no new
   pin is needed); a workflow logs in only after a login's first step showed the pinned
   key; `server-check.yml` logs in with `accept-new` whatever the pin, so it is not run;
