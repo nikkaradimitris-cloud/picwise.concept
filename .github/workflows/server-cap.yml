@@ -4,9 +4,11 @@
 # (deployment/server/print_cap.py, picwise_providers.catalogue_cap); nothing on the server
 # or shown changes, and nothing is deployed. The server's identity as in server-night.yml:
 # the key a login's first step is shown, against the pin, or else the feed link's seal.
-# Runs when this file is pushed to the working branch. The repository is public and so is
-# this log: the server's names and addresses are masked, and the measure prints counts,
-# names and prices, never a link.
+# Then the prices at the ends and far from their kind's (owner, 2026-10-27: «Κάνε τη
+# μέτρηση»; deployment/server/print_prices.py). Runs when this file is pushed to the
+# working branch. The repository is public and so is this log: the server's names and
+# addresses are masked, and the measures print counts, names, titles and prices, never a
+# link.
 name: Server cap (read-only, measured only)
 on:
   push:
@@ -128,11 +130,15 @@ jobs:
           names=$(ssh -n picwise 'hostname; hostname -f; hostname -I')
           for name in $names; do echo "::add-mask::$name"; done
           echo "connected"
+      - name: Copy the server's prepared catalogue to the runner
+        id: copy
+        run: ssh -n picwise 'sudo cat /srv/picwise/shared/prepared/catalogue.json.gz' > "$RUNNER_TEMP/catalogue.json.gz"
       - name: What a cap of 15% a category would keep
-        run: |
-          ssh -n picwise 'sudo cat /srv/picwise/shared/prepared/catalogue.json.gz' > "$RUNNER_TEMP/catalogue.json.gz"
-          python3 deployment/server/print_cap.py "$RUNNER_TEMP/catalogue.json.gz"
-          rm -f "$RUNNER_TEMP/catalogue.json.gz"
+        if: always() && steps.copy.outcome == 'success'
+        run: python3 deployment/server/print_cap.py "$RUNNER_TEMP/catalogue.json.gz"
+      - name: Prices at the ends, and far from their kind's
+        if: always() && steps.copy.outcome == 'success'
+        run: python3 deployment/server/print_prices.py "$RUNNER_TEMP/catalogue.json.gz"
       - name: Remove the key and the copy from the runner
         if: always()
         run: rm -f ~/.ssh/deploy_key ~/.ssh/config "$RUNNER_TEMP/catalogue.json.gz"
