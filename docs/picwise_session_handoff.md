@@ -167,6 +167,24 @@ read-only look at the night's round. Owner's rules unchanged (section below).
   affordable jewellery, since Finediam sets the prices. Put to the owner: no price rule
   and no trim; the ends are few and real; a price far from the kind's middle used as a
   check for wrong kinds.
+- **The owner's «Ναι» to no price rule, no trim, and a far price as a check for wrong
+  kinds; rings as one group (run `40535514183`, code `0958bd9` with `[skip actions]`):**
+  `catalogue_cap.joined_parts` puts a shelf whose last level names a kind of the same
+  category under that kind. The cap's totals are unchanged (164,176; 24,626 a category);
+  inside jewellery 14 groups, ring 310,572 -> 3,770 (one share, not two), earrings,
+  bracelet, necklace, the shelves "body jewellery" and "charms & pendants" 3,770 each,
+  all 1,741 watches; kept prices 0.99 / 1,050.00 / 109,787.50; 48,820 of 49,252 kept with
+  all three clean signs. `print_prices.py` now lists the products priced far outside
+  their kind's usual prices (beyond 1.5 times the middle half's spread on a ratio scale,
+  and ten times off the middle price): **9,174 in 130 of 504 kinds and shelves**; real
+  wrong kinds among the furthest (Harvia sauna stones 60 read as "sauna"; Living with
+  Luxury's cabinets 1,872-4,103 on its shelf of "cabinet doors"; children's snap bands
+  0.50-1.50 as "bracelet"; balloons on a balloon shelf whose middle is 99; tablecloths on
+  a "kitchen & dining" shelf whose middle is 1,170); but noisy where a kind mixes cheap and
+  luxury shops: 5,755 are rings (usual 147.67-18,357.94, set by Finediam), earrings 913,
+  bracelets 344; and "charging_cable" has a middle of 95 (phone and car charging cables
+  read as one kind). Put to the owner: compare within the same shop to cut the noise,
+  then fix the reading rules for what it finds, each fix told first.
 - **Rules that hold:** the pin stays as it is (our server still holds that key; no new
   pin is needed); a workflow logs in only after a login's first step showed the pinned
   key; `server-check.yml` logs in with `accept-new` whatever the pin, so it is not run;
