@@ -185,6 +185,19 @@ read-only look at the night's round. Owner's rules unchanged (section below).
   bracelets 344; and "charging_cable" has a middle of 95 (phone and car charging cables
   read as one kind). Put to the owner: compare within the same shop to cut the noise,
   then fix the reading rules for what it finds, each fix told first.
+- **The check compares within the shop too (owner's «Ναι», 27/10; code `bc8485a` with
+  `[skip actions]`, run `40536481871`):** a product is listed when its price is far
+  outside its kind's usual prices and its own shop's for that kind, when the shop has 10
+  or more; counted by shop and kind too. **7,143 in 110 kinds** (9,174 before); InStock
+  UK's cheap rings no longer listed. Most are real luxury or cheap ends, not errors:
+  Finediam's rings 5,304 (to 61,447.50), necklaces 91, pendants 52; MonsterPiercing's gold
+  body jewellery 462; penny sweets 194; Lets Buy Books at 0.49 51; Off-White Nikes at
+  5,100.20. **Wrong kinds found, fixes put to the owner:** earring backs read as
+  "earrings" (Finediam 113, "LOX Locking Earring Backs"); aerial and satellite coaxial
+  cables as "charging_cable" (InStock UK 265, "Maplin F Type Connector ... Coaxial
+  Cable"); sauna stones as "sauna" (Steam & Oak); photo frames with a mirror as "mirror"
+  (InStock UK 19). Also the shop's own category: Living with Luxury's cabinets on its
+  "cabinet doors" shelf (not ours to change).
 - **Rules that hold:** the pin stays as it is (our server still holds that key; no new
   pin is needed); a workflow logs in only after a login's first step showed the pinned
   key; `server-check.yml` logs in with `accept-new` whatever the pin, so it is not run;
