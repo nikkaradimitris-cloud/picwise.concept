@@ -56,11 +56,23 @@ read-only look at the night's round. Owner's rules unchanged (section below).
   two different host keys answer at the server's address: two machines on it (an address
   conflict at OVHcloud), or something in between. A reboot alone would give one new key,
   not two.
-- **Next, put to the owner:** a look that never logs in (a few tries, each recording the
-  key the address shows to a key scan and to a login's first step, as pins): if our key
-  of 25/10 still answers some of the time, our server is there and another machine
-  answers too, a matter for OVHcloud's support; the KVM console in the OVHcloud panel
-  shows what our VPS itself says.
+- **The look that never logs in (owner's «Ναι»; `.github/workflows/server-keys.yml`, run
+  `40501323803`, 12:07 UTC): our server is there.** Four tries, the order changed each
+  time: **a key scan (`ssh-keyscan`) is shown the morning's key every time, and a login's
+  first step (an `ssh` client offering no key or password) is shown our pinned key of
+  25/10 every time.** Not two machines taking turns: the key depends on how the address
+  is asked. Whoever shows the pinned key holds its private half, made on our server on
+  25/10, so real logins reach our server. Yesterday's deployment was shown the pinned key
+  by `ssh-keyscan` too, so what answers a key scan with another key began in the night:
+  not explained yet (something on the server since the night's updates, or on the way).
+  Every workflow takes the key to compare with the pin from `ssh-keyscan`, so each stops
+  there although a login would reach our server.
+- **Next, put to the owner:** `server-night.yml` takes the key from a login's first step
+  instead and compares it with the same pin (as strict: every connection then accepts
+  that key only); then it reads the night, and from inside the server what answers a key
+  scan with another key (the SSH listeners and services, the host keys' files and
+  dates, the night's updates) and who logged in since 26/10. The deployment and the
+  round stay as they are until the cause is known.
 - **Until it is clear:** the pin stays; nothing logs in to the server except to be shown
   its key (`server-check.yml` logs in with `accept-new` whatever the pin, so it is not
   run); no deployment and no round (each would stop at the same check anyway). A new
