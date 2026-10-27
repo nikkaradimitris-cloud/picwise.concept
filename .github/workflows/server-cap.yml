@@ -5,8 +5,8 @@
 # or shown changes, and nothing is deployed. The server's identity as in server-night.yml:
 # the key a login's first step is shown, against the pin, or else the feed link's seal.
 # Then the prices at the ends (owner, 2026-10-27: «Κάνε τη μέτρηση»), and the products
-# priced far outside their kind's usual prices, a check for wrong kinds (owner's «Ναι»,
-# the same day; deployment/server/print_prices.py). Runs when this file is pushed to the
+# priced far outside their kind's usual prices and their own shop's, a check for wrong
+# kinds (owner's «Ναι», the same day; deployment/server/print_prices.py). Runs when this file is pushed to the
 # working branch. The repository is public and so is this log: the server's names and
 # addresses are masked, and the measures print counts, names, titles and prices, never a
 # link.
