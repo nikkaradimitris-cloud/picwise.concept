@@ -3,11 +3,19 @@
 # (picwise-prepare.timer, 04:17 UTC), each read from its timer's last start, then each
 # shop of the prepared catalogue. It starts no round and changes nothing on the server.
 #
+# The server's identity is its host key against .github/server-host-key.pin, as in every
+# workflow. When the key no longer matches (27/10), this one, which sends the server no
+# secret, asks for a proof instead (owner's «Ναι», 2026-10-27): the server seals a random
+# nonce under the feed link (.github/scripts/feed_seal.py), which only it and GitHub
+# hold, and the link never travels. Only a server whose seal is GitHub's is read, and then
+# also why its key changed and who logged in since the deployment of 26/10.
+#
 # Runs when this file is pushed to the working branch; to read another night, change the
 # date below and push. The repository is public and so is this log: the server's names
-# and addresses are masked, and the bot prints shop names and counts, never an address.
+# and addresses are masked, no address or host key is printed, and the bot prints shop
+# names and counts.
 #
-# Night read: 2026-10-27
+# Night read: 2026-10-27, with the proof
 name: Server night (read-only)
 on:
   push:
@@ -34,23 +42,26 @@ jobs:
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          AWIN_FEED_URL: ${{ secrets.AWIN_FEED_URL }}
         run: |
           install -m 700 -d ~/.ssh
           # A key pasted on Windows may carry carriage returns, which ssh refuses.
           printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           # The server must show the host key pinned in .github/server-host-key.pin (an
-          # HMAC under the deploy key: .github/scripts/host_key_pin.py), and every
-          # connection below accepts that key only.
+          # HMAC under the deploy key: .github/scripts/host_key_pin.py), or prove below
+          # that it holds the feed link; every connection accepts the key it showed only.
           host_key=$(ssh-keyscan -T 15 -t ed25519 "$SERVER_HOST" 2>/dev/null | awk 'NF >= 3 {print $2, $3; exit}')
           [ -n "$host_key" ] || { echo "the server gave no host key"; exit 1; }
           pin=$(HOST_KEY="$host_key" python3 .github/scripts/host_key_pin.py)
           expected=$( (grep -v '^#' .github/server-host-key.pin || true) | tr -d '[:space:]')
-          if [ "$pin" != "$expected" ]; then
+          if [ "$pin" = "$expected" ]; then
+            echo "the server matches the pin"
+            echo "pinned=yes" >> "$GITHUB_OUTPUT"
+          else
             echo "the server does NOT match the pin (reinstalled, or not our server); its pin: $pin"
-            exit 1
+            echo "pinned=no" >> "$GITHUB_OUTPUT"
           fi
-          echo "the server matches the pin"
           echo "picwise-server $host_key" > ~/.ssh/known_hosts_picwise
           # The user is OVHcloud's for Ubuntu, written here rather than read from the
           # SERVER_USER secret: GitHub masks a secret's value all over the log.
@@ -70,10 +81,57 @@ jobs:
             LogLevel ERROR
           EOF
           chmod 600 ~/.ssh/config
+          # Without the pin, the server must seal a random nonce under the feed link as
+          # GitHub does: only the nonce goes to it, only the seal comes back.
+          nonce=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
+          ours=$(python3 .github/scripts/feed_seal.py "$nonce") || ours=""
+          unset AWIN_FEED_URL
+          if [ "$pin" != "$expected" ]; then
+            [ -n "$ours" ] || { echo "no feed link in GitHub's secrets: nothing can prove the server is ours"; exit 1; }
+            theirs=$(ssh picwise "sudo python3 - $nonce" < .github/scripts/feed_seal.py 2>/dev/null || true)
+            if [ "$theirs" != "$ours" ]; then
+              echo "the server could NOT prove it holds the feed link: nothing is read"
+              exit 1
+            fi
+            echo "the server proved it holds the feed link: it is ours, with a new host key"
+          fi
           # The host name resolves to the address, so it is masked like the address.
           names=$(ssh -n picwise 'hostname; hostname -f; hostname -I')
           for name in $names; do echo "::add-mask::$name"; done
           echo "connected"
+      - name: Why the server's host key changed, and who logged in since 26/10
+        if: steps.connect.outputs.pinned == 'no'
+        run: |
+          # The deploy key's fingerprint, to tell its logins from any other's.
+          deploy_fp=$(ssh-keygen -lf ~/.ssh/deploy_key | awk '{print $2}')
+          [ -n "$deploy_fp" ] || echo "the deploy key's fingerprint could not be read: each login below shows as another key"
+          ssh picwise "bash -s -- '$deploy_fp'" <<'EOF'
+          echo "booted at $(uptime -s) $(date +%Z)"
+          echo "the last boots in the journal:"
+          sudo journalctl --list-boots --no-pager | tail -n 4
+          echo "the host keys, last written:"
+          sudo stat -c '%y %n' /etc/ssh/ssh_host_*_key.pub
+          echo "cloud-init's instance: $(sudo cat /var/lib/cloud/data/instance-id 2>/dev/null || echo unknown);" \
+            "the one before: $(sudo cat /var/lib/cloud/data/previous-instance-id 2>/dev/null || echo unknown)"
+          echo "cloud-init's runs, and what it did to the host keys (no key printed):"
+          sudo grep -hE 'Cloud-init v\. .* running|ssh-keygen|ssh_host_|previous iid|new instance' \
+            /var/log/cloud-init.log 2>/dev/null | grep -vE 'SHA256:|AAAA' | tail -n 20
+          echo "the updates' reboots:"
+          sudo grep -hi 'reboot' /var/log/unattended-upgrades/unattended-upgrades.log 2>/dev/null | tail -n 4
+          echo
+          echo "logins over SSH since 26/10 16:00 UTC (no addresses):"
+          sudo journalctl -t sshd -t sshd-session --since '2026-10-26 16:00:00 UTC' -o short-iso --no-pager \
+            | awk -v fp="$1" '
+                / Accepted / {
+                  for (i = 1; i <= NF && $i != "Accepted"; i++) ;
+                  kind = ($NF == fp) ? "the deploy key" : ($(i + 1) == "publickey" ? "another key" : $(i + 1))
+                  count[$(i + 3) " with " kind]++; n++
+                  if (kind != "the deploy key") print "  " $1, $(i + 3), kind
+                }
+                END { for (k in count) print "  " count[k] " as " k; if (!n) print "  none" }'
+          echo "logins on the console (OVHcloud's KVM) since then:"
+          sudo journalctl -t login --since '2026-10-26 16:00:00 UTC' -o cat --no-pager | tail -n 5
+          EOF
       - name: The night's round of the shops, then the preparation
         # The script goes to the server on stdin, so no quote inside it can close the
         # command, as an apostrophe did in run 40328993620.
