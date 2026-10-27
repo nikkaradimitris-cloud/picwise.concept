@@ -28,13 +28,42 @@ read-only look at the night's round. Owner's rules unchanged (section below).
 - **What it can be:** the VPS reinstalled, or booted in rescue mode (both change the host
   key); the `SERVER_SSH_KEY` secret changed (the pin is an HMAC under a key derived from
   it, so a new deploy key changes the pin of the same host key); `SERVER_HOST` changed;
-  or another machine at the address. Put to the owner: did they do any of these since
-  26/10 16:16 UTC (18:16 in Greece); if not, what the VPS's page in the OVHcloud panel
-  says (state, rescue, a reinstall) and any OVHcloud email since then, without the
-  address.
-- **Until the owner answers:** the pin stays; nothing logs in to the server
-  (`server-check.yml` logs in with `accept-new` whatever the pin, so it is not run
-  either); no deployment and no round (each would stop at the same check anyway). A new
+  or another machine at the address.
+- **What the owner checked (27/10, screenshots; the server's name and address are in
+  them and are written nowhere):** the VPS page says Status "Active", Boot "LOCAL" (not
+  rescue), "Ubuntu 24.04", VPS-4 2027, London; no OVHcloud email of a reinstall or rescue.
+  One OVHcloud email, "Notification of connection to your OVHcloud account", dated
+  2026-10-26 14:09:47 (OVHcloud's clock), before the deployment that still matched the
+  pin; the owner does not remember logging in, and was advised to change the OVHcloud
+  password and turn on two-step verification (My account → Security). In GitHub's
+  secrets, `SERVER_HOST` and `SERVER_SSH_KEY` were last changed "2 days ago" (25/10), so
+  they are not the cause.
+- **The proof, built (owner's «Ναι», 27/10):** `server-night.yml`, which sends the
+  server no secret, no longer stops at a changed pin: it asks the server to seal a random
+  nonce under the feed link (`.github/scripts/feed_seal.py`, HMAC-SHA256; GitHub from the
+  `AWIN_FEED_URL` secret, the server from `/etc/picwise/picwise.env`); only the nonce goes
+  and only the seal comes back. A server whose seal is GitHub's is read: why its key
+  changed (boots, the host keys' dates, cloud-init, the updates' reboots), the SSH logins
+  since 26/10 16:00 UTC without addresses, then the night. Any other is not read, and the
+  failure is sorted without printing the server's words. The deployment and the round
+  keep the strict pin. Tests: `tests/test_picwise_server_feed_seal.py` (5); dry runs of
+  every case with stand-in commands; `actionlint`.
+- **What the proof found (runs `40489651144` and `40489927183`, 10:35-10:37 UTC): not
+  read.** The new key's pin is the same in all three runs (the key is stable since 09:00).
+  Port 22 says `SSH-2.0-OpenSSH_9.6p1 Ubuntu-3ubuntu13.20`, an Ubuntu 24.04. But the login
+  for the seal was shown **another key than the one the same address had shown a second
+  before** ("Host key verification failed"), so it stopped before logging in. At least
+  two different host keys answer at the server's address: two machines on it (an address
+  conflict at OVHcloud), or something in between. A reboot alone would give one new key,
+  not two.
+- **Next, put to the owner:** a look that never logs in (a few tries, each recording the
+  key the address shows to a key scan and to a login's first step, as pins): if our key
+  of 25/10 still answers some of the time, our server is there and another machine
+  answers too, a matter for OVHcloud's support; the KVM console in the OVHcloud panel
+  shows what our VPS itself says.
+- **Until it is clear:** the pin stays; nothing logs in to the server except to be shown
+  its key (`server-check.yml` logs in with `accept-new` whatever the pin, so it is not
+  run); no deployment and no round (each would stop at the same check anyway). A new
   pin is taken only once the owner says why the key changed. After a reinstall the
   server is empty: the setup, the deployment, the feed and the bot again
   (`server-setup.yml`, `server-deploy.yml`).
