@@ -307,6 +307,20 @@ def read_prepared_catalogue(path: Path, *, now: datetime | None = None) -> Prepa
     return check_prepared_catalogue(path, now=now).catalogue
 
 
+def read_prepared_catalogue_to_measure(path: Path) -> PreparedCatalogue | None:
+    """The prepared file at `path` whatever code wrote it and however old, or None when
+    it is not one: for a measure taken from the server's file with other code
+    (`deployment/server/print_cap.py`), never to stand in for the feed."""
+    try:
+        payload = _read_payload(path)
+        if not isinstance(payload, dict) or payload.get("format") != _FORMAT or payload.get("version") != _VERSION:
+            return None
+        prepared_at = datetime.fromisoformat(str(payload["prepared_at"]))
+        return _catalogue_from_payload(payload, prepared_at)
+    except (OSError, EOFError, ValueError, KeyError, TypeError, IndexError):
+        return None
+
+
 def _catalogue_from_payload(payload: dict[str, Any], prepared_at: datetime) -> PreparedCatalogue:
     status = payload["feed_status"]
     context = payload["availability_context"]
