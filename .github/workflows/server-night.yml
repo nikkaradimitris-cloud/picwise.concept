@@ -88,11 +88,27 @@ jobs:
           unset AWIN_FEED_URL
           if [ "$pin" != "$expected" ]; then
             [ -n "$ours" ] || { echo "no feed link in GitHub's secrets: nothing can prove the server is ours"; exit 1; }
-            theirs=$(ssh picwise "sudo python3 - $nonce" < .github/scripts/feed_seal.py 2>/dev/null || true)
+            # What any visitor of port 22 is told first: its SSH software and system.
+            banner=$(timeout 10 bash -c 'exec 3<>"/dev/tcp/$1/22"; head -n 1 <&3' _ "$SERVER_HOST" 2>/dev/null \
+              | tr -cd '[:print:]' | cut -c1-80 || true)
+            echo "the server's SSH software says: ${banner:-nothing}"
+            # The server's own words are never printed: its errors are only sorted.
+            errors="$RUNNER_TEMP/seal-errors"
+            theirs=$(ssh picwise "sudo -n python3 - $nonce" < .github/scripts/feed_seal.py 2> "$errors") && status=0 || status=$?
             if [ "$theirs" != "$ours" ]; then
-              echo "the server could NOT prove it holds the feed link: nothing is read"
+              if grep -q 'Permission denied' "$errors"; then why="it did not let the deploy key in"
+              elif grep -q 'Host key verification failed' "$errors"; then why="its host key changed again during the run"
+              elif [ "$status" = 255 ]; then why="the login did not complete"
+              elif grep -q 'sudo:' "$errors"; then why="the deploy key was let in, but sudo was refused"
+              elif grep -q 'feed_seal: no feed link' "$errors"; then why="the deploy key was let in, but the server holds no feed link"
+              elif [ "$status" = 0 ]; then why="the deploy key was let in, but its seal is not GitHub's (another feed link)"
+              else why="the deploy key was let in, but sealing failed (exit $status)"
+              fi
+              rm -f "$errors"
+              echo "the server could NOT prove it holds the feed link: $why; nothing is read"
               exit 1
             fi
+            rm -f "$errors"
             echo "the server proved it holds the feed link: it is ours, with a new host key"
           fi
           # The host name resolves to the address, so it is masked like the address.
