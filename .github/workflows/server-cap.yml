@@ -9,9 +9,10 @@
 # kinds (owner's «Ναι», the same day; deployment/server/print_prices.py). Then the kinds
 # this commit's rules read, set against the ones the server stored, and the check of far
 # prices again with them (owner, 2026-10-27: «Διόρθω τους κανόνες και άντε να δούμε πού
-# θα καταλήξουμε τελικά»; deployment/server/print_kind_changes.py): the rules reach the
-# server only with a deployment. Runs when this file is pushed to the
-# working branch. The repository is public and so is this log: the server's names and
+# θα καταλήξουμε τελικά»; deployment/server/print_kind_changes.py), with the words each
+# change's titles share most; an accessory stays on its shelf in the cap and the check.
+# The rules reach the server only with a deployment. Runs when this file is pushed to
+# the working branch. The repository is public and so is this log: the server's names and
 # addresses are masked, and the measures print counts, names, titles and prices, never a
 # link.
 name: Server cap (read-only, measured only)
