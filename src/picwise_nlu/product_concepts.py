@@ -130,7 +130,8 @@ desk_phone|PH||ip phone,ip phones,voip phone,voip phones,sip phone,sip phones,co
 power_bank|PH||power bank,power banks,powerbank,portable charger,external battery|εξωτερική μπαταρία,εξωτερικές μπαταρίες,φορητή μπαταρία,φορητός φορτιστής,πάουερ μπανκ
 phone_charger|PH||charger,chargers,phone charger,wall charger,usb charger,power adapter,power adapters,ac adapter,ac adapters|φορτιστής,φορτιστές,φορτιστής κινητού
 wireless_charger|PH|phone_charger|wireless charger,wireless chargers,charging pad|ασύρματος φορτιστής,ασύρματοι φορτιστές
-charging_cable|PH||charging cable,usb cable,cable,cables,usb c cable,lightning cable|καλώδιο φόρτισης,καλώδιο,καλώδια
+cable|PH||cable,cables|καλώδιο,καλώδια
+charging_cable|PH|cable|charging cable,charging cables,charge cable,charge cables,charger cable,charger cables,phone charger cable,phone charger cables,usb charger cable,usb charger cables,usb cable,usb cables,usb c cable,usb c cables,type c cable,type c cables,lightning cable,lightning cables,iphone cable,iphone cables|καλώδιο φόρτισης,καλώδια φόρτισης
 phone_case|PH||phone case,phone cases,mobile phone case,mobile phone cases,cell phone case,cell phone cases,smartphone case,smartphone cases,case,~cover,phone cover|θήκη κινητού,θήκες κινητού,θήκη,θήκες
 screen_protector|PH||screen protector,screen protectors,screen back protector,screen back protectors,tempered glass|προστασία οθόνης,προστατευτικό οθόνης,τζαμάκι
 car_phone_holder|PH||car phone holder,car phone mount,phone holder|βάση κινητού αυτοκινήτου,βάση κινητού
@@ -361,6 +362,7 @@ curtains|FU||curtains,curtain,blinds|κουρτίνες,κουρτίνα,στό�
 rug|FU||rug,rugs,carpet|χαλί,χαλιά
 bath_mat|FU||bath mat,bath mats,bathmat,bathmats,bath rug,bath rugs,shower mat,shower mats|πατάκι μπάνιου,πατάκια μπάνιου
 mirror|FU||mirror,mirrors,wall mirror|καθρέφτης,καθρέφτες
+photo_frame|FU||photo frame,photo frames,picture frame,picture frames|κορνίζα,κορνίζες
 wall_clock|FU||wall clock,alarm clock|ρολόι τοίχου,ξυπνητήρι
 baby_bottle|BK||baby bottle,baby bottles,feeding bottle|μπιμπερό
 breast_pump|BK||breast pump|θήλαστρο

@@ -81,81 +81,31 @@ def _distance(price: float, usual: tuple[float, float, float]) -> float:
     return 0.0
 
 
-def main(argv: list[str]) -> int:
-    if len(argv) != 2:
-        print("usage: print_prices.py CATALOGUE.json.gz")
-        return 0
-    root = Path(__file__).resolve().parents[2]
-    for folder in (root, root / "src"):
-        if str(folder) not in sys.path:
-            sys.path.insert(0, str(folder))
-    try:
-        from picwise_providers.catalogue_cap import category_of, joined_parts, part_of, shop_of
-        from picwise_providers.decision_labels import parse_price_amount
-        from picwise_providers.prepared_catalogue import read_prepared_catalogue_to_measure
+def rows_of(prepared, kinds) -> list[tuple]:
+    """Per product: its price (None when unread), currency, category, kind or shelf (a
+    shelf naming a kind joins it, as in the cap), shop and short title. `kinds` are the
+    stored ones, or those this checkout reads (`print_kind_changes.py`)."""
+    from picwise_providers.catalogue_cap import category_of, joined_parts, part_of, shop_of
+    from picwise_providers.decision_labels import parse_price_amount
 
-        prepared = read_prepared_catalogue_to_measure(Path(argv[1]))
-        if prepared is None:
-            print("no prepared catalogue could be read")
-            return 0
-        categories = [category_of(product) for product in prepared.products]
-        parts = joined_parts(categories, [part_of(product, kinds) for product, kinds in zip(prepared.products, prepared.kinds)])
-        rows = [
-            (
-                parse_price_amount(product.price_text),
-                str(product.currency or "").strip().upper() or "?",
-                category,
-                part,
-                shop_of(product),
-                _short(product.title),
-            )
-            for product, category, part in zip(prepared.products, categories, parts)
-        ]
-    except Exception as error:  # a measure only: the run goes on without it
-        print(f"the prices could not be measured: {type(error).__name__}")
-        return 0
-
-    total = len(rows)
-    currencies = Counter(currency for _price, currency, *_rest in rows)
-    print(
-        f"prices of the {total:,} products a card can show (catalogue of {prepared.prepared_at.isoformat()}): "
-        + "; ".join(f"{currency} {count:,}" for currency, count in currencies.most_common())
-        + " (the bands below are in each product's own currency)"
-    )
-    priced = [row for row in rows if row[0] is not None]
-    print(f"no price read: {total - len(priced):,}")
-    bands = (
-        ("under 1.00", lambda price: price < 1),
-        ("1.00 to under 2.00", lambda price: 1 <= price < 2),
-        ("10,000 and over", lambda price: price >= 10_000),
-        ("50,000 and over", lambda price: price >= 50_000),
-    )
-    print(
-        "; ".join(
-            f"{name}: {sum(1 for row in priced if test(row[0])):,} ({100 * sum(1 for row in priced if test(row[0])) / max(total, 1):.2f}%)"
-            for name, test in bands
+    categories = [category_of(product) for product in prepared.products]
+    parts = joined_parts(categories, [part_of(product, product_kinds) for product, product_kinds in zip(prepared.products, kinds)])
+    return [
+        (
+            parse_price_amount(product.price_text),
+            str(product.currency or "").strip().upper() or "?",
+            category,
+            part,
+            shop_of(product),
+            _short(product.title),
         )
-    )
-    for name, test in bands:
-        found = [row for row in priced if test(row[0])]
-        if not found or name == "50,000 and over":
-            continue
-        dear = name.startswith("10,000")
-        print(f"== {name}: {len(found):,}")
-        print("  by category:")
-        for line in _count_lines(Counter(row[2] for row in found), len(found)):
-            print(line)
-        print("  by shop:")
-        for line in _count_lines(Counter(row[4] for row in found), len(found)):
-            print(line)
-        if not dear:
-            packs = sum(1 for row in found if PACK.search(row[5]))
-            print(f"  their title names a pack, a set or a number of pieces: {packs:,} (by the words in the title)")
-        ordered = sorted(found, key=lambda row: (-row[0], row[5]) if dear else (row[0], row[5]))
-        print(f"  the {'dearest' if dear else 'cheapest'} {min(EXAMPLES, len(found))}:")
-        for price, currency, category, _part, shop, title in ordered[:EXAMPLES]:
-            print(f"    {_money(price):>12} {currency} | {shop} | {title} | {category}")
+        for product, category, part in zip(prepared.products, categories, parts)
+    ]
 
+
+def print_far(priced: list[tuple]) -> None:
+    """Print the products priced far outside the usual prices of their kind and of their
+    own shop's for it, from `rows_of`'s rows that have a price."""
     # Far outside the usual prices of their kind: beyond the middle half's spread, taken
     # FENCE times on a ratio scale, and FAR times off the middle price besides; and far
     # outside its own shop's usual prices for that kind too, when the shop has MIN_SHOP
@@ -201,6 +151,70 @@ def main(argv: list[str]) -> int:
     print(f"  the furthest {min(2 * EXAMPLES, len(far))}:")
     for _distance_, (price, currency, category, part, shop, title) in sorted(far, key=lambda item: (-item[0], item[1][5]))[: 2 * EXAMPLES]:
         print(f"    {_money(price):>12} {currency} | {part} (middle {_money(usual[part][2])}) | {shop} | {title} | {category}")
+
+
+def main(argv: list[str]) -> int:
+    if len(argv) != 2:
+        print("usage: print_prices.py CATALOGUE.json.gz")
+        return 0
+    root = Path(__file__).resolve().parents[2]
+    for folder in (root, root / "src"):
+        if str(folder) not in sys.path:
+            sys.path.insert(0, str(folder))
+    try:
+        from picwise_providers.prepared_catalogue import read_prepared_catalogue_to_measure
+
+        prepared = read_prepared_catalogue_to_measure(Path(argv[1]))
+        if prepared is None:
+            print("no prepared catalogue could be read")
+            return 0
+        rows = rows_of(prepared, prepared.kinds)
+    except Exception as error:  # a measure only: the run goes on without it
+        print(f"the prices could not be measured: {type(error).__name__}")
+        return 0
+
+    total = len(rows)
+    currencies = Counter(currency for _price, currency, *_rest in rows)
+    print(
+        f"prices of the {total:,} products a card can show (catalogue of {prepared.prepared_at.isoformat()}): "
+        + "; ".join(f"{currency} {count:,}" for currency, count in currencies.most_common())
+        + " (the bands below are in each product's own currency)"
+    )
+    priced = [row for row in rows if row[0] is not None]
+    print(f"no price read: {total - len(priced):,}")
+    bands = (
+        ("under 1.00", lambda price: price < 1),
+        ("1.00 to under 2.00", lambda price: 1 <= price < 2),
+        ("10,000 and over", lambda price: price >= 10_000),
+        ("50,000 and over", lambda price: price >= 50_000),
+    )
+    print(
+        "; ".join(
+            f"{name}: {sum(1 for row in priced if test(row[0])):,} ({100 * sum(1 for row in priced if test(row[0])) / max(total, 1):.2f}%)"
+            for name, test in bands
+        )
+    )
+    for name, test in bands:
+        found = [row for row in priced if test(row[0])]
+        if not found or name == "50,000 and over":
+            continue
+        dear = name.startswith("10,000")
+        print(f"== {name}: {len(found):,}")
+        print("  by category:")
+        for line in _count_lines(Counter(row[2] for row in found), len(found)):
+            print(line)
+        print("  by shop:")
+        for line in _count_lines(Counter(row[4] for row in found), len(found)):
+            print(line)
+        if not dear:
+            packs = sum(1 for row in found if PACK.search(row[5]))
+            print(f"  their title names a pack, a set or a number of pieces: {packs:,} (by the words in the title)")
+        ordered = sorted(found, key=lambda row: (-row[0], row[5]) if dear else (row[0], row[5]))
+        print(f"  the {'dearest' if dear else 'cheapest'} {min(EXAMPLES, len(found))}:")
+        for price, currency, category, _part, shop, title in ordered[:EXAMPLES]:
+            print(f"    {_money(price):>12} {currency} | {shop} | {title} | {category}")
+
+    print_far(priced)
     return 0
 
 

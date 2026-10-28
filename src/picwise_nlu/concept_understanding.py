@@ -1423,12 +1423,13 @@ _ACCESSORY_WORDS = frozenset(
 # "table runner", "cable ties", "mirror ball", "ring light", "shoe restore kit". Read
 # off a real feed, where each of these answered a search with the wrong kind of
 # product. Only English text puts the modifier first, so only English text is read
-# this way.
+# this way. "Sauna Stones" go on a sauna's heater (owner, 2026-10-27: Steam & Oak's
+# were saunas); the singular "stone" is a colour as often ("Corner Sofa Stone").
 _MODIFIER_TAIL_WORDS = frozenset(
     """
     runner runners mat mats decor cloth cloths ties tie clip clips sleeving duct ducts
     ball balls light lights restore stopper stoppers component components
-    clock clocks football tennis
+    clock clocks football tennis stones
     """.split()
 )
 
@@ -1960,7 +1961,10 @@ def _narrowest_shelves(category: str) -> str:
 # only when the lead does not name the classified kind itself: "Apple Watch Series 11
 # ... Aluminium Case" is a watch, and a lead that names the kind is read word by word.
 # Left out: "tray" (a processor's packaging), "adapter" (a multiport adapter is sold as
-# a dock) and "shield" (an "eco-shield" is a screen protector).
+# a dock) and "shield" (an "eco-shield" is a screen protector). "LOX Locking Earring
+# Backs" hold an earring on and are none, though filed under "Earrings" (owner,
+# 2026-10-27: 113 of Finediam's were priced far from its earrings); the singular
+# "back" is said of a product ("Open Back", "Flat Back") and is left out too.
 _LEAD_ACCESSORY_NOUNS = frozenset(
     """
     cover covers case cases casing casings folio folios sleeve sleeves protector
@@ -1969,7 +1973,7 @@ _LEAD_ACCESSORY_NOUNS = frozenset(
     organisers organizer organizers anchor anchors refill refills replacement
     replacements spare spares filter filters nozzle nozzles brush brushes attachment
     attachments companion companions guard guards accessory accessories part parts
-    cleaning repair maintenance pad pads
+    cleaning repair maintenance pad pads backs backing backings
     """.split()
 )
 # Words that name a group of the noun before them: "Anchor Kit", "Cleaning Kit".
@@ -2395,6 +2399,13 @@ def _is_descriptor_word(token: str) -> bool:
     return token in _lexicon().english_qualifier_words
 
 
+# Kinds an English title names last, after what they are made of or show: "Son 3D Word
+# Glass & Mirror 6x4 Photo Frame" is a frame (owner, 2026-10-27: InStock UK's photo
+# frames were read as mirrors). Any other title names its product first and goes on to
+# its parts ("Laptop Intel Celeron 64GB SSD").
+_NAMED_LAST_KINDS = frozenset({"photo_frame"})
+
+
 def _head_of_text(
     text: str,
     *,
@@ -2429,6 +2440,11 @@ def _head_of_text(
     spans = _concepts_in_text(text)
     if not spans:
         return None
+    covered = {i for span in spans for i in range(span.start, span.end)}
+    cut = next(
+        (i for i, token in enumerate(tokens) if token in _PURPOSE_WORDS and i not in covered),
+        len(tokens),
+    )
     if first_phrase:
         # The product a title names first, read as English reads a noun phrase: the
         # last name in the first run of names. "Fan Heater" is a heater, "Laptop Intel
@@ -2438,15 +2454,13 @@ def _head_of_text(
             if span.start != head.end:
                 break
             head = span
+        named = [span for span in spans if span.start < cut]
+        if named and named[-1].kind == "en" and named[-1].concept_id in _NAMED_LAST_KINDS:
+            head = named[-1]
     else:
         head = spans[0] if first else _pick_head(spans, tokens)
     if head is None:
         return None
-    covered = {i for span in spans for i in range(span.start, span.end)}
-    cut = next(
-        (i for i, token in enumerate(tokens) if token in _PURPOSE_WORDS and i not in covered),
-        len(tokens),
-    )
     if head.start > cut:
         return ACCESSORY_MARKER
     if head.kind == "en" and head.end < cut and tokens[head.end] in _MODIFIER_TAIL_WORDS:
