@@ -33,11 +33,13 @@ public, so no server name, address, host key or link in a log or a file.
    συμπληρώνει προτάσεις τι καλώδιο ζητάει: καλώδιο τηλεόρασης, καλώδιο φόρτισης,
    καλώδιο ίντερνετ ... το ίδιο με όλες αυτές τις γενικές λέξεις»; rules word by word lead
    nowhere). Built from the catalogue itself, each night, for every general word alike:
-   the shops' shelves under it (Google's taxonomy; its Greek names from Google's
-   `taxonomy-with-ids.el-GR.txt`, by id, not yet in `data/taxonomy_sources/google/`) and
-   the words titles put before it ("HDMI cable", "aerial cable"), only those that find
-   products, the largest first; in the search box and above the results ("Τι καλώδιο
-   ψάχνεις;"). Today's pieces: `src/picwise_providers/suggestions.py` (the box's
+   the shops' shelves under it (Google's taxonomy) and the words titles put before it
+   ("HDMI cable", "aerial cable"), only those that find products, the largest first; in
+   the search box and above the results ("What kind of cable?"), in the buyer's language:
+   the site is English for the UK and the US (`<html lang="en">`, en-GB/en-US), so the
+   shelves' English names; Greek names (Google's `taxonomy-with-ids.el-GR.txt`, by id, not
+   yet in `data/taxonomy_sources/google/`) only for a query in Greek. Today's pieces:
+   `src/picwise_providers/suggestions.py` (the box's
    suggestions by prefix, from the catalogue, `/suggest.json`), the older
    `src/picwise_search_memory/broad_query_suggestions.py` (from the vocabulary, not the
    catalogue). The cables of 28/10: 3,853 now "cable" (3,270 fabric extension leads,
