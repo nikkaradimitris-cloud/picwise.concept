@@ -1,9 +1,9 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-27 (morning).
+Current state for whoever picks the project up next. Updated 2026-10-28 (evening).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Now (2026-10-27, morning): the server shows another host key -- start here
+## Now (2026-10-27/28): the server's host key, the cap, the far prices, the kinds -- start here
 
 The owner's «Ναι» (26/10, evening) to two things: writing straight to `ccr-1361f1a7-dcpo60`
 (this session's own branch, `ccr-8eb9b420-958wtr`, is kept equal to it), and a small
@@ -198,6 +198,51 @@ read-only look at the night's round. Owner's rules unchanged (section below).
   Cable"); sauna stones as "sauna" (Steam & Oak); photo frames with a mirror as "mirror"
   (InStock UK 19). Also the shop's own category: Living with Luxury's cabinets on its
   "cabinet doors" shelf (not ours to change).
+- **The four rules fixed (owner, 27/10: «Διόρθω τους κανόνες και άντε να δούμε πού θα
+  καταλήξουμε τελικά»; code `7354a52` with `[skip actions]`, nothing deployed):** "backs",
+  "backing(s)" end a title's lead as an accessory's noun (`_LEAD_ACCESSORY_NOUNS`: earring
+  backs filed under "Earrings"); a plain "cable" is a new, broader kind `cable` (καλώδιο),
+  and `charging_cable` only what a title or a shelf names as a charging, charger, USB,
+  USB-C, Type-C, Lightning or iPhone cable, a cable too («καλώδιο» and "cable" find every
+  cable, «καλώδιο φόρτισης» and "usb cable" only those); "stones" right after a kind's
+  name make it something for it (`_MODIFIER_TAIL_WORDS`: sauna stones; not "stone", a
+  colour as often); a new kind `photo_frame` (photo or picture frame, κορνίζα), named last
+  in a title (`_NAMED_LAST_KINDS`: "Glass & Mirror 6x4 Photo Frame" is a frame); `cable`
+  and `photo_frame` compare as charging cables and mirrors did (length, size; no best).
+  Tests: `tests/test_picwise_kinds_from_the_far_prices.py` (10, failing on the old
+  rules); one changed (`test_the_first_shelf_that_names_a_product_decides`: a shelf
+  "cables" gives a cable); the kind, query, search and catalogue modules pass one at a
+  time (`test_picwise_learning_stage7b` takes 20 minutes); the misspelling benchmark the
+  same (93.8%).
+- **Where it ends (runs `40759989550`, `40761504364`, `40762760684`, the catalogue of 28/10
+  04:22 UTC, 524,436 shown; `deployment/server/print_kind_changes.py`, tests
+  `tests/test_picwise_server_print_kind_changes.py` (2): each product read again with this
+  commit's rules against the kind stored, the words each change's titles share, then the
+  check of far prices again):** **5,148 change kind (0.98%)**: 3,853 are no charging
+  cables but cables (InStock UK 3,730: 3,270 Lola's Leads fabric extension leads, Maplin's
+  coaxial and aerial cables, 150 liquorice "cables" among the sweets; Back to the Office
+  122: audio and fan cables; 168 say "USB", some perhaps phone cables now only "cable");
+  charging cables 4,049 -> 196; 1,254 photo frames (1,238 had no kind: Kenro, Walther);
+  Finediam's 18 LOX earring backs an accessory (doubtful before); Steam & Oak's sauna
+  stones an accessory; 6 mirrors photo frames; 16 frame "collections" doubtful, 6
+  accessories (a frame "on Stand", a photo mount, a frame clock). The far prices: 7,141
+  -> 6,995; charging cables 265 -> none (the same cheap cables now far below all cables'
+  middle of 102, set by the extension leads: 273, no wrong kind); mirrors 21 -> 15; the
+  sauna stones out; Finediam's earrings 113 -> 95, the furthest now a 46,319.00 diamond
+  earring.
+- **Found on the way:** the earring backs never answered a search for earrings (doubtful);
+  the cap counted them as earrings by their shelf (`catalogue_cap.joined_parts`), and the
+  check with it. The check now leaves an accessory on its shelf (`b2ce892`, `337047c`); the
+  cap still joins it, as chosen: with a share of their own, the accessories on Finediam's
+  shelf of rings would all be kept. **And those 3,075 "accessories" are engagement rings**
+  ("2.00 Ct Lab Grown 3 Stone With Side Halo Diamond Engagement Ring Platinum"): the
+  title says "With" before the ring's name, and a kind named only after a purpose word is
+  read as an accessory of it (`_head_of_text`, meant for "filter for coffee machine"), so
+  no search for a ring shows them (before 27/10 too). Put to the owner: after "with" (not
+  "for"), a kind the title names when nothing before names one is the product, measured
+  first. A few more accessories are real products (4 microphones with a "mount", 3
+  bedside tables "Storage Organiser"). The rules reach the server only with a deployment
+  (question 1).
 - **Rules that hold:** the pin stays as it is (our server still holds that key; no new
   pin is needed); a workflow logs in only after a login's first step showed the pinned
   key; `server-check.yml` logs in with `accept-new` whatever the pin, so it is not run;
@@ -208,6 +253,9 @@ read-only look at the night's round. Owner's rules unchanged (section below).
 - **Still waiting for the owner's word, as before:** the cap; the next kinds (mattresses,
   whiteboards, safety footwear, handheld mobile computers); HTTPS and the domain; the
   repository private; query logging from the server; 80 or 200 bot checks per shop.
+  New (28/10): question 1 (the deployment, the round and the setup taking the key from a
+  login's first step, so the fixed rules reach the server); a kind named after "with"
+  read as the product (the 3,075 engagement rings).
 
 ## Before (2026-10-26, evening): the bot runs each night on the server
 
