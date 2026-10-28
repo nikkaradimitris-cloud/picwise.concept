@@ -3,7 +3,62 @@
 Current state for whoever picks the project up next. Updated 2026-10-28 (evening).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Now (2026-10-27/28): the server's host key, the cap, the far prices, the kinds -- start here
+## Next conversation (from 2026-10-28): finish 1, 2, 3 -- start here
+
+The owner (28/10): «Θα ξεκινήσουμε με το 1 2 3 σε νέα συζήτηση», and **no deployment
+until these three are finished**. The work is on `ccr-1361f1a7-dcpo60` (pushed; the
+conversation's own branch `ccr-8eb9b420-958wtr` kept equal); bring it in first. Each is
+measured on a copy of the server's catalogue and shown to the owner before it is built.
+The owner's rules, unchanged: Greek, short, plain words; say what you found before
+building anything; nothing on `main` without their explicit «ναι»; never ask for the
+feed link (it holds the key); secrets only in GitHub's or Vercel's secrets; nothing in
+Supabase without asking; never open an Awin tracked link from a session or a bot; never
+propose contacting the shops; no second bot round the same day without their word;
+commission never a criterion; no fake data; Amazon removed for good; the repository is
+public, so no server name, address, host key or link in a log or a file.
+
+1. **The 3,075 engagement rings read as accessories** (Finediam, its shelf of rings):
+   "2.00 Ct Lab Grown 3 Stone With Side Halo Diamond Engagement Ring Platinum". The only
+   kind a title names comes after "With", and `_head_of_text`
+   (`src/picwise_nlu/concept_understanding.py`) reads a kind named after a purpose word
+   as an accessory of it (`if head.start > cut: return ACCESSORY_MARKER`, meant for
+   "filter for coffee machine"); `_read_concepts_in_text` hands it the spans after the
+   cut when none comes before. Proposed to the owner: after "with"/"με" (not
+   "for"/"για"), a kind the title names when nothing before names one is the product.
+   Look-alikes to keep: "Pram with Car Seat", "Case with Stand for iPad", "Vacuum
+   cleaner with filter". Measure: `deployment/server/print_kind_changes.py` lists every
+   change of kind and "accessories the cap counts in the kind their shelf names" (run
+   `40762760684`: 3,133, of which ring 3,075).
+2. **Choices for a general word** (owner: «Το search όταν του βάζεις καλώδιο πρέπει να
+   συμπληρώνει προτάσεις τι καλώδιο ζητάει: καλώδιο τηλεόρασης, καλώδιο φόρτισης,
+   καλώδιο ίντερνετ ... το ίδιο με όλες αυτές τις γενικές λέξεις»; rules word by word lead
+   nowhere). Built from the catalogue itself, each night, for every general word alike:
+   the shops' shelves under it (Google's taxonomy; its Greek names from Google's
+   `taxonomy-with-ids.el-GR.txt`, by id, not yet in `data/taxonomy_sources/google/`) and
+   the words titles put before it ("HDMI cable", "aerial cable"), only those that find
+   products, the largest first; in the search box and above the results ("Τι καλώδιο
+   ψάχνεις;"). Today's pieces: `src/picwise_providers/suggestions.py` (the box's
+   suggestions by prefix, from the catalogue, `/suggest.json`), the older
+   `src/picwise_search_memory/broad_query_suggestions.py` (from the vocabulary, not the
+   catalogue). The cables of 28/10: 3,853 now "cable" (3,270 fabric extension leads,
+   coaxial and aerial, audio, 168 saying "USB"), 196 charging cables. Measure first
+   which words are general and what each would offer.
+3. **The cap of 15% applied:** `catalogue_cap.cap_catalogue(..., kept_before=...)` is
+   built and measured (run `40762760684`: 164,144 kept, at most 24,621 a category), not
+   called. To do: the nightly preparation (`tools/prepare_catalogue.py` ->
+   `state.prepare_feed_catalogue`) calls it and keeps the kept keys on the server for the
+   next night (`kept_before`); measured first.
+
+Then the deployment (question 1: `server-deploy.yml`, the round and the setup take the
+host key from a login's first step, as `server-night.yml`; editing it deploys, so the
+owner may need to set "Accept edits"), then HTTPS and the domain. How to measure without
+deploying: commit code with `[skip actions]` in the message (`src/**`,
+`deployment/server/**` start `server-deploy.yml`), check no run started, then push a
+change of `.github/workflows/server-cap.yml` alone, which copies the server's catalogue
+to GitHub's runner and runs `print_cap.py`, `print_prices.py`, `print_kind_changes.py`.
+Tests one module at a time (`test_picwise_learning_stage7b` takes 20 minutes).
+
+## Now (2026-10-27/28): the server's host key, the cap, the far prices, the kinds
 
 The owner's «Ναι» (26/10, evening) to two things: writing straight to `ccr-1361f1a7-dcpo60`
 (this session's own branch, `ccr-8eb9b420-958wtr`, is kept equal to it), and a small
