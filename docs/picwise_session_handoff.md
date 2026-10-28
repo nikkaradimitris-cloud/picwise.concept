@@ -243,6 +243,17 @@ read-only look at the night's round. Owner's rules unchanged (section below).
   first. A few more accessories are real products (4 microphones with a "mount", 3
   bedside tables "Storage Organiser"). The rules reach the server only with a deployment
   (question 1).
+- **The owner's word (28/10): no deployment until what was started is finished** («Δεν
+  προχωράμε σε ανάπτυξη μέχρι να ολοκληρώσουμε αυτά που έχουμε ξεκινήσει»). Also: rules
+  word by word lead nowhere; a general word ("καλώδιο") should be answered with choices of
+  what it means (TV, charging, internet cable), for every general word alike. Started,
+  in this order, each measured on a copy of the server's catalogue before it is built:
+  1. the 3,075 engagement rings read as accessories (a kind named after "with" read as
+     the product); 2. choices for a general word, from the catalogue itself (the shops'
+     shelves, in Greek from Google's Greek taxonomy, and the words titles put before it),
+     in the search box and above the results; 3. the cap of 15% called by the nightly
+     preparation, the night before's kept list kept on the server. Then the deployment
+     (question 1), then HTTPS and the domain.
 - **Rules that hold:** the pin stays as it is (our server still holds that key; no new
   pin is needed); a workflow logs in only after a login's first step showed the pinned
   key; `server-check.yml` logs in with `accept-new` whatever the pin, so it is not run;
