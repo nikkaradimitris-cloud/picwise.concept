@@ -7,8 +7,9 @@ rules and set against the kind stored with it; the changes are counted from kind
 kind, the most first, with their shops, their titles' commonest words and cheapest
 titles; a product that keeps its narrowest kind and only gains a broader one (a
 charging cable, now a cable too) is no change; the kinds whose counts change are
-listed; the check of far prices is made again with the kinds read so; an unreadable
-file says so; nothing printed holds a link; every case exits 0.
+listed, and the accessories the cap counts in the kind their shelf names; the check of
+far prices is made again with the kinds read so; an unreadable file says so; nothing
+printed holds a link; every case exits 0.
 
 Every row is local test data: fictional brands and shops, `.invalid` addresses; the kinds
 stored are those the rules before 2026-10-27 gave such titles.
@@ -33,6 +34,7 @@ from picwise_providers.prepared_catalogue import PreparedCatalogue, write_prepar
 from picwise_providers.search_selection import _product_search_fields  # noqa: E402
 
 CABLES = "Electronics > Electronics Accessories > Cables"
+EARRINGS = "Clothing & Accessories > Jewellery & Watches > Earrings"
 
 
 def _product(number: int, title: str, price: float, shop: str, *, category: str = "", product_type: str = "") -> ProviderProduct:
@@ -56,9 +58,9 @@ def _product(number: int, title: str, price: float, shop: str, *, category: str 
 
 def _write(path: Path) -> None:
     rows = [
-        (_product(1, "Fictional Locking Earring Backs - Gold", 11.49, "Fictional Jewels", product_type="Earrings"), {"earrings"}),
-        (_product(2, "Fictional Silicone Earring Backs", 4.99, "Fictional Jewels", product_type="Earrings"), {"earrings"}),
-        (_product(3, "Fictional Diamond Stud Earrings", 499.00, "Fictional Jewels", product_type="Earrings"), {"earrings"}),
+        (_product(1, "Fictional Locking Earring Backs - Gold", 11.49, "Fictional Jewels", category=EARRINGS, product_type="Earrings"), {"earrings"}),
+        (_product(2, "Fictional Silicone Earring Backs", 4.99, "Fictional Jewels", category=EARRINGS, product_type="Earrings"), {"earrings"}),
+        (_product(3, "Fictional Diamond Stud Earrings", 499.00, "Fictional Jewels", category=EARRINGS, product_type="Earrings"), {"earrings"}),
         (_product(4, "Fictional Satellite Aerial Coaxial Cable 10m", 1.99, "Fictional Store", category=CABLES), {"charging_cable"}),
         (_product(5, "Fictional HDMI Cable 2m", 3.49, "Fictional Store", category=CABLES), {"charging_cable"}),
         (_product(6, "Fictional Speaker Cable 20m", 8.99, "Fictional Store", category=CABLES), {"charging_cable"}),
@@ -121,6 +123,9 @@ class PrintKindChangesTests(unittest.TestCase):
         self.assertRegex(out, r"\n\s+29 ->\s+26  charging_cable\n")
         self.assertRegex(out, r"\n\s+0 ->\s+3  cable\n")
         self.assertRegex(out, r"\n\s+0 ->\s+3  \(accessory\)\n")
+        # The cap would still count the two earring backs as earrings, by their shelf.
+        self.assertIn("accessories the cap counts in the kind their shelf names: 2 in 1 kinds", out)
+        self.assertRegex(out, r"\n\s+2  earrings\n\s+shops: Fictional Jewels 2\n\s+words: backs 2, earring 2,")
         # Where it ends: of the cheap cables only the USB-C one is still a charging
         # cable, and still far from the EV cables' prices.
         far = out[out.index("the check of far prices again"):]

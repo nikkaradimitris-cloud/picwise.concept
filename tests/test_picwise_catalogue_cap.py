@@ -7,11 +7,11 @@ information first; yesterday's kept ones the next night's starting point, more p
 a larger cap and fewer a smaller one in proportion. Pinned here: the cap is 15% of what
 is kept, worked out at once (no category over it, the next number up would be), and a
 category under it keeps all; inside a category the places are shared fairly over its
-kinds, a shelf naming a kind joining it unless the product is an accessory; inside a
-kind the clean ones first, those sold by more than one shop first among
-them, spread over the price range; the night before's kept ones stay while they fit,
-and when there are fewer places the ones that stay keep their spread; the same input
-gives the same choice; too few categories cut nothing.
+kinds, a shelf naming a kind joining it (an accessory marked so stays on its shelf, as
+the check of far prices asks); inside a kind the clean ones first, those sold by more
+than one shop first among them, spread over the price range; the night before's kept
+ones stay while they fit, and when there are fewer places the ones that stay keep their
+spread; the same input gives the same choice; too few categories cut nothing.
 
 Every row is local test data: fictional brands and shops, `.invalid` addresses.
 """
@@ -138,8 +138,9 @@ class FairShareTests(unittest.TestCase):
             ["ring", "watch", "ring", "watch", "t_shirt", "t_shirt", "shelf: home & garden > decor > rings"],
         )
 
-    def test_an_accessory_stays_on_its_shelf(self) -> None:
-        # Earring backs on a shelf of earrings are no earrings (owner, 2026-10-27).
+    def test_a_marked_accessory_stays_on_its_shelf(self) -> None:
+        # Earring backs on a shelf of earrings are no earrings: the check of far prices
+        # leaves them there (2026-10-28). The cap still joins them, as chosen.
         shelf = "shelf: clothing & accessories > jewellery & watches > earrings"
         self.assertEqual(
             joined_parts(["apparel & accessories > jewelry"] * 3, ["earrings", shelf, shelf], [False, False, True]),
@@ -151,9 +152,8 @@ class FairShareTests(unittest.TestCase):
         kinds = [frozenset({"earrings"})] * 40 + [frozenset()] * 10 + [frozenset({"__accessory__"})] * 10
         kinds += [frozenset()] * (len(products) - 60)
         inside = cap_catalogue(products, kinds, feed_ctx=_context(products)).inside["apparel & accessories > jewelry"]
-        self.assertEqual(set(inside), {"earrings", "shelf: apparel & accessories > jewelry > earrings"})
-        self.assertEqual(inside["earrings"][0], 50)
-        self.assertEqual(inside["shelf: apparel & accessories > jewelry > earrings"][0], 10)
+        self.assertEqual(set(inside), {"earrings"})
+        self.assertEqual(inside["earrings"][0], 60)
 
     def test_rings_on_a_shelf_of_rings_take_no_second_share(self) -> None:
         rings = [_product(index, JEWELLERY, gtin=_gtin(index)) for index in range(300)]

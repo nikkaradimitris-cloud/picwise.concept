@@ -19,8 +19,7 @@ are one group. Then:
   below, so they keep their spread;
 - inside a category, its places are shared fairly over its kinds (a product without
   one under its narrowest shelf, or under the kind that shelf names: "... > rings" with
-  "ring", so rings never take two shares; an accessory stays on its shelf, as earring
-  backs on a shelf of earrings are none): a kind with fewer products than an equal
+  "ring", so rings never take two shares): a kind with fewer products than an equal
   share keeps them all and leaves the rest to the others, so a search for earrings on a
   shelf full of rings still finds earrings;
 - inside a kind, the clean ones first (a barcode, or a brand and a part number; an
@@ -38,8 +37,6 @@ import statistics
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Collection, Mapping, Sequence
-
-from picwise_nlu.concept_understanding import ACCESSORY_MARKER
 
 from .catalogue_balance import CAP_SHARE, NO_SHOP, _narrowest_kind, _shelf_groups, capped_size
 from .contracts import FeedAvailabilityContext, ProviderProduct
@@ -125,9 +122,13 @@ def joined_parts(
 ) -> list[str]:
     """`parts` with a shelf whose last level names a kind of the same category put under
     that kind (a "... > rings" shelf with "ring"), so that one kind never takes two
-    shares: the kind reading leaves many rings on a shelf of rings without a kind. A
-    product read as an accessory (`accessories`, in order) stays on its shelf: earring
-    backs on a shelf of earrings are none (owner, 2026-10-27)."""
+    shares: the kind reading leaves many rings on a shelf of rings without a kind. The
+    products marked in `accessories`, in order, stay on their shelf: the check of far
+    prices (`deployment/server/print_prices.py`) leaves accessories there, since earring
+    backs on a shelf of earrings are none. The cap joins them all, as the owner chose
+    (2026-10-27): given a share of their own, the 3,075 accessories on Finediam's shelf
+    of rings would all be kept (measured 2026-10-28), so how the cap counts them is the
+    owner's to say."""
     kinds_in: dict[str, set[str]] = defaultdict(set)
     for category, part in zip(categories, parts):
         if not part.startswith("shelf: "):
@@ -211,11 +212,7 @@ def cap_catalogue(
     previous night kept."""
     keys = [row_key(product) for product in products]
     categories = [category_of(product) for product in products]
-    parts = joined_parts(
-        categories,
-        [part_of(product, product_kinds) for product, product_kinds in zip(products, kinds)],
-        [ACCESSORY_MARKER in product_kinds for product_kinds in kinds],
-    )
+    parts = joined_parts(categories, [part_of(product, product_kinds) for product, product_kinds in zip(products, kinds)])
     sizes = Counter(categories)
     size = capped_size(list(sizes.values()), share)
     shops = [shop_of(product) for product in products]

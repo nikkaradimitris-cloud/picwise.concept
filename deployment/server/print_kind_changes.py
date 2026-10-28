@@ -10,11 +10,11 @@ its type, its categories and its title) with this checkout's rules, and its narr
 kind set against the one the server stored: how many are read as another kind, from which
 to which, with the shops, the words their titles share most and the cheapest titles of
 each change (price first puts the cheapest at the top of a page), and the kinds whose
-counts change; then the check of far prices again (`print_prices.print_far`), with the
-kinds read so: where it ends. Run by
-.github/workflows/server-cap.yml on GitHub's runner, from a copy of the server's file;
-nothing on the server or shown changes until a deployment. Counts, names, titles and
-prices only; the file's links are never printed. Always exits 0.
+counts change; the accessories the cap counts in the kind their shelf names; then the
+check of far prices again (`print_prices.print_far`), with the kinds read so: where it
+ends. Run by .github/workflows/server-cap.yml on GitHub's runner, from a copy of the
+server's file; nothing on the server or shown changes until a deployment. Counts, names,
+titles and prices only; the file's links are never printed. Always exits 0.
 """
 from __future__ import annotations
 
@@ -45,6 +45,28 @@ def _label(kinds, narrowest) -> str:
     if "__uncertain_kind__" in kinds:
         return "(doubtful)"
     return narrowest(kinds) or "(no kind)"
+
+
+def _print_group(products: list, shop_of, parse_price_amount) -> None:
+    """A group's shops, the words its titles share most, and its cheapest titles."""
+    shops = Counter(shop_of(product) for product in products)
+    print("             shops: " + ", ".join(f"{shop} {count:,}" for shop, count in shops.most_common(SHOPS)))
+    words = Counter(
+        word
+        for product in products
+        for word in set(re.findall(r"[a-z]{3,}", str(product.title or "").lower()))
+        if word not in _COMMON
+    )
+    commonest = sorted(words.items(), key=lambda item: (-item[1], item[0]))[:WORDS]
+    print("             words: " + ", ".join(f"{word} {count:,}" for word, count in commonest))
+    priced = sorted(
+        products,
+        key=lambda product: (parse_price_amount(product.price_text) is None, parse_price_amount(product.price_text) or 0, str(product.title)),
+    )
+    for product in priced[:EXAMPLES]:
+        price = parse_price_amount(product.price_text)
+        shown = f"{price:,.2f} {str(product.currency or '').strip().upper()}" if price is not None else "no price"
+        print(f"             {shown:>14} | {shop_of(product)} | {_short(product.title)}")
 
 
 def main(argv: list[str]) -> int:
@@ -101,24 +123,7 @@ def main(argv: list[str]) -> int:
     print("from -> to, the most first, with their shops, their titles' commonest words and the cheapest titles (price | shop | title):")
     for (old, new), products in sorted(changes.items(), key=lambda item: (-len(item[1]), item[0]))[:CHANGES]:
         print(f"  {len(products):>9,}  {old} -> {new}")
-        shops = Counter(shop_of(product) for product in products)
-        print("             shops: " + ", ".join(f"{shop} {count:,}" for shop, count in shops.most_common(SHOPS)))
-        words = Counter(
-            word
-            for product in products
-            for word in set(re.findall(r"[a-z]{3,}", str(product.title or "").lower()))
-            if word not in _COMMON
-        )
-        commonest = sorted(words.items(), key=lambda item: (-item[1], item[0]))[:WORDS]
-        print("             words: " + ", ".join(f"{word} {count:,}" for word, count in commonest))
-        priced = sorted(
-            products,
-            key=lambda product: (parse_price_amount(product.price_text) is None, parse_price_amount(product.price_text) or 0, str(product.title)),
-        )
-        for product in priced[:EXAMPLES]:
-            price = parse_price_amount(product.price_text)
-            shown = f"{price:,.2f} {str(product.currency or '').strip().upper()}" if price is not None else "no price"
-            print(f"             {shown:>14} | {shop_of(product)} | {_short(product.title)}")
+        _print_group(products, shop_of, parse_price_amount)
     moved = sorted(
         (name for name in set(before) | set(after) if before[name] != after[name]),
         key=lambda name: (-abs(after[name] - before[name]), name),
@@ -126,6 +131,28 @@ def main(argv: list[str]) -> int:
     print(f"the kinds whose counts change, the most first: {len(moved):,}")
     for name in moved[:LISTED]:
         print(f"  {before[name]:>9,} -> {after[name]:>9,}  {name}")
+    # The products the cap counts in a kind they are read as no product of: an accessory
+    # on a shelf naming a kind joins that kind (`catalogue_cap.joined_parts`), as the
+    # owner chose for the rings on a shelf of rings. Listed for the owner's word on how
+    # the cap counts them (2026-10-28: 3,075 on Finediam's shelf of rings).
+    try:
+        from picwise_providers.catalogue_cap import category_of, joined_parts, part_of
+
+        parts = [part_of(product, kinds) for product, kinds in zip(prepared.products, kinds_now)]
+        joined = joined_parts([category_of(product) for product in prepared.products], parts)
+        counted: dict[str, list] = defaultdict(list)
+        for product, kinds, part, joined_part in zip(prepared.products, kinds_now, parts, joined):
+            if "__accessory__" in kinds and joined_part != part:
+                counted[joined_part].append(product)
+        print(
+            f"accessories the cap counts in the kind their shelf names: {sum(map(len, counted.values())):,}"
+            f" in {len(counted):,} kinds, the most first:"
+        )
+        for kind, products in sorted(counted.items(), key=lambda item: (-len(item[1]), item[0]))[:CHANGES]:
+            print(f"  {len(products):>9,}  {kind}")
+            _print_group(products, shop_of, parse_price_amount)
+    except Exception as error:  # a measure only
+        print(f"the accessories on a kind's shelf could not be counted: {type(error).__name__}")
     print("the check of far prices again, with the kinds this checkout's rules read:")
     try:
         print_far([row for row in rows_of(prepared, kinds_now) if row[0] is not None])
