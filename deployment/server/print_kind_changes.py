@@ -8,15 +8,17 @@ after the check of far prices (`print_prices.py`) listed products read as the wr
 Each product is read again as the preparation reads it (`annotate_product_concepts` of
 its type, its categories and its title) with this checkout's rules, and its narrowest
 kind set against the one the server stored: how many are read as another kind, from which
-to which, with the shops and the cheapest titles of each change (price first puts the
-cheapest at the top of a page), and the kinds whose counts change; then the check of far
-prices again (`print_prices.print_far`), with the kinds read so: where it ends. Run by
+to which, with the shops, the words their titles share most and the cheapest titles of
+each change (price first puts the cheapest at the top of a page), and the kinds whose
+counts change; then the check of far prices again (`print_prices.print_far`), with the
+kinds read so: where it ends. Run by
 .github/workflows/server-cap.yml on GitHub's runner, from a copy of the server's file;
 nothing on the server or shown changes until a deployment. Counts, names, titles and
 prices only; the file's links are never printed. Always exits 0.
 """
 from __future__ import annotations
 
+import re
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -25,6 +27,9 @@ CHANGES = 20
 SHOPS = 4
 EXAMPLES = 5
 LISTED = 20
+WORDS = 12
+# Words too common in titles to say what a group of products is.
+_COMMON = frozenset("and the for with from pack set new black white".split())
 
 
 def _short(text: str, width: int = 70) -> str:
@@ -93,11 +98,19 @@ def main(argv: list[str]) -> int:
         f" read again with this checkout's rules, {changed:,} are read as another kind"
         f" ({100 * changed / max(total, 1):.2f}%); {widened:,} keep their kind and gain or lose a broader one"
     )
-    print("from -> to, the most first, with their shops and the cheapest titles (price | shop | title):")
+    print("from -> to, the most first, with their shops, their titles' commonest words and the cheapest titles (price | shop | title):")
     for (old, new), products in sorted(changes.items(), key=lambda item: (-len(item[1]), item[0]))[:CHANGES]:
         print(f"  {len(products):>9,}  {old} -> {new}")
         shops = Counter(shop_of(product) for product in products)
         print("             shops: " + ", ".join(f"{shop} {count:,}" for shop, count in shops.most_common(SHOPS)))
+        words = Counter(
+            word
+            for product in products
+            for word in set(re.findall(r"[a-z]{3,}", str(product.title or "").lower()))
+            if word not in _COMMON
+        )
+        commonest = sorted(words.items(), key=lambda item: (-item[1], item[0]))[:WORDS]
+        print("             words: " + ", ".join(f"{word} {count:,}" for word, count in commonest))
         priced = sorted(
             products,
             key=lambda product: (parse_price_amount(product.price_text) is None, parse_price_amount(product.price_text) or 0, str(product.title)),

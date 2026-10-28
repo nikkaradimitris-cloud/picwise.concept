@@ -4,11 +4,11 @@
 copy of the server's file (owner, 2026-10-27: «Διόρθω τους κανόνες και άντε να δούμε πού
 θα καταλήξουμε τελικά»). Pinned here: each product is read again with this checkout's
 rules and set against the kind stored with it; the changes are counted from kind to
-kind, the most first, with their shops and cheapest titles; a product that keeps its
-narrowest kind and only gains a broader one (a charging cable, now a cable too) is no
-change; the kinds whose counts change are listed; the check of far prices is made
-again with the kinds read so; an unreadable file says so; nothing printed holds a link;
-every case exits 0.
+kind, the most first, with their shops, their titles' commonest words and cheapest
+titles; a product that keeps its narrowest kind and only gains a broader one (a
+charging cable, now a cable too) is no change; the kinds whose counts change are
+listed; the check of far prices is made again with the kinds read so; an unreadable
+file says so; nothing printed holds a link; every case exits 0.
 
 Every row is local test data: fictional brands and shops, `.invalid` addresses; the kinds
 stored are those the rules before 2026-10-27 gave such titles.
@@ -109,7 +109,10 @@ class PrintKindChangesTests(unittest.TestCase):
         first = next(index for index, line in enumerate(lines) if "->" in line and "charging_cable" in line)
         self.assertRegex(lines[first], r"^\s+3  charging_cable -> cable$")
         self.assertIn("shops: Fictional Store 3", lines[first + 1])
-        self.assertIn("1.99 GBP | Fictional Store | Fictional Satellite Aerial Coaxial Cable 10m", lines[first + 2])
+        self.assertEqual(
+            lines[first + 2].strip(), "words: cable 3, fictional 3, aerial 1, coaxial 1, hdmi 1, satellite 1, speaker 1"
+        )
+        self.assertIn("1.99 GBP | Fictional Store | Fictional Satellite Aerial Coaxial Cable 10m", lines[first + 3])
         self.assertRegex(out, r"\n\s+2  earrings -> \(accessory\)\n")
         self.assertIn("4.99 GBP | Fictional Jewels | Fictional Silicone Earring Backs", out)
         self.assertRegex(out, r"\n\s+1  sauna -> \(accessory\)\n")

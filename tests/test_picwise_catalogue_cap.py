@@ -7,7 +7,8 @@ information first; yesterday's kept ones the next night's starting point, more p
 a larger cap and fewer a smaller one in proportion. Pinned here: the cap is 15% of what
 is kept, worked out at once (no category over it, the next number up would be), and a
 category under it keeps all; inside a category the places are shared fairly over its
-kinds; inside a kind the clean ones first, those sold by more than one shop first among
+kinds, a shelf naming a kind joining it unless the product is an accessory; inside a
+kind the clean ones first, those sold by more than one shop first among
 them, spread over the price range; the night before's kept ones stay while they fit,
 and when there are fewer places the ones that stay keep their spread; the same input
 gives the same choice; too few categories cut nothing.
@@ -136,6 +137,23 @@ class FairShareTests(unittest.TestCase):
             joined_parts(categories, parts),
             ["ring", "watch", "ring", "watch", "t_shirt", "t_shirt", "shelf: home & garden > decor > rings"],
         )
+
+    def test_an_accessory_stays_on_its_shelf(self) -> None:
+        # Earring backs on a shelf of earrings are no earrings (owner, 2026-10-27).
+        shelf = "shelf: clothing & accessories > jewellery & watches > earrings"
+        self.assertEqual(
+            joined_parts(["apparel & accessories > jewelry"] * 3, ["earrings", shelf, shelf], [False, False, True]),
+            ["earrings", "earrings", shelf],
+        )
+        earrings = "Apparel & Accessories > Jewelry > Earrings"
+        products = [_product(index, earrings, gtin=_gtin(index)) for index in range(60)]
+        products += [_product(10_000 + index, name, gtin=_gtin(10_000 + index)) for index, name in enumerate(SMALL * 20)]
+        kinds = [frozenset({"earrings"})] * 40 + [frozenset()] * 10 + [frozenset({"__accessory__"})] * 10
+        kinds += [frozenset()] * (len(products) - 60)
+        inside = cap_catalogue(products, kinds, feed_ctx=_context(products)).inside["apparel & accessories > jewelry"]
+        self.assertEqual(set(inside), {"earrings", "shelf: apparel & accessories > jewelry > earrings"})
+        self.assertEqual(inside["earrings"][0], 50)
+        self.assertEqual(inside["shelf: apparel & accessories > jewelry > earrings"][0], 10)
 
     def test_rings_on_a_shelf_of_rings_take_no_second_share(self) -> None:
         rings = [_product(index, JEWELLERY, gtin=_gtin(index)) for index in range(300)]

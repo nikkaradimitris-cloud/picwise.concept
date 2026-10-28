@@ -83,13 +83,19 @@ def _distance(price: float, usual: tuple[float, float, float]) -> float:
 
 def rows_of(prepared, kinds) -> list[tuple]:
     """Per product: its price (None when unread), currency, category, kind or shelf (a
-    shelf naming a kind joins it, as in the cap), shop and short title. `kinds` are the
-    stored ones, or those this checkout reads (`print_kind_changes.py`)."""
+    shelf naming a kind joins it, as in the cap, unless the product is an accessory),
+    shop and short title. `kinds` are the stored ones, or those this checkout reads
+    (`print_kind_changes.py`)."""
+    from picwise_nlu.concept_understanding import ACCESSORY_MARKER
     from picwise_providers.catalogue_cap import category_of, joined_parts, part_of, shop_of
     from picwise_providers.decision_labels import parse_price_amount
 
     categories = [category_of(product) for product in prepared.products]
-    parts = joined_parts(categories, [part_of(product, product_kinds) for product, product_kinds in zip(prepared.products, kinds)])
+    parts = joined_parts(
+        categories,
+        [part_of(product, product_kinds) for product, product_kinds in zip(prepared.products, kinds)],
+        [ACCESSORY_MARKER in product_kinds for product_kinds in kinds],
+    )
     return [
         (
             parse_price_amount(product.price_text),
