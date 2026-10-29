@@ -18,7 +18,8 @@
 # its commit), set against the next's, and the last against this commit's. Then which
 # words are general and the choices a search for each could offer (owner, 2026-10-28/29:
 # «καλώδιο» answered with which cable, one logic for every general word;
-# deployment/server/print_choices.py, picwise_providers.kind_choices).
+# deployment/server/print_choices.py, picwise_providers.kind_choices): each choice in the
+# words the titles use, from 20 products whatever its share of the kind.
 # The rules reach the server only with a deployment. Runs when this file is pushed to
 # the working branch. The repository is public and so is this log: the server's names and
 # addresses are masked, and the measures print counts, names, titles and prices, never a
