@@ -1,4 +1,4 @@
-"""The choices a search for a general word could offer: measured, nothing shown changes.
+"""The choices a search for a general word offers: "What kind of cable?".
 
 Owner, 2026-10-28: «Το search όταν του βάζεις καλώδιο πρέπει να συμπληρώνει προτάσεις τι
 καλώδιο ζητάει: καλώδιο τηλεόρασης, καλώδιο φόρτισης, καλώδιο ίντερνετ ... το ίδιο με όλες
@@ -23,8 +23,15 @@ A group is a choice from `MIN_GROUP` products, however large the kind: on the se
 catalogue of 2026-10-29 one shop's fabric extension leads were 81% of all cables, and a
 share would have left "cable" without its HDMI, coaxial and charging cables. A kind is
 general with `MIN_CHOICES` choices of one way. Measured first on a copy of the server's
-catalogue (`deployment/server/print_choices.py`): which kinds are general, and what each
-would offer, before anything is built into the search.
+catalogue (`deployment/server/print_choices.py`, `measure_kind_choices`): 81 of the 116
+kinds of 50 or more products were general.
+
+What a search offers (`build_kind_choices`; owner, 2026-10-29: «Ναι προχώρα, βάλ' το στο
+search»): a general kind's narrower kinds and the words its titles name it with, each a
+search that narrows it as the understanding reads it, the largest first. Worked out
+each night with the prepared feed (`state.prepare_feed_catalogue`), shown above the
+results of a search naming only the kind (`picwise_surface.reference`) and offered in
+the search box's suggestions.
 """
 from __future__ import annotations
 
@@ -41,8 +48,9 @@ from picwise_nlu.concept_understanding import (
     _find_spans,
     _singular,
     normalize_understanding_text,
+    understand_product_query,
 )
-from picwise_nlu.product_concepts import broader_concepts
+from picwise_nlu.product_concepts import broader_concepts, get_product_concepts_by_id
 
 from .catalogue_balance import _narrowest_kind
 from .contracts import ProviderProduct
@@ -167,10 +175,22 @@ def _choices(counts: Counter) -> tuple[tuple[str, int], ...]:
     )[:_KEPT]
 
 
-def measure_kind_choices(
+@dataclass
+class _KindGroups:
+    products: int
+    nouns: Counter
+    # "word noun" -> products, and the narrowest kinds of those products.
+    words: Counter
+    word_kinds: dict[str, Counter]
+    narrower: Counter
+    shelves: Counter
+
+
+def _kind_groups(
     products: Sequence[ProviderProduct], kinds: Sequence[Collection[str]]
-) -> ChoicesMeasure:
-    """Every kind of at least `MIN_PRODUCTS` products, grouped (module docstring).
+) -> tuple[dict[str, _KindGroups], tuple[tuple[str, int], ...]]:
+    """Every kind of at least `MIN_PRODUCTS` products, grouped (module docstring), and
+    the words left out as saying how a product is, with how many kinds each came before.
     `kinds` holds each product's kinds, as the search reads them; a kind counts the
     products a search for it would list (`_context_allows_member`: a dog bed is no bed)."""
     members: dict[str, list[int]] = defaultdict(list)
@@ -201,37 +221,112 @@ def measure_kind_choices(
             if count >= _MIN_WORD_PRODUCTS:
                 word_kinds[word] += 1
     generic = {word for word, count in word_kinds.items() if count >= GENERIC_KINDS}
-    measured = []
+    groups: dict[str, _KindGroups] = {}
     for kind, rows in read.items():
-        nouns: Counter = Counter()
-        words: Counter = Counter()
-        narrower: Counter = Counter()
-        shelves: Counter = Counter()
+        group = _KindGroups(len(rows), Counter(), Counter(), defaultdict(Counter), Counter(), Counter())
         for index in rows:
             named = before[kind][index]
-            if named is not None:
-                nouns[named[1]] += 1
-                if named[0] and named[0] not in generic:
-                    words[f"{named[0]} {named[1]}"] += 1
             narrowest = _narrowest_kind(kinds[index])
+            if named is not None:
+                group.nouns[named[1]] += 1
+                if named[0] and named[0] not in generic:
+                    text = f"{named[0]} {named[1]}"
+                    group.words[text] += 1
+                    group.word_kinds[text][narrowest] += 1
             if narrowest and narrowest != kind:
-                narrower[narrowest] += 1
+                group.narrower[narrowest] += 1
             shelf = narrowest_shelf(products[index])
             if shelf:
-                shelves[shelf] += 1
-        measured.append(
-            KindChoices(
-                kind=kind,
-                products=len(rows),
-                noun=nouns.most_common(1)[0][0] if nouns else "",
-                named=sum(nouns.values()),
-                words=_choices(words),
-                narrower=_choices(narrower),
-                shelves=_choices(shelves),
-            )
-        )
-    measured.sort(key=lambda entry: (-entry.products, entry.kind))
-    return ChoicesMeasure(
-        kinds=tuple(measured),
-        generic_words=tuple(sorted(((word, word_kinds[word]) for word in generic), key=lambda item: (-item[1], item[0]))),
+                group.shelves[shelf] += 1
+        groups[kind] = group
+    generic_words = tuple(
+        sorted(((word, word_kinds[word]) for word in generic), key=lambda item: (-item[1], item[0]))
     )
+    return groups, generic_words
+
+
+def measure_kind_choices(
+    products: Sequence[ProviderProduct], kinds: Sequence[Collection[str]]
+) -> ChoicesMeasure:
+    """Every kind of at least `MIN_PRODUCTS` products, grouped (module docstring)."""
+    groups, generic_words = _kind_groups(products, kinds)
+    measured = [
+        KindChoices(
+            kind=kind,
+            products=group.products,
+            noun=group.nouns.most_common(1)[0][0] if group.nouns else "",
+            named=sum(group.nouns.values()),
+            words=_choices(group.words),
+            narrower=_choices(group.narrower),
+            shelves=_choices(group.shelves),
+        )
+        for kind, group in groups.items()
+    ]
+    measured.sort(key=lambda entry: (-entry.products, entry.kind))
+    return ChoicesMeasure(kinds=tuple(measured), generic_words=generic_words)
+
+
+@dataclass(frozen=True)
+class KindChoice:
+    """One choice a search for a general kind offers: the words of a search that narrows
+    it, and how many of the kind's products had them when the choices were worked out."""
+
+    text: str
+    products: int
+
+
+# How many choices a general kind offers, the largest first.
+CHOICES_OFFERED = 6
+# A choice by the words gives way to a narrower kind that holds this share of its
+# products: "charger cable" and "usb cable" are charging cables, offered as such.
+_COVERED_SHARE = 0.8
+
+
+def _narrows(text: str, kind: str) -> bool:
+    """Does a search for `text` answer a narrower part of `kind`: a narrower kind, or the
+    kind with a word to filter by? On the server's catalogue of 2026-10-29 "pendant
+    light" read as every lamp (one of the lamp's own names), and "funny shirt" as an
+    oven; neither is offered for what it would not answer."""
+    reading = understand_product_query(text)
+    if not reading.understood or reading.concept_id is None:
+        return False
+    if reading.concept_id != kind:
+        return kind in broader_concepts(reading.concept_id)
+    return bool(reading.filters)
+
+
+def build_kind_choices(
+    products: Sequence[ProviderProduct], kinds: Sequence[Collection[str]]
+) -> dict[str, tuple[KindChoice, ...]]:
+    """The choices each general kind offers, for the products a search can show: its
+    narrower kinds (named as the lexicon first names them) and the words its titles name
+    it with, from `MIN_GROUP` products each, the largest first, at most
+    `CHOICES_OFFERED`; only those the search reads as narrowing it (`_narrows`). A kind
+    is general, and listed, with `MIN_CHOICES` of them."""
+    groups, _generic_words = _kind_groups(products, kinds)
+    by_id = get_product_concepts_by_id()
+    offered: dict[str, tuple[KindChoice, ...]] = {}
+    for kind, group in groups.items():
+        narrower = {name: count for name, count in group.narrower.items() if count >= MIN_GROUP}
+        candidates: dict[str, int] = {}
+        for narrower_kind, count in narrower.items():
+            concept = by_id.get(narrower_kind)
+            name = concept.primary_english if concept is not None else ""
+            if name:
+                candidates[name] = max(candidates.get(name, 0), count)
+        for text, count in group.words.items():
+            if count < MIN_GROUP:
+                continue
+            inside = group.word_kinds[text]
+            if any(name in narrower and held >= _COVERED_SHARE * count for name, held in inside.items()):
+                continue
+            candidates[text] = max(candidates.get(text, 0), count)
+        kept: list[KindChoice] = []
+        for text, count in sorted(candidates.items(), key=lambda item: (-item[1], item[0])):
+            if len(kept) >= CHOICES_OFFERED:
+                break
+            if _narrows(text, kind):
+                kept.append(KindChoice(text=text, products=count))
+        if len(kept) >= MIN_CHOICES:
+            offered[kind] = tuple(kept)
+    return offered
