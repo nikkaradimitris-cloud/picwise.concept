@@ -22,7 +22,10 @@
 # words the titles use, from 20 products whatever its share of the kind. Then what a buyer
 # would see (owner, 2026-10-29: «Ναι προχώρα, βάλ' το στο search»): the copy prepared again
 # with this commit's rules and searched in-process, each general word and each of its
-# choices (deployment/server/print_search_choices.py), before any deployment.
+# choices (deployment/server/print_search_choices.py), before any deployment. Before it,
+# what each rule of the choices changes on its own (owner, 2026-10-29: «εσύ πρέπει να
+# αποφασίσεις ποιος είναι ο βέλτιστος τρόπος»; deployment/server/print_choice_rules.py):
+# one shop's words, halves of phrases, choices keeping the whole kind, the written noun.
 # The rules reach the server only with a deployment. Runs when this file is pushed to
 # the working branch. The repository is public and so is this log: the server's names and
 # addresses are masked, and the measures print counts, names, titles and prices, never a
@@ -183,6 +186,9 @@ jobs:
       - name: Which words are general, and the choices a search for each could offer
         if: always() && steps.copy.outcome == 'success'
         run: python3 deployment/server/print_choices.py "$RUNNER_TEMP/catalogue.json.gz"
+      - name: What each rule of the choices changes, each on its own
+        if: always() && steps.copy.outcome == 'success'
+        run: python3 deployment/server/print_choice_rules.py "$RUNNER_TEMP/catalogue.json.gz"
       - name: What a buyer would see for each general word, searched on the copy
         if: always() && steps.copy.outcome == 'success'
         run: python3 deployment/server/print_search_choices.py "$RUNNER_TEMP/catalogue.json.gz"
