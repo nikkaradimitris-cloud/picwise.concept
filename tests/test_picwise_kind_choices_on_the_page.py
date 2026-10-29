@@ -8,7 +8,8 @@ search», after the measure on the server's catalogue (runs 40868599997, 4086962
 Pinned here, through the deployed entry point (`api/index.py`) on a feed file: the page
 for "cable" (and «καλώδιο») shows its cheapest cables and above them "What kind of
 cable?" with the searches that narrow it, the largest first, each a link to its search,
-which finds those cables; a search that already narrows ("hdmi cable") asks nothing,
+which finds those cables, and the vocabulary's older "This search is too broad" does not
+ask too; a search that already narrows ("hdmi cable") asks nothing,
 and nor does one for a kind with one group only; the box's list offers the choices, so
 typing "cable" lists them after it; the prepared feed carries the choices, read back as
 written. Every row is local test data: fictional brands, `.invalid` addresses.
@@ -127,6 +128,10 @@ class KindChoicesOnThePageTests(unittest.TestCase):
         self.assertLess(start, page.index('<section class="pw-grid"'))
         # The cheapest cables are still the answer.
         self.assertIn("Fixturon Coaxial Cable 1m", page)
+        # One question: the vocabulary's older list ("usb cable", "lightning cable",
+        # which this catalogue does not have) does not ask too.
+        self.assertNotIn("This search is too broad", page)
+        self.assertNotIn("lightning cable", page)
 
     def test_the_greek_word_asks_the_same(self) -> None:
         page = self._get("/search", "q=%CE%BA%CE%B1%CE%BB%CF%8E%CE%B4%CE%B9%CE%BF")
