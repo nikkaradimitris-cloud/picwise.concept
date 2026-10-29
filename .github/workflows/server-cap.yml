@@ -15,7 +15,10 @@
 # put right after its name. Then each change of the rules on its own (owner, 2026-10-28:
 # the three things to finish, each measured before it is built): the kinds the rules of
 # each commit of RULES_STEPS read (deployment/server/kinds_of.py, each from a worktree of
-# its commit), set against the next's, and the last against this commit's.
+# its commit), set against the next's, and the last against this commit's. Then which
+# words are general and the choices a search for each could offer (owner, 2026-10-28/29:
+# «καλώδιο» answered with which cable, one logic for every general word;
+# deployment/server/print_choices.py, picwise_providers.kind_choices).
 # The rules reach the server only with a deployment. Runs when this file is pushed to
 # the working branch. The repository is public and so is this log: the server's names and
 # addresses are masked, and the measures print counts, names, titles and prices, never a
@@ -38,12 +41,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      # The commits whose rules are measured step by step before this one's (2026-10-29):
-      # the work branch before a kind a title names only after the English "with" is read
-      # as the product when the shop's shelf names it too, then with it; this commit adds
-      # the metals that may follow a product's name, read only right after it ("...
-      # Engagement Ring Platinum").
-      RULES_STEPS: cb40587f848579298f3c9afc53e744ef9a476f1a 0546e91d2552e9b9795af697cca87b5cea0c2bd6
+      # The commits whose rules are measured step by step before this one's, one change
+      # of the kind rules at a time (2026-10-29: cb40587 and 0546e91 for the English
+      # "with" and the metals after a name). None this time: the run measures the
+      # choices a search for a general word could offer, with this commit's rules.
+      RULES_STEPS: ""
     steps:
       - uses: actions/checkout@v5
         with:
@@ -174,6 +176,9 @@ jobs:
           # One "--step NAME=FILE" per line, without spaces: split into words on purpose.
           # shellcheck disable=SC2046
           python3 deployment/server/print_kind_changes.py "$RUNNER_TEMP/catalogue.json.gz" $(cat "$RUNNER_TEMP/steps.txt")
+      - name: Which words are general, and the choices a search for each could offer
+        if: always() && steps.copy.outcome == 'success'
+        run: python3 deployment/server/print_choices.py "$RUNNER_TEMP/catalogue.json.gz"
       - name: Remove the key and the copy from the runner
         if: always()
         run: |
