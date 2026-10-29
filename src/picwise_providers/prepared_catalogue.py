@@ -14,7 +14,8 @@ judged by the code that wrote it:
   (`LEFT_OUT_COLUMNS`), with what the feed says to call it not new and what kind it
   is;
 - the feed-wide availability context those judgements were made against;
-- the feed's status, the counts the scanning screen names, and the search suggestions.
+- the feed's status, the counts the scanning screen names, the search suggestions, and
+  the choices a search for a general kind offers ("What kind of cable?", `kind_choices`).
 
 It never holds the feed's link, which carries the account's API key.
 
@@ -35,12 +36,13 @@ import json
 import os
 import tempfile
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 from .contracts import FeedAvailabilityContext, ProviderFeedStatus, ProviderProduct
+from .kind_choices import KindChoice
 from .suggestions import SearchSuggestion
 
 PREPARED_CATALOGUE_ENV = "PICWISE_PREPARED_CATALOGUE_FILE"
@@ -104,6 +106,8 @@ class PreparedCatalogue:
     # so a server loading the file does not work them out again for every product.
     # Empty when not given; the search then works them out itself.
     search_fields: tuple[dict[str, str], ...] = ()
+    # Per general kind, the choices a search for it offers, the largest first.
+    choices: dict[str, tuple[KindChoice, ...]] = field(default_factory=dict)
 
 
 def code_fingerprint(*, repo_root: Path | None = None) -> str:
@@ -238,6 +242,10 @@ def write_prepared_catalogue(prepared: PreparedCatalogue, path: Path) -> int:
         "eligible_count": prepared.eligible_count,
         "shop_count": prepared.shop_count,
         "suggestions": [[row.text, row.products] for row in prepared.suggestions],
+        "choices": {
+            kind: [[choice.text, choice.products] for choice in choices]
+            for kind, choices in sorted(prepared.choices.items())
+        },
         "strings": list(table),
         "search_fields": list(field_names),
         "raw_columns": [list(keys) for keys in columns],
@@ -403,4 +411,9 @@ def _catalogue_from_payload(payload: dict[str, Any], prepared_at: datetime) -> P
             for text, count in payload["suggestions"]
         ),
         search_fields=tuple(search_fields),
+        # A file written before the choices were (2026-10-29) carries none.
+        choices={
+            str(kind): tuple(KindChoice(text=str(text), products=int(count)) for text, count in rows)
+            for kind, rows in (payload.get("choices") or {}).items()
+        },
     )

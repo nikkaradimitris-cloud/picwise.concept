@@ -85,7 +85,8 @@ def main(argv: list[str] | None = None) -> int:
         f"prepare_catalogue: {prepared.feed_status.product_count} rows, "
         f"{len(prepared.products)} products a card can show "
         f"({sum(1 for condition in prepared.non_new if not condition)} new), "
-        f"{prepared.shop_count} shops, {len(prepared.suggestions)} suggestions; "
+        f"{prepared.shop_count} shops, {len(prepared.suggestions)} suggestions, "
+        f"{len(prepared.choices)} kinds asking which one is meant; "
         f"{size / 1e6:.1f} MB written to {args.out} in {time.perf_counter() - started:.1f} s"
     )
     if args.static_dir is not None:
