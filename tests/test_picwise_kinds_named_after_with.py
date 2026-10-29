@@ -67,6 +67,12 @@ class NamedAfterWithTests(unittest.TestCase):
         ):
             with self.subTest(title=title):
                 self.assertEqual(_kinds("", "", title), {"ring"})
+        # Only right after a name: elsewhere a metal may name a product's line, and the
+        # same check on the catalogue made this sack of dog food doubtful.
+        self.assertIn(
+            "dog_food",
+            _kinds("", "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Food", "Dr John Titanium 15KG"),
+        )
 
     def test_without_a_shelf_naming_the_kind_it_is_still_an_accessory(self) -> None:
         title = "2.00 Ct Lab Grown 3 Stone With Side Halo Diamond Engagement Ring 18K White Gold"
