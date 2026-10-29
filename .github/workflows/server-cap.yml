@@ -14,8 +14,8 @@
 # names (the check of far prices leaves them on their shelf), with the word their titles
 # put right after its name. Then each change of the rules on its own (owner, 2026-10-28:
 # the three things to finish, each measured before it is built): the kinds the rules of
-# RULES_BEFORE read (deployment/server/kinds_of.py, from a checkout of that commit beside
-# this one), set against this commit's.
+# each commit of RULES_STEPS read (deployment/server/kinds_of.py, each from a worktree of
+# its commit), set against the next's, and the last against this commit's.
 # The rules reach the server only with a deployment. Runs when this file is pushed to
 # the working branch. The repository is public and so is this log: the server's names and
 # addresses are masked, and the measures print counts, names, titles and prices, never a
@@ -38,20 +38,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      # The commit whose rules this one's are set against: the work branch before the
-      # change measured (2026-10-29: a kind a title names only after the English "with",
-      # read as the product when the shop's shelf names it too).
-      RULES_BEFORE: cb40587f848579298f3c9afc53e744ef9a476f1a
+      # The commits whose rules are measured step by step before this one's (2026-10-29):
+      # the work branch before a kind a title names only after the English "with" is read
+      # as the product when the shop's shelf names it too, then with it; this commit adds
+      # the metals that may follow a product's name ("... Engagement Ring Platinum").
+      RULES_STEPS: cb40587f848579298f3c9afc53e744ef9a476f1a 0546e91d2552e9b9795af697cca87b5cea0c2bd6
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
-      - name: The rules before the change, beside this checkout
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ env.RULES_BEFORE }}
-          path: rules-before
-          persist-credentials: false
+          # The commits of RULES_STEPS, for their worktrees.
+          fetch-depth: 0
       - name: Connect with the key, check the server's identity, mask its names
         id: connect
         env:
@@ -161,14 +158,23 @@ jobs:
       - name: Prices at the ends, and far from their kind's
         if: always() && steps.copy.outcome == 'success'
         run: python3 deployment/server/print_prices.py "$RUNNER_TEMP/catalogue.json.gz"
-      - name: The kinds the rules before the change read
+      - name: The kinds the rules of each earlier step read
         if: always() && steps.copy.outcome == 'success'
-        run: python3 deployment/server/kinds_of.py rules-before "$RUNNER_TEMP/catalogue.json.gz" "$RUNNER_TEMP/kinds-before.txt"
+        run: |
+          : > "$RUNNER_TEMP/steps.txt"
+          for commit in $RULES_STEPS; do
+            git worktree add --detach --quiet "$RUNNER_TEMP/rules-$commit" "$commit"
+            python3 deployment/server/kinds_of.py "$RUNNER_TEMP/rules-$commit" "$RUNNER_TEMP/catalogue.json.gz" "$RUNNER_TEMP/kinds-$commit.txt"
+            printf -- '--step %s=%s\n' "${commit:0:7}" "$RUNNER_TEMP/kinds-$commit.txt" >> "$RUNNER_TEMP/steps.txt"
+          done
       - name: The kinds this commit's rules read, each change on its own, and the far prices again with them
         if: always() && steps.copy.outcome == 'success'
         run: |
-          python3 deployment/server/print_kind_changes.py "$RUNNER_TEMP/catalogue.json.gz" \
-            --step "${RULES_BEFORE:0:7}=$RUNNER_TEMP/kinds-before.txt"
+          # One "--step NAME=FILE" per line, without spaces: split into words on purpose.
+          # shellcheck disable=SC2046
+          python3 deployment/server/print_kind_changes.py "$RUNNER_TEMP/catalogue.json.gz" $(cat "$RUNNER_TEMP/steps.txt")
       - name: Remove the key and the copy from the runner
         if: always()
-        run: rm -f ~/.ssh/deploy_key ~/.ssh/config "$RUNNER_TEMP/catalogue.json.gz" "$RUNNER_TEMP/kinds-before.txt"
+        run: |
+          rm -f ~/.ssh/deploy_key ~/.ssh/config "$RUNNER_TEMP/catalogue.json.gz" "$RUNNER_TEMP/steps.txt"
+          rm -rf "$RUNNER_TEMP"/rules-* "$RUNNER_TEMP"/kinds-*.txt
