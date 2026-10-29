@@ -41,7 +41,8 @@ jobs:
       # The commits whose rules are measured step by step before this one's (2026-10-29):
       # the work branch before a kind a title names only after the English "with" is read
       # as the product when the shop's shelf names it too, then with it; this commit adds
-      # the metals that may follow a product's name ("... Engagement Ring Platinum").
+      # the metals that may follow a product's name, read only right after it ("...
+      # Engagement Ring Platinum").
       RULES_STEPS: cb40587f848579298f3c9afc53e744ef9a476f1a 0546e91d2552e9b9795af697cca87b5cea0c2bd6
     steps:
       - uses: actions/checkout@v5
