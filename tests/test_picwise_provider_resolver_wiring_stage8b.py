@@ -125,10 +125,20 @@ class ProviderResolverWiringStage8BTests(unittest.TestCase):
                 self.assertIsNone(resolution.provider_feed_status)
 
     def test_broad_query_suggestions_skip_provider_feed_lookup(self) -> None:
-        resolution = resolve_live_search("charger")
+        # A word read as a kind only by correcting it ("protector" as projector) keeps the
+        # vocabulary's suggestions alone.
+        resolution = resolve_live_search("protector")
         self.assertEqual(resolution.resolver_state, "broad_query_suggestions")
         self.assertFalse(resolution.result_allowed)
         self.assertIsNone(resolution.provider_feed_status)
+        self.assertGreaterEqual(len(resolution.suggestions), 2)
+
+    def test_a_kind_named_exactly_looks_the_feed_up_with_its_suggestions(self) -> None:
+        # Owner, 2026-10-29: "charger", a kind's own name, is searched in the feed too.
+        resolution = resolve_live_search("charger")
+        self.assertEqual(resolution.resolver_state, "broad_query_suggestions")
+        self.assertFalse(resolution.result_allowed)
+        self.assertEqual(resolution.provider_feed_status, "provider_feed_not_configured")
         self.assertGreaterEqual(len(resolution.suggestions), 2)
 
 

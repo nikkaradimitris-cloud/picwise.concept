@@ -196,10 +196,24 @@ class FeedSelectionSafetyStage8CPatchTests(unittest.TestCase):
                 self.assertFalse(resolution.result_allowed)
 
     def test_highly_ambiguous_broad_query_skips_feed_selection(self) -> None:
+        # Read as a kind only by correcting the word ("chain" as chair, "tools" as toy):
+        # the vocabulary's suggestions answer, and the feed is not searched.
+        for query in ("chain", "tools"):
+            with self.subTest(query=query):
+                resolution = resolve_live_search(query)
+                self.assertEqual(resolution.resolver_state, "broad_query_suggestions")
+                self.assertIsNone(resolution.provider_feed_selection_status)
+                self.assertIsNone(resolution.provider_feed_status)
+
+    def test_a_kind_named_exactly_reaches_the_feed_despite_many_suggestions(self) -> None:
+        # Owner, 2026-10-29: one logic for every general word. "charger" is a kind's own
+        # name: it keeps the vocabulary's suggestions, and the feed is searched for it
+        # (none is configured here), where the catalogue asks which one is meant.
         resolution = resolve_live_search("charger")
         self.assertEqual(resolution.resolver_state, "broad_query_suggestions")
+        self.assertGreaterEqual(len(resolution.suggestions), 2)
+        self.assertEqual(resolution.provider_feed_status, "provider_feed_not_configured")
         self.assertIsNone(resolution.provider_feed_selection_status)
-        self.assertIsNone(resolution.provider_feed_status)
 
     def test_no_price_band_filtering_in_selection(self) -> None:
         config = _feed_config()
