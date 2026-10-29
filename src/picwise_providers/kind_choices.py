@@ -32,12 +32,31 @@ search that narrows it as the understanding reads it, the largest first. Worked 
 each night with the prepared feed (`state.prepare_feed_catalogue`), shown above the
 results of a search naming only the kind (`picwise_surface.reference`) and offered in
 the search box's suggestions.
+
+The rules that keep what it offers true (owner, 2026-10-29: «εσύ πρέπει να αποφασίσεις
+ποιος είναι ο βέλτιστος τρόπος»; found on the server's catalogue the same day, run
+`40911685093`), each for every kind alike and each measured on its own
+(`deployment/server/print_choice_rules.py`):
+- `RULE_SHOPS`: a choice by the words is named so by `MIN_SHOPS` shops or more. One
+  shop's own words are no kind of the product: "robertson hoodie", "eng ring";
+- `RULE_PHRASES`: a word that is half of a phrase is read whole. When most of its titles
+  put a number before it ("3 Piece Suit", "2 Door Wardrobe") or a word the two make one
+  modifier with, as they do before the nouns of other kinds too ("Slim Fit Suit", "Slim
+  Fit Jeans"; "Long Sleeve Shirt", "Long Sleeve Dress"), each whole phrase of
+  `MIN_GROUP` products is the choice and the half is none: "3 piece suit", "slim fit
+  suit", not "piece suit", "fit suit". "Velvet Dining Chair" is a dining chair: "velvet
+  dining" comes before no other noun;
+- `RULE_WHOLE_KIND`: no choice whose search keeps `KEEPS_SHARE` of the kind or more:
+  "diamond ring" kept 134,488 of 141,635 rings and narrowed nothing;
+- `RULE_WRITTEN`: the noun as the titles write it most, not cut to a singular the search
+  does not read: "bootcut jeans", "caravan mattresses", not "bootcut jean", "caravan
+  mattresse".
 """
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from dataclasses import dataclass
-from typing import Collection, Sequence
+from dataclasses import dataclass, field
+from typing import Collection, Mapping, Sequence
 
 from picwise_nlu.concept_understanding import (
     ACCESSORY_MARKER,
@@ -54,7 +73,20 @@ from picwise_nlu.product_concepts import broader_concepts, get_product_concepts_
 
 from .catalogue_balance import _narrowest_kind
 from .contracts import ProviderProduct
-from .search_selection import _CONNECTIVE_TOKENS, _KIND_MARKERS, _PURPOSE_TOKENS, _context_allows_member
+from .search_selection import (
+    _CONNECTIVE_TOKENS,
+    _FILTER_FIELDS,
+    _KIND_MARKERS,
+    _KIND_PHRASE_FIELDS,
+    _PURPOSE_TOKENS,
+    _carries,
+    _context_allows_member,
+    _filter_units,
+    _kind_modifier,
+    _kind_name_pattern,
+    _merchant_identity,
+    _product_search_fields,
+)
 
 # A kind is read for choices from this many products.
 MIN_PRODUCTS = 50
@@ -68,6 +100,8 @@ GENERIC_KINDS = 8
 _MIN_WORD_PRODUCTS = 3
 # How many choices of each way a kind keeps, the largest first.
 _KEPT = 12
+# Two words make one modifier when they come before the nouns of this many kinds.
+_PAIR_NOUNS = 2
 
 
 @dataclass(frozen=True)
@@ -125,6 +159,35 @@ def _names_in(title: str) -> tuple[tuple[str, ...], list, list[int] | None, list
     return tokens, spans, (owners if tuple(parts_read) == tokens else None), wholes
 
 
+@dataclass(frozen=True)
+class _Named:
+    """How one title names a kind: the word right before the noun of its name, that noun
+    in the singular and as written, and the word before that word (`RULE_PHRASES`)."""
+
+    word: str
+    noun: str
+    written: str
+    lead: str = ""
+
+
+def _could_be_word(word: str, noun: str, brand_words: Collection[str]) -> bool:
+    return not (
+        len(word) < 2
+        or not word.replace("-", "").replace("'", "").isalpha()
+        or word in _CONNECTIVE_TOKENS
+        or word in _PURPOSE_TOKENS
+        or any(part in brand_words for part in word.split("-"))
+        or _singular(word) == noun
+    )
+
+
+def _possessive(word: str) -> str:
+    """ "men's" for "men-s", how "Men’s" (a curly apostrophe) is read."""
+    if word.endswith("-s") and word[:-2].isalpha():
+        return word[:-2] + "'s"
+    return word
+
+
 def _word_before_noun(
     tokens: tuple[str, ...],
     spans: list,
@@ -132,11 +195,13 @@ def _word_before_noun(
     wholes: list[str],
     kind: str,
     brand_words: Collection[str],
-) -> tuple[str, str] | None:
+) -> _Named | None:
     """The word a title puts right before the noun of this kind's name (or of a narrower
     kind's), and that noun in the singular: ("hdmi", "cable") for "Fixturon HDMI Cable
-    2m", ("zip-up", "hoodie") for "Zip-Up Hoodie". ("", noun) when nothing that could be a
-    choice stands there; None when the title does not name the kind in English."""
+    2m", ("zip-up", "hoodie") for "Zip-Up Hoodie"; with the noun as written ("trousers")
+    and the word before the word ("wide" in "Wide Leg Trousers", "3" in "3 Piece Suit").
+    The word is "" when nothing that could be a choice stands there; None when the title
+    does not name the kind in English."""
     for span in spans:
         if span.kind != "en" or kind not in broader_concepts(span.concept_id):
             continue
@@ -144,19 +209,18 @@ def _word_before_noun(
         noun = _singular(tokens[at])
         if owners is not None:
             # The whole written word before the one the noun stands in ("t-shirt").
-            word = wholes[owners[at] - 1] if owners[at] > 0 else ""
+            place = owners[at] - 1
+            word = wholes[place] if place >= 0 else ""
+            lead = wholes[place - 1] if place >= 1 else ""
         else:
             word = tokens[at - 1] if at > 0 else ""
-        if (
-            len(word) < 2
-            or not word.replace("-", "").isalpha()
-            or word in _CONNECTIVE_TOKENS
-            or word in _PURPOSE_TOKENS
-            or any(part in brand_words for part in word.split("-"))
-            or _singular(word) == noun
-        ):
-            word = ""
-        return word, noun
+            lead = tokens[at - 2] if at > 1 else ""
+        word = _possessive(word)
+        if not _could_be_word(word, noun, brand_words):
+            return _Named("", noun, tokens[at])
+        if not (lead.isdigit() or _could_be_word(lead, noun, brand_words)):
+            lead = ""
+        return _Named(word, noun, tokens[at], lead)
     return None
 
 
@@ -184,6 +248,17 @@ class _KindGroups:
     word_kinds: dict[str, Counter]
     narrower: Counter
     shelves: Counter
+    # The kind's products, by their place in the catalogue.
+    rows: list[int] = field(default_factory=list)
+    # Per "word noun": the shops naming it so, the words before its word, the noun as
+    # written.
+    word_shops: dict[str, set] = field(default_factory=lambda: defaultdict(set))
+    word_leads: dict[str, Counter] = field(default_factory=lambda: defaultdict(Counter))
+    word_written: dict[str, Counter] = field(default_factory=lambda: defaultdict(Counter))
+    # The pairs of words that make one modifier, read over the whole catalogue: a word
+    # and the one before it that come before the nouns of `_PAIR_NOUNS` kinds or more
+    # ("long sleeve", "slim fit", "king size"), shared by every kind.
+    compounds: frozenset = frozenset()
 
 
 def _kind_groups(
@@ -207,7 +282,7 @@ def _kind_groups(
         for index in rows:
             kinds_read_of[index].append(kind)
     # Each title is read once, for every kind of it that is read.
-    before: dict[str, dict[int, tuple[str, str] | None]] = defaultdict(dict)
+    before: dict[str, dict[int, _Named | None]] = defaultdict(dict)
     for index, product_kinds in kinds_read_of.items():
         product = products[index]
         tokens, spans, owners, wholes = _names_in(str(product.title or ""))
@@ -216,23 +291,44 @@ def _kind_groups(
             before[kind][index] = _word_before_noun(tokens, spans, owners, wholes, kind, brand_words)
     word_kinds: Counter = Counter()
     for kind in read:
-        words = Counter(named[0] for named in before[kind].values() if named and named[0])
+        words = Counter(named.word for named in before[kind].values() if named and named.word)
         for word, count in words.items():
             if count >= _MIN_WORD_PRODUCTS:
                 word_kinds[word] += 1
     generic = {word for word, count in word_kinds.items() if count >= GENERIC_KINDS}
+    # Each title once, whatever kinds it is read for: an office chair is a chair too.
+    pairs: Counter = Counter()
+    for index, product_kinds in kinds_read_of.items():
+        seen = {
+            (named.lead, named.word, named.noun)
+            for kind in product_kinds
+            if (named := before[kind][index]) is not None and named.word and named.lead
+        }
+        pairs.update(seen)
+    pair_nouns: Counter = Counter(
+        (lead, word) for (lead, word, _noun), count in pairs.items() if count >= _MIN_WORD_PRODUCTS
+    )
+    compounds = frozenset(pair for pair, nouns in pair_nouns.items() if nouns >= _PAIR_NOUNS)
     groups: dict[str, _KindGroups] = {}
     for kind, rows in read.items():
-        group = _KindGroups(len(rows), Counter(), Counter(), defaultdict(Counter), Counter(), Counter())
+        group = _KindGroups(
+            len(rows), Counter(), Counter(), defaultdict(Counter), Counter(), Counter(), rows, compounds=compounds
+        )
         for index in rows:
             named = before[kind][index]
             narrowest = _narrowest_kind(kinds[index])
             if named is not None:
-                group.nouns[named[1]] += 1
-                if named[0] and named[0] not in generic:
-                    text = f"{named[0]} {named[1]}"
+                group.nouns[named.noun] += 1
+                if named.word and named.word not in generic:
+                    text = f"{named.word} {named.noun}"
                     group.words[text] += 1
                     group.word_kinds[text][narrowest] += 1
+                    shop = _merchant_identity(products[index])
+                    if shop:
+                        group.word_shops[text].add(shop)
+                    if named.lead:
+                        group.word_leads[text][named.lead] += 1
+                    group.word_written[text][named.written] += 1
             if narrowest and narrowest != kind:
                 group.narrower[narrowest] += 1
             shelf = narrowest_shelf(products[index])
@@ -281,6 +377,30 @@ CHOICES_OFFERED = 6
 # products: "charger cable" and "usb cable" are charging cables, offered as such.
 _COVERED_SHARE = 0.8
 
+# The rules that keep the choices true (module docstring), each named so a measure can
+# leave it out and see what it changes.
+RULE_SHOPS = "shops"
+RULE_PHRASES = "phrases"
+RULE_WHOLE_KIND = "whole_kind"
+RULE_WRITTEN = "written"
+CHOICE_RULES = frozenset({RULE_SHOPS, RULE_PHRASES, RULE_WHOLE_KIND, RULE_WRITTEN})
+# A choice by the words is named so by this many shops.
+MIN_SHOPS = 2
+# A word is half of a phrase when this share of its titles put a number before it ("3
+# Piece Suit"), or a word the two make one modifier with (`_KindGroups.compounds`).
+HALF_PHRASE_SHARE = 0.5
+# No choice whose search keeps this share of its kind.
+KEEPS_SHARE = 0.8
+
+# What became of each choice considered (`kind_choice_candidates`).
+OFFERED = "offered"
+NOT_NARROWING = "not read as narrowing the kind"
+COVERED = "a narrower kind offered holds it"
+FEW_SHOPS = f"named so by fewer than {MIN_SHOPS} shops"
+HALF_PHRASE = "half of a phrase"
+WHOLE_KIND = f"its search keeps {KEEPS_SHARE:.0%} of the kind or more"
+BEYOND = f"beyond the {CHOICES_OFFERED} offered"
+
 
 def _narrows(text: str, kind: str) -> bool:
     """Does a search for `text` answer a narrower part of `kind`: a narrower kind, or the
@@ -295,38 +415,172 @@ def _narrows(text: str, kind: str) -> bool:
     return bool(reading.filters)
 
 
-def build_kind_choices(
-    products: Sequence[ProviderProduct], kinds: Sequence[Collection[str]]
-) -> dict[str, tuple[KindChoice, ...]]:
-    """The choices each general kind offers, for the products a search can show: its
-    narrower kinds (named as the lexicon first names them) and the words its titles name
-    it with, from `MIN_GROUP` products each, the largest first, at most
-    `CHOICES_OFFERED`; only those the search reads as narrowing it (`_narrows`). A kind
-    is general, and listed, with `MIN_CHOICES` of them."""
+@dataclass(frozen=True)
+class ChoiceCandidate:
+    """One choice a general kind could offer, and what became of it."""
+
+    text: str
+    # The kind's products whose titles name it so (or of the narrower kind).
+    products: int
+    # Of the kind's products, how many its search keeps; None when not counted.
+    found: int | None
+    outcome: str
+    # How many shops name it so; None for a narrower kind.
+    shops: int | None = None
+
+
+class _KindSearch:
+    """What a search for a choice keeps of one kind's products, read as the price-first
+    search reads it (`search_selection._select_products_for_concept`): the products of
+    the kind the choice names that carry every word it filters by, in their title, type
+    and brand."""
+
+    def __init__(self, kind: str, rows: list[int], kinds: Sequence[Collection[str]], fields_of) -> None:
+        self.kind = kind
+        self.rows = rows
+        self.kinds = kinds
+        self.fields = [fields_of(index) for index in rows]
+        self.brand_words = frozenset(word for row in self.fields for word in row.get("brand", "").split())
+        self.haystacks = [
+            {scope: " ".join(row[name] for name in scope if row.get(name)) for scope in (_FILTER_FIELDS, _KIND_PHRASE_FIELDS)}
+            for row in self.fields
+        ]
+
+    def found(self, text: str) -> int:
+        reading = understand_product_query(text)
+        concept = str(reading.concept_id or "")
+        places = [place for place, index in enumerate(self.rows) if concept in self.kinds[index]]
+        filters = tuple(term for term in reading.filters if term not in _CONNECTIVE_TOKENS)
+        if not filters:
+            return len(places)
+        units = _filter_units(
+            filters,
+            reading.filter_sources,
+            spec_values=frozenset(spec.token for spec in reading.specs),
+            modifier=_kind_modifier(reading, self.brand_words),
+            kind_names=_kind_name_pattern(concept),
+        )
+        return sum(1 for place in places if all(_carries(unit, self.haystacks[place]) for unit in units))
+
+
+def _word_candidates(group: _KindGroups, text: str, count: int, rules: Collection[str]) -> list[tuple[str, int, str]]:
+    """The choices one group of titles gives, (text, products, outcome when it is no
+    choice or ""): "hdmi cable"; the phrases a half of one stands in ("3 piece suit" and
+    "2 piece suit" for "piece suit"); the noun as the titles write it. A whole phrase is
+    named by the shops of its half."""
+    word, noun = text.rsplit(" ", 1)
+    written = noun
+    if RULE_WRITTEN in rules and group.word_written[text]:
+        written = group.word_written[text].most_common(1)[0][0]
+    if RULE_SHOPS in rules and len(group.word_shops[text]) < MIN_SHOPS:
+        return [(f"{word} {written}", count, FEW_SHOPS)]
+    leads = group.word_leads[text]
+    halves = sum(c for lead, c in leads.items() if lead.isdigit() or (lead, word) in group.compounds)
+    if RULE_PHRASES in rules and halves >= HALF_PHRASE_SHARE * count:
+        whole = [
+            (f"{lead} {word} {written}", c, "")
+            for lead, c in leads.most_common()
+            if c >= MIN_GROUP and (lead.isdigit() or (lead, word) in group.compounds)
+        ]
+        return whole + [(f"{word} {written}", count, HALF_PHRASE)]
+    return [(f"{word} {written}", count, "")]
+
+
+def kind_choice_candidates(
+    products: Sequence[ProviderProduct],
+    kinds: Sequence[Collection[str]],
+    fields: Sequence[Mapping[str, str]] | None = None,
+    *,
+    rules: Collection[str] = CHOICE_RULES,
+) -> dict[str, tuple[ChoiceCandidate, ...]]:
+    """Per kind of at least `MIN_PRODUCTS` products, every choice it could offer and what
+    became of it, the largest first: its narrower kinds (named as the lexicon first names
+    them) and the words its titles name it with, from `MIN_GROUP` products each, kept
+    while the search reads them as narrowing it (`_narrows`) and by the `rules` (module
+    docstring), at most `CHOICES_OFFERED`. `fields`, when given, are the products'
+    search fields, in order."""
     groups, _generic_words = _kind_groups(products, kinds)
+    return choice_candidates_of(groups, products, kinds, fields, rules=rules)
+
+
+def choice_candidates_of(
+    groups: Mapping[str, _KindGroups],
+    products: Sequence[ProviderProduct],
+    kinds: Sequence[Collection[str]],
+    fields: Sequence[Mapping[str, str]] | None = None,
+    *,
+    rules: Collection[str] = CHOICE_RULES,
+) -> dict[str, tuple[ChoiceCandidate, ...]]:
+    """`kind_choice_candidates` from groups already made (`_kind_groups`), so a measure
+    can weigh each rule without reading every title again."""
     by_id = get_product_concepts_by_id()
-    offered: dict[str, tuple[KindChoice, ...]] = {}
+
+    def fields_of(index: int) -> Mapping[str, str]:
+        return fields[index] if fields is not None else _product_search_fields(products[index])
+
+    considered: dict[str, tuple[ChoiceCandidate, ...]] = {}
     for kind, group in groups.items():
         narrower = {name: count for name, count in group.narrower.items() if count >= MIN_GROUP}
-        candidates: dict[str, int] = {}
+        candidates: dict[str, tuple[int, str, int | None]] = {}
+
+        def consider(text: str, count: int, outcome: str, shops: int | None) -> None:
+            # One entry a text: a choice still open over one already ruled out, then the
+            # larger count.
+            current = candidates.get(text)
+            if current is None or (bool(current[1]), -current[0]) > (bool(outcome), -count):
+                candidates[text] = (count, outcome, shops)
+
         for narrower_kind, count in narrower.items():
             concept = by_id.get(narrower_kind)
             name = concept.primary_english if concept is not None else ""
             if name:
-                candidates[name] = max(candidates.get(name, 0), count)
+                consider(name, count, "", None)
         for text, count in group.words.items():
             if count < MIN_GROUP:
                 continue
+            shops = len(group.word_shops[text])
             inside = group.word_kinds[text]
             if any(name in narrower and held >= _COVERED_SHARE * count for name, held in inside.items()):
+                consider(text, count, COVERED, shops)
                 continue
-            candidates[text] = max(candidates.get(text, 0), count)
-        kept: list[KindChoice] = []
-        for text, count in sorted(candidates.items(), key=lambda item: (-item[1], item[0])):
-            if len(kept) >= CHOICES_OFFERED:
-                break
-            if _narrows(text, kind):
-                kept.append(KindChoice(text=text, products=count))
+            for phrase, products_named, outcome in _word_candidates(group, text, count, rules):
+                consider(phrase, products_named, outcome, shops)
+        search: _KindSearch | None = None
+        rows: list[ChoiceCandidate] = []
+        offered = 0
+        for text, (count, outcome, shops) in sorted(candidates.items(), key=lambda item: (-item[1][0], item[0])):
+            found = None
+            if not outcome and offered >= CHOICES_OFFERED:
+                outcome = BEYOND
+            if not outcome and not _narrows(text, kind):
+                outcome = NOT_NARROWING
+            if not outcome and RULE_WHOLE_KIND in rules:
+                if search is None:
+                    search = _KindSearch(kind, group.rows, kinds, fields_of)
+                found = search.found(text)
+                if found >= KEEPS_SHARE * group.products:
+                    outcome = WHOLE_KIND
+            if not outcome:
+                outcome = OFFERED
+                offered += 1
+            rows.append(ChoiceCandidate(text=text, products=count, found=found, outcome=outcome, shops=shops))
+        considered[kind] = tuple(rows)
+    return considered
+
+
+def build_kind_choices(
+    products: Sequence[ProviderProduct],
+    kinds: Sequence[Collection[str]],
+    fields: Sequence[Mapping[str, str]] | None = None,
+    *,
+    rules: Collection[str] = CHOICE_RULES,
+) -> dict[str, tuple[KindChoice, ...]]:
+    """The choices each general kind offers, for the products a search can show
+    (`kind_choice_candidates`): a kind is general, and listed, with `MIN_CHOICES` of
+    them."""
+    offered: dict[str, tuple[KindChoice, ...]] = {}
+    for kind, rows in kind_choice_candidates(products, kinds, fields, rules=rules).items():
+        kept = tuple(KindChoice(text=row.text, products=row.products) for row in rows if row.outcome == OFFERED)
         if len(kept) >= MIN_CHOICES:
-            offered[kind] = tuple(kept)
+            offered[kind] = kept
     return offered

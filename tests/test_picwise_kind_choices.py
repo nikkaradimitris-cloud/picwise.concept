@@ -11,12 +11,20 @@ shelves; a group is a choice from a number of products, whatever share of the ki
 is; a kind is general with two choices of one way; a word before the nouns of many kinds
 ("black") is no choice, and neither is a number, the product's brand or a connective; a
 kind of too few products is not read; accessories and doubtful products count for no
-kind. Every row is local test data: fictional brands and shops, `.invalid` addresses.
+kind. And what a search offers (`build_kind_choices`, owner 2026-10-29: «εσύ πρέπει να
+αποφασίσεις ποιος είναι ο βέλτιστος τρόπος»), each rule on its own: a choice by the
+words is named so by two shops or more; a word that is half of a phrase is read whole
+("3 piece suit", "slim fit suit"), a word before it that comes before no other noun is
+not ("dining chair", not "velvet dining chair"); no choice keeps 80% of its kind; the
+noun as the titles write it ("bootcut jeans", which the search reads, not "bootcut
+jean", which it does not). Every row is local test data: fictional brands and shops,
+`.invalid` addresses.
 """
 from __future__ import annotations
 
 import sys
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,6 +52,17 @@ def _product(number: int, title: str, *, category: str = "", brand: str = "Fictb
         currency="GBP",
         raw={"merchant_name": "Fictional Store"},
     )
+
+
+def _two_shops(rows: list[tuple[str, str, set[str]]], one_shop: tuple[str, ...] = ()) -> list[ProviderProduct]:
+    """The rows as products of two shops, turn about; titles starting with one of
+    `one_shop` all of the first shop."""
+    products = []
+    for number, (title, category, _kinds) in enumerate(rows):
+        product = _product(number, title, category=category, brand="Fixturon")
+        shop = "Fictional Store One" if number % 2 or title.startswith(one_shop or ("\0",)) else "Fictional Store Two"
+        products.append(replace(product, raw={"merchant_name": shop}))
+    return products
 
 
 def _measure(rows: list[tuple[str, str, set[str]]], brand: str = "Fictbrand") -> kind_choices.ChoicesMeasure:
@@ -137,6 +156,76 @@ class KindChoicesTests(unittest.TestCase):
         # is the brand. The ring's titles put "engagement" before its noun.
         self.assertEqual(_entry(measure, "laptop").words, (("fictcc laptop", 20),))
         self.assertEqual(_entry(measure, "ring").words, (("engagement ring", 50),))
+
+
+
+class BuiltChoicesTests(unittest.TestCase):
+    """What a search offers, each rule on its own (`kind_choices.CHOICE_RULES`)."""
+
+    def _rows(self) -> list[tuple[str, str, set[str]]]:
+        return (
+            [("Fixturon 3 Piece Suit", "", {"suit"})] * 30
+            + [("Fixturon 2 Piece Suit", "", {"suit"})] * 25
+            + [("Fixturon Slim Fit Suit", "", {"suit"})] * 25
+            + [("Fixturon Robertson Suit", "", {"suit"})] * 22
+            + [("Fixturon Slim Fit Shirt", "", {"shirt"})] * 25
+            + [("Fixturon Oxford Shirt", "", {"shirt"})] * 25
+            + [("Fixturon Slim Fit Jeans", "", {"jeans"})] * 25
+            + [("Fixturon Bootcut Jeans", "", {"jeans"})] * 25
+            + [("Fixturon Velvet Dining Chair", "", {"chair"})] * 30
+            + [("Fixturon Ergonomic Office Chair", "", {"office_chair", "chair"})] * 25
+            + [("Fixturon Diamond Ring", "", {"ring"})] * 60
+            + [("Fixturon Diamond Halo Ring", "", {"ring"})] * 25
+            + [("Fixturon Emerald Ring", "", {"ring"})] * 20
+        )
+
+    def _choices(self, rules=kind_choices.CHOICE_RULES) -> dict[str, list[str]]:
+        rows = self._rows()
+        built = kind_choices.build_kind_choices(
+            _two_shops(rows, one_shop=("Fixturon Robertson",)), [kinds for _t, _c, kinds in rows], rules=rules
+        )
+        return {kind: [choice.text for choice in choices] for kind, choices in built.items()}
+
+    def test_every_rule(self) -> None:
+        choices = self._choices()
+        self.assertEqual(choices["suit"], ["3 piece suit", "2 piece suit", "slim fit suit"])
+        self.assertEqual(choices["shirt"], ["oxford shirt", "slim fit shirt"])
+        self.assertEqual(choices["jeans"], ["bootcut jeans", "slim fit jeans"])
+        self.assertEqual(choices["chair"], ["dining chair", "office chair"])
+        self.assertEqual(choices["ring"], ["halo ring", "emerald ring"])
+
+    def test_why_each_was_left_out(self) -> None:
+        rows = self._rows()
+        considered = kind_choices.kind_choice_candidates(
+            _two_shops(rows, one_shop=("Fixturon Robertson",)), [kinds for _t, _c, kinds in rows]
+        )
+        outcome = {(kind, row.text): row.outcome for kind, rows_of in considered.items() for row in rows_of}
+        self.assertEqual(outcome[("suit", "robertson suit")], kind_choices.FEW_SHOPS)
+        self.assertEqual(outcome[("suit", "piece suit")], kind_choices.HALF_PHRASE)
+        self.assertEqual(outcome[("suit", "fit suit")], kind_choices.HALF_PHRASE)
+        self.assertEqual(outcome[("ring", "diamond ring")], kind_choices.WHOLE_KIND)
+        found = {(kind, row.text): row.found for kind, rows_of in considered.items() for row in rows_of}
+        # "diamond" comes before "ring", one word between at most, as the search reads a
+        # word naming a sub-kind, in 85 of the 105 rings' titles.
+        self.assertEqual(found[("ring", "diamond ring")], 85)
+        self.assertEqual(found[("ring", "halo ring")], 25)
+
+    def test_one_shop_s_words_without_the_rule(self) -> None:
+        rules = kind_choices.CHOICE_RULES - {kind_choices.RULE_SHOPS}
+        self.assertIn("robertson suit", self._choices(rules)["suit"])
+
+    def test_halves_of_phrases_without_the_rule(self) -> None:
+        rules = kind_choices.CHOICE_RULES - {kind_choices.RULE_PHRASES}
+        self.assertEqual(self._choices(rules)["suit"], ["piece suit", "fit suit"])
+
+    def test_a_choice_keeping_the_kind_without_the_rule(self) -> None:
+        rules = kind_choices.CHOICE_RULES - {kind_choices.RULE_WHOLE_KIND}
+        self.assertEqual(self._choices(rules)["ring"][0], "diamond ring")
+
+    def test_the_singular_without_the_rule(self) -> None:
+        # "bootcut jean" is no search the understanding reads: the jeans keep one choice.
+        rules = kind_choices.CHOICE_RULES - {kind_choices.RULE_WRITTEN}
+        self.assertNotIn("jeans", self._choices(rules))
 
 
 if __name__ == "__main__":
