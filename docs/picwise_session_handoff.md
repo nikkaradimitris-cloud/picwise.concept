@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-28 (evening).
+Current state for whoever picks the project up next. Updated 2026-10-29 (item 1 measured).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
 ## Next conversation (from 2026-10-28): finish 1, 2, 3 -- start here
@@ -18,17 +18,13 @@ commission never a criterion; no fake data; Amazon removed for good; the reposit
 public, so no server name, address, host key or link in a log or a file.
 
 1. **The 3,075 engagement rings read as accessories** (Finediam, its shelf of rings):
-   "2.00 Ct Lab Grown 3 Stone With Side Halo Diamond Engagement Ring Platinum". The only
-   kind a title names comes after "With", and `_head_of_text`
-   (`src/picwise_nlu/concept_understanding.py`) reads a kind named after a purpose word
-   as an accessory of it (`if head.start > cut: return ACCESSORY_MARKER`, meant for
-   "filter for coffee machine"); `_read_concepts_in_text` hands it the spans after the
-   cut when none comes before. Proposed to the owner: after "with"/"με" (not
-   "for"/"για"), a kind the title names when nothing before names one is the product.
-   Look-alikes to keep: "Pram with Car Seat", "Case with Stand for iPad", "Vacuum
-   cleaner with filter". Measure: `deployment/server/print_kind_changes.py` lists every
-   change of kind and "accessories the cap counts in the kind their shelf names" (run
-   `40762760684`: 3,133, of which ring 3,075).
+   **built and measured on 2026-10-29, nothing deployed; waiting for the owner's word on
+   "For"** (section "Now (2026-10-29)" below). The English "with" (owner, 29/10: «Η
+   διορθώσεις πρέπει να αφορούν αγγλικό λεξιλόγιο»: English words only, no «με») and the
+   metals after a name make 2,303 of them rings; 772 stay accessories, 756 of them naming
+   the ring after a "For" ("Eternal Single Row For Center Oval Diamond Engagement Ring"),
+   which the rule leaves alone ("Filter for Coffee Machine"). Put to the owner: measure
+   "for" too, only on a shelf that names the kind.
 2. **Choices for a general word** (owner: «Το search όταν του βάζεις καλώδιο πρέπει να
    συμπληρώνει προτάσεις τι καλώδιο ζητάει: καλώδιο τηλεόρασης, καλώδιο φόρτισης,
    καλώδιο ίντερνετ ... το ίδιο με όλες αυτές τις γενικές λέξεις»; rules word by word lead
@@ -58,7 +54,55 @@ deploying: commit code with `[skip actions]` in the message (`src/**`,
 `deployment/server/**` start `server-deploy.yml`), check no run started, then push a
 change of `.github/workflows/server-cap.yml` alone, which copies the server's catalogue
 to GitHub's runner and runs `print_cap.py`, `print_prices.py`, `print_kind_changes.py`.
-Tests one module at a time (`test_picwise_learning_stage7b` takes 20 minutes).
+To see one change of the rules on its own, list the commits before it in the workflow's
+`RULES_STEPS` (each read from a worktree by `deployment/server/kinds_of.py`). Tests one
+module at a time (`test_picwise_learning_stage7b` takes 27 minutes).
+
+## Now (2026-10-29): item 1, the engagement rings
+
+The owner: «Ξεκινάμε με το 1»; then «Ναι» to pushing to `ccr-1361f1a7-dcpo60` for the
+measure (code with `[skip actions]`, then `server-cap.yml` alone; no run but the measure
+started, checked each time). This conversation's own branch `ccr-4f9ef4ee-j1nafx` is
+kept equal by merges (a force-push of it was refused; the work branch stays linear).
+The work branch had moved to `31e2ee4` (the previous conversation's docs commit on item
+2's language), so this work sits on it.
+
+- **Built** (`src/picwise_nlu/concept_understanding.py`, tests
+  `tests/test_picwise_kinds_named_after_with.py`, 5): a title that names no kind before
+  its first "with" (or "w/") is the kind it names after it, past one "with" or more,
+  when the shop's narrowest shelf names that kind too (`_cut_past_with`, read only by
+  `_title_named_head`, i.e. when neither the type nor the category gives a kind); after
+  "for", after an accessory's noun before the kind, or on no such shelf it is still an
+  accessory. English only (owner, 29/10). Metals right after a product's name
+  (platinum, palladium, titanium, tungsten, sterling; `_METAL_TAIL_WORDS`) describe it,
+  as gold and silver did; read only there, since elsewhere a metal names a line ("Dr John
+  Titanium 15KG", dog food, became doubtful when they were read everywhere).
+- **The measure** (`deployment/server/kinds_of.py`; `print_kind_changes.py --step`, whole
+  titles, and the word after a kind's name for the accessories on its shelf; tests
+  `tests/test_picwise_server_print_kind_changes.py`, 3; runs `40858411220`,
+  `40862093722`, `40862883104`, the catalogue of 29/10 04:21 UTC, 525,386 shown): **the
+  "with" rule alone 2,329 (0.44%)**: 2,271 Finediam engagement rings accessory -> ring;
+  42 Finediam pendants "with Diamond Accents Necklace (Without Chain)" accessory ->
+  necklace (the lexicon has "pendant" as a name of necklace, and they sit on its
+  necklaces shelf; told to the owner); 7 Geepas mixer grinders -> mixer; 6 baby tees ->
+  t_shirt; 2 pendant lights -> lamp; 1 utensil set with a knife set -> knife_set.
+  **The metals 1,891 (0.36%), all Finediam rings**: 1,823 doubtful -> ring ("... 3 Stone
+  Engagement Ring Platinum - Sterling Silver / 0.50 Carat"), 36 of no kind -> ring, 32
+  accessories -> ring. Rings 143,860 -> 148,022 in all. Of the 3,075: 2,303 rings, 772
+  still accessories on the ring shelf, the word after the ring's name "9k/18k" 756 —
+  these name it after a "For" ("Refined Solitaire For Peg Head Round Diamond Engagement
+  Ring — 9K/18K Gold & Platinum"). The far prices with the kinds read so: 7,104 (ring
+  5,284, Finediam's luxury and cheap ends as before). Every change since the deployment
+  of 26/10: 9,406 (1.79%).
+- **Tried and left out (probed on the measure's titles, not measured):** the noun before
+  "with" as the product ("Pendant with ... Necklace") would not keep the pendants out
+  (pendant is the necklace's own word) and would cost the mixer grinders and the
+  pendant lights.
+- **Checks:** the kind-related modules one at a time (116 pass; the two known failures,
+  `test_picwise_canonical_vocabulary_registry_stage2` and
+  `test_picwise_search_index_generated_blind_stage4`, fail on `cb40587` too); the
+  misspelling benchmark the same (93.8%, 0 wrong); `actionlint` could not be fetched
+  here (refused), the workflow was parsed and its kind steps run locally instead.
 
 ## Now (2026-10-27/28): the server's host key, the cap, the far prices, the kinds
 

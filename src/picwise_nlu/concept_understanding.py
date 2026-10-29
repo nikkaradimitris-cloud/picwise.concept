@@ -2406,6 +2406,12 @@ _DESCRIPTOR_TAIL_WORDS = frozenset(
     plus pro max mini lite uk eu us plug size type new
     """.split()
 )
+# Metals right after a product's name describe it, as "gold" and "silver" do: "... Diamond
+# Engagement Ring Platinum - Sterling Silver / 0.50 Carat" is a ring (measured on the
+# server's catalogue of 2026-10-29: 1,891 of Finediam's rings were accessories, doubtful
+# or of no kind for want of it). Read there only: elsewhere a metal may name a product's
+# line ("Dr John Titanium 15KG" is dog food).
+_METAL_TAIL_WORDS = frozenset("platinum palladium titanium tungsten sterling".split())
 
 
 def _is_descriptor_word(token: str) -> bool:
@@ -2556,12 +2562,13 @@ def _head_of_text(
         and head.kind == "en"
         and head.end < cut
         and not _is_descriptor_word(tokens[head.end])
+        and tokens[head.end] not in _METAL_TAIL_WORDS
     ):
         # The text names the product in passing, with a word PicWise cannot read right
         # after it: "Truck Bed Tailgate Extender", "Power banks and batteries". On
         # that evidence the kind is a guess, and PicWise shows nothing rather than the
-        # wrong kind. A colour, a spec or a packaging word still reads as the product
-        # ("Smartwatch Black Dial", "Speaker 40W").
+        # wrong kind. A colour, a spec, a packaging word or a metal still reads as the
+        # product ("Smartwatch Black Dial", "Speaker 40W", "Engagement Ring Platinum").
         return None
     return head.concept_id
 
