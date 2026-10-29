@@ -7,9 +7,10 @@ ring past a "With" before they name it: "2.00 Ct Lab Grown 3 Stone With Side Hal
 Diamond Engagement Ring Platinum", and only the words before a purpose word named the
 product.
 
-Pinned here: a title that names no kind before its first "with" (or "w/", "με") is the
-kind it names after it, when the shop's narrowest shelf names that kind too, past one
-"with" or more; and the look-alikes stay what they were: a title naming a kind only
+Pinned here: a title that names no kind before its first "with" (or "w/") is the kind it
+names after it, when the shop's narrowest shelf names that kind too, past one "with" or
+more; English words only (owner, 2026-10-29: «Η διορθώσεις πρέπει να αφορούν αγγλικό
+λεξιλόγιο»); and the look-alikes stay what they were: a title naming a kind only
 after "for", or after an accessory's noun ("Display Stand with ..."), or on no shelf
 naming it, is still an accessory; a kind named before "with" is still the product ("Pram
 with Car Seat", "Vacuum cleaner with filter", "Diamond Engagement Ring with Gift Box").
@@ -51,9 +52,6 @@ class NamedAfterWithTests(unittest.TestCase):
             for category in (RINGS, GOOGLE_RINGS):
                 with self.subTest(title=title, category=category):
                     self.assertEqual(_kinds("", category, title), {"ring"})
-
-    def test_the_greek_with_too(self) -> None:
-        self.assertEqual(_kinds("", RINGS, "Ασημένιο με Ζιργκόν Δαχτυλίδι"), {"ring"})
 
     def test_without_a_shelf_naming_the_kind_it_is_still_an_accessory(self) -> None:
         title = "2.00 Ct Lab Grown 3 Stone With Side Halo Diamond Engagement Ring 18K White Gold"
