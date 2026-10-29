@@ -281,14 +281,26 @@ def _query_eligible_for_feed_opportunity_attempt(
     broad_suggestions: tuple[BroadQuerySuggestion, ...],
     blocked_or_unsafe: bool,
     index_reason_codes: tuple[str, ...],
+    kind_understood: bool = False,
 ) -> bool:
+    """Whether the feed is searched for a query no category resolved.
+
+    A word with many of the vocabulary's suggestions is too ambiguous to search, unless
+    the kinds' reading finds it to be a kind's own name, exactly ("chair", "bag",
+    "jacket"): the feed's products of that kind are the answer, and the catalogue asks
+    which one is meant (`kind_choices`; owner, 2026-10-29: one logic for every general
+    word)."""
     if blocked_or_unsafe:
         return False
     if is_unsafe_broad_query(canonicalized_query):
         return False
     if _index_reason_codes_block_feed_opportunity(index_reason_codes):
         return False
-    if offer_broad_suggestions and len(broad_suggestions) >= _HIGHLY_AMBIGUOUS_BROAD_SUGGESTION_COUNT:
+    if (
+        offer_broad_suggestions
+        and len(broad_suggestions) >= _HIGHLY_AMBIGUOUS_BROAD_SUGGESTION_COUNT
+        and not kind_understood
+    ):
         return False
     return True
 
@@ -384,7 +396,8 @@ def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
         needs_review = False
         is_ambiguous_or_invalid = False
         # A query the index judges too broad ("charger": phone, laptop or car?) keeps
-        # its suggestions. Understanding the word does not settle which product.
+        # its suggestions, but the feed is searched for the kind it names, and the
+        # catalogue asks which one is meant where it has several (`kind_choices`).
 
     # No per-category query rewriting: collapsing "power bank 20000mah for iphone" to
     # "power bank" existed only so the manual Amazon matcher would hit, and it threw away
@@ -496,6 +509,9 @@ def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
         broad_suggestions=broad_suggestions,
         blocked_or_unsafe=blocked_or_unsafe,
         index_reason_codes=index_result.reason_codes,
+        # Named exactly: a word read as a kind only by correcting it ("chain" as chair,
+        # "protector" as projector, "tools" as toy) stays with the vocabulary's list.
+        kind_understood=bool(concept_understood and concept_reading.concept_id and concept_reading.exact),
     )
     should_check_provider_feed = bool(
         provider_lookup_key not in _CONNECTED_PROVIDER_BY_CATEGORY

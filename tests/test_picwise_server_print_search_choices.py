@@ -5,9 +5,11 @@
 Pinned here: the file is prepared again with this checkout's rules, kinds stored by older
 rules notwithstanding; each general kind's search is printed with how many products it
 finds, its first card and the choices it asks; each choice is searched and said to find
-products of the kind; a kind whose search the vocabulary's "too broad" answers instead
-says so ("chair", 2026-10-29); the Greek name asks the same; the box's suggestions hold
-the choices; nothing printed is a link; an unreadable file says so; every case exits 0.
+products of the kind; "chair", which the vocabulary's older "too broad" answered with no
+product until 2026-10-29, shows its chairs and asks like any other kind (the measure
+says so when that list answers instead); the Greek name asks the same; the box's
+suggestions hold the choices; nothing printed is a link; an unreadable file says so;
+every case exits 0.
 Every row is local test data: fictional brands and shops, `.invalid` addresses.
 """
 from __future__ import annotations
@@ -111,11 +113,11 @@ class PrintSearchChoicesTests(unittest.TestCase):
             "      each found: hdmi cable 30 (yes); coaxial cable 25 (yes); speaker cable 22 (yes)", out
         )
         self.assertIn("  the Greek καλώδιο: 77 products; asks: hdmi cable, coaxial cable, speaker cable", out)
-        # The older broad suggestions, from the vocabulary, answer "chair" with no products;
-        # the Greek name reaches the feed and asks.
-        self.assertIn(
-            '  chair: no products; the vocabulary\'s "too broad" answers instead: baby feeding chair', out
-        )
+        # "chair" has five of the vocabulary's suggestions, which once answered it alone.
+        self.assertIn("  chair: 55 products, the first card 40.00 GBP 'Fixturon Velvet Dining Chair 1'", out)
+        self.assertIn("      What kind of chair? dining chair, office chair", out)
+        self.assertIn("      each found: dining chair 30 (yes); office chair 25 (yes)", out)
+        self.assertNotIn("too broad", out)
         self.assertIn("  the Greek καρέκλα: 55 products; asks: dining chair, office chair", out)
         self.assertRegex(out, r"the search box: \d+ suggestions, 5 of them choices")
         self.assertNotIn("kettle:", out)

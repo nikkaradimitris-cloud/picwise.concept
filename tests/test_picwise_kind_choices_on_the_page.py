@@ -9,7 +9,11 @@ Pinned here, through the deployed entry point (`api/index.py`) on a feed file: t
 for "cable" (and «καλώδιο») shows its cheapest cables and above them "What kind of
 cable?" with the searches that narrow it, the largest first, each a link to its search,
 which finds those cables, and the vocabulary's older "This search is too broad" does not
-ask too; a search that already narrows ("hdmi cable") asks nothing,
+ask too; "chair", a word with many of the vocabulary's suggestions, shows the feed's
+chairs and asks the same way, where it once showed only that list and no product, which
+stays for a broad word the feed has nothing for ("jacket" here) and for a word read as a
+kind only by correcting it ("chain", read as chair); a search that already narrows
+("hdmi cable") asks nothing,
 and nor does one for a kind with one group only; the box's list offers the choices, so
 typing "cable" lists them after it; the prepared feed carries the choices, read back as
 written. Every row is local test data: fictional brands, `.invalid` addresses.
@@ -41,6 +45,8 @@ from picwise_providers.state import clear_provider_feed_pipeline_cache, prepare_
 
 CABLES = "Electronics > Electronics Accessories > Cables"
 KETTLES = "Home & Garden > Kitchen & Dining > Kitchen Appliances > Kettles"
+DINING_CHAIRS = "Furniture > Chairs > Kitchen & Dining Room Chairs"
+OFFICE_CHAIRS = "Furniture > Office Furniture > Office Chairs"
 HEADER = [
     "aw_product_id", "product_name", "brand_name", "product_type", "merchant_category",
     "aw_deep_link", "aw_image_url", "search_price", "currency", "in_stock",
@@ -56,6 +62,8 @@ def _rows() -> list[list[str]]:
         ("Fixturon Coaxial Cable {n}m", CABLES, 25, 2.0),
         ("Fixturon Speaker Cable {n}m", CABLES, 22, 4.0),
         ("Fixturon Electric Kettle {n}", KETTLES, 55, 20.0),
+        ("Fixturon Velvet Dining Chair {n}", DINING_CHAIRS, 30, 40.0),
+        ("Fixturon Ergonomic Office Chair {n}", OFFICE_CHAIRS, 25, 70.0),
     ):
         for step in range(count):
             number += 1
@@ -132,6 +140,30 @@ class KindChoicesOnThePageTests(unittest.TestCase):
         # which this catalogue does not have) does not ask too.
         self.assertNotIn("This search is too broad", page)
         self.assertNotIn("lightning cable", page)
+
+    def test_a_word_of_many_suggestions_shows_its_kind_and_asks(self) -> None:
+        # "chair" has five of the vocabulary's suggestions ("baby feeding chair", "shower
+        # chair" ...): once shown alone, with no product, as "This search is too broad".
+        page = self._get("/search", "q=chair")
+        self.assertIn("Fixturon Velvet Dining Chair 1", page)
+        self.assertIn('<span class="pw-kind-choices-ask">What kind of chair?</span>', page)
+        start = page.index('<nav class="pw-kind-choices"')
+        choices = page[start:page.index("</nav>", start)]
+        self.assertIn('href="/search?q=dining%20chair"', choices)
+        self.assertIn('href="/search?q=office%20chair"', choices)
+        self.assertNotIn("This search is too broad", page)
+        self.assertNotIn("shower chair", page)
+
+    def test_a_broad_word_with_nothing_to_show_keeps_the_older_list(self) -> None:
+        page = self._get("/search", "q=jacket")
+        self.assertIn("This search is too broad. Try:", page)
+        self.assertNotIn('<nav class="pw-kind-choices"', page)
+
+    def test_a_word_read_as_a_kind_only_by_correcting_it_shows_none_of_it(self) -> None:
+        # "chain" reads as "chair" only as a misspelling: no chair is its answer.
+        page = self._get("/search", "q=chain")
+        self.assertNotIn("Fixturon Velvet Dining Chair", page)
+        self.assertNotIn('<nav class="pw-kind-choices"', page)
 
     def test_the_greek_word_asks_the_same(self) -> None:
         page = self._get("/search", "q=%CE%BA%CE%B1%CE%BB%CF%8E%CE%B4%CE%B9%CE%BF")

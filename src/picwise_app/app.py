@@ -149,11 +149,12 @@ class PicwiseLocalApp:
             source_page=source_page,
             resolution=resolution,
         )
-        # Where the catalogue asks which one is meant ("What kind of cable?"), the
-        # vocabulary's older "too broad" list does not ask too: one question, one logic
-        # (owner, 2026-10-29).
-        if resolution.resolver_state == "broad_query_suggestions" and not getattr(
-            resolution, "kind_choices", ()
+        # Where the feed's products answer, the catalogue asks which one is meant ("What
+        # kind of cable?") when it has several, and the vocabulary's older "too broad"
+        # list, of words the catalogue may not have, does not ask too: one question, one
+        # logic (owner, 2026-10-29). It stays for a broad word with nothing to show.
+        if resolution.resolver_state == "broad_query_suggestions" and not provider_feed_cards_will_render(
+            resolution
         ):
             html = _inject_broad_query_suggestions(html, resolution)
         elif getattr(resolution, "did_you_mean", ()) and not provider_feed_cards_will_render(resolution):
