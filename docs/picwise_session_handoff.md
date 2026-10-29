@@ -401,7 +401,13 @@ read-only look at the night's round. Owner's rules unchanged (section below).
   (the rings' middle is Finediam's, the cables' the extension leads', the charging cables'
   the EV cables'); keep everything in the search, but let Google index only the kinds that
   pass a bar (enough products, shops, debugged); Search Console from the first day; an
-  alarm when a night fails, before launch.
+  alarm when a night fails, before launch. **Decided (owner, 29/10): «Θα στήσουμε
+  ολοκληρωμένα και θα δώσουμε στη Google αυτά που θέλουμε τμηματικά»**: everything is
+  built whole and in the search; Google is given what the owner chooses, part by part.
+  The gate for it exists for the buying pages (`src/picwise_buying_pages/index_gate.py`,
+  `docs/pickwise_roadmap_step6_quality_index_gate.md`: index, noindex, hold for review);
+  what it needs is a bar per kind (products, shops, checked) and the owner's choice of each
+  part.
 - **The owner's word (28/10): no deployment until what was started is finished** («Δεν
   προχωράμε σε ανάπτυξη μέχρι να ολοκληρώσουμε αυτά που έχουμε ξεκινήσει»). Also: rules
   word by word lead nowhere; a general word ("καλώδιο") should be answered with choices of
