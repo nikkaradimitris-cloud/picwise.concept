@@ -7,22 +7,24 @@ Owner, 2026-10-28: «Το search όταν του βάζεις καλώδιο π�
 here: every kind with products is read the same way, from the catalogue itself, and its
 products are grouped three ways:
 
-- by the word their titles put right before the noun that names the kind: "HDMI Cable"
-  and "Aerial Coaxial Cable" give "hdmi" and "coaxial", "Diamond Engagement Ring" gives
-  "engagement" (the noun is the last word of the kind's name in the title, in English);
+- by the words their titles name it with: the word right before the noun of the kind's
+  name and that noun, as written ("HDMI Cable" gives "hdmi cable", "Sofa Bed" under sofas
+  "sofa bed", "Diamond Engagement Ring" "engagement ring"), a hyphenated word kept whole
+  ("Zip-Up Hoodie" gives "zip-up hoodie"); in English;
 - by the narrower kind they are: a charging cable is a cable;
 - by the shop's narrowest shelf: "Audio & Video Cables".
 
 A word that comes before the nouns of many kinds says how a product is, not which kind
-of it: "black", "gold", "wireless", "usb" ("usb cable", "usb fan", "usb hub"). Which
-words do is read from the catalogue too, each night: a word before the nouns of at least
-`GENERIC_KINDS` kinds is no choice for any of them. Numbers, specs and the product's own
-brand never are.
+of it: "gaming", "knitted". Which words do is read from the catalogue too, each night: a
+word before the nouns of at least `GENERIC_KINDS` kinds is no choice for any of them.
+Numbers, specs and the product's own brand never are.
 
-A kind is general when at least `MIN_CHOICES` of its groups of one way each hold at least
-`MIN_SHARE` of its products and `MIN_GROUP` products. Measured first on a copy of the
-server's catalogue (`deployment/server/print_choices.py`): which kinds are general, and
-what each would offer, before anything is built into the search.
+A group is a choice from `MIN_GROUP` products, however large the kind: on the server's
+catalogue of 2026-10-29 one shop's fabric extension leads were 81% of all cables, and a
+share would have left "cable" without its HDMI, coaxial and charging cables. A kind is
+general with `MIN_CHOICES` choices of one way. Measured first on a copy of the server's
+catalogue (`deployment/server/print_choices.py`): which kinds are general, and what each
+would offer, before anything is built into the search.
 """
 from __future__ import annotations
 
@@ -48,10 +50,9 @@ from .search_selection import _CONNECTIVE_TOKENS, _KIND_MARKERS, _PURPOSE_TOKENS
 
 # A kind is read for choices from this many products.
 MIN_PRODUCTS = 50
-# A group is a choice when it holds this share of its kind's products, and this many.
-MIN_SHARE = 0.05
-MIN_GROUP = 10
-# A kind is general with this many such groups of one way.
+# A group is a choice from this many products.
+MIN_GROUP = 20
+# A kind is general with this many choices of one way.
 MIN_CHOICES = 2
 # A word before the nouns of this many kinds says how a product is, not which kind.
 GENERIC_KINDS = 8
@@ -71,13 +72,19 @@ class KindChoices:
     noun: str
     # How many of its products' titles name it in English.
     named: int
-    # (the word before the noun, products), the most first; generic words left out.
+    # The choices of each way, (name, products), the most first: the words the titles name
+    # it with ("hdmi cable"), generic words left out; its narrower kinds; its shelves.
     words: tuple[tuple[str, int], ...]
-    # (narrower kind, products) and (narrowest shelf, products), the most first.
     narrower: tuple[tuple[str, int], ...]
     shelves: tuple[tuple[str, int], ...]
-    general_by_words: bool
-    general_by_shelves: bool
+
+    @property
+    def general_by_words(self) -> bool:
+        return len(self.words) >= MIN_CHOICES
+
+    @property
+    def general_by_shelves(self) -> bool:
+        return len(self.shelves) >= MIN_CHOICES
 
     @property
     def general(self) -> bool:
@@ -91,31 +98,53 @@ class ChoicesMeasure:
     generic_words: tuple[tuple[str, int], ...]
 
 
-def _names_in(title: str) -> tuple[tuple[str, ...], list]:
-    """A title's words and the kinds' names in it, weak ones too ("Wedding Ring"): the
-    product's kind is already known, so a weak name only says where its noun stands."""
+def _names_in(title: str) -> tuple[tuple[str, ...], list, list[int] | None, list[str]]:
+    """A title's words, the kinds' names in it, weak ones too ("Wedding Ring": the
+    product's kind is already known, so a weak name only says where its noun stands), and
+    for each word the whole word it is written in, hyphens kept ("zip-up" for "zip" and
+    "up" of "Zip-Up Hoodie"); None for those when the two readings do not line up."""
     tokens = tuple(normalize_understanding_text(title).split())
-    return tokens, _choose_spans(_find_spans(tokens, [_exact_candidates(token) for token in tokens]))
+    spans = _choose_spans(_find_spans(tokens, [_exact_candidates(token) for token in tokens]))
+    owners: list[int] = []
+    wholes: list[str] = []
+    parts_read: list[str] = []
+    for written in str(title or "").split():
+        parts = normalize_understanding_text(written).split()
+        if parts:
+            owners.extend([len(wholes)] * len(parts))
+            wholes.append("-".join(parts))
+            parts_read.extend(parts)
+    return tokens, spans, (owners if tuple(parts_read) == tokens else None), wholes
 
 
 def _word_before_noun(
-    tokens: tuple[str, ...], spans: list, kind: str, brand_words: Collection[str]
+    tokens: tuple[str, ...],
+    spans: list,
+    owners: list[int] | None,
+    wholes: list[str],
+    kind: str,
+    brand_words: Collection[str],
 ) -> tuple[str, str] | None:
     """The word a title puts right before the noun of this kind's name (or of a narrower
     kind's), and that noun in the singular: ("hdmi", "cable") for "Fixturon HDMI Cable
-    2m". ("", noun) when nothing that could be a choice stands there; None when the title
-    does not name the kind in English."""
+    2m", ("zip-up", "hoodie") for "Zip-Up Hoodie". ("", noun) when nothing that could be a
+    choice stands there; None when the title does not name the kind in English."""
     for span in spans:
         if span.kind != "en" or kind not in broader_concepts(span.concept_id):
             continue
-        noun = _singular(tokens[span.end - 1])
-        word = tokens[span.end - 2] if span.end >= 2 else ""
+        at = span.end - 1
+        noun = _singular(tokens[at])
+        if owners is not None:
+            # The whole written word before the one the noun stands in ("t-shirt").
+            word = wholes[owners[at] - 1] if owners[at] > 0 else ""
+        else:
+            word = tokens[at - 1] if at > 0 else ""
         if (
             len(word) < 2
-            or not word.isalpha()
+            or not word.replace("-", "").isalpha()
             or word in _CONNECTIVE_TOKENS
             or word in _PURPOSE_TOKENS
-            or word in brand_words
+            or any(part in brand_words for part in word.split("-"))
             or _singular(word) == noun
         ):
             word = ""
@@ -130,10 +159,12 @@ def narrowest_shelf(product: ProviderProduct) -> str:
     return levels[-1] if levels else ""
 
 
-def _choices(counts: Counter, total: int) -> tuple[tuple[tuple[str, int], ...], bool]:
-    ordered = tuple(sorted(counts.items(), key=lambda item: (-item[1], item[0]))[:_KEPT])
-    large = [count for _name, count in ordered if count >= max(MIN_GROUP, MIN_SHARE * total)]
-    return ordered, len(large) >= MIN_CHOICES
+def _choices(counts: Counter) -> tuple[tuple[str, int], ...]:
+    return tuple(
+        (name, count)
+        for name, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+        if count >= MIN_GROUP
+    )[:_KEPT]
 
 
 def measure_kind_choices(
@@ -159,10 +190,10 @@ def measure_kind_choices(
     before: dict[str, dict[int, tuple[str, str] | None]] = defaultdict(dict)
     for index, product_kinds in kinds_read_of.items():
         product = products[index]
-        tokens, spans = _names_in(str(product.title or ""))
+        tokens, spans, owners, wholes = _names_in(str(product.title or ""))
         brand_words = set(normalize_understanding_text(str(product.brand or "")).split())
         for kind in product_kinds:
-            before[kind][index] = _word_before_noun(tokens, spans, kind, brand_words)
+            before[kind][index] = _word_before_noun(tokens, spans, owners, wholes, kind, brand_words)
     word_kinds: Counter = Counter()
     for kind in read:
         words = Counter(named[0] for named in before[kind].values() if named and named[0])
@@ -172,7 +203,6 @@ def measure_kind_choices(
     generic = {word for word, count in word_kinds.items() if count >= GENERIC_KINDS}
     measured = []
     for kind, rows in read.items():
-        total = len(rows)
         nouns: Counter = Counter()
         words: Counter = Counter()
         narrower: Counter = Counter()
@@ -182,26 +212,22 @@ def measure_kind_choices(
             if named is not None:
                 nouns[named[1]] += 1
                 if named[0] and named[0] not in generic:
-                    words[named[0]] += 1
+                    words[f"{named[0]} {named[1]}"] += 1
             narrowest = _narrowest_kind(kinds[index])
             if narrowest and narrowest != kind:
                 narrower[narrowest] += 1
             shelf = narrowest_shelf(products[index])
             if shelf:
                 shelves[shelf] += 1
-        word_choices, by_words = _choices(words, total)
-        shelf_choices, by_shelves = _choices(shelves, total)
         measured.append(
             KindChoices(
                 kind=kind,
-                products=total,
+                products=len(rows),
                 noun=nouns.most_common(1)[0][0] if nouns else "",
                 named=sum(nouns.values()),
-                words=word_choices,
-                narrower=tuple(sorted(narrower.items(), key=lambda item: (-item[1], item[0]))[:_KEPT]),
-                shelves=shelf_choices,
-                general_by_words=by_words,
-                general_by_shelves=by_shelves,
+                words=_choices(words),
+                narrower=_choices(narrower),
+                shelves=_choices(shelves),
             )
         )
     measured.sort(key=lambda entry: (-entry.products, entry.kind))

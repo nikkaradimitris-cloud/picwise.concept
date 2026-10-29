@@ -7,8 +7,8 @@ Owner, 2026-10-28: «Το search όταν του βάζεις καλώδιο π�
 καλώδιο ζητάει ... το ίδιο με όλες αυτές τις γενικές λέξεις»; 2026-10-29: one logic for all
 of them, never word by word. Each product is read with this checkout's rules
 (`annotate_product_concepts` of its type, its categories and its title), and every kind
-of at least `kind_choices.MIN_PRODUCTS` products is grouped by the word its titles put
-before its noun, by its narrower kinds and by its shops' narrowest shelves
+of at least `kind_choices.MIN_PRODUCTS` products is grouped by the words its titles name it
+with ("hdmi cable"), by its narrower kinds and by its shops' narrowest shelves
 (`picwise_providers.kind_choices`). Prints how many kinds are general by each way, the
 general ones with their choices, the largest that are not with their largest groups, and
 the words left out as saying how a product is rather than which kind. Run by
@@ -21,7 +21,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-GENERAL_LISTED = 80
+GENERAL_LISTED = 120
 NOT_GENERAL_LISTED = 25
 CHOICES_SHOWN = 8
 WORDS_SHOWN = 40
@@ -31,8 +31,8 @@ def _share(part: int, whole: int) -> str:
     return f"{100 * part / max(whole, 1):.0f}%"
 
 
-def _line(pairs, total: int, label=lambda name: name) -> str:
-    return ", ".join(f"{label(name)} {count:,} ({_share(count, total)})" for name, count in pairs[:CHOICES_SHOWN]) or "-"
+def _line(pairs, total: int) -> str:
+    return ", ".join(f"{name} {count:,} ({_share(count, total)})" for name, count in pairs[:CHOICES_SHOWN]) or "-"
 
 
 def main(argv: list[str]) -> int:
@@ -72,19 +72,18 @@ def main(argv: list[str]) -> int:
     print(
         f"the prepared catalogue of {prepared.prepared_at.isoformat()}: {len(prepared.products):,} products a card"
         f" can show, read with this checkout's rules; kinds of at least {kind_choices.MIN_PRODUCTS} products:"
-        f" {len(read):,}; general by the words before their noun: {len(by_words):,}; by their shelves:"
-        f" {len(by_shelves):,}; by either: {len(general):,} (a choice holds at least"
-        f" {100 * kind_choices.MIN_SHARE:.0f}% of its kind and {kind_choices.MIN_GROUP} products; a general kind has"
-        f" {kind_choices.MIN_CHOICES} or more)"
+        f" {len(read):,}; general by the words their titles name them with: {len(by_words):,}; by their shelves:"
+        f" {len(by_shelves):,}; by either: {len(general):,} (a choice holds at least {kind_choices.MIN_GROUP}"
+        f" products; a general kind has {kind_choices.MIN_CHOICES} or more of one way)"
     )
-    print("general kinds, the most products first: the choices by the word before the noun, by narrower kind, by shelf:")
+    print("general kinds, the most products first: the choices by the words the titles name them with, by narrower kind, by shelf:")
     for entry in general[:GENERAL_LISTED]:
         mark = "+".join(name for name, on in (("words", entry.general_by_words), ("shelves", entry.general_by_shelves)) if on)
         print(
             f"  {entry.kind} {entry.products:,} [{mark}]; the title names it as \"{entry.noun}\""
             f" in {entry.named:,} ({_share(entry.named, entry.products)})"
         )
-        print(f"      words: {_line(entry.words, entry.products, lambda word, noun=entry.noun: f'{word} {noun}')}")
+        print(f"      words: {_line(entry.words, entry.products)}")
         if entry.narrower:
             print(f"      narrower: {_line(entry.narrower, entry.products)}")
         print(f"      shelves: {_line(entry.shelves, entry.products)}")

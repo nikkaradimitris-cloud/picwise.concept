@@ -5,8 +5,8 @@ of the server's file (owner, 2026-10-28/29: a general word answered with choices
 it means, one logic for all of them; measured before it is built). Pinned here: each
 product is read with this checkout's rules; the kinds read, and those general by the
 words before their noun, by their shelves and by either, are counted; a general kind's
-choices are printed as the word and its noun ("hdmi cable"), its narrower kinds and its
-shelves, the largest first, with their shares; a kind that is not general is listed with
+choices are printed as the words the titles name it with ("hdmi cable"), its narrower kinds
+and its shelves, the largest first, with their shares; a kind that is not general is listed with
 its largest groups; nothing printed is a title or a link; an unreadable file says so;
 every case exits 0. Every row is local test data: fictional brands and shops, `.invalid`
 addresses.
@@ -52,10 +52,10 @@ def _product(number: int, title: str, category: str) -> ProviderProduct:
 
 def _write(path: Path) -> None:
     rows = (
-        [("Fictional HDMI Cable 2m", CABLES + " > Audio & Video Cables")] * 25
-        + [("Fictional Satellite Coaxial Cable 10m", CABLES + " > Audio & Video Cables")] * 20
-        + [("Fictional Cat6 Ethernet Cable 5m", CABLES + " > Network Cables")] * 15
-        + [("Fictional USB Charging Cable 1m", CABLES)] * 12
+        [("Fictional HDMI Cable 2m", CABLES + " > Audio & Video Cables")] * 30
+        + [("Fictional Satellite Coaxial Cable 10m", CABLES + " > Audio & Video Cables")] * 25
+        + [("Fictional Cat6 Ethernet Cable 5m", CABLES + " > Network Cables")] * 22
+        + [("Fictional USB Charging Cable 1m", CABLES)] * 21
         + [("Fictional Diamond Engagement Ring", RINGS)] * 55
     )
     products = tuple(_product(number, title, category) for number, (title, category) in enumerate(rows))
@@ -87,28 +87,28 @@ class PrintChoicesTests(unittest.TestCase):
             result = _run(path)
         self.assertEqual(result.returncode, 0, result.stderr)
         out = result.stdout
-        self.assertIn("127 products a card can show", out)
+        self.assertIn("153 products a card can show", out)
         self.assertIn(
-            "kinds of at least 50 products: 2; general by the words before their noun: 1; by their shelves: 1;"
-            " by either: 1",
+            "kinds of at least 50 products: 2; general by the words their titles name them with: 1; by their"
+            " shelves: 1; by either: 1",
             out,
         )
         lines = out.splitlines()
         first = next(index for index, line in enumerate(lines) if line.startswith("  cable "))
         self.assertEqual(
-            lines[first], '  cable 72 [words+shelves]; the title names it as "cable" in 72 (100%)'
+            lines[first], '  cable 98 [words+shelves]; the title names it as "cable" in 98 (100%)'
         )
         self.assertEqual(
             lines[first + 1].strip(),
-            "words: hdmi cable 25 (35%), coaxial cable 20 (28%), ethernet cable 15 (21%), charging cable 12 (17%)",
+            "words: hdmi cable 30 (31%), coaxial cable 25 (26%), ethernet cable 22 (22%), charging cable 21 (21%)",
         )
-        self.assertEqual(lines[first + 2].strip(), "narrower: charging_cable 12 (17%)")
+        self.assertEqual(lines[first + 2].strip(), "narrower: charging_cable 21 (21%)")
         self.assertEqual(
             lines[first + 3].strip(),
-            "shelves: Audio & Video Cables 45 (62%), Network Cables 15 (21%), Cables 12 (17%)",
+            "shelves: Audio & Video Cables 55 (56%), Network Cables 22 (22%), Cables 21 (21%)",
         )
         rest = out[out.index("the largest kinds that are not general"):]
-        self.assertIn("  ring 55; words: engagement 55 (100%); shelves: Rings 55 (100%)", rest)
+        self.assertIn("  ring 55; words: engagement ring 55 (100%); shelves: Rings 55 (100%)", rest)
         self.assertIn("the words left out as saying how a product is, before the nouns of 8 kinds or more: 0", out)
         self.assertNotIn("Fictional", out)
         self.assertNotIn("shop.invalid", out)
