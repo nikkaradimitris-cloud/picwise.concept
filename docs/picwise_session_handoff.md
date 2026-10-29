@@ -1,6 +1,7 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-29 (item 1 measured).
+Current state for whoever picks the project up next. Updated 2026-10-29 (items 1 and 2 built
+and measured, nothing deployed).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
 ## Next conversation (from 2026-10-28): finish 1, 2, 3 -- start here
@@ -39,12 +40,17 @@ public, so no server name, address, host key or link in a log or a file.
    suggestions by prefix, from the catalogue, `/suggest.json`), the older
    `src/picwise_search_memory/broad_query_suggestions.py` (from the vocabulary, not the
    catalogue). The cables of 28/10: 3,853 now "cable" (3,270 fabric extension leads,
-   coaxial and aerial, audio, 168 saying "USB"), 196 charging cables. **Measured on
-   2026-10-29, not built into the search** (section "Now (2026-10-29): item 2" below;
-   owner, 29/10: «η ίδια λογική ένας προγραμματισμός για όλες αυτές τις αναζητήσεις ...
-   δεν θέλω να διορθώνουμε ένα-ένα λέξη κλειδί»): 81 of the 116 kinds of 50 or more
-   products get choices; put to the owner: build it, measured again before any
-   deployment.
+   coaxial and aerial, audio, 168 saying "USB"), 196 charging cables. **Built into the
+   search and measured on 2026-10-29, nothing deployed** (owner, 29/10: «η ίδια λογική
+   ένας προγραμματισμός για όλες αυτές τις αναζητήσεις ... δεν θέλω να διορθώνουμε
+   ένα-ένα λέξη κλειδί», then «Ναι προχώρα, βάλ' το στο search»; section "Now
+   (2026-10-29): item 2" below): on the server's catalogue 43 kinds ask which one is
+   meant, each choice finding products of its kind. Found and put to the owner: the
+   vocabulary's older "too broad" answers "chair", "bag", "jacket", "charger" and
+   "bicycle" with no products (as before this work); noise among the choices (halves of
+   phrases, one shop's words, choices that keep almost the whole kind); good choices
+   lost because the search reads "pendant light" as every lamp. Waiting for the owner's
+   word on which to fix, each measured first.
 3. **The cap of 15% applied:** `catalogue_cap.cap_catalogue(..., kept_before=...)` is
    built and measured (run `40762760684`: 164,144 kept, at most 24,621 a category), not
    called. To do: the nightly preparation (`tools/prepare_catalogue.py` ->
@@ -62,13 +68,75 @@ To see one change of the rules on its own, list the commits before it in the wor
 `RULES_STEPS` (each read from a worktree by `deployment/server/kinds_of.py`). Tests one
 module at a time (`test_picwise_learning_stage7b` takes 27 minutes).
 
-## Now (2026-10-29): item 2, the choices for a general word (measured)
+## Now (2026-10-29): item 2, the choices for a general word (built, measured, not deployed)
 
 The owner (29/10): one logic for every general word, never keyword by keyword; «Ναι» to
-measuring it on the server's catalogue the same way as item 1. Built and measured, not
-called by the search: `src/picwise_providers/kind_choices.py` (`measure_kind_choices`;
-tests `tests/test_picwise_kind_choices.py`, 5), `deployment/server/print_choices.py`
-(tests `tests/test_picwise_server_print_choices.py`, 2), a step of `server-cap.yml`.
+measuring it on the server's catalogue the same way as item 1; then «Ναι προχώρα, βάλ'
+το στο search». The measure: `src/picwise_providers/kind_choices.py`
+(`measure_kind_choices`; tests `tests/test_picwise_kind_choices.py`),
+`deployment/server/print_choices.py` (tests `tests/test_picwise_server_print_choices.py`,
+2), a step of `server-cap.yml`.
+
+- **Built (commits `c2b45c5`, `992a59a`, `8ea237b`, all `[skip actions]`):** each night
+  the preparation works out the choices of every general kind with the catalogue
+  (`kind_choices.build_kind_choices`: the narrower kinds and the words the titles name
+  it with, not already covered by an offered narrower kind, the largest first, at most
+  6, each kept only if the search reads it as narrowing the kind -- a narrower kind or a
+  filter word, `_narrows`; a kind asks when 2 are left) and keeps them in the prepared
+  file (`PreparedCatalogue.choices`; an older file carries none, and nothing is asked).
+  A search naming only the kind (no filter, no spec) shows above its results "What kind
+  of cable?" with each choice a link to its search (`LiveSearchResolution.kind_choices`,
+  `reference._kind_choices_html`), in English, for a Greek query too; the box's list
+  offers the choices (`build_search_suggestions(..., choices=)`), so typing "cable"
+  lists them. Where the catalogue asks, the vocabulary's older "This search is too
+  broad. Try: usb cable, hdmi cable, lightning cable" no longer asks too
+  (`picwise_app.app`, found on the measure's page for "cable": two questions, one from
+  words the catalogue may not have). The preparation's summary counts the kinds that
+  ask. Tests: `tests/test_picwise_kind_choices_on_the_page.py` (6, through `api/index.py`
+  on a feed file), `tests/test_picwise_server_print_search_choices.py` (2). The modules
+  nearest the change pass; the full run of this code before the last fix (272 modules,
+  one process each): 269 pass, the 3 that fail fail the same before this work
+  (`test_picwise_canonical_vocabulary_registry_stage2`,
+  `test_picwise_search_index_generated_blind_stage4`, and
+  `test_picwise_search_index_blind_evaluation_stage6a`'s "amazon" and "galaxy" broad
+  terms).
+- **What a buyer would see (run `40911685093`, the catalogue of 29/10 04:21 UTC, 525,386
+  products, prepared again on GitHub's runner with this code and searched there;
+  `deployment/server/print_search_choices.py`):** 43 kinds ask (of the 81 the measure
+  calls general; the others keep fewer than 2 choices the search reads as narrowing).
+  Cable, 4,077: extension cable 3,296, charging cable 196, hdmi cable 80, audio cable 65,
+  braided cable 57, lan cable 26. Table: side, coffee, dining, dressing, nesting. Dress:
+  midi, mini, maxi, midaxi, jersey. Curtains: eyelet, pleat, blackout. Bracelet: tennis,
+  link, chain, diamond, station, line. Monitor: hd, qhd, touchscreen, uhd. The choices of
+  the 30 largest were each searched: every one finds products of the kind. «καλώδιο»
+  finds the same 4,077 and asks the same. The box: 1,898 suggestions, 173 of them
+  choices, 35 KB. About 0.9 s a search on the runner.
+- **Found, put to the owner (nothing fixed yet):**
+  1. "chair", "bag", "jacket", "charger" and "bicycle" show no products: one-word
+     searches with 5 or more of the vocabulary's suggestions get its older "This search
+     is too broad. Try: baby feeding chair, office chair, shower chair ..." instead of the
+     feed (`broad_query_suggestions.should_offer_broad_query_suggestions`,
+     `_HIGHLY_AMBIGUOUS_BROAD_SUGGESTION_COUNT = 5` in the resolver), as before this work;
+     the server has 1,822 chairs, 996 jackets, 865 bags. «καρέκλα» reaches the feed and
+     asks. 25 more kind names get those suggestions too, with the feed's products
+     (cable, lamp, bed, mattress, hat ...); the page does not show them. Proposed: the
+     catalogue decides, one logic: a search the kinds' reading understands goes to the
+     feed, and asks with the catalogue's choices.
+  2. Noise among the choices: halves of phrases ("piece suit" of "3 Piece Suit", "fit
+     suit" of "Slim Fit", "size bed" of "King Size", "leg trouser" of "Wide Leg", "neck
+     sweater" of "Crew Neck", "door wardrobe" of "2 Door"); one shop's words ("robertson
+     hoodie", "makasi rug", "eng ring", "remount ring", "color ring", "do tee", "cup
+     shirt", "horse toy"); choices keeping almost the whole kind ("diamond ring" 134,488
+     of 141,635 rings, "diamond earring" 18,742 of 19,972, "hat glove" all 424 gloves);
+     "caravan mattresse" (the plural cut by one "s"); "men-s watch". Proposed, each
+     measured first: a choice from 2 shops or more; the whole phrase when the word
+     before the noun is mostly half of one; no choice finding 80% of its kind or more;
+     English plurals in "-sses", "-ches", "-shes", "-xes" lose "es".
+  3. Good choices lost: "pendant light" 716, "ceiling light", "wall light", "mirrorless
+     camera" 186, "engagement ring": the search reads each as the whole kind with no
+     filter (a name of the kind in the vocabulary), so a buyer searching "pendant light"
+     sees every lamp, as before this work. Proposed: a name of a kind that only part of
+     its titles carry narrows the search to them.
 
 - **How:** every kind of 50 or more products (by this checkout's rules) is grouped three
   ways: the words its titles name it with -- the word right before the noun of its name
@@ -97,11 +165,11 @@ tests `tests/test_picwise_kind_choices.py`, 5), `deployment/server/print_choices
 - **Wrong kinds the shelves showed (to fix, told first):** vitamin and toothpaste tablets
   ("Vitamins & Supplements", "Toothpaste" shelves) and tablet cases read as tablet
   computers; basketball hoops (67) read as footballs.
-- **Proposed next (owner's word first):** build it into the search -- the choices of the
-  buyer's kind above the results ("What kind of cable?") and in the box's suggestions,
-  the largest six, each a search that finds products -- computed each night with the
-  catalogue, in English (Greek names only for a Greek query, from Google's Greek
-  taxonomy); measured on the server's catalogue again before any deployment.
+- **Proposed next (owner's word first), before it was built:** build it into the search
+  -- the choices of the buyer's kind above the results ("What kind of cable?") and in the
+  box's suggestions, the largest six, each a search that finds products -- computed each
+  night with the catalogue, in English; measured on the server's catalogue again before
+  any deployment. Done the same day (above).
 
 ## Now (2026-10-29): item 1, the engagement rings
 
