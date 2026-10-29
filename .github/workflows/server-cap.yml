@@ -39,8 +39,8 @@ jobs:
     timeout-minutes: 45
     env:
       # The commit whose rules this one's are set against: the work branch before the
-      # change measured (2026-10-28: a kind named only after "with", read as the product
-      # when the shop's shelf names it too).
+      # change measured (2026-10-29: a kind a title names only after the English "with",
+      # read as the product when the shop's shelf names it too).
       RULES_BEFORE: cb40587f848579298f3c9afc53e744ef9a476f1a
     steps:
       - uses: actions/checkout@v5
