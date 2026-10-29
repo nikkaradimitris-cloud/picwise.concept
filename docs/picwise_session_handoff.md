@@ -49,8 +49,14 @@ public, so no server name, address, host key or link in a log or a file.
    vocabulary's older "too broad" answers "chair", "bag", "jacket", "charger" and
    "bicycle" with no products (as before this work); noise among the choices (halves of
    phrases, one shop's words, choices that keep almost the whole kind); good choices
-   lost because the search reads "pendant light" as every lamp. Waiting for the owner's
-   word on which to fix, each measured first.
+   lost because the search reads "pendant light" as every lamp. The owner (29/10): «εσύ
+   πρέπει να αποφασίσεις ποιος είναι ο βέλτιστος τρόπος»: the order is chosen here.
+   **Built, tested, not yet measured on the server** (section below, "After the
+   buyer's view"): a kind's own name reaches the feed; four rules keep the choices true.
+   The push to the work branch was refused twice by the session's permission mode
+   ("Auto" classes a push to the deployment's branch as a deployment, `[skip actions]`
+   notwithstanding); the owner switches to "Accept edits" to approve it. The commits
+   wait, in the work branch's order, on the local branch `work-linear`.
 3. **The cap of 15% applied:** `catalogue_cap.cap_catalogue(..., kept_before=...)` is
    built and measured (run `40762760684`: 164,144 kept, at most 24,621 a category), not
    called. To do: the nightly preparation (`tools/prepare_catalogue.py` ->
@@ -170,6 +176,40 @@ measuring it on the server's catalogue the same way as item 1; then «Ναι π�
   box's suggestions, the largest six, each a search that finds products -- computed each
   night with the catalogue, in English; measured on the server's catalogue again before
   any deployment. Done the same day (above).
+
+### After the buyer's view (29/10, the order chosen here; built, not yet measured)
+
+1. **A kind's own name reaches the feed** (`63ccfda`/`2d4ea2e`): a one-word search with
+   5 or more of the vocabulary's suggestions that the kinds' reading finds to be a
+   kind's own name, exactly (`ConceptReading.exact`), is searched in the feed like
+   "cable", and the catalogue asks; a word read as a kind only by correcting it keeps
+   the list alone: "chain" reads as chair, "protector" as projector, "tools" as toy,
+   "portable" as a game table, "workshop" as safety shoes (54 words have 5+ suggestions;
+   8 are kinds named exactly: bag, bicycle, chair, charger, jacket, phone and the plurals).
+   Where the feed's products show, the older "too broad" list no longer replaces the
+   page's note (`picwise_app.app`); it stays for a broad word with nothing to show. The
+   tests of stages 8b and 8c that pinned "charger" to the list now pin "protector",
+   "chain" and "tools" to it and "charger" to the feed.
+2. **Four rules keep the choices true** (`cd841b1`/`f23c029`, `kind_choices.CHOICE_RULES`,
+   each can be left out): a choice by the words is named so by 2 shops or more
+   (`RULE_SHOPS`); a word mostly after a number, or after a word the two make one
+   modifier with before other nouns too, is read whole, "3 piece suit", "slim fit suit",
+   while "velvet dining" comes before no other noun and a velvet dining chair stays a
+   dining chair (`RULE_PHRASES`); no choice whose search keeps 80% of the kind, counted
+   as the price-first search reads a word (`RULE_WHOLE_KIND`; "diamond" must come before
+   "ring", one word between at most); the noun as the titles write it, "bootcut jeans",
+   which the search reads, not "bootcut jean", which it does not (`RULE_WRITTEN`).
+   `deployment/server/print_choice_rules.py` (a step of `server-cap.yml`) prints what
+   each rule leaves out and lets in on its own, then every general kind's choices with
+   what each one's search keeps. Tests: `tests/test_picwise_kind_choices.py` (11),
+   `tests/test_picwise_server_print_choice_rules.py` (2); the 31 modules through the
+   resolver and the choices pass.
+3. **Found on the way, not fixed (each to measure, the owner told first):** "skinny
+   jeans" reads as a tent ("skinny" as the greeklish σκηνή, ahead of the English
+   "jeans"); a title naming its kind only by a weak name reads as no kind even on a
+   shelf naming it ("Diamond Ring", "Emerald Ring", "Ruby Ring" on a Rings shelf; "Gold
+   Ring" reads); "pendant light", "ceiling light", "mirrorless camera" search as the
+   whole kind.
 
 ## Now (2026-10-29): item 1, the engagement rings
 
