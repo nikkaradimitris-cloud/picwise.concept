@@ -329,6 +329,9 @@ CONNECTIVE_WORDS = frozenset(
 _PURPOSE_WORDS = frozenset(
     {"for", "with", "without", "w/", "για", "με", "χωρις", "gia", "me", "xoris", "choris"}
 )
+# The purpose words that say what comes with the product, not what it is for: a title
+# can describe its product past them ("3 Stone With Side Halo Diamond Engagement Ring").
+_WITH_WORDS = frozenset({"with", "w/", "με", "me"})
 
 # Not retail product searches. Never fuzzily matched onto a product name.
 _NON_RETAIL_WORDS = frozenset(
@@ -728,11 +731,11 @@ def _choose_spans(spans: list[_Span]) -> list[_Span]:
     return sorted(chosen, key=lambda s: s.start)
 
 
-def _pick_head(spans: list[_Span], tokens: tuple[str, ...]) -> _Span | None:
+def _pick_head(spans: list[_Span], tokens: tuple[str, ...], cut: int | None = None) -> _Span | None:
     if not spans:
         return None
     covered = {i for span in spans for i in range(span.start, span.end)}
-    purpose_at = next(
+    purpose_at = cut if cut is not None else next(
         (i for i, token in enumerate(tokens) if token in _PURPOSE_WORDS and i not in covered),
         len(tokens),
     )
@@ -1836,6 +1839,14 @@ def _title_named_head(title: str, category: str) -> str | None:
     a better one. A lead that names nothing lets the rest of the title speak ("Brand
     X200, Wireless Gaming Mouse"), unless the category names a kind PicWise does not
     know and shares no word with it: "Garden Sheds" and "..., Waterproof Bike Tent".
+
+    A title that names a kind only after a "with" names something that comes with the
+    product, unless the shop's own shelf names that kind too: "2.00 Ct Lab Grown 3 Stone
+    With Side Halo Diamond Engagement Ring Platinum" on the shelf "Rings" is a ring, its
+    description running on past "With" (`_cut_past_with`; owner, 2026-10-28). The weak
+    name "rings" gives a shelf no kind of its own, but agrees with the one the title
+    names; with no shelf, or another one ("E-Book Readers" and "... with Case"), the
+    title still names an accessory.
     """
     lead_tokens = normalize_understanding_text(_title_lead(title)).split()
     cut = next((i for i, token in enumerate(lead_tokens) if token in _PURPOSE_WORDS), len(lead_tokens))
@@ -1855,9 +1866,13 @@ def _title_named_head(title: str, category: str) -> str | None:
             return UNCERTAIN_MARKER
         return head
     head = _head_of_text(title, strict_tail=True)
+    shelf = _narrowest_shelf(category)
+    if head is ACCESSORY_MARKER:
+        past = _head_of_text(title, strict_tail=True, past_with=True)
+        if past not in (None, ACCESSORY_MARKER) and _type_supports_concept(shelf, past):
+            return past
     if head is None or head is ACCESSORY_MARKER:
         return head
-    shelf = _narrowest_shelf(category)
     if shelf and _type_is_informative(shelf) and not _type_supports_concept(shelf, head):
         return UNCERTAIN_MARKER
     return head
@@ -2406,6 +2421,36 @@ def _is_descriptor_word(token: str) -> bool:
 _NAMED_LAST_KINDS = frozenset({"photo_frame"})
 
 
+def _cut_past_with(
+    tokens: tuple[str, ...], spans: list[_Span], cut: int, accessory_words: frozenset[str]
+) -> int:
+    """Where the words naming the product end, when text that names nothing before its
+    first "with" goes on describing the product past it: "2.00 Ct Lab Grown 3 Stone With
+    Side Halo Diamond Engagement Ring Platinum" is a ring (owner, 2026-10-28: 3,075 of
+    Finediam's engagement rings were read as accessories of a ring). The name ends at the
+    purpose word after the first kind named; `cut` is kept when a kind is named before
+    it, when none is named before a "for", or when an accessory's noun stands before the
+    kind ("Display Stand with Necklace").
+    """
+    if any(span.start < cut for span in spans):
+        return cut
+    covered = {i for span in spans for i in range(span.start, span.end)}
+    at = cut
+    while at < len(tokens) and tokens[at] in _WITH_WORDS:
+        end = next(
+            (i for i in range(at + 1, len(tokens)) if tokens[i] in _PURPOSE_WORDS and i not in covered),
+            len(tokens),
+        )
+        named = [span for span in spans if at < span.start < end]
+        if named:
+            before = tokens[: named[0].start]
+            if any(token in accessory_words or token in _LEAD_ACCESSORY_NOUNS for token in before):
+                return cut
+            return end
+        at = end
+    return cut
+
+
 def _head_of_text(
     text: str,
     *,
@@ -2413,6 +2458,7 @@ def _head_of_text(
     first_phrase: bool = False,
     strict_tail: bool = False,
     accessory_words: frozenset[str] | None = None,
+    past_with: bool = False,
 ) -> str | None:
     """The concept a piece of feed text names, or ACCESSORY_MARKER for an accessory of it.
 
@@ -2425,6 +2471,8 @@ def _head_of_text(
     for or comes with. "Vacuum cleaner with filter" is a vacuum cleaner, and text that
     names a product only after a purpose word -- "filter for coffee machine",
     "accessories for laptops" -- names something for that product, an accessory.
+    With `past_with`, text that names nothing before a "with" is read on past it
+    (`_cut_past_with`).
 
     `accessory_words` is wider for a feed's own classification (its product type, its
     category shelves) than for a title: see `_CLASSIFICATION_ACCESSORY_WORDS`.
@@ -2445,6 +2493,8 @@ def _head_of_text(
         (i for i, token in enumerate(tokens) if token in _PURPOSE_WORDS and i not in covered),
         len(tokens),
     )
+    if past_with:
+        cut = _cut_past_with(tokens, spans, cut, accessory_words)
     if first_phrase:
         # The product a title names first, read as English reads a noun phrase: the
         # last name in the first run of names. "Fan Heater" is a heater, "Laptop Intel
@@ -2458,7 +2508,7 @@ def _head_of_text(
         if named and named[-1].kind == "en" and named[-1].concept_id in _NAMED_LAST_KINDS:
             head = named[-1]
     else:
-        head = spans[0] if first else _pick_head(spans, tokens)
+        head = spans[0] if first else _pick_head(spans, tokens, cut)
     if head is None:
         return None
     if head.start > cut:
