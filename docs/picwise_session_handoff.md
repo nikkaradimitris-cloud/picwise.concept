@@ -39,8 +39,12 @@ public, so no server name, address, host key or link in a log or a file.
    suggestions by prefix, from the catalogue, `/suggest.json`), the older
    `src/picwise_search_memory/broad_query_suggestions.py` (from the vocabulary, not the
    catalogue). The cables of 28/10: 3,853 now "cable" (3,270 fabric extension leads,
-   coaxial and aerial, audio, 168 saying "USB"), 196 charging cables. Measure first
-   which words are general and what each would offer.
+   coaxial and aerial, audio, 168 saying "USB"), 196 charging cables. **Measured on
+   2026-10-29, not built into the search** (section "Now (2026-10-29): item 2" below;
+   owner, 29/10: «η ίδια λογική ένας προγραμματισμός για όλες αυτές τις αναζητήσεις ...
+   δεν θέλω να διορθώνουμε ένα-ένα λέξη κλειδί»): 81 of the 116 kinds of 50 or more
+   products get choices; put to the owner: build it, measured again before any
+   deployment.
 3. **The cap of 15% applied:** `catalogue_cap.cap_catalogue(..., kept_before=...)` is
    built and measured (run `40762760684`: 164,144 kept, at most 24,621 a category), not
    called. To do: the nightly preparation (`tools/prepare_catalogue.py` ->
@@ -57,6 +61,47 @@ to GitHub's runner and runs `print_cap.py`, `print_prices.py`, `print_kind_chang
 To see one change of the rules on its own, list the commits before it in the workflow's
 `RULES_STEPS` (each read from a worktree by `deployment/server/kinds_of.py`). Tests one
 module at a time (`test_picwise_learning_stage7b` takes 27 minutes).
+
+## Now (2026-10-29): item 2, the choices for a general word (measured)
+
+The owner (29/10): one logic for every general word, never keyword by keyword; «Ναι» to
+measuring it on the server's catalogue the same way as item 1. Built and measured, not
+called by the search: `src/picwise_providers/kind_choices.py` (`measure_kind_choices`;
+tests `tests/test_picwise_kind_choices.py`, 5), `deployment/server/print_choices.py`
+(tests `tests/test_picwise_server_print_choices.py`, 2), a step of `server-cap.yml`.
+
+- **How:** every kind of 50 or more products (by this checkout's rules) is grouped three
+  ways: the words its titles name it with -- the word right before the noun of its name
+  and that noun as written ("hdmi cable", "sofa bed" under sofas, "zip-up hoodie"),
+  weak names read too since the kind is known; its narrower kinds; its shops' narrowest
+  shelves. A word before the nouns of 8 kinds or more says how a product is, not which
+  kind ("gaming", "knitted", "football" on 29/10), and is no choice; nor a number, the
+  brand or a connective. A choice from 20 products, whatever its share (first run
+  `40868599997` asked 5% of the kind, and "cable" got no choice: one shop's fabric
+  extension leads are 81% of cables). General: 2 choices of one way.
+- **What it found (run `40869626869`, the catalogue of 29/10 04:21 UTC):** of 116 kinds
+  of 50+ products, 81 general (57 by words, 62 by shelves). Cable: extension 3,291,
+  charger 67, charging 56, braided 54, HDMI 42, audio 38, LAN 26, USB 24 (and shelves
+  HDMI, Network, Audio Cables). Table: side 774, coffee 496, console 273, dining 257,
+  dressing 61, nesting 48. Lamp: pendant light 716, table lamp 472, floor lamp 125,
+  ceiling light 124, wall light 90, chandeliers. Dress: midi, mini, maxi; earrings:
+  stud, hoop, diamond, drop; bracelet: tennis, link, chain; camera: mirrorless,
+  compact, instant, digital; curtains: eyelet, pleat, blackout; socks, mattresses,
+  beds, sofas, hats, gloves, saunas alike. Noise, mostly clothes with prints and
+  shops' own words: "do shirt" 764, "funny shirt", "rude shirt", "robertson hoodie",
+  "cup shirt", "color ring" 3,906, misspellings ("engagment ring" 504); the singular
+  cut short ("caravan mattresse", "wine glasse": `_singular` strips one "s"). The
+  shelves of several shops name one thing twice ("Dog Food", "Non-prescription Dog
+  Food"), so as choices they are weaker than the words. Not general: keyboard, mouse,
+  desk, backpack, perfume, motherboard, wall clock and others with one group.
+- **Wrong kinds the shelves showed (to fix, told first):** vitamin and toothpaste tablets
+  ("Vitamins & Supplements", "Toothpaste" shelves) and tablet cases read as tablet
+  computers; basketball hoops (67) read as footballs.
+- **Proposed next (owner's word first):** build it into the search -- the choices of the
+  buyer's kind above the results ("What kind of cable?") and in the box's suggestions,
+  the largest six, each a search that finds products -- computed each night with the
+  catalogue, in English (Greek names only for a Greek query, from Google's Greek
+  taxonomy); measured on the server's catalogue again before any deployment.
 
 ## Now (2026-10-29): item 1, the engagement rings
 
