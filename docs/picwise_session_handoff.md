@@ -389,6 +389,19 @@ read-only look at the night's round. Owner's rules unchanged (section below).
   first. A few more accessories are real products (4 microphones with a "mount", 3
   bedside tables "Storage Organiser"). The rules reach the server only with a deployment
   (question 1).
+- **The owner's answers (29/10) to an honest assessment** (asked: «πες την αλήθεια»): the
+  catalogue's gaps -> other affiliate networks will be added; the decision rests on the
+  middle price; the kind reading is finished when every kind defined has products and has
+  been debugged once; what users do does not matter now (there are none), what Google does
+  at launch does; there is a domain of our own, and the rules leave no room for breaking
+  Google's rules or data quality; the system is to keep itself up to date; everything in,
+  debugged in bulk (not a few kinds first); the creed: volume, quality of information,
+  truth, an architecture right for SEO. Answered: the middle price is a sound basis if it
+  is the median of a kind read right, from several shops, per size where size matters
+  (the rings' middle is Finediam's, the cables' the extension leads', the charging cables'
+  the EV cables'); keep everything in the search, but let Google index only the kinds that
+  pass a bar (enough products, shops, debugged); Search Console from the first day; an
+  alarm when a night fails, before launch.
 - **The owner's word (28/10): no deployment until what was started is finished** («Δεν
   προχωράμε σε ανάπτυξη μέχρι να ολοκληρώσουμε αυτά που έχουμε ξεκινήσει»). Also: rules
   word by word lead nowhere; a general word ("καλώδιο") should be answered with choices of
