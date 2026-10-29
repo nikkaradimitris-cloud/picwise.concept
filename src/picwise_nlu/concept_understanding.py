@@ -331,7 +331,9 @@ _PURPOSE_WORDS = frozenset(
 )
 # The purpose words that say what comes with the product, not what it is for: a title
 # can describe its product past them ("3 Stone With Side Halo Diamond Engagement Ring").
-_WITH_WORDS = frozenset({"with", "w/", "με", "me"})
+# English only: the shops' titles are English (owner, 2026-10-29: «Η διορθώσεις πρέπει να
+# αφορούν αγγλικό λεξιλόγιο»).
+_WITH_WORDS = frozenset({"with", "w/"})
 
 # Not retail product searches. Never fuzzily matched onto a product name.
 _NON_RETAIL_WORDS = frozenset(
