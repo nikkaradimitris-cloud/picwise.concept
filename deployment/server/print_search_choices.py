@@ -11,9 +11,11 @@ choices of every general kind worked out (`kind_choices.build_kind_choices`) and
 search box's suggestions with them; the search then answers from it in this process,
 as the server answers from its file (`state._active_prepared_catalogue`). For every
 general kind, the largest first: the search for its English name, how many products
-it finds and its cheapest, and each choice it asks with how many products that
-choice's own search finds and whether they are of the kind; then the Greek name of the
-first few, and the suggestions the box would hold. Run by .github/workflows/server-cap.yml
+it finds and its first card (the Recommended, at the middle price, when there is one;
+else the cheapest), or the vocabulary's "too broad" when that answers instead, and each
+choice it asks with how many products that choice's own search finds and whether they
+are of the kind; then the Greek name of the first few, and the suggestions the box would
+hold. Run by .github/workflows/server-cap.yml
 on GitHub's runner, from a copy of the server's file; nothing on the server or shown
 changes. Counts, kinds, words, titles and prices only, never a link. Always exits 0.
 """
@@ -119,12 +121,17 @@ def main(argv: list[str]) -> int:
             print(f"  {name}: the search failed: {type(error).__name__}")
             continue
         products = resolution.provider_feed_selected_products
-        cheapest = products[0] if products else {}
-        price = parse_price_amount(str(cheapest.get("price_text") or "")) if cheapest else None
-        shown = f"{price:,.2f} {cheapest.get('currency') or ''}".strip() if price is not None else "-"
+        if not products and "broad_query_suggestions" in resolution.reason_codes:
+            # The older broad suggestions, from the vocabulary, answer instead of the feed.
+            offered = ", ".join(str(row.canonical_term) for row in resolution.suggestions)
+            print(f"  {name}: no products; the vocabulary's \"too broad\" answers instead: {offered}")
+            continue
+        first = products[0] if products else {}
+        price = parse_price_amount(str(first.get("price_text") or "")) if first else None
+        shown = f"{price:,.2f} {first.get('currency') or ''}".strip() if price is not None else "-"
         print(
-            f"  {name}: {resolution.provider_feed_total_count:,} products, the cheapest {shown}"
-            f" {_short(cheapest.get('title') or '')!r}"
+            f"  {name}: {resolution.provider_feed_total_count:,} products, the first card {shown}"
+            f" {_short(first.get('title') or '')!r}"
         )
         asked = resolution.kind_choices
         if not asked:

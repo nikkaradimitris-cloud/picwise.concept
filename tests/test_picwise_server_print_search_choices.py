@@ -4,9 +4,10 @@
 (owner, 2026-10-29: «Ναι προχώρα, βάλ' το στο search», measured before any deployment).
 Pinned here: the file is prepared again with this checkout's rules, kinds stored by older
 rules notwithstanding; each general kind's search is printed with how many products it
-finds, its cheapest and the choices it asks; each choice is searched and said to find
-products of the kind; the Greek name asks the same; the box's suggestions hold the
-choices; nothing printed is a link; an unreadable file says so; every case exits 0.
+finds, its first card and the choices it asks; each choice is searched and said to find
+products of the kind; a kind whose search the vocabulary's "too broad" answers instead
+says so ("chair", 2026-10-29); the Greek name asks the same; the box's suggestions hold
+the choices; nothing printed is a link; an unreadable file says so; every case exits 0.
 Every row is local test data: fictional brands and shops, `.invalid` addresses.
 """
 from __future__ import annotations
@@ -33,6 +34,8 @@ from picwise_providers.search_selection import _product_search_fields  # noqa: E
 
 CABLES = "Electronics > Electronics Accessories > Cables"
 KETTLES = "Home & Garden > Kitchen & Dining > Kitchen Appliances > Kettles"
+DINING_CHAIRS = "Furniture > Chairs > Kitchen & Dining Room Chairs"
+OFFICE_CHAIRS = "Furniture > Office Furniture > Office Chairs"
 
 
 def _product(number: int, title: str, category: str, price: float) -> ProviderProduct:
@@ -62,6 +65,8 @@ def _write(path: Path) -> None:
         ("Fixturon Coaxial Cable {n}m", CABLES, 25, 2.0),
         ("Fixturon Speaker Cable {n}m", CABLES, 22, 4.0),
         ("Fixturon Electric Kettle {n}", KETTLES, 55, 20.0),
+        ("Fixturon Velvet Dining Chair {n}", DINING_CHAIRS, 30, 40.0),
+        ("Fixturon Ergonomic Office Chair {n}", OFFICE_CHAIRS, 25, 70.0),
     ):
         for step in range(count):
             products.append(_product(len(products) + 1, title.format(n=step + 1), category, base + step))
@@ -98,15 +103,21 @@ class PrintSearchChoicesTests(unittest.TestCase):
             result = _run(path)
         self.assertEqual(result.returncode, 0, result.stderr)
         out = result.stdout
-        self.assertIn("132 products a card can show, 132 of them new", out)
-        self.assertIn("1 general kinds ask which one is meant", out)
-        self.assertIn("  cable: 77 products, the cheapest 2.00 GBP 'Fixturon Coaxial Cable 1m'", out)
+        self.assertIn("187 products a card can show, 187 of them new", out)
+        self.assertIn("2 general kinds ask which one is meant", out)
+        self.assertRegex(out, r"  cable: 77 products, the first card \d+\.\d\d GBP 'Fixturon [A-Za-z]+ Cable \d+m'")
         self.assertIn("      What kind of cable? hdmi cable, coaxial cable, speaker cable", out)
         self.assertIn(
             "      each found: hdmi cable 30 (yes); coaxial cable 25 (yes); speaker cable 22 (yes)", out
         )
         self.assertIn("  the Greek καλώδιο: 77 products; asks: hdmi cable, coaxial cable, speaker cable", out)
-        self.assertRegex(out, r"the search box: \d+ suggestions, 3 of them choices")
+        # The older broad suggestions, from the vocabulary, answer "chair" with no products;
+        # the Greek name reaches the feed and asks.
+        self.assertIn(
+            '  chair: no products; the vocabulary\'s "too broad" answers instead: baby feeding chair', out
+        )
+        self.assertIn("  the Greek καρέκλα: 55 products; asks: dining chair, office chair", out)
+        self.assertRegex(out, r"the search box: \d+ suggestions, 5 of them choices")
         self.assertNotIn("kettle:", out)
         self.assertNotIn("shop.invalid", out)
 
