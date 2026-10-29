@@ -395,7 +395,7 @@ def _catalogue_kind_choices(
     else:
         kinds_of = {id(product): product_kinds for product, product_kinds in zip(catalogue.products, kinds)}
         new_kinds = [kinds_of[id(product)] for product in catalogue.new_products]
-    return build_kind_choices(catalogue.new_products, new_kinds)
+    return build_kind_choices(catalogue.new_products, new_kinds, catalogue.new_fields)
 
 
 def measure_configured_feed_intake(feed_config: ProviderFeedConfig | None = None) -> dict[str, Any] | None:
