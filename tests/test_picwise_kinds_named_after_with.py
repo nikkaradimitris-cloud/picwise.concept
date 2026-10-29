@@ -10,7 +10,8 @@ product.
 Pinned here: a title that names no kind before its first "with" (or "w/") is the kind it
 names after it, when the shop's narrowest shelf names that kind too, past one "with" or
 more; English words only (owner, 2026-10-29: «Η διορθώσεις πρέπει να αφορούν αγγλικό
-λεξιλόγιο»); and the look-alikes stay what they were: a title naming a kind only
+λεξιλόγιο»); a metal right after the kind's name describes it, as gold and silver do
+("... Engagement Ring Platinum"); and the look-alikes stay what they were: a title naming a kind only
 after "for", or after an accessory's noun ("Display Stand with ..."), or on no shelf
 naming it, is still an accessory; a kind named before "with" is still the product ("Pram
 with Car Seat", "Vacuum cleaner with filter", "Diamond Engagement Ring with Gift Box").
@@ -52,6 +53,20 @@ class NamedAfterWithTests(unittest.TestCase):
             for category in (RINGS, GOOGLE_RINGS):
                 with self.subTest(title=title, category=category):
                     self.assertEqual(_kinds("", category, title), {"ring"})
+
+    def test_a_metal_after_the_name_describes_it(self) -> None:
+        # Measured on the server's catalogue of 2026-10-29: 32 of Finediam's rings named
+        # past "With" were still accessories, "Platinum" right after the ring's name
+        # voiding it as a word PicWise could not read.
+        title = "2.00 Ct Lab Grown 3 Stone With Side Halo Diamond Engagement Ring Platinum - Sterling Silver / 0.50 Carat"
+        self.assertEqual(_kinds("", RINGS, title), {"ring"})
+        for title in (
+            "Fixturon Halo Diamond Engagement Ring Platinum",
+            "Fixturon Diamond Engagement Ring Sterling Silver Cubic Zirconia",
+            "Fixturon Diamond Engagement Ring Titanium 4mm",
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(_kinds("", "", title), {"ring"})
 
     def test_without_a_shelf_naming_the_kind_it_is_still_an_accessory(self) -> None:
         title = "2.00 Ct Lab Grown 3 Stone With Side Halo Diamond Engagement Ring 18K White Gold"

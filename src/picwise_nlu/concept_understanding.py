@@ -2399,11 +2399,15 @@ def query_allows_context(tokens: tuple[str, ...], marker: str) -> bool:
 
 
 # Words that may follow a product name in a title without changing what it is: a
-# colour or other preference word, a spec, a number, a packaging or version word.
+# colour or other preference word, a spec, a number, a packaging or version word, or a
+# metal, as "gold" and "silver" are: "... Diamond Engagement Ring Platinum - Sterling
+# Silver / 0.50 Carat" is a ring (measured on the server's catalogue of 2026-10-29: 32 of
+# Finediam's rings on its shelf of rings were read as accessories for want of it).
 _DESCRIPTOR_TAIL_WORDS = frozenset(
     """
     color colour colours colors version edition set sets pack packs pcs piece pieces
     plus pro max mini lite uk eu us plug size type new
+    platinum palladium titanium tungsten sterling
     """.split()
 )
 
