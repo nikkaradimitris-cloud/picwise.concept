@@ -24,6 +24,7 @@ from .contracts import (
 from .eligibility import evaluate_provider_product_eligibility
 from .feed_intake import measure_feed_intake
 from .graph_projection import project_provider_products_to_graph
+from .kind_choices import KindChoice, build_kind_choices
 from .offer_health import (
     build_feed_availability_context,
     evaluate_product_eligibility,
@@ -37,12 +38,14 @@ from .prepared_catalogue import (
 )
 from .normalization import extract_merchant_name
 from .purchasability_cache import enrich_provider_products_with_cache, resolve_purchasability_cache
+from .shop_catalogue import apply_shop_catalogues
 from .suggestions import SearchSuggestion, build_search_suggestions
 from .search_selection import (
     ProviderFeedRecommendationDecision,
     ProviderProductSelectionResult,
     SearchCatalogue,
     _product_concepts,
+    _product_search_fields,
     build_search_catalogue,
     decide_recommended_provider_product,
     is_strong_feed_opportunity_selection,
@@ -231,6 +234,9 @@ def _resolve_provider_feed_pipeline_uncached(
             parse_result=parse_result,
         )
 
+    # What the shops' own catalogues and the rows' barcodes say, before any row is
+    # judged (`shop_catalogue.py`, owner, 2026-10-26).
+    parse_result = replace(parse_result, products=apply_shop_catalogues(parse_result.products))
     feed_availability_context = build_feed_availability_context(parse_result.products)
     eligibility_results = tuple(
         _enrich_provider_eligibility_result(product, feed_ctx=feed_availability_context)
@@ -356,21 +362,40 @@ def prepare_feed_catalogue(
         return None
     catalogue = _search_catalogue(pipeline)
     eligible_count, shop_count = _catalogue_counts(pipeline)
+    kinds = tuple(
+        _product_concepts(product, fields) for product, fields in zip(catalogue.products, catalogue.fields)
+    )
+    choices = _catalogue_kind_choices(catalogue, kinds)
     return PreparedCatalogue(
         prepared_at=now or datetime.now(timezone.utc),
         feed_status=pipeline.feed_status,
         availability_context=pipeline.availability_context,
         products=catalogue.products,
         non_new=tuple(product_non_new_condition(product) for product in catalogue.products),
-        kinds=tuple(
-            _product_concepts(product, fields)
-            for product, fields in zip(catalogue.products, catalogue.fields)
-        ),
+        kinds=kinds,
         eligible_count=eligible_count,
         shop_count=shop_count,
-        suggestions=build_search_suggestions(catalogue.new_products),
+        suggestions=build_search_suggestions(catalogue.new_products, choices=choices),
         search_fields=catalogue.fields,
+        choices=choices,
     )
+
+
+def _catalogue_kind_choices(
+    catalogue: SearchCatalogue, kinds: tuple[frozenset[str], ...] | None = None
+) -> dict[str, tuple[KindChoice, ...]]:
+    """The choices of every general kind, for the new products a search reads
+    (`kind_choices.build_kind_choices`). `kinds`, when given, are those of
+    `catalogue.products`, in order."""
+    if kinds is None:
+        new_kinds = [
+            _product_concepts(product, fields)
+            for product, fields in zip(catalogue.new_products, catalogue.new_fields)
+        ]
+    else:
+        kinds_of = {id(product): product_kinds for product, product_kinds in zip(catalogue.products, kinds)}
+        new_kinds = [kinds_of[id(product)] for product in catalogue.new_products]
+    return build_kind_choices(catalogue.new_products, new_kinds, catalogue.new_fields)
 
 
 def measure_configured_feed_intake(feed_config: ProviderFeedConfig | None = None) -> dict[str, Any] | None:
@@ -389,7 +414,11 @@ def measure_configured_feed_intake(feed_config: ProviderFeedConfig | None = None
         and row.product_eligibility.card_eligible
         and product_non_new_condition(row.product)
     }
-    return measure_feed_intake(pipeline.eligibility_results, not_new_products=not_new)
+    return measure_feed_intake(
+        pipeline.eligibility_results,
+        not_new_products=not_new,
+        read_kinds=lambda product: _product_concepts(product, _product_search_fields(product)),
+    )
 
 
 def _today() -> date:
@@ -527,8 +556,25 @@ def search_suggestions(
     return _cached_for(
         pipeline,
         "suggestions",
-        lambda ready: build_search_suggestions(_search_catalogue(ready).new_products),
+        lambda ready: build_search_suggestions(
+            _search_catalogue(ready).new_products, choices=search_kind_choices(feed_config)
+        ),
     )
+
+
+def search_kind_choices(
+    feed_config: ProviderFeedConfig | None = None,
+) -> dict[str, tuple[KindChoice, ...]]:
+    """Per general kind, the choices a search for it offers (`kind_choices.py`): read
+    from the prepared feed, or worked out once per feed load."""
+    prepared = _active_prepared_catalogue() if feed_config is None else None
+    if prepared is not None:
+        return prepared.choices
+    config = feed_config or awin_feed_config_from_env()
+    pipeline = resolve_provider_feed_pipeline(config, include_graph_projection=False)
+    if pipeline.feed_status.status != "provider_feed_ready":
+        return {}
+    return _cached_for(pipeline, "kind_choices", lambda ready: _catalogue_kind_choices(_search_catalogue(ready)))
 
 
 def resolve_card_eligible_provider_feed_product_by_id(

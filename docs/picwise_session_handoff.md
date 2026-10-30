@@ -1,9 +1,1111 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-23.
+Current state for whoever picks the project up next. Updated 2026-10-30 (items 1, 2 and 3
+built and measured, nothing deployed; next, in a new conversation: the site moved to the
+real server).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation: the server; nothing left out of what is kept (owner, 2026-10-23) -- start here
+## Next conversation (from 2026-10-30): move the site to the real server -- start here
+
+**The owner (30/10): «2 μεταφορά του site στον κανονικό server και πάμε να ξεκινήσουμε από
+άλλη συζήτηση».** Before it: «Να προχωρήσεις με το 3 και να σταματήσουμε εκεί μετά την
+υλοποίηση του δεν με ενδιαφέρει επιπλέον απασφαλμάτωση το επόμενο βήμα θα είναι να
+προσθέσουμε επιπλέον καταστήματα από άλλο δίκτυο και να περάσουμε το site στο κανονικό
+server». So: **first the site moved to the real server, then the shops of another
+affiliate network.** Items 1, 2 and 3 are built and measured, nothing deployed (below); no
+more debugging for now: the reading errors found on 29-30/10 (section "After the buyer's
+view", 4) stay as they are.
+
+- **Where the work is:** `ccr-1361f1a7-dcpo60` (the conversation of 29-30/10 pushed its
+  last commit there; its own branch `ccr-4f9ef4ee-j1nafx` holds the same files). Bring it
+  in first. A push to it needs the session in **"Accept edits"** (the mode menu beside the
+  message box): "Auto" refuses it as a deployment, `[skip actions]` notwithstanding.
+  A push there of anything in `server-deploy.yml`'s `paths` (`src/**`, `tools/**`,
+  `api/**`, `assets/**`, `data/**`, `wsgi.py`, `deployment/server/**`,
+  `deployment/bot/**`, the pin, the workflow itself) **deploys**, unless the head commit
+  says `[skip actions]`; a push of `server-shops.yml` runs the shops' round at once (a
+  second round the same day only on the owner's word).
+- **Where things stand:** the live site is still Vercel's (`picwise.subby.cloud`). The
+  server (OVHcloud VPS-4, London, Ubuntu 24.04) runs the site under gunicorn on
+  `127.0.0.1:8016` only, so nothing reaches it from the internet; ufw lets 22, 80 and 443
+  in. Its code is the deployment of 26/10 (run `40355492889`); the shops' round and the
+  catalogue's preparation (04:17 UTC) run each night; the measures read its catalogue
+  through `server-cap.yml`.
+- **The steps, each on the owner's word:**
+  1. **Question 1:** `server-deploy.yml` and `server-shops.yml` compare the key a key
+     scan (`ssh-keyscan`) is shown with the pin, and a key scan has been shown another
+     key since 27/10 (section "Now (2026-10-27/28)"), so they stop at their first step;
+     `server-setup.yml` (run from `ccr-baaad713-r3uvvs` only) logs in with `accept-new`,
+     checking no pin. `server-night.yml` and `server-cap.yml` check the key a login's
+     first step is shown against the pin, and work: the same check to the three. Editing
+     `server-deploy.yml` deploys the work branch, so that edit is the deployment itself
+     and waits for the owner's «ναι».
+  2. **The deployment:** items 1-3 and everything since 26/10 reach the server; the
+     night's preparation then also keeps the pool Google may be given from
+     (`google_pool.json.gz`). After it: the deployment's own comparison of pages, and
+     `server-night.yml` the next morning.
+  3. **The site public on the server: HTTPS and the domain.** A web server in front of
+     gunicorn (TLS from Let's Encrypt); the domain of PicWise's own (the owner's to choose
+     and to point at the server's address at the registrar; the address never in the
+     repository); Vercel's `picwise.subby.cloud` until the switch. By `PROJECT_RULES.md`
+     §13: the site's own search stays `noindex`; Search Console from the first day.
+  4. Then the shops of another affiliate network.
+- **The owner's rules, unchanged** (the list in "Items 1, 2, 3" below, with nothing on
+  `main` without their explicit «ναι», and never a server name, address, host key or link
+  in a log or a file).
+
+### Items 1, 2, 3 (from 2026-10-28)
+
+The owner (28/10): «Θα ξεκινήσουμε με το 1 2 3 σε νέα συζήτηση», and **no deployment
+until these three are finished**. The work is on `ccr-1361f1a7-dcpo60` (pushed; the
+conversation's own branch `ccr-8eb9b420-958wtr` kept equal); bring it in first. Each is
+measured on a copy of the server's catalogue and shown to the owner before it is built.
+The owner's rules, unchanged: Greek, short, plain words; say what you found before
+building anything; nothing on `main` without their explicit «ναι»; never ask for the
+feed link (it holds the key); secrets only in GitHub's or Vercel's secrets; nothing in
+Supabase without asking; never open an Awin tracked link from a session or a bot; never
+propose contacting the shops; no second bot round the same day without their word;
+commission never a criterion; no fake data; Amazon removed for good; the repository is
+public, so no server name, address, host key or link in a log or a file.
+
+1. **The 3,075 engagement rings read as accessories** (Finediam, its shelf of rings):
+   **built and measured on 2026-10-29, nothing deployed; waiting for the owner's word on
+   "For"** (section "Now (2026-10-29)" below). The English "with" (owner, 29/10: «Η
+   διορθώσεις πρέπει να αφορούν αγγλικό λεξιλόγιο»: English words only, no «με») and the
+   metals after a name make 2,303 of them rings; 772 stay accessories, 756 of them naming
+   the ring after a "For" ("Eternal Single Row For Center Oval Diamond Engagement Ring"),
+   which the rule leaves alone ("Filter for Coffee Machine"). Put to the owner: measure
+   "for" too, only on a shelf that names the kind.
+2. **Choices for a general word** (owner: «Το search όταν του βάζεις καλώδιο πρέπει να
+   συμπληρώνει προτάσεις τι καλώδιο ζητάει: καλώδιο τηλεόρασης, καλώδιο φόρτισης,
+   καλώδιο ίντερνετ ... το ίδιο με όλες αυτές τις γενικές λέξεις»; rules word by word lead
+   nowhere). Built from the catalogue itself, each night, for every general word alike:
+   the shops' shelves under it (Google's taxonomy) and the words titles put before it
+   ("HDMI cable", "aerial cable"), only those that find products, the largest first; in
+   the search box and above the results ("What kind of cable?"), in the buyer's language:
+   the site is English for the UK and the US (`<html lang="en">`, en-GB/en-US), so the
+   shelves' English names; Greek names (Google's `taxonomy-with-ids.el-GR.txt`, by id, not
+   yet in `data/taxonomy_sources/google/`) only for a query in Greek. Today's pieces:
+   `src/picwise_providers/suggestions.py` (the box's
+   suggestions by prefix, from the catalogue, `/suggest.json`), the older
+   `src/picwise_search_memory/broad_query_suggestions.py` (from the vocabulary, not the
+   catalogue). The cables of 28/10: 3,853 now "cable" (3,270 fabric extension leads,
+   coaxial and aerial, audio, 168 saying "USB"), 196 charging cables. **Built into the
+   search and measured on 2026-10-29, nothing deployed** (owner, 29/10: «η ίδια λογική
+   ένας προγραμματισμός για όλες αυτές τις αναζητήσεις ... δεν θέλω να διορθώνουμε
+   ένα-ένα λέξη κλειδί», then «Ναι προχώρα, βάλ' το στο search»; section "Now
+   (2026-10-29): item 2" below): on the server's catalogue 43 kinds ask which one is
+   meant, each choice finding products of its kind. Found and put to the owner: the
+   vocabulary's older "too broad" answers "chair", "bag", "jacket", "charger" and
+   "bicycle" with no products (as before this work); noise among the choices (halves of
+   phrases, one shop's words, choices that keep almost the whole kind); good choices
+   lost because the search reads "pendant light" as every lamp. The owner (29/10): «εσύ
+   πρέπει να αποφασίσεις ποιος είναι ο βέλτιστος τρόπος»: the order is chosen here.
+   **Built and measured five times on 30/10, nothing deployed** (section below, "After
+   the buyer's view"): a kind's own name reaches the feed ("chair", "bag", "jacket",
+   "charger", "bicycle", "shorts"); seven rules keep the choices true; on the catalogue
+   of 30/10 41 kinds ask, «καλώδιο» with "extension cable, charging cable, hdmi cable,
+   audio cable, braided cable, data cable, network cables". A push to the work branch
+   needs the session in "Accept edits": "Auto" classes it as a deployment, `[skip
+   actions]` notwithstanding (refused twice on 29/10; the owner switched on 30/10).
+3. **The cap of 15%: built and measured on 30/10, nothing deployed** (section "Now
+   (2026-10-30): item 3" below). The owner, asked how the cap meets the rule of 29/10
+   (every product in PicWise's own search, `PROJECT_RULES.md` §13): «Όλα στο search».
+   So the cap cuts nothing from the search: each night it chooses the pool Google may be
+   given from (168,730 of 527,911 on the catalogue of 30/10), the night before's pool its
+   starting point, kept on the server beside the prepared catalogue.
+
+Then the deployment (question 1: `server-deploy.yml`, the round and the setup take the
+host key from a login's first step, as `server-night.yml`; editing it deploys, so the
+owner may need to set "Accept edits"), then HTTPS and the domain. How to measure without
+deploying: commit code with `[skip actions]` in the message (`src/**`,
+`deployment/server/**` start `server-deploy.yml`), check no run started, then push a
+change of `.github/workflows/server-cap.yml` alone, which copies the server's catalogue
+to GitHub's runner and runs `print_cap.py`, `print_prices.py`, `print_kind_changes.py`.
+To see one change of the rules on its own, list the commits before it in the workflow's
+`RULES_STEPS` (each read from a worktree by `deployment/server/kinds_of.py`). Tests one
+module at a time (`test_picwise_learning_stage7b` takes 27 minutes).
+
+## Now (2026-10-29): item 2, the choices for a general word (built, measured, not deployed)
+
+The owner (29/10): one logic for every general word, never keyword by keyword; «Ναι» to
+measuring it on the server's catalogue the same way as item 1; then «Ναι προχώρα, βάλ'
+το στο search». The measure: `src/picwise_providers/kind_choices.py`
+(`measure_kind_choices`; tests `tests/test_picwise_kind_choices.py`),
+`deployment/server/print_choices.py` (tests `tests/test_picwise_server_print_choices.py`,
+2), a step of `server-cap.yml`.
+
+- **Built (commits `c2b45c5`, `992a59a`, `8ea237b`, all `[skip actions]`):** each night
+  the preparation works out the choices of every general kind with the catalogue
+  (`kind_choices.build_kind_choices`: the narrower kinds and the words the titles name
+  it with, not already covered by an offered narrower kind, the largest first, at most
+  6, each kept only if the search reads it as narrowing the kind -- a narrower kind or a
+  filter word, `_narrows`; a kind asks when 2 are left) and keeps them in the prepared
+  file (`PreparedCatalogue.choices`; an older file carries none, and nothing is asked).
+  A search naming only the kind (no filter, no spec) shows above its results "What kind
+  of cable?" with each choice a link to its search (`LiveSearchResolution.kind_choices`,
+  `reference._kind_choices_html`), in English, for a Greek query too; the box's list
+  offers the choices (`build_search_suggestions(..., choices=)`), so typing "cable"
+  lists them. Where the catalogue asks, the vocabulary's older "This search is too
+  broad. Try: usb cable, hdmi cable, lightning cable" no longer asks too
+  (`picwise_app.app`, found on the measure's page for "cable": two questions, one from
+  words the catalogue may not have). The preparation's summary counts the kinds that
+  ask. Tests: `tests/test_picwise_kind_choices_on_the_page.py` (6, through `api/index.py`
+  on a feed file), `tests/test_picwise_server_print_search_choices.py` (2). The modules
+  nearest the change pass; the full run of this code before the last fix (272 modules,
+  one process each): 269 pass, the 3 that fail fail the same before this work
+  (`test_picwise_canonical_vocabulary_registry_stage2`,
+  `test_picwise_search_index_generated_blind_stage4`, and
+  `test_picwise_search_index_blind_evaluation_stage6a`'s "amazon" and "galaxy" broad
+  terms).
+- **What a buyer would see (run `40911685093`, the catalogue of 29/10 04:21 UTC, 525,386
+  products, prepared again on GitHub's runner with this code and searched there;
+  `deployment/server/print_search_choices.py`):** 43 kinds ask (of the 81 the measure
+  calls general; the others keep fewer than 2 choices the search reads as narrowing).
+  Cable, 4,077: extension cable 3,296, charging cable 196, hdmi cable 80, audio cable 65,
+  braided cable 57, lan cable 26. Table: side, coffee, dining, dressing, nesting. Dress:
+  midi, mini, maxi, midaxi, jersey. Curtains: eyelet, pleat, blackout. Bracelet: tennis,
+  link, chain, diamond, station, line. Monitor: hd, qhd, touchscreen, uhd. The choices of
+  the 30 largest were each searched: every one finds products of the kind. «καλώδιο»
+  finds the same 4,077 and asks the same. The box: 1,898 suggestions, 173 of them
+  choices, 35 KB. About 0.9 s a search on the runner.
+- **Found, put to the owner (nothing fixed yet):**
+  1. "chair", "bag", "jacket", "charger" and "bicycle" show no products: one-word
+     searches with 5 or more of the vocabulary's suggestions get its older "This search
+     is too broad. Try: baby feeding chair, office chair, shower chair ..." instead of the
+     feed (`broad_query_suggestions.should_offer_broad_query_suggestions`,
+     `_HIGHLY_AMBIGUOUS_BROAD_SUGGESTION_COUNT = 5` in the resolver), as before this work;
+     the server has 1,822 chairs, 996 jackets, 865 bags. «καρέκλα» reaches the feed and
+     asks. 25 more kind names get those suggestions too, with the feed's products
+     (cable, lamp, bed, mattress, hat ...); the page does not show them. Proposed: the
+     catalogue decides, one logic: a search the kinds' reading understands goes to the
+     feed, and asks with the catalogue's choices.
+  2. Noise among the choices: halves of phrases ("piece suit" of "3 Piece Suit", "fit
+     suit" of "Slim Fit", "size bed" of "King Size", "leg trouser" of "Wide Leg", "neck
+     sweater" of "Crew Neck", "door wardrobe" of "2 Door"); one shop's words ("robertson
+     hoodie", "makasi rug", "eng ring", "remount ring", "color ring", "do tee", "cup
+     shirt", "horse toy"); choices keeping almost the whole kind ("diamond ring" 134,488
+     of 141,635 rings, "diamond earring" 18,742 of 19,972, "hat glove" all 424 gloves);
+     "caravan mattresse" (the plural cut by one "s"); "men-s watch". Proposed, each
+     measured first: a choice from 2 shops or more; the whole phrase when the word
+     before the noun is mostly half of one; no choice finding 80% of its kind or more;
+     English plurals in "-sses", "-ches", "-shes", "-xes" lose "es".
+  3. Good choices lost: "pendant light" 716, "ceiling light", "wall light", "mirrorless
+     camera" 186, "engagement ring": the search reads each as the whole kind with no
+     filter (a name of the kind in the vocabulary), so a buyer searching "pendant light"
+     sees every lamp, as before this work. Proposed: a name of a kind that only part of
+     its titles carry narrows the search to them.
+
+- **How:** every kind of 50 or more products (by this checkout's rules) is grouped three
+  ways: the words its titles name it with -- the word right before the noun of its name
+  and that noun as written ("hdmi cable", "sofa bed" under sofas, "zip-up hoodie"),
+  weak names read too since the kind is known; its narrower kinds; its shops' narrowest
+  shelves. A word before the nouns of 8 kinds or more says how a product is, not which
+  kind ("gaming", "knitted", "football" on 29/10), and is no choice; nor a number, the
+  brand or a connective. A choice from 20 products, whatever its share (first run
+  `40868599997` asked 5% of the kind, and "cable" got no choice: one shop's fabric
+  extension leads are 81% of cables). General: 2 choices of one way.
+- **What it found (run `40869626869`, the catalogue of 29/10 04:21 UTC):** of 116 kinds
+  of 50+ products, 81 general (57 by words, 62 by shelves). Cable: extension 3,291,
+  charger 67, charging 56, braided 54, HDMI 42, audio 38, LAN 26, USB 24 (and shelves
+  HDMI, Network, Audio Cables). Table: side 774, coffee 496, console 273, dining 257,
+  dressing 61, nesting 48. Lamp: pendant light 716, table lamp 472, floor lamp 125,
+  ceiling light 124, wall light 90, chandeliers. Dress: midi, mini, maxi; earrings:
+  stud, hoop, diamond, drop; bracelet: tennis, link, chain; camera: mirrorless,
+  compact, instant, digital; curtains: eyelet, pleat, blackout; socks, mattresses,
+  beds, sofas, hats, gloves, saunas alike. Noise, mostly clothes with prints and
+  shops' own words: "do shirt" 764, "funny shirt", "rude shirt", "robertson hoodie",
+  "cup shirt", "color ring" 3,906, misspellings ("engagment ring" 504); the singular
+  cut short ("caravan mattresse", "wine glasse": `_singular` strips one "s"). The
+  shelves of several shops name one thing twice ("Dog Food", "Non-prescription Dog
+  Food"), so as choices they are weaker than the words. Not general: keyboard, mouse,
+  desk, backpack, perfume, motherboard, wall clock and others with one group.
+- **Wrong kinds the shelves showed (to fix, told first):** vitamin and toothpaste tablets
+  ("Vitamins & Supplements", "Toothpaste" shelves) and tablet cases read as tablet
+  computers; basketball hoops (67) read as footballs.
+- **Proposed next (owner's word first), before it was built:** build it into the search
+  -- the choices of the buyer's kind above the results ("What kind of cable?") and in the
+  box's suggestions, the largest six, each a search that finds products -- computed each
+  night with the catalogue, in English; measured on the server's catalogue again before
+  any deployment. Done the same day (above).
+
+## Now (2026-10-30): item 3, the pool Google may be given from (built, measured, not deployed)
+
+The owner (30/10): «Να προχωρήσεις με το 3»; then, between the cap of 27/10 (no category
+over 15% of the products shown) and the rule of 29/10 (`PROJECT_RULES.md` §13: every
+product a card can show stays in PicWise's own search), «Όλα στο search».
+
+- **Built** (code `411f328`, `[skip actions]`): `tools/prepare_catalogue.py`, after
+  writing the prepared catalogue, runs `catalogue_cap.cap_catalogue` on every product a
+  card can show, with the night before's pool as `kept_before`, and keeps the new pool
+  beside the catalogue (`google_pool.json.gz`: the kept rows' keys, `write_google_pool`,
+  `read_google_pool`, `google_pool_path`; on the server
+  `/srv/picwise/shared/prepared/google_pool.json.gz`, never in the public folder). The
+  search reads none of it: every product stays in the search. The pages meant for Google
+  (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`, not built) are to choose their products from it.
+  A failure keeps the night before's pool and prints "the pool Google may be given from
+  failed (...)"; a night that cannot read the feed leaves it as it is. The run's line
+  ("prepare_catalogue: the pool Google may be given from: N of M products ...") reaches
+  the night's log; the public note (`prepared.json`) counts it under `google_pool`,
+  without a row's id. Tests: `tests/test_picwise_catalogue_cap.py` (17),
+  `tests/test_picwise_prepared_catalogue.py` (24), `tests/test_picwise_server_print_cap.py`
+  (3); the modules that run the tool pass.
+- **Measured (run `41040939695`, the catalogue of 30/10, 527,911 products, 171
+  categories):** the pool 168,730, at most 25,309 a category; over the cap only
+  jewellery (381,204 -> 25,309: rings 310,572 -> 3,887, earrings, body jewellery,
+  bracelets, necklaces, charms & pendants about 3,887 each, all 1,724 watches) and
+  clothing (28,595 -> 25,309: t-shirts 7,292 -> 4,433, socks 4,859 -> 4,432, the rest
+  whole). After it: clothing and jewellery 15.0% each, decor 6.8%, the shops' own
+  categories 5.2%, food 5.1%, shoes 4.6%. By shop: Finediam 360,113 -> 18,850, InStock UK
+  93,406 -> 91,571 (54.3% of the pool; no limit per shop, owner 27/10). Of the 50,618 in
+  the pool from the two categories over the cap, 50,168 have an identity, an image and a
+  stock state that varies; 204 are sold by more than one shop. **The next night, on the
+  same products with the pool as its starting point: 168,730, every one the same**
+  (`print_cap.py`'s last line).
+
+### After the buyer's view (29-30/10, the order chosen here): built, measured, not deployed
+
+The owner (29/10): «εσύ πρέπει να αποφασίσεις ποιος είναι ο βέλτιστος τρόπος». Each step
+measured on a copy of the server's catalogue of 30/10 (527,911 products) before the next:
+runs `41028398470`, `41031539622`, `41034288478`, `41036545617`, `41038004324`
+(`deployment/server/print_choice_rules.py`: what each rule leaves out and lets in on
+its own; `print_search_choices.py`: what a buyer would see).
+
+1. **A kind's own name reaches the feed** (`2d4ea2e`, `f25284a`): a one-word search the
+   kinds' reading finds to be a kind's own name, exactly (`ConceptReading.exact`), is
+   searched in the feed whatever the vocabulary suggests (5+ suggestions stopped it) and
+   however close the index sets it to another word ("shorts" near "short"; the three
+   such names: shorts, cot, doll); the catalogue asks where it has several kinds of it.
+   A word read as a kind only by correcting it keeps the vocabulary's list alone:
+   "chain" reads as chair, "protector" as projector, "tools" as toy, "bots" as boots.
+   Where the feed's products show, the older "too broad" list no longer replaces the
+   page's note (`picwise_app.app`); it stays for a broad word with nothing to show. The
+   tests of stages 8b and 8c that pinned "charger" to the list now pin "protector",
+   "chain" and "tools" to it and "charger" to the feed. Measured: chair 1,867 products,
+   bag 843, jacket 1,006, charger 126, bicycle 92, shorts 690 (none before).
+2. **The rules that keep the choices true** (`kind_choices.CHOICE_RULES`, each can be
+   left out; the module's docstring says each with the run that showed why):
+   - `RULE_SHOPS`: a choice by the words is named so by 2 shops, or its word is used by
+     other shops before some noun; one shop's own words go ("robertson hoodie", "eng
+     ring", "remount ring", "do tee", "cup shirt"). Asking 2 shops of the phrase itself
+     (first run) also lost "lan cable", "thermal socks", "barrel sauna", "qhd monitor".
+   - `RULE_PHRASES`: a word three quarters of whose titles put a number, or a word the
+     two make one modifier with before other nouns too, before it is read whole ("3
+     piece suit", "3 seater sofa", "long sleeve shirt", "bean bag chair", "straight leg
+     trousers"), unless that word names the kind alone too ("Diamond Bracelet": a
+     diamond tennis bracelet is a tennis bracelet). The second run's reading (any word
+     mostly after the same few) made one shop's lines choices ("britain unisex hoodie").
+   - `RULE_WHOLE_KIND`: no choice whose search keeps 90% of the kind ("diamond ring",
+     139,693 of 141,636 rings).
+   - `RULE_WRITTEN`: the noun as the titles write it ("bootcut jeans", which the search
+     reads; "bootcut jean" it does not).
+   - `RULE_SAME_SEARCH`: no two choices the search reads the same ("diamond cross
+     pendant", "diamond cross necklace").
+   - `RULE_SHELVES`: a shop's narrowest shelf naming one word before the kind's noun is
+     a choice too ("Network Cables": the owner's «καλώδιο ίντερνετ», named "LAN",
+     "Cat6", "Ethernet" by titles, none from 20 of two shops); a shelf of two shelves
+     ("Charms & Pendants") is none.
+   - Every choice is weighed by what its own search keeps of the kind (as the
+     price-first search reads its words, `_KindSearch`), from 20 ("End Tables" stood on
+     800 products and its search found 7), the largest first, at most 8 (six left
+     "network cables" seventh).
+3. **What a buyer would see (run `41038004324`):** 41 kinds ask. Cable: extension cable,
+   charging cable, hdmi cable, audio cable, braided cable, data cable, network cables.
+   Socks: thermal, bamboo, cotton, wool, hiking, grip, bed socks. Bracelet: diamond,
+   tennis, link, chain, station, halo. Sofa: 3 seater, sofa bed, 2 seater, corner,
+   recliner, chesterfield. Chair: velvet, office, dining, back, gaming, bean bag, swivel,
+   bar. Every choice of every kind finds products of its kind. The box: 1,892
+   suggestions, 171 choices, 35 KB. Left as they are, each small: the jeweller's own
+   words on rings ("color rings", "fashion ring", "center ring", "cut ring"), "size bed",
+   "back chair", "2 edition trainers", "shape earrings", "letter bracelet" (its search
+   finds 11), "chesterfield sofa" (14).
+4. **Found on the way, not fixed (each to measure, the owner told first):** English
+   words read as other kinds: "skinny jeans" reads as a tent ("skinny" as the greeklish
+   σκηνή, ahead of the English "jeans"), "patch cables" as insoles; a title naming its
+   kind only by a weak name reads as no kind even on a shelf naming it ("Diamond Ring",
+   "Emerald Ring", "Ruby Ring" on a Rings shelf; "Gold Ring" reads); "pendant light",
+   "ceiling light", "mirrorless camera", "engagement ring" search as the whole kind.
+5. Tests: `tests/test_picwise_kind_choices.py` (14), `tests/test_picwise_kind_choices_on_the_page.py`
+   (10), `tests/test_picwise_server_print_choice_rules.py` (2),
+   `tests/test_picwise_server_print_search_choices.py` (2); the 31 modules through the
+   resolver and the choices pass.
+
+## Now (2026-10-29): item 1, the engagement rings
+
+The owner: «Ξεκινάμε με το 1»; then «Ναι» to pushing to `ccr-1361f1a7-dcpo60` for the
+measure (code with `[skip actions]`, then `server-cap.yml` alone; no run but the measure
+started, checked each time). This conversation's own branch `ccr-4f9ef4ee-j1nafx` is
+kept equal by merges (a force-push of it was refused; the work branch stays linear).
+The work branch had moved to `31e2ee4` (the previous conversation's docs commit on item
+2's language), so this work sits on it.
+
+- **Built** (`src/picwise_nlu/concept_understanding.py`, tests
+  `tests/test_picwise_kinds_named_after_with.py`, 5): a title that names no kind before
+  its first "with" (or "w/") is the kind it names after it, past one "with" or more,
+  when the shop's narrowest shelf names that kind too (`_cut_past_with`, read only by
+  `_title_named_head`, i.e. when neither the type nor the category gives a kind); after
+  "for", after an accessory's noun before the kind, or on no such shelf it is still an
+  accessory. English only (owner, 29/10). Metals right after a product's name
+  (platinum, palladium, titanium, tungsten, sterling; `_METAL_TAIL_WORDS`) describe it,
+  as gold and silver did; read only there, since elsewhere a metal names a line ("Dr John
+  Titanium 15KG", dog food, became doubtful when they were read everywhere).
+- **The measure** (`deployment/server/kinds_of.py`; `print_kind_changes.py --step`, whole
+  titles, and the word after a kind's name for the accessories on its shelf; tests
+  `tests/test_picwise_server_print_kind_changes.py`, 3; runs `40858411220`,
+  `40862093722`, `40862883104`, the catalogue of 29/10 04:21 UTC, 525,386 shown): **the
+  "with" rule alone 2,329 (0.44%)**: 2,271 Finediam engagement rings accessory -> ring;
+  42 Finediam pendants "with Diamond Accents Necklace (Without Chain)" accessory ->
+  necklace (the lexicon has "pendant" as a name of necklace, and they sit on its
+  necklaces shelf; told to the owner); 7 Geepas mixer grinders -> mixer; 6 baby tees ->
+  t_shirt; 2 pendant lights -> lamp; 1 utensil set with a knife set -> knife_set.
+  **The metals 1,891 (0.36%), all Finediam rings**: 1,823 doubtful -> ring ("... 3 Stone
+  Engagement Ring Platinum - Sterling Silver / 0.50 Carat"), 36 of no kind -> ring, 32
+  accessories -> ring. Rings 143,860 -> 148,022 in all. Of the 3,075: 2,303 rings, 772
+  still accessories on the ring shelf, the word after the ring's name "9k/18k" 756 —
+  these name it after a "For" ("Refined Solitaire For Peg Head Round Diamond Engagement
+  Ring — 9K/18K Gold & Platinum"). The far prices with the kinds read so: 7,104 (ring
+  5,284, Finediam's luxury and cheap ends as before). Every change since the deployment
+  of 26/10: 9,406 (1.79%).
+- **Tried and left out (probed on the measure's titles, not measured):** the noun before
+  "with" as the product ("Pendant with ... Necklace") would not keep the pendants out
+  (pendant is the necklace's own word) and would cost the mixer grinders and the
+  pendant lights.
+- **Checks:** the kind-related modules one at a time (116 pass; the two known failures,
+  `test_picwise_canonical_vocabulary_registry_stage2` and
+  `test_picwise_search_index_generated_blind_stage4`, fail on `cb40587` too); the
+  misspelling benchmark the same (93.8%, 0 wrong); `actionlint` could not be fetched
+  here (refused), the workflow was parsed and its kind steps run locally instead.
+
+## Now (2026-10-27/28): the server's host key, the cap, the far prices, the kinds
+
+The owner's «Ναι» (26/10, evening) to two things: writing straight to `ccr-1361f1a7-dcpo60`
+(this session's own branch, `ccr-8eb9b420-958wtr`, is kept equal to it), and a small
+read-only look at the night's round. Owner's rules unchanged (section below).
+
+- **The look, built:** `.github/workflows/server-night.yml`, run when it is pushed to
+  `ccr-1361f1a7-dcpo60`: from each timer's last start (`LastTriggerUSec`, kept across a
+  reboot), the result and times of `picwise-shops.service` and `picwise-prepare.service`,
+  the bot's own lines and the preparation's summary; then `print_shops.py` and
+  `print_kinds.py`, as after a deployment. It starts no round and changes nothing. Its
+  script goes to the server on stdin (`ssh picwise 'bash -s' <<'EOF'`), so no quote in it
+  can close the command. Checked here: `actionlint` 1.7.12, `bash -n`, a dry run with
+  stand-in commands; its connection step and its last three are `server-shops.yml`'s,
+  unchanged. To read another night: change its "Night read" date line and push.
+- **What it found (the owner's «στείλτο», 27/10 09:00 UTC, commit `bde4cdd`, run
+  `40477603160`): nothing of the night.** Its first step stopped at the identity check:
+  "the server does NOT match the pin (reinstalled, or not our server)". The pin it
+  computed is not `.github/server-host-key.pin` (taken 25/10); the deployment of 26/10
+  (run `40355492889`, connected at 16:04 UTC, done 16:16) still matched it. The step
+  stopped before any login: nothing was sent to the server. The night's round of 27/10
+  is unread, and whether it ran is not known.
+- **What it can be:** the VPS reinstalled, or booted in rescue mode (both change the host
+  key); the `SERVER_SSH_KEY` secret changed (the pin is an HMAC under a key derived from
+  it, so a new deploy key changes the pin of the same host key); `SERVER_HOST` changed;
+  or another machine at the address.
+- **What the owner checked (27/10, screenshots; the server's name and address are in
+  them and are written nowhere):** the VPS page says Status "Active", Boot "LOCAL" (not
+  rescue), "Ubuntu 24.04", VPS-4 2027, London; no OVHcloud email of a reinstall or rescue.
+  One OVHcloud email, "Notification of connection to your OVHcloud account", dated
+  2026-10-26 14:09:47 (OVHcloud's clock), before the deployment that still matched the
+  pin; the owner does not remember logging in, and was advised to change the OVHcloud
+  password and turn on two-step verification (My account → Security). In GitHub's
+  secrets, `SERVER_HOST` and `SERVER_SSH_KEY` were last changed "2 days ago" (25/10), so
+  they are not the cause.
+- **The proof, built (owner's «Ναι», 27/10):** `server-night.yml`, which sends the
+  server no secret, no longer stops at a changed pin: it asks the server to seal a random
+  nonce under the feed link (`.github/scripts/feed_seal.py`, HMAC-SHA256; GitHub from the
+  `AWIN_FEED_URL` secret, the server from `/etc/picwise/picwise.env`); only the nonce goes
+  and only the seal comes back. A server whose seal is GitHub's is read: why its key
+  changed (boots, the host keys' dates, cloud-init, the updates' reboots), the SSH logins
+  since 26/10 16:00 UTC without addresses, then the night. Any other is not read, and the
+  failure is sorted without printing the server's words. The deployment and the round
+  keep the strict pin. Tests: `tests/test_picwise_server_feed_seal.py` (5); dry runs of
+  every case with stand-in commands; `actionlint`.
+- **What the proof found (runs `40489651144` and `40489927183`, 10:35-10:37 UTC): not
+  read.** The new key's pin is the same in all three runs (the key is stable since 09:00).
+  Port 22 says `SSH-2.0-OpenSSH_9.6p1 Ubuntu-3ubuntu13.20`, an Ubuntu 24.04. But the login
+  for the seal was shown **another key than the one the same address had shown a second
+  before** ("Host key verification failed"), so it stopped before logging in. At least
+  two different host keys answer at the server's address: two machines on it (an address
+  conflict at OVHcloud), or something in between. A reboot alone would give one new key,
+  not two.
+- **The look that never logs in (owner's «Ναι»; `.github/workflows/server-keys.yml`, run
+  `40501323803`, 12:07 UTC): our server is there.** Four tries, the order changed each
+  time: **a key scan (`ssh-keyscan`) is shown the morning's key every time, and a login's
+  first step (an `ssh` client offering no key or password) is shown our pinned key of
+  25/10 every time.** Not two machines taking turns: the key depends on how the address
+  is asked. Whoever shows the pinned key holds its private half, made on our server on
+  25/10, so real logins reach our server. Yesterday's deployment was shown the pinned key
+  by `ssh-keyscan` too, so what answers a key scan with another key began in the night:
+  not explained yet (something on the server since the night's updates, or on the way).
+  Every workflow takes the key to compare with the pin from `ssh-keyscan`, so each stops
+  there although a login would reach our server.
+- **Built (owner's «ναι κάνε»):** `server-night.yml` takes the key from a login's first
+  step and compares it with the same pin (as strict: every connection then accepts that
+  key only); a key scan's key is only reported; when it differs, the server is asked what
+  answers a key scan. The deployment (`server-deploy.yml`), the round
+  (`server-shops.yml`) and the setup still compare `ssh-keyscan`'s key, so **they stop at
+  their first step until they take the key the same way** (put to the owner; editing
+  `server-deploy.yml` deploys).
+- **What it found (run `40504119821`, 12:29 UTC): our server is untouched.** It matched
+  the pin; a key scan was shown the morning's key again. From inside: up since
+  2026-10-25 11:04:58 UTC (no reboot since the setup); the host keys written 25/10 09:37
+  by cloud-init, the same instance-id since, no regeneration; the ed25519 key on disk is
+  the pinned one; one `sshd` (socket-activated) on 0.0.0.0:22 and [::]:22; no rewrite of
+  port 22 (nftables holds ufw's rules and fail2ban's reject set only); the night's only
+  update `libbrotli1` (27/10 06:23); since 26/10 16:00 UTC 13 SSH logins, all with the
+  deploy key, none on the console. So what shows a key scan another key is not on our
+  server: something on the way answers that kind of connection (not known what; it gets
+  no secret, and a login with any other key than the pinned one is refused by every
+  workflow). The server's nightly work does not need GitHub: the timers run on it.
+- **The night's round of 27/10 (the first by collections):** the bot 03:40:00-03:53:35
+  UTC, success: 54 shops, 413 requests; the file knows 65,031 products (59,996 with a
+  type, 29,460 sold out; 58,728 / 53,699 / 25,041 on 26/10). Back to the Office: its
+  catalogue to the page limit again (about 100 of its 200 requests), then **collections
+  38 of 1,338**: 30,282 of its 95,050 products known; at this pace a whole pass takes
+  about 35 nights (put to the owner: page the catalogue's first 25,000 less often, or
+  more requests for it). Finediam: Shopify answers 500 at page 23 again (5,500 known).
+  Juicy Couture UK: no shop address in its rows. Pro Espresso: its robots.txt redirects to
+  another site, so it is not read. The preparation 04:17:02-04:27:41 UTC, success:
+  1,124,205 rows, **524,335 shown** (+885), 81 shops, peak memory 7.9 GB, 640 s. Back to
+  the Office **6,135 shown** (5,252 on 26/10); rows given their shop's type with its kind
+  **24,974** (20,402), naming none 13,218; by barcode 1,128 (InStock UK 1,061); the
+  shop's sold-out holds 43,509 (the feed called 142 of them in stock). The cap,
+  measured: by shop Finediam 68.7%, InStock UK 17.8%; by aisle jewellery 72.7%; by kind
+  ring 57.7%; kinds from at least 3 shops 94 of 256. The kinds' check: of 249,225
+  products shown as a kind, the title names none of its kinds for 12,731.
+- **The owner's word (27/10, afternoon):** the deployment, the round and the setup stay
+  as they are for now («Το αφήνουμε όπως είναι»); no 400 requests for Back to the Office
+  («δεν θέλω αυτή τη στιγμή 400 ελέγχους»). **The cap, decided in its aim:** a kind of
+  like products (rings, watches) never more than 15% of all products, so that no shop
+  makes the site look like one kind of shop to Google, the server's room is not spent
+  on a few kinds but spreads to others little by little, and each search looks complete;
+  «πρώτα από όλα να έχει καθαρή και ποιοτική πληροφορία», a satisfying volume, not a
+  huge one. Put to the owner how it counts: each product under its kind, or its shop's
+  narrowest shelf when it has none (275,110 shown have no kind, most jewellery among
+  them); within a group over the cap the clean rows first (barcode or brand + model code,
+  an image, real stock), those sold by more than one shop first, spread over the price
+  range, the same ones each night; measured with that rule before anything is cut. It
+  reaches the server only by a deployment, which needs the change the owner left for now.
+- **The cap, chosen (owner, 27/10, after «βοήθησέ με γιατί έχω μπερδευτεί»):** 15% **per
+  category**, the first two levels of the shop's Google shelf ("apparel & accessories >
+  jewelry", watches included), not per department (too coarse: it would cut clothes and
+  shoes with the jewellery) nor per kind (many jewellery kinds of 15% each could still
+  make the site half jewellery). The size is worked out at once so that no category
+  keeps more than 15% of what all keep, each night from every product a card can show
+  (the owner asked whether it would keep cutting: it does not); the night before's kept
+  ones are the next night's starting point (owner: «κοιτώντας πάντα το χθεσινό σαν
+  αφετηρία»), more products a larger cap, fewer a smaller one in proportion. Built:
+  `src/picwise_providers/catalogue_cap.py` (inside a category its places shared fairly
+  over its kinds, a shelf for a product without one; inside a kind the clean ones first,
+  those in more than one shop first, spread over the prices; tests
+  `tests/test_picwise_catalogue_cap.py`, 12), `deployment/server/print_cap.py` (tests
+  `tests/test_picwise_server_print_cap.py`, 3), `read_prepared_catalogue_to_measure`, and
+  `.github/workflows/server-cap.yml`, which measures a copy of the server's catalogue on
+  GitHub's runner. **Not called by the preparation: nothing shown changes.** The code was
+  pushed with `[skip actions]` (commit `efc5ac0`), since `src/**` and
+  `deployment/server/**` would start a deployment, which the owner left as it is.
+- **What the cap would keep (run `40511286783`, the catalogue of 27/10 04:21 UTC):** of
+  524,335 in 171 categories, **164,176**, at most **24,626** a category; over it only
+  jewellery (380,984) and clothing (28,427). After it: clothing 15.0%, jewellery 15.0%,
+  decor 6.6%, food 5.3%, shoes 4.7%, vehicle parts 4.3%, hobbies 4.1%, the shops' own
+  categories 3.9%. Inside jewellery about 3,185 each for the shelf "rings" (products with
+  no kind), ring, earrings, the shelf "body jewellery", bracelet, necklace and the shelf
+  "charms & pendants"; all 1,725 watches; prices kept 0.99-109,787.50 (all 0.50-112,137.50),
+  middle 1,108.50 (1,566.43). Clothing: t-shirts 7,266 -> 4,142, socks 4,818 -> 4,141, the
+  rest whole. Of the 49,252 kept in the two, 48,796 with an identity, an image and a stock
+  state that varies; 218 sold by more than one shop. By shop: Finediam 360,127 -> 18,891
+  (11.5%), **InStock UK 93,406 -> 91,219, 55.6% of what is kept**, MonsterPiercing 16,030
+  -> 3,278. Found: rings count twice (the kind and the shelf of rings the kind reading
+  leaves without one), so they take two shares; to be one group before the cap is
+  applied. Put to the owner: a limit per shop as well (InStock UK would be over half).
+- **No limit per shop (owner, 27/10: «Να μην εφαρμοστεί πλαφόν ανά κατάστημα»).** The owner
+  then asked about price: what commission a 99p product leaves, whether it is poor or a
+  piece of a pack, and that about 100,000 is too much. Answered: commission never enters
+  a choice (PROJECT_RULES §4, concept §14) and the cookie earns on the whole basket; no
+  price ban; proposed trimming each kind's cheapest and dearest 2% inside the cap, after
+  a measure. **The measure (owner: «Κάνε τη μέτρηση»; `deployment/server/print_prices.py`,
+  tests `tests/test_picwise_server_print_prices.py` (2), run `40533880205` in
+  `server-cap.yml`):** of 524,335 (GBP 523,978, EUR 327, USD 28, DKK 2), under 1.00: 220
+  (0.04%; hobbies 58, books 49, food 41; InStock UK 167, Lets Buy Books 48; 13 name a
+  pack; penny sweets "10p each", stickers); 1.00-2.00: 1,165 (InStock UK 1,121; party
+  invitations, mini bath bombs; 82 name a pack); 10,000 and over: 28,436 (5.4%; Finediam
+  28,212, then Steam & Oak 108, SafeFort 75, Back to the Office 33); 50,000 and over: 106
+  (diamond necklaces to 112,137.50; network software licences to 125,474.99). Far from
+  their kind's middle price (516 kinds and shelves of 20 or more): under a tenth 4,888
+  (cheap bracelets against a middle of 3,099 the diamonds set), over ten times 7,229,
+  among them wrong kinds ("Okemia Mirror" 1,929 read as a toy; "Satin Bag Diamond
+  Earring" read as a bag; a full pallet of AdBlue). Inside the cap the cheapest 2% of
+  rings run to 358.60 and of bracelets to 125: trimming them would cut the ordinary
+  affordable jewellery, since Finediam sets the prices. Put to the owner: no price rule
+  and no trim; the ends are few and real; a price far from the kind's middle used as a
+  check for wrong kinds.
+- **The owner's «Ναι» to no price rule, no trim, and a far price as a check for wrong
+  kinds; rings as one group (run `40535514183`, code `0958bd9` with `[skip actions]`):**
+  `catalogue_cap.joined_parts` puts a shelf whose last level names a kind of the same
+  category under that kind. The cap's totals are unchanged (164,176; 24,626 a category);
+  inside jewellery 14 groups, ring 310,572 -> 3,770 (one share, not two), earrings,
+  bracelet, necklace, the shelves "body jewellery" and "charms & pendants" 3,770 each,
+  all 1,741 watches; kept prices 0.99 / 1,050.00 / 109,787.50; 48,820 of 49,252 kept with
+  all three clean signs. `print_prices.py` now lists the products priced far outside
+  their kind's usual prices (beyond 1.5 times the middle half's spread on a ratio scale,
+  and ten times off the middle price): **9,174 in 130 of 504 kinds and shelves**; real
+  wrong kinds among the furthest (Harvia sauna stones 60 read as "sauna"; Living with
+  Luxury's cabinets 1,872-4,103 on its shelf of "cabinet doors"; children's snap bands
+  0.50-1.50 as "bracelet"; balloons on a balloon shelf whose middle is 99; tablecloths on
+  a "kitchen & dining" shelf whose middle is 1,170); but noisy where a kind mixes cheap and
+  luxury shops: 5,755 are rings (usual 147.67-18,357.94, set by Finediam), earrings 913,
+  bracelets 344; and "charging_cable" has a middle of 95 (phone and car charging cables
+  read as one kind). Put to the owner: compare within the same shop to cut the noise,
+  then fix the reading rules for what it finds, each fix told first.
+- **The check compares within the shop too (owner's «Ναι», 27/10; code `bc8485a` with
+  `[skip actions]`, run `40536481871`):** a product is listed when its price is far
+  outside its kind's usual prices and its own shop's for that kind, when the shop has 10
+  or more; counted by shop and kind too. **7,143 in 110 kinds** (9,174 before); InStock
+  UK's cheap rings no longer listed. Most are real luxury or cheap ends, not errors:
+  Finediam's rings 5,304 (to 61,447.50), necklaces 91, pendants 52; MonsterPiercing's gold
+  body jewellery 462; penny sweets 194; Lets Buy Books at 0.49 51; Off-White Nikes at
+  5,100.20. **Wrong kinds found, fixes put to the owner:** earring backs read as
+  "earrings" (Finediam 113, "LOX Locking Earring Backs"); aerial and satellite coaxial
+  cables as "charging_cable" (InStock UK 265, "Maplin F Type Connector ... Coaxial
+  Cable"); sauna stones as "sauna" (Steam & Oak); photo frames with a mirror as "mirror"
+  (InStock UK 19). Also the shop's own category: Living with Luxury's cabinets on its
+  "cabinet doors" shelf (not ours to change).
+- **The four rules fixed (owner, 27/10: «Διόρθω τους κανόνες και άντε να δούμε πού θα
+  καταλήξουμε τελικά»; code `7354a52` with `[skip actions]`, nothing deployed):** "backs",
+  "backing(s)" end a title's lead as an accessory's noun (`_LEAD_ACCESSORY_NOUNS`: earring
+  backs filed under "Earrings"); a plain "cable" is a new, broader kind `cable` (καλώδιο),
+  and `charging_cable` only what a title or a shelf names as a charging, charger, USB,
+  USB-C, Type-C, Lightning or iPhone cable, a cable too («καλώδιο» and "cable" find every
+  cable, «καλώδιο φόρτισης» and "usb cable" only those); "stones" right after a kind's
+  name make it something for it (`_MODIFIER_TAIL_WORDS`: sauna stones; not "stone", a
+  colour as often); a new kind `photo_frame` (photo or picture frame, κορνίζα), named last
+  in a title (`_NAMED_LAST_KINDS`: "Glass & Mirror 6x4 Photo Frame" is a frame); `cable`
+  and `photo_frame` compare as charging cables and mirrors did (length, size; no best).
+  Tests: `tests/test_picwise_kinds_from_the_far_prices.py` (10, failing on the old
+  rules); one changed (`test_the_first_shelf_that_names_a_product_decides`: a shelf
+  "cables" gives a cable); the kind, query, search and catalogue modules pass one at a
+  time (`test_picwise_learning_stage7b` takes 20 minutes); the misspelling benchmark the
+  same (93.8%).
+- **Where it ends (runs `40759989550`, `40761504364`, `40762760684`, the catalogue of 28/10
+  04:22 UTC, 524,436 shown; `deployment/server/print_kind_changes.py`, tests
+  `tests/test_picwise_server_print_kind_changes.py` (2): each product read again with this
+  commit's rules against the kind stored, the words each change's titles share, then the
+  check of far prices again):** **5,148 change kind (0.98%)**: 3,853 are no charging
+  cables but cables (InStock UK 3,730: 3,270 Lola's Leads fabric extension leads, Maplin's
+  coaxial and aerial cables, 150 liquorice "cables" among the sweets; Back to the Office
+  122: audio and fan cables; 168 say "USB", some perhaps phone cables now only "cable");
+  charging cables 4,049 -> 196; 1,254 photo frames (1,238 had no kind: Kenro, Walther);
+  Finediam's 18 LOX earring backs an accessory (doubtful before); Steam & Oak's sauna
+  stones an accessory; 6 mirrors photo frames; 16 frame "collections" doubtful, 6
+  accessories (a frame "on Stand", a photo mount, a frame clock). The far prices: 7,141
+  -> 6,995; charging cables 265 -> none (the same cheap cables now far below all cables'
+  middle of 102, set by the extension leads: 273, no wrong kind); mirrors 21 -> 15; the
+  sauna stones out; Finediam's earrings 113 -> 95, the furthest now a 46,319.00 diamond
+  earring.
+- **Found on the way:** the earring backs never answered a search for earrings (doubtful);
+  the cap counted them as earrings by their shelf (`catalogue_cap.joined_parts`), and the
+  check with it. The check now leaves an accessory on its shelf (`b2ce892`, `337047c`); the
+  cap still joins it, as chosen: with a share of their own, the accessories on Finediam's
+  shelf of rings would all be kept. **And those 3,075 "accessories" are engagement rings**
+  ("2.00 Ct Lab Grown 3 Stone With Side Halo Diamond Engagement Ring Platinum"): the
+  title says "With" before the ring's name, and a kind named only after a purpose word is
+  read as an accessory of it (`_head_of_text`, meant for "filter for coffee machine"), so
+  no search for a ring shows them (before 27/10 too). Put to the owner: after "with" (not
+  "for"), a kind the title names when nothing before names one is the product, measured
+  first. A few more accessories are real products (4 microphones with a "mount", 3
+  bedside tables "Storage Organiser"). The rules reach the server only with a deployment
+  (question 1).
+- **The owner's answers (29/10) to an honest assessment** (asked: «πες την αλήθεια»): the
+  catalogue's gaps -> other affiliate networks will be added; the decision rests on the
+  middle price; the kind reading is finished when every kind defined has products and has
+  been debugged once; what users do does not matter now (there are none), what Google does
+  at launch does; there is a domain of our own, and the rules leave no room for breaking
+  Google's rules or data quality; the system is to keep itself up to date; everything in,
+  debugged in bulk (not a few kinds first); the creed: volume, quality of information,
+  truth, an architecture right for SEO. Answered: the middle price is a sound basis if it
+  is the median of a kind read right, from several shops, per size where size matters
+  (the rings' middle is Finediam's, the cables' the extension leads', the charging cables'
+  the EV cables'); keep everything in the search, but let Google index only the kinds that
+  pass a bar (enough products, shops, debugged); Search Console from the first day; an
+  alarm when a night fails, before launch. **Decided (owner, 29/10): «Θα στήσουμε
+  ολοκληρωμένα και θα δώσουμε στη Google αυτά που θέλουμε τμηματικά»**: everything is
+  built whole and in the search; Google is given what the owner chooses, part by part.
+  The gate for it exists for the buying pages (`src/picwise_buying_pages/index_gate.py`,
+  `docs/pickwise_roadmap_step6_quality_index_gate.md`: index, noindex, hold for review);
+  what it needs is a bar per kind (products, shops, checked) and the owner's choice of each
+  part. **Saved as a rule (owner, 29/10: «να το αποθηκεύσεις έτσι ώστε να είναι κανόνας»):
+  `PROJECT_RULES.md`, section 13 "Google Rule"**, and in `docs/PICWISE_GOOGLE_PAGES_SPEC.md`
+  (the gate of section 2, the batches of section 9, the owner's summary). The bar's numbers
+  are the owner's to set.
+- **The owner's word (28/10): no deployment until what was started is finished** («Δεν
+  προχωράμε σε ανάπτυξη μέχρι να ολοκληρώσουμε αυτά που έχουμε ξεκινήσει»). Also: rules
+  word by word lead nowhere; a general word ("καλώδιο") should be answered with choices of
+  what it means (TV, charging, internet cable), for every general word alike. Started,
+  in this order, each measured on a copy of the server's catalogue before it is built:
+  1. the 3,075 engagement rings read as accessories (a kind named after "with" read as
+     the product); 2. choices for a general word, from the catalogue itself (the shops'
+     shelves, in Greek from Google's Greek taxonomy, and the words titles put before it),
+     in the search box and above the results; 3. the cap of 15% called by the nightly
+     preparation, the night before's kept list kept on the server. Then the deployment
+     (question 1), then HTTPS and the domain.
+- **Rules that hold:** the pin stays as it is (our server still holds that key; no new
+  pin is needed); a workflow logs in only after a login's first step showed the pinned
+  key; `server-check.yml` logs in with `accept-new` whatever the pin, so it is not run;
+  the deployment, the round and the setup stop at their first step until they take the
+  key from a login's first step too (the owner's word first).
+- **Not affected:** the live site on Vercel (`picwise.subby.cloud`) does not depend on the
+  server; the server's own site listens on 127.0.0.1 only.
+- **Still waiting for the owner's word, as before:** the cap; the next kinds (mattresses,
+  whiteboards, safety footwear, handheld mobile computers); HTTPS and the domain; the
+  repository private; query logging from the server; 80 or 200 bot checks per shop.
+  New (28/10): question 1 (the deployment, the round and the setup taking the key from a
+  login's first step, so the fixed rules reach the server); a kind named after "with"
+  read as the product (the 3,075 engagement rings).
+
+## Before (2026-10-26, evening): the bot runs each night on the server
+
+The owner ended the conversation of 26/10 with «Πάμε σε άλλη συζήτηση». Owner's rules,
+unchanged: Greek, short, plain words; say what you found before building anything;
+nothing on `main` without their explicit «ναι»; never ask for the feed link (it holds the
+key); secrets only in GitHub's or Vercel's secrets; nothing in Supabase without asking;
+never open an Awin tracked link from a session or a bot; never propose contacting the
+shops.
+
+- **Where the work is:** the branch `ccr-1361f1a7-dcpo60` (pushed, last `a6d4318`): bring it
+  in first. `main` is still at `3608da0`: nothing of 25-26/10's server work is on it; pull
+  requests #13 (this branch), #12 and #11 to `main` are open; merge none without the
+  owner's «ναι».
+- **The server deploys from this branch** (`server-deploy.yml`, on a push touching the
+  site, the server files or `deployment/bot/**`). A session on another branch moves that
+  trigger to its own; in the session's Auto mode the safety check refuses that change and
+  its push as a production deploy, so ask the owner to switch the mode to "Accept edits"
+  (the menu under the message box) and approve the push.
+- **On the server now** (run `40355492889`, `9872f42` code): 523,450 products shown; So
+  Divine out; the barcode brings in about 1,100 rows (InStock UK about 1,050); the bot
+  (`picwise-shops.timer`, 03:40 UTC) feeds the preparation (`picwise-prepare.timer`, 04:17
+  UTC) the shops' types and stock; Back to the Office 5,252 shown (782 before); 20,402 rows
+  given their shop's type with its kind.
+- **First thing to do:** read the night's round of 27/10, the first to read Back to the
+  Office by its collections. Nothing prints it by itself: a deployment prints
+  `print_shops.py` (the note's `shop_catalogues`, `balance`); the bot's own lines are in
+  the server's journal (`journalctl -u picwise-shops.service --since today`), read
+  through a small read-only workflow (as `server-shops.yml`, without starting a round) or
+  by editing `server-shops.yml` to only print. Do not run a second round the same day
+  without the owner's word.
+- **Waiting for the owner's word:** the cap (measured only: by shop Finediam 68.9%, by
+  aisle jewellery 72.9%; a 15% cap would keep about 97,000-162,000 of 523,450; the owner
+  has not chosen a number or a grouping); the next kinds the shops' types name (mattresses,
+  whiteboards, safety footwear, handheld mobile computers); HTTPS and the domain; the
+  repository private; query logging from the server; 80 or 200 bot checks per shop.
+  Decided: InStock UK only with its right rows (no second look); (a) "safe" as a number not
+  needed (no title decides alone); Gigbain cancelled.
+
+## Before (2026-10-26, later): the bot and So Divine built, then put on the server
+
+The owner's answers to the three changes (26/10, later): «Γ ο κανόνας ισχύει μόνο για
+προϊόντα που το κατάστημα δεν τους έδωσε καμία κατηγορία» (addition (c) agreed: the 275,000
+shown with a shelf but no kind stay); «Θα κάνεις το 2 και το 3» (the bot for the shops
+without a category, So Divine out); «το in stock συμμετέχει μόνο με τα προϊόντα που έχει
+σωστά» (change 1, the second look at InStock UK, dropped: its rows without a category stay
+out unless a barcode gives them one, and the bot never asks it); «Στα θέματα αντιστοίχισης
+είχες αναφέρει για barcode ... για shopify φτιάξε τους μηχανισμούς σε αυτή τη βάση και ό,τι
+έρθει σωστό ήρθε». Additions (a) "safe" as a number and (b) "enough" were not answered.
+Owner's rules unchanged (see the section below).
+
+- **Where the work is:** the branch `ccr-1361f1a7-dcpo60` (pushed): `claude/bold-allen-ljj9d7`
+  brought in, plus this conversation's commits. `main` is at `3608da0`; nothing of this is
+  on `main`, nor on the server.
+- **Built and tested on the branch:**
+  1. **So Divine out:** `eligibility.LEFT_OUT_SHOPS` (by the rows' merchant name, spaces
+     and case aside); the feed gate blocks every row (`shop_left_out`, in the note per shop).
+  2. **The shops' catalogues and the barcodes, applied** (`src/picwise_providers/shop_catalogue.py`,
+     in `state._resolve_provider_feed_pipeline_uncached` before any row is judged): for a
+     shop the bot's file knows (`PICWISE_SHOP_CATALOGUES`), its sold-out (all variants, or
+     the one the address names; seen at most `STOCK_DAYS` = 3 days ago) holds a row as out
+     of stock (`shop_stock`, read by `offer_health` with the feed's columns), never the
+     other way; a row with no category from the feed takes its shop's type as type and
+     category **only when the reading gives a kind the type names by itself** (the title
+     may narrow it, "Vacuum Cleaners" + "Robot Vacuum Cleaner"; it never decides alone:
+     "Designer", a type naming no kind, a title contradicting the type all leave the row
+     held, as before). Then any row still without a category takes the category most
+     rows with its barcode write, under the same rule (a barcode on more than 50 rows is
+     ignored); this needs no file. Counted per shop in the note (`shop_catalogues`),
+     printed by `print_shops.py`. A row with a category keeps its own.
+  3. **The bot** (`deployment/bot/shop_catalogue_bot.py`, reusing the test's robots.txt
+     reading and asking): `picwise-shops.service` by `picwise-shops.timer` at 03:40 UTC;
+     `picwise-prepare.service` is ordered after it and reads its file. Shops: the note's
+     with rows showable but for a category, plus those its file knows (so a shop whose
+     rows got a category is asked again), never InStock UK or a left-out shop. Per shop:
+     robots.txt, then `/products.json?limit=250&page=N`, 3 s apart or its crawl-delay, at
+     most 200 requests a shop a round, 4 shops at a time, 25 minutes; a larger catalogue
+     goes on next round where it stopped (a catalogue as large as Finediam's ~367,000 rows
+     takes about 7 nights, Back to the Office's ~95,000 two). Kept on the server only
+     (`/srv/picwise/shared/shops/catalogues.json.gz`, never Supabase), for the feed's
+     products only: type, stock, sold-out variants, day seen; forgotten after 30 days.
+     Prints shop names and counts, never an address; always exits 0.
+  4. `deploy.sh` creates `/srv/picwise/shared/shops`, installs the two units and enables
+     the timer; a deployment never asks the shops itself.
+- **The server, from this branch (the owner's «Ναι», 26/10):** `server-deploy.yml` now
+  runs on pushes to `ccr-1361f1a7-dcpo60` (also on `deployment/bot/**`) and prints the
+  shops' timer; a session on another branch moves it to its own. In Auto mode the
+  session's safety check refused that change twice as a production deploy, so the owner
+  switched the session to "Accept edits" (the menu under the message box, "Auto") and
+  the push went through (`a0d00ee`, run `40328993620`). The first round of the bot:
+  `.github/workflows/server-shops.yml` (on a push of itself: `systemctl start
+  picwise-shops.service`, then `picwise-prepare.service`, then `print_shops.py` and
+  `print_kinds.py`), pushed only after a deployment ended, since both share the
+  `server-setup` group in no set order. The nightly round runs at 03:40 UTC.
+- **Pull request #13** (`ccr-1361f1a7-dcpo60` to `main`, opened by the app at 12:31 under an
+  older title) is open, like #12 and #11: nothing is merged without the owner's «ναι».
+- **On the server (26/10, 13:15-13:45 UTC):** deployment run `40328993620` (`a0d00ee`; its
+  step "What runs on the server" failed on an apostrophe inside the quoted command, fixed
+  in `1b2c4d9`): 1,123,995 rows, **518,108 shown**; So Divine 0 of 81 (`shop_left_out`);
+  **the barcode brought in 1,081 rows** (InStock UK 1,041); peak memory 7.8 GB. **First
+  round**, run `40329354654`: 54 shops, 331 requests, 8 minutes; the file knows 58,728
+  products (53,699 with a type, 25,041 sold out). Then the preparation: **521,698 shown**
+  (+3,590); Back to the Office 782 -> 3,973 shown. Of the 574,171 rows of those shops,
+  124,265 found in their catalogue; **sold out by the shop 39,072, and the feed already said
+  so for all but 188**: these shops' feed stock is nearly always right. Without a category
+  121,574: **given their shop's type with its kind 14,395** (Back to the Office 11,651,
+  Viaduct Clothing 2,148), many of them sold out; the type names no kind 18,176 ("Sold
+  Out" 2,209, "PCs/Workstations" 795, "Network Switches" 708, "Network Media Converters"
+  590, "Made-to-Measure" 454, "Network Cards" 378, "Security Software" 361, "Outdoor
+  Sauna" 336, "Networking Software" 328, "Video Games" 291); no type 3,261; not in the
+  catalogue 85,742. **Back to the Office: Shopify pages a catalogue only to page 100**
+  (25,000 products; page 101 answered 400), so 24,739 of its 95,050 products were read and
+  69,205 rows not found; the bot now ends the catalogue there and starts again from page 1
+  (`b4ba417`). Finediam's catalogue answered 500 at page 20 (goes on tonight).
+- **The owner's «Ναι» to both proposals (26/10, read as one yes for the two):** (1) a shop
+  whose catalogue stops at Shopify's page limit is read on by its collections
+  (`deployment/bot/shop_catalogue_bot.py`: `page_limit` kept, so the catalogue is paged
+  only that far again; then `/collections.json` and each collection's
+  `/collections/<name>/products.json`, one after another from a cursor kept across rounds,
+  within the same 200 requests, 3 s and robots.txt; "all" and a collection said to hold more
+  than 25,000 products are skipped; the list is read again after each whole pass). The
+  first collections come with the night's round, 03:40 UTC. (2) The vocabulary
+  (`src/picwise_nlu/product_concepts.py`): "workstation" a desktop PC; new kinds
+  `network_switch`, `media_converter`, `network_card`, `software` (only its full names,
+  "security software", "antivirus", "networking software", ...: a bare "software" stays
+  not understood, as `test_live_search_resolver` pins "accounting software"), `video_game`,
+  `sauna`. Tests: `tests/test_picwise_kinds_from_the_shops_types.py`;
+  `test_picwise_strict_kind_reading`'s unknown label "Networking Software" became "KVM
+  Switches". Misspelling benchmark unchanged (93.8%, 0 wrong). The note now lists 30
+  types naming no kind. **On the server** (run `40351335007`, `a701306`, the bot's file of
+  13:27): 522,733 shown (+1,035); given their shop's type with its kind 18,325 (+3,930),
+  naming none 14,246; Back to the Office 4,572 shown (782 in the morning). The types left
+  naming no kind, the most first: "Sold Out" 2,209, "Made-to-Measure" 454, "Bedding" 274,
+  "Smart Wearable Accessories" 262, "Power Distribution Units (PDUs)" 195, "Power Adapters &
+  Inverters" 194, "Console Servers" 193, "Labret Lip Rings" 190, "Servers" 184, "Video Cable
+  Adapters" 178, "Ring Binders" 175, "PCs/Workstations" 168 (titles naming another kind),
+  "Network Switch Components" 145, "TV Mounts & Stands" 138, "Monitor Mounts & Stands"
+  135, "Hardware Firewalls" 129, "Wireless Access Points" 128, "Memory Cards" 112, "Tablet
+  Cases" 111, then folders, power supplies, batteries, "Carbon Offset", sweatshirts, pens,
+  privacy filters, markers. Mounts, cases and parts are accessories and stay out; memory
+  cards, servers, access points, firewalls, batteries, bedding, sweatshirts and pens are
+  kinds the vocabulary could learn next (put to the owner).
+- **The second list of kinds (owner: «Ναι παίρνω και αυτά τα είδη», 26/10):** new kinds
+  `memory_card`, `server` (a bare "server" too; "Salad Servers" on a kitchen shelf stay
+  doubtful by the aisle rule), `access_point`, `firewall`, `battery` (full names; a bare
+  "battery" is weak, and no bare Greek "μπαταρία", which is also a tap), `pen` (a bare
+  "pen" is weak: "pen drive"), `marker`, `folder`, and `bedding`, now broader than bed
+  linen, duvets, pillows and bedspreads ("bedding" finds them all); "sweatshirts" and
+  "power supply units" added to their kinds. Why they were out, told to the owner: their
+  shops send no category to Awin, a row without one is not shown, and the type the bot
+  found named a kind the vocabulary did not know. Tests:
+  `tests/test_picwise_kinds_from_the_shops_types.py` (5);
+  `test_picwise_kinds_from_the_build_list` expects a duvet and a bedspread to be bedding
+  too. Full run: only the two that failed before fail; misspelling benchmark unchanged.
+  On the server (run `40355492889`, `9872f42`): **523,450 shown** (+717); Back to the
+  Office **5,252** (782 in the morning); given their shop's type with its kind 20,402
+  (+2,077), naming none 12,169; kinds with products from at least 3 shops 94 of 257 (84 in
+  the morning). Left naming no kind, besides accessories and parts: "Safety Footwear" 90,
+  "Handheld Mobile Computers" 87, "Diamond Ring" 84, "Mattresses" 83, "Whiteboards" 83,
+  "UPS Batteries" 81, "Laptops" 76 (titles naming another kind), "Electric Converters" 75.
+- **Why so few electronics (owner, 26/10):** the feed holds only the 85 programmes the
+  owner joined and was accepted to, mostly small fashion, jewellery and home shops; no
+  large electronics shop. Electronics shown: 9,087 (1.8%), plus what Back to the Office's
+  types now bring. Gigbain accepted the owner, but it is not in the feed: the link keeps
+  the shops chosen when it was made (`docs/awin_feed_setup_el.md`), so a new link with it
+  would go into the `AWIN_FEED_URL` secret, then a deployment. **The owner cancelled it
+  («Άκυρο για το συγκεκριμένο κατάστημα gigbain», 26/10): Gigbain stays out; do not ask
+  again.**
+- **The cap, measured (the owner's «Ναι» read as also for "measure first"):**
+  `src/picwise_providers/catalogue_balance.py`, the note's `balance`, printed last by
+  `print_shops.py`: per department and aisle (the top and two levels of Google's shelf,
+  British names read as US; the shops' own categories one group), per shop and per
+  narrowest kind, the largest groups and their shares, and what a 15% cap keeps (each
+  group at most C, the largest C with no group over 15% of what all keep; none with fewer
+  than 7 groups); and (b) "enough": kinds with products from at least 3 shops. Nothing
+  shown changes. Its numbers come with the first deployment.
+- **The owner's proposal of a cap (26/10):** no kind more than about 15% of all products,
+  so that a shop of 100,000 watches does not make PicWise "a watch site", which also
+  helps the checks. Analysis given: right, and needed now (Finediam, jewellery, is 70% of
+  the server's 518,041 shown); count it **per department** (from the shop's shelf: most
+  jewellery has no PicWise kind, so a per-kind cap would not see it) **and per shop**;
+  when cutting keep first the products sold in more than one shop, then a fair share per
+  kind and per price band, cheapest first within each (not only the cheapest, or an
+  expensive search finds nothing); stable from night to night (Google); the share is of
+  the total after the cut, which needs at least 7 departments of some size, else a
+  floor; today it would cut most of the jewellery and leave under half the total; it
+  does not fix "too few of another kind" (only new shops or networks do). Recommended:
+  **measure first, nothing shown changed**: built (below the deployment's block).
+- **Open, the owner's, from before:** HTTPS and the domain; the repository private; query
+  logging from the server (ask first); 80 or 200 bot checks per shop and what a low score
+  does; (a) and (b) above.
+
+## Before (2026-10-26): the rows without a category, after the shop test
+
+The owner ended the conversation of 25-26/10 with «Θα προχωρήσουμε αυτές τις αλλαγές σε
+άλλη συζήτηση»: the three changes below wait for their «ναι», each on its own. Owner's
+rules, unchanged: Greek, short, plain words; say what you found before building
+anything; nothing on `main` without their explicit «ναι»; never ask for the feed link
+(it holds the key); secrets only in GitHub's or Vercel's secrets, never in the
+repository, a log or the chat; nothing in Supabase without asking; the truth test is a
+bot's, never the owner's by hand; never open an Awin tracked link from a session or a
+bot; never propose contacting the shops («δεν στηρίζομαι σε αυτούς»).
+
+- **Where the work is:** the branch `claude/bold-allen-ljj9d7` (pushed; bring it in
+  first). `main` is at `3608da0` (the two kind fixes, live); the branch's server files,
+  measurements and the shop test are not on `main`. Pull requests #12 (this branch) and
+  #11 (`ccr-baaad713-r3uvvs`) to `main` are open; nothing goes to `main` without the
+  owner's «ναι». `server-shop-test.yml`, like `server-deploy.yml`, runs on pushes to
+  this branch; a session on another branch moves those triggers to its own.
+- **The owner's direction (26/10):** rows that can be mapped safely and sorted rightly
+  join the catalogue; rows no category can be given, also after the bot's check, stay
+  out (today's state already: the prepared catalogue keeps only the feed's eligible
+  rows); if too few products are left, another network joins (CJ or any other).
+  «Βρέθηκαν επίσης» is dropped. Three additions wait for their word: "safe" as a number
+  (a title's kind alone only for the kinds measured right 99% on rows with a shelf),
+  "enough" counted as kinds with products from at least 3 shops, and the rule only for
+  rows with no category from the shop (the about 275,000 shown with a shelf but no kind
+  yet stay).
+- **What the shop test found** (run `40309611314`; details in the bullet "The shop
+  catalogue test, run once" below): 53 of the 56 shops publish Shopify's catalogue,
+  with each product's stock and, for 33 shops (32,306 rows), a type on nearly every
+  product; paging past 5,000 works; **InStock UK (353,023 of the 388,813 rows) answers
+  500** on its catalogue, and the one row of it asked has no type.
+- **The three changes put to the owner (each on its own «ναι»):**
+  1. **A second, small look at InStock UK only** (about 10 requests, under the same
+     script's rules: robots.txt first, 3 s apart, never an Awin link): its
+     `/collections.json`, one or two collections' `/collections/<name>/products.json`,
+     and a few more of its rows' `/products/<name>.js`, to see whether a category is
+     anywhere. If none, its rows have the title only, under the "safe" rule above.
+  2. **The bot for the 55 other shops**, each night after the feed: per shop its
+     robots.txt, then its Shopify catalogue (250 products a request, at most 200
+     requests a shop a round): the shop's own type and each product's stock, matched
+     to the feed's rows by the product name in the address; what it learned kept on
+     the server (never in Supabase), so a round asks only for what is new; a row whose
+     type reads as a kind joins the catalogue, else the title decides (Finediam reads
+     worse with its type), else it stays out. User agent `PicWiseBot/0.1
+     (+https://picwise.subby.cloud)`.
+  3. **So Divine out:** it sells adult products and the server shows 72 of its 81
+     rows; the site has no adult rule.
+- **Open, the owner's, from before:** HTTPS and the domain (own domain recommended
+  before any indexing); the repository private; query logging from the server (ask
+  first); 80 or 200 bot checks per shop and what a low score does.
+
+## Before (2026-10-25, later, to 2026-10-26): every Google-format shop on the server; the kind problem on it
+
+The owner put the link with every Google-format shop in GitHub's secrets («ετοιμο»,
+25/10); the server reads it, and the deployment now names each shop of the feed.
+
+- **Where the work is:** the branch `claude/bold-allen-ljj9d7` (pushed): the branch
+  `ccr-baaad713-r3uvvs` brought in, plus this conversation's commits. Bring it in first.
+  `server-deploy.yml` now runs on pushes to this branch; a session on another branch
+  moves that trigger to its own. `server-setup.yml` and `server-check.yml` still name
+  `ccr-baaad713-r3uvvs`: move their trigger only when they are needed (moving setup's
+  runs the setup, which may reboot). The pull request from `ccr-baaad713-r3uvvs` to
+  `main` (#11) is open and lacks this branch's commits; nothing goes to `main` without
+  the owner's «ναι».
+- **The server works** (OVHcloud VPS-4, London, Ubuntu 24.04.5, 8 vCores, 22 GiB usable,
+  191 GB free; renewal automatic monthly, next 24/11): secured (updates daily with a
+  reboot at 03:30 UTC when needed, SSH by key only, ufw 22/80/443, fail2ban); the site
+  under gunicorn on 127.0.0.1:8016 only (nothing from the internet, so Google cannot
+  see it); the catalogue prepared at each deployment and nightly at 04:17 UTC. A session
+  cannot open SSH: everything goes through GitHub workflows (read their logs with the
+  GitHub tools). Secrets are sent only to a server whose host key matches the pin.
+- **Now on the server: every Google-format shop** (re-run of run `40189917132`, attempt 2,
+  and run `40192893502`, both success): **1,123,857 rows from 85 shops; 518,041 products
+  shown, from 77 shops; 605,816 rows held** (mostly no category: InStock UK 384,393,
+  Back to the Office 93,662; then out of stock). The preparation: peak memory 7.4 GB
+  (ceiling 16 GB), 6.8-8.5 min, a 47.5 MB file; the site 3.1, 4.5 and 5.8 GB after three
+  deployments (ceiling 12 GB; likely each worker that served a search holds the
+  catalogue, about 1.3 GB each, not measured per worker: to watch after a nightly
+  reload). So it fits without the PostgreSQL change. **`AKKO UK`, `EMOKO BIKE`, `Sinocare` and `World
+  Businesses for Sale` are not in the feed** (read by the bot in the shop list:
+  `deployment/server/print_shops.py`, step "Each shop of the prepared catalogue").
+  `Finediam` (jewellery) has 360,067 of the 518,041 shown (70%), so the suggestions are
+  full of rings and watches; `InStock UK` brings 509,939 rows (45% of the feed). 8 shops
+  show nothing: NORVEXA ADVISORY LTD, Frenzy Clothings, Beauti Outlet, myCord | Bracelet
+  Lab, Handbags Infinity Fashion, Purr and Mutt, Bluebells Flora Florist, Wilna Kitchen.
+  Two names do not read as shops, for a bot to check what they sell: `Shopping Ads:
+  Google & Bing` (6,798 shown) and `NORVEXA ADVISORY LTD` (13,227 rows, none shown).
+  No adult shop; `Affiliates - Spoiled Brat` is a Glasgow clothing shop, kept
+  (Companies House showed overdue accounts and a strike-off proposal: for the shop
+  checks later).
+- **The 12 searches against live: 0 of 12 the same, many the wrong kind.** "vacuum
+  cleaner": Colleen Hoover books (Lets Buy Books); "mouse": chocolate mice; "tv": a
+  "DEATH BY TV" hoody and Islamic digital learning packs; "speaker": banana plug
+  connectors; "camera": a camera module among the cheapest. The kind problem of 23/10
+  (section below), much larger with many shops.
+- **The two measures, built and read (owner: «Να προχωρήσουμε τις δύο μετρήσεις», and
+  how not to lose so many products without a category; also: a feed may not tell the
+  truth about stock, «για αυτό χρειαζόμαστε τους ελέγχους»).** On the branch only, in the
+  public note and printed by the deployment (steps "Each shop of the prepared catalogue"
+  and "Kinds that may be wrong in the prepared catalogue"); run `40200815389`, release of
+  `85f0a4a`. Measured only: nothing shown changed.
+  - **Rows without a category: 532,610**, 532,593 held for that alone. **None carries the
+    shop's own category (`product_type`)**, so reading that column would bring in
+    nothing. Passing today's other checks (in stock by the feed's word, a price, an
+    image), **388,781 could be shown if the title alone gave the kind**: the title reads
+    204,124 as a kind, 22,350 as an accessory, 51,430 as doubtful, 110,877 as nothing.
+    InStock UK is 353,023 of them (193,233 with a kind), Back to the Office 23,807.
+  - **Kinds of the 518,041 shown** (411,717 with a kind): the title names none of its
+    kinds on 176,239, and **"watch" alone holds 169,271, of which 167,551 are not
+    watches** (piercing oil and ear expanders of MonsterPiercing on "Body Jewellery",
+    Finediam's jewellery). Most likely cause, reproduced locally, not yet seen in the
+    server's own category text: a shelf like "Jewellery & Watches > Body Jewellery"
+    whose narrowest part names no kind, so the code reads the parent "Jewellery &
+    Watches" as watches. The title alone names the kind, not the type or shelf, on
+    6,518: right for hoodies and jumpers, wrong for "Chocolate Mice" (mouse), "Giant
+    Apple Cable" sweets (charging cable), "Voice Tablets" sweets (tablet), a "Rat &
+    Mouse" bait (mouse), the book "Make Your Bed" (bed), a model paint's "Protective
+    Coat" (jacket), incontinence "Pants" (trousers).
+- **The watch error fixed on the branch** (owner: «ναι, ξεκίνα με το ρολόι»; commit
+  `6aff4fe`, run `40205899827`; **not on `main`**). The server's shelves are Google's
+  British taxonomy: "clothing & accessories > jewellery & watches > body jewellery".
+  An aisle listing a kind with something PicWise has no kind for now gives that kind
+  only when the title names it, otherwise the narrower shelf decides; the narrowest
+  shelf keeps its kind ("Skillets & Frying Pans" stay cookware). Of Google's 5,595
+  shelves read with no title, two change (access points and network bridges under
+  "Bridges & Routers" are no routers). On the server: products shown as a kind
+  411,717 -> 243,908, titles naming none of their kinds 176,239 -> 10,865, "watch"
+  169,271 -> 1,751 products (31 suspects); the 12 searches show the same cards as
+  before. The kind lists now give each kind's three whole shelves. Left, seen in the
+  same list: titles alone giving a kind on another department's shelf, "barbell" 951
+  (piercing barbells on "body jewellery", were watches), "bag" 448 (291 on "sweets &
+  chocolate"), "bed" 212 (149 on "pet supplies"), chocolate mice as mice.
+- **A title alone on another department's aisle, fixed on the branch** (owner: «ναι,
+  προχώρα στο επόμενο λάθος»; commits `55a5477`, `45ab1d7`, `772855b`, `00ebb22`; **not on
+  `main`**). When no shelf names a kind and the title decides
+  (`concept_understanding._title_fallback_head`), the title's kind is now doubtful if the
+  category is an aisle of Google's taxonomy whose shelves name no kind of that
+  department (`mega_category_id`, or a broader kind's: a smartwatch is a watch);
+  `_aisle_departments` gathers them once from `taxonomy.en-US.txt`, each shelf read as it
+  is and in the singular; the two-level aisle counts, or its top when it names no kind;
+  an aisle whose name names the kind holds it ("Toys & Games"); British aisle names map
+  to the US ones (`_BRITISH_AISLE_NAMES`). Doubtful products are still found by their
+  words. The note lists what the rule doubted (`kinds_before_the_aisle_rule`), and the
+  deployment's comparison prints each server card's shelf and kinds (it copies the
+  prepared catalogue to the runner). **On the server** (run `40216310561`): 1,860 shown
+  products doubted, nearly all rightly: 941 piercing barbells, 291 sweets as bags, 85
+  chocolate mice, sweets as cables, tablets, belts and watches, books (Colleen Hoover,
+  slow cooker and air fryer cookbooks), model kits ("Retro Scooter - Model Kit"), pet
+  clothes, incontinence pants, tumbler cases as phone cases. Wrongly: 6 smartwatches
+  InStock UK files under "Electronics > Video > Video Multiplexers", 8 baby hooded
+  towels, 2 baby brush sets. The first version (`55a5477`) also doubted dining sets, sofa
+  suites, futon beds, tote bags, toys and every electric massager (2,062 in all); the
+  last one keeps them. The 12 searches: "vacuum cleaner" shows real vacuum cleaners,
+  "mouse" no chocolate mice, "tv" no hoodie; still wrong on "mouse": a craft stamp set
+  "Squeak the Mouse" and a "Self Tan Mousse" (coarse departments; "mousse" read as
+  mouse).
+- **Both fixes on `main` and live** (owner: «Ναι», 25/10): commit `3608da0` on `main`
+  holds only `concept_understanding.py` and the two test files, not the server's files;
+  the 107 related test modules (1,138 tests) pass on `main` but the two failing there
+  before. Vercel deployed it ("Deployment has completed"); the live site prepared at
+  18:50:06 UTC, and its 12 searches show the same cards as before (the errors were in
+  the server's larger feed, not in the live 20 shops). `main` is merged into this branch.
+- **The title alone against the shelf, measured** (owner: «Ναι»; commit `62fbf93`, run
+  `40223470414`; note key `title_alone`, printed by `print_kinds.py`): of 81,601 shown
+  products whose type and shelf alone give a kind, the title alone gives one to 52,024
+  (63.8%), **the shelf's own kind for 50,445 (97.0% of those)**, another for 1,579; none
+  for the rest (doubtful 11,681, nothing 17,174, an accessory 722). **InStock UK: 70.0%
+  get a kind, 94.6% of them the shelf's**; Finediam 100%; "Shopping Ads: Google & Bing"
+  (it sells Nike trainers) 1.6%: "Iron Grey" read as an iron, "Football Grey" as a
+  football. Of the disagreements, about half are the title being right where the
+  lexicon links no two kinds (bedside tables on "Bedside Tables" read as tables, dash
+  cams, heat pumps, lunch boxes, bracelets on InStock UK's bare "Jewellery & Watches"
+  shelf), half title errors (suit -> trousers 623, mattress -> bed 176 by the brand
+  "Starlight Beds", boxer shorts -> shorts, bean bag chairs -> bag, mixer grinder ->
+  angle grinder). For the 388,781 rows without a category this means about 204,000
+  could get a kind from their title, most of them right, a few thousand wrong, and
+  about 185,000 none (found by their words only).
+- **Rows without a category: the owner's direction (26/10)** «Ο στόχος είναι να λύσεις
+  αυτό το πρόβλημα»; **no contact with the shops** («δεν στηρίζομαι σε αυτούς»; never
+  propose it again); rows that cannot be mapped stay **outside the price logic** (shown,
+  not compared); the shop-check bot has a **double role**: check the feed's stock and
+  give category information, within its 200 checks per shop. The owner cancelled
+  showing them on the server with the title's kind («Σταμάτα», «Ακυρώ») before that.
+- **Where else a category hides, measured** (commits `d5693cb`, `bb0d8f8`; runs
+  `40298361738`, `40300435259`): of the 388,813 rows a search could show by their title,
+  **no column names a category** (they fill advertiser_id, advertiser_name,
+  availability, aw_deep_link, brand, condition, description, id, image_link, link,
+  price, title, identifier_exists, mpn, gtin: no custom label, no product type); **the
+  shop's address names only "products"** (`.../products/<name>`, Shopify's form; read
+  from the Awin link's `ued` as text, never opened); **a barcode** on 63,359, another row
+  with a category for only 620 (a kind for 137, 28 where the title gives none); **the
+  description's first sentence** gives a kind to 2,424 of the 184,675 the title gives
+  none (on rows with a shelf: 5.5%, 93.3% agreeing). So from the feed only the title
+  maps them: about 204,000, of which about 95% right (InStock UK 94.6%); about 185,000
+  cannot be mapped from the feed.
+- **The owner's proposal (26/10), replacing «Βρέθηκαν επίσης»:** rows that can be mapped
+  safely and sorted rightly in search join the catalogue; rows no category can be
+  given, also after the bot's check, are dropped («πόσες μετατροπές μπορείς να κάνεις
+  σε προϊόντα τα οποία είναι κρυφά ... το μόνο που κάνουν είναι να πιάνουν χώρο»); if
+  the products left are not enough, another network joins (CJ or any other);
+  «Αρκετά ασχοληθήκαμε». So **«Βρέθηκαν επίσης» is dropped**, nothing to build for it.
+  Asked for an evaluation; given: right, and today's state already (rows held for no
+  category are not in the prepared catalogue, only counted in the note; each night's
+  preparation lets a shop's row in once it has a category); three additions put to
+  the owner, **waiting for their word**: (a) "safe" as a number: a title's kind
+  accepted alone only for the kinds whose title reading measured right nearly always
+  (99%) on rows with a shelf, the rest only when the bot confirms them; (b) "enough"
+  measured in comparisons, not products: how many kinds have products from at least 3
+  shops (Finediam is 70% of what is shown); a new network passes the same gates by
+  itself; (c) the rule is for rows with **no category from the shop** only: the about
+  275,000 shown with a shelf but no PicWise kind yet (more than half jewellery: "ring"
+  gives none) stay, and the vocabulary grows. The bot (stock and category, 200 checks a
+  shop, never an Awin link) asks pages of the shops' sites: only on the owner's «ναι».
+- **The shop catalogue test, run once** (owner: «ναι, ξεκίνα τη δοκιμή στα 56
+  καταστήματα»; commit `364654e`, run `40309611314`, 11 minutes, 217 requests from the
+  server as `PicWiseBot/0.1`; `deployment/bot/shop_catalogue_test.py`, run by
+  `.github/workflows/server-shop-test.yml` on a push of either file; it reads the
+  feed's copy in the download cache, so no key). Of the 56 shops with rows a search
+  could show but for a category: **53 publish Shopify's catalogue** (`/products.json`);
+  every robots.txt allowed what was asked, none set a crawl-delay; the catalogue says
+  each product's stock, and its product names match the feed's addresses (Back to the
+  Office: 239 of 250 in the feed). **Paging past 5,000 works** (Back to the Office and
+  Finediam gave 250 products on page 21). **Back to the Office** (23,825 rows): a type
+  on every product, real ones ("Windows Laptops", "Chromebooks", "Televisions", "Toner
+  Cartridges"); a kind from type and title for 70.4% against 52.4% from the title
+  alone. 33 shops (32,306 rows) give a type to at least 80% of their first page; some
+  types name no kind ("Designer", "Everyday", "Consumable", "Crystal Art"), so a type
+  that gives none must leave the title to decide (Finediam: 54.0% with its type, 72.4%
+  from the title alone). **InStock UK (353,023 rows, 91%) is not solved by it**: Shopify
+  (its product page answered), but its catalogue answers 500 (pages 1 and 21), and the
+  one row asked has no type (a mirror, which its title names). Not asked: Juicy Couture
+  UK (no shop address in its rows), Pro Espresso (its robots.txt redirects to another
+  site). **Seen by the way: So Divine sells adult products** (vibrators, bondage), and
+  the server shows 72 of its 81 rows: the site has no adult rule, the Google spec wants
+  none on Google's pages, and the owner's plan of 22/10 left adult content out of the
+  feed link (the handoff's "no adult shop" above was read from names only). Put to the
+  owner, **waiting for their word**: (1) a second, small look at InStock UK only (its
+  collections and a few more rows); (2) the bot for the 55 other shops (category and
+  stock from their catalogues); (3) So Divine out.
+- **Before, put to the owner:** (2) before any row
+  without a category is shown by its title, measure how often the title alone agrees
+  with the shelf on the rows that have one (per shop: InStock UK has both); (3) ask
+  Awin or the two largest shops (InStock UK, Back to the Office) for their categories;
+  (4) then the shop checks the owner planned (set hours, 200 checks per shop, the
+  shop's own link, robots.txt, a gentle pace), which say whether a feed's stock is
+  true. Code goes to `main` only on their «ναι».
+- **Open, the owner's:** HTTPS and the domain (own domain recommended before any
+  indexing); the repository private (logs are public; nothing secret is in them);
+  query logging to Supabase from the server (ask first); 80 or 200 bot checks per shop
+  and what a low score does.
+
+## The conversation of 2026-10-23: the server; nothing left out of what is kept
 
 The owner opened a new conversation for a smaller kept file, then the server («Θέλω να
 ανοίξουμε νέα συζήτηση γιατί αυτή έχει βαρύνει και το φτιάχνουμε εκεί»). The smaller
@@ -13,6 +1115,35 @@ file was then stopped by the owner's rule below.
   `ccr-c30938cf-v749ay`'s notes. Its code is `main`'s (last merge `7b9624c`, 23/10 16:08
   UTC); it is ahead only by notes (PROGRESS and this file). Bring it into the next
   session's branch first.
+- **The server: bought, reachable, checked (25/10).** OVHcloud VPS-4 2027 in London
+  (Erith): Ubuntu 24.04.4, 8 vCores, 24 GB, 200 GB NVMe, €23.49 a month, no
+  commitment; renewal automatic every month (set 25/10; next 24/11). Login by the
+  owner's ed25519 key only, user `ubuntu`. The owner set the GitHub Actions secrets
+  `SERVER_HOST`, `SERVER_USER` and `SERVER_SSH_KEY`; `AWIN_FEED_URL` not yet (made
+  again in Awin's Create-a-Feed when the site moves). The repository is public: the
+  server's address never goes into it or into a log (GitHub masks secrets). The session
+  cannot open SSH (only HTTPS on 443), so the server is worked through GitHub
+  workflows; the read-only `.github/workflows/server-check.yml` (this branch only)
+  logged in on 25/10 (PROGRESS, 25/10). **Set up for security on 25/10** (owner's
+  «ναι»): up to date (Ubuntu 24.04.5), daily security updates with a reboot at 03:30
+  UTC when needed, SSH by key only and no root login, ufw letting in 22, 80 and 443
+  only, fail2ban; `deployment/server/base_setup.sh`, run by
+  `.github/workflows/server-setup.yml` (this branch only; a rollback undoes SSH and
+  firewall in 10 minutes unless a fresh login cancels it; the log masks the server's
+  names), run `40187243206`. **The site runs there since 25/10** (owner's «ναι»), with
+  today's code and no feed yet (the owner has no link ready): gunicorn on 127.0.0.1:8016
+  only (nothing from the internet, so Google cannot see it), the catalogue prepared at
+  each deployment and nightly at 04:17 UTC; `deployment/server/deploy.sh` by
+  `.github/workflows/server-deploy.yml` (this branch only), which then compares 15
+  pages with the live site: 11 the same, the 4 others differ only by the feed (run
+  `40188479854`). **With a feed since 25/10:** the owner's `AWIN_FEED_URL` (a
+  new-style Awin link with 2 feeds; Vercel reads 20 shops), sent only to the server
+  whose host key matches `.github/server-host-key.pin` (an HMAC under the deploy key,
+  `.github/scripts/host_key_pin.py`); 1,040 products prepared; of the 12 searches,
+  `camera` shares three of four cards with live, the rest differ by the shops (run
+  `40189276811`, PROGRESS 25/10). Next, the owner's: the same 20 shops or a larger
+  link; then HTTPS and the domain, only on the owner's word. The owner's guide:
+  `docs/ovhcloud_server_setup_el.md`.
 - **Owner's rule (2026-10-23): nothing that may serve the pages Google indexes is left
   out of what PicWise keeps.** In their words: «Δεν πρέπει να διαγράψεις τίποτα που θα
   επηρεάσει την ποιότητα χαρακτηριστικά seo ... Τα προϊόντα που θα καλούνται από την
@@ -30,16 +1161,34 @@ file was then stopped by the owner's rule below.
   product, and a keyword's variations map to that page. That conflicts with the
   founding documents' long-tail landings (raised; "Known doc conflict" below). Read the
   specification first.
-- **Its first step, built on the branch, not on `main`** (owner: «Ναι, βάλε το noindex
-  στο /search και προστάτεψε το site από την google όσο το χτίζουμε»): `noindex` on
+- **Its first step, on `main` since 23/10 18:15 UTC and seen live** (merge `47cd76b`,
+  owner: «Ναι, να μπει στο main και κάνε τον έλεγχο»; live check run `40001929114` at
+  18:16, PROGRESS 23/10). Built on the owner's «Ναι, βάλε το noindex
+  στο /search και προστάτεψε το site από την google όσο το χτίζουμε»: `noindex` on
   every page that shows a search (`/search`, `/results`, `/picwise-reference`, `/?q=`;
   the home page without a search stays indexable) and on `/demo`; a `robots.txt`
   keeping crawlers off `/out/` (the redirect to the shops records a click),
   `/subby-proof` and `/cron/`, not off `/search` yet (Google reads `noindex` only on a
   page it may fetch); `X-Robots-Tag: noindex` on the JSON routes. Both route tables;
-  `tests/test_picwise_google_protection.py`. `main` waits for the owner's yes (PROGRESS,
-  23/10, "The site's own search kept out of Google"). After the merge: check live
-  that the search pages carry the tag and `/robots.txt` answers.
+  `tests/test_picwise_google_protection.py`. The live check now prints all of this
+  (`.github/workflows/live-check.yml` on `ccr-fd5dc1bc-4vgsgl`, `39665da`, owner's
+  leave): it waits for a deployment that serves `/robots.txt`, then prints it, the
+  robots tag of each page and the JSON routes' header. Next, from the specification:
+  `Disallow: /search` once Google has dropped those pages (needs Search Console to see
+  it), then the catalogue on the server.
+- **The server's architecture: `docs/PICWISE_SERVER_ARCHITECTURE.md`** (owner's request
+  of 23/10, in English: database and search for 0.8-1M products, URLs and markets, the
+  store validation bot, text from the data). Nothing built. In short: PostgreSQL only (no
+  Meilisearch, no Redis), PicWise's own understanding and price-first rules kept as they
+  are; pages rendered each night and cached at Cloudflare; `/uk/` and `/us/` on one
+  domain with `hreflang`, no redirect by country; the bot visits only the shop's own
+  `link` (never `aw_deep_link`), keeps `robots.txt`, never evades a block, writes its own
+  tables, runs by a systemd timer after the load; text only from computed facts. It
+  corrects the brief: Hetzner US East is about three times dearer since June and its
+  cheap plans are not sold; 1M products and the bot need 16 GB at least (OVHcloud VPS-4,
+  24 GB, about $23 a month, put to the owner); 80 or 200 checks per shop is the owner's
+  setting; a domain of PicWise's own before indexing. Open, the owner's: provider and
+  size, domain, the checks per shop, what a shop's score changes.
 - **Owner's direction (2026-10-23): the business runs on Google.** «Η αρχιτεκτονική
   πρέπει να τηρεί αυστηρά την υψηλότερη ποιότητα και απαιτήσεις της google... Το
   business τρέχει γύρω από το seo... adwords ή διάδοση μέσα από social media
@@ -219,7 +1368,7 @@ kind) to a new conversation: «Αυτό το πρόβλημα θα το λύσο
   `test_picwise_search_index_generated_blind_stage4`. The owner's files reached only the
   old session: ask for a file again when one is needed, never for the link.
 - **The live site** is seen through the live check ("How a session sees the live site",
-  below); its last run is `39141651716`.
+  below); its last run is `40001929114` (23/10 18:16 UTC; re-run it to look again).
 - **The owner's words for this work** (2026-10-20): «Μην αλλάξεις τίποτα στο live site
   και μη χτίσεις τίποτα πριν μου πεις τι βρήκες. Τίποτα στο main χωρίς το ρητό μου
   «ναι». Μη μου ζητήσεις τον σύνδεσμο του feed, γιατί έχει το κλειδί. Γράψε μου στα

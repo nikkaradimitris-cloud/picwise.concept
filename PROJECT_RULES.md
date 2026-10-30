@@ -111,6 +111,17 @@ Before and during every change:
 - First phase is docs/spec/contracts foundation.
 - Do not build live product UI until mission docs and contracts are created and reviewed.
 
+## 13) Google Rule
+
+Set on 2026-10-29 by the owner: «Θα στήσουμε ολοκληρωμένα και θα δώσουμε στη Google αυτά που θέλουμε τμηματικά».
+
+- PicWise is built whole: every product a card can show is in PicWise's own search, whether or not Google sees it.
+- Google is given only what the owner chooses, part by part. Google indexes pages, not products: only the pages meant for Google (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`, section 2), never the site's own search, whose pages carry `noindex`.
+- A page opens to Google only when its kind passes the bar and the owner chooses its part. The bar: enough products of the kind, from enough shops, read as the right kind and checked (kind, price, stock). The numbers of the bar are the owner's to set (TODO). A page that does not pass is still shown to visitors, carries `noindex` and stays out of the sitemaps.
+- A page meant for Google may choose its products among all of its kind's products; whatever Google sees on it must be true.
+- A visitor who comes from Google finds the whole catalogue through PicWise's own search: a kind may have 15,000 products while Google sees the pages of 100 checked ones.
+- Parts go out one at a time, and a part Google does not keep is fixed or withdrawn before the next (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`, section 9).
+
 ## Enforcement
 
 These rules are mandatory for all Codex-assisted changes in this project, including code, docs, architecture, tests, UI, backend, routing, product, tracking, SEO, dashboard, and deployment work.
