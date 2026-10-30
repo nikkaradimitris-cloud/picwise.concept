@@ -397,8 +397,10 @@ class KindChoice:
     products: int
 
 
-# How many choices a general kind offers, the largest first.
-CHOICES_OFFERED = 6
+# How many choices a general kind offers, the largest first. Eight, not six: on the
+# server's catalogue of 2026-10-30 (run 41036545617) "network cables", the owner's own
+# example of a cable (26 found), came seventh, after "data cable" (34).
+CHOICES_OFFERED = 8
 # A choice by the words gives way to a narrower kind that holds this share of its
 # products: "charger cable" and "usb cable" are charging cables, offered as such.
 _COVERED_SHARE = 0.8
