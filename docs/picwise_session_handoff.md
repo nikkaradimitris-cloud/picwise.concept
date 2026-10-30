@@ -1,10 +1,22 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-30 (items 1 and 2 built
-and measured, nothing deployed; item 3 next).
+Current state for whoever picks the project up next. Updated 2026-10-30 (items 1, 2 and 3
+built and measured, nothing deployed; the owner stops there).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation (from 2026-10-28): finish 1, 2, 3 -- start here
+## Next conversation (from 2026-10-30): another network's shops, then the real server -- start here
+
+**The owner (30/10): «Να προχωρήσεις με το 3 και να σταματήσουμε εκεί μετά την υλοποίηση
+του δεν με ενδιαφέρει επιπλέον απασφαλμάτωση το επόμενο βήμα θα είναι να προσθέσουμε
+επιπλέον καταστήματα από άλλο δίκτυο και να περάσουμε το site στο κανονικό server».**
+Items 1, 2 and 3 are built and measured (below); no more debugging for now: the reading
+errors found on 29-30/10 (section "After the buyer's view", 4) stay as they are. Next:
+shops from another affiliate network; then the site moved to the real server (the
+deployment, question 1 below; nothing is deployed yet). The work is on
+`ccr-1361f1a7-dcpo60` (this conversation's branch `ccr-4f9ef4ee-j1nafx` holds the same
+files). A push to that branch needs the session in "Accept edits" ("Auto" refuses it).
+
+### Items 1, 2, 3 (from 2026-10-28)
 
 The owner (28/10): «Θα ξεκινήσουμε με το 1 2 3 σε νέα συζήτηση», and **no deployment
 until these three are finished**. The work is on `ccr-1361f1a7-dcpo60` (pushed; the
@@ -58,11 +70,12 @@ public, so no server name, address, host key or link in a log or a file.
    audio cable, braided cable, data cable, network cables". A push to the work branch
    needs the session in "Accept edits": "Auto" classes it as a deployment, `[skip
    actions]` notwithstanding (refused twice on 29/10; the owner switched on 30/10).
-3. **The cap of 15% applied:** `catalogue_cap.cap_catalogue(..., kept_before=...)` is
-   built and measured (run `40762760684`: 164,144 kept, at most 24,621 a category), not
-   called. To do: the nightly preparation (`tools/prepare_catalogue.py` ->
-   `state.prepare_feed_catalogue`) calls it and keeps the kept keys on the server for the
-   next night (`kept_before`); measured first.
+3. **The cap of 15%: built and measured on 30/10, nothing deployed** (section "Now
+   (2026-10-30): item 3" below). The owner, asked how the cap meets the rule of 29/10
+   (every product in PicWise's own search, `PROJECT_RULES.md` §13): «Όλα στο search».
+   So the cap cuts nothing from the search: each night it chooses the pool Google may be
+   given from (168,730 of 527,911 on the catalogue of 30/10), the night before's pool its
+   starting point, kept on the server beside the prepared catalogue.
 
 Then the deployment (question 1: `server-deploy.yml`, the round and the setup take the
 host key from a login's first step, as `server-night.yml`; editing it deploys, so the
@@ -177,6 +190,40 @@ measuring it on the server's catalogue the same way as item 1; then «Ναι π�
   box's suggestions, the largest six, each a search that finds products -- computed each
   night with the catalogue, in English; measured on the server's catalogue again before
   any deployment. Done the same day (above).
+
+## Now (2026-10-30): item 3, the pool Google may be given from (built, measured, not deployed)
+
+The owner (30/10): «Να προχωρήσεις με το 3»; then, between the cap of 27/10 (no category
+over 15% of the products shown) and the rule of 29/10 (`PROJECT_RULES.md` §13: every
+product a card can show stays in PicWise's own search), «Όλα στο search».
+
+- **Built** (code `411f328`, `[skip actions]`): `tools/prepare_catalogue.py`, after
+  writing the prepared catalogue, runs `catalogue_cap.cap_catalogue` on every product a
+  card can show, with the night before's pool as `kept_before`, and keeps the new pool
+  beside the catalogue (`google_pool.json.gz`: the kept rows' keys, `write_google_pool`,
+  `read_google_pool`, `google_pool_path`; on the server
+  `/srv/picwise/shared/prepared/google_pool.json.gz`, never in the public folder). The
+  search reads none of it: every product stays in the search. The pages meant for Google
+  (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`, not built) are to choose their products from it.
+  A failure keeps the night before's pool and prints "the pool Google may be given from
+  failed (...)"; a night that cannot read the feed leaves it as it is. The run's line
+  ("prepare_catalogue: the pool Google may be given from: N of M products ...") reaches
+  the night's log; the public note (`prepared.json`) counts it under `google_pool`,
+  without a row's id. Tests: `tests/test_picwise_catalogue_cap.py` (17),
+  `tests/test_picwise_prepared_catalogue.py` (24), `tests/test_picwise_server_print_cap.py`
+  (3); the modules that run the tool pass.
+- **Measured (run `41040939695`, the catalogue of 30/10, 527,911 products, 171
+  categories):** the pool 168,730, at most 25,309 a category; over the cap only
+  jewellery (381,204 -> 25,309: rings 310,572 -> 3,887, earrings, body jewellery,
+  bracelets, necklaces, charms & pendants about 3,887 each, all 1,724 watches) and
+  clothing (28,595 -> 25,309: t-shirts 7,292 -> 4,433, socks 4,859 -> 4,432, the rest
+  whole). After it: clothing and jewellery 15.0% each, decor 6.8%, the shops' own
+  categories 5.2%, food 5.1%, shoes 4.6%. By shop: Finediam 360,113 -> 18,850, InStock UK
+  93,406 -> 91,571 (54.3% of the pool; no limit per shop, owner 27/10). Of the 50,618 in
+  the pool from the two categories over the cap, 50,168 have an identity, an image and a
+  stock state that varies; 204 are sold by more than one shop. **The next night, on the
+  same products with the pool as its starting point: 168,730, every one the same**
+  (`print_cap.py`'s last line).
 
 ### After the buyer's view (29-30/10, the order chosen here): built, measured, not deployed
 
