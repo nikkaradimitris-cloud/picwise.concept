@@ -1,20 +1,58 @@
 # PicWise — session handoff
 
 Current state for whoever picks the project up next. Updated 2026-10-30 (items 1, 2 and 3
-built and measured, nothing deployed; the owner stops there).
+built and measured, nothing deployed; next, in a new conversation: the site moved to the
+real server).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation (from 2026-10-30): another network's shops, then the real server -- start here
+## Next conversation (from 2026-10-30): move the site to the real server -- start here
 
-**The owner (30/10): «Να προχωρήσεις με το 3 και να σταματήσουμε εκεί μετά την υλοποίηση
-του δεν με ενδιαφέρει επιπλέον απασφαλμάτωση το επόμενο βήμα θα είναι να προσθέσουμε
-επιπλέον καταστήματα από άλλο δίκτυο και να περάσουμε το site στο κανονικό server».**
-Items 1, 2 and 3 are built and measured (below); no more debugging for now: the reading
-errors found on 29-30/10 (section "After the buyer's view", 4) stay as they are. Next:
-shops from another affiliate network; then the site moved to the real server (the
-deployment, question 1 below; nothing is deployed yet). The work is on
-`ccr-1361f1a7-dcpo60` (this conversation's branch `ccr-4f9ef4ee-j1nafx` holds the same
-files). A push to that branch needs the session in "Accept edits" ("Auto" refuses it).
+**The owner (30/10): «2 μεταφορά του site στον κανονικό server και πάμε να ξεκινήσουμε από
+άλλη συζήτηση».** Before it: «Να προχωρήσεις με το 3 και να σταματήσουμε εκεί μετά την
+υλοποίηση του δεν με ενδιαφέρει επιπλέον απασφαλμάτωση το επόμενο βήμα θα είναι να
+προσθέσουμε επιπλέον καταστήματα από άλλο δίκτυο και να περάσουμε το site στο κανονικό
+server». So: **first the site moved to the real server, then the shops of another
+affiliate network.** Items 1, 2 and 3 are built and measured, nothing deployed (below); no
+more debugging for now: the reading errors found on 29-30/10 (section "After the buyer's
+view", 4) stay as they are.
+
+- **Where the work is:** `ccr-1361f1a7-dcpo60` (the conversation of 29-30/10 pushed its
+  last commit there; its own branch `ccr-4f9ef4ee-j1nafx` holds the same files). Bring it
+  in first. A push to it needs the session in **"Accept edits"** (the mode menu beside the
+  message box): "Auto" refuses it as a deployment, `[skip actions]` notwithstanding.
+  A push there of anything in `server-deploy.yml`'s `paths` (`src/**`, `tools/**`,
+  `api/**`, `assets/**`, `data/**`, `wsgi.py`, `deployment/server/**`,
+  `deployment/bot/**`, the pin, the workflow itself) **deploys**, unless the head commit
+  says `[skip actions]`; a push of `server-shops.yml` runs the shops' round at once (a
+  second round the same day only on the owner's word).
+- **Where things stand:** the live site is still Vercel's (`picwise.subby.cloud`). The
+  server (OVHcloud VPS-4, London, Ubuntu 24.04) runs the site under gunicorn on
+  `127.0.0.1:8016` only, so nothing reaches it from the internet; ufw lets 22, 80 and 443
+  in. Its code is the deployment of 26/10 (run `40355492889`); the shops' round and the
+  catalogue's preparation (04:17 UTC) run each night; the measures read its catalogue
+  through `server-cap.yml`.
+- **The steps, each on the owner's word:**
+  1. **Question 1:** `server-deploy.yml` and `server-shops.yml` compare the key a key
+     scan (`ssh-keyscan`) is shown with the pin, and a key scan has been shown another
+     key since 27/10 (section "Now (2026-10-27/28)"), so they stop at their first step;
+     `server-setup.yml` (run from `ccr-baaad713-r3uvvs` only) logs in with `accept-new`,
+     checking no pin. `server-night.yml` and `server-cap.yml` check the key a login's
+     first step is shown against the pin, and work: the same check to the three. Editing
+     `server-deploy.yml` deploys the work branch, so that edit is the deployment itself
+     and waits for the owner's «ναι».
+  2. **The deployment:** items 1-3 and everything since 26/10 reach the server; the
+     night's preparation then also keeps the pool Google may be given from
+     (`google_pool.json.gz`). After it: the deployment's own comparison of pages, and
+     `server-night.yml` the next morning.
+  3. **The site public on the server: HTTPS and the domain.** A web server in front of
+     gunicorn (TLS from Let's Encrypt); the domain of PicWise's own (the owner's to choose
+     and to point at the server's address at the registrar; the address never in the
+     repository); Vercel's `picwise.subby.cloud` until the switch. By `PROJECT_RULES.md`
+     §13: the site's own search stays `noindex`; Search Console from the first day.
+  4. Then the shops of another affiliate network.
+- **The owner's rules, unchanged** (the list in "Items 1, 2, 3" below, with nothing on
+  `main` without their explicit «ναι», and never a server name, address, host key or link
+  in a log or a file).
 
 ### Items 1, 2, 3 (from 2026-10-28)
 
