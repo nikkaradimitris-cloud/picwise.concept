@@ -28,14 +28,26 @@ are one group. Then:
   the dearest, so every search keeps cheap, middle and dear choices; ties go by the
   row's id, so the same ones come each night.
 
-Nothing is deleted: a product left out is not shown, and comes back when there is room.
-Measured first (`deployment/server/print_cap.py`): nothing shown changes.
+Nothing is deleted. Owner, 2026-10-30 («Όλα στο search», by `PROJECT_RULES.md` §13, «Θα
+στήσουμε ολοκληρωμένα και θα δώσουμε στη Google αυτά που θέλουμε τμηματικά»): every
+product a card can show stays in PicWise's own search; the cap chooses only the pool
+Google may be given from, the pages meant for Google choosing their products among
+those kept. Each night the preparation works it out with the night before's pool as its
+starting point and keeps it beside the prepared catalogue (`GOOGLE_POOL_NAME`,
+`write_google_pool`, `read_google_pool`); a product left out comes back when there is
+room. Measured first (`deployment/server/print_cap.py`).
 """
 from __future__ import annotations
 
+import gzip
+import json
+import os
 import statistics
+import tempfile
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
 from typing import Any, Collection, Mapping, Sequence
 
 from .catalogue_balance import CAP_SHARE, NO_SHOP, _narrowest_kind, _shelf_groups, capped_size
@@ -330,3 +342,50 @@ def cap_summary(result: CapResult, *, listed: int = 10) -> dict[str, Any]:
         "kept_from_before": result.kept_from_before,
         "prices": result.prices,
     }
+
+
+# The pool Google may be given from, kept by the nightly preparation beside the prepared
+# catalogue: the kept products' row keys, the next night's starting point. Never in the
+# site's public folder: a row key is the feed's own id.
+GOOGLE_POOL_NAME = "google_pool.json.gz"
+
+
+def google_pool_path(prepared_path: Path) -> Path:
+    """Where the pool is kept for a prepared catalogue written at `prepared_path`."""
+    return prepared_path.parent / GOOGLE_POOL_NAME
+
+
+def read_google_pool(path: Path) -> frozenset[str]:
+    """The row keys of the pool kept at `path`; none when there is no file, or it cannot
+    be read, and then the cap starts afresh."""
+    try:
+        with gzip.open(path, "rt", encoding="utf-8") as handle:
+            payload = json.load(handle)
+        return frozenset(str(key) for key in payload["keys"])
+    except (OSError, ValueError, KeyError, TypeError, EOFError):
+        return frozenset()
+
+
+def write_google_pool(result: CapResult, path: Path, *, prepared_at: datetime) -> int:
+    """Keep the pool a cap chose, whole or not at all; the size written, in bytes."""
+    payload = {
+        "v": 1,
+        "prepared_at": prepared_at.isoformat(timespec="seconds"),
+        "share": result.share,
+        "size": result.size,
+        "products": len(result.keep),
+        "kept": result.kept,
+        "keys": sorted(result.kept_keys),
+    }
+    data = gzip.compress(json.dumps(payload, ensure_ascii=True).encode("ascii"), 6)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handle, partial = tempfile.mkstemp(dir=path.parent, prefix=path.name, suffix=".partial")
+    try:
+        with os.fdopen(handle, "wb") as stream:
+            stream.write(data)
+        os.replace(partial, path)
+    except BaseException:
+        if os.path.exists(partial):
+            os.unlink(partial)
+        raise
+    return len(data)

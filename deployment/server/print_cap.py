@@ -8,7 +8,10 @@ category of the shop's shelf, yesterday's kept ones the next night's starting po
 clean information first (`picwise_providers.catalogue_cap`). Measured first: run by
 .github/workflows/server-cap.yml on GitHub's runner, from a copy of the server's file,
 with this checkout's code; nothing on the server or shown changes. Counts, names and
-prices only; the file's links are never printed. Always exits 0.
+prices only; the file's links are never printed. Always exits 0. Owner, 2026-10-30: every
+product stays in the search, and the cap chooses the pool Google may be given from, which
+the nightly preparation keeps for the next night (`tools/prepare_catalogue.py`): the
+last line says what the next night keeps, the pool its starting point.
 """
 from __future__ import annotations
 
@@ -100,6 +103,21 @@ def main(argv: list[str]) -> int:
             + (f"; {lacking} of them" if lacking else "")
             + f"; {result.kept_in_several_shops:,} sold by more than one shop"
         )
+    # The nightly preparation keeps this pool for the next night (owner, 2026-10-30:
+    # every product stays in the search, the cap chooses the pool Google may be given
+    # from): the next night, on the same products, keeps the same pool.
+    try:
+        again = cap_catalogue(
+            prepared.products, prepared.kinds, feed_ctx=prepared.availability_context, kept_before=result.kept_keys
+        )
+    except Exception as error:  # a measure only
+        print(f"the next night could not be measured: {type(error).__name__}")
+        return 0
+    print(
+        f"the next night, the pool kept as its starting point, on the same products: {again.kept:,} kept,"
+        f" {len(again.kept_keys & result.kept_keys):,} of them the same, {again.kept_from_before:,} in the categories"
+        " over the cap kept from the night before"
+    )
     return 0
 
 

@@ -11,14 +11,19 @@ kinds, a shelf naming a kind joining it (an accessory marked so stays on its she
 the check of far prices asks); inside a kind the clean ones first, those sold by more
 than one shop first among them, spread over the price range; the night before's kept
 ones stay while they fit, and when there are fewer places the ones that stay keep their
-spread; the same input gives the same choice; too few categories cut nothing.
+spread; the same input gives the same choice; too few categories cut nothing. And the
+pool Google may be given from (owner, 2026-10-30: every product stays in the search):
+kept beside the prepared file and read back as written, the next night's starting
+point; no file, or a broken one, starts afresh.
 
 Every row is local test data: fictional brands and shops, `.invalid` addresses.
 """
 from __future__ import annotations
 
 import sys
+import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,7 +31,15 @@ if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
 from picwise_providers.catalogue_balance import capped_size  # noqa: E402
-from picwise_providers.catalogue_cap import cap_catalogue, fair_quotas, joined_parts, row_key  # noqa: E402
+from picwise_providers.catalogue_cap import (  # noqa: E402
+    cap_catalogue,
+    fair_quotas,
+    google_pool_path,
+    joined_parts,
+    read_google_pool,
+    row_key,
+    write_google_pool,
+)
 from picwise_providers.contracts import ProviderProduct  # noqa: E402
 from picwise_providers.offer_health import build_feed_availability_context  # noqa: E402
 
@@ -268,6 +281,34 @@ class NightBeforeTests(unittest.TestCase):
         self.assertNotIn(gone, kept_rings)
         self.assertEqual(len(kept_rings), result.size)
         self.assertEqual(products_today.size, result.size)
+
+
+class GooglePoolFileTests(unittest.TestCase):
+    """The pool Google may be given from, kept from one night to the next (owner,
+    2026-10-30: every product stays in the search; the cap chooses only that pool)."""
+
+    def test_the_night_before_s_pool_is_read_back_as_written(self) -> None:
+        products = _catalogue({JEWELLERY: 300, **{name: 20 for name in SMALL}})
+        result = cap_catalogue(products, [frozenset()] * len(products), feed_ctx=_context(products))
+        with tempfile.TemporaryDirectory() as folder:
+            path = google_pool_path(Path(folder) / "prepared" / "catalogue.json.gz")
+            self.assertEqual(path.name, "google_pool.json.gz")
+            self.assertGreater(write_google_pool(result, path, prepared_at=datetime(2026, 10, 30, 4, 21, tzinfo=timezone.utc)), 0)
+            self.assertEqual(read_google_pool(path), result.kept_keys)
+            self.assertEqual(len(result.kept_keys), result.kept)
+            # The next night on the same products keeps the same pool, all of it from before.
+            again = cap_catalogue(
+                products, [frozenset()] * len(products), feed_ctx=_context(products), kept_before=read_google_pool(path)
+            )
+            self.assertEqual(again.kept_keys, result.kept_keys)
+            self.assertEqual(again.kept_from_before, result.by_category["apparel & accessories > jewelry"][1])
+
+    def test_no_file_or_a_broken_one_starts_afresh(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "google_pool.json.gz"
+            self.assertEqual(read_google_pool(path), frozenset())
+            path.write_bytes(b"not a pool")
+            self.assertEqual(read_google_pool(path), frozenset())
 
 
 if __name__ == "__main__":
