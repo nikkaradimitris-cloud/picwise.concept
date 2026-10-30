@@ -1,8 +1,8 @@
 # PicWise — session handoff
 
 Current state for whoever picks the project up next. Updated 2026-10-30 (items 1, 2 and 3
-built and measured, nothing deployed; next, in a new conversation: the site moved to the
-real server).
+built and measured, nothing deployed; the site moved to the real server: step 1 prepared,
+the deployment waiting for the owner's «ναι»).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
 ## Next conversation (from 2026-10-30): move the site to the real server -- start here
@@ -40,6 +40,20 @@ view", 4) stay as they are.
      first step is shown against the pin, and work: the same check to the three. Editing
      `server-deploy.yml` deploys the work branch, so that edit is the deployment itself
      and waits for the owner's «ναι».
+     **Prepared (30/10, the conversation of `ccr-60773189-pesaft`; owner: «Ξεκινάμε με
+     τη μεταφορά του site στον κανονικό server»), not yet on the work branch:** the three
+     take the key a login's first step is shown and compare it with the same pin,
+     strictly (no seal: the deployment sends the feed link); a key scan's key is only
+     reported. `server-setup.yml` still runs from `ccr-baaad713-r3uvvs` only. Checked:
+     `actionlint` 1.7.12 with shellcheck, clean; a dry run of the three connection steps
+     with stand-in `ssh` and `ssh-keyscan` (the pinned key with a key scan showing the
+     same key, another, or none; another key; no key), 15 cases as expected. Two commits,
+     to reach the work branch **in two pushes**, so that only the deployment runs: first
+     the round's and the setup's change with these notes (`[skip actions]`), alone; then
+     the commit changing `server-deploy.yml` alone, without the skip, which deploys. One
+     push of both would also start a round of the shops (its file is in the push's
+     changes), a second one the same day. Both wait for the owner's «ναι» and the session
+     in "Accept edits".
   2. **The deployment:** items 1-3 and everything since 26/10 reach the server; the
      night's preparation then also keeps the pool Google may be given from
      (`google_pool.json.gz`). After it: the deployment's own comparison of pages, and
