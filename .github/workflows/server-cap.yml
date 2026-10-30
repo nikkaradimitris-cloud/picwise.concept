@@ -26,7 +26,8 @@
 # what each rule of the choices changes on its own (owner, 2026-10-29: «εσύ πρέπει να
 # αποφασίσεις ποιος είναι ο βέλτιστος τρόπος»; deployment/server/print_choice_rules.py):
 # one shop's words, halves of phrases, choices keeping the whole kind, the written noun,
-# one search offered twice (the rules as refined after run 41028398470, 2026-10-30).
+# one search offered twice, the shops' shelves (the rules as refined after runs
+# 41028398470 and 41031539622, 2026-10-30).
 # The rules reach the server only with a deployment. Runs when this file is pushed to
 # the working branch. The repository is public and so is this log: the server's names and
 # addresses are masked, and the measures print counts, names, titles and prices, never a
