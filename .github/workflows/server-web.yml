@@ -1,0 +1,220 @@
+# The site public on its own server: HTTPS on picwise.subby.cloud, Caddy in front of the
+# site (owner, 2026-10-30: «Θέλω να βλέπω live το site από το καινούργιο server»; the
+# domain stays picwise.subby.cloud, PROJECT_RULES.md §8). The work on the server is
+# deployment/web/web_setup.sh, the front door's settings deployment/web/Caddyfile.
+#
+# Caddy is installed from Ubuntu's own archive and kept stopped while the domain points
+# elsewhere. The run then waits, up to WAIT_MINUTES, for the owner to point the domain's
+# record at the server at the registrar, asking the zone's own name servers every 20
+# seconds. Once it points at the server, Caddy starts and takes its certificate from
+# Let's Encrypt by itself, and the site is checked over HTTPS from outside. Vercel keeps
+# answering whoever still holds the old record, and the old record put back is the way
+# back to it.
+#
+# Runs when this file or deployment/web/ is pushed to the working branch; to wait again,
+# change the line below and push. The repository is public and so is this log: the
+# server's names and addresses are masked, and no address is printed.
+#
+# Opened: 2026-10-30
+name: Server web (HTTPS on the domain)
+on:
+  push:
+    branches: [ccr-1361f1a7-dcpo60]
+    paths:
+      - '.github/workflows/server-web.yml'
+      - 'deployment/web/**'
+permissions:
+  contents: read
+# Shared with the deployment, the setup and the shops' round, so none of them runs at the
+# same time.
+concurrency:
+  group: server-setup
+  cancel-in-progress: false
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      DOMAIN: picwise.subby.cloud
+      ZONE: subby.cloud
+      WAIT_MINUTES: 60
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Connect with the key, check the server's identity, mask its names
+        id: connect
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          # A key pasted on Windows may carry carriage returns, which ssh refuses.
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # The server must show a login the host key pinned in .github/server-host-key.pin
+          # (an HMAC under the deploy key: .github/scripts/host_key_pin.py), and every
+          # connection below accepts that key only. The key is the one a login's first
+          # step is shown, as in server-deploy.yml: since the night of 26-27/10 a key scan
+          # is shown another key while logins are shown the pinned one.
+          seen="$RUNNER_TEMP/seen"
+          : > "$seen"
+          ssh -F /dev/null -o BatchMode=yes -o ConnectTimeout=15 -o HostKeyAlgorithms=ssh-ed25519 \
+            -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$seen" -o GlobalKnownHostsFile=/dev/null \
+            -o PubkeyAuthentication=no -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no \
+            -o HostbasedAuthentication=no -o GSSAPIAuthentication=no -o LogLevel=QUIET \
+            "ubuntu@$SERVER_HOST" true 2>/dev/null || true
+          host_key=$(awk 'NF >= 3 {print $2, $3; exit}' "$seen")
+          rm -f "$seen"
+          [ -n "$host_key" ] || { echo "the server showed a login no host key"; exit 1; }
+          pin=$(HOST_KEY="$host_key" python3 .github/scripts/host_key_pin.py)
+          expected=$( (grep -v '^#' .github/server-host-key.pin || true) | tr -d '[:space:]')
+          if [ "$pin" != "$expected" ]; then
+            echo "the server does NOT match the pin (reinstalled, or not our server); its pin: $pin"
+            exit 1
+          fi
+          echo "the server matches the pin"
+          echo "picwise-server $host_key" > ~/.ssh/known_hosts_picwise
+          # The user is OVHcloud's for Ubuntu, written here rather than read from the
+          # SERVER_USER secret: GitHub masks a secret's value all over the log.
+          cat > ~/.ssh/config <<EOF
+          Host picwise
+            HostName $SERVER_HOST
+            HostKeyAlias picwise-server
+            UserKnownHostsFile ~/.ssh/known_hosts_picwise
+            StrictHostKeyChecking yes
+            User ubuntu
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            BatchMode yes
+            ConnectTimeout 15
+            ServerAliveInterval 15
+            ServerAliveCountMax 8
+            LogLevel ERROR
+          EOF
+          chmod 600 ~/.ssh/config
+          # The host name resolves to the address, so it is masked like the address.
+          names=$(ssh -n picwise 'hostname; hostname -f; hostname -I')
+          for name in $names; do echo "::add-mask::$name"; done
+          echo "connected"
+      - name: Send the front door's files
+        run: |
+          ssh picwise 'cat > ~/picwise-web.sh' < deployment/web/web_setup.sh
+          ssh picwise 'cat > ~/picwise-Caddyfile' < deployment/web/Caddyfile
+      - name: Caddy on the server, stopped while the domain points elsewhere; its file checked
+        run: ssh -n picwise 'sudo bash ~/picwise-web.sh install ~/picwise-Caddyfile'
+      - name: Wait for the domain to point at the server
+        id: dns
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        run: |
+          command -v dig > /dev/null || sudo apt-get -q -y install dnsutils > /dev/null
+          # The server's addresses, to compare with the record; never printed.
+          mapfile -t ours < <( {
+            getent ahostsv4 "$SERVER_HOST" | awk '{print $1}'
+            ssh -n picwise "ip -o addr show scope global | awk '{print \$4}' | cut -d/ -f1"
+          } | sort -u)
+          [ "${#ours[@]}" -gt 0 ] || { echo "the server's addresses could not be read"; exit 1; }
+          for address in "${ours[@]}"; do echo "::add-mask::$address"; done
+          is_ours() {
+            local address
+            for address in "${ours[@]}"; do [ "$address" = "$1" ] && return 0; done
+            return 1
+          }
+          # The zone's own name servers, asked directly, so no resolver's memory of the
+          # old record delays the change.
+          mapfile -t servers < <(dig +short NS "$ZONE" | sed 's/\.$//' | sort)
+          [ "${#servers[@]}" -gt 0 ] || { echo "no name servers found for $ZONE"; exit 1; }
+          echo "the name servers of $ZONE: ${servers[*]}"
+          ask() {
+            local server answer
+            for server in "${servers[@]}"; do
+              if answer=$(dig +short +norecurse +time=5 +tries=1 "$1" "$DOMAIN" "@$server" 2> /dev/null); then
+                printf '%s\n' "$answer" | grep -v '^;' || true
+                return 0
+              fi
+            done
+            return 1
+          }
+          # Names end with a dot (an alias, as Vercel's record is); addresses do not.
+          state() {
+            local a4 a6 alias address mine=0 others=0
+            a4=$(ask A) || { echo "no answer from the name servers"; return; }
+            a6=$(ask AAAA) || a6=""
+            alias=$(printf '%s\n' "$a4" | grep '\.$' | head -n 1 | sed 's/\.$//' || true)
+            for address in $(printf '%s\n%s\n' "$a4" "$a6" | grep -v '\.$' | grep -E '^[0-9A-Fa-f:.]+$' || true); do
+              if is_ours "$address"; then mine=$((mine + 1)); else others=$((others + 1)); fi
+            done
+            if [ -n "$alias" ]; then echo "an alias (CNAME) to $alias"
+            elif [ "$mine" -gt 0 ] && [ "$others" = 0 ]; then echo "points at the server"
+            elif [ "$mine" -gt 0 ]; then echo "points at the server and at $others other address(es): the other record must go"
+            elif [ "$others" -gt 0 ]; then echo "points at $others other address(es), not the server"
+            else echo "no record"
+            fi
+          }
+          deadline=$(( $(date +%s) + WAIT_MINUTES * 60 ))
+          last=""
+          while :; do
+            now=$(state)
+            if [ "$now" != "$last" ]; then echo "$(date -u +%H:%M:%S) UTC, $DOMAIN: $now"; last=$now; fi
+            if [ "$now" = "points at the server" ]; then
+              echo "points=yes" >> "$GITHUB_OUTPUT"
+              break
+            fi
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "not pointed at the server within $WAIT_MINUTES minutes: Caddy stays stopped; change the line \"Opened\" and push to wait again"
+              echo "points=no" >> "$GITHUB_OUTPUT"
+              break
+            fi
+            sleep 20
+          done
+      - name: Open the site on the domain
+        if: steps.dns.outputs.points == 'yes'
+        run: ssh -n picwise 'sudo bash ~/picwise-web.sh open ~/picwise-Caddyfile'
+      - name: The site over HTTPS, from outside
+        if: steps.dns.outputs.points == 'yes'
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        run: |
+          # The server reached by its address, whatever this runner's resolver remembers.
+          address=$(getent ahostsv4 "$SERVER_HOST" | awk '{print $1; exit}')
+          [ -n "$address" ] || { echo "the server's address could not be read"; exit 1; }
+          echo "::add-mask::$address"
+          reach=(--resolve "$DOMAIN:443:$address" --resolve "$DOMAIN:80:$address")
+          # The certificate comes within a minute or two of Caddy's start; curl checks it.
+          ok=""
+          for attempt in $(seq 1 40); do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' -m 10 "${reach[@]}" "https://$DOMAIN/health" 2> /dev/null) || code=000
+            if [ "$code" = 200 ]; then
+              echo "HTTPS answers from the server with a valid certificate ($(date -u +%H:%M:%S) UTC, try $attempt)"
+              ok=yes
+              break
+            fi
+            sleep 15
+          done
+          [ -n "$ok" ] || { echo "no answer over HTTPS with a valid certificate in 10 minutes"; exit 1; }
+          echo "the certificate:"
+          echo | openssl s_client -connect "$address:443" -servername "$DOMAIN" 2> /dev/null \
+            | openssl x509 -noout -subject -issuer -dates | sed 's/^/  /'
+          echo "the pages, as a visitor reaching the server gets them:"
+          for path in / /health /robots.txt "/search?q=kettle" /suggest.json /no-such-page; do
+            headers=$(curl -sS -o "$RUNNER_TEMP/page" -D - -m 30 "${reach[@]}" "https://$DOMAIN$path" | tr -d '\r') || headers=""
+            status=$(printf '%s\n' "$headers" | awk 'NR == 1 {print $2}')
+            served_by=$(printf '%s\n' "$headers" | awk 'tolower($1) == "server:" {print $2}')
+            robots=$(printf '%s\n' "$headers" | awk 'tolower($1) == "x-robots-tag:" {print $2}')
+            meta=$(grep -o '<meta name="robots"[^>]*>' "$RUNNER_TEMP/page" | head -n 1 || true)
+            echo "  $path: ${status:-no answer}, $(wc -c < "$RUNNER_TEMP/page") bytes, by ${served_by:-?}${robots:+, X-Robots-Tag $robots}${meta:+, $meta}"
+          done
+          rm -f "$RUNNER_TEMP/page"
+          echo "http:// sends to: $(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' -m 10 "${reach[@]}" "http://$DOMAIN/")"
+          # What this runner's own resolver gives: Caddy is the server, Vercel the old record.
+          echo "as this runner's resolver sees the domain now, it is answered by:" \
+            "$(curl -sS -o /dev/null -D - -m 10 "https://$DOMAIN/health" | tr -d '\r' | awk 'tolower($1) == "server:" {print $2}')"
+      - name: What answers on the server
+        if: always() && steps.connect.outcome == 'success'
+        run: ssh -n picwise 'sudo bash ~/picwise-web.sh status'
+      - name: Remove the files from the server and the key from the runner
+        if: always()
+        run: |
+          if [ -f ~/.ssh/config ]; then ssh -n picwise 'rm -f ~/picwise-web.sh ~/picwise-Caddyfile' || true; fi
+          rm -f ~/.ssh/deploy_key ~/.ssh/config

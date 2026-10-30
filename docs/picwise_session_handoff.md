@@ -1,8 +1,8 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-30 (items 1, 2 and 3
-built and measured, nothing deployed; the site moved to the real server: step 1 prepared,
-the deployment waiting for the owner's «ναι»).
+Current state for whoever picks the project up next. Updated 2026-10-30 (the site moved
+to the real server: items 1-3 deployed to it; HTTPS on picwise.subby.cloud built, waiting
+for the owner's record at Papaki).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
 ## Next conversation (from 2026-10-30): move the site to the real server -- start here
@@ -58,11 +58,48 @@ view", 4) stay as they are.
      night's preparation then also keeps the pool Google may be given from
      (`google_pool.json.gz`). After it: the deployment's own comparison of pages, and
      `server-night.yml` the next morning.
+     **Done (owner's «ναι», 30/10; `0a48f1f` pushed alone with `[skip actions]`, no run;
+     then `2584a8f` alone, run `41046682097`, 11:14-11:29 UTC, success):** the login's
+     first step showed the pinned key; a key scan still the key of 27/10 (pin
+     `59e8bfb6`). Release `20261030T111452Z-2584a8f`; the preparation 751.6 s, peak memory
+     7.9 GB: 527,894 products, 81 shops; the pool Google may be given from 168,710 (25,306
+     a category; none kept the night before, the first night). The site active, its
+     memory 6,212 MB; disk 305 MB used, 191 GB free. Against Vercel: 10 of 15 pages the
+     same, the server failed none; `/`, `/suggest.json`, `/search?q=kettle`,
+     `/private-beta-readiness`, `/prepared.json` differ as expected (the new code, the
+     larger catalogue); 0 of 12 searches show the same cards (the server's catalogue has
+     every shop and the bot's types). Vercel adds `cache-control: public, max-age=0,
+     must-revalidate`, the server none. Vercel also built a preview of the pushed commit
+     (PR #13 is open from this branch to `main`), as for every push since 26/10; the live
+     site was not touched. The owner, asked, did not answer whether to stop the previews.
   3. **The site public on the server: HTTPS and the domain.** A web server in front of
      gunicorn (TLS from Let's Encrypt); the domain of PicWise's own (the owner's to choose
      and to point at the server's address at the registrar; the address never in the
      repository); Vercel's `picwise.subby.cloud` until the switch. By `PROJECT_RULES.md`
      §13: the site's own search stays `noindex`; Search Console from the first day.
+     **The owner (30/10): the domain stays `picwise.subby.cloud`** («domain name subby.cloud
+     και ειναι υποτομεας το picwise μπορει να αλλαξει ονομα αν αντιμετωπισουμε προβλημα»;
+     §8 holds), `subby.cloud` bought at **Papaki**; «Θέλω να βλέπω live το site από το
+     καινούργιο server». They meant to change the name servers: advised not to (they
+     carry the whole `subby.cloud`, the Subby site and its email); only the record
+     `picwise` changes, to an A record with the server's IPv4, typed by the owner at
+     Papaki, never in the chat or a file. **Built:** `deployment/web/Caddyfile` (Caddy in
+     front of gunicorn: the certificate from Let's Encrypt by itself, http:// to https://,
+     HSTS of two years, HTTP/3 off since ufw keeps UDP 443 closed),
+     `deployment/web/web_setup.sh` (`install`: Caddy from Ubuntu's own archive, 2.6.2,
+     whose security updates unattended-upgrades applies; stopped while the domain points
+     elsewhere; the Caddyfile checked by `caddy validate` before anyone touches the DNS;
+     `open`; `status`, the certificate's log lines only, no visitor's address) and
+     `.github/workflows/server-web.yml` (runs on a push of itself or `deployment/web/`;
+     waits up to 60 minutes for the record, asking the zone's own name servers every
+     20 s; then opens the site and checks it over HTTPS from outside: the certificate,
+     the pages and their robots tags, http:// to https://, and who answers the runner's
+     own resolver, Caddy or Vercel). Checked: `actionlint` with shellcheck, clean; dry
+     runs with stand-ins: the wait 7 cases, `web_setup.sh` 13 checks. **The way back:**
+     the old record put back at Papaki (Vercel still serves the site). Left for after the
+     switch: `server-deploy.yml`'s line "nothing on 80 or 443" (editing it deploys);
+     `compare_with_vercel.py` compares with `https://picwise.subby.cloud`, which is then
+     the server itself; Search Console; Vercel's previews and its daily renewal.
   4. Then the shops of another affiliate network.
 - **The owner's rules, unchanged** (the list in "Items 1, 2, 3" below, with nothing on
   `main` without their explicit «ναι», and never a server name, address, host key or link
