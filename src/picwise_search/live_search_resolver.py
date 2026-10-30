@@ -29,6 +29,7 @@ from picwise_providers.state import (
     resolve_search_provider_feed_metadata,
     resolve_search_provider_feed_product_selection,
     resolve_search_provider_feed_recommendation_decision,
+    search_kind_choices,
 )
 
 from .index_resolver_adapter import get_cached_offline_search_index, resolve_query_with_search_index
@@ -117,6 +118,11 @@ class LiveSearchResolution:
     provider_feed_shop_counts: tuple[tuple[str, int], ...] = field(default_factory=tuple)
     # (product id, place in the whole answer by price, 1 = cheapest; equal prices share)
     provider_feed_price_ranks: tuple[tuple[str, int], ...] = field(default_factory=tuple)
+    # A search naming only a general kind ("cable"): the searches that narrow it, the
+    # largest first, and the kind's English name for the question above the results
+    # ("What kind of cable?"; owner, 2026-10-28/29). Empty for every other search.
+    kind_choices: tuple[str, ...] = field(default_factory=tuple)
+    kind_choices_name: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -145,6 +151,9 @@ class LiveSearchResolution:
             "reason_codes": list(self.reason_codes),
             "suggestions": [row.to_dict() for row in self.suggestions],
         }
+        if self.kind_choices:
+            payload["kind_choices"] = list(self.kind_choices)
+            payload["kind_choices_name"] = self.kind_choices_name
         if self.provider_feed_status is not None:
             payload["provider_feed_status"] = self.provider_feed_status
             payload["provider_feed_reason_codes"] = list(self.provider_feed_reason_codes)
@@ -272,14 +281,26 @@ def _query_eligible_for_feed_opportunity_attempt(
     broad_suggestions: tuple[BroadQuerySuggestion, ...],
     blocked_or_unsafe: bool,
     index_reason_codes: tuple[str, ...],
+    kind_understood: bool = False,
 ) -> bool:
+    """Whether the feed is searched for a query no category resolved.
+
+    A word with many of the vocabulary's suggestions is too ambiguous to search, unless
+    the kinds' reading finds it to be a kind's own name, exactly ("chair", "bag",
+    "jacket"): the feed's products of that kind are the answer, and the catalogue asks
+    which one is meant (`kind_choices`; owner, 2026-10-29: one logic for every general
+    word)."""
     if blocked_or_unsafe:
         return False
     if is_unsafe_broad_query(canonicalized_query):
         return False
     if _index_reason_codes_block_feed_opportunity(index_reason_codes):
         return False
-    if offer_broad_suggestions and len(broad_suggestions) >= _HIGHLY_AMBIGUOUS_BROAD_SUGGESTION_COUNT:
+    if (
+        offer_broad_suggestions
+        and len(broad_suggestions) >= _HIGHLY_AMBIGUOUS_BROAD_SUGGESTION_COUNT
+        and not kind_understood
+    ):
         return False
     return True
 
@@ -375,7 +396,8 @@ def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
         needs_review = False
         is_ambiguous_or_invalid = False
         # A query the index judges too broad ("charger": phone, laptop or car?) keeps
-        # its suggestions. Understanding the word does not settle which product.
+        # its suggestions, but the feed is searched for the kind it names, and the
+        # catalogue asks which one is meant where it has several (`kind_choices`).
 
     # No per-category query rewriting: collapsing "power bank 20000mah for iphone" to
     # "power bank" existed only so the manual Amazon matcher would hit, and it threw away
@@ -487,6 +509,9 @@ def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
         broad_suggestions=broad_suggestions,
         blocked_or_unsafe=blocked_or_unsafe,
         index_reason_codes=index_result.reason_codes,
+        # Named exactly: a word read as a kind only by correcting it ("chain" as chair,
+        # "protector" as projector, "tools" as toy) stays with the vocabulary's list.
+        kind_understood=bool(concept_understood and concept_reading.concept_id and concept_reading.exact),
     )
     should_check_provider_feed = bool(
         provider_lookup_key not in _CONNECTED_PROVIDER_BY_CATEGORY
@@ -616,6 +641,8 @@ def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
         # recognised it ("cordless dril") where the concept lexicon did not.
         did_you_mean = suggest_product_names(raw_query)
     understood_concept_name = None
+    kind_choices: tuple[str, ...] = ()
+    kind_choices_name = ""
     if concept_understood:
         concept = get_product_concepts_by_id().get(str(concept_reading.concept_id))
         if concept is not None:
@@ -623,6 +650,19 @@ def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
             understood_concept_name = (
                 concept.greek[0] if greek_query and concept.greek else concept.primary_english
             )
+            if (
+                provider_feed_price_first
+                and provider_feed_selected_products
+                and not concept_reading.filters
+                and not concept_reading.specs
+            ):
+                # The search names only the kind: offer what narrows it. The site is in
+                # English (en-GB, en-US), and so are the choices, worked out from the
+                # shops' English titles.
+                kind_choices = tuple(
+                    choice.text for choice in search_kind_choices().get(concept.concept_id, ())
+                )
+                kind_choices_name = concept.primary_english if kind_choices else ""
     return LiveSearchResolution(
         did_you_mean=did_you_mean,
         understood_concept_id=concept_reading.concept_id if concept_understood else None,
@@ -677,4 +717,6 @@ def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
         provider_feed_cheapest_product_ids=provider_feed_cheapest_product_ids,
         provider_feed_shop_counts=provider_feed_shop_counts,
         provider_feed_price_ranks=provider_feed_price_ranks,
+        kind_choices=kind_choices,
+        kind_choices_name=kind_choices_name,
     )

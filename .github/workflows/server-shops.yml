@@ -1,0 +1,94 @@
+# The shops' catalogues read once now, rather than waiting for the night (03:40 UTC), then
+# the catalogue prepared with what they said (owner's «Ναι», 2026-10-26). The bot is
+# deployment/bot/shop_catalogue_bot.py, run on the server by picwise-shops.service and
+# the preparation by picwise-prepare.service, as each night. Runs when this file is
+# pushed. The repository is public and so is this log: the server's names and addresses
+# are masked, and the bot prints shop names and counts, never an address.
+name: Server shops round
+on:
+  push:
+    branches: [ccr-1361f1a7-dcpo60]
+    paths:
+      - '.github/workflows/server-shops.yml'
+permissions:
+  contents: read
+# Shared with the deployment and the setup, so none of them runs at the same time.
+concurrency:
+  group: server-setup
+  cancel-in-progress: false
+jobs:
+  round:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Connect with the key, check the server's identity, mask its names
+        id: connect
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          # A key pasted on Windows may carry carriage returns, which ssh refuses.
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # The server must show the host key pinned in .github/server-host-key.pin (an
+          # HMAC under the deploy key: .github/scripts/host_key_pin.py), and every
+          # connection below accepts that key only.
+          host_key=$(ssh-keyscan -T 15 -t ed25519 "$SERVER_HOST" 2>/dev/null | awk 'NF >= 3 {print $2, $3; exit}')
+          [ -n "$host_key" ] || { echo "the server gave no host key"; exit 1; }
+          pin=$(HOST_KEY="$host_key" python3 .github/scripts/host_key_pin.py)
+          expected=$( (grep -v '^#' .github/server-host-key.pin || true) | tr -d '[:space:]')
+          if [ "$pin" != "$expected" ]; then
+            echo "the server does NOT match the pin (reinstalled, or not our server); its pin: $pin"
+            exit 1
+          fi
+          echo "the server matches the pin"
+          echo "picwise-server $host_key" > ~/.ssh/known_hosts_picwise
+          # The user is OVHcloud's for Ubuntu, written here rather than read from the
+          # SERVER_USER secret: GitHub masks a secret's value all over the log.
+          cat > ~/.ssh/config <<EOF
+          Host picwise
+            HostName $SERVER_HOST
+            HostKeyAlias picwise-server
+            UserKnownHostsFile ~/.ssh/known_hosts_picwise
+            StrictHostKeyChecking yes
+            User ubuntu
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            BatchMode yes
+            ConnectTimeout 15
+            ServerAliveInterval 15
+            ServerAliveCountMax 8
+            LogLevel ERROR
+          EOF
+          chmod 600 ~/.ssh/config
+          # The host name resolves to the address, so it is masked like the address.
+          names=$(ssh -n picwise 'hostname; hostname -f; hostname -I')
+          for name in $names; do echo "::add-mask::$name"; done
+          echo "connected"
+      - name: Ask the shops, once now
+        run: |
+          started=$(ssh -n picwise 'date -u "+%Y-%m-%d %H:%M:%S"')
+          echo "release in use: $(ssh -n picwise 'basename "$(readlink -f /srv/picwise/current)"')"
+          ssh -n picwise 'sudo systemctl start picwise-shops.service' || echo "the round ended in an error"
+          ssh -n picwise "sudo journalctl -u picwise-shops.service -o cat --no-pager --since '$started UTC'"
+      - name: Prepare the catalogue with what they said
+        run: |
+          started=$(ssh -n picwise 'date -u "+%Y-%m-%d %H:%M:%S"')
+          ssh -n picwise 'sudo systemctl start picwise-prepare.service' \
+            || echo "preparing failed; the site keeps the last prepared file (30 h)"
+          ssh -n picwise "sudo journalctl -u picwise-prepare.service -o cat --no-pager --since '$started UTC'" \
+            | grep -E 'prepare_catalogue|Consumed' | tail -n 3 || true
+          ssh -n picwise 'echo "the shops, every night: $(systemctl list-timers picwise-shops.timer --no-legend | awk "{print \$1, \$2, \$3, \$4}")"'
+      - name: Each shop of the prepared catalogue
+        if: always() && steps.connect.outcome == 'success'
+        run: ssh -n picwise 'sudo cat /srv/picwise/shared/public/prepared.json' | python3 deployment/server/print_shops.py
+      - name: Kinds that may be wrong in the prepared catalogue
+        if: always() && steps.connect.outcome == 'success'
+        run: ssh -n picwise 'sudo cat /srv/picwise/shared/public/prepared.json' | python3 deployment/server/print_kinds.py
+      - name: Remove the key from the runner
+        if: always()
+        run: rm -f ~/.ssh/deploy_key ~/.ssh/config

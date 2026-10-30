@@ -22,7 +22,11 @@ note of what this build prepared: counts, the time, how fresh the feed's listing
 each shop's feed brings in (`picwise_providers.feed_intake`: rows, shown, shown only
 when asked for, held back and why, and what its `product_type` column carries), and per
 kind the products shown as it whose title does not name it (`picwise_providers.kind_check`),
-never the feed's link.
+how often a title alone gives the kind its shelf gives (`title_alone`), what the shops'
+own catalogues and the rows' barcodes gave (`shop_catalogues`,
+`picwise_providers.shop_catalogue`), and how the shown products spread and what a cap
+on a share would cut (`balance`, `picwise_providers.catalogue_balance`), never the
+feed's link.
 """
 from __future__ import annotations
 
@@ -81,7 +85,8 @@ def main(argv: list[str] | None = None) -> int:
         f"prepare_catalogue: {prepared.feed_status.product_count} rows, "
         f"{len(prepared.products)} products a card can show "
         f"({sum(1 for condition in prepared.non_new if not condition)} new), "
-        f"{prepared.shop_count} shops, {len(prepared.suggestions)} suggestions; "
+        f"{prepared.shop_count} shops, {len(prepared.suggestions)} suggestions, "
+        f"{len(prepared.choices)} kinds asking which one is meant; "
         f"{size / 1e6:.1f} MB written to {args.out} in {time.perf_counter() - started:.1f} s"
     )
     if args.static_dir is not None:
@@ -95,6 +100,9 @@ def main(argv: list[str] | None = None) -> int:
                 "freshness": _freshness(prepared),
                 "intake": _intake(),
                 "kinds": _kinds(prepared),
+                "title_alone": _title_alone(prepared),
+                "shop_catalogues": _shop_catalogues(),
+                "balance": _balance(prepared),
             },
         )
     return 0
@@ -126,7 +134,41 @@ def _kinds(prepared) -> dict[str, object]:
     try:
         from picwise_providers.kind_check import measure_kind_titles
 
-        return measure_kind_titles(prepared.products, prepared.kinds)
+        return measure_kind_titles(prepared.products, prepared.kinds, prepared.search_fields or None)
+    except Exception as error:
+        return {"error": _where(error)}
+
+
+def _title_alone(prepared) -> dict[str, object]:
+    """How often a shown product's title alone gives the kind its shelf gives; a failure
+    is only noted."""
+    try:
+        from picwise_providers.kind_check import measure_title_alone
+
+        return measure_title_alone(prepared.products, prepared.search_fields or None)
+    except Exception as error:
+        return {"error": _where(error)}
+
+
+def _shop_catalogues() -> dict[str, object] | None:
+    """What the shops' own catalogues and the rows' barcodes gave the feed's rows
+    (`picwise_providers.shop_catalogue`); a failure here is only noted."""
+    try:
+        from picwise_providers.shop_catalogue import last_shop_catalogue_note
+
+        return last_shop_catalogue_note()
+    except Exception as error:
+        return {"error": _where(error)}
+
+
+def _balance(prepared) -> dict[str, object]:
+    """How the shown products spread over departments, aisles, shops and kinds, and what
+    a cap would cut (`picwise_providers.catalogue_balance`); measured only, and a
+    failure here is only noted."""
+    try:
+        from picwise_providers.catalogue_balance import measure_catalogue_balance
+
+        return measure_catalogue_balance(prepared.products, prepared.kinds)
     except Exception as error:
         return {"error": _where(error)}
 

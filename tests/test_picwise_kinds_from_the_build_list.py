@@ -69,8 +69,12 @@ class KindsOfTheirOwnTests(unittest.TestCase):
         self.assertEqual(_kinds(_BATH_MATS, "Fixturon Shaggy Rug - Cream"), {"rug"})
 
     def test_a_bedspread_is_not_a_duvet(self) -> None:
-        self.assertEqual(_kinds(_QUILTS, "Catherine Lansfield Tilly Floral Bedspread - Blue"), {"bedspread"})
-        self.assertEqual(_kinds(_QUILTS, "Fixturon 10.5 Tog Duvet - King"), {"duvet"})
+        # Both are bedding since 2026-10-26 (owner: «Ναι παίρνω και αυτά τα είδη», a shop's
+        # type "Bedding"), and still not each other.
+        self.assertEqual(
+            _kinds(_QUILTS, "Catherine Lansfield Tilly Floral Bedspread - Blue"), {"bedspread", "bedding"}
+        )
+        self.assertEqual(_kinds(_QUILTS, "Fixturon 10.5 Tog Duvet - King"), {"duvet", "bedding"})
 
     def test_a_dimm_is_ram_on_any_shelf(self) -> None:
         self.assertEqual(

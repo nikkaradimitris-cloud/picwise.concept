@@ -1,0 +1,92 @@
+# One look at the shops whose rows a search could show but for a category (owner,
+# 2026-10-26: «ναι, ξεκίνα τη δοκιμή στα 56 καταστήματα»): does each publish its
+# catalogue for machines, and does that catalogue say what each product is? The work
+# is deployment/bot/shop_catalogue_test.py, run on the server, as the site's user and
+# from the server's own address: per shop its robots.txt, then at most three requests
+# it allows, a few seconds apart; never an Awin link. It changes nothing on the server.
+#
+# On each push to the working branch that changes the script or this file. The
+# repository is public and so is this log: the server's names and addresses are
+# masked; the shops' hosts, types and collection names are printed, never a whole
+# address.
+name: Server shop test
+on:
+  push:
+    branches: [claude/bold-allen-ljj9d7]
+    paths:
+      - '.github/workflows/server-shop-test.yml'
+      - 'deployment/bot/shop_catalogue_test.py'
+permissions:
+  contents: read
+# Shared with server-setup.yml and server-deploy.yml: never while the server is set up
+# or a release deployed.
+concurrency:
+  group: server-setup
+  cancel-in-progress: false
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Connect with the key, check the server's identity, mask its names
+        id: connect
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          # A key pasted on Windows may carry carriage returns, which ssh refuses.
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # The server must show the host key pinned in .github/server-host-key.pin (an
+          # HMAC under the deploy key: .github/scripts/host_key_pin.py), and every
+          # connection below accepts that key only, so the secrets sent can only reach it.
+          host_key=$(ssh-keyscan -T 15 -t ed25519 "$SERVER_HOST" 2>/dev/null | awk 'NF >= 3 {print $2, $3; exit}')
+          [ -n "$host_key" ] || { echo "the server gave no host key"; exit 1; }
+          pin=$(HOST_KEY="$host_key" python3 .github/scripts/host_key_pin.py)
+          expected=$( (grep -v '^#' .github/server-host-key.pin || true) | tr -d '[:space:]')
+          if [ "$pin" != "$expected" ]; then
+            echo "the server does NOT match the pin (reinstalled, or not our server); its pin: $pin"
+            exit 1
+          fi
+          echo "the server matches the pin"
+          echo "picwise-server $host_key" > ~/.ssh/known_hosts_picwise
+          # The user is OVHcloud's for Ubuntu, written here rather than read from the
+          # SERVER_USER secret: GitHub masks a secret's value all over the log.
+          cat > ~/.ssh/config <<EOF
+          Host picwise
+            HostName $SERVER_HOST
+            HostKeyAlias picwise-server
+            UserKnownHostsFile ~/.ssh/known_hosts_picwise
+            StrictHostKeyChecking yes
+            User ubuntu
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            BatchMode yes
+            ConnectTimeout 15
+            ServerAliveInterval 15
+            ServerAliveCountMax 8
+            LogLevel ERROR
+          EOF
+          chmod 600 ~/.ssh/config
+          # The host name resolves to the address, so it is masked like the address.
+          names=$(ssh -n picwise 'hostname; hostname -f; hostname -I')
+          for name in $names; do echo "::add-mask::$name"; done
+          echo "connected"
+      - name: Ask the shops, once
+        run: |
+          # The script from stdin, in a unit of its own with its own limits; the site's
+          # code (the release in use) on its path, and the feed's copy the preparation
+          # downloaded, so no key is needed.
+          ssh picwise 'sudo systemd-run --quiet --wait --pipe --collect \
+            -p User=picwise -p Group=picwise -p WorkingDirectory=/srv/picwise/current \
+            -p Environment=PYTHONPATH=/srv/picwise/current/src -p Environment=PYTHONDONTWRITEBYTECODE=1 \
+            -p Nice=10 -p MemoryHigh=3G -p MemoryMax=4G -p RuntimeMaxSec=40min \
+            -p NoNewPrivileges=yes -p ProtectSystem=strict -p ProtectHome=yes -p PrivateTmp=yes \
+            /usr/bin/python3 -' < deployment/bot/shop_catalogue_test.py
+      - name: Remove the key from the runner
+        if: always()
+        run: rm -f ~/.ssh/deploy_key ~/.ssh/config
