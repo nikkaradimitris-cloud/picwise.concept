@@ -198,6 +198,13 @@ class BuiltChoicesTests(unittest.TestCase):
             + [("Fixturon Thermal Socks", "", {"socks"})] * 30
             + [("Fixturon Cotton Socks", "", {"socks"})] * 25
             + [("Fixturon Thermal Gloves", "", {"gloves"})] * 50
+            # "Diamond Bracelet" names the kind with "diamond" alone: a diamond tennis
+            # bracelet is a tennis bracelet, though "diamond tennis" comes before
+            # necklaces too.
+            + [("Fixturon Diamond Tennis Bracelet", "", {"bracelet"})] * 25
+            + [("Fixturon Diamond Bracelet", "", {"bracelet"})] * 20
+            + [("Fixturon Silver Link Bracelet", "", {"bracelet"})] * 10
+            + [("Fixturon Diamond Tennis Necklace", "", {"necklace"})] * 5
         )
 
     def _products(self, rows: list[tuple[str, str, set[str]]]) -> list[ProviderProduct]:
@@ -219,6 +226,31 @@ class BuiltChoicesTests(unittest.TestCase):
         self.assertEqual(choices["cable"], ["coaxial cable", "hdmi cable"])
         self.assertEqual(choices["necklace"], ["cross pendant", "initial necklace"])
         self.assertEqual(choices["socks"], ["thermal socks", "cotton socks"])
+        self.assertEqual(choices["bracelet"], ["tennis bracelet", "diamond bracelet"])
+
+    def test_a_shelf_naming_one_word_before_the_noun(self) -> None:
+        # Network cables named "Cat6" and "Cat5e" by their titles, and by their shelves; a
+        # shelf the search cannot read ("Ethernet Cables" in no field it searches) is none.
+        rows = (
+            [("Fixturon Cat6 Cable 5m", "Electronics > Cables > Network Cables", {"cable"})] * 25
+            + [("Fixturon Cat5e Cable 2m", "Electronics > Cables > LAN Cables", {"cable"})] * 25
+            + [("Fixturon HDMI Cable 2m", "Electronics > Cables > Audio & Video Cables", {"cable"})] * 25
+            + [("Fixturon Cat7 Cable 1m", "Electronics > Cables > Ethernet Cables", {"cable"})] * 25
+        )
+        products = [
+            # The shop's own type names the shelf, except for the Cat7 cables.
+            product if "Cat7" in product.title else replace(
+                product, raw={**product.raw, "product_type": product.category_text.split(" > ")[-1]}
+            )
+            for product in _two_shops(rows)
+        ]
+        kinds = [row_kinds for _t, _c, row_kinds in rows]
+        built = kind_choices.build_kind_choices(products, kinds)
+        self.assertEqual([choice.text for choice in built["cable"]], ["hdmi cable", "lan cables", "network cables"])
+        considered = {row.text: row.outcome for row in kind_choices.kind_choice_candidates(products, kinds)["cable"]}
+        self.assertEqual(considered["ethernet cables"], kind_choices.FINDS_NONE)
+        rules = kind_choices.CHOICE_RULES - {kind_choices.RULE_SHELVES}
+        self.assertNotIn("cable", kind_choices.build_kind_choices(products, kinds, rules=rules))
 
     def test_why_each_was_left_out(self) -> None:
         rows = self._rows()
