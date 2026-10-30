@@ -4,7 +4,9 @@
 the server's file (owner, 2026-10-27: measure first). Pinned here: a prepared file
 written by this code is read and measured (the categories over the cap, the largest
 after it, the kinds inside, the shops, the clean signs), a file written by other code is
-measured too, an unreadable one says so, and every case exits 0.
+measured too, an unreadable one says so, and every case exits 0; the next night, the
+pool kept as its starting point, keeps the same pool on the same products (owner,
+2026-10-30: the cap chooses the pool Google may be given from).
 
 Every row is local test data: fictional brands and shops, `.invalid` addresses.
 """
@@ -87,6 +89,12 @@ class PrintCapTests(unittest.TestCase):
         self.assertIn("ring", out)
         self.assertIn("Fictional Rings", out)
         self.assertIn("with all of an identity, an image", out)
+        # The next night, the pool its starting point, keeps the same pool (owner,
+        # 2026-10-30: the cap chooses the pool Google may be given from).
+        self.assertRegex(
+            out,
+            r"the next night, the pool kept as its starting point, on the same products: ([\d,]+) kept, \1 of them the same",
+        )
         self.assertNotIn("shop.invalid", out)
 
     def test_a_file_written_by_other_code_is_measured_too(self) -> None:

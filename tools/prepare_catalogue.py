@@ -6,8 +6,11 @@
 
 Reads the configured feed (`AWIN_FEED_URL` or `AWIN_FEED_FILE`), or the file given,
 judges it as a search does and writes `prepared/catalogue.json.gz`
-(`src/picwise_providers/prepared_catalogue.py`). It prints counts and sizes, never the
-feed's link, which carries the account's API key.
+(`src/picwise_providers/prepared_catalogue.py`). Beside it, the pool Google may be given
+from (`google_pool.json.gz`, `picwise_providers.catalogue_cap`; owner, 2026-10-30): no
+category over 15% of it, the night before's pool its starting point; every product stays
+in the search. It prints counts and sizes, never the feed's link, which carries the
+account's API key.
 
 `--keep-going` is for a deployment's build (`vercel.json`): when the feed cannot be read,
 or preparing it fails, it says so and exits 0, writing nothing, and the server then
@@ -24,9 +27,10 @@ when asked for, held back and why, and what its `product_type` column carries), 
 kind the products shown as it whose title does not name it (`picwise_providers.kind_check`),
 how often a title alone gives the kind its shelf gives (`title_alone`), what the shops'
 own catalogues and the rows' barcodes gave (`shop_catalogues`,
-`picwise_providers.shop_catalogue`), and how the shown products spread and what a cap
-on a share would cut (`balance`, `picwise_providers.catalogue_balance`), never the
-feed's link.
+`picwise_providers.shop_catalogue`), how the shown products spread and what a cap on a
+share would cut (`balance`, `picwise_providers.catalogue_balance`), and how many the
+pool Google may be given from holds (`google_pool`), never the feed's link nor a row's
+id.
 """
 from __future__ import annotations
 
@@ -81,6 +85,7 @@ def main(argv: list[str] | None = None) -> int:
         print("prepare_catalogue: the feed could not be read; nothing written")
         _write_static_note(args.static_dir, {"prepared": False, "reason": "feed_not_readable"})
         return 0 if args.keep_going else 1
+    pool = _google_pool(prepared, args.out)
     print(
         f"prepare_catalogue: {prepared.feed_status.product_count} rows, "
         f"{len(prepared.products)} products a card can show "
@@ -89,6 +94,14 @@ def main(argv: list[str] | None = None) -> int:
         f"{len(prepared.choices)} kinds asking which one is meant; "
         f"{size / 1e6:.1f} MB written to {args.out} in {time.perf_counter() - started:.1f} s"
     )
+    if "error" in pool:
+        print(f"prepare_catalogue: the pool Google may be given from failed ({pool['error']}); the night before's is kept")
+    else:
+        print(
+            f"prepare_catalogue: the pool Google may be given from: {pool['kept']:,} of {pool['products']:,} products"
+            f" (at most {pool['size'] if pool['size'] is not None else 'all'} a category, {pool['share']:.0%}),"
+            f" {pool['kept_from_before']:,} of them kept the night before; every product stays in the search"
+        )
     if args.static_dir is not None:
         _write_static_note(
             args.static_dir,
@@ -103,9 +116,44 @@ def main(argv: list[str] | None = None) -> int:
                 "title_alone": _title_alone(prepared),
                 "shop_catalogues": _shop_catalogues(),
                 "balance": _balance(prepared),
+                "google_pool": pool,
             },
         )
     return 0
+
+
+def _google_pool(prepared, out: Path) -> dict[str, object]:
+    """The pool Google may be given from (owner, 2026-10-30: every product stays in the
+    search; `picwise_providers.catalogue_cap`): no category over 15% of it, worked out
+    from every product a card can show with the night before's pool as its starting
+    point, and kept beside the prepared file for the next night. A failure here keeps
+    the night before's pool and is only noted."""
+    try:
+        from picwise_providers.catalogue_cap import (
+            cap_catalogue,
+            google_pool_path,
+            read_google_pool,
+            write_google_pool,
+        )
+
+        path = google_pool_path(out)
+        result = cap_catalogue(
+            prepared.products,
+            prepared.kinds,
+            feed_ctx=prepared.availability_context,
+            kept_before=read_google_pool(path),
+        )
+        write_google_pool(result, path, prepared_at=prepared.prepared_at)
+    except Exception as error:
+        return {"error": _where(error)}
+    return {
+        "share": result.share,
+        "size": result.size,
+        "products": len(result.keep),
+        "kept": result.kept,
+        "kept_from_before": result.kept_from_before,
+        "over": sorted(result.inside),
+    }
 
 
 def _freshness(prepared) -> dict[str, object]:
