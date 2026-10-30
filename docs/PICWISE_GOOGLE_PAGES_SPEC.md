@@ -17,6 +17,11 @@ rules are read again at the source: Google changes them.
   λέξεις-κλειδιά τις αντιστοιχίζει η ίδια η Google σε αυτές τις σελίδες.
 - Η Google βλέπει μόνο σελίδες που περνούν έλεγχο ποιότητας. Οι υπόλοιπες υπάρχουν για
   τους επισκέπτες, αλλά λένε στη Google να μην τις καταχωρίσει.
+- Κανόνας του ιδιοκτήτη (29/10, `PROJECT_RULES.md` §13): το PicWise στήνεται ολόκληρο,
+  και όλα τα προϊόντα βρίσκονται στη δική μας αναζήτηση. Στη Google δίνουμε τμηματικά
+  μόνο όσα διαλέγει ο ιδιοκτήτης και περνούν το όριο του είδους τους: αρκετά προϊόντα,
+  από αρκετά καταστήματα, ελεγμένα. Ένα είδος μπορεί να έχει 15.000 προϊόντα στην
+  αναζήτηση και η Google να βλέπει τις σελίδες 100 ελεγμένων.
 - Τρία είδη σελίδων: η σελίδα λέξης-κλειδιού (4 προϊόντα, σύγκριση, τιμές), η σελίδα
   προϊόντος από πολλά καταστήματα (όλες οι τιμές) και η σελίδα προϊόντος από ένα
   κατάστημα (ελεγμένο κείμενο AI, παρόμοια προϊόντα).
@@ -80,11 +85,15 @@ The order for `/search` matters. A page blocked by `robots.txt` is never fetched
 Google never sees its `noindex` and can still index the bare address. So `noindex`
 comes first, and `Disallow` only after Google has dropped those pages.
 
-**The gate**, for every page type:
+**The gate**, for every page type (and `PROJECT_RULES.md`, section 13, owner, 2026-10-29:
+built whole, given to Google part by part, the parts the owner chooses):
 
 - real data only;
 - at least 4 products of the kind on a list page
   (`docs/pickwise_roadmap_step6_quality_index_gate.md`);
+- the kind's bar: enough products, from enough shops, read as the right kind and
+  checked (kind, price, stock); the numbers are the owner's to set (TODO);
+- a part of the site the owner has chosen to open;
 - a set of products of its own;
 - no adult products (the feed's `adult` column);
 - for a product page, the conditions of its section below.
@@ -259,7 +268,8 @@ the plan's limit, with an alert at 70%.
 
 ## 9. Release in batches
 
-Pages reach Google in batches. First a small batch, a few hundred pages of one kind.
+Pages reach Google in batches, each one the owner chooses (`PROJECT_RULES.md`, section
+13). First a small batch, a few hundred pages of one kind.
 Then Search Console is read before the next batch goes out: pages indexed or refused,
 impressions, clicks.
 
