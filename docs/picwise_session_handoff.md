@@ -1,7 +1,7 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-29 (items 1 and 2 built
-and measured, nothing deployed).
+Current state for whoever picks the project up next. Updated 2026-10-30 (items 1 and 2 built
+and measured, nothing deployed; item 3 next).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
 ## Next conversation (from 2026-10-28): finish 1, 2, 3 -- start here
@@ -51,12 +51,13 @@ public, so no server name, address, host key or link in a log or a file.
    phrases, one shop's words, choices that keep almost the whole kind); good choices
    lost because the search reads "pendant light" as every lamp. The owner (29/10): «εσύ
    πρέπει να αποφασίσεις ποιος είναι ο βέλτιστος τρόπος»: the order is chosen here.
-   **Built, tested, not yet measured on the server** (section below, "After the
-   buyer's view"): a kind's own name reaches the feed; four rules keep the choices true.
-   The push to the work branch was refused twice by the session's permission mode
-   ("Auto" classes a push to the deployment's branch as a deployment, `[skip actions]`
-   notwithstanding); the owner switches to "Accept edits" to approve it. The commits
-   wait, in the work branch's order, on the local branch `work-linear`.
+   **Built and measured five times on 30/10, nothing deployed** (section below, "After
+   the buyer's view"): a kind's own name reaches the feed ("chair", "bag", "jacket",
+   "charger", "bicycle", "shorts"); seven rules keep the choices true; on the catalogue
+   of 30/10 41 kinds ask, «καλώδιο» with "extension cable, charging cable, hdmi cable,
+   audio cable, braided cable, data cable, network cables". A push to the work branch
+   needs the session in "Accept edits": "Auto" classes it as a deployment, `[skip
+   actions]` notwithstanding (refused twice on 29/10; the owner switched on 30/10).
 3. **The cap of 15% applied:** `catalogue_cap.cap_catalogue(..., kept_before=...)` is
    built and measured (run `40762760684`: 164,144 kept, at most 24,621 a category), not
    called. To do: the nightly preparation (`tools/prepare_catalogue.py` ->
@@ -177,39 +178,72 @@ measuring it on the server's catalogue the same way as item 1; then «Ναι π�
   night with the catalogue, in English; measured on the server's catalogue again before
   any deployment. Done the same day (above).
 
-### After the buyer's view (29/10, the order chosen here; built, not yet measured)
+### After the buyer's view (29-30/10, the order chosen here): built, measured, not deployed
 
-1. **A kind's own name reaches the feed** (`63ccfda`/`2d4ea2e`): a one-word search with
-   5 or more of the vocabulary's suggestions that the kinds' reading finds to be a
-   kind's own name, exactly (`ConceptReading.exact`), is searched in the feed like
-   "cable", and the catalogue asks; a word read as a kind only by correcting it keeps
-   the list alone: "chain" reads as chair, "protector" as projector, "tools" as toy,
-   "portable" as a game table, "workshop" as safety shoes (54 words have 5+ suggestions;
-   8 are kinds named exactly: bag, bicycle, chair, charger, jacket, phone and the plurals).
+The owner (29/10): «εσύ πρέπει να αποφασίσεις ποιος είναι ο βέλτιστος τρόπος». Each step
+measured on a copy of the server's catalogue of 30/10 (527,911 products) before the next:
+runs `41028398470`, `41031539622`, `41034288478`, `41036545617`, `41038004324`
+(`deployment/server/print_choice_rules.py`: what each rule leaves out and lets in on
+its own; `print_search_choices.py`: what a buyer would see).
+
+1. **A kind's own name reaches the feed** (`2d4ea2e`, `f25284a`): a one-word search the
+   kinds' reading finds to be a kind's own name, exactly (`ConceptReading.exact`), is
+   searched in the feed whatever the vocabulary suggests (5+ suggestions stopped it) and
+   however close the index sets it to another word ("shorts" near "short"; the three
+   such names: shorts, cot, doll); the catalogue asks where it has several kinds of it.
+   A word read as a kind only by correcting it keeps the vocabulary's list alone:
+   "chain" reads as chair, "protector" as projector, "tools" as toy, "bots" as boots.
    Where the feed's products show, the older "too broad" list no longer replaces the
    page's note (`picwise_app.app`); it stays for a broad word with nothing to show. The
    tests of stages 8b and 8c that pinned "charger" to the list now pin "protector",
-   "chain" and "tools" to it and "charger" to the feed.
-2. **Four rules keep the choices true** (`cd841b1`/`f23c029`, `kind_choices.CHOICE_RULES`,
-   each can be left out): a choice by the words is named so by 2 shops or more
-   (`RULE_SHOPS`); a word mostly after a number, or after a word the two make one
-   modifier with before other nouns too, is read whole, "3 piece suit", "slim fit suit",
-   while "velvet dining" comes before no other noun and a velvet dining chair stays a
-   dining chair (`RULE_PHRASES`); no choice whose search keeps 80% of the kind, counted
-   as the price-first search reads a word (`RULE_WHOLE_KIND`; "diamond" must come before
-   "ring", one word between at most); the noun as the titles write it, "bootcut jeans",
-   which the search reads, not "bootcut jean", which it does not (`RULE_WRITTEN`).
-   `deployment/server/print_choice_rules.py` (a step of `server-cap.yml`) prints what
-   each rule leaves out and lets in on its own, then every general kind's choices with
-   what each one's search keeps. Tests: `tests/test_picwise_kind_choices.py` (11),
-   `tests/test_picwise_server_print_choice_rules.py` (2); the 31 modules through the
+   "chain" and "tools" to it and "charger" to the feed. Measured: chair 1,867 products,
+   bag 843, jacket 1,006, charger 126, bicycle 92, shorts 690 (none before).
+2. **The rules that keep the choices true** (`kind_choices.CHOICE_RULES`, each can be
+   left out; the module's docstring says each with the run that showed why):
+   - `RULE_SHOPS`: a choice by the words is named so by 2 shops, or its word is used by
+     other shops before some noun; one shop's own words go ("robertson hoodie", "eng
+     ring", "remount ring", "do tee", "cup shirt"). Asking 2 shops of the phrase itself
+     (first run) also lost "lan cable", "thermal socks", "barrel sauna", "qhd monitor".
+   - `RULE_PHRASES`: a word three quarters of whose titles put a number, or a word the
+     two make one modifier with before other nouns too, before it is read whole ("3
+     piece suit", "3 seater sofa", "long sleeve shirt", "bean bag chair", "straight leg
+     trousers"), unless that word names the kind alone too ("Diamond Bracelet": a
+     diamond tennis bracelet is a tennis bracelet). The second run's reading (any word
+     mostly after the same few) made one shop's lines choices ("britain unisex hoodie").
+   - `RULE_WHOLE_KIND`: no choice whose search keeps 90% of the kind ("diamond ring",
+     139,693 of 141,636 rings).
+   - `RULE_WRITTEN`: the noun as the titles write it ("bootcut jeans", which the search
+     reads; "bootcut jean" it does not).
+   - `RULE_SAME_SEARCH`: no two choices the search reads the same ("diamond cross
+     pendant", "diamond cross necklace").
+   - `RULE_SHELVES`: a shop's narrowest shelf naming one word before the kind's noun is
+     a choice too ("Network Cables": the owner's «καλώδιο ίντερνετ», named "LAN",
+     "Cat6", "Ethernet" by titles, none from 20 of two shops); a shelf of two shelves
+     ("Charms & Pendants") is none.
+   - Every choice is weighed by what its own search keeps of the kind (as the
+     price-first search reads its words, `_KindSearch`), from 20 ("End Tables" stood on
+     800 products and its search found 7), the largest first, at most 8 (six left
+     "network cables" seventh).
+3. **What a buyer would see (run `41038004324`):** 41 kinds ask. Cable: extension cable,
+   charging cable, hdmi cable, audio cable, braided cable, data cable, network cables.
+   Socks: thermal, bamboo, cotton, wool, hiking, grip, bed socks. Bracelet: diamond,
+   tennis, link, chain, station, halo. Sofa: 3 seater, sofa bed, 2 seater, corner,
+   recliner, chesterfield. Chair: velvet, office, dining, back, gaming, bean bag, swivel,
+   bar. Every choice of every kind finds products of its kind. The box: 1,892
+   suggestions, 171 choices, 35 KB. Left as they are, each small: the jeweller's own
+   words on rings ("color rings", "fashion ring", "center ring", "cut ring"), "size bed",
+   "back chair", "2 edition trainers", "shape earrings", "letter bracelet" (its search
+   finds 11), "chesterfield sofa" (14).
+4. **Found on the way, not fixed (each to measure, the owner told first):** English
+   words read as other kinds: "skinny jeans" reads as a tent ("skinny" as the greeklish
+   σκηνή, ahead of the English "jeans"), "patch cables" as insoles; a title naming its
+   kind only by a weak name reads as no kind even on a shelf naming it ("Diamond Ring",
+   "Emerald Ring", "Ruby Ring" on a Rings shelf; "Gold Ring" reads); "pendant light",
+   "ceiling light", "mirrorless camera", "engagement ring" search as the whole kind.
+5. Tests: `tests/test_picwise_kind_choices.py` (14), `tests/test_picwise_kind_choices_on_the_page.py`
+   (10), `tests/test_picwise_server_print_choice_rules.py` (2),
+   `tests/test_picwise_server_print_search_choices.py` (2); the 31 modules through the
    resolver and the choices pass.
-3. **Found on the way, not fixed (each to measure, the owner told first):** "skinny
-   jeans" reads as a tent ("skinny" as the greeklish σκηνή, ahead of the English
-   "jeans"); a title naming its kind only by a weak name reads as no kind even on a
-   shelf naming it ("Diamond Ring", "Emerald Ring", "Ruby Ring" on a Rings shelf; "Gold
-   Ring" reads); "pendant light", "ceiling light", "mirrorless camera" search as the
-   whole kind.
 
 ## Now (2026-10-29): item 1, the engagement rings
 
