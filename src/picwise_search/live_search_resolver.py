@@ -265,8 +265,13 @@ def _safe_confidence(value: Any) -> float:
     return round(score, 2)
 
 
-def _index_reason_codes_block_feed_opportunity(reason_codes: tuple[str, ...]) -> bool:
-    blocked_markers = ("homograph", "unsafe", "blocked")
+def _index_reason_codes_block_feed_opportunity(
+    reason_codes: tuple[str, ...], *, kind_understood: bool = False
+) -> bool:
+    """Whether the index's reasons keep the feed unsearched. A word the index finds close
+    to another ("shorts" and "short") is searched when it is a kind's own name, exactly;
+    an unsafe or blocked one never is."""
+    blocked_markers = ("unsafe", "blocked") if kind_understood else ("homograph", "unsafe", "blocked")
     for code in reason_codes:
         lowered = str(code).lower()
         if any(marker in lowered for marker in blocked_markers):
@@ -285,16 +290,17 @@ def _query_eligible_for_feed_opportunity_attempt(
 ) -> bool:
     """Whether the feed is searched for a query no category resolved.
 
-    A word with many of the vocabulary's suggestions is too ambiguous to search, unless
-    the kinds' reading finds it to be a kind's own name, exactly ("chair", "bag",
-    "jacket"): the feed's products of that kind are the answer, and the catalogue asks
-    which one is meant (`kind_choices`; owner, 2026-10-29: one logic for every general
-    word)."""
+    A word with many of the vocabulary's suggestions, or one the index finds close to
+    another word, is too ambiguous to search, unless the kinds' reading finds it to be a
+    kind's own name, exactly ("chair", "bag", "jacket"; "shorts", which the index sets
+    near "short"): the feed's products of that kind are the answer, and the catalogue
+    asks which one is meant (`kind_choices`; owner, 2026-10-29: one logic for every
+    general word)."""
     if blocked_or_unsafe:
         return False
     if is_unsafe_broad_query(canonicalized_query):
         return False
-    if _index_reason_codes_block_feed_opportunity(index_reason_codes):
+    if _index_reason_codes_block_feed_opportunity(index_reason_codes, kind_understood=kind_understood):
         return False
     if (
         offer_broad_suggestions
