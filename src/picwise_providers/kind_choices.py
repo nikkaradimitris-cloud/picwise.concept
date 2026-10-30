@@ -390,7 +390,8 @@ def measure_kind_choices(
 @dataclass(frozen=True)
 class KindChoice:
     """One choice a search for a general kind offers: the words of a search that narrows
-    it, and how many of the kind's products had them when the choices were worked out."""
+    it, and how many of the kind's products that search kept when the choices were
+    worked out."""
 
     text: str
     products: int
@@ -418,7 +419,7 @@ CHOICE_RULES = frozenset(
 MIN_SHOPS = 2
 # A word is half of a phrase when this share of its titles put before it a number ("3
 # Piece Suit") or a word the two make one modifier with (`_KindGroups.compounds`).
-HALF_PHRASE_SHARE = 0.5
+HALF_PHRASE_SHARE = 0.75
 # No choice whose search keeps this share of its kind.
 KEEPS_SHARE = 0.9
 
@@ -430,7 +431,7 @@ FEW_SHOPS = f"one shop's own word: named so by fewer than {MIN_SHOPS} shops, and
 HALF_PHRASE = "half of a phrase"
 WHOLE_KIND = f"its search keeps {KEEPS_SHARE:.0%} of the kind or more"
 SAME_SEARCH = "searched as a larger choice is"
-FINDS_NONE = "its search finds none of the kind"
+FINDS_FEW = f"its search finds fewer than {MIN_GROUP} of the kind"
 BEYOND = f"beyond the {CHOICES_OFFERED} offered"
 
 
@@ -451,6 +452,9 @@ def _shelf_choice(shelf: str, nouns: Collection[str]) -> str:
     """A shop's narrowest shelf as a choice, as the shelf writes it, when it names one word
     before the kind's noun: "network cables" for "Network Cables"; "" for any other shelf
     ("Audio & Video Cables", "Cables", "Ceiling Light Fixtures")."""
+    # "Charms & Pendants", "Coats & Jackets" are two shelves in one.
+    if any(mark in shelf for mark in ("&", ",", "/", "+")) or " and " in shelf.lower():
+        return ""
     words = normalize_understanding_text(shelf).split()
     if len(words) != 2 or _singular(words[1]) not in nouns:
         return ""
@@ -565,11 +569,12 @@ def kind_choice_candidates(
     rules: Collection[str] = CHOICE_RULES,
 ) -> dict[str, tuple[ChoiceCandidate, ...]]:
     """Per kind of at least `MIN_PRODUCTS` products, every choice it could offer and what
-    became of it, the largest first: its narrower kinds (named as the lexicon first names
-    them) and the words its titles name it with, from `MIN_GROUP` products each, kept
-    while the search reads them as narrowing it (`_narrows`) and by the `rules` (module
-    docstring), at most `CHOICES_OFFERED`. `fields`, when given, are the products'
-    search fields, in order."""
+    became of it: its narrower kinds (named as the lexicon first names them), the words
+    its titles name it with and its shelves, from `MIN_GROUP` products each, kept while
+    the search reads them as narrowing it (`_narrows`), its own search keeps `MIN_GROUP`
+    of the kind or more, and by the `rules` (module docstring); at most
+    `CHOICES_OFFERED`, the largest by what that search keeps first. `fields`, when given,
+    are the products' search fields, in order."""
     groups, _generic_words = _kind_groups(products, kinds)
     return choice_candidates_of(groups, products, kinds, fields, rules=rules)
 
@@ -622,36 +627,47 @@ def choice_candidates_of(
                 if text and count >= MIN_GROUP:
                     consider(text, count, "", None)
         search: _KindSearch | None = None
-        rows: list[ChoiceCandidate] = []
-        offered = 0
-        searches: set[tuple] = set()
-        for text, (count, outcome, shops) in sorted(candidates.items(), key=lambda item: (-item[1][0], item[0])):
+        # What each choice's own search keeps of the kind, for those still open; the
+        # largest of those, by what the buyer would find, are offered.
+        judged: list[list] = []
+        for text, (count, outcome, shops) in candidates.items():
             found = None
-            if not outcome and offered >= CHOICES_OFFERED:
-                outcome = BEYOND
             if not outcome and not _narrows(text, kind):
                 outcome = NOT_NARROWING
-            if not outcome and RULE_SAME_SEARCH in rules:
-                # "diamond cross pendant" and "diamond cross necklace" are one search: a
-                # necklace with "diamond" and "cross".
-                same = _search_key(text)
-                if same in searches:
-                    outcome = SAME_SEARCH
-                searches.add(same)
             if not outcome:
                 if search is None:
                     search = _KindSearch(kind, group.rows, kinds, fields_of)
                 found = search.found(text)
-                if found == 0:
-                    # A shelf's words may be in no field the search reads.
-                    outcome = FINDS_NONE
+                if found < MIN_GROUP:
+                    # A shelf's words may be in no field the search reads ("End Tables"
+                    # on 800 products, the search finding 7).
+                    outcome = FINDS_FEW
                 elif RULE_WHOLE_KIND in rules and found >= KEEPS_SHARE * group.products:
                     outcome = WHOLE_KIND
-            if not outcome:
-                outcome = OFFERED
-                offered += 1
-            rows.append(ChoiceCandidate(text=text, products=count, found=found, outcome=outcome, shops=shops))
-        considered[kind] = tuple(rows)
+            judged.append([text, count, found, outcome, shops])
+        judged.sort(key=lambda row: (bool(row[3]), -(row[2] or 0), -row[1], row[0]))
+        offered = 0
+        searches: set[tuple] = set()
+        for row in judged:
+            if row[3]:
+                continue
+            if RULE_SAME_SEARCH in rules:
+                # "diamond cross pendant" and "diamond cross necklace" are one search: a
+                # necklace with "diamond" and "cross".
+                same = _search_key(row[0])
+                if same in searches:
+                    row[3] = SAME_SEARCH
+                    continue
+                searches.add(same)
+            if offered >= CHOICES_OFFERED:
+                row[3] = BEYOND
+                continue
+            row[3] = OFFERED
+            offered += 1
+        considered[kind] = tuple(
+            ChoiceCandidate(text=text, products=count, found=found, outcome=outcome, shops=shops)
+            for text, count, found, outcome, shops in judged
+        )
     return considered
 
 
@@ -667,7 +683,9 @@ def build_kind_choices(
     them."""
     offered: dict[str, tuple[KindChoice, ...]] = {}
     for kind, rows in kind_choice_candidates(products, kinds, fields, rules=rules).items():
-        kept = tuple(KindChoice(text=row.text, products=row.products) for row in rows if row.outcome == OFFERED)
+        kept = tuple(
+            KindChoice(text=row.text, products=row.found or row.products) for row in rows if row.outcome == OFFERED
+        )
         if len(kept) >= MIN_CHOICES:
             offered[kind] = kept
     return offered

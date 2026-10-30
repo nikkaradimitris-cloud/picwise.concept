@@ -226,7 +226,9 @@ class BuiltChoicesTests(unittest.TestCase):
         self.assertEqual(choices["cable"], ["coaxial cable", "hdmi cable"])
         self.assertEqual(choices["necklace"], ["cross pendant", "initial necklace"])
         self.assertEqual(choices["socks"], ["thermal socks", "cotton socks"])
-        self.assertEqual(choices["bracelet"], ["tennis bracelet", "diamond bracelet"])
+        # The largest by what each one's search finds: "diamond" before "bracelet", one
+        # word between at most, in 45 bracelets, "tennis" in 25.
+        self.assertEqual(choices["bracelet"], ["diamond bracelet", "tennis bracelet"])
 
     def test_a_shelf_naming_one_word_before_the_noun(self) -> None:
         # Network cables named "Cat6" and "Cat5e" by their titles, and by their shelves; a
@@ -248,9 +250,18 @@ class BuiltChoicesTests(unittest.TestCase):
         built = kind_choices.build_kind_choices(products, kinds)
         self.assertEqual([choice.text for choice in built["cable"]], ["hdmi cable", "lan cables", "network cables"])
         considered = {row.text: row.outcome for row in kind_choices.kind_choice_candidates(products, kinds)["cable"]}
-        self.assertEqual(considered["ethernet cables"], kind_choices.FINDS_NONE)
+        self.assertEqual(considered["ethernet cables"], kind_choices.FINDS_FEW)
         rules = kind_choices.CHOICE_RULES - {kind_choices.RULE_SHELVES}
         self.assertNotIn("cable", kind_choices.build_kind_choices(products, kinds, rules=rules))
+
+    def test_which_shelves_name_a_choice(self) -> None:
+        # One word before the kind's noun; "Charms & Pendants" is two shelves in one, and
+        # read without its "&" it would look like one.
+        self.assertEqual(kind_choices._shelf_choice("Network Cables", {"cable"}), "network cables")
+        self.assertEqual(kind_choices._shelf_choice("Charms & Pendants", {"pendant", "necklace"}), "")
+        self.assertEqual(kind_choices._shelf_choice("Audio & Video Cables", {"cable"}), "")
+        self.assertEqual(kind_choices._shelf_choice("Cables", {"cable"}), "")
+        self.assertEqual(kind_choices._shelf_choice("Cable Locks", {"cable"}), "")
 
     def test_why_each_was_left_out(self) -> None:
         rows = self._rows()
