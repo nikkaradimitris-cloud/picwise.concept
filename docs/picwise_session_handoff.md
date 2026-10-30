@@ -515,7 +515,10 @@ read-only look at the night's round. Owner's rules unchanged (section below).
   The gate for it exists for the buying pages (`src/picwise_buying_pages/index_gate.py`,
   `docs/pickwise_roadmap_step6_quality_index_gate.md`: index, noindex, hold for review);
   what it needs is a bar per kind (products, shops, checked) and the owner's choice of each
-  part.
+  part. **Saved as a rule (owner, 29/10: «να το αποθηκεύσεις έτσι ώστε να είναι κανόνας»):
+  `PROJECT_RULES.md`, section 13 "Google Rule"**, and in `docs/PICWISE_GOOGLE_PAGES_SPEC.md`
+  (the gate of section 2, the batches of section 9, the owner's summary). The bar's numbers
+  are the owner's to set.
 - **The owner's word (28/10): no deployment until what was started is finished** («Δεν
   προχωράμε σε ανάπτυξη μέχρι να ολοκληρώσουμε αυτά που έχουμε ξεκινήσει»). Also: rules
   word by word lead nowhere; a general word ("καλώδιο") should be answered with choices of
