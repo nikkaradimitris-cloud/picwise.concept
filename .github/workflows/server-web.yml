@@ -3,19 +3,21 @@
 # domain stays picwise.subby.cloud, PROJECT_RULES.md §8). The work on the server is
 # deployment/web/web_setup.sh, the front door's settings deployment/web/Caddyfile.
 #
-# Caddy is installed from Ubuntu's own archive and kept stopped while the domain points
-# elsewhere. The run then waits, up to WAIT_MINUTES, for the owner to point the domain's
-# record at the server at the registrar, asking the zone's own name servers every 20
-# seconds. Once it points at the server, Caddy starts and takes its certificate from
-# Let's Encrypt by itself, and the site is checked over HTTPS from outside. Vercel keeps
-# answering whoever still holds the old record, and the old record put back is the way
-# back to it.
+# First a short look, whose log can be read at once: where the domain points now, from
+# the zone's own name servers as the registry names them (deployment/web/dns_state.sh;
+# subby.cloud is bought at Papaki, but its name servers are Vercel's, so its records are
+# kept at Vercel). Then Caddy is installed from Ubuntu's own archive, kept stopped while
+# the domain points elsewhere, and its file checked; the run waits, up to WAIT_MINUTES,
+# for the owner to point the record at the server, asking every 20 seconds. Once it
+# points at the server, Caddy starts and takes its certificate from Let's Encrypt by
+# itself, and the site is checked over HTTPS from outside. Vercel keeps answering whoever
+# still holds the old record, and the old record put back is the way back to it.
 #
 # Runs when this file or deployment/web/ is pushed to the working branch; to wait again,
 # change the line below and push. The repository is public and so is this log: the
 # server's names and addresses are masked, and no address is printed.
 #
-# Opened: 2026-10-30
+# Opened: 2026-10-30, second wait (the record is changed at Vercel)
 name: Server web (HTTPS on the domain)
 on:
   push:
@@ -25,19 +27,39 @@ on:
       - 'deployment/web/**'
 permissions:
   contents: read
-# Shared with the deployment, the setup and the shops' round, so none of them runs at the
-# same time.
-concurrency:
-  group: server-setup
-  cancel-in-progress: false
+env:
+  DOMAIN: picwise.subby.cloud
+  ZONE: subby.cloud
 jobs:
-  web:
+  look:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Where the domain points now
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        run: |
+          command -v dig > /dev/null || sudo apt-get -q -y install dnsutils > /dev/null
+          ours="$RUNNER_TEMP/ours"
+          getent ahostsv4 "$SERVER_HOST" | awk '{print $1}' | sort -u > "$ours"
+          [ -s "$ours" ] || { echo "the server's address could not be read"; exit 1; }
+          while read -r address; do echo "::add-mask::$address"; done < "$ours"
+          bash deployment/web/dns_state.sh "$DOMAIN" "$ZONE" "$ours"
+          rm -f "$ours"
+  web:
+    needs: look
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    # Shared with the deployment, the setup and the shops' round, so none of them runs at
+    # the same time.
+    concurrency:
+      group: server-setup
+      cancel-in-progress: false
     env:
-      DOMAIN: picwise.subby.cloud
-      ZONE: subby.cloud
-      WAIT_MINUTES: 60
+      WAIT_MINUTES: 90
     steps:
       - uses: actions/checkout@v5
         with:
@@ -110,54 +132,23 @@ jobs:
         run: |
           command -v dig > /dev/null || sudo apt-get -q -y install dnsutils > /dev/null
           # The server's addresses, to compare with the record; never printed.
-          mapfile -t ours < <( {
+          ours="$RUNNER_TEMP/ours"
+          {
             getent ahostsv4 "$SERVER_HOST" | awk '{print $1}'
             ssh -n picwise "ip -o addr show scope global | awk '{print \$4}' | cut -d/ -f1"
-          } | sort -u)
-          [ "${#ours[@]}" -gt 0 ] || { echo "the server's addresses could not be read"; exit 1; }
-          for address in "${ours[@]}"; do echo "::add-mask::$address"; done
-          is_ours() {
-            local address
-            for address in "${ours[@]}"; do [ "$address" = "$1" ] && return 0; done
-            return 1
-          }
-          # The zone's own name servers, asked directly, so no resolver's memory of the
-          # old record delays the change.
-          mapfile -t servers < <(dig +short NS "$ZONE" | sed 's/\.$//' | sort)
-          [ "${#servers[@]}" -gt 0 ] || { echo "no name servers found for $ZONE"; exit 1; }
-          echo "the name servers of $ZONE: ${servers[*]}"
-          ask() {
-            local server answer
-            for server in "${servers[@]}"; do
-              if answer=$(dig +short +norecurse +time=5 +tries=1 "$1" "$DOMAIN" "@$server" 2> /dev/null); then
-                printf '%s\n' "$answer" | grep -v '^;' || true
-                return 0
-              fi
-            done
-            return 1
-          }
-          # Names end with a dot (an alias, as Vercel's record is); addresses do not.
-          state() {
-            local a4 a6 alias address mine=0 others=0
-            a4=$(ask A) || { echo "no answer from the name servers"; return; }
-            a6=$(ask AAAA) || a6=""
-            alias=$(printf '%s\n' "$a4" | grep '\.$' | head -n 1 | sed 's/\.$//' || true)
-            for address in $(printf '%s\n%s\n' "$a4" "$a6" | grep -v '\.$' | grep -E '^[0-9A-Fa-f:.]+$' || true); do
-              if is_ours "$address"; then mine=$((mine + 1)); else others=$((others + 1)); fi
-            done
-            if [ -n "$alias" ]; then echo "an alias (CNAME) to $alias"
-            elif [ "$mine" -gt 0 ] && [ "$others" = 0 ]; then echo "points at the server"
-            elif [ "$mine" -gt 0 ]; then echo "points at the server and at $others other address(es): the other record must go"
-            elif [ "$others" -gt 0 ]; then echo "points at $others other address(es), not the server"
-            else echo "no record"
-            fi
-          }
+          } | sort -u > "$ours"
+          [ -s "$ours" ] || { echo "the server's addresses could not be read"; exit 1; }
+          while read -r address; do echo "::add-mask::$address"; done < "$ours"
           deadline=$(( $(date +%s) + WAIT_MINUTES * 60 ))
           last=""
           while :; do
-            now=$(state)
-            if [ "$now" != "$last" ]; then echo "$(date -u +%H:%M:%S) UTC, $DOMAIN: $now"; last=$now; fi
-            if [ "$now" = "points at the server" ]; then
+            report=$(bash deployment/web/dns_state.sh "$DOMAIN" "$ZONE" "$ours")
+            if [ "$report" != "$last" ]; then
+              echo "$(date -u +%H:%M:%S) UTC"
+              printf '%s\n' "$report" | sed 's/^/  /'
+              last=$report
+            fi
+            if [ "$(printf '%s\n' "$report" | tail -n 1)" = "$DOMAIN: points at the server" ]; then
               echo "points=yes" >> "$GITHUB_OUTPUT"
               break
             fi
@@ -168,6 +159,7 @@ jobs:
             fi
             sleep 20
           done
+          rm -f "$ours"
       - name: Open the site on the domain
         if: steps.dns.outputs.points == 'yes'
         run: ssh -n picwise 'sudo bash ~/picwise-web.sh open ~/picwise-Caddyfile'

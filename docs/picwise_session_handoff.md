@@ -95,7 +95,18 @@ view", 4) stay as they are.
      20 s; then opens the site and checks it over HTTPS from outside: the certificate,
      the pages and their robots tags, http:// to https://, and who answers the runner's
      own resolver, Caddy or Vercel). Checked: `actionlint` with shellcheck, clean; dry
-     runs with stand-ins: the wait 7 cases, `web_setup.sh` 13 checks. **The way back:**
+     runs with stand-ins: the wait 7 cases, `web_setup.sh` 13 checks. **First run
+     (`41064935444`, 13:38-14:39 UTC):** Caddy 2.6.2 installed, stopped, its file
+     accepted; the record never changed in the hour: **the name servers of `subby.cloud`
+     are Vercel's (`ns1.vercel-dns.com`, `ns2.vercel-dns.com`)**, so the zone's records
+     are kept at Vercel and a change at Papaki does nothing; `picwise` answered with two
+     of Vercel's addresses throughout. So: the owner adds the A record in Vercel's DNS
+     (team Domains, `subby.cloud`) and removes `picwise.subby.cloud` from the project
+     `picwise-concept`; never `subby.cloud` itself. The way back there: the A record
+     deleted and the domain added back to the project. The workflow now first runs a
+     short job (`look`) whose log is readable at once, and reads the name servers from
+     the `.cloud` registry each time (`deployment/web/dns_state.sh`), so a change of name
+     servers is seen too; dry runs 11 cases. **The way back:**
      the old record put back at Papaki (Vercel still serves the site). Left for after the
      switch: `server-deploy.yml`'s line "nothing on 80 or 443" (editing it deploys);
      `compare_with_vercel.py` compares with `https://picwise.subby.cloud`, which is then
