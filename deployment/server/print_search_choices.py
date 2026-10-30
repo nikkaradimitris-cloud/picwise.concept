@@ -14,10 +14,12 @@ general kind, the largest first: the search for its English name, how many produ
 it finds and its first card (the Recommended, at the middle price, when there is one;
 else the cheapest), or the vocabulary's "too broad" when that answers instead, and each
 choice it asks with how many products that choice's own search finds and whether they
-are of the kind; then the Greek name of the first few, and the suggestions the box would
-hold. Run by .github/workflows/server-cap.yml
-on GitHub's runner, from a copy of the server's file; nothing on the server or shown
-changes. Counts, kinds, words, titles and prices only, never a link. Always exits 0.
+are of the kind; then the Greek name of the first few, the kinds' own names the
+vocabulary's "too broad" list once answered alone ("chair", "bag", "jacket") and what
+each finds now, and the suggestions the box would hold. Run by
+.github/workflows/server-cap.yml on GitHub's runner, from a copy of the server's file;
+nothing on the server or shown changes. Counts, kinds, words, titles and prices only,
+never a link. Always exits 0.
 """
 from __future__ import annotations
 
@@ -163,6 +165,7 @@ def main(argv: list[str]) -> int:
             f"  the Greek {concept.greek[0]}: {resolution.provider_feed_total_count:,} products; asks:"
             f" {', '.join(resolution.kind_choices) or 'nothing'}"
         )
+    _print_once_too_broad(by_id)
     phrases = {choice.text for kind_choices in choices.values() for choice in kind_choices}
     texts = [suggestion.text for suggestion in suggestions]
     size = len(json.dumps({"v": 1, "suggestions": texts}, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
@@ -172,6 +175,40 @@ def main(argv: list[str]) -> int:
         f" ({1000 * seconds / max(searched, 1):.0f} ms each on the runner)"
     )
     return 0
+
+
+def _print_once_too_broad(by_id) -> None:
+    """The kinds' own names, one word each, that the vocabulary's older "too broad" list
+    answered alone, with no product, until 2026-10-29 ("chair", "bag", "jacket"): what a
+    search for each finds now, and whether that list still answers it."""
+    from picwise_search import live_search_resolver as resolver
+
+    names = []
+    for concept in by_id.values():
+        name = concept.primary_english
+        if not name or " " in name:
+            continue
+        query = resolver.normalize_greeklish_and_typos(resolver.normalize_query(name))
+        suggestions = resolver.build_broad_query_suggestions(resolver._vocabulary_registry(), query)
+        if len(suggestions) < resolver._HIGHLY_AMBIGUOUS_BROAD_SUGGESTION_COUNT:
+            continue
+        lookup = resolver.lookup_offline_search_index(query, resolver.get_cached_offline_search_index())
+        if resolver.should_offer_broad_query_suggestions(
+            normalized_query=query, lookup_result=lookup, suggestions=suggestions
+        ):
+            names.append(name)
+    print(f"the kinds' own names the vocabulary's \"too broad\" list once answered alone: {len(names)}")
+    for name in sorted(names):
+        try:
+            resolution = resolver.resolve_live_search(name)
+        except Exception as error:  # a measure only
+            print(f"  {name}: the search failed: {type(error).__name__}")
+            continue
+        older = " (the list answers, no product)" if not resolution.provider_feed_selected_products else ""
+        print(
+            f"  {name}: {resolution.provider_feed_total_count:,} products; asks:"
+            f" {', '.join(resolution.kind_choices) or 'nothing'}{older}"
+        )
 
 
 if __name__ == "__main__":

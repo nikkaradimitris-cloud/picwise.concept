@@ -37,20 +37,27 @@ The rules that keep what it offers true (owner, 2026-10-29: «εσύ πρέπε�
 ποιος είναι ο βέλτιστος τρόπος»; found on the server's catalogue the same day, run
 `40911685093`), each for every kind alike and each measured on its own
 (`deployment/server/print_choice_rules.py`):
-- `RULE_SHOPS`: a choice by the words is named so by `MIN_SHOPS` shops or more. One
-  shop's own words are no kind of the product: "robertson hoodie", "eng ring";
+- `RULE_SHOPS`: a choice by the words is named so by `MIN_SHOPS` shops or more, or its
+  word is one other shops use too, before some noun of the catalogue. One shop's own
+  words are no kind of the product: "robertson hoodie", "eng ring", "remount ring".
+  Measured on 2026-10-30 (run `41028398470`): asking two shops for the phrase itself
+  also lost one shop's "lan cable", "thermal socks", "qhd monitor";
 - `RULE_PHRASES`: a word that is half of a phrase is read whole. When most of its titles
-  put a number before it ("3 Piece Suit", "2 Door Wardrobe") or a word the two make one
-  modifier with, as they do before the nouns of other kinds too ("Slim Fit Suit", "Slim
-  Fit Jeans"; "Long Sleeve Shirt", "Long Sleeve Dress"), each whole phrase of
-  `MIN_GROUP` products is the choice and the half is none: "3 piece suit", "slim fit
-  suit", not "piece suit", "fit suit". "Velvet Dining Chair" is a dining chair: "velvet
-  dining" comes before no other noun;
+  put a number before it ("3 Piece Suit", "2 Seater Sofa"), or one of two words with
+  fewer than `MIN_GROUP` titles putting anything else ("Slim Fit Suit", "Long Sleeve
+  Shirt", "Bean Bag Chair"), each whole phrase of `MIN_GROUP` products is the choice and
+  the half is none: "3 piece suit", "long sleeve shirt", not "piece suit", "sleeve
+  shirt". A word many titles name without that word before it is a word of its own:
+  "Tennis Bracelet" stands without "Diamond" in 607 titles, and stays "tennis bracelet"
+  (run `41028398470` read "diamond" with it as one modifier, before pendants and
+  necklaces too, and offered "diamond tennis bracelet");
 - `RULE_WHOLE_KIND`: no choice whose search keeps `KEEPS_SHARE` of the kind or more:
   "diamond ring" kept 134,488 of 141,635 rings and narrowed nothing;
 - `RULE_WRITTEN`: the noun as the titles write it most, not cut to a singular the search
   does not read: "bootcut jeans", "caravan mattresses", not "bootcut jean", "caravan
-  mattresse".
+  mattresse";
+- `RULE_SAME_SEARCH`: no two choices a search reads the same, the same kind with the
+  same words: "diamond cross pendant" and "diamond cross necklace" found the same 503.
 """
 from __future__ import annotations
 
@@ -100,8 +107,6 @@ GENERIC_KINDS = 8
 _MIN_WORD_PRODUCTS = 3
 # How many choices of each way a kind keeps, the largest first.
 _KEPT = 12
-# Two words make one modifier when they come before the nouns of this many kinds.
-_PAIR_NOUNS = 2
 
 
 @dataclass(frozen=True)
@@ -255,10 +260,9 @@ class _KindGroups:
     word_shops: dict[str, set] = field(default_factory=lambda: defaultdict(set))
     word_leads: dict[str, Counter] = field(default_factory=lambda: defaultdict(Counter))
     word_written: dict[str, Counter] = field(default_factory=lambda: defaultdict(Counter))
-    # The pairs of words that make one modifier, read over the whole catalogue: a word
-    # and the one before it that come before the nouns of `_PAIR_NOUNS` kinds or more
-    # ("long sleeve", "slim fit", "king size"), shared by every kind.
-    compounds: frozenset = frozenset()
+    # Per word, the shops whose titles put it right before a kind's noun, any kind's,
+    # over the whole catalogue (`RULE_SHOPS`), shared by every kind.
+    shops_of_word: Mapping[str, set] = field(default_factory=dict)
 
 
 def _kind_groups(
@@ -296,23 +300,18 @@ def _kind_groups(
             if count >= _MIN_WORD_PRODUCTS:
                 word_kinds[word] += 1
     generic = {word for word, count in word_kinds.items() if count >= GENERIC_KINDS}
-    # Each title once, whatever kinds it is read for: an office chair is a chair too.
-    pairs: Counter = Counter()
-    for index, product_kinds in kinds_read_of.items():
-        seen = {
-            (named.lead, named.word, named.noun)
-            for kind in product_kinds
-            if (named := before[kind][index]) is not None and named.word and named.lead
-        }
-        pairs.update(seen)
-    pair_nouns: Counter = Counter(
-        (lead, word) for (lead, word, _noun), count in pairs.items() if count >= _MIN_WORD_PRODUCTS
-    )
-    compounds = frozenset(pair for pair, nouns in pair_nouns.items() if nouns >= _PAIR_NOUNS)
+    shops_of_word: dict[str, set] = defaultdict(set)
+    for kind in read:
+        for index, named in before[kind].items():
+            if named is not None and named.word:
+                shop = _merchant_identity(products[index])
+                if shop:
+                    shops_of_word[named.word].add(shop)
     groups: dict[str, _KindGroups] = {}
     for kind, rows in read.items():
         group = _KindGroups(
-            len(rows), Counter(), Counter(), defaultdict(Counter), Counter(), Counter(), rows, compounds=compounds
+            len(rows), Counter(), Counter(), defaultdict(Counter), Counter(), Counter(), rows,
+            shops_of_word=shops_of_word,
         )
         for index in rows:
             named = before[kind][index]
@@ -383,22 +382,28 @@ RULE_SHOPS = "shops"
 RULE_PHRASES = "phrases"
 RULE_WHOLE_KIND = "whole_kind"
 RULE_WRITTEN = "written"
-CHOICE_RULES = frozenset({RULE_SHOPS, RULE_PHRASES, RULE_WHOLE_KIND, RULE_WRITTEN})
-# A choice by the words is named so by this many shops.
+RULE_SAME_SEARCH = "same_search"
+CHOICE_RULES = frozenset({RULE_SHOPS, RULE_PHRASES, RULE_WHOLE_KIND, RULE_WRITTEN, RULE_SAME_SEARCH})
+# A choice by the words is named so by this many shops, or its word is put before a
+# noun by this many shops somewhere in the catalogue.
 MIN_SHOPS = 2
 # A word is half of a phrase when this share of its titles put a number before it ("3
-# Piece Suit"), or a word the two make one modifier with (`_KindGroups.compounds`).
+# Piece Suit"), or one of `_HALF_PHRASE_LEADS` words, with fewer than `MIN_GROUP` titles,
+# and fewer than `_HALF_PHRASE_REST` of them, putting anything else or nothing.
 HALF_PHRASE_SHARE = 0.5
+_HALF_PHRASE_LEADS = 2
+_HALF_PHRASE_REST = 0.25
 # No choice whose search keeps this share of its kind.
-KEEPS_SHARE = 0.8
+KEEPS_SHARE = 0.9
 
 # What became of each choice considered (`kind_choice_candidates`).
 OFFERED = "offered"
 NOT_NARROWING = "not read as narrowing the kind"
 COVERED = "a narrower kind offered holds it"
-FEW_SHOPS = f"named so by fewer than {MIN_SHOPS} shops"
+FEW_SHOPS = f"one shop's own word: named so by fewer than {MIN_SHOPS} shops, and used by no other"
 HALF_PHRASE = "half of a phrase"
 WHOLE_KIND = f"its search keeps {KEEPS_SHARE:.0%} of the kind or more"
+SAME_SEARCH = "searched as a larger choice is"
 BEYOND = f"beyond the {CHOICES_OFFERED} offered"
 
 
@@ -413,6 +418,14 @@ def _narrows(text: str, kind: str) -> bool:
     if reading.concept_id != kind:
         return kind in broader_concepts(reading.concept_id)
     return bool(reading.filters)
+
+
+def _search_key(text: str) -> tuple:
+    """What a search for `text` asks of the feed: its kind, the words it filters by and
+    its specs, whatever their order."""
+    reading = understand_product_query(text)
+    filters = frozenset(term for term in reading.filters if term not in _CONNECTIVE_TOKENS)
+    return (reading.concept_id, filters, frozenset(spec.token for spec in reading.specs))
 
 
 @dataclass(frozen=True)
@@ -472,17 +485,36 @@ def _word_candidates(group: _KindGroups, text: str, count: int, rules: Collectio
     written = noun
     if RULE_WRITTEN in rules and group.word_written[text]:
         written = group.word_written[text].most_common(1)[0][0]
-    if RULE_SHOPS in rules and len(group.word_shops[text]) < MIN_SHOPS:
+    if (
+        RULE_SHOPS in rules
+        and len(group.word_shops[text]) < MIN_SHOPS
+        and len(group.shops_of_word.get(word, ())) < MIN_SHOPS
+    ):
         return [(f"{word} {written}", count, FEW_SHOPS)]
-    leads = group.word_leads[text]
-    halves = sum(c for lead, c in leads.items() if lead.isdigit() or (lead, word) in group.compounds)
-    if RULE_PHRASES in rules and halves >= HALF_PHRASE_SHARE * count:
-        whole = [
-            (f"{lead} {word} {written}", c, "")
-            for lead, c in leads.most_common()
-            if c >= MIN_GROUP and (lead.isdigit() or (lead, word) in group.compounds)
-        ]
-        return whole + [(f"{word} {written}", count, HALF_PHRASE)]
+    if RULE_PHRASES in rules:
+        leads = group.word_leads[text]
+        numbers = Counter({lead: c for lead, c in leads.items() if lead.isdigit()})
+        if sum(numbers.values()) >= HALF_PHRASE_SHARE * count:
+            phrases = numbers
+        else:
+            # A few words before it nearly always: "Slim Fit", "Long Sleeve", "Bean Bag".
+            # Many titles with other words, or none, before it make it a word of its own:
+            # "Tennis Bracelet" stands without "Diamond" in 607 titles of 6,474. A word
+            # that names the kind on its own too says how it is ("Diamond Bracelet",
+            # "Denim Jeans"), and is no half of the phrase.
+            top = Counter(
+                {
+                    lead: c
+                    for lead, c in leads.items()
+                    if not lead.isdigit() and group.words.get(f"{lead} {noun}", 0) < MIN_GROUP
+                }
+            ).most_common(_HALF_PHRASE_LEADS)
+            rest = count - sum(c for _lead, c in top)
+            fixed = rest < MIN_GROUP and rest < _HALF_PHRASE_REST * count
+            phrases = Counter(dict(top)) if fixed else Counter()
+        if phrases:
+            whole = [(f"{lead} {word} {written}", c, "") for lead, c in phrases.most_common() if c >= MIN_GROUP]
+            return whole + [(f"{word} {written}", count, HALF_PHRASE)]
     return [(f"{word} {written}", count, "")]
 
 
@@ -548,12 +580,20 @@ def choice_candidates_of(
         search: _KindSearch | None = None
         rows: list[ChoiceCandidate] = []
         offered = 0
+        searches: set[tuple] = set()
         for text, (count, outcome, shops) in sorted(candidates.items(), key=lambda item: (-item[1][0], item[0])):
             found = None
             if not outcome and offered >= CHOICES_OFFERED:
                 outcome = BEYOND
             if not outcome and not _narrows(text, kind):
                 outcome = NOT_NARROWING
+            if not outcome and RULE_SAME_SEARCH in rules:
+                # "diamond cross pendant" and "diamond cross necklace" are one search: a
+                # necklace with "diamond" and "cross".
+                same = _search_key(text)
+                if same in searches:
+                    outcome = SAME_SEARCH
+                searches.add(same)
             if not outcome and RULE_WHOLE_KIND in rules:
                 if search is None:
                     search = _KindSearch(kind, group.rows, kinds, fields_of)
