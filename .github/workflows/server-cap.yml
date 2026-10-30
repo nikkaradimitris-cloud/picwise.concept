@@ -28,7 +28,9 @@
 # one shop's words, halves of phrases, choices keeping the whole kind, the written noun,
 # one search offered twice, the shops' shelves, each choice weighed by what its own
 # search finds, eight offered (the rules as refined after runs 41028398470, 41031539622,
-# 41034288478 and 41036545617, 2026-10-30).
+# 41034288478 and 41036545617, 2026-10-30). And item 3 (owner, 2026-10-30: «Όλα στο
+# search»): the cap chooses only the pool Google may be given from, kept each night for
+# the next; print_cap.py says what the next night keeps, the pool its starting point.
 # The rules reach the server only with a deployment. Runs when this file is pushed to
 # the working branch. The repository is public and so is this log: the server's names and
 # addresses are masked, and the measures print counts, names, titles and prices, never a
