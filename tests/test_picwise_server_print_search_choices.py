@@ -67,7 +67,9 @@ def _write(path: Path) -> None:
         ("Fixturon Coaxial Cable {n}m", CABLES, 25, 2.0),
         ("Fixturon Speaker Cable {n}m", CABLES, 22, 4.0),
         ("Fixturon Electric Kettle {n}", KETTLES, 55, 20.0),
-        ("Fixturon Velvet Dining Chair {n}", DINING_CHAIRS, 30, 40.0),
+        ("Fixturon Velvet Dining Chair {n}", DINING_CHAIRS, 10, 40.0),
+        ("Fixturon Oak Dining Chair {n}", DINING_CHAIRS, 10, 50.0),
+        ("Fixturon Grey Dining Chair {n}", DINING_CHAIRS, 10, 60.0),
         ("Fixturon Ergonomic Office Chair {n}", OFFICE_CHAIRS, 25, 70.0),
     ):
         for step in range(count):
@@ -117,8 +119,12 @@ class PrintSearchChoicesTests(unittest.TestCase):
         self.assertIn("  chair: 55 products, the first card 40.00 GBP 'Fixturon Velvet Dining Chair 1'", out)
         self.assertIn("      What kind of chair? dining chair, office chair", out)
         self.assertIn("      each found: dining chair 30 (yes); office chair 25 (yes)", out)
-        self.assertNotIn("too broad", out)
+        self.assertNotIn("  chair: no products", out)
         self.assertIn("  the Greek καρέκλα: 55 products; asks: dining chair, office chair", out)
+        # Every kind's own name that list once answered alone, what it finds now.
+        self.assertRegex(out, r"the kinds' own names the vocabulary's \"too broad\" list once answered alone: \d+")
+        self.assertIn("  chair: 55 products; asks: dining chair, office chair\n", out)
+        self.assertIn("  jacket: 0 products; asks: nothing (the list answers, no product)", out)
         self.assertRegex(out, r"the search box: \d+ suggestions, 5 of them choices")
         self.assertNotIn("kettle:", out)
         self.assertNotIn("shop.invalid", out)

@@ -62,7 +62,9 @@ def _rows() -> list[list[str]]:
         ("Fixturon Coaxial Cable {n}m", CABLES, 25, 2.0),
         ("Fixturon Speaker Cable {n}m", CABLES, 22, 4.0),
         ("Fixturon Electric Kettle {n}", KETTLES, 55, 20.0),
-        ("Fixturon Velvet Dining Chair {n}", DINING_CHAIRS, 30, 40.0),
+        ("Fixturon Velvet Dining Chair {n}", DINING_CHAIRS, 10, 40.0),
+        ("Fixturon Oak Dining Chair {n}", DINING_CHAIRS, 10, 50.0),
+        ("Fixturon Grey Dining Chair {n}", DINING_CHAIRS, 10, 60.0),
         ("Fixturon Ergonomic Office Chair {n}", OFFICE_CHAIRS, 25, 70.0),
     ):
         for step in range(count):
