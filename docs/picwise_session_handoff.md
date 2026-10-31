@@ -1,12 +1,90 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-31, evening (the
-site moved to the real server: items 1-3 deployed to it on 30/10; **picwise.subby.cloud
-answers from the server since 2026-10-31 10:03 UTC**, HTTPS by Caddy; Vercel kept as the
-backup).
+Current state for whoever picks the project up next. Updated 2026-10-31, night (**the
+design of 31/10 and the pages are live on the server since 15:46 UTC**, run
+`41215460767`; picwise.subby.cloud answers from the server since 2026-10-31 10:03 UTC,
+HTTPS by Caddy; Vercel kept as the backup).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation (from 2026-10-31, evening): pick up here -- start here
+## Next conversation (from 2026-10-31, night): pick up here -- start here
+
+The design of 31/10 is built and deployed with the pages (owner, 31/10: «Υλοποίησε τα όλα
+και ανέβασέ τα στο server και θα κάνω τους λογαριασμούς αργότερα»).
+
+- **Which branch.** `ccr-1361f1a7-dcpo60`, the branch the server deploys from, now holds
+  everything: the pages (`6ba081d`, `b7adf77`), the design proposal (`578bc49`,
+  `1b83d18`) and the design built (`f529b6f`, `901bfb3`, `ce8ba74`), pushed together and
+  deployed by run `41215460767` (success, 15:34-15:48 UTC: release
+  `20261031T153406Z-ce8ba74`; the catalogue prepared again with the new code, 528,134
+  products from 81 shops, peak memory 7.9 GB, 718 s; the site healthy at 15:46:14; its
+  memory 6,187 MB; 15 of 15 pages answered with no failure and the 12 searches show the
+  new cards, through https://picwise.subby.cloud as from the server itself). The
+  session's branch `ccr-9826870f-qkgl6s` holds the same. `ccr-60773189-pesaft` is behind
+  both; nothing is waiting on it.
+- **What the site shows now** (`src/picwise_surface/reference.py`, `browser_lists.py`,
+  `trends.py`; pinned by `tests/test_picwise_design_2026_10_31.py`, 30 tests):
+  - **Cards, symmetric**: a square photo shown whole (`object-fit:contain`, 400×400 set
+    before it loads: no layout shift, measured CLS 0), then the role, a title of at most
+    three lines and the shop line at fixed heights, so every card of a row is as tall as
+    the others and the prices and buttons line up. The price reads "£12.74"
+    (`_display_price`: GBP, EUR, USD signs; any other text keeps its code). The button
+    names the shop ("View at <shop>"; "View" on phones). The stock line rewords the
+    labels' own fact for a shopper ("Listed as available by the shop"; never "in stock"
+    for a flag that is the same on every row), and every card states its limitation
+    ("... not verified by PicWise", after a not-new or no-description note in the
+    labels' words). The owner's labels stay ("Recommended", "Mid-priced for this
+    category", "Lowest price"). "4 of 45" also above the cards. Phones: two cards a row.
+  - **One product alone** (owner, 31/10): the same card laid out on its own, "This is
+    the only product PicWise found for this search in its shops.", with Shop, Brand,
+    Product code (barcode, else the maker's part number, read from the shop's row by
+    `picwise_app.app.single_product_code`) only when the shop gives them, and Delivery
+    "See the shop's site" (PicWise holds no delivery data: the prepared file leaves it
+    out). No "Lowest price" label, no "More".
+  - **History and Favourites** instead of Login and Register: local storage only
+    (`picwise.favourites.v1`, `picwise.history.v1`, `picwise.history.on`), no request,
+    lines drawn as text; the buttons show only where JavaScript and storage work (a
+    head script that only reads). **The history is off until the visitor chooses
+    «Keep my searches»** in its panel, and «Stop keeping history» forgets it: a list
+    kept on a device that the visitor did not ask for needs consent under UK PECR and the
+    EU's ePrivacy rules, and asking first needs no banner. Favourites are kept by the
+    heart on a photo, open through `/out/feed?...&src=favourites&rec=0`, and show the
+    price "when saved". The privacy and cookie pages say all this.
+  - **Home page**: "Find the product you want in UK shops", the "What is PicWise?" words,
+    the box, and three lines on how PicWise chooses. **The trends panel is built and
+    shows nothing**: `load_trends_panel()` returns None (`TRENDS_SOURCE_STATUS =
+    "not_connected"`) until a real source writes its rows; tested on fictional rows.
+  - **Footer**: About in, Demo and PicWise Reference out (the routes still answer).
+- **Tests.** All 278 modules run one by one, four at a time: 273 pass. Two did not
+  finish within 20 minutes under that load (`test_picwise_learning_stage7b`,
+  `test_picwise_search_index_blind_evaluation_stage6a`: the learning and the search
+  vocabulary, which this work did not touch). Three fail, none because of this work:
+  `test_picwise_canonical_vocabulary_registry_stage2`
+  (`test_live_search_provider_and_surface_files_unchanged_in_this_stage`) and
+  `test_picwise_search_index_generated_blind_stage4` fail the same way on the code
+  before it; `test_picwise_search_graph_contracts_stage1db1` fails only while
+  `reference.py` has uncommitted changes, as the gotchas say, and passes once committed.
+  One more was already failing since 31/10 and is fixed: the truth test for weak
+  availability read the home page's new description (the "What is PicWise?" words) as a
+  stock claim; it now leaves the description out, as it does the tooltip.
+- **Waiting for the owner** (unchanged): the accounts, Search Console and Merchant Center
+  (free), Google Ads later; and whether Merchant Center shows Best sellers.
+- **Next, in order** (each shown to the owner before it is built on):
+  1. The application text (`docs/awin_application_message.md`) and the presentation of
+     the business: the site is live with its pages and design now.
+  2. The trends' real source, once the accounts exist: `trends.load_trends_panel`.
+  3. Awin's offers on the cards: an Awin API token in GitHub's secrets; only offers valid
+     by Awin's own end date.
+  4. Structured data (price range and number of shops, no ratings) on the pages given to
+     Google, when the first of them is built (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`).
+  Then the owner applies again to the 6 Awin advertisers that rejected them (SharkNinja,
+  Beldray, Gtech, Boots, Road Angel, Mattress Online).
+- **Still open**: the first search after a restart (16.5 s, so after every deployment;
+  not touched here: loading the catalogue in every worker at once could pass the site's
+  memory ceiling, and that needs measuring on the server first); the deployment's line
+  "nothing on 80 or 443" and `compare_with_vercel.py` (the server against itself);
+  Vercel's previews (PR #13); a key scan still shown another host key (reported only).
+
+## Before (2026-10-31, evening): the handover to the conversation that built the design
 
 The owner moved to a new conversation, this one having grown long and slow («μεγαλώσει
 και τραβάει πολύ»). Read this, then the section below (the owner's plan of 31/10).
@@ -2360,6 +2438,14 @@ files: correcting the phase wording is the owner's decision, not the engineer's.
 
 ## Working gotchas
 
+- The cards' markup is read by tests and by `deployment/server/compare_with_vercel.py`
+  (design of 31/10): `<article class="pw-card" data-choice-id=...>` or `class="pw-card
+  pw-card-recommended"` exactly, no other class on the article; `pw-card-title`,
+  `pw-role-label`, `pw-card-description` (the price's place), `pw-price`, `pw-card-shop`,
+  `pw-card-stock`, `pw-card-note`. A product alone is the same article inside
+  `<section class="pw-grid" data-card-count="1" data-layout="single">`. The search
+  page's CSS is `reference._PAGE_STYLES`; two tests pin its `@media (max-width:1099px)`
+  rule for the grid.
 - Run tests **per module**, a few in parallel; never the whole suite in one process
   (out of memory, hours).
 - The prepared file leaves out the Awin columns no rule reads
