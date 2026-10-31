@@ -169,6 +169,26 @@ view", 4) stay as they are.
      runs; only when it lacks none does the owner put it in `AWIN_FEED_URL`, and a
      deployment takes it to the server (`deploy.sh` writes it to
      `/etc/picwise/picwise.env`; the preparation reads it).
+     **A title's safety, measured (owner, 31/10: «Ναι, κάνε τη μέτρηση»; "safe" as 99%,
+     put to them on 26/10; `deployment/server/print_title_safety.py`, tests 3;
+     `server-cap.yml` with `MEASURE: title`, run `41196508034`, the server's feed of 31/10
+     judged as the preparation judges it):** on the rows shown with a shelf the title
+     alone gives a kind to 58,352, agreeing with the shelf for 96.5%. Of the 201,024 rows
+     held for want of a category whose title gives a kind, the 27 kinds at 99% (100+ rows
+     to tell by) would bring in **11,067** (InStock UK 10,293), and **no kind more from 3
+     shops (94 before and after)**. And the 99% does not carry over: among those 27,
+     HDMI cables read as jackets, tripods as cameras, shoe racks and camera shoe mounts
+     as shoes, monitor arms as monitors. Under 99%: 22 kinds, 159,564 rows, **151,312 of
+     them read as phone cases** (69.1% right on the rows with a shelf: "case" in laptop
+     bags, earbuds, cables); too few rows to tell: 224 kinds, 30,393 rows. Told to the
+     owner: by their title these rows cannot be shown safely; the reliable witness is
+     the shop's category.
+     **The owner (31/10): another network, even a US one, to borrow categories by similar
+     titles** («υπάρχουνε ίδια είδη ... από το άλλο feed θα μπορέσουμε να αντλήσουμε την
+     κατηγορία»). Answered: a category can be borrowed only for the same product (barcode
+     or brand + model), as tried in our own feed (516 of about 380,000); InStock UK's held
+     rows mostly carry no barcode (46,775 of 352,963); a similar title is a guess from the
+     title again. Another network's value is its own shops, with categories.
 - **The owner's rules, unchanged** (the list in "Items 1, 2, 3" below, with nothing on
   `main` without their explicit «ναι», and never a server name, address, host key or link
   in a log or a file).
