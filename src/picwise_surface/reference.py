@@ -1045,6 +1045,9 @@ _PAGE_STYLES = (
     ".pw-query-line{margin:0;font-size:15px;color:#1a3d6b;font-weight:600;line-height:1.4;}"
     ".pw-results-count{margin:0;font-size:13px;font-weight:700;color:var(--ink-2);background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 12px;white-space:nowrap;}"
     ".pw-reference-disclaimer{margin:4px 0 14px;font-size:13px;line-height:1.5;color:var(--muted);}"
+    ".pw-reference-disclaimer a{color:var(--blue);font-weight:600;}"
+    # A search with nothing to show: its message is the page's answer, so it reads as one.
+    '.pw-reference-frame:has(.pw-grid[data-card-count="0"]) .pw-reference-disclaimer{max-width:760px;margin:10px auto 0;font-size:16px;line-height:1.55;color:var(--ink);text-align:center;}'
     ".pw-kind-choices{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0 4px;}"
     ".pw-kind-choices-ask{font-size:14px;font-weight:700;color:var(--ink);margin-right:4px;}"
     ".pw-kind-choice{display:inline-flex;align-items:center;height:32px;padding:0 13px;border-radius:999px;background:#eaf1ff;color:var(--blue);font-size:13px;font-weight:600;text-decoration:none;}"
