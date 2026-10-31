@@ -174,10 +174,13 @@ def read_offers(
         pages += 1
         if first is None:
             first = answer
+            # Printed at once, so that a run stopped early still says what Awin sends.
+            print(f"the answer's shape: {_shape(answer)}", flush=True)
         items = _items(answer)
         fresh = [item for item in items if _offer_key(item) not in seen]
         seen.update(_offer_key(item) for item in fresh)
         offers.extend(fresh)
+        print(f"page {page}: {len(items)} offers, {len(fresh)} not read before", flush=True)
         if len(items) < PAGE_SIZE or not fresh:
             break
         time.sleep(pause)
@@ -240,7 +243,7 @@ def our_shops(note: Any) -> dict[str, tuple[str, int]]:
 
 
 def report(offers: list[dict[str, Any]], first: Any, shops: dict[str, tuple[str, int]], *, now: datetime) -> list[str]:
-    lines = [f"the answer's shape: {_shape(first)}"]
+    lines = [] if first is None else [f"the answer's shape: {_shape(first)}"]
     if offers:
         lines.append(f"an offer's shape: {_shape(offers[0])}")
     lines.append(f"== {len(offers):,} live offers for the United Kingdom")
@@ -331,7 +334,7 @@ def main(argv: list[str] | None = None, *, post: Post = _post, get: Get = _get, 
     except (RuntimeError, urllib.error.URLError, TimeoutError, ValueError) as error:
         print(_redact(f"the offers could not be read: {error}", token, publisher))
         return 1
-    for line in report(offers, first, our_shops(note), now=datetime.now(timezone.utc)):
+    for line in report(offers, None, our_shops(note), now=datetime.now(timezone.utc)):
         print(_redact(line, token, publisher))
     return 0
 
