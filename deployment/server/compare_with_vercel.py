@@ -153,7 +153,13 @@ def search_cards(page: str) -> list[str]:
         price = re.search(r'class="pw-price">(.*?)</p>', card, re.S)
         meta = re.search(r'class="pw-meta">(.*?)</p>', card, re.S)
         role = re.search(r'class="pw-role-label">(.*?)</p>', card, re.S)
-        shop = _text(meta.group(1)).split("Provider:")[-1].strip() if meta else ""
+        # The shop's own line since the design of 2026-10-31; the line it was named in
+        # before ("... Provider: <shop> via Awin") on a page drawn by older code.
+        shop_line = re.search(r'class="pw-card-shop">(.*?)</p>', card, re.S)
+        if shop_line:
+            shop = _text(shop_line.group(1))
+        else:
+            shop = _text(meta.group(1)).split("Provider:")[-1].strip() if meta else ""
         lines.append(
             f"{_text(price.group(1)) if price else '?':>12} | {shop[:28]:28} | "
             f"{_text(role.group(1)) if role else '':22} | {_text(title.group(1))[:70] if title else '?'}"

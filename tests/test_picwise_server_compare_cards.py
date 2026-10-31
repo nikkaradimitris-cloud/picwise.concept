@@ -116,5 +116,31 @@ class ServerCardShelvesTests(unittest.TestCase):
         self.assertTrue(out.getvalue().startswith("=== no shelves for the cards"))
 
 
+
+class ServerCardShopTests(unittest.TestCase):
+    """The shop on each card line: from the card's shop line since the design of
+    2026-10-31, and from the provider line of a page drawn by older code."""
+
+    def test_the_shop_line_of_the_new_cards(self) -> None:
+        page = (
+            '<p class="pw-counter">1 of 1</p><article class="pw-card" data-choice-id="k1">'
+            '<h2 title="Fixturon Glass Kettle 1.7L" class="pw-card-title">Fixturon Glass Kettle 1.7L</h2>'
+            '<p class="pw-card-shop">Fixture Store One via Awin</p><p class="pw-price">&#163;3.75</p>'
+            '<p class="pw-role-label">Lowest price</p></article>'
+        )
+        lines = compare.search_cards(page)
+        self.assertEqual(lines[0], "counter: 1 of 1")
+        self.assertIn("Fixture Store One via Awin", lines[1])
+        self.assertIn("\u00a33.75", lines[1])
+        self.assertIn("Fixturon Glass Kettle 1.7L", lines[1])
+
+    def test_the_provider_line_of_older_cards(self) -> None:
+        page = (
+            '<article class="pw-card"><h2 class="pw-card-title">Fixturon Glass Kettle 1.7L</h2>'
+            '<p class="pw-price">3.75 GBP</p>'
+            '<p class="pw-meta">Availability not verified  ·  Provider: Fixture Store One via Awin</p></article>'
+        )
+        self.assertIn("Fixture Store One via Awin", compare.search_cards(page)[1])
+
 if __name__ == "__main__":
     unittest.main()
