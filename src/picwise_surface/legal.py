@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 
+# The footer of every public page. "Demo" and "PicWise Reference" left it with the design
+# of 2026-10-31 (`docs/design/picwise_design_proposal_2026-10-31.html`): pages of the
+# site's building, not for shoppers. Their routes still answer.
 FOOTER_LINKS: tuple[tuple[str, str], ...] = (
     ("Home", "/"),
     ("About", "/about"),
-    ("Demo", "/demo"),
-    ("PicWise Reference", "/picwise-reference"),
     ("Terms", "/terms"),
     ("Privacy", "/privacy"),
     ("Cookies", "/cookies"),
@@ -188,6 +189,12 @@ def render_privacy_page() -> str:
         "</ul>"
         "<h2>What PicWise does not do</h2>"
         "<p>PicWise has no user accounts and no sign-in. It sets no cookies of its own and uses no analytics or advertising pixels. It takes no payments, card details or orders; purchases happen on the shops' websites. It does not compare software (SaaS) or finance products, so it collects nothing for them.</p>"
+        "<h2>Favourites and search history</h2>"
+        "<p>The Favourites and History buttons keep their lists in your own browser, in its local storage, on your device. "
+        "A product is kept in Favourites when you tap the heart on its photo; your searches are kept in History only after "
+        "you choose \u201cKeep my searches\u201d there. Nothing in these lists is sent to PicWise, which never sees them. "
+        "You can remove them at any time with \u201cClear favourites\u201d, \u201cClear history\u201d or "
+        "\u201cStop keeping history\u201d, or by clearing this site's data in your browser.</p>"
         "<h2>Emails</h2>"
         "<p>If you email PicWise, your email address and message are used to reply to you.</p>"
         "<h2>Voice search (microphone)</h2>"
@@ -200,7 +207,8 @@ def render_privacy_page() -> str:
         "<h2>Links to shops</h2>"
         "<p>When you follow a link to a shop, you leave PicWise. Awin (the affiliate network) and the shop then process data, including their own cookies, under their own privacy policies.</p>"
         "<h2>Cookies and browser storage</h2>"
-        "<p>See the <a href=\"/cookies\">Cookie Policy</a>. PicWise sets no cookies and stores nothing in your browser.</p>"
+        "<p>See the <a href=\"/cookies\">Cookie Policy</a>. PicWise sets no cookies. Your favourites, and your searches if "
+        "you switch History on, are kept by your own browser in its local storage, and are never sent to PicWise.</p>"
         "<h2>Legal basis</h2>"
         "<p>Technical logs: PicWise's legitimate interest in running a working and secure website. Emails: replying to your request. If PicWise ever uses non-essential cookies, it will ask for your consent first.</p>"
         "<h2>How long data is kept</h2>"
@@ -231,11 +239,16 @@ def render_cookies_page() -> str:
         "<h2>What cookies are</h2>"
         "<p>Cookies, local storage, pixels and tags are small pieces of data or code that let a website remember things on your device or measure visits.</p>"
         "<h2>PicWise's own cookies</h2>"
-        "<p>None. PicWise sets no cookies and stores nothing in your browser. It needs no essential cookies to work, and uses no non-essential cookies: no analytics, no advertising, no tracking pixels or tags.</p>"
+        "<p>None. PicWise sets no cookies. It needs no essential cookies to work, and uses no non-essential cookies: no analytics, no advertising, no tracking pixels or tags.</p>"
+        "<h2>Your favourites and history, in your browser</h2>"
+        "<p>When you tap the heart on a product, or switch History on (\u201cKeep my searches\u201d), your browser keeps that list "
+        "in its local storage, on your device, because you asked for it. It is never sent to PicWise. You can clear it from the "
+        "Favourites and History panels, or by clearing this site's data in your browser. Without it PicWise works the same; "
+        "only these lists are not kept.</p>"
         "<h2>Cookies after you leave PicWise</h2>"
         "<p>When you follow a link to a shop, Awin, the affiliate network, and then the shop set their own cookies, so that the shop knows you came from PicWise and can pay its commission. These cookies belong to them and follow their own policies.</p>"
         "<h2>Consent</h2>"
-        "<p>Because PicWise sets no non-essential cookies, it shows no consent banner. If that ever changes, PicWise will ask for your consent first, as UK and EU law require, and update this page.</p>"
+        "<p>PicWise sets no cookies and keeps nothing on your device unless you ask it to (a favourite, or History switched on), so it shows no consent banner. If that ever changes, PicWise will ask for your consent first, as UK and EU law require, and update this page.</p>"
         "<h2>How you can control cookies</h2>"
         "<p>Your browser's settings let you see, block and delete cookies, including those of Awin and the shops.</p>"
         "<h2>Contact</h2>"

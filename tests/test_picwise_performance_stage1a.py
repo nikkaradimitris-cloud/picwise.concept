@@ -22,9 +22,10 @@ from picwise_search_memory.canonical_registry import (  # noqa: E402
 
 def _assert_landing_shell(test_case: unittest.TestCase, body: str) -> None:
     expected_links = (
+        # The footer since the design of 2026-10-31: About in, Demo and PicWise
+        # Reference out (their routes still answer).
         ("/", "Home"),
-        ("/demo", "Demo"),
-        ("/picwise-reference", "PicWise Reference"),
+        ("/about", "About"),
         ("/terms", "Terms"),
         ("/privacy", "Privacy"),
         ("/cookies", "Cookies"),
@@ -34,7 +35,9 @@ def _assert_landing_shell(test_case: unittest.TestCase, body: str) -> None:
     for href, label in expected_links:
         test_case.assertIn(f'class="pw-footer-link" href="{href}">{label}<', body)
     test_case.assertIn("What are you looking for?", body)
-    test_case.assertIn("Live safe mode", body)
+    # The page without a search says what PicWise is (the design of 2026-10-31).
+    test_case.assertIn('<h1 class="pw-hero-title">Find the product you want in UK shops</h1>', body)
+    test_case.assertNotIn('href="/demo"', body)
     test_case.assertIn('action="/search"', body)
     test_case.assertIn('method="get"', body)
     test_case.assertIn('name="q"', body)

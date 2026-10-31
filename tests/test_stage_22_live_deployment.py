@@ -57,10 +57,10 @@ class DeploymentEntrypointTests(unittest.TestCase):
     @staticmethod
     def _assert_common_footer_links(body: str) -> None:
         expected_links = (
+            # The footer since the design of 2026-10-31: Demo and PicWise Reference
+            # out (their routes still answer).
             ("/", "Home"),
             ("/about", "About"),
-            ("/demo", "Demo"),
-            ("/picwise-reference", "PicWise Reference"),
             ("/terms", "Terms"),
             ("/privacy", "Privacy"),
             ("/cookies", "Cookies"),
@@ -82,6 +82,8 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "HomeDemoPicWise ReferenceTermsPrivacyCookiesAffiliate DisclosureContact"
             not in body.replace(" ", "").replace("\n", "")
         )
+        assert 'class="pw-footer-link" href="/demo"' not in body
+        assert 'class="pw-footer-link" href="/picwise-reference"' not in body
 
     def test_deployment_entrypoint_imports(self) -> None:
         self.assertTrue(callable(deployment_app))
@@ -112,7 +114,8 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
         self.assertIn("<main", body.lower())
         self.assertIn("What are you looking for?", body)
-        self.assertIn("Live safe mode", body)
+        # The home page of the design of 2026-10-31 says what PicWise is above the box.
+        self.assertIn('<h1 class="pw-hero-title">Find the product you want in UK shops</h1>', body)
         self.assertIn("shopping decision assistant", body)
         self.assertIn("<title>PicWise — Find the product you want in UK shops</title>", body)
         self.assertIn('<meta name="description"', body)
@@ -124,8 +127,11 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn('placeholder="What are you looking for?"', body)
         self.assertIn('class="pw-search-button"', body)
         self.assertIn("What is PicWise?", body)
-        self.assertIn("Login", body)
-        self.assertIn("Register", body)
+        # History and Favourites took the place of Login and Register, which did nothing.
+        self.assertIn('id="pw-history-button"', body)
+        self.assertIn('id="pw-favourites-button"', body)
+        self.assertNotIn(">Login<", body)
+        self.assertNotIn(">Register<", body)
         self.assertNotIn("search all amazon", body.lower())
         self.assertNotIn("live amazon search", body.lower())
         self.assertNotIn(">View on Amazon<", body)
@@ -137,7 +143,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertEqual(status, "200 OK")
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
         self.assertIn("What are you looking for?", body)
-        self.assertIn("Live safe mode", body)
+        self.assertIn('<h1 class="pw-hero-title">Find the product you want in UK shops</h1>', body)
         self.assertIn(
             'placeholder="What are you looking for?"',
             body,
@@ -165,7 +171,9 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self._assert_common_footer_links(body)
         self.assertEqual(body.count('<article class="pw-card'), 0)
         self.assertNotIn("&middot;", body)
-        self.assertIn("PicWise safely shows no product cards", body)
+        # Without a search, the page says what PicWise is and how it chooses; it shows
+        # no cards and no empty search state.
+        self.assertIn('<section class="pw-how" aria-label="How PicWise chooses">', body)
 
     def test_search_route_renders_main_shell_without_amazon_for_power_bank_query(self) -> None:
         # Amazon has been removed from the product: power banks resolve through the same
@@ -503,7 +511,9 @@ class DeploymentEntrypointTests(unittest.TestCase):
     def test_search_route_renders_safe_no_result_for_empty_query(self) -> None:
         status, _headers, body = _call_wsgi("/search", "q=")
         self.assertEqual(status, "200 OK")
-        self.assertIn("PicWise safely shows no product cards", body)
+        # An empty search is the page without a search: what PicWise is, and no cards.
+        self.assertIn('<h1 class="pw-hero-title">Find the product you want in UK shops</h1>', body)
+        self.assertNotIn("<article", body)
         self.assertNotIn(">View on Amazon<", body)
         self.assertNotIn("tag=picwise-20", body)
         self.assertNotIn('class="pw-card"', body)
@@ -579,7 +589,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertNotIn("picwise-reference-live-renderer-proof-v1", reference_body)
         self.assertIn("What is PicWise?", reference_body)
         self.assertEqual(reference_body.count('class="pw-brand"'), 1)
-        self.assertIn("PicWise safely shows no product cards", reference_body)
+        self.assertNotIn("<article", reference_body)
         self._assert_common_footer_links(reference_body)
 
     def test_terms_privacy_cookies_affiliate_contact_routes(self) -> None:
@@ -677,8 +687,8 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn('class="pw-search-button"', body)
         self.assertNotIn("View demo", body)
         self.assertIn("What is PicWise?", body)
-        self.assertIn("Login", body)
-        self.assertIn("Register", body)
+        self.assertIn('id="pw-history-button"', body)
+        self.assertIn('id="pw-favourites-button"', body)
         self.assertNotIn('<article class="pw-card pw-card-recommended"', body)
         self.assertNotIn("Recommended by Picwise", body)
 

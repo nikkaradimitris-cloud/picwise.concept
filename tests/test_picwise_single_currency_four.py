@@ -131,9 +131,11 @@ class SingleCurrencyFourTests(unittest.TestCase):
         return cards
 
     def _currencies(self, query: str) -> set[str]:
+        # A price reads "£12.74" since the design of 2026-10-31: the sign is the currency.
+        signs = {"GBP": ("GBP", "\u00a3"), "USD": ("USD", "$"), "EUR": ("EUR", "\u20ac")}
         found = set()
         for card in self._cards(query):
-            found |= {code for code in ("GBP", "USD", "EUR") if code in card["text"]}
+            found |= {code for code, marks in signs.items() if any(mark in card["text"] for mark in marks)}
         return found
 
     def test_the_four_never_mix_currencies(self) -> None:
