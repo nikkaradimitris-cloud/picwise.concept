@@ -30,8 +30,11 @@
 # search finds, eight offered (the rules as refined after runs 41028398470, 41031539622,
 # 41034288478 and 41036545617, 2026-10-30). And item 3 (owner, 2026-10-30: «Όλα στο
 # search»): the cap chooses only the pool Google may be given from, kept each night for
-# the next; print_cap.py says what the next night keeps, the pool its starting point.
-# The rules reach the server only with a deployment. Runs when this file is pushed to
+# the next; print_cap.py says what the next night keeps, the pool its starting point. And
+# the gaps (owner, 2026-10-31: «Ναι, κάνε τη μέτρηση»): which kinds have products from fewer
+# than 3 shops and which have none, by mega-category (deployment/server/print_gaps.py), so
+# that the owner knows which shops to look for. MEASURE says which measures a run takes:
+# "gaps" alone, or "all". The rules reach the server only with a deployment. Runs when this file is pushed to
 # the working branch. The repository is public and so is this log: the server's names and
 # addresses are masked, and the measures print counts, names, titles and prices, never a
 # link.
@@ -58,6 +61,8 @@ jobs:
       # "with" and the metals after a name). None this time: the run measures the
       # choices a search for a general word could offer, with this commit's rules.
       RULES_STEPS: ""
+      # "gaps": the kinds short of shops only (a minute); "all": every measure below.
+      MEASURE: gaps
     steps:
       - uses: actions/checkout@v5
         with:
@@ -167,14 +172,17 @@ jobs:
       - name: Copy the server's prepared catalogue to the runner
         id: copy
         run: ssh -n picwise 'sudo cat /srv/picwise/shared/prepared/catalogue.json.gz' > "$RUNNER_TEMP/catalogue.json.gz"
+      - name: Which kinds have products from too few shops, and which have none
+        if: always() && steps.copy.outcome == 'success' && (env.MEASURE == 'gaps' || env.MEASURE == 'all')
+        run: python3 deployment/server/print_gaps.py "$RUNNER_TEMP/catalogue.json.gz"
       - name: What a cap of 15% a category would keep
-        if: always() && steps.copy.outcome == 'success'
+        if: always() && steps.copy.outcome == 'success' && env.MEASURE == 'all'
         run: python3 deployment/server/print_cap.py "$RUNNER_TEMP/catalogue.json.gz"
       - name: Prices at the ends, and far from their kind's
-        if: always() && steps.copy.outcome == 'success'
+        if: always() && steps.copy.outcome == 'success' && env.MEASURE == 'all'
         run: python3 deployment/server/print_prices.py "$RUNNER_TEMP/catalogue.json.gz"
       - name: The kinds the rules of each earlier step read
-        if: always() && steps.copy.outcome == 'success'
+        if: always() && steps.copy.outcome == 'success' && env.MEASURE == 'all'
         run: |
           : > "$RUNNER_TEMP/steps.txt"
           for commit in $RULES_STEPS; do
@@ -183,19 +191,19 @@ jobs:
             printf -- '--step %s=%s\n' "${commit:0:7}" "$RUNNER_TEMP/kinds-$commit.txt" >> "$RUNNER_TEMP/steps.txt"
           done
       - name: The kinds this commit's rules read, each change on its own, and the far prices again with them
-        if: always() && steps.copy.outcome == 'success'
+        if: always() && steps.copy.outcome == 'success' && env.MEASURE == 'all'
         run: |
           # One "--step NAME=FILE" per line, without spaces: split into words on purpose.
           # shellcheck disable=SC2046
           python3 deployment/server/print_kind_changes.py "$RUNNER_TEMP/catalogue.json.gz" $(cat "$RUNNER_TEMP/steps.txt")
       - name: Which words are general, and the choices a search for each could offer
-        if: always() && steps.copy.outcome == 'success'
+        if: always() && steps.copy.outcome == 'success' && env.MEASURE == 'all'
         run: python3 deployment/server/print_choices.py "$RUNNER_TEMP/catalogue.json.gz"
       - name: What each rule of the choices changes, each on its own
-        if: always() && steps.copy.outcome == 'success'
+        if: always() && steps.copy.outcome == 'success' && env.MEASURE == 'all'
         run: python3 deployment/server/print_choice_rules.py "$RUNNER_TEMP/catalogue.json.gz"
       - name: What a buyer would see for each general word, searched on the copy
-        if: always() && steps.copy.outcome == 'success'
+        if: always() && steps.copy.outcome == 'success' && env.MEASURE == 'all'
         run: python3 deployment/server/print_search_choices.py "$RUNNER_TEMP/catalogue.json.gz"
       - name: Remove the key and the copy from the runner
         if: always()
