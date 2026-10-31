@@ -141,6 +141,20 @@ view", 4) stay as they are.
      publishers. Not found: each network's count of UK advertisers; which shops and
      kinds each brings shows only to a registered publisher. A shop in two networks is
      one shop (`PROJECT_RULES.md` §5).
+     **The gaps, measured (owner: «Ναι, κάνε τη μέτρηση»; `deployment/server/print_gaps.py`,
+     tests 3; `server-cap.yml` with `MEASURE: gaps`, run `41193055282`, the catalogue of
+     31/10 04:23 UTC: 528,173 products from 76 shops, 257,437 with a kind):** of the 312
+     kinds defined, 94 from 3+ shops, 63 from two, 101 from one, 54 with none. Covered:
+     jewellery (196,441), clothing (19,932), furniture (14,420). Short, by mega-category
+     (3+ / two / one / none of the kinds; products; shops): computers 7/11/17/3, 6,213,
+     9 (Back to the Office alone for laptops 650, monitors 760, RAM 1,157); audio-video
+     5/7/2/2, 1,275 (TVs 52 from two shops); phones 5/5/2/2, 5,402; home appliances
+     3/2/8/4, 440 (washing machines 2, fridges 5, no dishwasher, air conditioner, air
+     purifier); kitchen 5/7/11/2, 1,106 (toasters 55 from Geepas alone); power tools
+     0/2/5/6, 23; hand tools 1/2/9/3, 352; car parts 0/0/3/6, 169 (engine oil from All
+     Oils alone); tyres 0/2/2/5, 9 (no tyre); health devices 2/1/2/6, 33; baby, pets,
+     sports 3/5/15/7, 2,948 (dog food 368 from InStock UK alone); garden 5/3/11/3, 2,280;
+     bicycles 0/2/4/2, 124.
 - **The owner's rules, unchanged** (the list in "Items 1, 2, 3" below, with nothing on
   `main` without their explicit «ναι», and never a server name, address, host key or link
   in a log or a file).
