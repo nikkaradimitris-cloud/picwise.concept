@@ -1,6 +1,6 @@
 """The offers Awin gives PicWise's account: what there is, and for which of PicWise's shops.
 
-    AWIN_API_TOKEN=... AWIN_PUBLISHER_ID=... python3 .github/scripts/awin_offers.py \
+    AWIN_API_TOKEN=... [AWIN_PUBLISHER_ID=...] python3 .github/scripts/awin_offers.py \
         [--shops-from https://picwise.subby.cloud/prepared.json]
 
 Owner, 2026-10-31: «σχετικά με τις προσφορές στα καταστήματα πρέπει να τις τραβήξουμε»;
@@ -20,7 +20,12 @@ code is the account's own, and this log is public), how many end within a week; 
 advertisers with the most offers, and which of them are PicWise's shops, matched by
 name against the shops of the server's public note (`prepared.json`). The token and the
 account's id are secrets and never printed. Nothing on the server or the site changes.
-Exits 1 when Awin refuses or cannot be read; 0 with a note when the secrets are not set.
+Exits 1 when Awin refuses or cannot be read; 0 with a note when the token is not set.
+
+The account's id may be left out: the token is the user's, and Awin's accounts call
+(`GET /accounts`) names the publisher accounts it reaches. With exactly one, that is
+PicWise's (owner, 2026-10-31, who could not find the number); with several, the check
+names them and asks for AWIN_PUBLISHER_ID.
 """
 from __future__ import annotations
 
@@ -37,6 +42,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Callable
 
 API = "https://api.awin.com/publisher/{publisher}/promotions"
+ACCOUNTS_API = "https://api.awin.com/accounts?type=publisher"
 PAGE_SIZE = 200
 # Awin allows a publisher about 20 calls a minute: one page every 3.5 seconds.
 PAUSE_SECONDS = 3.5
@@ -46,6 +52,7 @@ EXAMPLES_PER_SHOP = 3
 SOON = timedelta(days=7)
 
 Post = Callable[[str, dict[str, Any], str], tuple[int, Any]]
+Get = Callable[[str, str], tuple[int, Any]]
 
 
 def _post(url: str, body: dict[str, Any], token: str) -> tuple[int, Any]:
@@ -68,6 +75,49 @@ def _post(url: str, body: dict[str, Any], token: str) -> tuple[int, Any]:
             return error.code, json.loads(text)
         except ValueError:
             return error.code, text[:500]
+
+
+def _get(url: str, token: str) -> tuple[int, Any]:
+    request = urllib.request.Request(
+        url, headers={"Authorization": f"Bearer {token}", "Accept": "application/json"}, method="GET"
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            return response.status, json.loads(response.read().decode("utf-8") or "null")
+    except urllib.error.HTTPError as error:
+        text = error.read().decode("utf-8", errors="replace")
+        try:
+            return error.code, json.loads(text)
+        except ValueError:
+            return error.code, text[:500]
+
+
+def publisher_accounts(answer: Any) -> list[tuple[str, str]]:
+    """(id, name) of each publisher account in an answer of Awin's accounts call."""
+    rows = answer.get("accounts") if isinstance(answer, dict) else answer
+    found: list[tuple[str, str]] = []
+    for row in rows if isinstance(rows, list) else ():
+        if not isinstance(row, dict):
+            continue
+        kind = str(row.get("accountType") or row.get("type") or "publisher").lower()
+        ident = str(row.get("accountId") or row.get("id") or "").strip()
+        if kind == "publisher" and ident:
+            found.append((ident, " ".join(str(row.get("accountName") or row.get("name") or "").split())))
+    return found
+
+
+def find_publisher(token: str, *, get: Get = _get) -> tuple[str, str]:
+    """The publisher account the token reaches, when there is one: (id, "") or ("", why not)."""
+    status, answer = get(ACCOUNTS_API, token)
+    if status != 200:
+        return "", f"Awin's accounts call answered {status}: {_redact(str(answer), token)[:300]}"
+    accounts = publisher_accounts(answer)
+    if len(accounts) == 1:
+        return accounts[0][0], ""
+    if not accounts:
+        return "", "the token reaches no publisher account"
+    names = ", ".join(name or "(no name)" for _ident, name in accounts)
+    return "", f"the token reaches {len(accounts)} publisher accounts ({names}): set AWIN_PUBLISHER_ID to PicWise's"
 
 
 def _items(answer: Any) -> list[dict[str, Any]]:
@@ -235,16 +285,27 @@ def _read_note(url: str) -> Any:
         return None
 
 
-def main(argv: list[str] | None = None, *, post: Post = _post, note: Any = None) -> int:
+def main(argv: list[str] | None = None, *, post: Post = _post, get: Get = _get, note: Any = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--shops-from", help="the server's public note, prepared.json, for PicWise's shops")
     args = parser.parse_args(argv)
     token = str(os.environ.get("AWIN_API_TOKEN") or "").strip()
     publisher = str(os.environ.get("AWIN_PUBLISHER_ID") or "").strip()
-    missing = [name for name, value in (("AWIN_API_TOKEN", token), ("AWIN_PUBLISHER_ID", publisher)) if not value]
-    if missing:
-        print(f"not in GitHub's secrets yet: {', '.join(missing)}; nothing read")
+    if not token:
+        print("not in GitHub's secrets yet: AWIN_API_TOKEN; nothing read")
         return 0
+    if not publisher:
+        try:
+            publisher, why_not = find_publisher(token, get=get)
+        except (urllib.error.URLError, TimeoutError, ValueError) as error:
+            publisher, why_not = "", f"Awin's accounts call could not be read: {error}"
+        if not publisher:
+            print(_redact(f"the account's id is not set and was not found: {why_not}", token))
+            return 1
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            # The runner masks it everywhere in this log from here on.
+            print(f"::add-mask::{publisher}")
+        print("the account: found from the token (one publisher account)")
     if note is None and args.shops_from:
         note = _read_note(args.shops_from)
     try:

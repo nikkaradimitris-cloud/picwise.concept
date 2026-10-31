@@ -3,11 +3,13 @@
 # later talk). The work is .github/scripts/awin_offers.py, on GitHub's runner: the session
 # that wrote it cannot reach api.awin.com.
 #
-# It needs two secrets the owner makes: AWIN_API_TOKEN (Awin, "API Credentials") and
-# AWIN_PUBLISHER_ID (the account's number); without them it says so and reads nothing.
+# It needs the secret AWIN_API_TOKEN (Awin, "API Credentials"); without it it says so and
+# reads nothing. AWIN_PUBLISHER_ID (the account's number) may be left out: the check finds
+# the one publisher account the token reaches.
 #
 # Read-only: nothing on the server or the site changes. Runs when this file or the script
-# is pushed to the working branch; to read again, change the line below and push. The
+# is pushed to the working branch, or to the session's branch that built it (a push there
+# deploys nothing); to read again, change the line below and push. The
 # repository is public and so is this log: the token and the account's id are secrets,
 # never printed; voucher codes are never printed either, only whether an offer has one.
 #
@@ -15,7 +17,7 @@
 name: Awin offers (read-only)
 on:
   push:
-    branches: [ccr-1361f1a7-dcpo60]
+    branches: [ccr-1361f1a7-dcpo60, ccr-9826870f-qkgl6s]
     paths:
       - '.github/workflows/awin-offers.yml'
       - '.github/scripts/awin_offers.py'
