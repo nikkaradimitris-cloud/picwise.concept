@@ -1,0 +1,36 @@
+# The offers Awin gives PicWise's account, read once and printed (owner, 2026-10-31: «τις
+# προσφορές στα καταστήματα πρέπει να τις τραβήξουμε»; which product an offer is for is a
+# later talk). The work is .github/scripts/awin_offers.py, on GitHub's runner: the session
+# that wrote it cannot reach api.awin.com.
+#
+# It needs two secrets the owner makes: AWIN_API_TOKEN (Awin, "API Credentials") and
+# AWIN_PUBLISHER_ID (the account's number); without them it says so and reads nothing.
+#
+# Read-only: nothing on the server or the site changes. Runs when this file or the script
+# is pushed to the working branch; to read again, change the line below and push. The
+# repository is public and so is this log: the token and the account's id are secrets,
+# never printed; voucher codes are never printed either, only whether an offer has one.
+#
+# Read: not yet
+name: Awin offers (read-only)
+on:
+  push:
+    branches: [ccr-1361f1a7-dcpo60]
+    paths:
+      - '.github/workflows/awin-offers.yml'
+      - '.github/scripts/awin_offers.py'
+permissions:
+  contents: read
+jobs:
+  offers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: The live offers for the UK, and which of PicWise's shops have them
+        env:
+          AWIN_API_TOKEN: ${{ secrets.AWIN_API_TOKEN }}
+          AWIN_PUBLISHER_ID: ${{ secrets.AWIN_PUBLISHER_ID }}
+        run: python3 .github/scripts/awin_offers.py --shops-from https://picwise.subby.cloud/prepared.json
