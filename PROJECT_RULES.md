@@ -16,6 +16,7 @@ Changed on 2026-10-16 by the owner: "price first" (`docs/picwise_price_first_pla
 - Picwise finds the product the buyer asked for, shows only what is in stock, cheapest first, and makes one honest pick.
 - Picwise must reduce search-to-decision time.
 - Every purchase-intent query must lead to 4 choices first, with exactly 1 honest recommended choice among them, and a "More" that opens the next 4 cheapest as often as the buyer asks.
+- Fewer than four right products are shown as they are (`docs/PICWISE_DECISION_CONTRACT.md`, 2026-10-16). Even one product is shown when there is no other, on a layout of its own, never as one small card in the middle (owner, 2026-10-31: «Το ευρετήριο μπορεί να εμφανίσει και ένα προϊόν εάν δεν υπάρχουν άλλα σε αυτή την περίπτωση το εμφανίζει διαφορετικά»).
 
 ## 3) Required Output Contract (Always)
 
@@ -117,7 +118,7 @@ Set on 2026-10-29 by the owner: «Θα στήσουμε ολοκληρωμένα
 
 - PicWise is built whole: every product a card can show is in PicWise's own search, whether or not Google sees it.
 - Google is given only what the owner chooses, part by part. Google indexes pages, not products: only the pages meant for Google (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`, section 2), never the site's own search, whose pages carry `noindex`.
-- A page opens to Google only when its kind passes the bar and the owner chooses its part. The bar: enough products of the kind, from enough shops, read as the right kind and checked (kind, price, stock). The numbers of the bar are the owner's to set (TODO). A page that does not pass is still shown to visitors, carries `noindex` and stays out of the sitemaps.
+- A page opens to Google only when its kind passes the bar and the owner chooses its part. The bar: products of the kind read as the right kind and checked (kind, price, stock). No minimum of shops (owner, 2026-10-31: «Καταργείται το όριο των τριών καταστημάτων ανά είδος»), and no minimum of products: even one product, on a layout of its own. Further numbers of the bar are the owner's to set (TODO). A page that does not pass is still shown to visitors, carries `noindex` and stays out of the sitemaps.
 - A page meant for Google may choose its products among all of its kind's products; whatever Google sees on it must be true.
 - A visitor who comes from Google finds the whole catalogue through PicWise's own search: a kind may have 15,000 products while Google sees the pages of 100 checked ones.
 - Parts go out one at a time, and a part Google does not keep is fixed or withdrawn before the next (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`, section 9).

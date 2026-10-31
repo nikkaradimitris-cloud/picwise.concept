@@ -89,10 +89,12 @@ comes first, and `Disallow` only after Google has dropped those pages.
 built whole, given to Google part by part, the parts the owner chooses):
 
 - real data only;
-- at least 4 products of the kind on a list page
-  (`docs/pickwise_roadmap_step6_quality_index_gate.md`);
-- the kind's bar: enough products, from enough shops, read as the right kind and
-  checked (kind, price, stock); the numbers are the owner's to set (TODO);
+- products of the kind on a list page, with no minimum: even one, shown on a layout of
+  its own, never as one small card in the middle (owner, 2026-10-31; before, at least 4,
+  `docs/pickwise_roadmap_step6_quality_index_gate.md`);
+- the kind's bar: products read as the right kind and checked (kind, price, stock); no
+  minimum of shops (owner, 2026-10-31: «Καταργείται το όριο των τριών καταστημάτων ανά
+  είδος»); further numbers are the owner's to set (TODO);
 - a part of the site the owner has chosen to open;
 - a set of products of its own;
 - no adult products (the feed's `adult` column);

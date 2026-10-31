@@ -5,6 +5,37 @@ to the real server: items 1-3 deployed to it on 30/10; **picwise.subby.cloud ans
 the server since 2026-10-31 10:03 UTC**, HTTPS by Caddy; Vercel kept as the backup).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
+## Now (2026-10-31, afternoon): the owner's plan after the move -- start here
+
+The site is live from the server (below). The owner's decisions of 31/10:
+
+- **The catalogue stays as it is**, «ποιοτικός και εξακριβωμένος»; no new network for now
+  (Shopify's catalogue pays no commission; a title cannot safely give the held rows a
+  kind, measured; another network's similar titles would not either).
+- **No minimum of shops per kind, and none of products**: «Καταργείται το όριο των τριών
+  καταστημάτων ανά είδος. Το ευρετήριο μπορεί να εμφανίσει και ένα προϊόν εάν δεν
+  υπάρχουν άλλα σε αυτή την περίπτωση το εμφανίζει διαφορετικά (δεν θα βγει μία καρτούλα
+  στη μέση.)». Written into `PROJECT_RULES.md` (§2, §13), the Google pages spec (the
+  gate) and the Decision Contract; the single product's own layout comes with the new
+  design.
+- **Before applying to shops or networks** («Για να κάνουμε αιτήσεις θα πρέπει να
+  έχουμε»): (a) a design, (b) a UI wholly compatible with Google's standards, (c) cards
+  laid out symmetrically, with what Google asks of each product; every page filled in
+  (terms of use, what the site is, the operator); an application text and a
+  presentation of the business; then Awin's offers (vouchers, promotions) in a field of
+  the card; the month's 10 trending purchases under the home page's search box, from a
+  Google channel (true to its source, as decided on 16/10); favourites and search
+  history **without a login, kept in the visitor's browser** (owner: «συμφωνώ στο 6»).
+- **The operator, given by the owner for the pages:** their sole business in Piraeus,
+  Greece, with its VAT number, and `mysubby.cloud@gmail.com` as the contact (the pages
+  showed `contact.picwise@subby.cloud`, and tests forbade the Gmail address; the
+  owner's word now decides).
+- **Order put to the owner and worked through:** the pages (true and complete, a page
+  "About PicWise", the home page's title and description, which still said "Reference
+  — Buying Decision Preview" and "provider integrations are being configured"), shown
+  to the owner before any deployment; then the design proposal; then the presentation;
+  the trends' source; Awin's offers; favourites and history.
+
 ## Next conversation (from 2026-10-30): move the site to the real server -- start here
 
 **The owner (30/10): «2 μεταφορά του site στον κανονικό server και πάμε να ξεκινήσουμε από
