@@ -81,13 +81,21 @@ The design of 31/10 is built and deployed with the pages (owner, 31/10: «Υλο
   now («πρέπει να τις τραβήξουμε»); **which product an offer is for is a later talk**
   («αυτό είναι άλλη συζήτηση»).
 - **Waiting for the owner:**
-  1. **`AWIN_API_TOKEN` and `AWIN_PUBLISHER_ID` in GitHub's secrets** (Awin, page "API
-     Credentials", ui.awin.com/awin-api; the account's number). Then change the line
-     "Read:" of `.github/workflows/awin-offers.yml` and push it to `ccr-1361f1a7-dcpo60`:
-     the read-only check (`.github/scripts/awin_offers.py`, 10 tests; first run
-     `41220045077` said the secrets are missing) prints the offers' shape, counts and
-     PicWise's shops with offers, never the token, the id or a code. After the owner sees
-     it: a nightly fetch on the server, then the offers on the site.
+  1. ~~The Awin token~~ **in GitHub's secrets since 31/10** (`AWIN_API_TOKEN`; the account's
+     number is found from it, `AWIN_PUBLISHER_ID` not needed). **First read** (run
+     `41226304997`): Awin answers `{data, pagination: {page, pageSize, total}}`, an offer
+     `{promotionId, type, advertiser: {id, name, joined}, title, description, terms,
+     startDate, endDate, status, url, urlTracking, dateAdded, campaign, regions: {all},
+     categories, voucher: {code, exclusive, attributable}}`; 20,000 live offers read (the
+     check's most; 7,571 vouchers, 12,429 promotions; 4,463 advertisers); **28 of
+     PicWise's 85 shops have offers** (Geepas: mixer grinders, kettle and toaster set, air
+     fryers; Finediam 23% off; Angel Barocco, EXG Pro, Craft Buddy Shop, Mint Outdoor,
+     Optimum Nutrition, Game Over, Gardenista...), but **Awin calls the account joined to
+     only 2 of them (Game Over, Gardenista), the only ones whose voucher codes it gives**:
+     the applications to the shops matter for the offers too. Next: a nightly fetch on the
+     server, asked only for PicWise's shops by their advertiser ids (the feed's
+     `merchant_id`), so it is complete and quick; showing offers on the site, and which
+     product an offer is for, is the owner's later talk.
   2. **A source for the trending searches**: Google Ads (free without a campaign) with a
      manager account and an API developer token with Basic access, by application
      (Keyword Planner's monthly searches; Explorer access excludes keyword planning), or
