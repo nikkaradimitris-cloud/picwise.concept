@@ -58,6 +58,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
     def _assert_common_footer_links(body: str) -> None:
         expected_links = (
             ("/", "Home"),
+            ("/about", "About"),
             ("/demo", "Demo"),
             ("/picwise-reference", "PicWise Reference"),
             ("/terms", "Terms"),
@@ -72,8 +73,10 @@ class DeploymentEntrypointTests(unittest.TestCase):
             assert f'href="{href}"' in body
         assert '<nav class="pw-footer-links" aria-label="PicWise public footer links">' in body
         assert (
-            "PicWise may earn commissions from qualifying purchases, referrals, or provider links "
-            "when affiliate or provider integrations are active."
+            # The footer's notice since Awin went live (2026-10-31).
+            "PicWise earns a commission from some shops, through Awin, when you buy after following "
+            "one of its links. The price you pay is the same, and the commission never changes the "
+            "order of the results."
         ) in body
         assert (
             "HomeDemoPicWise ReferenceTermsPrivacyCookiesAffiliate DisclosureContact"
@@ -111,7 +114,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn("What are you looking for?", body)
         self.assertIn("Live safe mode", body)
         self.assertIn("shopping decision assistant", body)
-        self.assertIn("<title>PicWise Reference — Buying Decision Preview</title>", body)
+        self.assertIn("<title>PicWise — Find the product you want in UK shops</title>", body)
         self.assertIn('<meta name="description"', body)
         self._assert_common_footer_links(body)
         self.assertIn('class="pw-search-shell"', body)
@@ -519,6 +522,10 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "Recommended.",
         )
         lowered = (body[: tooltip.start()] + body[tooltip.end():]).lower()
+        # The head's description is the same text of the owner's (2026-10-31), for Google.
+        described = f'<meta name="description" content="{tooltip.group(1)}">'.lower()
+        self.assertIn(described, lowered)
+        lowered = lowered.replace(described, "")
         self.assertNotIn("eur ", lowered)
         self.assertNotIn("in stock", lowered)
         self.assertNotIn("prime", lowered)
@@ -581,7 +588,8 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "/privacy": ("Privacy Policy", "<title>Privacy Policy — PicWise</title>", True),
             "/cookies": ("Cookie Policy", "<title>Cookie Policy — PicWise</title>", True),
             "/affiliate-disclosure": ("Affiliate Disclosure", "<title>Affiliate Disclosure — PicWise</title>", True),
-            "/contact": ("contact.picwise@subby.cloud", "<title>Contact — PicWise</title>", True),
+            "/contact": ("mysubby.cloud@gmail.com", "<title>Contact — PicWise</title>", True),
+            "/about": ("About PicWise", "<title>About PicWise — PicWise</title>", True),
         }
         for path, (must_have, title_tag, must_have_email) in expected.items():
             status, headers, body = _call_wsgi(path)
@@ -589,10 +597,11 @@ class DeploymentEntrypointTests(unittest.TestCase):
             self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
             self.assertIn(must_have, body)
             self.assertIn(title_tag, body)
+            # The contact the owner gave on 2026-10-31.
             if must_have_email:
-                self.assertIn("contact.picwise@subby.cloud", body)
+                self.assertIn("mysubby.cloud@gmail.com", body)
             self.assertNotIn("contact@picwise.subby.cloud", body)
-            self.assertNotIn("mysubby.cloud@gmail.com", body)
+            self.assertNotIn("contact.picwise@subby.cloud", body)
             self.assertIn('<meta name="description"', body)
             self._assert_common_footer_links(body)
 
@@ -600,7 +609,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         _status, _headers, body = _call_wsgi("/affiliate-disclosure")
         self.assertIn("PicWise works with the Awin affiliate network", body)
         self.assertNotIn("Amazon", body)
-        self.assertIn("Linkwise", body)
+        self.assertNotIn("Linkwise", body)
         self.assertIn("SaaS", body)
         self.assertIn("finance", body.lower())
 

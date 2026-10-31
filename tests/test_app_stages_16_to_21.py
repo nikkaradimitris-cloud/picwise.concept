@@ -60,8 +60,10 @@ class AppHttpEndpointTests(unittest.TestCase):
             assert f'href="{href}"' in body
         assert '<nav class="pw-footer-links" aria-label="PicWise public footer links">' in body
         assert (
-            "PicWise may earn commissions from qualifying purchases, referrals, or provider links "
-            "when affiliate or provider integrations are active."
+            # The footer's notice since Awin went live (2026-10-31).
+            "PicWise earns a commission from some shops, through Awin, when you buy after following "
+            "one of its links. The price you pay is the same, and the commission never changes the "
+            "order of the results."
         ) in body
         assert (
             "HomeDemoPicWise ReferenceTermsPrivacyCookiesAffiliate DisclosureContact"
@@ -289,6 +291,10 @@ class AppHttpEndpointTests(unittest.TestCase):
             "Recommended.",
         )
         lowered = (body[: tooltip.start()] + body[tooltip.end():]).lower()
+        # The head's description is the same text of the owner's (2026-10-31), for Google.
+        described = f'<meta name="description" content="{tooltip.group(1)}">'.lower()
+        self.assertIn(described, lowered)
+        lowered = lowered.replace(described, "")
         self.assertNotIn("eur ", lowered)
         self.assertNotIn("in stock", lowered)
         self.assertNotIn("prime", lowered)
@@ -393,15 +399,16 @@ class AppHttpEndpointTests(unittest.TestCase):
             ("/privacy", "Privacy Policy"),
             ("/cookies", "Cookie Policy"),
             ("/affiliate-disclosure", "PicWise works with the Awin affiliate network"),
-            ("/contact", "contact.picwise@subby.cloud"),
+            ("/contact", "mysubby.cloud@gmail.com"),
+            ("/about", "About PicWise"),
         ):
             body = self._fetch(path)
             self.assertIn(token, body)
-            self.assertIn("contact.picwise@subby.cloud", body)
+            self.assertIn("mysubby.cloud@gmail.com", body)
             self.assertNotIn("contact@picwise.subby.cloud", body)
             self.assertIn('<meta name="description"', body)
             self._assert_common_footer_links(body)
-            self.assertNotIn("mysubby.cloud@gmail.com", body)
+            self.assertNotIn("contact.picwise@subby.cloud", body)
 
         from urllib.error import HTTPError
 

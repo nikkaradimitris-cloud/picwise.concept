@@ -1028,8 +1028,10 @@ def render_picwise_reference_surface(
         '<meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         f"{'' if indexable else NOINDEX_META}"
-        "<title>PicWise Reference — Buying Decision Preview</title>"
-        '<meta name="description" content="Preview how PicWise supports product comparison and buying decisions while provider integrations are being configured.">'
+        "<title>PicWise — Find the product you want in UK shops</title>"
+        # What PicWise does, in the owner's own words of 2026-10-17 ("What is PicWise?"),
+        # for Google to show under the home page (owner, 2026-10-31: the pages true).
+        f'<meta name="description" content="{escape(_WHAT_IS_PICWISE)}">'
         "<style>"
         "*{box-sizing:border-box;}html,body{height:100%;}"
         "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:#0f1f3a;background:#f8fbff;}"
