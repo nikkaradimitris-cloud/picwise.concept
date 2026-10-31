@@ -47,6 +47,20 @@ The site is live from the server (below). The owner's decisions of 31/10:
   the number of shops for the pages given to Google; brand and code on the single
   product's layout; the 16 s first search after a restart). The examples are the
   server's real "kettle" cards (4 of 75).
+- **The trends, redone (owner, 31/10: «Αυτό το φτωχό που έχεις κάνει με τα κουμπάκια δεν
+  βοηθάει πουθενά φτιάξε ένα ωραίο πάνελ ... δημοφιλείς αγορές για αυτό το μήνα παράδειγμα
+  apple iphone ... Philips air fryer ... αν μπορείς να αντλείς και αριθμό αναζητήσεων»):** a
+  panel "Popular in the UK this month" in the same file: rank, a coloured icon per
+  category, Google's relative demand as a 5-step scale, rising/falling/new against last
+  month, searches a month, and PicWise's offers ("27 offers · from £699", or "Not in our
+  shops yet", never an empty search); invented numbers, labelled as an example. Real
+  sources found: **Google Merchant Center's best sellers** (Merchant API Reports v1:
+  product clusters such as "Google Pixel 7" ranked by estimated units sold on Google,
+  per country and category, weekly or monthly, with relative demand, previous rank and
+  the change), **Google Ads Keyword Planner** (approximate monthly searches; ranges
+  without ad spend, by third-party accounts; needs an account with a payment method and
+  a developer token with Basic access), **Google Trends API** (alpha, by application).
+  Both need accounts of the owner's; none created yet.
 - **Order put to the owner and worked through:** the pages (true and complete, a page
   "About PicWise", the home page's title and description, which still said "Reference
   — Buying Decision Preview" and "provider integrations are being configured"), shown
