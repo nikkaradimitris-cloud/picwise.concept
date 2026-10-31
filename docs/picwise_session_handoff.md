@@ -18,9 +18,11 @@ The design of 31/10 is built and deployed with the pages (owner, 31/10: «Υλο
   `20261031T153406Z-ce8ba74`; the catalogue prepared again with the new code, 528,134
   products from 81 shops, peak memory 7.9 GB, 718 s; the site healthy at 15:46:14; its
   memory 6,187 MB; 15 of 15 pages answered with no failure and the 12 searches show the
-  new cards, through https://picwise.subby.cloud as from the server itself). The
-  session's branch `ccr-9826870f-qkgl6s` holds the same. `ccr-60773189-pesaft` is behind
-  both; nothing is waiting on it.
+  new cards, through https://picwise.subby.cloud as from the server itself). Since then
+  the server's branch also has the Awin offers check (`e112d77`, no deployment). **Start
+  the next conversation from the session's branch `ccr-9826870f-qkgl6s`**: it holds all
+  of that and, not deployed, the trends panel's rewording (`aef1ff7`) and these notes.
+  `ccr-60773189-pesaft` is behind both; nothing is waiting on it.
 - **What the site shows now** (`src/picwise_surface/reference.py`, `browser_lists.py`,
   `trends.py`; pinned by `tests/test_picwise_design_2026_10_31.py`, 30 tests):
   - **Cards, symmetric**: a square photo shown whole (`object-fit:contain`, 400×400 set
@@ -66,14 +68,33 @@ The design of 31/10 is built and deployed with the pages (owner, 31/10: «Υλο
   One more was already failing since 31/10 and is fixed: the truth test for weak
   availability read the home page's new description (the "What is PicWise?" words) as a
   stock claim; it now leaves the description out, as it does the tooltip.
-- **Waiting for the owner** (unchanged): the accounts, Search Console and Merchant Center
-  (free), Google Ads later; and whether Merchant Center shows Best sellers.
+- **The owner's word after the deployment (31/10, evening).** The trends are **searches,
+  not sales** («μπορούμε να λέμε trend αναζητήσεις και όχι πωλήσεις»): the panel says
+  "Trending searches in the UK this month" (`aef1ff7`, on the session's branch only, not
+  deployed: the panel shows nothing yet, so it waits for the next deployment), and its
+  source is Google's search data, not Merchant Center's best sellers (which Google gives
+  to shops that sell, and whose terms limit showing it). Awin's offers are to be pulled
+  now («πρέπει να τις τραβήξουμε»); **which product an offer is for is a later talk**
+  («αυτό είναι άλλη συζήτηση»).
+- **Waiting for the owner:**
+  1. **`AWIN_API_TOKEN` and `AWIN_PUBLISHER_ID` in GitHub's secrets** (Awin, page "API
+     Credentials", ui.awin.com/awin-api; the account's number). Then change the line
+     "Read:" of `.github/workflows/awin-offers.yml` and push it to `ccr-1361f1a7-dcpo60`:
+     the read-only check (`.github/scripts/awin_offers.py`, 10 tests; first run
+     `41220045077` said the secrets are missing) prints the offers' shape, counts and
+     PicWise's shops with offers, never the token, the id or a code. After the owner sees
+     it: a nightly fetch on the server, then the offers on the site.
+  2. **A source for the trending searches**: Google Ads (free without a campaign) with a
+     manager account and an API developer token with Basic access, by application
+     (Keyword Planner's monthly searches; Explorer access excludes keyword planning), or
+     the Google Trends API (alpha, by application, often unanswered). Search Console is
+     still worth making for the site.
 - **Next, in order** (each shown to the owner before it is built on):
-  1. The application text (`docs/awin_application_message.md`) and the presentation of
+  1. The Awin offers check, as soon as the secrets exist; then the nightly fetch.
+  2. The application text (`docs/awin_application_message.md`) and the presentation of
      the business: the site is live with its pages and design now.
-  2. The trends' real source, once the accounts exist: `trends.load_trends_panel`.
-  3. Awin's offers on the cards: an Awin API token in GitHub's secrets; only offers valid
-     by Awin's own end date.
+  3. The trending searches' real source, once the owner's Google access exists:
+     `trends.load_trends_panel`.
   4. Structured data (price range and number of shops, no ratings) on the pages given to
      Google, when the first of them is built (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`).
   Then the owner applies again to the 6 Awin advertisers that rejected them (SharkNinja,
