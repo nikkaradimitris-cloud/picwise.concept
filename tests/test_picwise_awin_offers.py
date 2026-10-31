@@ -141,6 +141,16 @@ class AwinOffersCheckTests(unittest.TestCase):
         self.assertEqual([call[1]["pagination"]["page"] for call in awin.calls], [1, 2])
         self.assertIn(f"== {offers_check.PAGE_SIZE + 1:,} live offers for the United Kingdom", out)
 
+    def test_an_answer_that_ignores_the_page_is_read_once(self) -> None:
+        # Awin sending its first page again whatever page is asked: one page more, no repeat.
+        full = [_offer(index, FIXTURON) for index in range(offers_check.PAGE_SIZE)]
+        awin = _Awin([full] * 50)
+        code, out = _run(awin)
+        self.assertEqual(code, 0)
+        self.assertEqual(len(awin.calls), 2)
+        self.assertIn("pages read: 2 of at most 100", out)
+        self.assertIn(f"== {offers_check.PAGE_SIZE:,} live offers for the United Kingdom", out)
+
     def test_the_counts_and_the_shops_of_picwise_among_the_advertisers(self) -> None:
         awin = _Awin([[
             _offer(1, FIXTURON, kind="voucher", code="FIXCODE10"),

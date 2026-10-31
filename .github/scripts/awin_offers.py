@@ -142,13 +142,27 @@ def _shape(value: Any, depth: int = 0) -> str:
     return type(value).__name__
 
 
+def _offer_key(offer: dict[str, Any]) -> str:
+    """One offer however often a page repeats it: its id, else all it says."""
+    ident = offer.get("promotionId", offer.get("id"))
+    return f"id:{ident}" if ident not in (None, "") else json.dumps(offer, sort_keys=True, default=str)
+
+
 def read_offers(
     publisher: str, token: str, *, post: Post = _post, pause: float = PAUSE_SECONDS
 ) -> tuple[list[dict[str, Any]], Any]:
-    """Every page of the live offers for the UK; the first answer as well, for its shape."""
+    """Every page of the live offers for the UK, each offer once; the first answer as
+    well, for its shape.
+
+    Reading stops at a short page, or at a page that brings no offer not already read:
+    an answer that ignores the page asked for, sending the same offers again, is read
+    once, not a hundred times (the first run, 31/10, went on to the last page).
+    """
     url = API.format(publisher=publisher)
     offers: list[dict[str, Any]] = []
+    seen: set[str] = set()
     first: Any = None
+    pages = 0
     for page in range(1, MAX_PAGES + 1):
         body = {
             "filters": {"membership": "all", "regionCodes": ["GB"], "status": "active", "type": "all"},
@@ -157,13 +171,17 @@ def read_offers(
         status, answer = post(url, body, token)
         if status != 200:
             raise RuntimeError(f"Awin answered {status}: {_redact(str(answer), token, publisher)[:300]}")
+        pages += 1
         if first is None:
             first = answer
         items = _items(answer)
-        offers.extend(items)
-        if len(items) < PAGE_SIZE:
+        fresh = [item for item in items if _offer_key(item) not in seen]
+        seen.update(_offer_key(item) for item in fresh)
+        offers.extend(fresh)
+        if len(items) < PAGE_SIZE or not fresh:
             break
         time.sleep(pause)
+    print(f"pages read: {pages} of at most {MAX_PAGES}")
     return offers, first
 
 
