@@ -11,8 +11,9 @@
 - History and Favourites take the place of Login and Register: kept in the visitor's
   browser, never sent to PicWise, shown only where JavaScript and local storage work,
   and the history kept only once the visitor asks for it;
-- the month's popular purchases show only from a real source: none is connected, so
-  the home page has no panel; on fictional rows the panel says only what its sources give;
+- the month's trending searches (searches, not sales: owner, 2026-10-31) show only from
+  a real source: none is connected, so the home page has no panel; on fictional rows the
+  panel says only what its sources give;
 - the footer has About and no longer "Demo" or "PicWise Reference"; the privacy and
   cookie pages say what the browser keeps.
 
@@ -406,7 +407,7 @@ class HomePageTests(unittest.TestCase):
         self.assertIsNone(load_trends_panel())
         self.assertEqual(TRENDS_SOURCE_STATUS, "not_connected")
         self.assertNotIn('id="pw-trends"', self.page)
-        self.assertNotIn("Popular in the UK this month", self.page)
+        self.assertNotIn("Trending searches in the UK this month", self.page)
 
 
 def _panel(rows: tuple[TrendRow, ...], **overrides: str) -> TrendsPanel:
@@ -414,7 +415,7 @@ def _panel(rows: tuple[TrendRow, ...], **overrides: str) -> TrendsPanel:
         "period": "October 2026",
         "country": "United Kingdom",
         "rows": rows,
-        "ranking_source": "Google Merchant Center best sellers (units sold on Google, UK, monthly)",
+        "ranking_source": "Google Ads Keyword Planner (monthly searches, UK)",
         "searches_source": "Google Ads Keyword Planner, approximate",
         "offers_source": "PicWise's shops, last night",
     }
@@ -444,18 +445,20 @@ class TrendsPanelTests(unittest.TestCase):
         panel = render_trends_panel(_panel(self._rows()))
         names = re.findall(r'<span class="pw-tp-name">(.*?)</span>', panel)
         self.assertEqual(names, ["Testline Phone 12", "Fixturon Air Fryer 5L", "Sampleware Vacuum &lt;Pro&gt;"])
-        self.assertIn("Popular in the UK this month", panel)
+        self.assertIn("Trending searches in the UK this month", panel)
+        self.assertIn("The products people search for most on Google this month", panel)
+        # Searches, not sales (owner, 2026-10-31).
+        for word in ("bought", "sold", "best sellers", "sales"):
+            self.assertNotIn(word, panel.lower())
         self.assertIn("October 2026 · United Kingdom", panel)
         self.assertIn("~550K searches a month", panel)
-        self.assertIn('aria-label="Demand on Google: Very high"', panel)
+        self.assertIn('aria-label="Search interest: Very high"', panel)
         self.assertIn("Up 1 place on last month", panel)
         self.assertIn("New in the top 10 this month", panel)
         self.assertIn("Down 2 places on last month", panel)
         self.assertIn('href="/search?q=Testline%20Phone%2012"', panel)
         self.assertIn("27 offers · from £699", panel)
-        self.assertIn(
-            "Ranking and demand: Google Merchant Center best sellers (units sold on Google, UK, monthly).", panel
-        )
+        self.assertIn("Ranking and interest: Google Ads Keyword Planner (monthly searches, UK).", panel)
         self.assertIn("Searches: Google Ads Keyword Planner, approximate.", panel)
 
     def test_a_product_not_in_the_shops_never_links_to_an_empty_search(self) -> None:

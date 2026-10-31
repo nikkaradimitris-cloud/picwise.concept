@@ -1,24 +1,26 @@
-"""The month's popular purchases, under the home page's search box (owner, 2026-10-31).
+"""The month's trending searches, under the home page's search box (owner, 2026-10-31).
 
 The design is the panel in `docs/design/picwise_design_proposal_2026-10-31.html`
 (owner: «φτιάξε ένα ωραίο πάνελ ... δημοφιλείς αγορές για αυτό το μήνα ... αν μπορείς
 να αντλείς και αριθμό αναζητήσεων»): rank, a coloured icon per category, Google's
-relative demand on a five-step scale, rising, falling or new against last month,
-searches a month, and what PicWise's shops ask for the product.
+search interest on a five-step scale, rising, falling or new against last month,
+searches a month, and what PicWise's shops ask for the product. It speaks of searches,
+not sales (owner, 2026-10-31: «μπορούμε να λέμε trend αναζητήσεις και όχι πωλήσεις»).
 
 Every figure must come from a real source, named on the panel (`docs/LANDING_PAGE_SPEC.md`,
 "Trends state only what is known"; `docs/ANTI_FAKE_TRUST_RULES.md`):
 
-- the ranking, the demand and the change: Google Merchant Center's best sellers;
+- the ranking, the interest and the change: Google's search data (Google Ads Keyword
+  Planner's monthly searches, or the Google Trends API's interest);
 - the searches a month: Google Ads Keyword Planner, approximate;
 - the offers and the lowest price: PicWise's own catalogue, counted when the panel's
   data is written, never when a page is drawn.
 
-No source is connected yet: the owner's Merchant Center and Google Ads accounts do not
-exist (31/10). So `load_trends_panel` returns None, its status is `not_connected`, and
-the home page shows no panel at all: never invented rows, never an empty frame. The
-renderer is built and tested on fictional rows so that the day a source writes real
-ones, the panel only has to be given them.
+No source is connected yet: the owner's Google accounts do not exist (31/10). So
+`load_trends_panel` returns None, its status is `not_connected`, and the home page shows
+no panel at all: never invented rows, never an empty frame. The renderer is built and
+tested on fictional rows so that the day a source writes real ones, the panel only has
+to be given them.
 """
 from __future__ import annotations
 
@@ -31,8 +33,8 @@ TRENDS_SOURCE_STATUS = "not_connected"
 
 MAX_TREND_ROWS = 10
 
-# Google's relative demand, as Merchant Center's best sellers report gives it, on the
-# panel's five steps. 0 or None: the source gave none, and the scale is not drawn.
+# Google's search interest, on the panel's five steps. 0 or None: the source gave none,
+# and the scale is not drawn.
 _DEMAND_LEVELS = {5: "Very high", 4: "High", 3: "Medium", 2: "Low", 1: "Very low"}
 _CHANGES = frozenset({"up", "down", "new", "flat"})
 
@@ -78,7 +80,7 @@ class TrendRow:
     rank: int
     name: str
     category: str
-    # Google's relative demand on five steps (5 = very high); None when not given.
+    # Google's search interest on five steps (5 = very high); None when not given.
     demand_level: int | None = None
     # Against last month: "up", "down", "new", "flat", or "" when the source says nothing.
     change: str = ""
@@ -107,11 +109,11 @@ class TrendsPanel:
 def load_trends_panel() -> TrendsPanel | None:
     """The panel's data from its sources, or None while none is connected.
 
-    TODO (owner's accounts, 31/10): read the month's best sellers from Google Merchant
-    Center (Merchant API, Reports: product clusters ranked by units sold on Google, UK,
-    with relative demand, previous rank and the change) and the searches from Google Ads
-    Keyword Planner, written once a month with the offers counted in PicWise's catalogue.
-    Until then the panel is not shown.
+    TODO (owner's accounts, 31/10): the month's most searched products in the UK and
+    their change from Google Ads Keyword Planner (monthly searches; its API needs a
+    developer token with Basic access) or the Google Trends API (interest 0-100; alpha,
+    by application), written once a month with the offers counted in PicWise's
+    catalogue. Until then the panel is not shown.
     """
     return None
 
@@ -159,7 +161,7 @@ def _demand_html(level: int | None) -> str:
     )
     name = _DEMAND_LEVELS[int(level)]
     return (
-        f'<span class="pw-tp-scale" role="img" aria-label="Demand on Google: {name}">{steps}</span>'
+        f'<span class="pw-tp-scale" role="img" aria-label="Search interest: {name}">{steps}</span>'
         f'<span class="pw-tp-level">{name}</span>'
     )
 
@@ -226,14 +228,14 @@ def render_trends_panel(panel: TrendsPanel | None) -> str:
         f'style="--c:{_category_style(name)[1]}" aria-pressed="false">{escape(name)}</button>'
         for name in categories
     )
-    sources = [f"Ranking and demand: {escape(panel.ranking_source.strip())}."]
+    sources = [f"Ranking and interest: {escape(panel.ranking_source.strip())}."]
     if any(str(row.monthly_searches or "").strip() for row in rows) and panel.searches_source.strip():
         sources.append(f"Searches: {escape(panel.searches_source.strip())}.")
     if any(int(row.offers or 0) > 0 for row in rows) and panel.offers_source.strip():
         sources.append(f"Offers and prices: {escape(panel.offers_source.strip())}.")
     kicker = " · ".join(part for part in (panel.period.strip(), panel.country.strip()) if part)
     country = panel.country.strip()
-    heading = "Popular in the UK this month" if country == "United Kingdom" else "Popular this month"
+    heading = "Trending searches in the UK this month" if country == "United Kingdom" else "Trending searches this month"
     has_change = any(row.change in _CHANGES for row in rows)
     legend = (
         '<div class="pw-tp-legend" aria-hidden="true">'
@@ -249,8 +251,8 @@ def render_trends_panel(panel: TrendsPanel | None) -> str:
         '<div class="pw-tp-head"><div>'
         f'<p class="pw-tp-kicker">{escape(kicker)}</p>'
         f'<h2 class="pw-tp-title" id="pw-tp-title">{heading}</h2>'
-        '<p class="pw-tp-intro">The products bought most on Google this month, how much people '
-        "search for them, and what PicWise's shops ask for them.</p>"
+        '<p class="pw-tp-intro">The products people search for most on Google this month, how '
+        "that is changing, and what PicWise's shops ask for them.</p>"
         f"</div>{legend}</div>"
         f'<div class="pw-tp-tabs pw-needs-js" role="group" aria-label="Show a category">'
         '<button class="pw-tp-tab on" type="button" data-category="" aria-pressed="true">All</button>'
