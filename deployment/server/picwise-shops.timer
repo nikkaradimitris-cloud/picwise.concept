@@ -1,0 +1,12 @@
+# Every night, after the updates' reboot window (03:30 UTC) and before the preparation
+# (picwise-prepare.timer, 04:17 UTC), which waits for it when it runs late.
+# Installed by deployment/server/deploy.sh.
+[Unit]
+Description=PicWise: ask the shops for their catalogues every night
+
+[Timer]
+OnCalendar=*-*-* 03:40:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

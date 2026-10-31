@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import unicodedata
 from dataclasses import dataclass
+from typing import Mapping, Sequence
 
 import re
 
@@ -30,6 +31,7 @@ from picwise_nlu.concept_understanding import (
 from picwise_nlu.product_concepts import get_product_concepts_by_id
 
 from .contracts import ProviderProduct
+from .kind_choices import KindChoice
 from .search_selection import (
     _FILTER_FIELDS,
     _KIND_MARKERS,
@@ -148,13 +150,20 @@ def _answers_phrase(phrase: str, product: ProviderProduct, haystack: dict[tuple[
     ).names
 
 
-def build_search_suggestions(products: tuple[ProviderProduct, ...]) -> tuple[SearchSuggestion, ...]:
+def build_search_suggestions(
+    products: tuple[ProviderProduct, ...],
+    *,
+    choices: Mapping[str, Sequence[KindChoice]] | None = None,
+) -> tuple[SearchSuggestion, ...]:
     """The suggestions for one catalogue: the products a search can show.
 
     `products` must be what a search reads: the feed's eligible products that are new.
     A kind counts the products a search for it would list, by the same reading
     (`_product_concepts`, `_context_allows_member`), so "bed" is not offered on the
-    strength of dog beds alone.
+    strength of dog beds alone. `choices` are the general kinds' choices worked out for
+    the same products (`kind_choices.build_kind_choices`): each is offered too, so that
+    typing "cable" lists "hdmi cable" and "extension cable" after it (owner, 2026-10-28:
+    the box completes which cable is meant).
     """
     kind_counts: dict[str, int] = {}
     brand_kind_counts: dict[tuple[str, str], int] = {}
@@ -229,6 +238,15 @@ def build_search_suggestions(products: tuple[ProviderProduct, ...]) -> tuple[Sea
             continue
         offer(phrase, count)
         bucket.append(key)
+    for kind_choices in (choices or {}).values():
+        for choice in kind_choices:
+            key = suggestion_key(choice.text)
+            bucket = by_start.setdefault(key.split()[0][:4], [])
+            if any(_same_name(key, other) for other in bucket if other != key):
+                continue
+            offer(choice.text, choice.products)
+            if key not in bucket:
+                bucket.append(key)
 
     return tuple(
         sorted(suggestions.values(), key=lambda row: (-row.products, suggestion_key(row.text)))

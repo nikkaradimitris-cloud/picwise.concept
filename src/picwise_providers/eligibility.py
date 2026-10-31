@@ -1,7 +1,19 @@
 from __future__ import annotations
 
 from .contracts import PROVIDER_ELIGIBILITY_STATUSES, ProviderEligibilityResult, ProviderProduct
-from .normalization import derive_stable_provider_product_id, is_valid_http_url
+from .normalization import derive_stable_provider_product_id, extract_merchant_name, is_valid_http_url
+
+# Shops the owner left out, by the name their rows carry, read as `shop_key` reads it.
+# So Divine sells adult products and the site has no rule for them (owner, 2026-10-26:
+# «Θα κάνεις το 2 και το 3», the third being "So Divine out"); the Google spec wants
+# none on Google's pages.
+LEFT_OUT_SHOPS = frozenset({"so divine"})
+
+
+def shop_key(raw: object) -> str:
+    """A row's shop as the left-out list names it: its merchant name, spaces and case
+    aside."""
+    return " ".join(str(extract_merchant_name(raw) or "").split()).casefold()
 
 
 def _category_mapping_state(category_text: str) -> tuple[str, tuple[str, ...]]:
@@ -29,6 +41,8 @@ def evaluate_provider_product_eligibility(product: ProviderProduct) -> ProviderE
         reason_codes.append("invalid_product_url")
     if not str(product.provider_product_id or derived_id).strip():
         reason_codes.append("missing_provider_product_id")
+    if shop_key(product.raw) in LEFT_OUT_SHOPS:
+        reason_codes.append("shop_left_out")
 
     category_state, category_reasons = _category_mapping_state(product.category_text)
     reason_codes.extend(category_reasons)
@@ -46,6 +60,7 @@ def evaluate_provider_product_eligibility(product: ProviderProduct) -> ProviderE
         "missing_product_url",
         "invalid_product_url",
         "missing_provider_product_id",
+        "shop_left_out",
     }
     if any(code in blocking_codes for code in reason_codes):
         status = "blocked"

@@ -1,0 +1,11 @@
+# Every night at the time of Vercel's daily job (`vercel.json` "crons": 17 4 * * *).
+# Installed by deployment/server/deploy.sh.
+[Unit]
+Description=PicWise: prepare the catalogue every night
+
+[Timer]
+OnCalendar=*-*-* 04:17:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target
