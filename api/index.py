@@ -23,6 +23,7 @@ from picwise_integrations import (  # noqa: E402
 )
 from picwise_search.live_search_resolver import parse_shown_count  # noqa: E402
 from picwise_surface import (  # noqa: E402
+    render_about_page,
     render_affiliate_disclosure_page,
     render_branded_not_found_page,
     render_contact_page,
@@ -131,6 +132,11 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
 
     if path == "/contact":
         html = render_contact_page()
+        body = html.encode("utf-8")
+        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+
+    if path == "/about":
+        html = render_about_page()
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 

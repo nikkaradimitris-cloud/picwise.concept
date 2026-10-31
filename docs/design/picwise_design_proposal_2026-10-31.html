@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PicWise: πρόταση design</title>
+<style>
+:root{
+  --blue:#1a4fb7;--blue-2:#2f6fe4;--ink:#0f2442;--ink-2:#355174;--muted:#6b7f9e;
+  --line:#dbe6f6;--bg:#f5f8fd;--card:#ffffff;--green:#1d8a4e;--green-bg:#e7f6ed;
+  --note-bg:#fff7e8;--note-line:#f0d9a8;--note-ink:#7a5410;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#eef2f8;font-family:Inter,"Segoe UI",Arial,sans-serif;color:var(--ink)}
+.doc{max-width:1180px;margin:0 auto;padding:24px 16px 60px}
+.doc h1{font-size:26px;margin:0 0 6px}
+.doc .lead{color:var(--ink-2);margin:0 0 18px;line-height:1.55}
+.note{background:var(--note-bg);border:1px solid var(--note-line);color:var(--note-ink);border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.55;margin:14px 0}
+.note b{color:#5c3d06}
+.label{font:800 12px/1.3 Inter,Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#b4471f;margin:34px 0 8px}
+.frame{background:var(--bg);border:1px solid #cfdcf0;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(16,40,80,.08)}
+/* site header */
+.site-head{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;background:#fff;border-bottom:1px solid var(--line)}
+.logo{font-weight:800;font-size:24px;letter-spacing:-.03em;color:var(--blue);text-decoration:none}
+.head-actions{display:flex;gap:8px}
+.icon-btn{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--ink-2);font-size:14px;cursor:pointer}
+.icon-btn svg{width:17px;height:17px}
+.count{background:var(--blue);color:#fff;border-radius:999px;font-size:11px;padding:1px 6px}
+/* home */
+.home{padding:54px 22px 40px;text-align:center}
+.home h2{font-size:34px;letter-spacing:-.02em;margin:0 0 8px}
+.home p.sub{margin:0 auto 22px;color:var(--ink-2);max-width:620px;line-height:1.55}
+.search{display:flex;max-width:640px;margin:0 auto;background:#fff;border:2px solid var(--blue-2);border-radius:999px;padding:6px 6px 6px 18px;align-items:center;box-shadow:0 8px 24px rgba(47,111,228,.12)}
+.search input{flex:1;border:0;outline:0;font-size:17px;color:var(--ink);background:transparent}
+.search button{border:0;background:var(--blue-2);color:#fff;font-weight:700;border-radius:999px;padding:11px 20px;font-size:15px}
+.how{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:860px;margin:36px auto 0;text-align:left}
+.how div{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;font-size:14px;color:var(--ink-2);line-height:1.5}
+.how b{display:block;color:var(--ink);margin-bottom:4px}
+
+/* trends panel */
+.tp{max-width:980px;margin:30px auto 0;text-align:left;background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 14px 34px rgba(16,40,80,.10)}
+.tp-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:20px 22px 14px;background:linear-gradient(120deg,#0f2f73 0%,#2f6fe4 60%,#5b8ff0 100%);color:#fff}
+.tp-kicker{font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.85;font-weight:700}
+.tp-head h3{margin:4px 0 6px;font-size:24px;letter-spacing:-.02em}
+.tp-head p{margin:0;max-width:560px;font-size:14px;line-height:1.5;opacity:.92}
+.tp-legend{display:flex;flex-direction:column;gap:6px;font-size:12px;opacity:.95;align-self:center}
+.tp-legend .tp-chg{margin:0 4px 0 0}
+.tp-tabs{display:flex;gap:8px;flex-wrap:wrap;padding:14px 22px 4px}
+.tp-tab{padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-size:13px;color:var(--ink-2);text-decoration:none;background:#fff}
+.tp-tab:not(.on){border-left:4px solid var(--c)}
+.tp-tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tp-list{list-style:none;margin:0;padding:10px 14px 4px;display:grid;grid-template-columns:1fr 1fr;column-gap:14px}
+.tp-row{display:grid;grid-template-columns:34px 44px minmax(0,1fr) auto;grid-template-areas:"rank icon main chg" "rank icon deal deal";align-items:center;gap:4px 10px;padding:12px 8px;border-bottom:1px solid #eef2f8}
+.tp-rank{grid-area:rank;font-size:22px;font-weight:800;color:#c3cfe2;text-align:center}
+.tp-row:nth-child(-n+3) .tp-rank{color:var(--blue-2)}
+.tp-icon{grid-area:icon;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center}
+.tp-icon svg{width:24px;height:24px}
+.tp-main{grid-area:main;min-width:0;display:flex;flex-direction:column;gap:3px}
+.tp-name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tp-sub{display:flex;align-items:center;gap:8px;font-size:12px}
+.tp-cat{font-weight:700}
+.tp-scale{display:inline-flex;gap:3px}
+.tp-scale i{display:block;width:16px;height:7px;border-radius:3px}
+.tp-level{color:var(--muted)}
+.tp-sub2{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
+.tp-sub2 svg{width:13px;height:13px}
+.tp-chg{grid-area:chg;font-size:11px;font-weight:800;padding:3px 7px;border-radius:999px;white-space:nowrap}
+.tp-chg.up{background:#e7f6ed;color:#1d8a4e}.tp-chg.down{background:#fdecec;color:#c23b3b}
+.tp-chg.new{background:#fff3d6;color:#a56a00}.tp-chg.flat{background:#eef2f8;color:#6b7f9e}
+.tp-deal{grid-area:deal;display:flex;justify-content:space-between;align-items:center;margin-top:4px;padding:7px 10px;border-radius:10px;background:#f2f6fe;color:var(--ink);font-size:13px;font-weight:650;text-decoration:none}
+.tp-deal span{color:var(--blue-2)}
+.tp-deal.none{background:#f6f7f9;color:#9aa6b8;font-weight:500}
+.tp-source{margin:0;padding:12px 22px 4px;font-size:12px;color:var(--muted);line-height:1.5}
+.tp-example{margin:10px 22px 18px;padding:9px 12px;border-radius:10px;background:var(--note-bg);border:1px dashed var(--note-line);color:var(--note-ink);font-size:12px;font-weight:700}
+@media (max-width:860px){.tp-list{grid-template-columns:1fr}}
+@media (max-width:520px){.tp-head h3{font-size:21px}.tp-legend{flex-direction:row;flex-wrap:wrap;gap:10px}.tp-list{padding:6px 8px 4px}.tp-row{grid-template-columns:22px 36px minmax(0,1fr) auto;gap:4px 8px;padding:12px 2px}.tp-rank{font-size:17px}.tp-icon{width:36px;height:36px;border-radius:10px}.tp-icon svg{width:20px;height:20px}.tp-level{display:none}.tp-scale i{width:12px;height:6px}.tp-sub2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tp-deal{font-size:12px;padding:7px 9px}.tp-deal span{white-space:nowrap;margin-left:8px}}
+/* results */
+.results{padding:22px}
+.results-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.search.small{max-width:520px;margin:0;flex:1}
+.counter{font-size:14px;color:var(--muted)}
+.kinds{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:16px 0 4px}
+.kinds span{font-weight:700;font-size:14px;margin-right:4px}
+.kinds a{padding:6px 12px;border-radius:999px;background:#eaf1ff;color:var(--blue);font-size:13px;text-decoration:none}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.card{position:relative;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;min-width:0}
+.card.rec{border:2px solid var(--blue-2);box-shadow:0 10px 26px rgba(47,111,228,.14)}
+.photo{position:relative;aspect-ratio:1/1;border-radius:12px;background:#fff;border:1px solid #edf2fa;display:flex;align-items:center;justify-content:center;color:#9aabc6;font-size:12px;text-align:center}
+.photo svg{width:44%;height:44%;opacity:.5}
+.fav{position:absolute;top:8px;right:8px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center}
+.fav svg{width:17px;height:17px}
+.fav.on svg{fill:#e5484d;stroke:#e5484d}
+.role{align-self:flex-start;margin:10px 0 6px;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.03em;background:#eef3fb;color:var(--ink-2)}
+.card.rec .role{background:var(--blue-2);color:#fff}
+.title{font-size:15px;line-height:1.35;font-weight:650;margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:61px}
+.shop{font-size:13px;color:var(--muted);margin:6px 0 0}
+.price{font-size:24px;font-weight:800;letter-spacing:-.02em;margin:10px 0 2px}
+.stock{font-size:13px;color:var(--green);font-weight:650}
+.pos{font-size:12px;color:var(--muted);margin-top:2px}
+.cta{margin-top:auto;padding-top:12px}
+.cta a{display:block;text-align:center;padding:10px;border-radius:10px;border:1px solid var(--blue-2);color:var(--blue-2);font-weight:700;text-decoration:none;font-size:14px}
+.card.rec .cta a{background:var(--blue-2);color:#fff}
+.more{display:flex;justify-content:center;margin:18px 0 4px}
+.more a{padding:10px 18px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink);text-decoration:none;font-weight:650;font-size:14px}
+.disc{font-size:12px;color:var(--muted);text-align:center;margin-top:12px}
+/* single */
+.single{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:24px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;margin-top:16px}
+.single .photo{aspect-ratio:1/1}
+.single h3{font-size:22px;line-height:1.3;margin:0 0 8px}
+.single .price{font-size:32px}
+.facts{margin:14px 0;padding:0;list-style:none;font-size:14px;color:var(--ink-2)}
+.facts li{padding:7px 0;border-bottom:1px solid #eef2f8}
+.facts li span{color:var(--muted);display:inline-block;min-width:120px}
+.single .cta a{display:inline-block;padding:12px 26px;background:var(--blue-2);color:#fff}
+.only{background:#f0f5ff;border:1px solid #d6e3fb;color:var(--ink-2);border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:12px}
+/* panel */
+.panel-wrap{display:flex;justify-content:flex-end;padding:0 22px 22px}
+.panel{width:330px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 16px 40px rgba(16,40,80,.16);padding:14px}
+.panel h4{margin:0 0 8px;font-size:15px}
+.panel ul{list-style:none;margin:0 0 10px;padding:0}
+.panel li{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f3f9;font-size:14px;color:var(--ink-2)}
+.panel li a{color:var(--blue);text-decoration:none}
+.panel small{color:var(--muted);font-size:12px;line-height:1.45;display:block}
+/* mobile */
+.phone{width:380px;max-width:100%;margin:0 auto;background:var(--bg);border:10px solid #1b2a44;border-radius:34px;overflow:hidden}
+.phone .site-head{padding:12px 14px}
+.phone .results{padding:12px}
+.phone .grid{grid-template-columns:repeat(2,1fr);gap:10px}
+.phone .title{font-size:13px;min-height:53px}
+.phone .price{font-size:19px}
+.phone .icon-btn span.txt{display:none}
+/* footer */
+.foot{padding:16px 22px;border-top:1px solid var(--line);background:#fff;display:flex;flex-wrap:wrap;gap:8px}
+.foot a{padding:6px 10px;border:1px solid var(--line);border-radius:999px;font-size:13px;color:var(--ink-2);text-decoration:none}
+.foot p{flex-basis:100%;margin:6px 0 0;font-size:12px;color:var(--muted)}
+/* google table */
+table.g{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;font-size:14px}
+table.g th,table.g td{border-bottom:1px solid #edf1f8;padding:9px 10px;text-align:left;vertical-align:top}
+table.g th{background:#f3f7fe;color:var(--ink)}
+.ok{color:var(--green);font-weight:700}
+.todo{color:#b4471f;font-weight:700}
+@media (max-width:860px){.grid{grid-template-columns:repeat(2,1fr)}.single{grid-template-columns:1fr}.how{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="doc">
+  <h1>PicWise: πρόταση design</h1>
+  <p class="lead">Σχέδιο για έγκριση, <b>όχι</b> το ίδιο το site. Τα προϊόντα στα παραδείγματα είναι πραγματικά, από τον κατάλογο του server (αναζήτηση «kettle», 4 από 75). Στη θέση των φωτογραφιών υπάρχουν πλαίσια, γιατί το σχέδιο δεν φορτώνει εικόνες καταστημάτων. Τα κείμενα του site μένουν στα αγγλικά, γιατί απευθύνεται σε αγοραστές στην Αγγλία.</p>
+
+  <div class="note"><b>Τι αλλάζει με μια ματιά:</b> (1) οι κάρτες έχουν ίδιο ύψος και ίδια τετράγωνη φωτογραφία, που δεν κόβεται, ενώ σήμερα είναι μια στενή λωρίδα 84 pixel· (2) τα κουμπιά Login/Register, που δεν κάνουν τίποτα, γίνονται <b>Ιστορικό</b> και <b>Αγαπημένα</b>, αποθηκευμένα στη συσκευή του επισκέπτη· (3) κάτω από την αναζήτηση μπαίνουν οι 10 τάσεις του μήνα· (4) ένα μόνο προϊόν έχει δική του εμφάνιση· (5) από το κάτω μέρος φεύγουν τα «Demo» και «PicWise Reference» και μπαίνει το «About».</div>
+
+  <!-- A. HOME -->
+  <p class="label">Α. Αρχική σελίδα (υπολογιστής)</p>
+  <div class="frame">
+    <header class="site-head">
+      <a class="logo" href="#">PicWise</a>
+      <div class="head-actions">
+        <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="txt">History</span></button>
+        <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.4-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.6-9.5 9-9.5 9z"/></svg><span class="txt">Favourites</span><span class="count">2</span></button>
+      </div>
+    </header>
+    <section class="home">
+      <h2>Find the product you want in UK shops</h2>
+      <p class="sub">PicWise finds the product you want in the shops it is connected to, shows what the shops list as in stock, cheapest first, and marks one mid-priced Recommended.</p>
+      <form class="search" onsubmit="return false"><input value="" placeholder="What are you looking for?"><button>Search</button></form>
+      <section class="tp" aria-label="Popular in the UK this month"><div class="tp-head"><div><div class="tp-kicker">October 2026 &middot; United Kingdom</div><h3>Popular in the UK this month</h3><p>The products bought most on Google this month, how much people search for them, and what PicWise's shops ask for them.</p></div><div class="tp-legend"><span><span class="tp-chg up">&#9650;</span> rising</span><span><span class="tp-chg down">&#9660;</span> falling</span><span><span class="tp-chg new">NEW</span> new in the top 10</span></div></div><nav class="tp-tabs"><a class="tp-tab on" href="#">All</a><a class="tp-tab" href="#" style="--c:#2f6fe4">Phones</a><a class="tp-tab" href="#" style="--c:#f08a24">Kitchen</a><a class="tp-tab" href="#" style="--c:#14a38b">Home</a><a class="tp-tab" href="#" style="--c:#7a5cf0">Gaming</a><a class="tp-tab" href="#" style="--c:#e0457b">Audio</a><a class="tp-tab" href="#" style="--c:#2e9d4f">Wearables</a></nav><ol class="tp-list"><li class="tp-row"><span class="tp-rank">1</span><span class="tp-icon" style="background:#2f6fe41a;color:#2f6fe4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.5h2"/></svg></span><span class="tp-main"><span class="tp-name">Apple iPhone 16</span><span class="tp-sub"><span class="tp-cat" style="color:#2f6fe4">Phones</span><span class="tp-scale" title="Google relative demand: Very high"><i style="background:#2f6fe4"></i><i style="background:#2f6fe4"></i><i style="background:#2f6fe4"></i><i style="background:#2f6fe4"></i><i style="background:#2f6fe4"></i></span><span class="tp-level">Very high</span></span><span class="tp-sub2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>~550K searches a month</span></span><span class="tp-chg up">&#9650; 1</span><a class="tp-deal" href="#">27 offers &middot; from £699<span>Compare &rarr;</span></a></li><li class="tp-row"><span class="tp-rank">2</span><span class="tp-icon" style="background:#f08a241a;color:#f08a24"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16v3a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6z"/><path d="M8 6c0-1 1-1.5 1-2.5M12 6c0-1 1-1.5 1-2.5M16 6c0-1 1-1.5 1-2.5"/></svg></span><span class="tp-main"><span class="tp-name">Philips Airfryer XXL</span><span class="tp-sub"><span class="tp-cat" style="color:#f08a24">Kitchen</span><span class="tp-scale" title="Google relative demand: Very high"><i style="background:#f08a24"></i><i style="background:#f08a24"></i><i style="background:#f08a24"></i><i style="background:#f08a24"></i><i style="background:#f08a24"></i></span><span class="tp-level">Very high</span></span><span class="tp-sub2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>~74K searches a month</span></span><span class="tp-chg new">NEW</span><a class="tp-deal" href="#">9 offers &middot; from £149<span>Compare &rarr;</span></a></li><li class="tp-row"><span class="tp-rank">3</span><span class="tp-icon" style="background:#f08a241a;color:#f08a24"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16v3a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6z"/><path d="M8 6c0-1 1-1.5 1-2.5M12 6c0-1 1-1.5 1-2.5M16 6c0-1 1-1.5 1-2.5"/></svg></span><span class="tp-main"><span class="tp-name">Ninja Dual Zone Air Fryer</span><span class="tp-sub"><span class="tp-cat" style="color:#f08a24">Kitchen</span><span class="tp-scale" title="Google relative demand: High"><i style="background:#f08a24"></i><i style="background:#f08a24"></i><i style="background:#f08a24"></i><i style="background:#f08a24"></i><i style="background:#e6ecf5"></i></span><span class="tp-level">High</span></span><span class="tp-sub2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>~165K searches a month</span></span><span class="tp-chg down">&#9660; 1</span><a class="tp-deal" href="#">14 offers &middot; from £119<span>Compare &rarr;</span></a></li><li class="tp-row"><span class="tp-rank">4</span><span class="tp-icon" style="background:#2f6fe41a;color:#2f6fe4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 18.5h2"/></svg></span><span class="tp-main"><span class="tp-name">Samsung Galaxy S25</span><span class="tp-sub"><span class="tp-cat" style="color:#2f6fe4">Phones</span><span class="tp-scale" title="Google relative demand: High"><i style="background:#2f6fe4"></i><i style="background:#2f6fe4"></i><i style="background:#2f6fe4"></i><i style="background:#2f6fe4"></i><i style="background:#e6ecf5"></i></span><span class="tp-level">High</span></span><span class="tp-sub2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>~201K searches a month</span></span><span class="tp-chg up">&#9650; 2</span><a class="tp-deal" href="#">18 offers &middot; from £599<span>Compare &rarr;</span></a></li><li class="tp-row"><span class="tp-rank">5</span><span class="tp-icon" style="background:#14a38b1a;color:#14a38b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3l4 11"/><circle cx="17.5" cy="16.5" r="3.5"/><path d="M5 20h9"/></svg></span><span class="tp-main"><span class="tp-name">Dyson V15 Detect</span><span class="tp-sub"><span class="tp-cat" style="color:#14a38b">Home</span><span class="tp-scale" title="Google relative demand: High"><i style="background:#14a38b"></i><i style="background:#14a38b"></i><i style="background:#14a38b"></i><i style="background:#14a38b"></i><i style="background:#e6ecf5"></i></span><span class="tp-level">High</span></span><span class="tp-sub2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>~60K searches a month</span></span><span class="tp-chg flat">=</span><a class="tp-deal" href="#">6 offers &middot; from £499<span>Compare &rarr;</span></a></li><li class="tp-row"><span class="tp-rank">6</span><span class="tp-icon" style="background:#7a5cf01a;color:#7a5cf0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="7" width="19" height="10" rx="5"/><path d="M7 12h3M8.5 10.5v3M15.5 11.5h.01M17.5 13h.01"/></svg></span><span class="tp-main"><span class="tp-name">PlayStation 5 Slim</span><span class="tp-sub"><span class="tp-cat" style="color:#7a5cf0">Gaming</span><span class="tp-scale" title="Google relative demand: High"><i style="background:#7a5cf0"></i><i style="background:#7a5cf0"></i><i style="background:#7a5cf0"></i><i style="background:#7a5cf0"></i><i style="background:#e6ecf5"></i></span><span class="tp-level">High</span></span><span class="tp-sub2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>~110K searches a month</span></span><span class="tp-chg up">&#9650; 3</span><a class="tp-deal" href="#">11 offers &middot; from £389<span>Compare &rarr;</span></a></li><li class="tp-row"><span class="tp-rank">7</span><span class="tp-icon" style="background:#e0457b1a;color:#e0457b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/></svg></span><span class="tp-main"><span class="tp-name">Apple AirPods Pro 2</span><span class="tp-sub"><span class="tp-cat" style="color:#e0457b">Audio</span><span class="tp-scale" title="Google relative demand: Medium"><i style="background:#e0457b"></i><i style="background:#e0457b"></i><i style="background:#e0457b"></i><i style="background:#e6ecf5"></i><i style="background:#e6ecf5"></i></span><span class="tp-level">Medium</span></span><span class="tp-sub2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>~90K searches a month</span></span><span class="tp-chg down">&#9660; 2</span><a class="tp-deal" href="#">21 offers &middot; from £179<span>Compare &rarr;</span></a></li><li class="tp-row"><span class="tp-rank">8</span><span class="tp-icon" style="background:#14a38b1a;color:#14a38b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3l4 11"/><circle cx="17.5" cy="16.5" r="3.5"/><path d="M5 20h9"/></svg></span><span class="tp-main"><span class="tp-name">Shark Cordless Vacuum</span><span class="tp-sub"><span class="tp-cat" style="color:#14a38b">Home</span><span class="tp-scale" title="Google relative demand: Medium"><i style="background:#14a38b"></i><i style="background:#14a38b"></i><i style="background:#14a38b"></i><i style="background:#e6ecf5"></i><i style="background:#e6ecf5"></i></span><span class="tp-level">Medium</span></span><span class="tp-sub2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>~40K searches a month</span></span><span class="tp-chg new">NEW</span><span class="tp-deal none">Not in our shops yet</span></li><li class="tp-row"><span class="tp-rank">9</span><span class="tp-icon" style="background:#f08a241a;color:#f08a24"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16v3a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6z"/><path d="M8 6c0-1 1-1.5 1-2.5M12 6c0-1 1-1.5 1-2.5M16 6c0-1 1-1.5 1-2.5"/></svg></span><span class="tp-main"><span class="tp-name">De'Longhi Bean-to-Cup</span><span class="tp-sub"><span class="tp-cat" style="color:#f08a24">Kitchen</span><span class="tp-scale" title="Google relative demand: Medium"><i style="background:#f08a24"></i><i style="background:#f08a24"></i><i style="background:#f08a24"></i><i style="background:#e6ecf5"></i><i style="background:#e6ecf5"></i></span><span class="tp-level">Medium</span></span><span class="tp-sub2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>~33K searches a month</span></span><span class="tp-chg up">&#9650; 1</span><a class="tp-deal" href="#">5 offers &middot; from £299<span>Compare &rarr;</span></a></li><li class="tp-row"><span class="tp-rank">10</span><span class="tp-icon" style="background:#2e9d4f1a;color:#2e9d4f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="6" width="10" height="12" rx="3"/><path d="M9 6l1-3h4l1 3M9 18l1 3h4l1-3"/></svg></span><span class="tp-main"><span class="tp-name">Garmin Forerunner 265</span><span class="tp-sub"><span class="tp-cat" style="color:#2e9d4f">Wearables</span><span class="tp-scale" title="Google relative demand: Low"><i style="background:#2e9d4f"></i><i style="background:#2e9d4f"></i><i style="background:#e6ecf5"></i><i style="background:#e6ecf5"></i><i style="background:#e6ecf5"></i></span><span class="tp-level">Low</span></span><span class="tp-sub2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>~22K searches a month</span></span><span class="tp-chg flat">=</span><a class="tp-deal" href="#">4 offers &middot; from £299<span>Compare &rarr;</span></a></li></ol><p class="tp-source">Ranking and demand: Google Merchant Center best sellers (units sold on Google, UK, monthly). Searches: Google Ads Keyword Planner, approximate. Offers and prices: PicWise's shops, last night.</p><div class="tp-example">ΠΑΡΑΔΕΙΓΜΑ ΣΧΕΔΙΟΥ: τα προϊόντα και τα νούμερα εδώ είναι φανταστικά, για να δεις την εμφάνιση. Στο site θα έρχονται από τις πηγές της Google.</div></section>
+      <div class="how">
+        <div><b>Only what you asked for</b>A search for a coffee machine shows coffee machines, not their filters.</div>
+        <div><b>In stock, cheapest first</b>As the shops list them, read again every night.</div>
+        <div><b>One fair pick</b>The Recommended comes from the middle of the prices, not the cheapest or dearest.</div>
+      </div>
+    </section>
+    <footer class="foot">
+      <a href="#">Home</a><a href="#">About</a><a href="#">Terms</a><a href="#">Privacy</a><a href="#">Cookies</a><a href="#">Affiliate Disclosure</a><a href="#">Contact</a>
+      <p>PicWise earns a commission from some shops, through Awin, when you buy after following one of its links. The price you pay is the same, and the commission never changes the order of the results.</p>
+    </footer>
+  </div>
+  <div class="note"><b>Από πού θα έρχονται τα στοιχεία (όλα πραγματικά, όχι δικά μας):</b> (1) <b>Κατάταξη, «ζήτηση», άνοδος/πτώση:</b> Google Merchant Center, αναφορά «Best sellers», η Google βγάζει κάθε μήνα τα πιο δημοφιλή προϊόντα της Αγγλίας ανά κατηγορία, από τις πωλήσεις που μετρά. (2) <b>Αριθμός αναζητήσεων:</b> Google Ads Keyword Planner, κατά προσέγγιση (χωρίς διαφημιστική δαπάνη μάλλον σε εύρη, π.χ. «10K–100K»). (3) <b>Προσφορές και τιμή «από»:</b> ο δικός μας κατάλογος. Αν δεν έχουμε το προϊόν, γράφει «Not in our shops yet» και δεν ανοίγει άδεια αναζήτηση. Χρειάζονται δύο δωρεάν λογαριασμοί σου: Merchant Center και Google Ads (για το (2) και μια αίτηση πρόσβασης στο API).</div>
+
+  <!-- B. RESULTS -->
+  <p class="label">Β. Αποτελέσματα: 4 συμμετρικές κάρτες (πραγματικά προϊόντα του server)</p>
+  <div class="frame">
+    <header class="site-head">
+      <a class="logo" href="#">PicWise</a>
+      <div class="head-actions">
+        <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="txt">History</span></button>
+        <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.4-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.6-9.5 9-9.5 9z"/></svg><span class="txt">Favourites</span><span class="count">2</span></button>
+      </div>
+    </header>
+    <section class="results">
+      <div class="results-top">
+        <form class="search small" onsubmit="return false"><input value="kettle"><button>Search</button></form>
+        <div class="counter">4 of 75 kettles, cheapest first</div>
+      </div>
+      <div class="grid">
+        <article class="card rec">
+          <div class="photo">product photo<span class="fav on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.4-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.6-9.5 9-9.5 9z"/></svg></span></div>
+          <span class="role">RECOMMENDED · MIDDLE PRICE</span>
+          <h3 class="title">Opus Collection 1.7L Electric Kettle &amp; 2 Slice Bread Toaster Set</h3>
+          <p class="shop">Geepas · via Awin</p>
+          <p class="price">£33.99</p>
+          <div class="stock">In stock at the shop</div>
+          <div class="pos">37th cheapest of 75</div>
+          <div class="cta"><a href="#">View at Geepas</a></div>
+        </article>
+        <article class="card">
+          <div class="photo">product photo<span class="fav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.4-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.6-9.5 9-9.5 9z"/></svg></span></div>
+          <span class="role">LOWEST PRICE</span>
+          <h3 class="title">1.7L Fast-Boil Cordless Black Electric Kettle</h3>
+          <p class="shop">Geepas · via Awin</p>
+          <p class="price">£12.74</p>
+          <div class="stock">In stock at the shop</div>
+          <div class="pos">Cheapest of 75</div>
+          <div class="cta"><a href="#">View at Geepas</a></div>
+        </article>
+        <article class="card">
+          <div class="photo">product photo<span class="fav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.4-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.6-9.5 9-9.5 9z"/></svg></span></div>
+          <span class="role">LOWEST PRICE</span>
+          <h3 class="title">1.8L Stainless Steel Jug Kettle With LED Indicator</h3>
+          <p class="shop">Geepas · via Awin</p>
+          <p class="price">£12.74</p>
+          <div class="stock">In stock at the shop</div>
+          <div class="pos">Cheapest of 75</div>
+          <div class="cta"><a href="#">View at Geepas</a></div>
+        </article>
+        <article class="card">
+          <div class="photo">product photo<span class="fav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.4-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.6-9.5 9-9.5 9z"/></svg></span></div>
+          <span class="role">3RD CHEAPEST</span>
+          <h3 class="title">Stainless Steel 1 Litre Whistling Kettle | Zion</h3>
+          <p class="shop">InStock UK · via Awin</p>
+          <p class="price">£12.95</p>
+          <div class="stock">In stock at the shop</div>
+          <div class="pos">3rd cheapest of 75</div>
+          <div class="cta"><a href="#">View at InStock UK</a></div>
+        </article>
+      </div>
+      <div class="more"><a href="#">See the next 4 cheapest · 8 of 75</a></div>
+      <p class="disc">Prices and stock as the shops listed them last night. Check them on the shop's site before you buy.</p>
+    </section>
+    <div class="panel-wrap">
+      <div class="panel">
+        <h4>History (on this device)</h4>
+        <ul><li><a href="#">kettle</a><span>today</span></li><li><a href="#">hdmi cable</a><span>today</span></li><li><a href="#">office chair</a><span>yesterday</span></li></ul>
+        <small>Kept only in this browser; PicWise never receives it. <a href="#">Clear history</a></small>
+      </div>
+    </div>
+  </div>
+  <div class="note"><b>Συμμετρία:</b> όλες οι κάρτες έχουν το ίδιο ύψος, τετράγωνη φωτογραφία που δεν κόβεται, τίτλο το πολύ 3 γραμμών, τιμή και κουμπί στην ίδια ευθεία. <b>Ιστορικό και αγαπημένα:</b> φυλάγονται μόνο στον browser του επισκέπτη, χωρίς login και χωρίς cookies προς εμάς. Η «καρδιά» πάνω στη φωτογραφία βάζει το προϊόν στα αγαπημένα.</div>
+
+  <!-- C. SINGLE -->
+  <p class="label">Γ. Όταν υπάρχει μόνο ένα προϊόν (δική του εμφάνιση, όχι μία καρτούλα στη μέση)</p>
+  <div class="frame">
+    <section class="results">
+      <div class="results-top">
+        <form class="search small" onsubmit="return false"><input value="whistling kettle"><button>Search</button></form>
+        <div class="counter">1 of 1</div>
+      </div>
+      <div class="single">
+        <div class="photo">product photo, large<span class="fav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.4-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.6-9.5 9-9.5 9z"/></svg></span></div>
+        <div>
+          <div class="only">This is the only one in stock at the shops PicWise reads today.</div>
+          <h3>Stainless Steel 1 Litre Whistling Kettle | Zion</h3>
+          <p class="price">£12.95</p>
+          <div class="stock">In stock at the shop</div>
+          <ul class="facts">
+            <li><span>Shop</span>InStock UK, via Awin</li>
+            <li><span>Brand</span>as the shop gives it</li>
+            <li><span>Product code</span>EAN / model, when the shop gives it</li>
+            <li><span>Delivery</span>as the shop gives it, else "see the shop"</li>
+          </ul>
+          <div class="cta"><a href="#">View at InStock UK</a></div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="note">Παράδειγμα: πώς θα φαινόταν αν αυτός ο βραστήρας ήταν ο μόνος. Τα στοιχεία της λίστας (μάρκα, κωδικός, μεταφορικά) εμφανίζονται <b>μόνο</b> όταν τα δίνει το κατάστημα. Δεν συμπληρώνουμε ποτέ τίποτα δικό μας.</div>
+
+  <!-- D. MOBILE -->
+  <p class="label">Δ. Κινητό</p>
+  <div class="phone">
+    <header class="site-head">
+      <a class="logo" href="#">PicWise</a>
+      <div class="head-actions">
+        <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="txt">History</span></button>
+        <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.4-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.6-9.5 9-9.5 9z"/></svg><span class="txt">Favourites</span><span class="count">2</span></button>
+      </div>
+    </header>
+    <section class="results">
+      <form class="search" onsubmit="return false" style="max-width:none"><input value="kettle"><button>Go</button></form>
+      <div class="counter" style="margin-top:10px">4 of 75, cheapest first</div>
+      <div class="grid">
+        <article class="card rec"><div class="photo">photo</div><span class="role">RECOMMENDED</span><h3 class="title">Opus Collection 1.7L Electric Kettle &amp; 2 Slice Bread Toaster Set</h3><p class="price">£33.99</p><div class="pos">Geepas</div><div class="cta"><a href="#">View</a></div></article>
+        <article class="card"><div class="photo">photo</div><span class="role">LOWEST</span><h3 class="title">1.7L Fast-Boil Cordless Black Electric Kettle</h3><p class="price">£12.74</p><div class="pos">Geepas</div><div class="cta"><a href="#">View</a></div></article>
+        <article class="card"><div class="photo">photo</div><span class="role">LOWEST</span><h3 class="title">1.8L Stainless Steel Jug Kettle With LED Indicator</h3><p class="price">£12.74</p><div class="pos">Geepas</div><div class="cta"><a href="#">View</a></div></article>
+        <article class="card"><div class="photo">photo</div><span class="role">3RD</span><h3 class="title">Stainless Steel 1 Litre Whistling Kettle | Zion</h3><p class="price">£12.95</p><div class="pos">InStock UK</div><div class="cta"><a href="#">View</a></div></article>
+      </div>
+    </section>
+  </div>
+
+  <!-- E. GOOGLE -->
+  <p class="label">Ε. Τι ζητά η Google για κάθε προϊόν, και πώς το καλύπτουμε</p>
+  <table class="g">
+    <tr><th>Η Google ζητά</th><th>Στο PicWise</th></tr>
+    <tr><td>Όνομα, φωτογραφία, τιμή με νόμισμα</td><td><span class="ok">Ναι</span>: από το feed του καταστήματος</td></tr>
+    <tr><td>Διαθεσιμότητα</td><td><span class="ok">Ναι</span>: δείχνουμε μόνο ό,τι το κατάστημα δηλώνει σε απόθεμα, και το ελέγχει και το bot</td></tr>
+    <tr><td>Ποιο κατάστημα πουλάει</td><td><span class="ok">Ναι</span>, πάνω σε κάθε κάρτα</td></tr>
+    <tr><td>Μάρκα, κωδικός (EAN/GTIN ή μοντέλο)</td><td>Όταν τα δίνει το κατάστημα· <span class="todo">να μπουν στην κάρτα του ενός προϊόντος</span></td></tr>
+    <tr><td>Δομημένα δεδομένα (structured data) για προϊόντα: σε site σύγκρισης, το εύρος τιμών (από–έως) και πόσα καταστήματα</td><td><span class="todo">Να προστεθούν</span> στις σελίδες που θα δοθούν στη Google· χωρίς βαθμολογίες, αφού δεν έχουμε πραγματικές</td></tr>
+    <tr><td>Σύνδεσμοι affiliate σημαδεμένοι ως «sponsored»</td><td><span class="ok">Ναι</span>, ήδη</td></tr>
+    <tr><td>Ταχύτητα και σταθερή σελίδα (Core Web Vitals)</td><td>Σταθερό μέγεθος φωτογραφίας, άρα η σελίδα δεν «πηδάει» όσο φορτώνει· <span class="todo">η πρώτη αναζήτηση μετά από επανεκκίνηση ήταν αργή (16 δ.), θέλει διόρθωση</span></td></tr>
+    <tr><td>Κινητό, HTTPS, χωρίς ενοχλητικά pop-up</td><td><span class="ok">Ναι</span>: HTTPS από τις 31/10· το design είναι φτιαγμένο πρώτα για κινητό</td></tr>
+    <tr><td>Ποιος τρέχει το site, πώς κερδίζει</td><td><span class="ok">Ναι</span>: About, Terms, Affiliate Disclosure (ενημερώθηκαν 31/10)</td></tr>
+  </table>
+  <div class="note">Όλα τα παραπάνω ακολουθούν τους κανόνες μας: δεν μπαίνουν ψεύτικες βαθμολογίες, «μόνο 2 έμειναν» ή εκπτώσεις χωρίς πραγματική πηγή, και η προμήθεια δεν αλλάζει ποτέ τη σειρά.</div>
+</div>
+</body>
+</html>

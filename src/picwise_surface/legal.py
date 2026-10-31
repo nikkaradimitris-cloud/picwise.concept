@@ -3,6 +3,7 @@ from __future__ import annotations
 
 FOOTER_LINKS: tuple[tuple[str, str], ...] = (
     ("Home", "/"),
+    ("About", "/about"),
     ("Demo", "/demo"),
     ("PicWise Reference", "/picwise-reference"),
     ("Terms", "/terms"),
@@ -12,11 +13,36 @@ FOOTER_LINKS: tuple[tuple[str, str], ...] = (
     ("Contact", "/contact"),
 )
 
+# Who runs PicWise and how to reach them, given by the owner on 2026-10-31 (the
+# address on the site's own domain, their choice the same day).
+OPERATOR_NAME = "Nikos Karadimitris"
+OPERATOR_ADDRESS = "53 N. Notara Street, Piraeus, Greece"
+OPERATOR_VAT = "EL120948460"
 PUBLIC_CONTACT_EMAIL = "contact.picwise@subby.cloud"
+LAST_UPDATED = "31 October 2026"
 
 SHORT_AFFILIATE_NOTICE = (
-    "PicWise may earn commissions from qualifying purchases, referrals, or provider links "
-    "when affiliate or provider integrations are active."
+    "PicWise earns a commission from some shops, through Awin, when you buy after following "
+    "one of its links. The price you pay is the same, and the commission never changes the "
+    "order of the results."
+)
+
+_OPERATOR_HTML = (
+    f"<p>PicWise is run by {OPERATOR_NAME}, a sole trader based in Greece.</p>"
+    f"<p>Address: {OPERATOR_ADDRESS}<br>VAT number: {OPERATOR_VAT}<br>Email: {PUBLIC_CONTACT_EMAIL}</p>"
+)
+
+_WHAT_PICWISE_DOES_HTML = (
+    "<p>PicWise is a product search for shoppers in the United Kingdom who already know what "
+    "they want to buy. Type a product, and PicWise shows only that kind of product, only what "
+    "the shops list as in stock, cheapest first: four choices, usually with one marked as the "
+    "recommended pick from the middle of the prices rather than simply the cheapest, and "
+    "\u201cMore\u201d for the next four.</p>"
+    "<p>The prices and stock come from the shops' own product feeds, received through the Awin "
+    "affiliate network and read again every night. Where a shop publishes its own catalogue, "
+    "PicWise also reads it to check what is in stock.</p>"
+    "<p>PicWise is not a shop. Every purchase is made on the shop's own website, under the "
+    "shop's terms.</p>"
 )
 
 
@@ -104,234 +130,210 @@ def _render_legal_page(*, title: str, meta_description: str, heading: str, intro
 
 def render_terms_page() -> str:
     sections = (
-        "<h2>About PicWise</h2>"
-        "<p>PicWise is an informational product discovery, comparison, and buying-decision assistant. PicWise does not operate as an online store.</p>"
-        "<h2>Informational purpose only</h2>"
-        "<p>PicWise may highlight, rank, recommend, or compare options, but these outputs are informational only.</p>"
+        "<h2>Who runs PicWise</h2>"
+        f"{_OPERATOR_HTML}"
+        "<h2>What PicWise is</h2>"
+        f"{_WHAT_PICWISE_DOES_HTML}"
+        "<h2>Information only</h2>"
+        "<p>PicWise's results, its recommended pick and its labels are information to help you decide.</p>"
         "<p class=\"pw-emphasis\">A PicWise recommendation does not mean an option is guaranteed to be the best, cheapest, most suitable, safest, highest quality, or most cost-effective choice. PicWise may be wrong because data, terms, availability, market conditions, and user needs can change or be incomplete. Users remain responsible for their final decision.</p>"
-        "<h2>PicWise is not an online store</h2>"
-        "<p>PicWise does not sell products directly and does not provide direct sales for products or services.</p>"
-        "<p>PicWise provides no checkout, no payments, no shipping, no returns, no warranties, no subscriptions, no applications, no approvals, no claims handling, and no seller/provider support.</p>"
-        "<h2>External store/provider responsibility</h2>"
-        "<p>All purchases, subscriptions, applications, and other actions are completed on external provider or store websites. External seller/provider terms apply.</p>"
-        "<p>Prices, availability, ratings, images, delivery times, seller terms, return policies, warranties, subscription terms, provider terms, fees, rates, approval criteria, and eligibility rules may change at any time.</p>"
-        "<p>Users must verify all details on the external seller/provider site before buying, subscribing, applying, or acting.</p>"
+        "<h2>Purchases happen on the shops' websites</h2>"
+        "<p>PicWise does not sell products directly and provides no checkout, payments, shipping, returns, warranties or customer support. All of these belong to the shop you buy from, the external seller/provider, under its own terms.</p>"
+        "<p>Prices, stock, delivery times and offers can change after PicWise last read them. Check the details on the shop's website before you buy.</p>"
+        "<h2>Links to shops and commission</h2>"
+        "<p>Links from PicWise to shops go through the Awin affiliate network. When you buy after following one, the shop may pay PicWise a commission through Awin. The price you pay is the same, and the commission never changes the order of the results or the recommended pick. See the <a href=\"/affiliate-disclosure\">Affiliate Disclosure</a>.</p>"
+        "<h2>What PicWise compares</h2>"
+        "<p>PicWise compares physical products sold by shops in the United Kingdom. It does not compare software or SaaS subscriptions, nor finance or insurance products; if that changes, these terms will say so first.</p>"
         "<h2>No guarantee</h2>"
-        "<p>PicWise does not guarantee cheapest price, best product, best service, availability, completeness, accuracy, suitability, approval, rates, coverage, or eligibility.</p>"
-        "<h2>External links and third-party websites</h2>"
-        "<p>PicWise may include links to affiliate networks such as Awin, Linkwise, SaaS providers, ERP providers, finance/insurance providers, merchants, and other third-party websites.</p>"
-        "<h2>Affiliate relationships and monetization</h2>"
-        "<p>PicWise may earn commissions, referral fees, lead fees, or other compensation when affiliate/provider integrations are active. Affiliate compensation does not make PicWise the seller, provider, lender, insurer, software vendor, broker, or contracting party.</p>"
-        "<h2>Physical products scope</h2>"
-        "<p>PicWise may compare external product offers. External providers remain responsible for fulfillment, delivery, support, returns, and warranties.</p>"
-        "<h2>SaaS / ERP / software provider scope</h2>"
-        "<p>PicWise may later compare software, SaaS, ERP, business tools, subscriptions, or digital services from external providers. PicWise does not sell, operate, license, support, implement, or guarantee third-party services.</p>"
-        "<p>Users must verify subscription terms, features, pricing, service levels, cancellation terms, security terms, data terms, and provider contracts directly with the provider.</p>"
-        "<h2>Finance / insurance / business finance scope</h2>"
-        "<p>PicWise may later provide informational comparison or referral paths for finance, insurance, loans, cards, accounts, business finance, or related providers.</p>"
-        "<p>PicWise does not provide financial, insurance, tax, investment, credit, or legal advice and does not guarantee approval, rates, eligibility, coverage, premiums, loan terms, returns, risk level, or suitability.</p>"
+        "<p>PicWise does not guarantee the cheapest price, the best product, availability, completeness, accuracy or suitability.</p>"
         "<h2>Disclaimer</h2>"
-        "<p>PicWise provides informational comparison, discovery, and buying-decision support only. PicWise content may contain errors, delays, omissions, outdated information, or third-party data issues.</p>"
-        "<p>Use of PicWise is at the user's own risk.</p>"
+        "<p>PicWise's content may contain errors, delays, omissions or outdated information, including in the data shops send. Use of PicWise is at the user's own risk.</p>"
         "<h2>Limitation of liability</h2>"
-        "<p>To the maximum extent permitted by applicable law, PicWise and its operator are not responsible for losses, damages, costs, claims, missed savings, wrong purchases, failed purchases, rejected applications, denied coverage, changed prices, unavailable products, third-party service issues, delivery problems, returns, warranties, provider errors, seller disputes, external website issues, or decisions made based on PicWise content.</p>"
-        "<p>PicWise is not responsible for actions, omissions, policies, terms, products, services, prices, availability, data, tracking, cookies, privacy practices, or customer support of external providers and networks.</p>"
+        "<p>To the maximum extent permitted by applicable law, PicWise and its operator are not responsible for losses, damages, costs, claims, missed savings, wrong purchases, failed purchases, changed prices, unavailable products, delivery problems, returns, warranties, shop errors, seller disputes, external website issues, or decisions made based on PicWise content.</p>"
+        "<p>PicWise is not responsible for the actions, terms, products, prices, data, tracking, cookies, privacy practices or customer support of shops and networks.</p>"
         "<h2>No professional advice</h2>"
-        "<p>No professional advice is provided by PicWise. PicWise does not provide legal, financial, tax, investment, insurance, medical, technical implementation, procurement, compliance, or professional advice.</p>"
-        "<p>SaaS/ERP/software comparisons are informational only. Finance/insurance/business finance comparisons are informational only and no financial advice is provided.</p>"
-        "<h2>User responsibility and prohibited misuse</h2>"
-        "<p>Users must evaluate suitability independently and must not misuse PicWise for unlawful, deceptive, abusive, or unauthorized purposes.</p>"
+        "<p>PicWise gives no professional advice: no financial advice, and no legal, tax, medical or technical advice.</p>"
+        "<h2>Acceptable use</h2>"
+        "<p>Do not use PicWise for unlawful, deceptive, abusive or unauthorised purposes, or in a way that harms the service or other people.</p>"
         "<h2>Intellectual property</h2>"
-        "<p>PicWise content, layout, and text are owned by or licensed to PicWise/operator. Third-party names, trademarks, providers, and product names belong to their respective owners and are used only for identification/comparison where applicable.</p>"
+        "<p>PicWise's text, layout and design belong to its operator. Shop, brand and product names, and product images, belong to their owners and appear only to identify and compare products.</p>"
         "<h2>Corrections and changes</h2>"
-        "<p>Users and providers can contact PicWise to request correction of inaccurate information or external link concerns. PicWise may update these pages and service behavior over time.</p>"
+        "<p>Shoppers and shops can ask PicWise to correct inaccurate information. PicWise may update these terms and the service over time; the date below shows the latest version.</p>"
         "<h2>Contact</h2>"
         f"<p>Email: {PUBLIC_CONTACT_EMAIL}</p>"
-        "<p>Last updated: May 2026</p>"
+        f"<p>Last updated: {LAST_UPDATED}</p>"
     )
     return _render_legal_page(
         title="Terms of Use — PicWise",
         meta_description=(
-            "Read the PicWise Terms of Use for external provider links, comparison limits, affiliate "
-            "relationships, SaaS, finance, and user responsibilities."
+            "The terms of use of PicWise, a product search that shows UK shops' products in stock, "
+            "cheapest first: who runs it, links to shops, commission, and limits."
         ),
         heading="Terms of Use",
-        intro="Please review these terms before using PicWise.",
+        intro="Please read these terms before using PicWise.",
         sections=sections,
     )
 
 
 def render_privacy_page() -> str:
     sections = (
-        "<h2>About PicWise and scope</h2>"
-        "<p>This Privacy Policy applies to PicWise public pages and explains the basic data processing context for website operation and communication.</p>"
-        "<h2>Data PicWise may process now</h2>"
+        "<h2>Who is responsible for your data</h2>"
+        f"{_OPERATOR_HTML}"
+        "<h2>What PicWise processes</h2>"
+        "<p>Like any website, the server that runs PicWise keeps technical logs to work and stay secure:</p>"
         "<ul>"
-        "<li>IP address</li><li>Browser/device type</li><li>Requested URLs</li><li>Timestamps</li>"
-        "<li>Referrer data</li><li>Server logs</li><li>Error logs</li><li>Security logs</li>"
+        "<li>the pages requested, including the words of a search</li><li>timestamps</li>"
+        "<li>browser and device type</li><li>referrer data</li>"
+        "<li>IP addresses, in security logs</li><li>error logs</li>"
         "</ul>"
-        "<h2>Contact data</h2>"
-        "<p>If you email PicWise, your email address and message content may be used to reply.</p>"
-        "<h2>Search/demo interactions</h2>"
-        "<p>Search and demo interactions may be processed to show website responses. No purchase, subscription, application, or checkout is completed on PicWise.</p>"
+        "<h2>What PicWise does not do</h2>"
+        "<p>PicWise has no user accounts and no sign-in. It sets no cookies of its own and uses no analytics or advertising pixels. It takes no payments, card details or orders; purchases happen on the shops' websites. It does not compare software (SaaS) or finance products, so it collects nothing for them.</p>"
+        "<h2>Emails</h2>"
+        "<p>If you email PicWise, your email address and message are used to reply to you.</p>"
         "<h2>Voice search (microphone)</h2>"
         "<p>Where your browser can turn speech into text, the search box shows a microphone button. Nothing is recorded unless you press it. "
         "Your browser does the listening with its own speech service, not PicWise: in Google Chrome the audio is sent to Google to be turned into text, "
         "and in Microsoft Edge and Apple Safari to Microsoft's or Apple's service, under their own privacy policies. "
         "PicWise receives only the words, as a typed search, and never the audio.</p>"
-        "<h2>What PicWise does not currently process</h2>"
-        "<p>PicWise does not process checkout payments, card details, shipping fulfillment, seller customer support, direct product orders, direct SaaS subscriptions, or direct credit/insurance applications unless explicitly implemented later.</p>"
-        "<h2>Hosting and technical providers</h2>"
-        "<p>Hosting and server infrastructure may process technical logs for operation and reliability.</p>"
-        "<h2>External provider and affiliate links</h2>"
-        "<p>After leaving PicWise, affiliate networks, SaaS providers, ERP providers, finance/insurance providers, merchants, and other external sellers may process data under their own policies.</p>"
+        "<h2>Hosting</h2>"
+        "<p>PicWise runs on a server of OVHcloud in London, United Kingdom, which processes the technical logs above for PicWise.</p>"
+        "<h2>Links to shops</h2>"
+        "<p>When you follow a link to a shop, you leave PicWise. Awin (the affiliate network) and the shop then process data, including their own cookies, under their own privacy policies.</p>"
         "<h2>Cookies and browser storage</h2>"
-        "<p>See <a href=\"/cookies\">/cookies</a> for the full Cookie Policy. Cookies, browser storage, and related technologies may be used for essential operation and may expand when integrations are active.</p>"
-        "<h2>Pixels and tracking</h2>"
-        "<p>Non-essential pixels or tracking should only be activated with consent where required. Provider and affiliate tracking configurations are in progress.</p>"
-        "<h2>Affiliate/referral tracking</h2>"
-        "<p>When integrations become active, links may include tracking parameters, affiliate IDs, referral IDs, lead IDs, or network tracking fields.</p>"
+        "<p>See the <a href=\"/cookies\">Cookie Policy</a>. PicWise sets no cookies and stores nothing in your browser.</p>"
         "<h2>Legal basis</h2>"
-        "<p>Legal basis may include legitimate interests for operation, security, debugging, fraud prevention, and service improvement; consent where required for non-essential cookies/pixels/analytics; communication necessity for contact requests; and legal obligations where applicable.</p>"
-        "<h2>Data retention</h2>"
-        "<p>Logs and contact emails are retained only as long as reasonably needed for operation, security, communication, legal, or dispute purposes.</p>"
-        "<h2>User rights</h2>"
-        "<p>Where applicable, users may request access, correction, deletion, restriction, objection, portability, and withdrawal of consent.</p>"
-        "<h2>EEA / UK users</h2>"
-        "<p>PicWise recognizes privacy rights for users in the European Economic Area (EEA), GDPR contexts, and the United Kingdom.</p>"
-        "<h2>US / international users</h2>"
-        "<p>Privacy rights may vary by location. Users can contact PicWise about privacy requests.</p>"
+        "<p>Technical logs: PicWise's legitimate interest in running a working and secure website. Emails: replying to your request. If PicWise ever uses non-essential cookies, it will ask for your consent first.</p>"
+        "<h2>How long data is kept</h2>"
+        "<p>Technical logs are kept only as long as needed for operation and security, and emails as long as needed to answer them and for legal obligations.</p>"
+        "<h2>Your rights</h2>"
+        "<p>In the European Economic Area and the United Kingdom, the GDPR and the UK GDPR give you these rights. You may ask for access to, correction or deletion of your data, restrict or object to its processing, or ask for a copy, by emailing PicWise. You may also complain to a data protection authority: in Greece, where PicWise's operator is based, the Hellenic Data Protection Authority; in the United Kingdom, the Information Commissioner's Office.</p>"
         "<h2>Children</h2>"
         "<p>PicWise is not directed to children under 13.</p>"
-        "<h2>International transfers and security</h2>"
-        "<p>External providers and infrastructure may operate in different countries. PicWise uses reasonable security measures but no system can provide an absolute guarantee.</p>"
-        "<h2>Automated decisions</h2>"
-        "<p>PicWise may provide informational ranking/comparison outputs, but users should verify provider terms before acting. PicWise does not claim regulated automated credit or insurance decisions.</p>"
         "<h2>Changes and contact</h2>"
-        "<p>PicWise may update this policy as the service evolves.</p>"
+        "<p>PicWise may update this policy as the service changes; the date below shows the latest version.</p>"
         f"<p>Email: {PUBLIC_CONTACT_EMAIL}</p>"
-        "<p>Last updated: October 2026</p>"
+        f"<p>Last updated: {LAST_UPDATED}</p>"
     )
     return _render_legal_page(
         title="Privacy Policy — PicWise",
         meta_description=(
-            "Learn how PicWise handles basic technical data, contact requests, provider links, cookies, "
-            "pixels, affiliate tracking, and privacy rights."
+            "How PicWise handles data: who is responsible, the technical logs its server keeps, no cookies "
+            "of its own, links to shops through Awin, and your rights."
         ),
         heading="Privacy Policy",
-        intro="This page explains how PicWise handles privacy-related data.",
+        intro="This page explains what data PicWise handles and why.",
         sections=sections,
     )
 
 
 def render_cookies_page() -> str:
     sections = (
-        "<h2>What cookies and similar technologies are</h2>"
-        "<p>Cookies, local storage, pixels, and tags help websites remember context and measure performance.</p>"
-        "<h2>Essential cookies / local storage</h2>"
-        "<p>Essential cookies or browser storage may be used for operation, security, preferences, or session behavior where needed.</p>"
-        "<h2>Non-essential cookies</h2>"
-        "<p>Non-essential cookies may include analytics, performance, affiliate, conversion, marketing, personalization, or provider-tracking cookies if activated later.</p>"
-        "<h2>Pixels and tags</h2>"
-        "<p>Analytics pixels, affiliate pixels, conversion pixels, provider tracking tags, and remarketing tags may be used later when integrations are active.</p>"
-        "<h2>Current state</h2>"
-        "<p>Provider and affiliate tracking is being configured. PicWise does not currently claim that Google Analytics, Meta Pixel, affiliate-network pixels, Linkwise pixels, finance-provider pixels, SaaS-provider pixels, or a consent manager are active.</p>"
-        "<h2>Third-party cookies after leaving PicWise</h2>"
-        "<p>Affiliate networks, Linkwise, SaaS providers, finance/insurance providers, merchants, and other providers may use their own cookies/tracking under their own policies.</p>"
-        "<h2>Consent and UK/EU rule</h2>"
-        "<p>Non-essential cookies and pixels should only be used with consent where required by UK/EU law.</p>"
-        "<h2>Cookie consent trigger rule</h2>"
-        "<p>If analytics, affiliate pixels, remarketing, conversion tracking, or other non-essential tracking are added later, a consent mechanism must be added before activation where required.</p>"
-        "<h2>How users can control cookies</h2>"
-        "<p>Users can control cookies via browser settings and third-party provider settings where applicable.</p>"
-        "<h2>Future updates and contact</h2>"
-        "<p>This page will be updated when tracking/provider integrations become active.</p>"
+        "<h2>What cookies are</h2>"
+        "<p>Cookies, local storage, pixels and tags are small pieces of data or code that let a website remember things on your device or measure visits.</p>"
+        "<h2>PicWise's own cookies</h2>"
+        "<p>None. PicWise sets no cookies and stores nothing in your browser. It needs no essential cookies to work, and uses no non-essential cookies: no analytics, no advertising, no tracking pixels or tags.</p>"
+        "<h2>Cookies after you leave PicWise</h2>"
+        "<p>When you follow a link to a shop, Awin, the affiliate network, and then the shop set their own cookies, so that the shop knows you came from PicWise and can pay its commission. These cookies belong to them and follow their own policies.</p>"
+        "<h2>Consent</h2>"
+        "<p>Because PicWise sets no non-essential cookies, it shows no consent banner. If that ever changes, PicWise will ask for your consent first, as UK and EU law require, and update this page.</p>"
+        "<h2>How you can control cookies</h2>"
+        "<p>Your browser's settings let you see, block and delete cookies, including those of Awin and the shops.</p>"
+        "<h2>Contact</h2>"
         f"<p>Email: {PUBLIC_CONTACT_EMAIL}</p>"
-        "<p>Last updated: May 2026</p>"
+        f"<p>Last updated: {LAST_UPDATED}</p>"
     )
     return _render_legal_page(
         title="Cookie Policy — PicWise",
         meta_description=(
-            "Learn how PicWise may use essential cookies, browser storage, analytics cookies, pixels, "
-            "affiliate tracking, and provider tracking when active."
+            "PicWise sets no cookies of its own and uses no tracking pixels; Awin and the shops set their own "
+            "cookies once you follow a link to a shop."
         ),
         heading="Cookie Policy",
-        intro="This page explains how PicWise approaches cookies and similar technologies.",
+        intro="This page explains how PicWise and the sites it links to use cookies.",
         sections=sections,
     )
 
 
 def render_affiliate_disclosure_page() -> str:
     sections = (
-        "<h2>About affiliate links and referral links</h2>"
-        "<p>PicWise may include affiliate links, referral links, or provider links when integrations are active.</p>"
-        "<h2>Affiliate networks</h2>"
-        "<p>PicWise works with the Awin affiliate network where provider integrations are "
-        "active.</p>"
-        "<h2>Linkwise</h2>"
-        "<p>PicWise may participate in Linkwise programs where available.</p>"
-        "<h2>Other affiliate/provider networks</h2>"
-        "<p>PicWise may work with other affiliate networks, merchant programs, and provider referral ecosystems.</p>"
-        "<h2>SaaS / ERP / software affiliate or referral programs</h2>"
-        "<p>PicWise may include SaaS, ERP, software, or digital-service referral relationships in future stages.</p>"
-        "<h2>Finance / insurance / business finance referral or lead programs</h2>"
-        "<p>PicWise may include finance, insurance, loans, cards, accounts, or business finance referral paths where permitted.</p>"
-        "<h2>How compensation may work</h2>"
-        "<p>If users click affiliate/referral/provider links and make qualifying purchases or complete qualifying actions, PicWise may earn a commission, referral fee, lead fee, or other compensation.</p>"
-        "<p>This does not necessarily increase the price paid by the user.</p>"
-        "<p>Affiliate relationships may influence monetization, but PicWise should aim to provide useful comparison and decision support.</p>"
-        "<h2>Current state</h2>"
-        "<p>Provider/affiliate integrations are being configured. PicWise does not claim live provider offers unless actually active.</p>"
-        "<h2>External provider responsibility and user verification</h2>"
-        "<p>Pricing, availability, delivery, returns, warranties, subscription terms, finance/insurance eligibility, rates, approval, and legal/provider terms are controlled by external providers/stores.</p>"
-        "<p>Users should verify details on the external provider/store before buying, subscribing, applying, or acting.</p>"
-        "<h2>Recommendation limitation</h2>"
-        "<p>Affiliate compensation or a highlighted recommendation does not guarantee that an option is the best, cheapest, most suitable, or most cost-effective choice.</p>"
-        "<h2>Disclosure placement rule</h2>"
-        "<p>When live affiliate links are added, a clear affiliate disclosure must appear near affiliate link areas or in a clearly visible page/footer location.</p>"
+        "<h2>How PicWise earns</h2>"
+        "<p>PicWise works with the Awin affiliate network. Links from PicWise to shops go through Awin, and when you buy after following one, the shop may pay PicWise a commission through Awin.</p>"
+        "<h2>What it does not change</h2>"
+        "<p>The price you pay is the same. The commission never decides what PicWise shows or in which order: results are the kind you asked for, in stock, cheapest first, and the recommended pick is the one in the middle of the prices. Shops that pay no commission are ranked by the same rule.</p>"
+        "<h2>Which shops</h2>"
+        "<p>The shops on PicWise run a programme with Awin and have accepted PicWise into it. PicWise works with no other affiliate network at present; any other will be named here first.</p>"
+        "<h2>What PicWise compares</h2>"
+        "<p>Physical products from UK shops. PicWise has no software (SaaS), finance or insurance referral programmes.</p>"
+        "<h2>Check before you buy</h2>"
+        "<p>Prices, stock, delivery, returns and warranties are set by the shop. Check them on the shop's website before you buy.</p>"
         "<h2>Contact</h2>"
         f"<p>Email: {PUBLIC_CONTACT_EMAIL}</p>"
-        "<p>Last updated: May 2026</p>"
+        f"<p>Last updated: {LAST_UPDATED}</p>"
     )
     return _render_legal_page(
         title="Affiliate Disclosure — PicWise",
         meta_description=(
-            "Learn how PicWise may earn commissions from Awin, Linkwise, SaaS, finance, "
-            "insurance, and other provider programs."
+            "How PicWise earns: a commission from shops through Awin when you buy, at no extra cost to you, "
+            "never changing the order of the results."
         ),
         heading="Affiliate Disclosure",
-        intro="This page explains how affiliate and provider compensation may apply to PicWise.",
+        intro="This page explains how PicWise earns, and what that never changes.",
         sections=sections,
     )
 
 
 def render_contact_page() -> str:
     sections = (
-        "<h2>PicWise contact page</h2>"
+        "<h2>Email</h2>"
         f"<p>Email: {PUBLIC_CONTACT_EMAIL}</p>"
-        "<h2>Contact topics</h2>"
+        "<h2>Who runs PicWise</h2>"
+        f"{_OPERATOR_HTML}"
+        "<h2>What you can write about</h2>"
         "<ul>"
-        "<li>Website questions</li>"
-        "<li>Privacy questions</li>"
-        "<li>Cookie/pixel questions</li>"
-        "<li>Affiliate disclosure questions</li>"
-        "<li>Correction requests</li>"
-        "<li>Product information concerns</li>"
-        "<li>SaaS/provider information concerns</li>"
-        "<li>Finance/insurance provider information concerns</li>"
-        "<li>External link concerns</li>"
-        "<li>Legal/trust page questions</li>"
+        "<li>Questions about PicWise</li>"
+        "<li>A price, a product or a shop shown wrongly</li>"
+        "<li>Privacy and cookies</li>"
+        "<li>The affiliate disclosure</li>"
+        "<li>Shops that want to be on PicWise</li>"
         "</ul>"
-        "<p>No contact form is required at this stage.</p>"
-        "<p>Last updated: May 2026</p>"
+        f"<p>Last updated: {LAST_UPDATED}</p>"
     )
     return _render_legal_page(
         title="Contact — PicWise",
         meta_description=(
-            "Contact PicWise for website, privacy, affiliate disclosure, cookie, correction, or external "
-            "provider questions."
+            "Contact PicWise about the site, a product shown wrongly, privacy, cookies or the affiliate disclosure."
         ),
         heading="Contact",
-        intro="Use this page to contact PicWise for legal/trust and information concerns.",
+        intro="Write to PicWise by email.",
+        sections=sections,
+    )
+
+
+def render_about_page() -> str:
+    sections = (
+        "<h2>What PicWise does</h2>"
+        f"{_WHAT_PICWISE_DOES_HTML}"
+        "<h2>How the choices are made</h2>"
+        "<ul>"
+        "<li>Only the kind of product you asked for: a search for a coffee machine shows coffee machines, not filters for coffee machines.</li>"
+        "<li>Only what the shop lists as in stock.</li>"
+        "<li>Cheapest first, in one currency.</li>"
+        "<li>A recommended pick when the prices allow one: the product in the middle of the prices, so neither the cheapest nor the dearest decides it.</li>"
+        "<li>When there are fewer products, PicWise shows just those, and says so.</li>"
+        "</ul>"
+        "<h2>How PicWise earns</h2>"
+        "<p>A commission from some shops, through Awin, when you buy after following a PicWise link. The price you pay is the same, and the commission never changes the order. See the <a href=\"/affiliate-disclosure\">Affiliate Disclosure</a>.</p>"
+        "<h2>Who runs PicWise</h2>"
+        f"{_OPERATOR_HTML}"
+        f"<p>Last updated: {LAST_UPDATED}</p>"
+    )
+    return _render_legal_page(
+        title="About PicWise — PicWise",
+        meta_description=(
+            "PicWise is a product search for UK shoppers: only the kind you asked for, in stock, cheapest first, "
+            "with one recommended pick from the middle of the prices."
+        ),
+        heading="About PicWise",
+        intro="A product search that shows only what you asked for, in stock, cheapest first.",
         sections=sections,
     )
