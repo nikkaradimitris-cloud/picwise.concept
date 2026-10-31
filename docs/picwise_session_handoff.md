@@ -57,10 +57,14 @@ The design of 31/10 is built and deployed with the pages (owner, 31/10: «Υλο
     "not_connected"`) until a real source writes its rows; tested on fictional rows.
   - **Footer**: About in, Demo and PicWise Reference out (the routes still answer).
 - **Tests.** All 278 modules run one by one, four at a time: 273 pass. Two did not
-  finish within 20 minutes under that load (`test_picwise_learning_stage7b`,
-  `test_picwise_search_index_blind_evaluation_stage6a`: the learning and the search
-  vocabulary, which this work did not touch). Three fail, none because of this work:
-  `test_picwise_canonical_vocabulary_registry_stage2`
+  finish within 20 minutes under that load and were run again alone:
+  `test_picwise_learning_stage7b` passes (10 tests, 23.5 minutes);
+  `test_picwise_search_index_blind_evaluation_stage6a` (54 minutes) passes 12 of 13:
+  `test_negative_broad_terms_are_included` expects "amazon" and "galaxy" among the broad
+  terms that must match nothing, which `picwise_search_memory/blind_evaluation.py`
+  (`_NEGATIVE_BROAD_TERMS`, unchanged since 25/05) does not hold: a mismatch older than
+  this work, in files it did not touch; left as it is. Three fail, none because of this
+  work: `test_picwise_canonical_vocabulary_registry_stage2`
   (`test_live_search_provider_and_surface_files_unchanged_in_this_stage`) and
   `test_picwise_search_index_generated_blind_stage4` fail the same way on the code
   before it; `test_picwise_search_graph_contracts_stage1db1` fails only while
