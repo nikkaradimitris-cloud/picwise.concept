@@ -1,8 +1,8 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-30 (the site moved
-to the real server: items 1-3 deployed to it; HTTPS on picwise.subby.cloud built, waiting
-for the owner's record at Papaki).
+Current state for whoever picks the project up next. Updated 2026-10-31 (the site moved
+to the real server: items 1-3 deployed to it on 30/10; **picwise.subby.cloud answers from
+the server since 2026-10-31 10:03 UTC**, HTTPS by Caddy; Vercel kept as the backup).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
 ## Next conversation (from 2026-10-30): move the site to the real server -- start here
@@ -106,7 +106,20 @@ view", 4) stay as they are.
      deleted and the domain added back to the project. The workflow now first runs a
      short job (`look`) whose log is readable at once, and reads the name servers from
      the `.cloud` registry each time (`deployment/web/dns_state.sh`), so a change of name
-     servers is seen too; dry runs 11 cases. **The way back:**
+     servers is seen too; dry runs 11 cases. **Live (31/10, run `41190899316`):** the
+     owner added at Vercel (Domains, `subby.cloud`, DNS Records) the A record `picwise`
+     with the server's IPv4, TTL 60, at about 10:02 UTC; the domain was **not** removed
+     from the project: Vercel answers the record added by hand instead of its own. The
+     wait saw it at 10:03:05, Caddy started, and at 10:03:25 HTTPS answered from the
+     server with a valid certificate (Let's Encrypt `YE2`, 31/10/2026 to 29/01/2027,
+     renewed by Caddy). From outside: `/` 200, `/health` 200 (X-Robots-Tag noindex),
+     `/robots.txt` 200, `/search?q=kettle` 200 with `<meta name="robots"
+     content="noindex">` but **16.5 s** (the first search after the restart; to measure),
+     `/suggest.json` 200 noindex, `/no-such-page` 404, http:// 308 to https://, the
+     runner's own resolver answered by the server. Every answer carries two `Server`
+     headers (Caddy's and gunicorn's). `subby.cloud`'s other records (ImprovMX's MX and
+     SPF for its email) untouched. **The way back to Vercel:** the A record `picwise`
+     deleted at Vercel (within a minute, TTL 60). Earlier note, **the way back:**
      the old record put back at Papaki (Vercel still serves the site). Left for after the
      switch: `server-deploy.yml`'s line "nothing on 80 or 443" (editing it deploys);
      `compare_with_vercel.py` compares with `https://picwise.subby.cloud`, which is then
