@@ -125,6 +125,22 @@ view", 4) stay as they are.
      `compare_with_vercel.py` compares with `https://picwise.subby.cloud`, which is then
      the server itself; Search Console; Vercel's previews and its daily renewal.
   4. Then the shops of another affiliate network.
+     **31/10, after the site went live:** the owner asked about registering with Shopify;
+     Shopify's Global Catalog (UCP; open to every developer since its Spring '26 Edition,
+     cross-merchant products and offers) pays no commission, Shopify Collabs is for
+     creators applying brand by brand: **not taken** (owner: «Χωρίς προμήθεια τι να το
+     κάνω?»); the bot's checks of Shopify shops need no account. Then, asked which
+     network next («Ναι»), read from the networks' own pages and others (shopify.dev,
+     caddyserver.com and DNS-over-HTTPS are blocked in this session): **Webgains** first
+     for the UK (feeds in Google Shopping's format, as Awin's: id, title, link,
+     image_link, availability, price, google_product_category, shipping; by URL or API;
+     it names price comparison publishers among its own: Pricerunner, Lyst, uSwitch;
+     such publishers are expected to meet merchants' minimum CPA); **CJ** when the US
+     market opens (GraphQL product search, products of joined advertisers only); Impact
+     (catalogues per joined brand, FTP or API) the alternative; Rakuten hand-picks its
+     publishers. Not found: each network's count of UK advertisers; which shops and
+     kinds each brings shows only to a registered publisher. A shop in two networks is
+     one shop (`PROJECT_RULES.md` §5).
 - **The owner's rules, unchanged** (the list in "Items 1, 2, 3" below, with nothing on
   `main` without their explicit «ναι», and never a server name, address, host key or link
   in a log or a file).
