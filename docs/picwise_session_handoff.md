@@ -36,6 +36,17 @@ The site is live from the server (below). The owner's decisions of 31/10:
   of `src/**` deploys. Login: put to the owner what it would add (favourites and history
   on every device, price alerts by email) and cost (personal data, GDPR, security);
   their answer: search history yes, no login for now.
+- **The design proposal, sent to the owner (31/10; `docs/design/picwise_design_proposal_2026-10-31.html`,
+  for approval, nothing built):** symmetric cards (same height, a square photo that is
+  not cut, at most 3 lines of title, price and button on one line) instead of today's
+  84-pixel photo strip; History and Favourites (in the visitor's browser) instead of
+  the Login and Register buttons, which do nothing; the month's 10 trends under the
+  search box, empty until a real Google source is found; one product on a layout of its
+  own; the footer without "Demo" and "PicWise Reference", with "About"; a table of what
+  Google asks of a product and what is missing (structured data with the price range and
+  the number of shops for the pages given to Google; brand and code on the single
+  product's layout; the 16 s first search after a restart). The examples are the
+  server's real "kettle" cards (4 of 75).
 - **Order put to the owner and worked through:** the pages (true and complete, a page
   "About PicWise", the home page's title and description, which still said "Reference
   — Buying Decision Preview" and "provider integrations are being configured"), shown
