@@ -1,11 +1,69 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-31 (the site moved
-to the real server: items 1-3 deployed to it on 30/10; **picwise.subby.cloud answers from
-the server since 2026-10-31 10:03 UTC**, HTTPS by Caddy; Vercel kept as the backup).
+Current state for whoever picks the project up next. Updated 2026-10-31, evening (the
+site moved to the real server: items 1-3 deployed to it on 30/10; **picwise.subby.cloud
+answers from the server since 2026-10-31 10:03 UTC**, HTTPS by Caddy; Vercel kept as the
+backup).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Now (2026-10-31, afternoon): the owner's plan after the move -- start here
+## Next conversation (from 2026-10-31, evening): pick up here -- start here
+
+The owner moved to a new conversation, this one having grown long and slow («μεγαλώσει
+και τραβάει πολύ»). Read this, then the section below (the owner's plan of 31/10).
+
+- **Which branch.** `ccr-1361f1a7-dcpo60` is the work branch the server deploys from: at
+  `b966aa1` plus this note, which is what the site runs. `ccr-60773189-pesaft` holds the
+  same **plus 4 commits not deployed, by the owner's word** («όλο μαζί θα ανέβει»):
+  `6ba081d` and `b7adf77` (the pages: terms, privacy, cookies, affiliate, contact, a new
+  About page, the operator, the home page's title and description; tests pass) and
+  `578bc49`, `1b83d18` (the design proposal, a document only). Start from
+  `ccr-60773189-pesaft` and keep new work on the session's own branch. Push nothing under
+  the deploy paths (`src/**`, `api/**`, `tools/**`, `assets/**`, `data/**`, `wsgi.py`, ...)
+  to `ccr-1361f1a7-dcpo60` until the owner says everything goes up; then it all goes in
+  one push, and the deployment runs.
+- **The last thing done: how the owner makes the accounts without a subscription**
+  (owner: «Ωραίο γράψε μου πώς φτιάχνω τους λογαριασμούς αλλά δεν θέλω να πληρώσω θέλω να
+  πω συνδρομητικά»; the «Ωραίο» was for the redone trends panel). Sent, in this order:
+  1. **Google Search Console** (free, no card): a Domain property `picwise.subby.cloud`,
+     its TXT record added in Vercel's DNS (subby.cloud's name servers are Vercel's; name
+     `picwise`, as for the A record), then Verify.
+  2. **Google Merchant Center** (free, no card): business "PicWise", country Greece (the
+     owner's seat), the site; true details only (PicWise sells nothing itself). Then look
+     for "Best sellers" (Growth, or Analytics → Market insights) and say whether it shows.
+     Told honestly: Google gives that report to retailers in free listings or Shopping
+     ads, so a comparison site may not get it; Google's terms are to be checked before
+     its figures are shown on the site.
+  3. **Google Ads, only for the number of searches** (no subscription; it charges only for
+     ads run): Keyword Planner's numbers usually need a payment method on file, ranges
+     ("100–1,000") without one; Expert mode, "create an account without a campaign",
+     manual payments if offered, never a campaign. The manager account and the API's
+     developer token (Basic access, by application) later, if the owner decides.
+  4. **Google Trends API**: interest 0–100, no numbers; alpha, by application.
+  Proposed: 1 and 2 now, Ads later. Whatever key or code the owner is given goes into
+  GitHub's secrets, never into the chat. **Waiting for the owner:** the accounts, and
+  whether Merchant Center shows Best sellers.
+- **Next, in order** (each shown to the owner before it is built on):
+  1. Ask whether to build the design (`docs/design/picwise_design_proposal_2026-10-31.html`;
+     the owner said «Ωραίο» to the redone panel and nothing against the rest); then build
+     it in code on the session's branch: symmetric cards, the single product's own layout,
+     History and Favourites in the browser instead of Login/Register, the trends panel
+     (shown only from a real source: no invented rows on the site), the footer.
+  2. The application text (`docs/awin_application_message.md`: the site is live now) and
+     the presentation of the business.
+  3. The trends' real source, once the accounts exist.
+  4. Awin's offers on the cards: needs an Awin API token in GitHub's secrets; only offers
+     valid by Awin's own end date.
+  5. One deployment of everything, when the owner says.
+  Then the owner applies again to the **6 Awin advertisers that rejected them earlier**
+  (tab "Rejected", "+ Join"; owner's screenshot of 31/10): SharkNinja, Beldray, Gtech,
+  Boots, Road Angel, Mattress Online. Each sends a product feed and fills a gap the
+  measurement found; the reason was not shown, likely the site then still being built.
+- **Still open from the move** (section "Next conversation (from 2026-10-30)" below): the
+  first search after a restart (16.5 s); the deployment's line "nothing on 80 or 443" and
+  `compare_with_vercel.py` (now the server against itself); Vercel's previews (PR #13, no
+  answer yet); a key scan still shown another host key (reported only).
+
+## Now (2026-10-31, afternoon): the owner's plan after the move
 
 The site is live from the server (below). The owner's decisions of 31/10:
 
