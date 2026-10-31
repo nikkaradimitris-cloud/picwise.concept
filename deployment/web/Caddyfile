@@ -1,0 +1,20 @@
+# PicWise's front door on its own server (owner, 2026-10-30: «Θέλω να βλέπω live το
+# site από το καινούργιο server»): HTTPS for picwise.subby.cloud in front of the site,
+# which gunicorn serves on 127.0.0.1:8016 only (deployment/server/picwise-web.service).
+# Put in place by deployment/web/web_setup.sh once the domain points at the server;
+# Caddy then takes the certificate from Let's Encrypt by itself, renews it by itself,
+# and sends http:// to https://. It passes the visitor's Host on and tells the site the
+# request came over HTTPS, so the site's own links are https://picwise.subby.cloud ones.
+{
+	# HTTP/1.1 and HTTP/2 only: HTTP/3 would need UDP 443, which the firewall keeps
+	# closed (deployment/server/base_setup.sh), and browsers would try it first.
+	servers {
+		protocols h1 h2
+	}
+}
+
+picwise.subby.cloud {
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=63072000"
+	reverse_proxy 127.0.0.1:8016
+}

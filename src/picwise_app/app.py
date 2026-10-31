@@ -36,6 +36,7 @@ from picwise_providers.state import (
 from picwise_providers.normalization import extract_merchant_name, is_valid_http_url
 from picwise_surface import (
     provider_feed_cards_will_render,
+    render_about_page,
     render_affiliate_disclosure_page,
     render_branded_not_found_page,
     render_contact_page,
@@ -59,6 +60,7 @@ LOCAL_AVAILABLE_ROUTES = (
     "/cookies",
     "/affiliate-disclosure",
     "/contact",
+    "/about",
     "/search",
     "/results",
     "/picwise-reference",
@@ -149,7 +151,13 @@ class PicwiseLocalApp:
             source_page=source_page,
             resolution=resolution,
         )
-        if resolution.resolver_state == "broad_query_suggestions":
+        # Where the feed's products answer, the catalogue asks which one is meant ("What
+        # kind of cable?") when it has several, and the vocabulary's older "too broad"
+        # list, of words the catalogue may not have, does not ask too: one question, one
+        # logic (owner, 2026-10-29). It stays for a broad word with nothing to show.
+        if resolution.resolver_state == "broad_query_suggestions" and not provider_feed_cards_will_render(
+            resolution
+        ):
             html = _inject_broad_query_suggestions(html, resolution)
         elif getattr(resolution, "did_you_mean", ()) and not provider_feed_cards_will_render(resolution):
             html = _inject_did_you_mean(html, resolution)
@@ -171,6 +179,9 @@ class PicwiseLocalApp:
 
     def contact_html(self) -> str:
         return render_contact_page()
+
+    def about_html(self) -> str:
+        return render_about_page()
 
     def not_found_html(self) -> str:
         return render_branded_not_found_page()
@@ -800,6 +811,10 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/contact":
             html = self.app.contact_html()
+            self._send_html(HTTPStatus.OK, html)
+            return
+        if parsed.path == "/about":
+            html = self.app.about_html()
             self._send_html(HTTPStatus.OK, html)
             return
         if parsed.path in {"/search", "/results"}:

@@ -811,6 +811,25 @@ def _render_choice_card(card: dict[str, object], idx: int) -> str:
     )
 
 
+def _kind_choices_html(resolution: LiveSearchResolution) -> str:
+    """The question above the results of a search naming only a general kind, with the
+    searches that narrow it as links: "What kind of cable? extension cable, hdmi cable"
+    (owner, 2026-10-28: the search asks which cable is meant; `kind_choices.py`)."""
+    choices = tuple(str(text) for text in getattr(resolution, "kind_choices", ()) or () if str(text).strip())
+    name = str(getattr(resolution, "kind_choices_name", "") or "").strip()
+    if not choices or not name:
+        return ""
+    question = f"What kind of {name}?"
+    links = "".join(
+        f'<a class="pw-kind-choice" href="/search?q={quote(text, safe="")}">{escape(text)}</a>'
+        for text in choices
+    )
+    return (
+        f'<nav class="pw-kind-choices" aria-label="{escape(question, quote=True)}">'
+        f'<span class="pw-kind-choices-ask">{escape(question)}</span>{links}</nav>'
+    )
+
+
 def render_picwise_reference_surface(
     query: str = "",
     *,
@@ -999,6 +1018,9 @@ def render_picwise_reference_surface(
             "and provider availability are both verified.</section>"
         )
     safe_note_html = f'<p class="pw-reference-disclaimer">{escape(safe_note_line)}</p>' if safe_note_line else ""
+    kind_choices_html = (
+        _kind_choices_html(resolution) if price_first_page and resolution is not None else ""
+    )
 
     html = (
         "<!doctype html>"
@@ -1006,8 +1028,10 @@ def render_picwise_reference_surface(
         '<meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         f"{'' if indexable else NOINDEX_META}"
-        "<title>PicWise Reference — Buying Decision Preview</title>"
-        '<meta name="description" content="Preview how PicWise supports product comparison and buying decisions while provider integrations are being configured.">'
+        "<title>PicWise — Find the product you want in UK shops</title>"
+        # What PicWise does, in the owner's own words of 2026-10-17 ("What is PicWise?"),
+        # for Google to show under the home page (owner, 2026-10-31: the pages true).
+        f'<meta name="description" content="{escape(_WHAT_IS_PICWISE)}">'
         "<style>"
         "*{box-sizing:border-box;}html,body{height:100%;}"
         "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:#0f1f3a;background:#f8fbff;}"
@@ -1072,6 +1096,11 @@ def render_picwise_reference_surface(
         ".pw-footer a{color:#6e83a3;text-decoration:none;margin-left:22px;}"
         "@media (min-width:1100px){.pw-reference-viewport{padding:8px;}.pw-reference-frame{padding:12px 20px 16px;}.pw-topbar{height:46px;margin-bottom:16px;}.pw-brand-wrap{margin:0 0 24px;}.pw-search-wrap{height:52px;margin:0 auto 20px;}.pw-query-line{margin:0 auto 40px;}.pw-card{padding:12px 12px 10px;min-height:444px;}.pw-product-image-wrap{height:74px;margin:0 0 8px;}.pw-product-image{width:228px;height:74px;}}"
         ".pw-more{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:1190px;margin:24px auto 0;}"
+        ".pw-kind-choices{display:flex;flex-wrap:wrap;align-items:center;gap:8px;width:100%;max-width:760px;margin:-28px auto 28px;}"
+        ".pw-kind-choices-ask{font-size:15px;font-weight:600;color:#1a3d6b;margin-right:4px;}"
+        ".pw-kind-choice{display:inline-flex;align-items:center;height:32px;padding:0 13px;border-radius:999px;border:1px solid #ccdbf2;background:#fff;color:#1d3a63;font-size:14px;font-weight:600;text-decoration:none;}"
+        ".pw-kind-choice:hover{background:#eef4ff;}"
+        ".pw-kind-choice:focus-visible{outline:2px solid #2a6deb;outline-offset:3px;}"
         ".pw-counter{margin:0;font-size:14px;font-weight:600;color:#3c5f8a;}"
         ".pw-more-button{display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 30px;border-radius:999px;background:#1f6dff;color:#fff;font-size:15px;font-weight:700;text-decoration:none;}"
         ".pw-more-button:focus-visible{outline:2px solid #2a6deb;outline-offset:3px;}"
@@ -1129,6 +1158,7 @@ def render_picwise_reference_surface(
         '<ul class="pw-suggest" id="pw-suggest-list" role="listbox" aria-label="Suggestions" hidden></ul>'
         "</section>"
         f'<p class="pw-query-line">{escape(query_line)}</p>'
+        f"{kind_choices_html}"
         f'<p class="pw-reference-disclaimer">{escape(disclaimer_line)}</p>'
         f"{safe_note_html}"
         f'<section class="pw-grid" data-card-count="{len(card_html)}">'

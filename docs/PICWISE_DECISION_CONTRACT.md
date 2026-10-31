@@ -25,6 +25,11 @@ If any item is missing, output is non-compliant.
 > price (fewer than three). Items 1 and 2 hold whenever the feed has four products of
 > the kind and a mid-priced one with a code. Built for searches whose product is
 > understood on 2026-10-16 (step 3 of the build order).
+>
+> **Added by the owner on 2026-10-31:** even one product is shown when there is no
+> other, on a layout of its own, never as one small card in the middle («σε αυτή την
+> περίπτωση το εμφανίζει διαφορετικά (δεν θα βγει μία καρτούλα στη μέση)»). To be
+> built with the new design.
 
 ## Choice Object Contract
 
