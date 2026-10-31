@@ -16,7 +16,9 @@ shape is printed (its field names, never its values) before the counts, since it
 written from Awin's documentation without a token to try it.
 
 Printed: the offers by type, how many carry a voucher code (never the code: an exclusive
-code is the account's own, and this log is public), how many end within a week; the
+code is the account's own, and this log is public; a title naming the code it carries
+has it hidden; a title naming a code Awin withholds is the advertiser's own public
+wording), how many end within a week; the
 advertisers with the most offers, and which of them are PicWise's shops, matched by
 name against the shops of the server's public note (`prepared.json`). The token and the
 account's id are secrets and never printed. Nothing on the server or the site changes.
@@ -176,6 +178,9 @@ def read_offers(
             first = answer
             # Printed at once, so that a run stopped early still says what Awin sends.
             print(f"the answer's shape: {_shape(answer)}", flush=True)
+            paging = answer.get("pagination") if isinstance(answer, dict) else None
+            if isinstance(paging, dict) and paging.get("total") is not None:
+                print(f"offers in all, as Awin counts them: {paging.get('total')}", flush=True)
         items = _items(answer)
         fresh = [item for item in items if _offer_key(item) not in seen]
         seen.update(_offer_key(item) for item in fresh)
@@ -209,6 +214,16 @@ def _code(offer: dict[str, Any]) -> bool:
     if isinstance(voucher, dict):
         return bool(str(voucher.get("code") or "").strip())
     return bool(str(offer.get("code") or offer.get("voucherCode") or "").strip())
+
+
+def _title(offer: dict[str, Any]) -> str:
+    """The offer's title, with the voucher code it carries hidden."""
+    title = " ".join(str(offer.get("title") or "").split())
+    voucher = offer.get("voucher")
+    code = str(voucher.get("code") or "").strip() if isinstance(voucher, dict) else ""
+    if code:
+        title = re.sub(re.escape(code), "***", title, flags=re.IGNORECASE)
+    return title
 
 
 def _date(value: Any) -> datetime | None:
@@ -281,7 +296,7 @@ def report(offers: list[dict[str, Any]], first: Any, shops: dict[str, tuple[str,
         )
         for offer in own[:EXAMPLES_PER_SHOP]:
             end = _date(offer.get("endDate"))
-            title = " ".join(str(offer.get("title") or "").split())[:90]
+            title = _title(offer)[:90]
             lines.append(
                 f"      {offer.get('type') or '?'} | until {end.date() if end else '-'} | "
                 f"code: {'yes' if _code(offer) else 'no'} | {title}"

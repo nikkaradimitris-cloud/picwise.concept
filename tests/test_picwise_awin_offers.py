@@ -189,6 +189,25 @@ class AwinOffersCheckTests(unittest.TestCase):
             self.assertNotIn(secret, out)
         self.assertIn("code: yes", out)
 
+    def test_a_title_naming_its_own_code_has_it_hidden(self) -> None:
+        offer = _offer(1, FIXTURON, kind="voucher", code="PICWISE10")
+        offer["title"] = "Exclusive: 10% off with code picwise10"
+        code, out = _run(_Awin([[offer]]))
+        self.assertEqual(code, 0)
+        self.assertNotIn("picwise10", out.lower())
+        self.assertIn("Exclusive: 10% off with code ***", out)
+
+    def test_the_total_awin_counts_is_printed(self) -> None:
+        class _Counted(_Awin):
+            def __call__(self, url: str, body: dict, token: str) -> tuple[int, object]:
+                status, answer = super().__call__(url, body, token)
+                answer["pagination"]["total"] = 41234
+                return status, answer
+
+        code, out = _run(_Counted([[_offer(1, FIXTURON)]]))
+        self.assertEqual(code, 0)
+        self.assertIn("offers in all, as Awin counts them: 41234", out)
+
     def test_a_refusal_fails_the_run_and_says_why_without_the_secrets(self) -> None:
         code, out = _run(_Awin([], status=401))
         self.assertEqual(code, 1)

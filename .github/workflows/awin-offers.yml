@@ -13,7 +13,7 @@
 # repository is public and so is this log: the token and the account's id are secrets,
 # never printed; voucher codes are never printed either, only whether an offer has one.
 #
-# Read: not yet
+# Read: 2026-10-31, the token in GitHub's secrets (runs 41226304997, then this)
 name: Awin offers (read-only)
 on:
   push:
@@ -26,7 +26,8 @@ permissions:
 jobs:
   offers:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Awin answers a page of 200 offers in about 9 seconds: 100 pages take 15 minutes.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
         with:
