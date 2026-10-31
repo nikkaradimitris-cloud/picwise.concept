@@ -8,10 +8,12 @@ they make a new link with more shops, whether the old ones are in it («πως �
 συμπεριλαμβάνονται και τα παλιότερα μέσα στο καινούργιο?»). Each link is downloaded on
 GitHub's runner and read row by row, never held whole; its shops are counted by the
 advertiser's id (its name when a row has no id). Printed: each feed's shops and rows,
-the shops of the one in use that the new one lacks (none, before the new link replaces
-the old), and the shops the new one adds. The links are secrets and never printed;
-nothing on the server or the site changes. Exits 1 when the link in use cannot be read,
-or the new one cannot, or lacks a shop of the one in use.
+the shops of the one in use that the new one lacks, those it keeps with over a tenth
+fewer rows (a category chosen when the link was made leaves the rest of a shop out:
+owner's screenshot of Awin's categories, 31/10), and the shops it adds. A new link
+replaces the old only with none lacking and none shrunk. The links are secrets and
+never printed; nothing on the server or the site changes. Exits 1 when the link in use
+cannot be read, or the new one cannot, or lacks or shrinks a shop of the one in use.
 """
 from __future__ import annotations
 
@@ -28,6 +30,9 @@ from pathlib import Path
 
 # The most a link may send: a feed of every shop is about 1-2 GB (the server takes 2 GB).
 LIMIT = 4 * 1024**3
+# A shop of the link in use counts as shrunk in the new one below this share of its rows;
+# a shop's feed moves by a few rows from day to day.
+KEPT = 0.9
 _GZIP_MAGIC = b"\x1f\x8b"
 csv.field_size_limit(sys.maxsize)
 
@@ -119,16 +124,21 @@ def main() -> int:
         return 0
     new_rows, new_names = read["new"]
     missing = [key for key in old_rows if key not in new_rows]
+    shrunk = [key for key in old_rows if key in new_rows and new_rows[key] < KEPT * old_rows[key]]
     added = [key for key in new_rows if key not in old_rows]
     print(f"shops of the feed in use that the new one lacks: {len(missing):,}")
     listed(missing, old_rows, old_names)
+    print(f"shops of the feed in use that the new one keeps with over a tenth fewer rows: {len(shrunk):,}")
+    for key in sorted(shrunk, key=lambda key: (-old_rows[key], old_names[key].lower())):
+        shown = old_names[key] if old_names[key] == key else f"{old_names[key]} ({key})"
+        print(f"  {old_rows[key]:>9,} -> {new_rows[key]:>9,}  {shown}")
     print(f"shops the new feed adds: {len(added):,}")
     listed(added, new_rows, new_names)
     print(
-        "the new feed holds every shop of the one in use" if not missing
-        else "the new feed lacks shops of the one in use: keep the link in use"
+        "the new feed holds every shop of the one in use, with its rows" if not missing and not shrunk
+        else "the new feed lacks or shrinks shops of the one in use: keep the link in use"
     )
-    return 1 if missing else 0
+    return 1 if missing or shrunk else 0
 
 
 if __name__ == "__main__":

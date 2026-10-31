@@ -4,8 +4,10 @@
 2026-10-31: «πως θα ξέρω οτι συμπεριλαμβάνονται και τα παλιότερα μέσα στο καινούργιο?»).
 Pinned here: shops are counted by the advertiser's id, by name when a row has none, from
 a plain or a gzipped feed; a new feed holding every shop of the one in use passes and
-names the shops it adds; one lacking a shop fails and names it; with no new link the
-shops in use are listed; a link that cannot be read fails; a link is never printed.
+names the shops it adds; one lacking a shop, or keeping one with over a tenth fewer rows
+(a link made with some categories only), fails and names it, while a few rows less
+pass; with no new link the shops in use are listed; a link that cannot be read fails; a
+link is never printed.
 
 Every feed is local test data: fictional shops, `file://` links to temporary files.
 """
@@ -66,7 +68,7 @@ class CompareFeedsTests(unittest.TestCase):
         self.assertIn("shops of the feed in use that the new one lacks: 0", out)
         self.assertIn("shops the new feed adds: 1", out)
         self.assertIn("4  Fictional Tools (103)", out)
-        self.assertIn("the new feed holds every shop of the one in use", out)
+        self.assertIn("the new feed holds every shop of the one in use, with its rows", out)
         self.assertNotIn(folder, out)
 
     def test_a_new_feed_lacking_an_old_shop_fails_and_names_it(self) -> None:
@@ -79,6 +81,23 @@ class CompareFeedsTests(unittest.TestCase):
         self.assertIn("shops of the feed in use that the new one lacks: 1", done.stdout)
         self.assertIn("2  Fictional Rings (102)", done.stdout)
         self.assertIn("keep the link in use", done.stdout)
+
+    def test_a_shop_kept_with_far_fewer_rows_fails_and_a_few_less_pass(self) -> None:
+        big = {"101": ("Fictional Home", 100), "102": ("Fictional Rings", 50)}
+        with tempfile.TemporaryDirectory() as folder:
+            old = _feed(Path(folder) / "old.csv", big)
+            # Only some categories chosen: the home shop keeps 60 of its 100 rows.
+            narrowed = _feed(Path(folder) / "narrowed.csv", {"101": ("Fictional Home", 60), "102": ("Fictional Rings", 50)})
+            # A day's moves: 95 of 100.
+            moved = _feed(Path(folder) / "moved.csv", {"101": ("Fictional Home", 95), "102": ("Fictional Rings", 51)})
+            failed = _run(old, narrowed)
+            passed = _run(old, moved)
+        self.assertEqual(failed.returncode, 1)
+        self.assertIn("keeps with over a tenth fewer rows: 1", failed.stdout)
+        self.assertIn("100 ->        60  Fictional Home (101)", failed.stdout)
+        self.assertIn("keep the link in use", failed.stdout)
+        self.assertEqual(passed.returncode, 0, passed.stdout)
+        self.assertIn("keeps with over a tenth fewer rows: 0", passed.stdout)
 
     def test_without_a_new_link_the_shops_in_use_are_listed(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
