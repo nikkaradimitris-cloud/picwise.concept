@@ -13,11 +13,12 @@ FOOTER_LINKS: tuple[tuple[str, str], ...] = (
     ("Contact", "/contact"),
 )
 
-# Who runs PicWise and how to reach them, given by the owner on 2026-10-31.
+# Who runs PicWise and how to reach them, given by the owner on 2026-10-31 (the
+# address on the site's own domain, their choice the same day).
 OPERATOR_NAME = "Nikos Karadimitris"
 OPERATOR_ADDRESS = "53 N. Notara Street, Piraeus, Greece"
 OPERATOR_VAT = "EL120948460"
-PUBLIC_CONTACT_EMAIL = "mysubby.cloud@gmail.com"
+PUBLIC_CONTACT_EMAIL = "contact.picwise@subby.cloud"
 LAST_UPDATED = "31 October 2026"
 
 SHORT_AFFILIATE_NOTICE = (

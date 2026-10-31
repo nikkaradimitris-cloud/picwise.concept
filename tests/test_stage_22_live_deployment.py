@@ -588,7 +588,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "/privacy": ("Privacy Policy", "<title>Privacy Policy — PicWise</title>", True),
             "/cookies": ("Cookie Policy", "<title>Cookie Policy — PicWise</title>", True),
             "/affiliate-disclosure": ("Affiliate Disclosure", "<title>Affiliate Disclosure — PicWise</title>", True),
-            "/contact": ("mysubby.cloud@gmail.com", "<title>Contact — PicWise</title>", True),
+            "/contact": ("contact.picwise@subby.cloud", "<title>Contact — PicWise</title>", True),
             "/about": ("About PicWise", "<title>About PicWise — PicWise</title>", True),
         }
         for path, (must_have, title_tag, must_have_email) in expected.items():
@@ -597,11 +597,10 @@ class DeploymentEntrypointTests(unittest.TestCase):
             self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
             self.assertIn(must_have, body)
             self.assertIn(title_tag, body)
-            # The contact the owner gave on 2026-10-31.
             if must_have_email:
-                self.assertIn("mysubby.cloud@gmail.com", body)
+                self.assertIn("contact.picwise@subby.cloud", body)
             self.assertNotIn("contact@picwise.subby.cloud", body)
-            self.assertNotIn("contact.picwise@subby.cloud", body)
+            self.assertNotIn("mysubby.cloud@gmail.com", body)
             self.assertIn('<meta name="description"', body)
             self._assert_common_footer_links(body)
 

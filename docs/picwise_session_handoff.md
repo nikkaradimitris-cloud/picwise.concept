@@ -27,9 +27,15 @@ The site is live from the server (below). The owner's decisions of 31/10:
   Google channel (true to its source, as decided on 16/10); favourites and search
   history **without a login, kept in the visitor's browser** (owner: «συμφωνώ στο 6»).
 - **The operator, given by the owner for the pages:** their sole business in Piraeus,
-  Greece, with its VAT number, and `mysubby.cloud@gmail.com` as the contact (the pages
-  showed `contact.picwise@subby.cloud`, and tests forbade the Gmail address; the
-  owner's word now decides).
+  Greece, with its VAT number; the contact stays `contact.picwise@subby.cloud` (owner's
+  choice, 31/10; their Gmail address never on the site, as the tests pin).
+- **Nothing is deployed until everything goes up together** (owner, 31/10: «Δεν θα
+  ανεβάσεις τίποτα ακόμα όλο μαζί θα ανέβει»). So the code since `6ba081d` (the pages,
+  written, tests passing, shown to the owner: «πολύ ωραία γράψαμε τους όρους») is
+  **only on `ccr-60773189-pesaft`**, never pushed to `ccr-1361f1a7-dcpo60`, where a push
+  of `src/**` deploys. Login: put to the owner what it would add (favourites and history
+  on every device, price alerts by email) and cost (personal data, GDPR, security);
+  their answer: search history yes, no login for now.
 - **Order put to the owner and worked through:** the pages (true and complete, a page
   "About PicWise", the home page's title and description, which still said "Reference
   — Buying Decision Preview" and "provider integrations are being configured"), shown

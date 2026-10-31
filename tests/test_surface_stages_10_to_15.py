@@ -350,12 +350,13 @@ class LandingUiTests(unittest.TestCase):
         self.assertIn("SaaS", affiliate)
         self.assertIn("finance", affiliate.lower())
 
-        # The operator and the contact the owner gave on 2026-10-31.
-        self.assertIn("mysubby.cloud@gmail.com", contact)
+        # The operator the owner gave on 2026-10-31, and the contact on the site's own
+        # domain they chose the same day (never their own Gmail address).
+        self.assertIn("contact.picwise@subby.cloud", contact)
         for page in (terms, privacy, cookies, affiliate, contact):
-            self.assertIn("mysubby.cloud@gmail.com", page)
-            self.assertNotIn("contact.picwise@subby.cloud", page)
+            self.assertIn("contact.picwise@subby.cloud", page)
             self.assertNotIn("contact@picwise.subby.cloud", page)
+            self.assertNotIn("mysubby.cloud@gmail.com", page)
         for page in (terms, privacy, contact):
             self.assertIn("Nikos Karadimitris", page)
             self.assertIn("EL120948460", page)

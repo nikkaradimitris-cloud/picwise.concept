@@ -399,16 +399,16 @@ class AppHttpEndpointTests(unittest.TestCase):
             ("/privacy", "Privacy Policy"),
             ("/cookies", "Cookie Policy"),
             ("/affiliate-disclosure", "PicWise works with the Awin affiliate network"),
-            ("/contact", "mysubby.cloud@gmail.com"),
+            ("/contact", "contact.picwise@subby.cloud"),
             ("/about", "About PicWise"),
         ):
             body = self._fetch(path)
             self.assertIn(token, body)
-            self.assertIn("mysubby.cloud@gmail.com", body)
+            self.assertIn("contact.picwise@subby.cloud", body)
             self.assertNotIn("contact@picwise.subby.cloud", body)
             self.assertIn('<meta name="description"', body)
             self._assert_common_footer_links(body)
-            self.assertNotIn("contact.picwise@subby.cloud", body)
+            self.assertNotIn("mysubby.cloud@gmail.com", body)
 
         from urllib.error import HTTPError
 
