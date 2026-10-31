@@ -155,6 +155,20 @@ view", 4) stay as they are.
      Oils alone); tyres 0/2/2/5, 9 (no tyre); health devices 2/1/2/6, 33; baby, pets,
      sports 3/5/15/7, 2,948 (dog food 368 from InStock UK alone); garden 5/3/11/3, 2,280;
      bicycles 0/2/4/2, 124.
+     **More shops into the Awin feed, safely (owner, 31/10: the link in use was made with
+     no category chosen, any language and every shop with a Google feed; «πως θα ξέρω οτι
+     συμπεριλαμβάνονται και τα παλιότερα μέσα στο καινούργιο?»):** `.github/workflows/
+     feed-compare.yml` with `.github/scripts/compare_feeds.py` (tests
+     `tests/test_picwise_feed_compare.py`, 5) downloads on GitHub's runner the link in use
+     and the new one (secret `AWIN_FEED_URL_NEW`), counts each one's shops by advertiser,
+     names those the new one lacks (and fails) and those it adds; read-only, links never
+     printed. First run (`41193779710`, the link in use alone, 1 min 46 s): **85 shops,
+     1,125,253 rows**, InStock UK 509,939, Finediam 367,758, Back to the Office 94,875
+     first. The way: the owner joins programmes (the gaps above), makes a new link as
+     before (every shop with a Google feed), saves it as `AWIN_FEED_URL_NEW`; the compare
+     runs; only when it lacks none does the owner put it in `AWIN_FEED_URL`, and a
+     deployment takes it to the server (`deploy.sh` writes it to
+     `/etc/picwise/picwise.env`; the preparation reads it).
 - **The owner's rules, unchanged** (the list in "Items 1, 2, 3" below, with nothing on
   `main` without their explicit «ναι», and never a server name, address, host key or link
   in a log or a file).
