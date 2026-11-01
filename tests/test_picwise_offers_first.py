@@ -10,9 +10,10 @@
   programmes PicWise is joined to (most real vouchers of 01/11 came without one);
 - the order: the Recommended, then the products an offer covers, cheapest first, then
   the rest, cheapest first; "More" goes on in that order; without offers, the price alone;
-- the Recommended: a product on offer when one carries a code («Εάν υπάρχει προσφορά να
-  προτείνει την προσφορά»), the one nearest the middle of their prices, reading "On offer";
-  else as before;
+- the Recommended: a product on offer whenever there is one («Εάν υπάρχει προσφορά να
+  προτείνει την προσφορά»; «το recommended όταν υπάρχει προσφορά πρέπει να δείχνει την
+  προσφορά»), the one nearest the middle of their prices, one with a code first, reading
+  "On offer"; else as before;
 - the card: "Offer" instead of "Lowest price", the offer in the shop's words, its end,
   its code only where given, its terms; the page saying the order;
 - the pages that say how PicWise orders and earns, saying it truly.
@@ -344,17 +345,29 @@ class OffersFirstPageTests(unittest.TestCase):
         self.assertEqual(cards[0]["role"], "On offer")
         self.assertEqual([card["role"] for card in cards[1:]], ["Lowest price"] * 3)
 
-    def test_products_on_offer_without_a_code_leave_the_recommended_as_before(self) -> None:
-        # A Recommended must carry an EAN/GTIN (owner, 2026-10-16): with none on offer,
-        # the middle of the whole answer, k5, is recommended; the offers follow it.
+    def test_products_on_offer_without_a_code_are_still_recommended(self) -> None:
+        # Owner, 2026-11-01, of a live search with an offer and a Recommended not on
+        # offer: «το recommended όταν υπάρχει προσφορά πρέπει να δείχνει την προσφορά».
+        # With no product on offer carrying an EAN/GTIN, the one nearest the middle of
+        # their prices is recommended all the same.
         self._write_feed(no_code=frozenset({"k3", "k6", "k9"}))
         set_offers_document({"shops": {"1003": _shop("Fixture Store Three", [_offer(13, "10% off kettles")])}})
         page = self._page()
         cards = self._cards(page)
-        self.assertEqual([card["id"] for card in cards], ["k5", "k3", "k6", "k9"])
-        self.assertEqual(cards[0]["role"], "Mid-priced for this category")
-        self.assertEqual(cards[0]["offer"], "")
-        self.assertIn("The Recommended is mid-priced for this category", page)
+        self.assertEqual([card["id"] for card in cards], ["k6", "k3", "k9", "k1"])
+        self.assertTrue(cards[0]["recommended"])
+        self.assertEqual(cards[0]["role"], "On offer")
+        self.assertIn("10% off kettles", cards[0]["offer"])
+        self.assertIn("The Recommended is on offer", page)
+
+    def test_a_product_on_offer_with_a_code_comes_before_one_nearer_the_middle_without(self) -> None:
+        # k6 (the middle of k3, k6, k9) has no code: k3 and k9 are equally far from it,
+        # and the cheaper, k3, is recommended.
+        self._write_feed(no_code=frozenset({"k6"}))
+        set_offers_document({"shops": {"1003": _shop("Fixture Store Three", [_offer(16, "10% off kettles")])}})
+        cards = self._cards(self._page())
+        self.assertEqual([card["id"] for card in cards], ["k3", "k6", "k9", "k1"])
+        self.assertEqual(cards[0]["role"], "On offer")
 
     def test_fewer_than_three_products_have_no_recommended_even_on_offer(self) -> None:
         # Fewer than three products have no Recommended (2026-10-16), on offer or not:

@@ -17,9 +17,11 @@ For every purchase-intent query, Picwise must:
   trusted; no shop page is checked)
 - return 4 choices first: exactly 1 Recommended (the middle product of the result in
   price order, or the nearest one to it that has an EAN/GTIN; a dearest product
-  costing at least twice the next one does not count towards the middle; when a product
-  a current shop offer covers has an EAN/GTIN, a product on offer, by the same rule over
-  those on offer: owner, 2026-11-01, «Εάν υπάρχει προσφορά να προτείνει την προσφορά»)
+  costing at least twice the next one does not count towards the middle; when a current
+  shop offer covers a product of the result, a product on offer, by the same rule over
+  those on offer, one with an EAN/GTIN first: owner, 2026-11-01, «Εάν υπάρχει προσφορά να
+  προτείνει την προσφορά», «το recommended όταν υπάρχει προσφορά πρέπει να δείχνει την
+  προσφορά»)
   and the 3 cheapest
 - show how many there are ("4 of 45")
 - after the Recommended, put the products a current shop offer covers first, cheapest
@@ -60,8 +62,8 @@ Picwise must not become:
   or the Recommended.
 - The order, after the kind asked for and availability: the Recommended, then the
   products a current shop offer covers, then the rest, each cheapest first (owner,
-  2026-11-01). The Recommended is a product on offer when one with a code is covered by a
-  current shop offer, else the middle product in price order. No ratings are used. No
+  2026-11-01). The Recommended is a product on offer whenever a current shop offer covers
+  one, else the middle product in price order. No ratings are used. No
   one pays for a place.
 
 ## First Phase Boundary

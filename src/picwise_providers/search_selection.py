@@ -1684,24 +1684,26 @@ def _median_recommendation(ordered: list[_PricedProduct]) -> tuple[int | None, s
 
 def _offer_recommendation(on_offer: list[_PricedProduct]) -> int | None:
     """Which product on offer is the Recommended (owner, 2026-11-01: «Εάν υπάρχει
-    προσφορά να προτείνει την προσφορά»), as its index in `on_offer`, cheapest first.
+    προσφορά να προτείνει την προσφορά», and, seeing a search with an offer and a
+    Recommended not on offer: «το recommended όταν υπάρχει προσφορά πρέπει να δείχνει
+    την προσφορά»), as its index in `on_offer`, cheapest first.
 
     The products a current shop offer covers stand for the whole answer in the rules of
     `_median_recommendation`: their middle price (a dearest costing at least twice the
-    next not counted), and the one with an EAN/GTIN nearest to it, the cheaper of two
-    equally near. One product on offer is its own middle; of two, the cheaper is. None
-    when no product on offer carries a code: the Recommended is then chosen as before.
-    Asked only of an answer that may have a Recommended at all (three products or more).
+    next not counted), and the one nearest to it, the cheaper of two equally near; one
+    with an EAN/GTIN first, so that "not cheaper elsewhere" can still be known, and,
+    when none on offer carries one, the nearest of them all: an offer is recommended
+    whenever there is one. One product on offer is its own middle; of two, the cheaper
+    is. None only when nothing is on offer. Asked only of an answer that may have a
+    Recommended at all (three products or more).
     """
     if not on_offer:
         return None
     counted = max(1, _counted_products(on_offer))
     middle_price = on_offer[(counted - 1) // 2].price
-    best: tuple[tuple[float, float, int], int] | None = None
+    best: tuple[tuple[bool, float, float, int], int] | None = None
     for index, candidate in enumerate(on_offer):
-        if not candidate.key.startswith("gtin:"):
-            continue
-        rank = (abs(candidate.price - middle_price), candidate.price, index)
+        rank = (not candidate.key.startswith("gtin:"), abs(candidate.price - middle_price), candidate.price, index)
         if best is None or rank < best[0]:
             best = (rank, index)
     return best[1] if best is not None else None
@@ -1850,8 +1852,8 @@ def _price_first_result(
     """
     # Owner, 2026-11-01: «Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο» and
     # «Εάν υπάρχει προσφορά να προτείνει την προσφορά». The Recommended is a product a
-    # current shop offer covers, when one carries a code (`_offer_recommendation`); after
-    # it come the other products on offer, cheapest first, then the rest, cheapest first
+    # current shop offer covers whenever there is one (`_offer_recommendation`); after it
+    # come the other products on offer, cheapest first, then the rest, cheapest first
     # (`product_offers`). With no offer, the Recommended and the order are as before.
     covered = offers_covering(entry.product for entry in ordered)
     covered_entries = [entry for entry in ordered if id(entry.product) in covered]
