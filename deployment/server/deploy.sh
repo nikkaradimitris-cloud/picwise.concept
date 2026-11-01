@@ -33,7 +33,7 @@ id picwise > /dev/null 2>&1 || useradd --system --user-group --home-dir "$APP" -
   --shell /usr/sbin/nologin picwise
 install -d -o root -g root -m 755 "$APP" "$APP/releases" "$APP/venvs"
 install -d -o picwise -g picwise -m 750 "$SHARED" "$SHARED/prepared" "$SHARED/public" "$SHARED/cache" \
-  "$SHARED/shops"
+  "$SHARED/shops" "$SHARED/offers"
 install -d -o root -g picwise -m 750 /etc/picwise
 
 echo "== release $RELEASE_ID"
@@ -67,10 +67,11 @@ echo "== secrets"
 install -o root -g picwise -m 640 "$ENV_FILE" /etc/picwise/picwise.env
 rm -f "$ENV_FILE"
 if grep -q '^AWIN_FEED_URL=' /etc/picwise/picwise.env; then echo "feed link: set"; else echo "feed link: not set"; fi
+if grep -q '^AWIN_API_TOKEN=' /etc/picwise/picwise.env; then echo "Awin token: set"; else echo "Awin token: not set"; fi
 
 echo "== services"
 for unit in picwise-web.service picwise-prepare.service picwise-prepare.timer picwise-shops.service \
-  picwise-shops.timer; do
+  picwise-shops.timer picwise-offers.service picwise-offers.timer; do
   install -m 644 "$RELEASE/deployment/server/$unit" /etc/systemd/system/
 done
 systemctl daemon-reload
@@ -88,6 +89,13 @@ systemctl enable --now picwise-prepare.timer
 # The shops' catalogues each night before the preparation (owner, 2026-10-26); a
 # deployment never asks them itself.
 systemctl enable --now picwise-shops.timer
+
+echo "== the offers of PicWise's shops (Awin), fetched once now and every night"
+# Owner, 2026-11-01: «Οκ να φέρνει τις προσφορές των δικών μας καταστημάτων». Served to no
+# one yet; its counts only are printed.
+systemctl start picwise-offers.service || echo "fetching the offers failed; the last file kept"
+journalctl -u picwise-offers.service -o cat --no-pager --since "-31min" | grep '^offers:' | tail -n 1 || true
+systemctl enable --now picwise-offers.timer
 
 echo "== the site"
 systemctl enable picwise-web.service
