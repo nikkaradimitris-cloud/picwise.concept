@@ -1,12 +1,74 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-10-31, night (**the
-design of 31/10 and the pages are live on the server since 15:46 UTC**, run
-`41215460767`; picwise.subby.cloud answers from the server since 2026-10-31 10:03 UTC,
-HTTPS by Caddy; Vercel kept as the backup).
+Current state for whoever picks the project up next. Updated 2026-11-01 (**offers first
+and the Recommended on offer built, not deployed: waiting for the owner's word**; live on
+the server: the design of 31/10 and the pages, run `41215460767`, and the nightly offers
+fetch, run `41289100060`; picwise.subby.cloud answers from the server since 2026-10-31
+10:03 UTC, HTTPS by Caddy; Vercel kept as the backup).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation (from 2026-10-31, night): pick up here -- start here
+## Next conversation (from 2026-11-01): pick up here -- start here
+
+- **Which branch.** Start from the session's branch `ccr-9826870f-qkgl6s`. It holds all
+  that is deployed (`ca01c61`, run `41289100060`) and, **committed but not deployed**,
+  offers first and the Recommended on offer (`6836bbe`, `1d1c880`, `3bf18d8`, `9f6e3c4`).
+  Deploying them is the owner's word: a push of them to `ccr-1361f1a7-dcpo60`. They
+  change `search_selection.py`, so the deployment prepares the catalogue again (about 12
+  minutes, as every deployment so far did).
+- **The owner's word (01/11).** «Ανά προϊόν... Όταν ψάχνει ένας πελάτης ένα προϊόν ή μία
+  κατηγορία υπάρχει προσφορά σε αυτό το προϊόν ... προϊόντα με προσφορές πρώτα»; asked
+  whether that changes "cheapest first": «Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το
+  φθηνότερο»; then «Μήπως θα ήταν πιο σωστό το recommended να προτείνει το offer?», and,
+  given three choices with the advice to keep the Recommended neutral: «Εάν υπάρχει
+  προσφορά να προτείνει την προσφορά».
+- **What is built** (`docs/PICWISE_DECISION_CONTRACT.md`, "Offers first"; PROJECT_RULES §5):
+  - **Which offer covers a product** (`src/picwise_providers/product_offers.py`): one of
+    the product's own shop (the feed's `merchant_id`), live now by its own dates, stating a
+    discount (a percentage, "£15 off", "10 off", half price, buy one get one...), not addressed to publishers (commission),
+    and either on the whole shop ("15% off everything", "10% off your first order") or on a
+    kind every word of which is in the product's title ("10% off kettles"). "Up to" and
+    "selected" cover nothing: which products, the offer does not say. Free delivery covers
+    nothing (no price stated off the product). Checked on Awin's real titles of 31/10.
+  - **The order**: the Recommended; then the products on offer, cheapest first; then the
+    rest, cheapest first; "More" goes on in that order. Without offers, as before.
+  - **The Recommended**: when the answer holds three products or more and a product on
+    offer carries an EAN/GTIN, the product on offer with a code nearest the middle of the
+    offer products' prices (`_offer_recommendation`); its card reads "On offer" (not
+    "Mid-priced for this category", which would not be true) and the page says "The
+    Recommended is on offer: of the products on offer, the one nearest the middle of their
+    prices." Otherwise as before; fewer than three products still have none. "Lowest
+    price" is then measured against the middle price of the whole answer.
+  - **The card**: "Offer" instead of "Lowest price"; the offer in the shop's words, "until
+    31 Dec", its code where Awin gives one (joined programmes only: 2 of the 30 shops with
+    offers), "Offer terms". The query line says "offers first, then cheapest first".
+  - **The pages**: the home page's words and "how PicWise chooses", About, the Affiliate
+    Disclosure (an "Offers" section: PicWise is paid nothing to show an offer or to put it
+    first; and "Which shops" made true: a commission only from the shops that accepted
+    PicWise into their programme, the others shown by the same rule).
+  - **The site reads the offers file** through `PICWISE_OFFERS_FILE`
+    (`deployment/server/picwise-web.service`, installed by every deployment), the file
+    `fetch_offers.py` writes every night; it looks again for a new one every 60 s. Without
+    the file, no offers and the order of before. Measured: 91 ms at most over 100,000
+    products, about 2 ms over 2,000.
+- **Tests.** `tests/test_picwise_offers_first.py` (16) pins the offer rules, the order, the
+  Recommended on offer, its fallback without a code, one product on offer, an answer of two
+  products and the pages. All 281 modules run one by one, four at a time:
+  276 pass; three fail as before this work (`test_picwise_canonical_vocabulary_registry_stage2`
+  and `test_picwise_search_index_generated_blind_stage4` fail the same way on the code before
+  it; `test_picwise_search_graph_contracts_stage1db1` only while `reference.py` had
+  uncommitted changes, and passes once committed); the two slowest
+  (`test_picwise_learning_stage7b`, `test_picwise_search_index_blind_evaluation_stage6a`)
+  load none of the changed code and were still running when this was written (alone, last
+  time: 7b passed in 23.5 minutes; 6a 12 of 13, the old mismatch of the section below).
+- **Seen on the local preview** (fictional shops): "kettle", Store Two's "10% off kettles"
+  on its three kettles: the Recommended is its £19.99 kettle ("On offer"), then its £12.74
+  and £33.99 ones ("Offer"), then the cheapest of the rest ("Lowest price").
+- **Next, in order**: the owner's word to deploy; after it, the deployment's log (the 12
+  searches print their cards: which show offers), then these notes and PROGRESS. Then as
+  before: the application text and the Awin applications (the offers' codes come only from
+  joined programmes), the trending searches' source, the first search after a restart.
+
+## Before (2026-10-31, night, to 2026-11-01 morning): the design deployed, the offers fetched
 
 The design of 31/10 is built and deployed with the pages (owner, 31/10: «Υλοποίησε τα όλα
 και ανέβασέ τα στο server και θα κάνω τους λογαριασμούς αργότερα»).
