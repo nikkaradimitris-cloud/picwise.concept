@@ -70,8 +70,9 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 - **Tests.** `tests/test_picwise_product_photos.py` (17), `tests/test_picwise_offers_first.py`
   (19), `tests/test_picwise_live_photos.py` (4). Every module but the 54-minute one, on
   `e69b2ed`: 279 pass, two fail as before this work (`..._canonical_vocabulary_registry_stage2`,
-  `..._search_index_generated_blind_stage4`), `test_picwise_learning_stage7b` still running
-  when this was written. With the browser guard after it, the 10 modules that read the
+  `..._search_index_generated_blind_stage4`), `test_picwise_learning_stage7b` stopped at the
+  20-minute limit (it passed in 1,147 s earlier the same day; it loads none of the changed
+  code: `picwise_learning` reads no provider or page module). With the browser guard after it, the 10 modules that read the
   pages, photos or offers pass.
 - **Next, in order**: the owner's word to deploy; after it, the deployment's log, then
   the live check again (photos), then these notes and PROGRESS. Then: "bean bag" as a kind
