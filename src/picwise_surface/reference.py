@@ -136,6 +136,13 @@ _PRICE_FIRST_SORTED_WITH_OFFERS = (
     "from the shops connected to PicWise."
 )
 _OFFER_LABEL = "Offer"
+# Owner, 2026-11-01: «Εάν υπάρχει προσφορά να προτείνει την προσφορά». A Recommended
+# chosen for its offer is not "mid-priced for this category", and says what it is.
+_PRICE_FIRST_RECOMMENDED_OFFER_LABEL = "On offer"
+_RECOMMENDED_MID_PRICED = "The Recommended is mid-priced for this category."
+_RECOMMENDED_ON_OFFER = (
+    "The Recommended is on offer: of the products on offer, the one nearest the middle of their prices."
+)
 _OFFERS_NOTE = "Offers are the shops' own, as they state them through Awin: check them on the shop's site."
 _PRICE_FIRST_FEED_NOTE = "Prices and stock are as the shops list them."
 _PRICE_FIRST_DISCLOSURES = {
@@ -173,8 +180,8 @@ _HOW_PICWISE_CHOOSES = (
     ),
     (
         "One fair pick",
-        "The Recommended comes from the middle of the prices, not the cheapest or the dearest, "
-        "and never from commission.",
+        "The Recommended is a product on offer where there is one, else the one in the middle of "
+        "the prices, not the cheapest or the dearest, and never from commission.",
     ),
 )
 
@@ -204,7 +211,7 @@ _SEARCH_PLACEHOLDER = "What are you looking for?"
 _WHAT_IS_PICWISE = (
     "PicWise finds the product you want in the shops it is connected to, shows what the "
     "shops list as in stock, products on offer first and then cheapest first, and marks one "
-    "mid-priced Recommended."
+    "Recommended: a product on offer where there is one, else a mid-priced one."
 )
 _MIC_TITLE = (
     "Search by voice. Your browser turns your words into text; in Chrome the audio is "
@@ -776,7 +783,7 @@ def _build_price_first_cards(
         )
         offer = offers.get(product_id)
         if is_recommended:
-            role_label = _PRICE_FIRST_RECOMMENDED_LABEL
+            role_label = _PRICE_FIRST_RECOMMENDED_OFFER_LABEL if offer else _PRICE_FIRST_RECOMMENDED_LABEL
         elif offer:
             role_label = _OFFER_LABEL
         elif product_id in cheapest:
@@ -1287,6 +1294,8 @@ def render_picwise_reference_surface(
                 ]
                 if any(card.get("offer") for card in price_first_cards):
                     disclosure = disclosure.replace(_PRICE_FIRST_SORTED, _PRICE_FIRST_SORTED_WITH_OFFERS)
+                if any(card.get("offer") and card.get("recommended") for card in price_first_cards):
+                    disclosure = disclosure.replace(_RECOMMENDED_MID_PRICED, _RECOMMENDED_ON_OFFER)
         else:
             feed_cards, feed_live, feed_disclosure, feed_safe_note = (
                 _build_provider_feed_result_cards(

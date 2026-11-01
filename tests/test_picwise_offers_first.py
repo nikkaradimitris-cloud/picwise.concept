@@ -9,6 +9,9 @@
   "selected" cover nothing;
 - the order: the Recommended, then the products an offer covers, cheapest first, then
   the rest, cheapest first; "More" goes on in that order; without offers, the price alone;
+- the Recommended: a product on offer when one carries a code («Εάν υπάρχει προσφορά να
+  προτείνει την προσφορά»), the one nearest the middle of their prices, reading "On offer";
+  else as before;
 - the card: "Offer" instead of "Lowest price", the offer in the shop's words, its end,
   its code only where given, its terms; the page saying the order;
 - the pages that say how PicWise orders and earns, saying it truly.
@@ -215,16 +218,21 @@ KETTLES = [
 
 class OffersFirstPageTests(unittest.TestCase):
     def setUp(self) -> None:
+        self._previous = os.environ.get("AWIN_FEED_FILE")
+        self._write_feed()
+
+    def _write_feed(self, *, no_code: frozenset[str] = frozenset(), only: frozenset[str] = frozenset()) -> None:
         path = Path(tempfile.mkdtemp()) / "feed.csv"
         with path.open("w", newline="", encoding="utf-8") as handle:
             writer = csv.writer(handle)
             writer.writerow(_COLUMNS)
             for index, (pid, title, price, shop, shop_id) in enumerate(KETTLES, start=1):
+                if only and pid not in only:
+                    continue
                 writer.writerow([pid, title, title.split()[0], "Kettles", "Kitchen Appliances",
                                  f"https://fixture.example.invalid/out/{pid}", f"https://fixture.example.invalid/img/{pid}.jpg",
                                  price, "GBP", "1", shop, shop_id, fixture_description(), "local_test_fixture",
-                                 _ean13(f"50{index:010d}")])
-        self._previous = os.environ.get("AWIN_FEED_FILE")
+                                 "" if pid in no_code else _ean13(f"50{index:010d}")])
         os.environ["AWIN_FEED_FILE"] = str(path)
         clear_awin_feed_parse_cache()
         clear_provider_feed_pipeline_cache()
@@ -269,25 +277,31 @@ class OffersFirstPageTests(unittest.TestCase):
         self.assertEqual([card["role"] for card in cards[1:]], ["Lowest price"] * 3)
         self.assertNotIn("offers first", self._page())
 
-    def test_after_the_recommended_the_products_on_offer_cheapest_first_then_the_rest(self) -> None:
+    def test_the_offer_is_recommended_and_the_other_offers_follow_then_the_rest(self) -> None:
         set_offers_document({"shops": {"1003": _shop("Fixture Store Three", [
             _offer(7, "10% off kettles", code="KETTLE10", terms="One per order."),
         ], joined=True)}})
         page = self._page()
         cards = self._cards(page)
-        # k5 the Recommended (the middle price); then Store Three's kettles k3, k6, k9;
-        # "More" goes on with the rest, cheapest first.
-        self.assertEqual([card["id"] for card in cards], ["k5", "k3", "k6", "k9"])
+        # Store Three's kettles k3 £19, k6 £28, k9 £37 are on offer: the Recommended is the
+        # middle of them, k6; then k3 and k9; then the cheapest of the rest, k1.
+        self.assertEqual([card["id"] for card in cards], ["k6", "k3", "k9", "k1"])
         self.assertTrue(cards[0]["recommended"])
-        for card in cards[1:]:
-            self.assertEqual(card["role"], "Offer")
-            self.assertTrue(card["marked"])
+        self.assertEqual(cards[0]["role"], "On offer")
+        for card in cards[:3]:
             self.assertIn("10% off kettles", card["offer"])
             self.assertIn("until 31 Dec", card["offer"])
             self.assertIn("Code: KETTLE10", card["offer"])
             self.assertIn("Offer terms One per order.", card["offer"])
+        for card in cards[1:3]:
+            self.assertEqual(card["role"], "Offer")
+            self.assertTrue(card["marked"])
+        self.assertEqual(cards[3]["role"], "Lowest price")
+        self.assertEqual(cards[3]["offer"], "")
+        self.assertIn("The Recommended is on offer: of the products on offer, the one nearest the middle", page)
+        self.assertNotIn("The Recommended is mid-priced for this category", page)
         more = self._cards(self._page(shown=8))
-        self.assertEqual([card["id"] for card in more], ["k5", "k3", "k6", "k9", "k1", "k2", "k4", "k7"])
+        self.assertEqual([card["id"] for card in more], ["k6", "k3", "k9", "k1", "k2", "k4", "k5", "k7"])
         self.assertEqual([card["role"] for card in more[4:]], ["", "", "", ""])
         self.assertIn("Results for: kettle, offers first, then cheapest first", page)
         self.assertIn("Products a current shop offer covers come first, then the rest by price, lowest first", page)
@@ -298,20 +312,46 @@ class OffersFirstPageTests(unittest.TestCase):
     def test_an_offer_without_a_code_shows_none(self) -> None:
         set_offers_document({"shops": {"1001": _shop("Fixture Store One", [_offer(8, "15% off everything")])}})
         cards = self._cards(self._page())
-        self.assertEqual([card["id"] for card in cards], ["k5", "k1", "k4", "k7"])
-        for card in cards[1:]:
+        # k1 £13, k4 £22, k7 £31 on offer: k4 the middle, the Recommended.
+        self.assertEqual([card["id"] for card in cards], ["k4", "k1", "k7", "k2"])
+        for card in cards[:3]:
             self.assertNotIn("Code:", card["offer"])
             self.assertIn("15% off everything", card["offer"])
 
-    def test_a_recommended_on_offer_keeps_its_labels_and_shows_its_offer(self) -> None:
-        set_offers_document({"shops": {"1002": _shop("Fixture Store Two", [_offer(9, "20% off your order")])}})
+    def test_one_product_on_offer_is_the_recommended_whatever_its_price(self) -> None:
+        set_offers_document({"shops": {"1003": _shop("Fixture Store Three", [_offer(12, "£5 off Kettle Nine")])}})
         cards = self._cards(self._page())
-        self.assertEqual(cards[0]["id"], "k5")
+        # The dearest kettle, k9 £37, alone on offer: recommended, then the cheapest; "Lowest
+        # price" is measured against the middle price of the whole answer, k5's £25.
+        self.assertEqual([card["id"] for card in cards], ["k9", "k1", "k2", "k3"])
+        self.assertEqual(cards[0]["role"], "On offer")
+        self.assertEqual([card["role"] for card in cards[1:]], ["Lowest price"] * 3)
+
+    def test_products_on_offer_without_a_code_leave_the_recommended_as_before(self) -> None:
+        # A Recommended must carry an EAN/GTIN (owner, 2026-10-16): with none on offer,
+        # the middle of the whole answer, k5, is recommended; the offers follow it.
+        self._write_feed(no_code=frozenset({"k3", "k6", "k9"}))
+        set_offers_document({"shops": {"1003": _shop("Fixture Store Three", [_offer(13, "10% off kettles")])}})
+        page = self._page()
+        cards = self._cards(page)
+        self.assertEqual([card["id"] for card in cards], ["k5", "k3", "k6", "k9"])
         self.assertEqual(cards[0]["role"], "Mid-priced for this category")
-        self.assertIn("20% off your order", cards[0]["offer"])
-        # Then the other products of Store Two, k2 and k8, then the cheapest of the rest.
-        self.assertEqual([card["id"] for card in cards[1:]], ["k2", "k8", "k1"])
-        self.assertEqual(cards[3]["role"], "Lowest price")
+        self.assertEqual(cards[0]["offer"], "")
+        self.assertIn("The Recommended is mid-priced for this category", page)
+
+    def test_fewer_than_three_products_have_no_recommended_even_on_offer(self) -> None:
+        # Fewer than three products have no Recommended (2026-10-16), on offer or not:
+        # the product on offer comes first, labelled with its offer.
+        self._write_feed(only=frozenset({"k2", "k6"}))
+        set_offers_document({"shops": {"1003": _shop("Fixture Store Three", [_offer(14, "10% off kettles")])}})
+        page = self._page()
+        cards = self._cards(page)
+        self.assertEqual([card["id"] for card in cards], ["k6", "k2"])
+        self.assertFalse(any(card["recommended"] for card in cards))
+        self.assertEqual(cards[0]["role"], "Offer")
+        self.assertIn("10% off kettles", cards[0]["offer"])
+        self.assertIn("No Recommended here: these products have no middle price to pick.", page)
+        self.assertNotIn("The Recommended is on offer", page)
 
     def test_an_offer_that_covers_no_product_changes_nothing(self) -> None:
         set_offers_document({"shops": {"1001": _shop("Fixture Store One", [
