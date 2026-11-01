@@ -11,11 +11,11 @@ Mandatory operating rulebook for Picwise Production.
 
 ## 2) Core Identity
 
-Changed on 2026-10-16 by the owner: "price first" (`docs/picwise_price_first_plan_2026-10-15.md`).
+Changed on 2026-10-16 by the owner: "price first" (`docs/picwise_price_first_plan_2026-10-15.md`). Changed again on 2026-11-01 by the owner: products a current shop offer covers come first (owner, 2026-11-01: «Ανά προϊόν... Όταν ψάχνει ένας πελάτης ένα προϊόν ή μία κατηγορία υπάρχει προσφορά σε αυτό το προϊόν ... προϊόντα με προσφορές πρώτα», and, asked whether that changes "cheapest first": «Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο»).
 
-- Picwise finds the product the buyer asked for, shows only what is in stock, cheapest first, and makes one honest pick.
+- Picwise finds the product the buyer asked for, shows only what is in stock, the products a current shop offer covers first and then cheapest first, and makes one honest pick.
 - Picwise must reduce search-to-decision time.
-- Every purchase-intent query must lead to 4 choices first, with exactly 1 honest recommended choice among them, and a "More" that opens the next 4 cheapest as often as the buyer asks.
+- Every purchase-intent query must lead to 4 choices first, with exactly 1 honest recommended choice among them, and a "More" that opens the next 4 in that order as often as the buyer asks.
 - Fewer than four right products are shown as they are (`docs/PICWISE_DECISION_CONTRACT.md`, 2026-10-16). Even one product is shown when there is no other, on a layout of its own, never as one small card in the middle (owner, 2026-10-31: «Το ευρετήριο μπορεί να εμφανίσει και ένα προϊόν εάν δεν υπάρχουν άλλα σε αυτή την περίπτωση το εμφανίζει διαφορετικά»).
 
 ## 3) Required Output Contract (Always)
@@ -51,7 +51,7 @@ The project must never:
 
 - Picwise may earn through affiliate/referral/lead/conversion models.
 - Commission is never part of recommendation logic.
-- The order is the price, after the kind asked for and availability. The Recommended is the middle product in price order, the median, with a dearest product costing at least twice the next one left out of the count (`docs/PICWISE_DECISION_CONTRACT.md`, "Price first"; changed on 2026-10-16 by the owner).
+- The order, after the kind asked for and availability: the Recommended first; then the products a current shop offer covers, cheapest first; then the rest, cheapest first (owner, 2026-11-01). An offer covers a product only where its own words leave no doubt: the whole shop, or the product's kind named in it, live now by its own dates (`picwise_providers.product_offers`; `docs/PICWISE_DECISION_CONTRACT.md`, "Offers first"). PicWise is paid nothing to put an offer first; commission still never decides the order. The Recommended is the middle product in price order, the median, with a dearest product costing at least twice the next one left out of the count (`docs/PICWISE_DECISION_CONTRACT.md`, "Price first"; changed on 2026-10-16 by the owner).
 - A shop in several networks is one shop, known by its own site's domain. Its price and availability come from the freshest feed (the latest update date the network states) with a real stock state, never chosen by commission; only when the networks give the same offer is the link taken from the network that pays best, the highest commission first (`docs/PICWISE_DECISION_CONTRACT.md`, "One shop in several networks"; owner, 2026-10-22).
 
 ## 6) Brain Model

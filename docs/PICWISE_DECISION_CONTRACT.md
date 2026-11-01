@@ -424,7 +424,9 @@ sales figure between them. In their place:
    feed's word is trusted; no shop page is checked (owner, 2026-10-16)
 3. the products must carry title, price, image, description, link and availability, as
    ruled on 2026-10-12; specifications and codes are shown when present, never required
-4. cheapest first, by product price alone, with no delivery cost
+4. cheapest first, by product price alone, with no delivery cost; **after the Recommended,
+   the products a current shop offer covers come first**, cheapest first among them, then
+   the rest (owner, 2026-11-01; "Offers first" below)
 5. the same product (same EAN/GTIN or, without it, same brand and manufacturer code,
    MPN; owner, 2026-10-16) shown once, from the cheapest shop that has it in stock;
    neither code, no joining
@@ -496,3 +498,32 @@ Put to the owner in these two steps and accepted («Ναι, γράψ' το στ�
 that states no date never counts as fresher than one that does (an unknown date is not
 a fresh one; put to the owner and accepted, «Εντάξει, συμφωνώ»). Not built: PicWise reads one network today; this applies when a
 second one comes in.
+
+## Offers first, decided by the owner, 2026-11-01
+
+The owner: «Ανά προϊόν... Όταν ψάχνει ένας πελάτης ένα προϊόν ή μία κατηγορία υπάρχει
+προσφορά σε αυτό το προϊόν ψάχνει παράδειγμα καφετιέρα θα το δείξει τις προσφορές προϊόντα
+με προσφορές πρώτα». Asked, with the choices put to them (a label with the order kept, a row
+of offers above the results, or products with an offer first), whether that changes
+"cheapest first": «Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο».
+
+1. **The order.** The Recommended first, as before; then the products a current shop
+   offer covers, cheapest first; then the rest, cheapest first. "More" opens the next four
+   in that order. The Recommended is chosen as before (the middle product by price).
+2. **What an offer is.** Awin's offers of PicWise's shops, fetched every night
+   (`deployment/server/fetch_offers.py`). Awin gives them per shop, so an offer covers a
+   product only where its own words leave no doubt (`picwise_providers.product_offers`):
+   it states a discount (a percentage, an amount off, half price, a second one free; not
+   free delivery, a collection, a bundle price or a code alone); it is meant for shoppers
+   (not a commission offer to publishers); it is live now by its own dates; and it covers
+   the whole shop ("sitewide", "everything", "your order", "your first order", "new
+   customers", or a discount naming nothing but the shop) or names the product's kind,
+   every word of it in the product's title. "Up to" and "selected" cover no product: which
+   ones the offer does not say. A product an offer may not cover is never said to be on
+   offer.
+3. **The card.** An offer card is labelled "Offer" instead of "Lowest price", and shows
+   the offer in the shop's words, its end date, its code where Awin gives one (to joined
+   programmes only), and its terms. The Recommended keeps its labels and shows its offer
+   too. The page says the order ("offers first, then cheapest first").
+4. **No one pays for a place.** PicWise is paid nothing to show an offer or to put it
+   first; commission still never decides the order.

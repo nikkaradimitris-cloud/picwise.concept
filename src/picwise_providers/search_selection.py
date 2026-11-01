@@ -33,6 +33,7 @@ from .normalization import extract_merchant_name
 from .decision_labels import parse_price_amount
 from .product_description import has_sufficient_description
 from .product_specs import read_product_specs
+from .product_offers import offers_covering
 from .product_identity import same_product_key
 from .product_condition import (
     non_new_condition,
@@ -1823,28 +1824,34 @@ def _price_first_result(
     strength (`is_strong_feed_opportunity_selection`), and a dropped word weakens it.
     """
     recommended_index, recommendation_status = _median_recommendation(ordered)
-    if recommended_index is None:
-        display_order = list(ordered)
-    else:
-        display_order = (
-            [ordered[recommended_index]]
-            + ordered[:recommended_index]
-            + ordered[recommended_index + 1 :]
-        )
+    recommended = ordered[recommended_index] if recommended_index is not None else None
+    # Owner, 2026-11-01: «Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο».
+    # After the Recommended come the products a current shop offer covers, cheapest
+    # first, and then the rest, cheapest first (`product_offers`). With no offer, the
+    # order is the price, as before.
+    rest = [entry for entry in ordered if entry is not recommended]
+    covered = offers_covering(entry.product for entry in rest)
+    on_offer = {id(entry) for entry in rest if id(entry.product) in covered}
+    display_order = (
+        ([recommended] if recommended is not None else [])
+        + [entry for entry in rest if id(entry) in on_offer]
+        + [entry for entry in rest if id(entry) not in on_offer]
+    )
     page_size = max(safe_max, -(-max(int(shown or 0), safe_max) // safe_max) * safe_max)
     first_page = display_order[:safe_max]
     opened = display_order[safe_max:page_size]
 
-    recommended = ordered[recommended_index] if recommended_index is not None else None
     # "Lowest price" is for the cheap end of the answer: first-page products priced at
     # or below the Recommended or, with none, at or below the middle price (owner,
     # 2026-10-16 and 2026-10-17). Of three standing desks, the £630.99 one is not the
     # lowest price, though it is on the page.
     lowest_price_ceiling = recommended.price if recommended is not None else _middle_price(ordered)
+    # A product on offer is labelled with its offer, not "Lowest price".
     cheapest_ids = tuple(
         str(entry.product.provider_product_id or "").strip()
         for entry in first_page
         if entry is not recommended
+        and id(entry) not in on_offer
         and lowest_price_ceiling is not None
         and entry.price <= lowest_price_ceiling
     )

@@ -21,6 +21,7 @@ from picwise_search_memory.broad_query_suggestions import (
 )
 from picwise_search_memory.index_lookup import lookup_offline_search_index
 
+from picwise_providers.product_offers import offers_covering
 from picwise_providers.search_selection import (
     is_strong_feed_opportunity_selection,
     provider_product_to_backend_dict,
@@ -118,6 +119,9 @@ class LiveSearchResolution:
     provider_feed_shop_counts: tuple[tuple[str, int], ...] = field(default_factory=tuple)
     # (product id, place in the whole answer by price, 1 = cheapest; equal prices share)
     provider_feed_price_ranks: tuple[tuple[str, int], ...] = field(default_factory=tuple)
+    # (product id, the current shop offer covering it) for shown products on offer, which
+    # come right after the Recommended (owner, 2026-11-01; `picwise_providers.product_offers`).
+    provider_feed_offers: tuple[tuple[str, dict[str, Any]], ...] = field(default_factory=tuple)
     # A search naming only a general kind ("cable"): the searches that narrow it, the
     # largest first, and the kind's English name for the question above the results
     # ("What kind of cable?"; owner, 2026-10-28/29). Empty for every other search.
@@ -187,6 +191,7 @@ class LiveSearchResolution:
             payload["provider_feed_price_ranks"] = [
                 list(row) for row in self.provider_feed_price_ranks
             ]
+            payload["provider_feed_offers"] = [list(row) for row in self.provider_feed_offers]
             if self.provider_feed_decision_status is not None:
                 payload["provider_feed_decision_status"] = self.provider_feed_decision_status
                 payload["provider_feed_recommended_product_id"] = self.provider_feed_recommended_product_id
@@ -502,6 +507,7 @@ def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
     provider_feed_cheapest_product_ids: tuple[str, ...] = ()
     provider_feed_shop_counts: tuple[tuple[str, int], ...] = ()
     provider_feed_price_ranks: tuple[tuple[str, int], ...] = ()
+    provider_feed_offers: tuple[tuple[str, dict[str, Any]], ...] = ()
     selection_query = canonicalized_query or normalized_query or raw_query
     standard_provider_feed_path = bool(
         mega_category_id
@@ -604,6 +610,14 @@ def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
                         provider_feed_cheapest_product_ids = selection.cheapest_product_ids
                         provider_feed_shop_counts = selection.shop_counts
                         provider_feed_price_ranks = selection.price_ranks
+                        if selection.price_first:
+                            shown_products = tuple(selection.selected_products) + tuple(selection.more_products)
+                            covered = offers_covering(shown_products)
+                            provider_feed_offers = tuple(
+                                (str(product.provider_product_id or "").strip(), covered[id(product)].to_dict())
+                                for product in shown_products
+                                if id(product) in covered
+                            )
                     if recommendation.decision_status == "recommended" and not products_exposed:
                         # A weak feed-opportunity selection is reported but not exposed.
                         # Claiming "recommended" with zero exposed products contradicts
@@ -723,6 +737,7 @@ def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
         provider_feed_cheapest_product_ids=provider_feed_cheapest_product_ids,
         provider_feed_shop_counts=provider_feed_shop_counts,
         provider_feed_price_ranks=provider_feed_price_ranks,
+        provider_feed_offers=provider_feed_offers,
         kind_choices=kind_choices,
         kind_choices_name=kind_choices_name,
     )

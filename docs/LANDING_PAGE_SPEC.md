@@ -92,7 +92,9 @@ Recommended card must additionally show:
 Changed on 2026-10-16 by the owner: "price first" (`docs/picwise_price_first_plan_2026-10-15.md`).
 
 - "More" is below the first 4 choices, on every search.
-- Each press opens the next 4 cheapest, as often as the buyer asks, until the list ends.
+- Each press opens the next 4 in the answer's order, as often as the buyer asks, until the
+  list ends: the products a current shop offer covers first, then the cheapest (owner,
+  2026-11-01: «Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο»).
 - A counter shows how many are shown: "4 of 45", "8 of 45".
 - Nothing opened by "More" is recommended.
 - It is a button the buyer presses, not an infinite scroll that loads on its own.

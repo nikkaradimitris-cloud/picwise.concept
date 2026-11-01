@@ -95,7 +95,7 @@ class WordingTests(unittest.TestCase):
         page = render_picwise_reference_surface("")
         self.assertIn(
             "PicWise finds the product you want in the shops it is connected to, shows what "
-            "the shops list as in stock, cheapest first, and marks one mid-priced Recommended.",
+            "the shops list as in stock, products on offer first and then cheapest first, and marks one mid-priced Recommended.",
             page,
         )
         self.assertNotIn("recommends the 4 best matches", page)

@@ -296,7 +296,7 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertEqual(
             tooltip.group(1),
             "PicWise finds the product you want in the shops it is connected to, shows "
-            "what the shops list as in stock, cheapest first, and marks one mid-priced "
+            "what the shops list as in stock, products on offer first and then cheapest first, and marks one mid-priced "
             "Recommended.",
         )
         lowered = (body[: tooltip.start()] + body[tooltip.end():]).lower()

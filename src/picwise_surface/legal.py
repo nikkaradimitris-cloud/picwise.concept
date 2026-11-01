@@ -20,7 +20,7 @@ OPERATOR_NAME = "Nikos Karadimitris"
 OPERATOR_ADDRESS = "53 N. Notara Street, Piraeus, Greece"
 OPERATOR_VAT = "EL120948460"
 PUBLIC_CONTACT_EMAIL = "contact.picwise@subby.cloud"
-LAST_UPDATED = "31 October 2026"
+LAST_UPDATED = "1 November 2026"
 
 SHORT_AFFILIATE_NOTICE = (
     "PicWise earns a commission from some shops, through Awin, when you buy after following "
@@ -36,7 +36,8 @@ _OPERATOR_HTML = (
 _WHAT_PICWISE_DOES_HTML = (
     "<p>PicWise is a product search for shoppers in the United Kingdom who already know what "
     "they want to buy. Type a product, and PicWise shows only that kind of product, only what "
-    "the shops list as in stock, cheapest first: four choices, usually with one marked as the "
+    "the shops list as in stock, those a current shop offer covers first and then cheapest first: "
+    "four choices, usually with one marked as the "
     "recommended pick from the middle of the prices rather than simply the cheapest, and "
     "\u201cMore\u201d for the next four.</p>"
     "<p>The prices and stock come from the shops' own product feeds, received through the Awin "
@@ -168,7 +169,7 @@ def render_terms_page() -> str:
         title="Terms of Use — PicWise",
         meta_description=(
             "The terms of use of PicWise, a product search that shows UK shops' products in stock, "
-            "cheapest first: who runs it, links to shops, commission, and limits."
+            "offers first, then cheapest first: who runs it, links to shops, commission, and limits."
         ),
         heading="Terms of Use",
         intro="Please read these terms before using PicWise.",
@@ -272,9 +273,11 @@ def render_affiliate_disclosure_page() -> str:
         "<h2>How PicWise earns</h2>"
         "<p>PicWise works with the Awin affiliate network. Links from PicWise to shops go through Awin, and when you buy after following one, the shop may pay PicWise a commission through Awin.</p>"
         "<h2>What it does not change</h2>"
-        "<p>The price you pay is the same. The commission never decides what PicWise shows or in which order: results are the kind you asked for, in stock, cheapest first, and the recommended pick is the one in the middle of the prices. Shops that pay no commission are ranked by the same rule.</p>"
+        "<p>The price you pay is the same. The commission never decides what PicWise shows or in which order: results are the kind you asked for, in stock, those a current shop offer covers first and then cheapest first, and the recommended pick is the one in the middle of the prices. Shops that pay no commission are ranked by the same rule.</p>"
+        "<h2>Offers</h2>"
+        "<p>An offer on a product is the shop's own, as it states it through Awin, shown with its end date and, where the shop gives one, its code. PicWise is paid nothing to show an offer or to put it first, and shows it only where its words cover the product.</p>"
         "<h2>Which shops</h2>"
-        "<p>The shops on PicWise run a programme with Awin and have accepted PicWise into it. PicWise works with no other affiliate network at present; any other will be named here first.</p>"
+        "<p>The shops on PicWise run a programme with Awin. PicWise earns a commission only from the shops that have accepted it into their programme; the others are shown by the same rule, and PicWise earns nothing from them. PicWise works with no other affiliate network at present; any other will be named here first.</p>"
         "<h2>What PicWise compares</h2>"
         "<p>Physical products from UK shops. PicWise has no software (SaaS), finance or insurance referral programmes.</p>"
         "<h2>Check before you buy</h2>"
@@ -330,7 +333,7 @@ def render_about_page() -> str:
         "<ul>"
         "<li>Only the kind of product you asked for: a search for a coffee machine shows coffee machines, not filters for coffee machines.</li>"
         "<li>Only what the shop lists as in stock.</li>"
-        "<li>Cheapest first, in one currency.</li>"
+        "<li>Products a current shop offer covers first, then cheapest first, in one currency. The offer is the shop's own, shown in its words with its end date.</li>"
         "<li>A recommended pick when the prices allow one: the product in the middle of the prices, so neither the cheapest nor the dearest decides it.</li>"
         "<li>When there are fewer products, PicWise shows just those, and says so.</li>"
         "</ul>"
@@ -343,10 +346,10 @@ def render_about_page() -> str:
     return _render_legal_page(
         title="About PicWise — PicWise",
         meta_description=(
-            "PicWise is a product search for UK shoppers: only the kind you asked for, in stock, cheapest first, "
+            "PicWise is a product search for UK shoppers: only the kind you asked for, in stock, offers first, then cheapest first, "
             "with one recommended pick from the middle of the prices."
         ),
         heading="About PicWise",
-        intro="A product search that shows only what you asked for, in stock, cheapest first.",
+        intro="A product search that shows only what you asked for, in stock, offers first, then cheapest first.",
         sections=sections,
     )

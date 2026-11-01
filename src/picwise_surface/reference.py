@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from html import escape
 from urllib.parse import quote
@@ -128,6 +129,14 @@ _PRICE_FIRST_RECOMMENDED_LABEL = "Mid-priced for this category"
 _PRICE_FIRST_LOWEST_LABEL = "Lowest price"
 _PRICE_FIRST_SHOPS_LABEL = "Lowest price of {shops} shops"
 _PRICE_FIRST_SORTED = "Sorted by price, lowest first, from the shops connected to PicWise."
+# Owner, 2026-11-01: «Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο». A page
+# whose answer has products on offer says so where it says how it is sorted.
+_PRICE_FIRST_SORTED_WITH_OFFERS = (
+    "Products a current shop offer covers come first, then the rest by price, lowest first, "
+    "from the shops connected to PicWise."
+)
+_OFFER_LABEL = "Offer"
+_OFFERS_NOTE = "Offers are the shops' own, as they state them through Awin: check them on the shop's site."
 _PRICE_FIRST_FEED_NOTE = "Prices and stock are as the shops list them."
 _PRICE_FIRST_DISCLOSURES = {
     "recommended": (
@@ -157,7 +166,11 @@ _PRICE_FIRST_PAGE_NOTE = (
 _HOME_HEADING = "Find the product you want in UK shops"
 _HOW_PICWISE_CHOOSES = (
     ("Only what you asked for", "A search for a coffee machine shows coffee machines, not their filters."),
-    ("In stock, cheapest first", "As the shops list them, read again every night."),
+    (
+        "In stock, offers first, then cheapest",
+        "Products a shop's current offer covers come first, then the rest by price, as the shops "
+        "list them, read again every night.",
+    ),
     (
         "One fair pick",
         "The Recommended comes from the middle of the prices, not the cheapest or the dearest, "
@@ -190,7 +203,8 @@ _NUMBER_AND_CODE = re.compile(r"^(\d[\d,]*(?:\.\d+)?) ([A-Z]{3})$")
 _SEARCH_PLACEHOLDER = "What are you looking for?"
 _WHAT_IS_PICWISE = (
     "PicWise finds the product you want in the shops it is connected to, shows what the "
-    "shops list as in stock, cheapest first, and marks one mid-priced Recommended."
+    "shops list as in stock, products on offer first and then cheapest first, and marks one "
+    "mid-priced Recommended."
 )
 _MIC_TITLE = (
     "Search by voice. Your browser turns your words into text; in Chrome the audio is "
@@ -750,6 +764,7 @@ def _build_price_first_cards(
     total = int(getattr(resolution, "provider_feed_total_count", 0) or 0)
     products = first_page + opened
     labels = build_fact_based_choice_labels(products)
+    offers = dict(getattr(resolution, "provider_feed_offers", ()) or ())
     cards: list[dict[str, object]] = []
     for index, product in enumerate(products):
         label = labels[index] if index < len(labels) else None
@@ -759,8 +774,11 @@ def _build_price_first_cards(
         shops_label = (
             _PRICE_FIRST_SHOPS_LABEL.format(shops=shop_count) if shop_count > 1 else ""
         )
+        offer = offers.get(product_id)
         if is_recommended:
             role_label = _PRICE_FIRST_RECOMMENDED_LABEL
+        elif offer:
+            role_label = _OFFER_LABEL
         elif product_id in cheapest:
             role_label = shops_label or _PRICE_FIRST_LOWEST_LABEL
         else:
@@ -789,7 +807,8 @@ def _build_price_first_cards(
                 "brand": str(product.get("brand") or "").strip(),
                 "stock_line": stock_line,
                 "stock_state": stock_state,
-                "extra_line": shops_label if is_recommended else "",
+                "extra_line": shops_label if is_recommended or (offer and shops_label) else "",
+                "offer": offer or None,
                 "note": _card_note(label),
                 "meta": "",
                 "bullets": [],
@@ -843,6 +862,41 @@ def _price_first_more_html(
     return f'<nav class="pw-more" aria-label="More products">{counter}{button}</nav>'
 
 
+def _offer_until(end: object) -> str:
+    """"until 31 Dec", with the year when it is not this year's."""
+    try:
+        moment = datetime.fromisoformat(str(end or "").replace("Z", "+00:00"))
+    except ValueError:
+        return ""
+    year = "" if moment.year == datetime.now(timezone.utc).year else f" {moment.year}"
+    return f"until {moment.day} {moment:%b}{year}"
+
+
+def _offer_html(offer: dict[str, object]) -> str:
+    """The shop's offer on a card, in the shop's own words, its end, its code where the
+    shop gives one, and its terms."""
+    title = escape(str(offer.get("title") or ""))
+    facts = [_offer_until(offer.get("end"))]
+    code = str(offer.get("code") or "").strip()
+    meta = escape(" · ".join(part for part in facts if part))
+    code_html = (
+        f'{" · " if meta else ""}Code: <strong class="pw-offer-code">{escape(code)}</strong>' if code else ""
+    )
+    terms = str(offer.get("terms") or "").strip()
+    terms_html = (
+        f'<details class="pw-offer-terms"><summary>Offer terms</summary><p>{escape(terms)}</p></details>'
+        if terms
+        else ""
+    )
+    return (
+        '<div class="pw-card-offer">'
+        f'<p class="pw-offer-title">{title}</p>'
+        f'<p class="pw-offer-meta">{meta}{code_html}</p>'
+        f"{terms_html}"
+        "</div>"
+    )
+
+
 def _single_product_facts_html(card: dict[str, object], *, product_code: str) -> str:
     """What a product shown alone says of itself, each line only when its shop gives it
     (the design's single product: shop, brand, product code, delivery). PicWise holds no
@@ -884,11 +938,13 @@ def _render_choice_card(
     )
     # A product shown alone is not "the lowest price" of anything: its own line says it
     # is the only one.
-    role_label_html = (
-        f'<p class="pw-role-label">{escape(str(card.get("role_label")))}</p>'
-        if str(card.get("role_label") or "") and not single
-        else ""
-    )
+    offer = card.get("offer") if isinstance(card.get("offer"), dict) else None
+    role_label_html = ""
+    if str(card.get("role_label") or "") and not single:
+        # The offer's mark comes before the class, so that what reads the cards by their
+        # classes (tests, the deployment's comparison) reads this label as any other.
+        offer_mark = ' data-offer="1"' if offer and str(card.get("role_label")) == _OFFER_LABEL else ""
+        role_label_html = f'<p{offer_mark} class="pw-role-label">{escape(str(card.get("role_label")))}</p>'
     reasons = "".join(
         f'<li class="pw-feature-item"><span class="pw-feature-dot" aria-hidden="true"></span><span>{escape(str(reason))}</span></li>'
         for reason in list(card.get("bullets") or ())
@@ -902,6 +958,8 @@ def _render_choice_card(
             f'<p class="pw-card-stock pw-stock-{escape(str(card.get("stock_state") or "unconfirmed"), quote=True)}">'
             f'{escape(str(card["stock_line"]))}</p>'
         )
+    if offer:
+        lines.append(_offer_html(offer))
     lines.append(f'<p class="pw-card-description">{escape(str(card["description"]))}</p>')
     if str(card.get("extra_line") or ""):
         lines.append(f'<p class="pw-card-extra">{escape(str(card["extra_line"]))}</p>')
@@ -1081,6 +1139,14 @@ _PAGE_STYLES = (
     ".pw-warning-icon{font-size:10px;color:#6f86ad;line-height:1.2;margin-top:1px;}"
     ".pw-rec-note{margin:6px 0 0;font-size:11px;line-height:1.35;color:#2e4c7d;background:#eef4ff;border-radius:8px;padding:6px 8px;}"
     ".pw-card-note{margin:8px 0 0;font-size:11.5px;line-height:1.4;color:#7b8ba3;}"
+    ".pw-role-label[data-offer]{background:#fff1e6;color:#b4471f;}"
+    ".pw-card-offer{margin:6px 0 0;padding:7px 9px;border-radius:10px;background:#fff7f0;border:1px solid #f6d9c2;}"
+    ".pw-offer-title{margin:0;font-size:12.5px;font-weight:700;line-height:1.35;color:#9a3b12;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}"
+    ".pw-offer-meta{margin:2px 0 0;font-size:11.5px;color:#8a5a3c;}"
+    ".pw-offer-code{font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:.04em;color:#9a3b12;}"
+    ".pw-offer-terms{margin:4px 0 0;font-size:11px;color:#8a5a3c;}"
+    ".pw-offer-terms summary{cursor:pointer;}"
+    ".pw-offer-terms p{margin:4px 0 0;line-height:1.4;}"
     ".pw-card-body>:nth-last-child(2){margin-bottom:12px;}"
     ".pw-card-cta{margin-top:auto;display:block;width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--blue-2);color:var(--blue-2);background:#fff;font:inherit;font-size:14px;font-weight:700;text-align:center;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;}"
     ".pw-card-cta:hover{background:#eef4ff;}"
@@ -1219,6 +1285,8 @@ def render_picwise_reference_surface(
                 disclosure = _PRICE_FIRST_DISCLOSURES[
                     str(resolution.provider_feed_decision_status)
                 ]
+                if any(card.get("offer") for card in price_first_cards):
+                    disclosure = disclosure.replace(_PRICE_FIRST_SORTED, _PRICE_FIRST_SORTED_WITH_OFFERS)
         else:
             feed_cards, feed_live, feed_disclosure, feed_safe_note = (
                 _build_provider_feed_result_cards(
@@ -1246,7 +1314,12 @@ def render_picwise_reference_surface(
         )
         if display_query.strip():
             if has_live_results and price_first_page:
-                query_line = f"Results for: {display_query}, cheapest first"
+                with_offers = any(card.get("offer") for card in card_specs)
+                query_line = (
+                    f"Results for: {display_query}, offers first, then cheapest first"
+                    if with_offers
+                    else f"Results for: {display_query}, cheapest first"
+                )
                 understood_name = str(getattr(resolution, "understood_concept_name", "") or "")
                 if understood_name and getattr(resolution, "understood_by_correction", False):
                     query_line += f"  ·  Understood as: {understood_name}"
@@ -1365,6 +1438,11 @@ def render_picwise_reference_surface(
         page_note = _PRICE_FIRST_PAGE_NOTE if price_first_page else (
             "Selected real products from connected provider feed. Recommended from these 4."
         )
+        if price_first_page and any(card.get("offer") for card in card_specs):
+            page_note = page_note.replace(
+                "cheapest first.", "products on offer first, then cheapest first.", 1
+            )
+            page_note = f"{page_note} {_OFFERS_NOTE}"
         note_or_empty_html = f'<p class="pw-demo-note">&#9432; {escape(page_note)}</p>'
     elif is_home:
         note_or_empty_html = ""

@@ -17,6 +17,9 @@ Group=picwise
 # it shows no products, as with no feed.
 Environment=PICWISE_PREPARED_CATALOGUE_FILE=/srv/picwise/shared/prepared/catalogue.json.gz
 Environment=PICWISE_STATIC_DIR=/srv/picwise/shared/public
+# The current offers of PicWise's shops, fetched every night by picwise-offers.service:
+# a product an offer covers comes right after the Recommended (owner, 2026-11-01).
+Environment=PICWISE_OFFERS_FILE=/srv/picwise/shared/offers/offers.json
 Environment=PYTHONDONTWRITEBYTECODE=1
 # The release in use is resolved once, at start: a worker gunicorn starts again later
 # loads the same code, even after a deployment has pointed `current` to a newer one.

@@ -4,9 +4,12 @@
 
 > Changed on 2026-10-16 by the owner's decision, "price first" (`docs/picwise_price_first_plan_2026-10-15.md`). It
 > replaces "a decision engine, not a search engine" and the limited "more".
+>
+> Changed on 2026-11-01 by the owner: products a current shop offer covers come first
+> («Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο»; `PROJECT_RULES.md` §5).
 
-Picwise finds the product the buyer asked for, shows only what is in stock, cheapest
-first, and makes one honest pick.
+Picwise finds the product the buyer asked for, shows only what is in stock, the products
+a current shop offer covers first and then cheapest first, and makes one honest pick.
 
 For every purchase-intent query, Picwise must:
 - show only the kind of product asked for
@@ -17,7 +20,10 @@ For every purchase-intent query, Picwise must:
   costing at least twice the next one does not count towards the middle) and the 3
   cheapest
 - show how many there are ("4 of 45")
-- offer "More": the next 4 cheapest, as often as the buyer asks
+- after the Recommended, put the products a current shop offer covers first, cheapest
+  first among them, with the offer in the shop's own words and its end date (owner,
+  2026-11-01)
+- offer "More": the next 4 in that order, as often as the buyer asks
 - explain the recommendation briefly and clearly
 - include a clear CTA per choice
 - track decision and click events
@@ -50,8 +56,10 @@ Picwise must not become:
 - No fake products, reviews, ratings, conversions, revenue, savings, urgency, or confidence signals.
 - No commission-first ranking or recommendation. Commission never decides the order
   or the Recommended.
-- The order is the price, after the kind asked for and availability. The Recommended
-  is the middle product in price order. No ratings are used.
+- The order, after the kind asked for and availability: the Recommended, then the
+  products a current shop offer covers, then the rest, each cheapest first (owner,
+  2026-11-01). The Recommended is the middle product in price order. No ratings are
+  used. No one pays for a place.
 
 ## First Phase Boundary
 
