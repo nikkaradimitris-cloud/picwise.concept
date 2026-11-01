@@ -1,9 +1,8 @@
 # PicWise — session handoff
 
 Current state for whoever picks the project up next. Updated 2026-11-01 (**offers first
-and the Recommended on offer live since 10:06 UTC**, run `41295172671`; **found on it:
-vouchers without their code shown as offers; the fix built, not deployed: waiting for the
-owner's word**; also live: the design of 31/10 and the pages, run `41215460767`, and the
+and the Recommended on offer live since 10:06 UTC**, run `41295172671`; **vouchers without
+their code no longer shown since 12:21 UTC**, run `41305061462`; also live: the design of 31/10 and the pages, run `41215460767`, and the
 nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the server since
 2026-10-31 10:03 UTC, HTTPS by Caddy; Vercel kept as the backup).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
@@ -16,10 +15,16 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   success, 09:55-10:08 UTC, release `20261101T095518Z-d4c2a40`; the catalogue prepared
   again, 528,524 products from 81 shops, peak memory 7.9 GB, 620 s; the site active since
   10:06:16 UTC, its memory 6,212 MB; offers fetched again: 94 live, of 30 of the 85 shops,
-  joined to 2, 2 voucher codes; 15 of 15 pages and 12 of 12 searches answered. **Committed
-  after it, not deployed: the voucher fix** (below, `7e1cbce`); deploying it is
-  the owner's word, a push to `ccr-1361f1a7-dcpo60` (the catalogue is prepared again, about
-  12 minutes).
+  joined to 2, 2 voucher codes; 15 of 15 pages and 12 of 12 searches answered. **The
+  voucher fix** (below, `7e1cbce`, with these notes `001b2d8`) **is deployed too** (owner:
+  «Ναι ανέβασε το στο server»): run `41305061462`, success, 12:08-12:24 UTC, release
+  `20261101T120852Z-001b2d8`; 528,518 products from 81 shops prepared again (peak memory
+  7.9 GB, 736 s); the site active since 12:21:45 UTC, its memory 6,210 MB; offers fetched
+  again (94, of 30 shops, joined to 2, 2 codes); 15 of 15 pages and 12 of 12 searches
+  answered, **none of the 12 showing an offer now**: "kettle" and "mouse" have the cards of
+  before. Offers now show only for the shops whose offers remain (Gardenista, Game Over,
+  Ready Steady Bed, Cottsbury, a few Finediam and Optimum Nutrition products), none of
+  which the 12 searches reach. Nothing is waiting to be deployed.
 - **What the deployment showed, and the fix.** Of the 12 searches the deployment prints,
   two show offers. "kettle": the Recommended reads "On offer", Geepas's "1.7L Electric
   Kettle & 4 Slice Bread Toaster Vintage Set Retrovive" at £109.99, then three Geepas
@@ -89,9 +94,7 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 - **Seen on the local preview** (fictional shops): "kettle", Store Two's "10% off kettles"
   on its three kettles: the Recommended is its £19.99 kettle ("On offer"), then its £12.74
   and £33.99 ones ("Offer"), then the cheapest of the rest ("Lowest price").
-- **Next, in order**: the owner's word to deploy the voucher fix; after it, the
-  deployment's log (the 12 searches print their cards: "kettle" should be back to the
-  order of before), then these notes and PROGRESS. Then as before: the application text and the Awin applications (the offers' codes come only from
+- **Next, in order**, as before: the application text and the Awin applications (the offers' codes come only from
   joined programmes), the trending searches' source, the first search after a restart.
 
 ## Before (2026-10-31, night, to 2026-11-01 morning): the design deployed, the offers fetched
