@@ -1125,7 +1125,11 @@ _PAGE_STYLES = (
     ".pw-anchor{position:absolute;top:-80px;}"
     ".pw-product-image-wrap{position:relative;aspect-ratio:1/1;width:100%;border-radius:12px;background:#fff;border:1px solid #edf2fa;display:flex;align-items:center;justify-content:center;overflow:hidden;}"
     ".pw-product-image{display:block;width:100%;height:100%;object-fit:contain;color:transparent;}"
-    # A card whose photo fails is hidden whole (HEAD_SCRIPT marks it; owner, 2026-11-01).
+    # A card is seen only once its photo has loaded, and one whose photo fails never
+    # (HEAD_SCRIPT marks them; owner, 2026-11-01). Its place is kept while the photo
+    # loads, so nothing moves when it appears.
+    ".pw-photo-guard .pw-card{visibility:hidden;opacity:0;}"
+    ".pw-photo-guard .pw-card.pw-photo-ok{visibility:visible;opacity:1;transition:opacity .15s ease-out;}"
     ".pw-card.pw-no-photo{display:none;}"
     ".pw-card-body{display:flex;flex-direction:column;flex:1;min-width:0;}"
     ".pw-role{display:flex;flex-direction:column;align-items:flex-start;gap:4px;height:46px;margin:10px 0 4px;overflow:hidden;}"

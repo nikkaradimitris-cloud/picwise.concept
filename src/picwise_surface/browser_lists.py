@@ -46,18 +46,26 @@ HEART_ICON = (
 # Run in the page's <head>, before anything is drawn: the buttons that need JavaScript
 # and local storage appear with the page, never a moment after it (no layout shift).
 # It only reads: finding out whether storage is allowed stores nothing.
-# It also listens, before any photo loads, for a card whose photo fails, and hides the
-# card whole (owner, 2026-11-01: «Όταν το προϊόν δεν φέρνει φωτογραφία δεν πρέπει να
-# εμφανίζεται... Στις περισσότερες περιπτώσεις είναι not found»): the last guard, for a
-# photo gone since the nightly check (`deployment/server/check_photos.py`) left the
-# others out.
+# It also keeps every card out of sight until its photo has loaded, and a card whose photo
+# fails out of the page (owner, 2026-11-01: «Όταν το προϊόν δεν φέρνει φωτογραφία δεν πρέπει
+# να εμφανίζεται... Στις περισσότερες περιπτώσεις είναι not found», and «να μην μπορεί να
+# εμφανιστεί ένα προϊόν αν δεν έχει φωτογραφία στο ui»): a product is never seen without
+# its photo, whatever changed at the shop since the nightly check
+# (`deployment/server/check_photos.py`). The listeners are set before any photo exists,
+# so none loads or fails unheard. Only where the browser can find a photo's card
+# (`closest`) are cards held back at all: an older one shows them as before.
 HEAD_SCRIPT = (
     "(function(){var c=document.documentElement.classList;c.add('pw-js');"
     f"try{{if(window.localStorage){{window.localStorage.getItem('{FAVOURITES_STORAGE_KEY}');c.add('pw-store');}}}}"
     "catch(e){}"
-    "document.addEventListener('error',function(e){var t=e.target;"
-    "if(t&&t.tagName==='IMG'&&t.closest&&(' '+t.className+' ').indexOf(' pw-product-image ')>-1)"
-    "{var a=t.closest('.pw-card');if(a){a.classList.add('pw-no-photo');}}},true);"
+    "if(!window.Element||!Element.prototype.closest){return;}"
+    "c.add('pw-photo-guard');"
+    "function card(t){return t&&t.tagName==='IMG'&&(' '+t.className+' ').indexOf(' pw-product-image ')>-1"
+    "?t.closest('.pw-card'):null;}"
+    "document.addEventListener('load',function(e){var a=card(e.target);"
+    "if(a){a.classList.add(e.target.naturalWidth>0?'pw-photo-ok':'pw-no-photo');}},true);"
+    "document.addEventListener('error',function(e){var a=card(e.target);"
+    "if(a){a.classList.add('pw-no-photo');}},true);"
     "})();"
 )
 

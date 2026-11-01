@@ -152,13 +152,26 @@ class GonePhotosPageTests(_PreparedMixin, unittest.TestCase):
 
 
 class BrowserGuardTests(unittest.TestCase):
-    def test_a_card_whose_photo_fails_is_hidden_whole(self) -> None:
+    """«να μην μπορεί να εμφανιστεί ένα προϊόν αν δεν έχει φωτογραφία στο ui» (owner,
+    2026-11-01). The behaviour itself was seen in Chromium on the local preview: the
+    cards appear as their photos load, and one whose photo answers 404 never does."""
+
+    def test_a_card_is_seen_only_once_its_photo_has_loaded(self) -> None:
+        self.assertIn("addEventListener('load'", HEAD_SCRIPT)
+        self.assertIn("naturalWidth>0?'pw-photo-ok':'pw-no-photo'", HEAD_SCRIPT)
         self.assertIn("addEventListener('error'", HEAD_SCRIPT)
         self.assertIn("closest('.pw-card')", HEAD_SCRIPT)
-        self.assertIn("pw-no-photo", HEAD_SCRIPT)
+        self.assertIn("c.add('pw-photo-guard')", HEAD_SCRIPT)
+        # The listeners are caught on their way down, before the photo itself.
+        self.assertEqual(HEAD_SCRIPT.count("},true);"), 2)
         self.assertNotIn("setItem", HEAD_SCRIPT)
+        self.assertIn(".pw-photo-guard .pw-card{visibility:hidden;opacity:0;}", _PAGE_STYLES)
+        self.assertIn(".pw-photo-guard .pw-card.pw-photo-ok{visibility:visible;opacity:1;", _PAGE_STYLES)
         self.assertIn(".pw-card.pw-no-photo{display:none;}", _PAGE_STYLES)
-        self.assertNotIn("No photo from the shop", _PAGE_STYLES)
+
+    def test_a_browser_that_cannot_find_a_photo_s_card_shows_the_cards_as_before(self) -> None:
+        guard = HEAD_SCRIPT.index("c.add('pw-photo-guard')")
+        self.assertLess(HEAD_SCRIPT.index("if(!window.Element||!Element.prototype.closest){return;}"), guard)
 
 
 class PhotoCheckDeploymentTests(unittest.TestCase):

@@ -212,8 +212,14 @@ refused): 18 of InStock UK's 100, 1 of Lets Buy Books'; every other shop's loade
   and leaves those products out of every search: not shown, counted or recommended. A
   photo that answers again is back on the next list. The preparation keeps every product,
   so that the check can ask again.
-- In the visitor's browser, a card whose photo fails all the same (gone since the night's
-  check) is hidden whole, never shown with a broken picture (`browser_lists.HEAD_SCRIPT`).
+- In the visitor's browser a card is seen only once its photo has loaded, and one whose
+  photo fails never (owner, the same day: «από σκανάρισμα σε σκανάρισμα μπορεί να υπάρξει
+  στο ενδιάμεσο αλλαγές ... να μην μπορεί να εμφανιστεί ένα προϊόν αν δεν έχει φωτογραφία
+  στο ui»): whatever changed at the shop since the night's check, a product is never seen
+  without its photo. Its place is kept while the photo loads, so nothing moves when it
+  appears (`browser_lists.HEAD_SCRIPT`, classes `pw-photo-guard`, `pw-photo-ok`,
+  `pw-no-photo`). A browser without JavaScript cannot tell, and shows the cards as before;
+  the nightly check covers it.
 
 Pinned by `tests/test_picwise_product_photos.py`.
 

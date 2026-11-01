@@ -50,9 +50,16 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
     looked at every 60 s) and both search catalogue paths (`state._prepared_search_catalogue`,
     `state._search_catalogue`) leave those products out: not shown, counted or recommended.
     The preparation keeps every product (`prepare_feed_catalogue` builds its catalogue
-    with `leave_out_gone_photos=False`), so the check can ask again. The browser hides a
-    card whose photo fails all the same, whole (`browser_lists.HEAD_SCRIPT`, class
-    `pw-no-photo`). The deployment log prints the photo timer, whether a check is running,
+    with `leave_out_gone_photos=False`), so the check can ask again.
+  - **In the browser, a card is seen only once its photo has loaded** (owner, after the
+    first build: «από σκανάρισμα σε σκανάρισμα μπορεί να υπάρξει στο ενδιάμεσο αλλαγές ...
+    να μην μπορεί να εμφανιστεί ένα προϊόν αν δεν έχει φωτογραφία στο ui»):
+    `browser_lists.HEAD_SCRIPT` sets load and error listeners before any photo exists;
+    cards are `visibility:hidden` under `pw-photo-guard` until `pw-photo-ok`, and
+    `display:none` with `pw-no-photo` (a 404, or a photo of no size). Their place is kept
+    while the photos load. Seen in Chromium on the local preview with photos answering
+    after 1.5 s and one 404: all four hidden while loading, three shown, the 404 one never.
+    A browser without JavaScript, or without `closest`, shows the cards as before. The deployment log prints the photo timer, whether a check is running,
     its last summary lines, and "photos gone: N of M" once the file exists.
   - Not measured yet: how long the first check of ~528,000 photos takes on the server, and
     whether Shopify's CDN slows it (429s are asked again the next night). After the
@@ -60,8 +67,12 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
     gone, and the next deployment's log for the photo summary. The first search in each
     worker after a new list is written rebuilds the search catalogue (some seconds), once
     a night.
-- **Tests.** `tests/test_picwise_product_photos.py` (16), `tests/test_picwise_offers_first.py`
-  (19), `tests/test_picwise_live_photos.py` (4). The 14 modules that read offers, photos or the pages pass; the run of every module (but the 54-minute one) was still going when this was written, with no failure in its first 173 of 280.
+- **Tests.** `tests/test_picwise_product_photos.py` (17), `tests/test_picwise_offers_first.py`
+  (19), `tests/test_picwise_live_photos.py` (4). Every module but the 54-minute one, on
+  `e69b2ed`: 279 pass, two fail as before this work (`..._canonical_vocabulary_registry_stage2`,
+  `..._search_index_generated_blind_stage4`), `test_picwise_learning_stage7b` still running
+  when this was written. With the browser guard after it, the 10 modules that read the
+  pages, photos or offers pass.
 - **Next, in order**: the owner's word to deploy; after it, the deployment's log, then
   the live check again (photos), then these notes and PROGRESS. Then: "bean bag" as a kind
   (a vocabulary change, `picwise_nlu`), the application text and Awin applications, the
