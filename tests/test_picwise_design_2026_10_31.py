@@ -395,7 +395,8 @@ class HomePageTests(unittest.TestCase):
     def test_the_home_page_says_what_picwise_is_and_how_it_chooses(self) -> None:
         self.assertIn('<h1 class="pw-hero-title">Find the product you want in UK shops</h1>', self.page)
         self.assertIn('<p class="pw-hero-sub">PicWise finds the product you want', self.page)
-        for title in ("Only what you asked for", "In stock, cheapest first", "One fair pick"):
+        # The order since the owner's word of 2026-11-01: offers first, then cheapest.
+        for title in ("Only what you asked for", "In stock, offers first, then cheapest", "One fair pick"):
             self.assertIn(f'<h2 class="pw-how-title">{title}</h2>', self.page)
         self.assertIn("never from commission", self.page)
         # The home page may be indexed; it shows no empty search state.
