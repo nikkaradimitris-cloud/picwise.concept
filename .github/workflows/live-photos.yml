@@ -1,0 +1,30 @@
+# The live site's photos and offers, read as a visitor's browser reads them (owner,
+# 2026-11-01: «έχω παρατηρήσει ότι και σε άλλα προϊόντα η εικόνα είναι χαλασμένη», and «το
+# recommended όταν υπάρχει προσφορά πρέπει να δείχνει την προσφορά»). The work is
+# .github/scripts/live_photos.py, on GitHub's runner: the session that wrote it cannot reach
+# the site or the shops' image hosts.
+#
+# Read-only: it reads public search pages and public product photos; nothing on the server
+# or the site changes. Runs only when this file or the script is pushed to the session's
+# branch, where a push deploys nothing; to read again, change the line below and push.
+#
+# Read: 2026-11-01
+name: Live photos and offers (read-only)
+on:
+  push:
+    branches: [ccr-9826870f-qkgl6s]
+    paths:
+      - '.github/workflows/live-photos.yml'
+      - '.github/scripts/live_photos.py'
+permissions:
+  contents: read
+jobs:
+  photos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: The cards of some searches, and whether their photos load
+        run: python3 .github/scripts/live_photos.py --site https://picwise.subby.cloud
