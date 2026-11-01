@@ -1,20 +1,45 @@
 # PicWise — session handoff
 
 Current state for whoever picks the project up next. Updated 2026-11-01 (**offers first
-and the Recommended on offer built, not deployed: waiting for the owner's word**; live on
-the server: the design of 31/10 and the pages, run `41215460767`, and the nightly offers
-fetch, run `41289100060`; picwise.subby.cloud answers from the server since 2026-10-31
-10:03 UTC, HTTPS by Caddy; Vercel kept as the backup).
+and the Recommended on offer live since 10:06 UTC**, run `41295172671`; **found on it:
+vouchers without their code shown as offers; the fix built, not deployed: waiting for the
+owner's word**; also live: the design of 31/10 and the pages, run `41215460767`, and the
+nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the server since
+2026-10-31 10:03 UTC, HTTPS by Caddy; Vercel kept as the backup).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
 ## Next conversation (from 2026-11-01): pick up here -- start here
 
-- **Which branch.** Start from the session's branch `ccr-9826870f-qkgl6s`. It holds all
-  that is deployed (`ca01c61`, run `41289100060`) and, **committed but not deployed**,
-  offers first and the Recommended on offer (`6836bbe`, `1d1c880`, `3bf18d8`, `9f6e3c4`).
-  Deploying them is the owner's word: a push of them to `ccr-1361f1a7-dcpo60`. They
-  change `search_selection.py`, so the deployment prepares the catalogue again (about 12
-  minutes, as every deployment so far did).
+- **Which branch.** Start from the session's branch `ccr-9826870f-qkgl6s`. Offers first
+  and the Recommended on offer (`6836bbe`, `1d1c880`, `3bf18d8`, `9f6e3c4`, with these
+  notes `d4c2a40`) are **deployed** (owner: «Ναι ανέβασε στο server»): run `41295172671`,
+  success, 09:55-10:08 UTC, release `20261101T095518Z-d4c2a40`; the catalogue prepared
+  again, 528,524 products from 81 shops, peak memory 7.9 GB, 620 s; the site active since
+  10:06:16 UTC, its memory 6,212 MB; offers fetched again: 94 live, of 30 of the 85 shops,
+  joined to 2, 2 voucher codes; 15 of 15 pages and 12 of 12 searches answered. **Committed
+  after it, not deployed: the voucher fix** (below, `7e1cbce`); deploying it is
+  the owner's word, a push to `ccr-1361f1a7-dcpo60` (the catalogue is prepared again, about
+  12 minutes).
+- **What the deployment showed, and the fix.** Of the 12 searches the deployment prints,
+  two show offers. "kettle": the Recommended reads "On offer", Geepas's "1.7L Electric
+  Kettle & 4 Slice Bread Toaster Vintage Set Retrovive" at £109.99, then three Geepas
+  kettle-and-toaster sets at £22.99, £28.49 and £29.99 ("Offer"), all from Geepas's "Kettle &
+  Toaster Set 10 OFF" (before: the Recommended was Geepas's "Opus Collection" set at £33.99,
+  "Mid-priced", then kettles from £12.74). "mouse": Craft Buddy's "Squeak the Mouse A6 Stamp
+  Set" reads "Offer" (it was there before as "Lowest price": a wrong product for "mouse",
+  older than this work). **Geepas's offer is a voucher Awin gave without its code**, as for
+  every programme the account is not joined to: a shopper could not have the discount. The
+  offers check of 01/11 (run `41289100066`, up to 3 offers a shop) shows it was most of
+  them: of the 53 offers printed, 32 covered products as deployed, 23 of those vouchers
+  without their code. **The fix** (`product_offers.py`): a voucher covers a product only
+  with its code; a promotion needs none. Of the 53, 9 still cover products: Game Over's and
+  Gardenista's vouchers with their codes, the "10% off your first order" promotions of Game
+  Over, Gardenista and Ready Steady Bed, Cottsbury's "15% off everything", Finediam's
+  "Diamond Jewellery - Flat 23% OFF" (to 02/11), an Optimum Nutrition bundle, Game Over's
+  "Pick 2". With it, "kettle" goes back to the order of before. Left out with the rest:
+  Susan Caplan's voucher, whose title names its code ("using code SC15OFF"); reading a code
+  from a title could be a later step. More codes come with each programme that accepts
+  PicWise.
 - **The owner's word (01/11).** «Ανά προϊόν... Όταν ψάχνει ένας πελάτης ένα προϊόν ή μία
   κατηγορία υπάρχει προσφορά σε αυτό το προϊόν ... προϊόντα με προσφορές πρώτα»; asked
   whether that changes "cheapest first": «Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το
@@ -52,20 +77,21 @@ fetch, run `41289100060`; picwise.subby.cloud answers from the server since 2026
     products, about 2 ms over 2,000.
 - **Tests.** `tests/test_picwise_offers_first.py` (16) pins the offer rules, the order, the
   Recommended on offer, its fallback without a code, one product on offer, an answer of two
-  products and the pages. All 281 modules run one by one, four at a time:
-  276 pass; three fail as before this work (`test_picwise_canonical_vocabulary_registry_stage2`
-  and `test_picwise_search_index_generated_blind_stage4` fail the same way on the code before
-  it; `test_picwise_search_graph_contracts_stage1db1` only while `reference.py` had
-  uncommitted changes, and passes once committed); the two slowest
-  (`test_picwise_learning_stage7b`, `test_picwise_search_index_blind_evaluation_stage6a`)
-  load none of the changed code and were still running when this was written (alone, last
-  time: 7b passed in 23.5 minutes; 6a 12 of 13, the old mismatch of the section below).
+  products and the pages; with the voucher fix, 18. All 281 modules run one by one, four
+  at a time, on `9f6e3c4`: 277 pass, and `test_picwise_search_graph_contracts_stage1db1`
+  too once committed (it fails only while `reference.py` has uncommitted changes); two fail
+  as before this work (`test_picwise_canonical_vocabulary_registry_stage2` and
+  `test_picwise_search_index_generated_blind_stage4`, the same way on the code before it);
+  `test_picwise_search_index_blind_evaluation_stage6a` did not finish within 20 minutes (54
+  minutes alone last time, 12 of 13, the old mismatch of the section below); it loads none
+  of the changed code. The voucher fix changes only how the offers file is read: the 14
+  modules that read offers or the pages pass with it.
 - **Seen on the local preview** (fictional shops): "kettle", Store Two's "10% off kettles"
   on its three kettles: the Recommended is its £19.99 kettle ("On offer"), then its £12.74
   and £33.99 ones ("Offer"), then the cheapest of the rest ("Lowest price").
-- **Next, in order**: the owner's word to deploy; after it, the deployment's log (the 12
-  searches print their cards: which show offers), then these notes and PROGRESS. Then as
-  before: the application text and the Awin applications (the offers' codes come only from
+- **Next, in order**: the owner's word to deploy the voucher fix; after it, the
+  deployment's log (the 12 searches print their cards: "kettle" should be back to the
+  order of before), then these notes and PROGRESS. Then as before: the application text and the Awin applications (the offers' codes come only from
   joined programmes), the trending searches' source, the first search after a restart.
 
 ## Before (2026-10-31, night, to 2026-11-01 morning): the design deployed, the offers fetched
