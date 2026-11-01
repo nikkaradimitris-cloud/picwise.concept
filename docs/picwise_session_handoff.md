@@ -18,11 +18,14 @@ The design of 31/10 is built and deployed with the pages (owner, 31/10: «Υλο
   `20261031T153406Z-ce8ba74`; the catalogue prepared again with the new code, 528,134
   products from 81 shops, peak memory 7.9 GB, 718 s; the site healthy at 15:46:14; its
   memory 6,187 MB; 15 of 15 pages answered with no failure and the 12 searches show the
-  new cards, through https://picwise.subby.cloud as from the server itself). Since then
-  the server's branch also has the Awin offers check (`e112d77`, no deployment). **Start
-  the next conversation from the session's branch `ccr-9826870f-qkgl6s`**: it holds all
-  of that and, not deployed, the trends panel's rewording (`aef1ff7`) and these notes.
-  `ccr-60773189-pesaft` is behind both; nothing is waiting on it.
+  new cards, through https://picwise.subby.cloud as from the server itself). Since then,
+  **deployed on 01/11 by run `41289100060`** (owner: «Ναι ανέβασέ το»; release
+  `20261101T083000Z-ca01c61`, success: 528,524 products prepared, the site healthy at
+  08:40 UTC, 15 of 15 pages and 12 of 12 searches answered): the trends panel's
+  rewording (`aef1ff7`), the Awin offers check and **the nightly fetch of the offers**
+  (`ca01c61`). **Start the next conversation from the session's branch
+  `ccr-9826870f-qkgl6s`**: it holds all of that and these notes (documents only after
+  `ca01c61`). `ccr-60773189-pesaft` is behind both; nothing is waiting on it.
 - **What the site shows now** (`src/picwise_surface/reference.py`, `browser_lists.py`,
   `trends.py`; pinned by `tests/test_picwise_design_2026_10_31.py`, 30 tests):
   - **Cards, symmetric**: a square photo shown whole (`object-fit:contain`, 400×400 set
@@ -96,6 +99,16 @@ The design of 31/10 is built and deployed with the pages (owner, 31/10: «Υλο
      server, asked only for PicWise's shops by their advertiser ids (the feed's
      `merchant_id`), so it is complete and quick; showing offers on the site, and which
      product an offer is for, is the owner's later talk.
+     **Built and deployed (01/11, owner: «Οκ να φέρνει τις προσφορές των δικών μας
+     καταστημάτων»):** `deployment/server/fetch_offers.py` (tests 12) run by
+     `picwise-offers.service`, every night at 05:05 UTC (`picwise-offers.timer`) and once
+     by each deployment; `AWIN_API_TOKEN` written to the server's environment file by
+     `server-deploy.yml` (the site's own service never reads it). It writes
+     `/srv/picwise/shared/offers/offers.json`, served to no one: per shop with an offer, its
+     name, whether the account is joined, and its offers live now by their own dates, with a
+     code and a tracking link only where Awin gives them. **First fetch: 94 live offers, of
+     30 of the 85 shops in the feed, joined to 2 of them, 2 voucher codes.** Next, the
+     owner's: how offers show on the site, and which product an offer is for.
   2. **A source for the trending searches**: Google Ads (free without a campaign) with a
      manager account and an API developer token with Basic access, by application
      (Keyword Planner's monthly searches; Explorer access excludes keyword planning), or
