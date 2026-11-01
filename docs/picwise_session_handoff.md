@@ -1,8 +1,9 @@
 # PicWise — session handoff
 
 Current state for whoever picks the project up next. Updated 2026-11-01, afternoon
-(**built, not deployed: products whose photo is gone left out, and the offer recommended
-even without a barcode; waiting for the owner's word**; live: offers first and the
+(**deployed at 16:22 UTC, run `41324998201`: products whose photo is gone left out (the
+first nightly check started then), a card seen only once its photo has loaded, and the
+offer recommended even without a barcode**; live before: offers first and the
 Recommended on offer since 10:06 UTC, run `41295172671`; vouchers without their code no
 longer shown since 12:21 UTC, run `41305061462`; also live: the design of 31/10 and the pages, run `41215460767`, and the
 nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the server since
@@ -11,11 +12,18 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-01, afternoon): pick up here -- start here
 
-- **Which branch.** Start from the session's branch `ccr-9826870f-qkgl6s`. Deployed: all
-  up to `001b2d8` (run `41305061462`). **Committed, not deployed** (deploying is the
-  owner's word, a push to `ccr-1361f1a7-dcpo60`; the catalogue is prepared again):
-  `2dfce17` (the offer Recommended without a barcode) and `e69b2ed` (photos), with these
-  notes. `4511a44` (a read-only check of the live site) runs only on the session's branch.
+- **Which branch.** Start from the session's branch `ccr-9826870f-qkgl6s`. **Deployed:
+  all up to `4b5497b`** (owner: «Ναι ανέβασε τα στο server»): run `41324998201`, success,
+  16:11-16:24 UTC, release `20261101T161114Z-4b5497b`; 528,518 products from 81 shops
+  prepared again (peak memory 7.9 GB, 619 s); offers fetched again (94, of 30 shops, joined
+  to 2, 2 codes); the photo check started in the background ("photo check now:
+  activating", "photos gone: not checked yet"), its timer next at 04:40 UTC; the site
+  active since 16:22:14 UTC, its memory 5,393 MB; 15 of 15 pages and 12 of 12 searches
+  answered (none of the 12 with an offer, as before). `4511a44` (a read-only check of the
+  live site) runs only on the session's branch. **To see the first photo check's effect**:
+  read the live site again (change the "Read:" line of `.github/workflows/live-photos.yml`
+  and push to the session's branch) after about 17:25 UTC, when its hour is over; the
+  next deployment's log prints its summary lines.
 - **What the owner saw (01/11, on the phone).** «bean bag»: no offer, and a broken photo
   on the Recommended («έχω παρατηρήσει ότι και σε άλλα προϊόντα η εικόνα είναι χαλασμένη»);
   «το recommended όταν υπάρχει προσφορά πρέπει να δείχνει την προσφορά»; then, of the
@@ -74,8 +82,9 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   20-minute limit (it passed in 1,147 s earlier the same day; it loads none of the changed
   code: `picwise_learning` reads no provider or page module). With the browser guard after it, the 10 modules that read the
   pages, photos or offers pass.
-- **Next, in order**: the owner's word to deploy; after it, the deployment's log, then
-  the live check again (photos), then these notes and PROGRESS. Then: "bean bag" as a kind
+- **Next, in order**: the live check again (photos gone from the pages; "garden furniture"
+  and "diamond earrings" with an "On offer" Recommended), then these notes and PROGRESS.
+  Then: "bean bag" as a kind
   (a vocabulary change, `picwise_nlu`), the application text and Awin applications, the
   trending searches' source, the first search after a restart.
 
