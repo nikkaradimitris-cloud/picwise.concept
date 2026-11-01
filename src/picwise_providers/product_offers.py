@@ -15,6 +15,11 @@ product it may not cover is never said to be on offer:
 - it is meant for shoppers: an offer that speaks of commission is the network's to the
   publisher;
 - it is live now by its own dates;
+- a voucher comes with its code: a voucher is a code typed at the shop's checkout, and
+  Awin gives it only for the programmes PicWise is joined to. Without it the shopper
+  cannot have the discount, so the voucher covers no product (2026-11-01, after the
+  first deployment showed Geepas's code-less "Kettle & Toaster Set 10 OFF" first). A
+  promotion needs no code;
 - and it covers the product: the whole shop ("sitewide", "everything", "your order",
   "your first order", "new customers", or a discount naming nothing but the shop), or the
   kind it names, every word of which is in the product's title ("10% off mixer grinders"
@@ -197,6 +202,10 @@ class _Offers:
                 scope = offer_scope(str(row.get("title") or ""), name)
                 if end is None or scope is None:
                     continue
+                code = " ".join(str(row.get("code") or "").split())
+                if str(row.get("type") or "").strip().lower() == "voucher" and not code:
+                    # A voucher without its code: the shopper cannot have it.
+                    continue
                 kept.append(_Offer(
                     offer=ProductOffer(
                         shop=name,
@@ -206,7 +215,7 @@ class _Offers:
                         title=" ".join(str(row.get("title") or "").split()),
                         terms=" ".join(str(row.get("terms") or "").split()),
                         end=end,
-                        code=" ".join(str(row.get("code") or "").split()),
+                        code=code,
                         scope=scope[0],
                     ),
                     start=_date(row.get("start")),

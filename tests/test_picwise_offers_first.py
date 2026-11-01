@@ -6,7 +6,8 @@
 - which offer covers which product (`picwise_providers.product_offers`), on offer titles
   written as Awin's real ones were (31/10): a stated discount, for shoppers, live now,
   on the whole shop or on a kind every word of which is in the title; "up to" and
-  "selected" cover nothing;
+  "selected" cover nothing; a voucher only with its code, which Awin gives for the
+  programmes PicWise is joined to (most real vouchers of 01/11 came without one);
 - the order: the Recommended, then the products an offer covers, cheapest first, then
   the rest, cheapest first; "More" goes on in that order; without offers, the price alone;
 - the Recommended: a product on offer when one carries a code («Εάν υπάρχει προσφορά να
@@ -156,6 +157,22 @@ class OfferForProductTests(unittest.TestCase):
         self.assertEqual((offer.offer_id, offer.code, offer.scope), ("3", "KETTLE12", "kind"))
         offer = offer_for_product(_product("b", "Geefix Toaster", "101"), now=NOW)
         self.assertEqual((offer.offer_id, offer.scope), ("1", "shop"))
+
+    def test_a_voucher_without_its_code_covers_nothing(self) -> None:
+        # Geepas's real voucher of 01/11, without its code: the account is not joined to
+        # the programme, so Awin gave none, and a shopper could not have the discount.
+        voucher = {"id": 1, "type": "voucher", "title": "Kettle & Toaster Set 10 OFF", "description": "",
+                   "terms": "", "start": None, "end": "2026-12-31T23:59:59+00:00", "regions_all": True}
+        product = _product("a", "Geefix 1.7L Electric Kettle & 2 Slice Bread Toaster Set", "101")
+        set_offers_document({"shops": {"101": _shop("Geefix", [voucher])}})
+        self.assertIsNone(offer_for_product(product, now=NOW))
+        self.assertEqual(offers_covering([product], now=NOW), {})
+        # With its code, as for a joined programme, it covers the product.
+        set_offers_document({"shops": {"101": _shop("Geefix", [dict(voucher, code="SET10")], joined=True)}})
+        self.assertEqual(offer_for_product(product, now=NOW).code, "SET10")
+        # A promotion needs no code.
+        set_offers_document({"shops": {"101": _shop("Geefix", [dict(voucher, type="promotion")])}})
+        self.assertIsNotNone(offer_for_product(product, now=NOW))
 
     def test_the_file_is_read_and_read_again_when_it_changes(self) -> None:
         folder = Path(tempfile.mkdtemp())
@@ -358,6 +375,17 @@ class OffersFirstPageTests(unittest.TestCase):
             _offer(10, "Free delivery on orders over £20"), _offer(11, "Save up to 30% on kettles"),
         ])}})
         self.assertEqual([card["id"] for card in self._cards(self._page())], ["k5", "k1", "k2", "k3"])
+
+    def test_a_voucher_without_its_code_changes_nothing(self) -> None:
+        set_offers_document({"shops": {"1003": _shop("Fixture Store Three", [
+            {"id": 15, "type": "voucher", "title": "10% off kettles", "description": "", "terms": "",
+             "start": None, "end": "2026-12-31T23:59:59+00:00", "regions_all": True},
+        ])}})
+        page = self._page()
+        cards = self._cards(page)
+        self.assertEqual([card["id"] for card in cards], ["k5", "k1", "k2", "k3"])
+        self.assertEqual([card["offer"] for card in cards], ["", "", "", ""])
+        self.assertNotIn("offers first", page)
 
 
 class PagesSayTheOrderTests(unittest.TestCase):

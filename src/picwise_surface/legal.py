@@ -275,7 +275,7 @@ def render_affiliate_disclosure_page() -> str:
         "<h2>What it does not change</h2>"
         "<p>The price you pay is the same. The commission never decides what PicWise shows or in which order: results are the kind you asked for, in stock, those a current shop offer covers first and then cheapest first, and the recommended pick is a product on offer where there is one, else the one in the middle of the prices. Shops that pay no commission are ranked by the same rule.</p>"
         "<h2>Offers</h2>"
-        "<p>An offer on a product is the shop's own, as it states it through Awin, shown with its end date and, where the shop gives one, its code. PicWise is paid nothing to show an offer or to put it first, and shows it only where its words cover the product.</p>"
+        "<p>An offer on a product is the shop's own, as it states it through Awin, shown with its end date and, where the shop gives one, its code. PicWise is paid nothing to show an offer or to put it first, and shows it only where its words cover the product. A voucher is shown only with its code: without it, you could not have the discount.</p>"
         "<h2>Which shops</h2>"
         "<p>The shops on PicWise run a programme with Awin. PicWise earns a commission only from the shops that have accepted it into their programme; the others are shown by the same rule, and PicWise earns nothing from them. PicWise works with no other affiliate network at present; any other will be named here first.</p>"
         "<h2>What PicWise compares</h2>"

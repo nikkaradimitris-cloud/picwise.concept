@@ -530,7 +530,13 @@ of offers above the results, or products with an offer first), whether that chan
    the whole shop ("sitewide", "everything", "your order", "your first order", "new
    customers", or a discount naming nothing but the shop) or names the product's kind,
    every word of it in the product's title. "Up to" and "selected" cover no product: which
-   ones the offer does not say. A product an offer may not cover is never said to be on
+   ones the offer does not say. A voucher covers a product only with its code: a voucher
+   is a code typed at the shop's checkout, and Awin gives it only for the programmes
+   PicWise is joined to; without it the shopper cannot have the discount (2026-11-01: the
+   first deployment of offers first put Geepas's code-less "Kettle & Toaster Set 10 OFF"
+   first and made one of those sets the Recommended; of the 53 offers of PicWise's shops
+   the check printed, 32 covered products, 23 of them vouchers without their code). A
+   promotion needs no code. A product an offer may not cover is never said to be on
    offer.
 4. **The card.** An offer card is labelled "Offer" instead of "Lowest price", and shows
    the offer in the shop's words, its end date, its code where Awin gives one (to joined
