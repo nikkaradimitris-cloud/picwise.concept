@@ -1124,7 +1124,9 @@ _PAGE_STYLES = (
     ".pw-card-recommended{border:2px solid var(--blue-2);box-shadow:0 10px 26px rgba(47,111,228,.14);padding:11px;}"
     ".pw-anchor{position:absolute;top:-80px;}"
     ".pw-product-image-wrap{position:relative;aspect-ratio:1/1;width:100%;border-radius:12px;background:#fff;border:1px solid #edf2fa;display:flex;align-items:center;justify-content:center;overflow:hidden;}"
-    ".pw-product-image{display:block;width:100%;height:100%;object-fit:contain;}"
+    ".pw-product-image{display:block;width:100%;height:100%;object-fit:contain;color:transparent;}"
+    # A card whose photo fails is hidden whole (HEAD_SCRIPT marks it; owner, 2026-11-01).
+    ".pw-card.pw-no-photo{display:none;}"
     ".pw-card-body{display:flex;flex-direction:column;flex:1;min-width:0;}"
     ".pw-role{display:flex;flex-direction:column;align-items:flex-start;gap:4px;height:46px;margin:10px 0 4px;overflow:hidden;}"
     ".pw-rec-badge{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:var(--blue-2);color:#fff;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}"

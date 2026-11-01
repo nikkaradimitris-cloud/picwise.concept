@@ -46,10 +46,19 @@ HEART_ICON = (
 # Run in the page's <head>, before anything is drawn: the buttons that need JavaScript
 # and local storage appear with the page, never a moment after it (no layout shift).
 # It only reads: finding out whether storage is allowed stores nothing.
+# It also listens, before any photo loads, for a card whose photo fails, and hides the
+# card whole (owner, 2026-11-01: «Όταν το προϊόν δεν φέρνει φωτογραφία δεν πρέπει να
+# εμφανίζεται... Στις περισσότερες περιπτώσεις είναι not found»): the last guard, for a
+# photo gone since the nightly check (`deployment/server/check_photos.py`) left the
+# others out.
 HEAD_SCRIPT = (
     "(function(){var c=document.documentElement.classList;c.add('pw-js');"
     f"try{{if(window.localStorage){{window.localStorage.getItem('{FAVOURITES_STORAGE_KEY}');c.add('pw-store');}}}}"
-    "catch(e){}})();"
+    "catch(e){}"
+    "document.addEventListener('error',function(e){var t=e.target;"
+    "if(t&&t.tagName==='IMG'&&t.closest&&(' '+t.className+' ').indexOf(' pw-product-image ')>-1)"
+    "{var a=t.closest('.pw-card');if(a){a.classList.add('pw-no-photo');}}},true);"
+    "})();"
 )
 
 

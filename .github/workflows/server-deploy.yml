@@ -157,6 +157,10 @@ jobs:
             echo "the shops, every night: $(systemctl list-timers picwise-shops.timer --no-legend | awk "{print \$1, \$2, \$3, \$4}")"
             echo "the offers, every night: $(systemctl list-timers picwise-offers.timer --no-legend | awk "{print \$1, \$2, \$3, \$4}")"
             sudo python3 -c "import json; d = json.load(open(\"/srv/picwise/shared/offers/offers.json\")); s = d[\"shops\"]; print(\"offers:\", sum(len(v[\"offers\"]) for v in s.values()), \"live, of\", len(s), \"of the\", d[\"shops_in_feed\"], \"shops in the feed, fetched\", d[\"fetched_at\"])" 2>/dev/null || echo "offers: none fetched yet"
+            echo "the photos, every night: $(systemctl list-timers picwise-photos.timer --no-legend | awk "{print \$1, \$2, \$3, \$4}")"
+            echo "photo check now: $(systemctl is-active picwise-photos.service)"
+            sudo journalctl -u picwise-photos.service -o cat --no-pager --since "-26h" | grep -E "^photos" | tail -n 2 || true
+            sudo python3 -c "import json; d = json.load(open(\"/srv/picwise/shared/photos/gone.json\")); print(\"photos gone:\", len(d[\"gone\"]), \"of\", d[\"photos\"], \"checked\", d[\"checked_at\"])" 2>/dev/null || echo "photos gone: not checked yet"
             echo "memory of the site: $(ps -o rss= -u picwise | awk "{s+=\$1} END {printf \"%.0f MB\", s/1024}")"
             sudo python3 -c "import json; d = json.load(open(\"/srv/picwise/shared/public/prepared.json\")); print(\"prepared:\", d.get(\"prepared\"), d.get(\"prepared_at\", d.get(\"reason\")), d.get(\"products\"), \"products,\", d.get(\"shops\"), \"shops\")"
             echo "disk: $(sudo du -sh /srv/picwise | cut -f1) in /srv/picwise; $(df -h --output=avail / | tail -1 | tr -d " ") free"

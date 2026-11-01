@@ -195,6 +195,28 @@ Implemented in `search_selection` (`_non_new_condition`,
 
 ## What a product must carry to be shown, decided by the owner, 2026-10-12
 
+**Added by the owner on 2026-11-01: a photo that is there.** On the live site some cards
+showed a broken photo, and their products' pages at the shop said "Page not found": «Όταν
+το προϊόν δεν φέρνει φωτογραφία δεν πρέπει να εμφανίζεται... Στις περισσότερες περιπτώσεις
+είναι not found». A read of 244 photos of 27 searches (`.github/scripts/live_photos.py`,
+run `41313109104`) found 19 gone, HTTP 404 with or without a Referer (links to nothing, not
+refused): 18 of InStock UK's 100, 1 of Lets Buy Books'; every other shop's loaded.
+
+- The server asks every photo of the prepared catalogue each night, after the
+  preparation (`deployment/server/check_photos.py`, picwise-photos.service, 04:40 UTC),
+  at most an hour a night: never asked first, then those it could not read, gone ones
+  again after a week, the others after two weeks. Only HTTP 404 and 410 call a photo
+  gone; no answer, a refusal, a server error or too many asks is asked again the next
+  night, never called gone.
+- The site reads the list (`PICWISE_GONE_PHOTOS_FILE`, `picwise_providers.product_photos`)
+  and leaves those products out of every search: not shown, counted or recommended. A
+  photo that answers again is back on the next list. The preparation keeps every product,
+  so that the check can ask again.
+- In the visitor's browser, a card whose photo fails all the same (gone since the night's
+  check) is hidden whole, never shown with a broken picture (`browser_lists.HEAD_SCRIPT`).
+
+Pinned by `tests/test_picwise_product_photos.py`.
+
 **Changed by the owner on 2026-10-18: a description is no longer required.** On the
 live feed, "tv" found nothing, because the only televisions came from shops that send
 no description. Asked whether products without one should appear, the owner chose «Ναι,
@@ -511,16 +533,19 @@ of offers above the results, or products with an offer first), whether that chan
    cheapest first; then the rest, cheapest first. "More" opens the next four in that order.
 2. **The Recommended** (asked whether the Recommended should be the offer, with the choices
    put to them; the engineer's advice was to keep it neutral: «Εάν υπάρχει προσφορά να
-   προτείνει την προσφορά»). When the answer holds three products or more (as for any
-   Recommended) and a product on offer carries an EAN/GTIN, the Recommended is a product on
-   offer: the products on offer stand for the whole answer in rule 7 of "Price first"
-   (their middle price, a dearest costing at least twice the next not counted; the
-   one with a code nearest to it, the cheaper of two equally near); one product on offer is
-   its own middle, of two the cheaper. Its card reads "On offer" instead of "Mid-priced for
-   this category", which would not be true, and the page says how it was chosen. With no
-   product on offer carrying a code, the Recommended is chosen as before, and "Lowest price"
-   is measured against the middle price of the whole answer when the Recommended was chosen
-   for its offer.
+   προτείνει την προσφορά»; then, of a live search with an offer and a Recommended not on
+   offer: «το recommended όταν υπάρχει προσφορά πρέπει να δείχνει την προσφορά»). When the
+   answer holds three products or more (as for any Recommended) and a current shop offer
+   covers one of them, the Recommended is a product on offer: the products on offer stand
+   for the whole answer in rule 7 of "Price first" (their middle price, a dearest costing
+   at least twice the next not counted; the one nearest to it, the cheaper of two equally
+   near), one with an EAN/GTIN first, and, when none on offer carries one, the nearest of
+   them all (2026-11-01: "garden furniture" and "diamond earrings" had offers on products
+   without one, and a Recommended not on offer); one product on offer is its own middle,
+   of two the cheaper. Its card reads "On offer" instead of "Mid-priced for this
+   category", which would not be true, and the page says how it was chosen. With nothing
+   on offer, the Recommended is chosen as before; "Lowest price" is measured against the
+   middle price of the whole answer when the Recommended was chosen for its offer.
 3. **What an offer is.** Awin's offers of PicWise's shops, fetched every night
    (`deployment/server/fetch_offers.py`). Awin gives them per shop, so an offer covers a
    product only where its own words leave no doubt (`picwise_providers.product_offers`):

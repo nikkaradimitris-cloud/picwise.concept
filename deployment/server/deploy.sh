@@ -33,7 +33,7 @@ id picwise > /dev/null 2>&1 || useradd --system --user-group --home-dir "$APP" -
   --shell /usr/sbin/nologin picwise
 install -d -o root -g root -m 755 "$APP" "$APP/releases" "$APP/venvs"
 install -d -o picwise -g picwise -m 750 "$SHARED" "$SHARED/prepared" "$SHARED/public" "$SHARED/cache" \
-  "$SHARED/shops" "$SHARED/offers"
+  "$SHARED/shops" "$SHARED/offers" "$SHARED/photos"
 install -d -o root -g picwise -m 750 /etc/picwise
 
 echo "== release $RELEASE_ID"
@@ -71,7 +71,7 @@ if grep -q '^AWIN_API_TOKEN=' /etc/picwise/picwise.env; then echo "Awin token: s
 
 echo "== services"
 for unit in picwise-web.service picwise-prepare.service picwise-prepare.timer picwise-shops.service \
-  picwise-shops.timer picwise-offers.service picwise-offers.timer; do
+  picwise-shops.timer picwise-photos.service picwise-photos.timer picwise-offers.service picwise-offers.timer; do
   install -m 644 "$RELEASE/deployment/server/$unit" /etc/systemd/system/
 done
 systemctl daemon-reload
@@ -96,6 +96,13 @@ echo "== the offers of PicWise's shops (Awin), fetched once now and every night"
 systemctl start picwise-offers.service || echo "fetching the offers failed; the last file kept"
 journalctl -u picwise-offers.service -o cat --no-pager --since "-31min" | grep '^offers:' | tail -n 1 || true
 systemctl enable --now picwise-offers.timer
+
+echo "== the products' photos, checked now in the background and every night"
+# Owner, 2026-11-01: «Όταν το προϊόν δεν φέρνει φωτογραφία δεν πρέπει να εμφανίζεται». The
+# first check asks every photo, at most an hour; the site leaves the gone ones out once
+# the file is written, within a minute.
+systemctl start --no-block picwise-photos.service || echo "the photo check did not start; the last file kept"
+systemctl enable --now picwise-photos.timer
 
 echo "== the site"
 systemctl enable picwise-web.service
