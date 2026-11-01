@@ -258,22 +258,27 @@ def set_offers_document(document: Mapping[str, Any] | None) -> None:
 
 
 def _shop_id(raw: Mapping[str, Any]) -> str:
-    for key in ("merchant_id", "advertiser_id", "MERCHANT_ID"):
-        value = str(raw.get(key) or "").strip()
-        if value:
-            return value
-    return ""
+    value = raw.get("merchant_id") or raw.get("advertiser_id") or raw.get("MERCHANT_ID")
+    if not value:
+        return ""
+    return value.strip() if isinstance(value, str) else str(value).strip()
 
 
 def _covering(offers: tuple[_Offer, ...], product: Any, moment: datetime) -> ProductOffer | None:
-    title = str(getattr(product, "title", "") or "")
-    covering = [
-        entry
-        for entry in offers
-        if entry.offer.end >= moment
-        and (entry.start is None or entry.start <= moment)
-        and (entry.offer.scope == "shop" or _covers(entry.words, title))
-    ]
+    live = [entry for entry in offers if entry.offer.end >= moment and (entry.start is None or entry.start <= moment)]
+    if not live:
+        return None
+    covering = [entry for entry in live if entry.offer.scope == "shop"]
+    kinds = [entry for entry in live if entry.offer.scope == "kind"]
+    if kinds:
+        # The title's words are read once for all the kind offers of its shop.
+        words = _words(str(getattr(product, "title", "") or ""))
+        title_words, joined = set(words), "".join(words)
+        covering += [
+            entry
+            for entry in kinds
+            if all(word in title_words or (len(word) >= 6 and word in joined) for word in entry.words)
+        ]
     if not covering:
         return None
     # One naming its kind before one on the whole shop, one with a code before one
@@ -306,11 +311,21 @@ def offers_covering(products: Any, *, now: datetime | None = None) -> dict[int, 
         return {}
     moment = now or datetime.now(timezone.utc)
     found: dict[int, ProductOffer] = {}
+    # A shop whose offers all cover the whole shop gives every product the same one:
+    # worked out once for the shop, not once for each of its products.
+    whole_shop: dict[str, ProductOffer | None] = {}
     for product in products:
         raw = getattr(product, "raw", None)
-        offers = by_shop.get(_shop_id(raw)) if isinstance(raw, Mapping) else None
-        if offers:
+        shop = _shop_id(raw) if isinstance(raw, Mapping) else ""
+        offers = by_shop.get(shop) if shop else None
+        if not offers:
+            continue
+        if shop in whole_shop:
+            offer = whole_shop[shop]
+        else:
             offer = _covering(offers, product, moment)
-            if offer is not None:
-                found[id(product)] = offer
+            if all(entry.offer.scope == "shop" for entry in offers):
+                whole_shop[shop] = offer
+        if offer is not None:
+            found[id(product)] = offer
     return found
