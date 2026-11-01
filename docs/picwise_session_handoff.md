@@ -1,13 +1,73 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-11-01 (**offers first
-and the Recommended on offer live since 10:06 UTC**, run `41295172671`; **vouchers without
-their code no longer shown since 12:21 UTC**, run `41305061462`; also live: the design of 31/10 and the pages, run `41215460767`, and the
+Current state for whoever picks the project up next. Updated 2026-11-01, afternoon
+(**built, not deployed: products whose photo is gone left out, and the offer recommended
+even without a barcode; waiting for the owner's word**; live: offers first and the
+Recommended on offer since 10:06 UTC, run `41295172671`; vouchers without their code no
+longer shown since 12:21 UTC, run `41305061462`; also live: the design of 31/10 and the pages, run `41215460767`, and the
 nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the server since
 2026-10-31 10:03 UTC, HTTPS by Caddy; Vercel kept as the backup).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation (from 2026-11-01): pick up here -- start here
+## Next conversation (from 2026-11-01, afternoon): pick up here -- start here
+
+- **Which branch.** Start from the session's branch `ccr-9826870f-qkgl6s`. Deployed: all
+  up to `001b2d8` (run `41305061462`). **Committed, not deployed** (deploying is the
+  owner's word, a push to `ccr-1361f1a7-dcpo60`; the catalogue is prepared again):
+  `2dfce17` (the offer Recommended without a barcode) and `e69b2ed` (photos), with these
+  notes. `4511a44` (a read-only check of the live site) runs only on the session's branch.
+- **What the owner saw (01/11, on the phone).** «bean bag»: no offer, and a broken photo
+  on the Recommended («έχω παρατηρήσει ότι και σε άλλα προϊόντα η εικόνα είναι χαλασμένη»);
+  «το recommended όταν υπάρχει προσφορά πρέπει να δείχνει την προσφορά»; then, of the
+  broken ones: «Όταν το προϊόν δεν φέρνει φωτογραφία δεν πρέπει να εμφανίζεται... Στις
+  περισσότερες περιπτώσεις είναι not found» (the shop's page said "Page not found").
+- **Read on the live site** (`.github/workflows/live-photos.yml` →
+  `.github/scripts/live_photos.py`, GitHub's runner, run `41313109104`; read-only; to read
+  again, change its "Read:" line and push to the session's branch). 27 searches, 12 cards
+  each: 244 photos, **19 gone (HTTP 404, with or without a Referer: links to nothing):
+  18 of InStock UK's 100, 1 of Lets Buy Books'**; every other shop's loaded; all on
+  cdn.shopify.com. Offers show and the Recommended reads "On offer" in "bean bag chair"
+  (Ready Steady Bed), "garden cushion", "outdoor cushion", "pillow" (Gardenista), "bedding"
+  (Cottsbury); **not in "garden furniture" and "diamond earrings"**, where the products on
+  offer carry no EAN/GTIN. «bean bag» reads only "bag" ("PicWise could not match: bean"):
+  PicWise's kinds have no "bean bag" (Google's taxonomy has "Bean Bag Chairs"), so no bean
+  bag was in its results. Also seen: "bedding" shows Gardenista's cushion covers on offer
+  (a kind read wrong, older than offers, put forward by them).
+- **Built (not deployed):**
+  - **The offer Recommended without a barcode** (`2dfce17`): of the products on offer,
+    the one nearest the middle of their prices, one with an EAN/GTIN first, and when none
+    has one, the nearest of them all. Fewer than three products: still none.
+  - **Products whose photo is gone are not shown** (`e69b2ed`):
+    `deployment/server/check_photos.py`, run by `picwise-photos.service` every night at
+    04:40 UTC (`picwise-photos.timer`) and by each deployment in the background, asks every
+    photo of the prepared catalogue (HEAD over kept-open connections, a GET of one byte
+    where HEAD is refused, redirects followed; at most an hour a night; never asked first,
+    then unread, gone ones again after a week, the rest after two weeks; 16 at a time),
+    keeps the answers in `/srv/picwise/shared/photos/photos.sqlite3` and writes the gone
+    ones (HTTP 404 or 410 only; no answer, refused, 429 or 5xx are asked again, never
+    called gone) to `/srv/picwise/shared/photos/gone.json`. The site reads it
+    (`PICWISE_GONE_PHOTOS_FILE` in `picwise-web.service`; `picwise_providers.product_photos`,
+    looked at every 60 s) and both search catalogue paths (`state._prepared_search_catalogue`,
+    `state._search_catalogue`) leave those products out: not shown, counted or recommended.
+    The preparation keeps every product (`prepare_feed_catalogue` builds its catalogue
+    with `leave_out_gone_photos=False`), so the check can ask again. The browser hides a
+    card whose photo fails all the same, whole (`browser_lists.HEAD_SCRIPT`, class
+    `pw-no-photo`). The deployment log prints the photo timer, whether a check is running,
+    its last summary lines, and "photos gone: N of M" once the file exists.
+  - Not measured yet: how long the first check of ~528,000 photos takes on the server, and
+    whether Shopify's CDN slows it (429s are asked again the next night). After the
+    deployment, read the live site again (the check above) to see InStock UK's dead photos
+    gone, and the next deployment's log for the photo summary. The first search in each
+    worker after a new list is written rebuilds the search catalogue (some seconds), once
+    a night.
+- **Tests.** `tests/test_picwise_product_photos.py` (16), `tests/test_picwise_offers_first.py`
+  (19), `tests/test_picwise_live_photos.py` (4). The 14 modules that read offers, photos or the pages pass; the run of every module (but the 54-minute one) was still going when this was written, with no failure in its first 173 of 280.
+- **Next, in order**: the owner's word to deploy; after it, the deployment's log, then
+  the live check again (photos), then these notes and PROGRESS. Then: "bean bag" as a kind
+  (a vocabulary change, `picwise_nlu`), the application text and Awin applications, the
+  trending searches' source, the first search after a restart.
+
+## Before (2026-11-01, morning to midday): offers first deployed, then the voucher fix
 
 - **Which branch.** Start from the session's branch `ccr-9826870f-qkgl6s`. Offers first
   and the Recommended on offer (`6836bbe`, `1d1c880`, `3bf18d8`, `9f6e3c4`, with these
