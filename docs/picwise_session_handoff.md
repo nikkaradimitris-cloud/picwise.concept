@@ -20,10 +20,17 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   activating", "photos gone: not checked yet"), its timer next at 04:40 UTC; the site
   active since 16:22:14 UTC, its memory 5,393 MB; 15 of 15 pages and 12 of 12 searches
   answered (none of the 12 with an offer, as before). `4511a44` (a read-only check of the
-  live site) runs only on the session's branch. **To see the first photo check's effect**:
-  read the live site again (change the "Read:" line of `.github/workflows/live-photos.yml`
-  and push to the session's branch) after about 17:25 UTC, when its hour is over; the
-  next deployment's log prints its summary lines.
+  live site) runs only on the session's branch.
+- **Seen on the live site after the first photo check** (the read again, run
+  `41331736477`, 17:29 UTC): **237 of 237 photos load** (before: 19 of 244 failed;
+  InStock UK 87 of 87, before 82 of 100). The 27 searches show 585 fewer products, 2.0%
+  (29,073 to 28,488), almost all InStock UK's: "bag" 843 to 648, "camera" 401 to 276,
+  "craft bag" 30 to 5, "bedding" 755 to 740; "bag" now recommends another product (the
+  one of the owner's screenshot, whose photo was gone, is out). **"garden furniture" and
+  "diamond earrings" now show an "On offer" Recommended** (Gardenista's £143.97 bundle;
+  Finediam's £897 earrings, from "FineDiam Diamond Jewellery - Flat 23% OFF", to 02/11).
+  How many photos the server found gone in all, and how long the check took, are not
+  known here: the next deployment's log prints its summary lines and "photos gone".
 - **What the owner saw (01/11, on the phone).** «bean bag»: no offer, and a broken photo
   on the Recommended («έχω παρατηρήσει ότι και σε άλλα προϊόντα η εικόνα είναι χαλασμένη»);
   «το recommended όταν υπάρχει προσφορά πρέπει να δείχνει την προσφορά»; then, of the
@@ -82,9 +89,7 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   20-minute limit (it passed in 1,147 s earlier the same day; it loads none of the changed
   code: `picwise_learning` reads no provider or page module). With the browser guard after it, the 10 modules that read the
   pages, photos or offers pass.
-- **Next, in order**: the live check again (photos gone from the pages; "garden furniture"
-  and "diamond earrings" with an "On offer" Recommended), then these notes and PROGRESS.
-  Then: "bean bag" as a kind
+- **Next, in order**: "bean bag" as a kind
   (a vocabulary change, `picwise_nlu`), the application text and Awin applications, the
   trending searches' source, the first search after a restart.
 
