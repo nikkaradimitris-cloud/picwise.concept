@@ -99,6 +99,16 @@ class PhotoRulesTests(unittest.TestCase):
         self.assertEqual(live_photos.image_kind(b"<!doctype html><html>Hotlinking not allowed"), "")
         self.assertEqual(live_photos.image_kind(b""), "")
 
+    def test_the_box_s_suggestions_are_matched_as_the_box_matches_them(self) -> None:
+        words = ["electric kettle", "kettle", "βραστήρας", "Fixturon kettle", "toaster", "Kettle Pro"]
+        # Names starting with what was typed first, then names with a word starting so.
+        self.assertEqual(live_photos.box_suggestions(words, "ke"),
+                         ["kettle", "Kettle Pro", "electric kettle", "Fixturon kettle"])
+        # Without accents and in lower case, as the box's own `norm`.
+        self.assertEqual(live_photos.box_suggestions(words, "ΒΡΑΣΤΗΡΑΣ"), ["βραστήρας"])
+        self.assertEqual(live_photos.box_suggestions(words, "  "), [])
+        self.assertEqual(len(live_photos.box_suggestions([f"kettle {n}" for n in range(20)], "ke")), 8)
+
     def test_each_photo_is_counted_once_per_shop_and_host(self) -> None:
         def card(shop: str, image: str) -> live_photos.Card:
             return live_photos.Card("q", False, "", "£1.00", shop, "A product", "", image)

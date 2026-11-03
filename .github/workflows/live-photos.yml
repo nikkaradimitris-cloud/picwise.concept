@@ -8,7 +8,8 @@
 # or the site changes. Runs only when this file or the script is pushed to the session's
 # branch, where a push deploys nothing; to read again, change the line below and push.
 #
-# Read: 2026-11-01 (run 41313109104), and again after the first photo check of 16:22 UTC
+# Read: 2026-11-01 (run 41313109104), and again after the first photo check of 16:22 UTC;
+# 2026-11-03, with "tablet" and the search box's suggestions
 name: Live photos and offers (read-only)
 on:
   push:

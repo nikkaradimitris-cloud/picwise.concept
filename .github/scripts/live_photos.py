@@ -18,7 +18,9 @@ from __future__ import annotations
 
 import argparse
 import html
+import json
 import re
+import unicodedata
 import sys
 import urllib.error
 import urllib.parse
@@ -36,7 +38,12 @@ SEARCHES = (
     "bean bag", "bean bag chair", "gaming bean bag", "garden cushion", "cushion cover",
     "outdoor cushion", "garden furniture", "pillow", "duvet cover", "bedding",
     "diamond necklace", "diamond earrings", "protein powder", "creatine", "bag", "craft bag",
+    # Owner, 2026-11-03: «Στα tablets .. tablet... Βγάζει και χάπια».
+    "tablet", "tablets", "ipad", "android tablet", "vitamin tablets",
 )
+# What the search box suggests as these are typed (owner, 2026-11-03: «έλεγξε αν υπάρχουν
+# προτάσεις κατά την πληκτρολόγηση»), matched as the box matches them.
+TYPED = ("ta", "tab", "tabl", "ke", "lap", "hea", "mou", "be", "ga", "κα", "βρ", "ακ")
 SHOWN = 12
 BROWSER = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -147,6 +154,32 @@ def fetch_photo(url: str, *, referer: str) -> str:
     return ""
 
 
+def box_key(text: str) -> str:
+    """The box's own `norm`: no accents, lower case, final sigma as sigma, one space."""
+    decomposed = unicodedata.normalize("NFD", str(text or ""))
+    plain = "".join(char for char in decomposed if not unicodedata.combining(char))
+    return re.sub(r"\s+", " ", plain.lower().replace("\u03c2", "\u03c3"))
+
+
+def box_suggestions(words: list[str], typed: str, limit: int = 8) -> list[str]:
+    """What the box lists for `typed`: names starting with it first, then names with a
+    word starting with it, eight at most (`reference.py`, `update`)."""
+    q = box_key(typed).lstrip(" ")
+    if not q.strip():
+        return []
+    starts: list[int] = []
+    inner: list[int] = []
+    for index, word in enumerate(words):
+        if len(starts) >= limit:
+            break
+        key = box_key(word)
+        if key.startswith(q):
+            starts.append(index)
+        elif len(inner) < limit and (" " + q) in key:
+            inner.append(index)
+    return [words[index] for index in (starts + inner)[:limit]]
+
+
 def host(url: str) -> str:
     return urllib.parse.urlsplit(url).netloc.lower() or "-"
 
@@ -222,6 +255,14 @@ def main(argv: list[str] | None = None) -> int:
         failed = [photo for photo in photos.values() if not photo.ok]
         for photo, why in zip(failed, pool.map(lambda p: fetch_photo(p.url, referer=""), failed)):
             photo.without_referer = why
+    status, body = _get(f"{site}/suggest.json")
+    try:
+        words = [str(word) for word in json.loads(body).get("suggestions", [])]
+    except (ValueError, AttributeError):
+        words = []
+    print(f"== the search box's suggestions: {status}, {len(words)} names")
+    for typed in TYPED:
+        print(f"  {typed!r:8} -> {box_suggestions(words, typed)}")
     plain = sum(1 for url in photos if url.lower().startswith("http://"))
     print(f"== {len(photos)} photos on the pages read ({plain} given as http://); "
           f"{sum(p.ok for p in photos.values())} load, {sum(not p.ok for p in photos.values())} do not")
