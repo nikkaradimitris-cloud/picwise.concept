@@ -544,8 +544,9 @@ supplement tablets among their first twelve, of 131; the server's kind report co
    the kind does not list it.
 2. **Which departments an aisle holds is written down**, per aisle of Google's 21
    (`_AISLE_HOLDS`): Health & Beauty holds health devices, beauty and grooming, and
-   insoles; Food, Beverages & Tobacco, Media, Mature and Religious & Ceremonial hold none;
-   Business & Industrial, not listed, holds every department. Read from Google's own
+   insoles; Sporting Goods holds no clothing read off a title (a "Sauna Suit" is no suit,
+   as before); Food, Beverages & Tobacco, Media, Mature and Religious & Ceremonial hold
+   none; Business & Industrial, not listed, holds every department. Read from Google's own
    shelves instead, as since 2026-10-25, every aisle held computers: "Toners" (skin care),
    "Highlighters" (make-up), "Fertility Tests & Monitors" and "Practice Nets & Screens"
    read as printer toner, markers and monitors. Checked against Google's file: every kind

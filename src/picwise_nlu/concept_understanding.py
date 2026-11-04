@@ -1953,8 +1953,9 @@ _AISLE_HOLDS = {
     "office supplies": "CO FU",
     "religious & ceremonial": "",
     "software": "CO AV",
-    # Camp furniture and camp kitchens are sold here too.
-    "sporting goods": "BK MO PH CL FO JW HE GA FU KI",
+    # Camp furniture and camp kitchens are sold here too; clothing is not read off a
+    # title here, as before: a "Sauna Suit" is no suit.
+    "sporting goods": "BK MO PH FO JW HE GA FU KI",
     "toys & games": "BK AV",
     "vehicles & parts": "CP TY MO AV PH",
 }
