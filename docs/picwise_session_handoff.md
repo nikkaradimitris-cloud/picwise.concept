@@ -54,9 +54,27 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   the live check again ("tablet").
 - **Tests.** `tests/test_picwise_main_kind_only.py` (4), `tests/test_picwise_title_on_another_aisle.py`
   (8). Every module but the 54-minute one: 280 pass; `test_picwise_kinds_from_the_shops_types` failed once (a sauna suit read as a suit: the table had clothing in sporting goods) and passes after `92fd939`; two fail as before this work (`..._canonical_vocabulary_registry_stage2`, `..._search_index_generated_blind_stage4`); `test_picwise_learning_stage7b` stopped at the 20-minute limit (it loads none of the changed code). After `92fd939` the 8 modules that read kinds pass.
-- **Next, in order**: the owner's word to deploy; then the deployment's kind report and the
-  live check. Then as before: "bean bag" as a kind, the Awin applications, the trending
-  searches' source.
+- **The owner's next request (04/11), the first thing of the next conversation**: «Θέλω να
+  μάθω ποια προϊόντα δημιουργούν μπέρδεμα στην αναζήτηση.. όπως τα tablets... Banks...κτλ
+  δηλαδή που μπορεί να μπερδευτεί το ευρετήριο και να βγάζει ακατάλληλα προϊόντα.. θέλω
+  έναν ολοκληρωμένο έλεγχο από άκρη σε άκρη». Asked before whether all categories had been
+  checked: only Google's 5,595 categories and subcategories were (the table refuses 32
+  homonym shelves, nothing else); the 528,518 real products, which only the server holds,
+  were not. Proposed to the owner, not yet approved: a read-only check on a copy of the
+  server's prepared catalogue, on GitHub's runner (as `server-cap.yml` did; it needs a push
+  of a workflow to `ccr-1361f1a7-dcpo60`, so the owner's word first; nothing on the site
+  changes). What it should print, with the main-kind rule of `cdd1eb3`/`92fd939` and
+  without it: per kind, the products whose kind comes from the title alone, grouped by
+  the shop's shelf, with examples; the products the rule takes away; the words that name
+  more than one thing ("tablet" pills, "bank" (power bank, piggy bank, money bank),
+  "mouse", "monitor", "toner", "case", "cable", "bed", "suit", "pad", "charger", "stand",
+  "light", "speaker", "watch", "ring", "chain", "drill"...), each with the shelves its
+  products come from; and, for every kind's search, its first page on the live site
+  (`live-photos.yml` can read every kind's search). Then the owner decides what to fix,
+  and whether to deploy the main-kind rule (not deployed yet).
+- **Next, in order**: the audit above; the owner's word to deploy the main-kind rule; then
+  the deployment's kind report and the live check. Then as before: "bean bag" as a kind,
+  the Awin applications, the trending searches' source.
 
 ## Before (2026-11-01, afternoon): photos, the offer Recommended without a barcode
 
