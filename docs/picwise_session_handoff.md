@@ -53,7 +53,7 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   catalogue": "made doubtful by their aisle, per kind"); read it after the deployment, and
   the live check again ("tablet").
 - **Tests.** `tests/test_picwise_main_kind_only.py` (4), `tests/test_picwise_title_on_another_aisle.py`
-  (8). The run of every module (but the 54-minute one) was still going when this was written: 189 of 284 done, 0 failing.
+  (8). Every module but the 54-minute one: 280 pass; `test_picwise_kinds_from_the_shops_types` failed once (a sauna suit read as a suit: the table had clothing in sporting goods) and passes after `92fd939`; two fail as before this work (`..._canonical_vocabulary_registry_stage2`, `..._search_index_generated_blind_stage4`); `test_picwise_learning_stage7b` stopped at the 20-minute limit (it loads none of the changed code). After `92fd939` the 8 modules that read kinds pass.
 - **Next, in order**: the owner's word to deploy; then the deployment's kind report and the
   live check. Then as before: "bean bag" as a kind, the Awin applications, the trending
   searches' source.
