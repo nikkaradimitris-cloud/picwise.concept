@@ -24,11 +24,13 @@ from .contracts import (
 from .eligibility import evaluate_provider_product_eligibility
 from .feed_intake import measure_feed_intake
 from .graph_projection import project_provider_products_to_graph
+from .kind_choices import KindChoice, build_kind_choices
 from .offer_health import (
     build_feed_availability_context,
     evaluate_product_eligibility,
     offer_validity_reason_codes,
 )
+from .product_photos import gone_photos, gone_photos_key, photo_is_gone
 from .prepared_catalogue import (
     PreparedCatalogue,
     check_prepared_catalogue,
@@ -37,12 +39,14 @@ from .prepared_catalogue import (
 )
 from .normalization import extract_merchant_name
 from .purchasability_cache import enrich_provider_products_with_cache, resolve_purchasability_cache
+from .shop_catalogue import apply_shop_catalogues
 from .suggestions import SearchSuggestion, build_search_suggestions
 from .search_selection import (
     ProviderFeedRecommendationDecision,
     ProviderProductSelectionResult,
     SearchCatalogue,
     _product_concepts,
+    _product_search_fields,
     build_search_catalogue,
     decide_recommended_provider_product,
     is_strong_feed_opportunity_selection,
@@ -231,6 +235,9 @@ def _resolve_provider_feed_pipeline_uncached(
             parse_result=parse_result,
         )
 
+    # What the shops' own catalogues and the rows' barcodes say, before any row is
+    # judged (`shop_catalogue.py`, owner, 2026-10-26).
+    parse_result = replace(parse_result, products=apply_shop_catalogues(parse_result.products))
     feed_availability_context = build_feed_availability_context(parse_result.products)
     eligibility_results = tuple(
         _enrich_provider_eligibility_result(product, feed_ctx=feed_availability_context)
@@ -290,12 +297,29 @@ def _feed_eligible_products(pipeline: ProviderFeedPipelineResult) -> tuple[Provi
     return tuple(row.product for row in pipeline.eligibility_results if row.status == "eligible")
 
 
-def _search_catalogue(pipeline: ProviderFeedPipelineResult) -> SearchCatalogue:
-    """The products a search reads, judged once per feed load: eligible in the feed,
-    card-eligible, and which of them are new (`build_search_catalogue`)."""
+def _search_catalogue(
+    pipeline: ProviderFeedPipelineResult, *, leave_out_gone_photos: bool = True
+) -> SearchCatalogue:
+    """The products a search reads, judged once per feed load and list of gone photos:
+    eligible in the feed, card-eligible, their photo not gone (`product_photos`), and
+    which of them are new (`build_search_catalogue`).
+
+    The preparation keeps the products whose photo is gone (`leave_out_gone_photos`
+    False): the nightly photo check reads its photos from the prepared file, and asks
+    again after a week whether a gone one has come back."""
+    photos = gone_photos_key() if leave_out_gone_photos else ("every photo",)
+    name = "search_catalogue" if leave_out_gone_photos else "search_catalogue_every_photo"
+    cached = _CATALOGUE_CACHE.get(name)
+    if cached is not None and cached[0] is pipeline and cached[1][0] == photos:
+        return cached[1][1]
 
     def build(ready: ProviderFeedPipelineResult) -> SearchCatalogue:
-        rows = tuple(row for row in ready.eligibility_results if row.status == "eligible")
+        gone = gone_photos() if leave_out_gone_photos else frozenset()
+        rows = tuple(
+            row
+            for row in ready.eligibility_results
+            if row.status == "eligible" and not photo_is_gone(row.product, gone)
+        )
         # The pipeline judged each row against the same availability context as it
         # loaded the feed; that judgement is reused rather than made a second time.
         judged = all(row.product_eligibility is not None for row in rows)
@@ -307,7 +331,9 @@ def _search_catalogue(pipeline: ProviderFeedPipelineResult) -> SearchCatalogue:
             ),
         )
 
-    return _cached_for(pipeline, "search_catalogue", build)
+    catalogue = build(pipeline)
+    _CATALOGUE_CACHE[name] = (pipeline, (photos, catalogue))
+    return catalogue
 
 
 # The search catalogue, counts and suggestions of the pipeline last read, kept with it
@@ -354,23 +380,42 @@ def prepare_feed_catalogue(
     pipeline = resolve_provider_feed_pipeline(config, include_graph_projection=False)
     if pipeline.feed_status.status != "provider_feed_ready" or pipeline.availability_context is None:
         return None
-    catalogue = _search_catalogue(pipeline)
+    catalogue = _search_catalogue(pipeline, leave_out_gone_photos=False)
     eligible_count, shop_count = _catalogue_counts(pipeline)
+    kinds = tuple(
+        _product_concepts(product, fields) for product, fields in zip(catalogue.products, catalogue.fields)
+    )
+    choices = _catalogue_kind_choices(catalogue, kinds)
     return PreparedCatalogue(
         prepared_at=now or datetime.now(timezone.utc),
         feed_status=pipeline.feed_status,
         availability_context=pipeline.availability_context,
         products=catalogue.products,
         non_new=tuple(product_non_new_condition(product) for product in catalogue.products),
-        kinds=tuple(
-            _product_concepts(product, fields)
-            for product, fields in zip(catalogue.products, catalogue.fields)
-        ),
+        kinds=kinds,
         eligible_count=eligible_count,
         shop_count=shop_count,
-        suggestions=build_search_suggestions(catalogue.new_products),
+        suggestions=build_search_suggestions(catalogue.new_products, choices=choices),
         search_fields=catalogue.fields,
+        choices=choices,
     )
+
+
+def _catalogue_kind_choices(
+    catalogue: SearchCatalogue, kinds: tuple[frozenset[str], ...] | None = None
+) -> dict[str, tuple[KindChoice, ...]]:
+    """The choices of every general kind, for the new products a search reads
+    (`kind_choices.build_kind_choices`). `kinds`, when given, are those of
+    `catalogue.products`, in order."""
+    if kinds is None:
+        new_kinds = [
+            _product_concepts(product, fields)
+            for product, fields in zip(catalogue.new_products, catalogue.new_fields)
+        ]
+    else:
+        kinds_of = {id(product): product_kinds for product, product_kinds in zip(catalogue.products, kinds)}
+        new_kinds = [kinds_of[id(product)] for product in catalogue.new_products]
+    return build_kind_choices(catalogue.new_products, new_kinds, catalogue.new_fields)
 
 
 def measure_configured_feed_intake(feed_config: ProviderFeedConfig | None = None) -> dict[str, Any] | None:
@@ -389,7 +434,11 @@ def measure_configured_feed_intake(feed_config: ProviderFeedConfig | None = None
         and row.product_eligibility.card_eligible
         and product_non_new_condition(row.product)
     }
-    return measure_feed_intake(pipeline.eligibility_results, not_new_products=not_new)
+    return measure_feed_intake(
+        pipeline.eligibility_results,
+        not_new_products=not_new,
+        read_kinds=lambda product: _product_concepts(product, _product_search_fields(product)),
+    )
 
 
 def _today() -> date:
@@ -463,15 +512,19 @@ def _prepared_time(prepared_at: datetime) -> dict[str, Any]:
 def _prepared_search_catalogue(prepared: PreparedCatalogue) -> SearchCatalogue:
     """The prepared products a search reads today.
 
-    Everything was judged when the file was written except the one rule that moves with
-    the date: an offer whose validity window has closed since then is left out.
+    Everything was judged when the file was written except what moves after it: an offer
+    whose validity window has closed since then is left out, and so is a product whose
+    photo the nightly check has found gone since (`product_photos`, owner, 2026-11-01).
     """
     today = _today()
+    photos = gone_photos_key()
     cached = _PREPARED_STATE.get("catalogue")
-    if cached is not None and cached[0] == today:
+    if cached is not None and cached[0] == (today, photos):
         return cached[1]
+    gone = gone_photos()
     open_today = tuple(
-        not offer_validity_reason_codes(product, today=today) for product in prepared.products
+        not offer_validity_reason_codes(product, today=today) and not photo_is_gone(product, gone)
+        for product in prepared.products
     )
     catalogue = build_search_catalogue(
         prepared.products,
@@ -487,7 +540,7 @@ def _prepared_search_catalogue(prepared: PreparedCatalogue) -> SearchCatalogue:
             for product, fields in zip(catalogue.products, catalogue.fields)
         }
     )
-    _PREPARED_STATE["catalogue"] = (today, catalogue)
+    _PREPARED_STATE["catalogue"] = ((today, photos), catalogue)
     return catalogue
 
 
@@ -527,8 +580,25 @@ def search_suggestions(
     return _cached_for(
         pipeline,
         "suggestions",
-        lambda ready: build_search_suggestions(_search_catalogue(ready).new_products),
+        lambda ready: build_search_suggestions(
+            _search_catalogue(ready).new_products, choices=search_kind_choices(feed_config)
+        ),
     )
+
+
+def search_kind_choices(
+    feed_config: ProviderFeedConfig | None = None,
+) -> dict[str, tuple[KindChoice, ...]]:
+    """Per general kind, the choices a search for it offers (`kind_choices.py`): read
+    from the prepared feed, or worked out once per feed load."""
+    prepared = _active_prepared_catalogue() if feed_config is None else None
+    if prepared is not None:
+        return prepared.choices
+    config = feed_config or awin_feed_config_from_env()
+    pipeline = resolve_provider_feed_pipeline(config, include_graph_projection=False)
+    if pipeline.feed_status.status != "provider_feed_ready":
+        return {}
+    return _cached_for(pipeline, "kind_choices", lambda ready: _catalogue_kind_choices(_search_catalogue(ready)))
 
 
 def resolve_card_eligible_provider_feed_product_by_id(

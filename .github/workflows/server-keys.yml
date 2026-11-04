@@ -1,0 +1,65 @@
+# Which host keys the server's address shows, without logging in (owner's «Ναι»,
+# 2026-10-27). On 27/10 the address showed a key other than the pinned one, and a
+# login's first step was shown yet another a second later (server-night.yml, run
+# 40489927183). Four tries, a few seconds apart, the order changed each time: each
+# records the key a key scan is shown and the key a login's first step is shown (no key
+# or password is offered, so the login stops there), as pins (.github/scripts/
+# host_key_pin.py), never the keys. It sends the server nothing secret and changes
+# nothing. Runs when this file is pushed to the working branch. The repository is public
+# and so is this log: the address is a secret, which GitHub masks.
+name: Server host keys (read-only, no login)
+on:
+  push:
+    branches: [ccr-1361f1a7-dcpo60]
+    paths:
+      - '.github/workflows/server-keys.yml'
+permissions:
+  contents: read
+# Shared with the deployment, the setup and the shops' round.
+concurrency:
+  group: server-setup
+  cancel-in-progress: false
+jobs:
+  keys:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: The key a key scan and a login's first step are shown, four times
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          pinned=$( (grep -v '^#' .github/server-host-key.pin || true) | tr -d '[:space:]')
+          # The key the address showed from 27/10 09:00 UTC (runs 40477603160 to 40489927183).
+          morning=59e8bfb64995ec28571a4b12c486b4b7e76ff5bfb137aa56d89f13ec4a635148
+          name() {
+            if [ -z "$1" ]; then echo "no key"
+            elif [ "$1" = "$pinned" ]; then echo "our key of 25/10"
+            elif [ "$1" = "$morning" ]; then echo "the key of this morning"
+            else echo "another key (pin ${1:0:8})"; fi
+          }
+          pin_of() { if [ -n "$1" ]; then HOST_KEY="$1" python3 .github/scripts/host_key_pin.py; fi; }
+          scan() { ssh-keyscan -T 10 -t ed25519 "$SERVER_HOST" 2>/dev/null | awk 'NF >= 3 {print $2, $3; exit}'; }
+          first_step() {
+            local seen="$RUNNER_TEMP/seen"
+            : > "$seen"
+            # The key is written down when shown; with no key or password to offer, the
+            # login ends there.
+            ssh -F /dev/null -o BatchMode=yes -o ConnectTimeout=10 -o HostKeyAlgorithms=ssh-ed25519 \
+              -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$seen" -o GlobalKnownHostsFile=/dev/null \
+              -o PubkeyAuthentication=no -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no \
+              -o HostbasedAuthentication=no -o GSSAPIAuthentication=no -o LogLevel=QUIET \
+              "ubuntu@$SERVER_HOST" true 2>/dev/null || true
+            awk 'NF >= 3 {print $2, $3; exit}' "$seen"
+            rm -f "$seen"
+          }
+          for try in 1 2 3 4; do
+            if [ $((try % 2)) = 1 ]; then scanned=$(scan); login=$(first_step)
+            else login=$(first_step); scanned=$(scan); fi
+            echo "try $try ($(date -u +%H:%M:%S) UTC): a key scan is shown $(name "$(pin_of "$scanned")");" \
+              "a login's first step, $(name "$(pin_of "$login")")"
+            sleep 5
+          done

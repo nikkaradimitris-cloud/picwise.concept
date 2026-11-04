@@ -25,6 +25,11 @@ If any item is missing, output is non-compliant.
 > price (fewer than three). Items 1 and 2 hold whenever the feed has four products of
 > the kind and a mid-priced one with a code. Built for searches whose product is
 > understood on 2026-10-16 (step 3 of the build order).
+>
+> **Added by the owner on 2026-10-31:** even one product is shown when there is no
+> other, on a layout of its own, never as one small card in the middle («σε αυτή την
+> περίπτωση το εμφανίζει διαφορετικά (δεν θα βγει μία καρτούλα στη μέση)»). To be
+> built with the new design.
 
 ## Choice Object Contract
 
@@ -189,6 +194,34 @@ Implemented in `search_selection` (`_non_new_condition`,
 (`read_condition_request`). Pinned by `tests/test_picwise_condition_request.py`.
 
 ## What a product must carry to be shown, decided by the owner, 2026-10-12
+
+**Added by the owner on 2026-11-01: a photo that is there.** On the live site some cards
+showed a broken photo, and their products' pages at the shop said "Page not found": «Όταν
+το προϊόν δεν φέρνει φωτογραφία δεν πρέπει να εμφανίζεται... Στις περισσότερες περιπτώσεις
+είναι not found». A read of 244 photos of 27 searches (`.github/scripts/live_photos.py`,
+run `41313109104`) found 19 gone, HTTP 404 with or without a Referer (links to nothing, not
+refused): 18 of InStock UK's 100, 1 of Lets Buy Books'; every other shop's loaded.
+
+- The server asks every photo of the prepared catalogue each night, after the
+  preparation (`deployment/server/check_photos.py`, picwise-photos.service, 04:40 UTC),
+  at most an hour a night: never asked first, then those it could not read, gone ones
+  again after a week, the others after two weeks. Only HTTP 404 and 410 call a photo
+  gone; no answer, a refusal, a server error or too many asks is asked again the next
+  night, never called gone.
+- The site reads the list (`PICWISE_GONE_PHOTOS_FILE`, `picwise_providers.product_photos`)
+  and leaves those products out of every search: not shown, counted or recommended. A
+  photo that answers again is back on the next list. The preparation keeps every product,
+  so that the check can ask again.
+- In the visitor's browser a card is seen only once its photo has loaded, and one whose
+  photo fails never (owner, the same day: «από σκανάρισμα σε σκανάρισμα μπορεί να υπάρξει
+  στο ενδιάμεσο αλλαγές ... να μην μπορεί να εμφανιστεί ένα προϊόν αν δεν έχει φωτογραφία
+  στο ui»): whatever changed at the shop since the night's check, a product is never seen
+  without its photo. Its place is kept while the photo loads, so nothing moves when it
+  appears (`browser_lists.HEAD_SCRIPT`, classes `pw-photo-guard`, `pw-photo-ok`,
+  `pw-no-photo`). A browser without JavaScript cannot tell, and shows the cards as before;
+  the nightly check covers it.
+
+Pinned by `tests/test_picwise_product_photos.py`.
 
 **Changed by the owner on 2026-10-18: a description is no longer required.** On the
 live feed, "tv" found nothing, because the only televisions came from shops that send
@@ -419,7 +452,9 @@ sales figure between them. In their place:
    feed's word is trusted; no shop page is checked (owner, 2026-10-16)
 3. the products must carry title, price, image, description, link and availability, as
    ruled on 2026-10-12; specifications and codes are shown when present, never required
-4. cheapest first, by product price alone, with no delivery cost
+4. cheapest first, by product price alone, with no delivery cost; **after the Recommended,
+   the products a current shop offer covers come first**, cheapest first among them, then
+   the rest (owner, 2026-11-01; "Offers first" below)
 5. the same product (same EAN/GTIN or, without it, same brand and manufacturer code,
    MPN; owner, 2026-10-16) shown once, from the cheapest shop that has it in stock;
    neither code, no joining
@@ -491,3 +526,90 @@ Put to the owner in these two steps and accepted («Ναι, γράψ' το στ�
 that states no date never counts as fresher than one that does (an unknown date is not
 a fresh one; put to the owner and accepted, «Εντάξει, συμφωνώ»). Not built: PicWise reads one network today; this applies when a
 second one comes in.
+
+## The main kind only, decided by the owner, 2026-11-03
+
+The owner, of the live site: «Στα tablets .. tablet... Βγάζει και χάπια... Εφόσον το κύριο
+είδος είναι tablet ... αυτό πρέπει να συμβαίνει γενικά παντού». Read on the live site
+(`.github/workflows/live-photos.yml`, run `41621931827`): "tablet", "tablets" and "ipad"
+showed one tablet and eleven of InStock UK's toothpaste, mouthwash, electrolyte and
+supplement tablets among their first twelve, of 131; the server's kind report counted
+72 of its 190 tablets as named by their title alone, among them fish food and mouthwash.
+
+1. **A title's kind needs an aisle that may hold it.** When neither a product's type nor
+   its shelf names a kind and its title does, the kind holds only where the aisle the
+   product is filed in may hold the kind's department, or a broader kind's (a smartwatch
+   is a watch too) (`concept_understanding._aisle_may_hold`). Otherwise the kind is
+   doubtful: the product is still found by its words, never by its kind, so a search for
+   the kind does not list it.
+2. **Which departments an aisle holds is written down**, per aisle of Google's 21
+   (`_AISLE_HOLDS`): Health & Beauty holds health devices, beauty and grooming, and
+   insoles; Sporting Goods holds no clothing read off a title (a "Sauna Suit" is no suit,
+   as before); Food, Beverages & Tobacco, Media, Mature and Religious & Ceremonial hold
+   none; Business & Industrial, not listed, holds every department. Read from Google's own
+   shelves instead, as since 2026-10-25, every aisle held computers: "Toners" (skin care),
+   "Highlighters" (make-up), "Fertility Tests & Monitors" and "Practice Nets & Screens"
+   read as printer toner, markers and monitors. Checked against Google's file: every kind
+   Google files in an aisle under its exact name is held there, but for 32 shelves whose
+   names are homonyms ("Musical Keyboard Bags & Cases" as phone cases, "Workstations &
+   Cubicles" as computers, "Camera & Optics Manuals" as cameras).
+3. **The aisle comes from the category**: the first category field that starts with an
+   aisle of Google's ("Health & Beauty > ..."); or a shop's own shelf found among Google's
+   shelves by its name, in Google's US spelling ("Vitamins & Supplements", "Mouthwash",
+   "Fish Food", "Body Jewellery"), or, for a name of two words or more, by its last word
+   ("Sports Nutrition" as "Fitness & Nutrition"). A one-word shelf Google has no shelf of
+   ("Gadgets", "Health"), a shelf like nothing of Google's, or no category leaves the title
+   to decide, as before. An aisle or a shelf whose own name names the kind holds it.
+4. **What it changes**: the tablets of shelves of health, pets and sweets are no tablets;
+   tablets on a tablets, computers, e-readers or electronics shelf, or a shop's own one,
+   stay. Body jewellery is no barbell. Pinned by `tests/test_picwise_main_kind_only.py` and
+   `tests/test_picwise_title_on_another_aisle.py`.
+
+## Offers first, decided by the owner, 2026-11-01
+
+The owner: «Ανά προϊόν... Όταν ψάχνει ένας πελάτης ένα προϊόν ή μία κατηγορία υπάρχει
+προσφορά σε αυτό το προϊόν ψάχνει παράδειγμα καφετιέρα θα το δείξει τις προσφορές προϊόντα
+με προσφορές πρώτα». Asked, with the choices put to them (a label with the order kept, a row
+of offers above the results, or products with an offer first), whether that changes
+"cheapest first": «Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο».
+
+1. **The order.** The Recommended first; then the products a current shop offer covers,
+   cheapest first; then the rest, cheapest first. "More" opens the next four in that order.
+2. **The Recommended** (asked whether the Recommended should be the offer, with the choices
+   put to them; the engineer's advice was to keep it neutral: «Εάν υπάρχει προσφορά να
+   προτείνει την προσφορά»; then, of a live search with an offer and a Recommended not on
+   offer: «το recommended όταν υπάρχει προσφορά πρέπει να δείχνει την προσφορά»). When the
+   answer holds three products or more (as for any Recommended) and a current shop offer
+   covers one of them, the Recommended is a product on offer: the products on offer stand
+   for the whole answer in rule 7 of "Price first" (their middle price, a dearest costing
+   at least twice the next not counted; the one nearest to it, the cheaper of two equally
+   near), one with an EAN/GTIN first, and, when none on offer carries one, the nearest of
+   them all (2026-11-01: "garden furniture" and "diamond earrings" had offers on products
+   without one, and a Recommended not on offer); one product on offer is its own middle,
+   of two the cheaper. Its card reads "On offer" instead of "Mid-priced for this
+   category", which would not be true, and the page says how it was chosen. With nothing
+   on offer, the Recommended is chosen as before; "Lowest price" is measured against the
+   middle price of the whole answer when the Recommended was chosen for its offer.
+3. **What an offer is.** Awin's offers of PicWise's shops, fetched every night
+   (`deployment/server/fetch_offers.py`). Awin gives them per shop, so an offer covers a
+   product only where its own words leave no doubt (`picwise_providers.product_offers`):
+   it states a discount (a percentage, an amount off, half price, a second one free; not
+   free delivery, a collection, a bundle price or a code alone); it is meant for shoppers
+   (not a commission offer to publishers); it is live now by its own dates; and it covers
+   the whole shop ("sitewide", "everything", "your order", "your first order", "new
+   customers", or a discount naming nothing but the shop) or names the product's kind,
+   every word of it in the product's title. "Up to" and "selected" cover no product: which
+   ones the offer does not say. A voucher covers a product only with its code: a voucher
+   is a code typed at the shop's checkout, and Awin gives it only for the programmes
+   PicWise is joined to; without it the shopper cannot have the discount (2026-11-01: the
+   first deployment of offers first put Geepas's code-less "Kettle & Toaster Set 10 OFF"
+   first and made one of those sets the Recommended; of the 53 offers of PicWise's shops
+   the check printed, 32 covered products, 23 of them vouchers without their code). A
+   promotion needs no code. A product an offer may not cover is never said to be on
+   offer.
+4. **The card.** An offer card is labelled "Offer" instead of "Lowest price", and shows
+   the offer in the shop's words, its end date, its code where Awin gives one (to joined
+   programmes only), and its terms. The page says the order ("offers first, then
+   cheapest first").
+5. **No one pays for a place.** PicWise is paid nothing to show an offer or to put it
+   first; commission still never decides the order.

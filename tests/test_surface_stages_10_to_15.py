@@ -345,15 +345,21 @@ class LandingUiTests(unittest.TestCase):
 
         self.assertIn("PicWise works with the Awin affiliate network", affiliate)
         self.assertNotIn("Amazon", affiliate)
-        self.assertIn("Linkwise", affiliate)
+        # PicWise works with Awin alone (owner, 2026-10-31): no other network is named.
+        self.assertNotIn("Linkwise", affiliate)
         self.assertIn("SaaS", affiliate)
         self.assertIn("finance", affiliate.lower())
 
+        # The operator the owner gave on 2026-10-31, and the contact on the site's own
+        # domain they chose the same day (never their own Gmail address).
         self.assertIn("contact.picwise@subby.cloud", contact)
         for page in (terms, privacy, cookies, affiliate, contact):
             self.assertIn("contact.picwise@subby.cloud", page)
             self.assertNotIn("contact@picwise.subby.cloud", page)
             self.assertNotIn("mysubby.cloud@gmail.com", page)
+        for page in (terms, privacy, contact):
+            self.assertIn("Nikos Karadimitris", page)
+            self.assertIn("EL120948460", page)
 
     def test_branded_not_found_page_has_required_elements(self) -> None:
         html = render_branded_not_found_page()

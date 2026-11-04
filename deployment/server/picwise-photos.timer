@@ -1,0 +1,12 @@
+# Every night, after the preparation (picwise-prepare.timer, 04:17 UTC, some 12 minutes),
+# whose catalogue's photos are checked; the service waits for it when it runs late.
+# Installed by deployment/server/deploy.sh.
+[Unit]
+Description=PicWise: check which products' photos are gone, every night
+
+[Timer]
+OnCalendar=*-*-* 04:40:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

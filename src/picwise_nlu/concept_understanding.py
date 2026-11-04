@@ -57,6 +57,10 @@ from .product_concepts import (
     get_qualifiers,
     spec_fields_for_mega_category,
 )
+from .product_concepts import _MEGA as _DEPARTMENT_BY_CODE
+
+# A department's short name ("CO") by its id ("computers_office_peripherals").
+_MEGA_CODES = {department: code for code, department in _DEPARTMENT_BY_CODE.items()}
 
 # --------------------------------------------------------------------------------------
 # Text normalisation and phonetic keys
@@ -329,6 +333,11 @@ CONNECTIVE_WORDS = frozenset(
 _PURPOSE_WORDS = frozenset(
     {"for", "with", "without", "w/", "για", "με", "χωρις", "gia", "me", "xoris", "choris"}
 )
+# The purpose words that say what comes with the product, not what it is for: a title
+# can describe its product past them ("3 Stone With Side Halo Diamond Engagement Ring").
+# English only: the shops' titles are English (owner, 2026-10-29: «Η διορθώσεις πρέπει να
+# αφορούν αγγλικό λεξιλόγιο»).
+_WITH_WORDS = frozenset({"with", "w/"})
 
 # Not retail product searches. Never fuzzily matched onto a product name.
 _NON_RETAIL_WORDS = frozenset(
@@ -728,11 +737,11 @@ def _choose_spans(spans: list[_Span]) -> list[_Span]:
     return sorted(chosen, key=lambda s: s.start)
 
 
-def _pick_head(spans: list[_Span], tokens: tuple[str, ...]) -> _Span | None:
+def _pick_head(spans: list[_Span], tokens: tuple[str, ...], cut: int | None = None) -> _Span | None:
     if not spans:
         return None
     covered = {i for span in spans for i in range(span.start, span.end)}
-    purpose_at = next(
+    purpose_at = cut if cut is not None else next(
         (i for i, token in enumerate(tokens) if token in _PURPOSE_WORDS and i not in covered),
         len(tokens),
     )
@@ -1423,12 +1432,13 @@ _ACCESSORY_WORDS = frozenset(
 # "table runner", "cable ties", "mirror ball", "ring light", "shoe restore kit". Read
 # off a real feed, where each of these answered a search with the wrong kind of
 # product. Only English text puts the modifier first, so only English text is read
-# this way.
+# this way. "Sauna Stones" go on a sauna's heater (owner, 2026-10-27: Steam & Oak's
+# were saunas); the singular "stone" is a colour as often ("Corner Sofa Stone").
 _MODIFIER_TAIL_WORDS = frozenset(
     """
     runner runners mat mats decor cloth cloths ties tie clip clips sleeving duct ducts
     ball balls light lights restore stopper stoppers component components
-    clock clocks football tennis
+    clock clocks football tennis stones
     """.split()
 )
 
@@ -1835,6 +1845,14 @@ def _title_named_head(title: str, category: str) -> str | None:
     a better one. A lead that names nothing lets the rest of the title speak ("Brand
     X200, Wireless Gaming Mouse"), unless the category names a kind PicWise does not
     know and shares no word with it: "Garden Sheds" and "..., Waterproof Bike Tent".
+
+    A title that names a kind only after a "with" names something that comes with the
+    product, unless the shop's own shelf names that kind too: "2.00 Ct Lab Grown 3 Stone
+    With Side Halo Diamond Engagement Ring Platinum" on the shelf "Rings" is a ring, its
+    description running on past "With" (`_cut_past_with`; owner, 2026-10-28). The weak
+    name "rings" gives a shelf no kind of its own, but agrees with the one the title
+    names; with no shelf, or another one ("E-Book Readers" and "... with Case"), the
+    title still names an accessory.
     """
     lead_tokens = normalize_understanding_text(_title_lead(title)).split()
     cut = next((i for i, token in enumerate(lead_tokens) if token in _PURPOSE_WORDS), len(lead_tokens))
@@ -1854,9 +1872,13 @@ def _title_named_head(title: str, category: str) -> str | None:
             return UNCERTAIN_MARKER
         return head
     head = _head_of_text(title, strict_tail=True)
+    shelf = _narrowest_shelf(category)
+    if head is ACCESSORY_MARKER:
+        past = _head_of_text(title, strict_tail=True, past_with=True)
+        if past not in (None, ACCESSORY_MARKER) and _type_supports_concept(shelf, past):
+            return past
     if head is None or head is ACCESSORY_MARKER:
         return head
-    shelf = _narrowest_shelf(category)
     if shelf and _type_is_informative(shelf) and not _type_supports_concept(shelf, head):
         return UNCERTAIN_MARKER
     return head
@@ -1904,32 +1926,129 @@ def _aisle_departments() -> dict[str, frozenset[str]]:
     return {aisle: frozenset(found) for aisle, found in departments.items()}
 
 
+# Owner, 2026-11-03: «Στα tablets .. tablet... Βγάζει και χάπια ... αυτό πρέπει να
+# συμβαίνει γενικά παντού». A search for a kind shows that kind, never another thing its
+# word also names: on the live site "tablet" showed 11 toothpaste, mouthwash and
+# supplement tablets among its first 12. Which departments of PicWise's (the lexicon's
+# `mega_category_id`) each of Google's 21 aisles may hold, as a buyer would file them.
+# Read from Google's shelves themselves, every aisle held computers: "Toners" (skin care),
+# "Highlighters" (make-up), "Fertility Tests & Monitors" and "Practice Nets & Screens" read
+# as printer toner, markers and monitors, and every "Cases" as phone cases. An aisle not
+# listed holds every department.
+_AISLE_HOLDS = {
+    "animals & pet supplies": "BK FU BE",
+    "apparel & accessories": "CL FO JW PH",
+    "arts & entertainment": "AV BK FU",
+    "baby & toddler": "BK FU HE KI HA",
+    "cameras & optics": "AV CO PH",
+    "electronics": "CO AV PH HA FU HE TY",
+    "food, beverages & tobacco": "",
+    "furniture": "FU BK GA",
+    "hardware": "PT HT GA HA FU HE",
+    "health & beauty": "HE BE FO",
+    "home & garden": "KI FU HA GA HE HT BE AV",
+    "luggage & bags": "JW CO BK",
+    "mature": "",
+    "media": "",
+    "office supplies": "CO FU",
+    "religious & ceremonial": "",
+    "software": "CO AV",
+    # Camp furniture and camp kitchens are sold here too; clothing is not read off a
+    # title here, as before: a "Sauna Suit" is no suit.
+    "sporting goods": "BK MO PH FO JW HE GA FU KI",
+    "toys & games": "BK AV",
+    "vehicles & parts": "CP TY MO AV PH",
+}
+# A shop's own shelf in Google's British or older names.
+_BRITISH_SHELF_NAMES = {"sweets & chocolate": "candy & chocolate", "jewellery": "jewelry"}
+
+
+def _us_shelf_name(name: str) -> str:
+    name = " ".join(str(name or "").lower().split())
+    name = _BRITISH_AISLE_NAMES.get(name, _BRITISH_SHELF_NAMES.get(name, name))
+    return " ".join(_BRITISH_SHELF_NAMES.get(word, word) for word in name.split())
+
+
+@lru_cache(maxsize=1)
+def _google_shelf_aisles() -> tuple[dict[str, frozenset[str]], dict[str, frozenset[str]]]:
+    """Per name of a shelf of Google's (as it is and in the singular), the aisles it is
+    found in; and per last word of a shelf's name, the aisles of the shelves that end in
+    it. Empty when the taxonomy file is not there."""
+    try:
+        lines = _TAXONOMY_PATH.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return {}, {}
+    by_name: dict[str, set[str]] = {}
+    by_word: dict[str, set[str]] = {}
+    for line in lines:
+        if not line.strip() or line.startswith("#"):
+            continue
+        names = [" ".join(name.lower().split()) for name in line.split(">")]
+        shelf = names[-1]
+        for form in {shelf, _in_the_singular(shelf)}:
+            by_name.setdefault(form, set()).add(names[0])
+        words = _in_the_singular(shelf).split()
+        if words:
+            by_word.setdefault(words[-1], set()).add(names[0])
+    return (
+        {name: frozenset(aisles) for name, aisles in by_name.items()},
+        {word: frozenset(aisles) for word, aisles in by_word.items()},
+    )
+
+
+def _shelf_aisles(shelf: str) -> frozenset[str]:
+    """The aisles of Google's a shop's own shelf is one of: those of Google's shelves of
+    the same name ("Vitamins & Supplements", "Mouthwash", "Fish Food"), else, for a name
+    of two words or more, of those whose name ends in the same word ("Sports Nutrition"
+    as "Fitness & Nutrition"). A shelf of one word Google has no shelf of ("Gadgets",
+    "Health") says nothing: as a last word it ends shelves of too many kinds. None when
+    Google has no such shelf."""
+    by_name, by_word = _google_shelf_aisles()
+    name = _us_shelf_name(shelf)
+    if not name:
+        return frozenset()
+    found = by_name.get(name) or by_name.get(_in_the_singular(name))
+    if found:
+        return found
+    words = _in_the_singular(name).split()
+    return by_word.get(words[-1], frozenset()) if len(words) > 1 else frozenset()
+
+
 def _aisle_may_hold(category: str, concept_id: str) -> bool:
-    """Does the aisle a category starts with hold, on some shelf of Google's, a kind of
-    this kind's department, or of a broader kind's: a smartwatch is a watch too, so an
-    aisle of watches may hold one. The first category field that is an aisle of
-    Google's is read at its first two levels, or at its top when Google's shelves there
-    name no kind at all ("Furniture > Furniture Sets" holds sofas the lexicon cannot
-    read off its shelves); an aisle whose own name names the kind holds it ("Toys &
-    Games", a toy). True when no field is an aisle of Google's."""
+    """May the aisle a product is filed in hold this kind (`_AISLE_HOLDS`): one of the
+    kind's department, or of a broader kind's (a smartwatch is a watch too). The first
+    category field that says which aisle decides: one that starts with an aisle of
+    Google's ("Health & Beauty > ..."), or a shop's own shelf found among Google's
+    shelves by its name ("Vitamins & Supplements", in Health & Beauty; owner,
+    2026-11-03). An aisle whose own name names the kind holds it ("Toys & Games", a toy),
+    and so does a shelf. True when no field says which aisle."""
     by_id = get_product_concepts_by_id()
-    aisles = _aisle_departments()
-    if concept_id not in by_id or not aisles:
+    if concept_id not in by_id:
         return True
     kinds = set(broader_concepts(concept_id))
-    departments = {by_id[kind].mega_category_id for kind in kinds if kind in by_id}
+    departments = {_MEGA_CODES.get(by_id[kind].mega_category_id, "") for kind in kinds if kind in by_id}
+    aisles_of_google = set(_AISLE_HOLDS) | set(_aisle_departments())
     for crumb in str(category or "").split(CATEGORY_FIELD_SEPARATOR.strip()):
         names = [
-            _BRITISH_AISLE_NAMES.get(name, name)
+            _us_shelf_name(name)
             for name in (" ".join(segment.lower().split()) for segment in _BREADCRUMB_SPLIT_RE.split(crumb))
             if name
         ]
-        if not names or names[0] not in aisles:
+        if not names:
             continue
-        if any(span.concept_id in kinds for name in names[:2] for span in _concepts_in_text(_in_the_singular(name))):
+        if names[0] in aisles_of_google:
+            aisles, named = {names[0]}, names[:2]
+        else:
+            aisles, named = set(_shelf_aisles(names[-1])), names[-1:]
+            if not aisles:
+                continue
+        if any(span.concept_id in kinds for name in named for span in _concepts_in_text(_in_the_singular(name))):
             return True
-        two = " > ".join(names[:2])
-        held = aisles.get(two) if len(names) > 1 and aisles.get(two) else aisles[names[0]]
+        held: set[str] = set()
+        for aisle in aisles:
+            if aisle not in _AISLE_HOLDS:
+                return True
+            held.update(_AISLE_HOLDS[aisle].split())
         return bool(departments & held)
     return True
 
@@ -1960,7 +2079,10 @@ def _narrowest_shelves(category: str) -> str:
 # only when the lead does not name the classified kind itself: "Apple Watch Series 11
 # ... Aluminium Case" is a watch, and a lead that names the kind is read word by word.
 # Left out: "tray" (a processor's packaging), "adapter" (a multiport adapter is sold as
-# a dock) and "shield" (an "eco-shield" is a screen protector).
+# a dock) and "shield" (an "eco-shield" is a screen protector). "LOX Locking Earring
+# Backs" hold an earring on and are none, though filed under "Earrings" (owner,
+# 2026-10-27: 113 of Finediam's were priced far from its earrings); the singular
+# "back" is said of a product ("Open Back", "Flat Back") and is left out too.
 _LEAD_ACCESSORY_NOUNS = frozenset(
     """
     cover covers case cases casing casings folio folios sleeve sleeves protector
@@ -1969,7 +2091,7 @@ _LEAD_ACCESSORY_NOUNS = frozenset(
     organisers organizer organizers anchor anchors refill refills replacement
     replacements spare spares filter filters nozzle nozzles brush brushes attachment
     attachments companion companions guard guards accessory accessories part parts
-    cleaning repair maintenance pad pads
+    cleaning repair maintenance pad pads backs backing backings
     """.split()
 )
 # Words that name a group of the noun before them: "Anchor Kit", "Cleaning Kit".
@@ -2385,6 +2507,12 @@ _DESCRIPTOR_TAIL_WORDS = frozenset(
     plus pro max mini lite uk eu us plug size type new
     """.split()
 )
+# Metals right after a product's name describe it, as "gold" and "silver" do: "... Diamond
+# Engagement Ring Platinum - Sterling Silver / 0.50 Carat" is a ring (measured on the
+# server's catalogue of 2026-10-29: 1,891 of Finediam's rings were accessories, doubtful
+# or of no kind for want of it). Read there only: elsewhere a metal may name a product's
+# line ("Dr John Titanium 15KG" is dog food).
+_METAL_TAIL_WORDS = frozenset("platinum palladium titanium tungsten sterling".split())
 
 
 def _is_descriptor_word(token: str) -> bool:
@@ -2395,6 +2523,43 @@ def _is_descriptor_word(token: str) -> bool:
     return token in _lexicon().english_qualifier_words
 
 
+# Kinds an English title names last, after what they are made of or show: "Son 3D Word
+# Glass & Mirror 6x4 Photo Frame" is a frame (owner, 2026-10-27: InStock UK's photo
+# frames were read as mirrors). Any other title names its product first and goes on to
+# its parts ("Laptop Intel Celeron 64GB SSD").
+_NAMED_LAST_KINDS = frozenset({"photo_frame"})
+
+
+def _cut_past_with(
+    tokens: tuple[str, ...], spans: list[_Span], cut: int, accessory_words: frozenset[str]
+) -> int:
+    """Where the words naming the product end, when text that names nothing before its
+    first "with" goes on describing the product past it: "2.00 Ct Lab Grown 3 Stone With
+    Side Halo Diamond Engagement Ring Platinum" is a ring (owner, 2026-10-28: 3,075 of
+    Finediam's engagement rings were read as accessories of a ring). The name ends at the
+    purpose word after the first kind named; `cut` is kept when a kind is named before
+    it, when none is named before a "for", or when an accessory's noun stands before the
+    kind ("Display Stand with Necklace").
+    """
+    if any(span.start < cut for span in spans):
+        return cut
+    covered = {i for span in spans for i in range(span.start, span.end)}
+    at = cut
+    while at < len(tokens) and tokens[at] in _WITH_WORDS:
+        end = next(
+            (i for i in range(at + 1, len(tokens)) if tokens[i] in _PURPOSE_WORDS and i not in covered),
+            len(tokens),
+        )
+        named = [span for span in spans if at < span.start < end]
+        if named:
+            before = tokens[: named[0].start]
+            if any(token in accessory_words or token in _LEAD_ACCESSORY_NOUNS for token in before):
+                return cut
+            return end
+        at = end
+    return cut
+
+
 def _head_of_text(
     text: str,
     *,
@@ -2402,6 +2567,7 @@ def _head_of_text(
     first_phrase: bool = False,
     strict_tail: bool = False,
     accessory_words: frozenset[str] | None = None,
+    past_with: bool = False,
 ) -> str | None:
     """The concept a piece of feed text names, or ACCESSORY_MARKER for an accessory of it.
 
@@ -2414,6 +2580,8 @@ def _head_of_text(
     for or comes with. "Vacuum cleaner with filter" is a vacuum cleaner, and text that
     names a product only after a purpose word -- "filter for coffee machine",
     "accessories for laptops" -- names something for that product, an accessory.
+    With `past_with`, text that names nothing before a "with" is read on past it
+    (`_cut_past_with`).
 
     `accessory_words` is wider for a feed's own classification (its product type, its
     category shelves) than for a title: see `_CLASSIFICATION_ACCESSORY_WORDS`.
@@ -2429,6 +2597,13 @@ def _head_of_text(
     spans = _concepts_in_text(text)
     if not spans:
         return None
+    covered = {i for span in spans for i in range(span.start, span.end)}
+    cut = next(
+        (i for i, token in enumerate(tokens) if token in _PURPOSE_WORDS and i not in covered),
+        len(tokens),
+    )
+    if past_with:
+        cut = _cut_past_with(tokens, spans, cut, accessory_words)
     if first_phrase:
         # The product a title names first, read as English reads a noun phrase: the
         # last name in the first run of names. "Fan Heater" is a heater, "Laptop Intel
@@ -2438,15 +2613,13 @@ def _head_of_text(
             if span.start != head.end:
                 break
             head = span
+        named = [span for span in spans if span.start < cut]
+        if named and named[-1].kind == "en" and named[-1].concept_id in _NAMED_LAST_KINDS:
+            head = named[-1]
     else:
-        head = spans[0] if first else _pick_head(spans, tokens)
+        head = spans[0] if first else _pick_head(spans, tokens, cut)
     if head is None:
         return None
-    covered = {i for span in spans for i in range(span.start, span.end)}
-    cut = next(
-        (i for i, token in enumerate(tokens) if token in _PURPOSE_WORDS and i not in covered),
-        len(tokens),
-    )
     if head.start > cut:
         return ACCESSORY_MARKER
     if head.kind == "en" and head.end < cut and tokens[head.end] in _MODIFIER_TAIL_WORDS:
@@ -2490,12 +2663,13 @@ def _head_of_text(
         and head.kind == "en"
         and head.end < cut
         and not _is_descriptor_word(tokens[head.end])
+        and tokens[head.end] not in _METAL_TAIL_WORDS
     ):
         # The text names the product in passing, with a word PicWise cannot read right
         # after it: "Truck Bed Tailgate Extender", "Power banks and batteries". On
         # that evidence the kind is a guess, and PicWise shows nothing rather than the
-        # wrong kind. A colour, a spec or a packaging word still reads as the product
-        # ("Smartwatch Black Dial", "Speaker 40W").
+        # wrong kind. A colour, a spec, a packaging word or a metal still reads as the
+        # product ("Smartwatch Black Dial", "Speaker 40W", "Engagement Ring Platinum").
         return None
     return head.concept_id
 

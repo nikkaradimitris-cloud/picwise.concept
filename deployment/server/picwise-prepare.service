@@ -1,0 +1,50 @@
+# Prepares the catalogue from the feed, as each Vercel deployment's build does
+# (`vercel.json` "buildCommand"): run once by each deployment and every night by
+# picwise-prepare.timer. The site picks the new file up by itself.
+# Installed by deployment/server/deploy.sh.
+[Unit]
+Description=PicWise: prepare the catalogue from the feed
+# A round of the shops' catalogues still running is waited for: it is read here.
+After=network-online.target picwise-shops.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=picwise
+Group=picwise
+WorkingDirectory=/srv/picwise/current
+# The feed link, written by the deployment from GitHub's secrets; never in the repository.
+EnvironmentFile=-/etc/picwise/picwise.env
+Environment=AWIN_FEED_CACHE_DIR=/srv/picwise/shared/cache
+# The code's 300 MB cap is a Vercel-sized one; the server takes a feed of every shop.
+Environment=AWIN_FEED_MAX_BYTES=2147483648
+# What the shops' own catalogues say, written by picwise-shops.service
+# (`picwise_providers.shop_catalogue`).
+Environment=PICWISE_SHOP_CATALOGUES=/srv/picwise/shared/shops/catalogues.json.gz
+Environment=PYTHONDONTWRITEBYTECODE=1
+# GNU time adds one line with the run's peak memory and length, for sizing the server.
+ExecStart=/usr/bin/time -f "prepare_catalogue: peak memory %%M KB, %%e s" /usr/bin/python3 \
+    tools/prepare_catalogue.py --keep-going \
+    --static-dir /srv/picwise/shared/public --out /srv/picwise/shared/prepared/catalogue.json.gz
+TimeoutStartSec=60min
+Nice=10
+# A ceiling, so that reading a large feed can never take the memory the site needs.
+MemoryHigh=14G
+MemoryMax=16G
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/picwise/shared
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=

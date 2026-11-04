@@ -1,0 +1,5 @@
+# What the server installs besides the system's Python: the WSGI server only (the site
+# itself uses the standard library). Pinned with its hash, installed by deploy.sh with
+# `pip --require-hashes`. gunicorn 26.2.0 was released on 2026-08-24.
+gunicorn==26.2.0 \
+    --hash=sha256:bd249d0b3f7972f7432f0a6b6ff3b3ee2d129f70cd1ff6c09a9dd9e29a2b88e3
