@@ -1,16 +1,64 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-11-01, afternoon
-(**deployed at 16:22 UTC, run `41324998201`: products whose photo is gone left out (the
-first nightly check started then), a card seen only once its photo has loaded, and the
-offer recommended even without a barcode**; live before: offers first and the
+Current state for whoever picks the project up next. Updated 2026-11-04 (**built, not
+deployed: "tablet" without pills, the main kind only everywhere; waiting for the owner's
+word**; live since 2026-11-01 16:22 UTC, run `41324998201`: products whose photo is gone
+left out, a card seen only once its photo has loaded, the offer recommended even without a
+barcode; live before: offers first and the
 Recommended on offer since 10:06 UTC, run `41295172671`; vouchers without their code no
 longer shown since 12:21 UTC, run `41305061462`; also live: the design of 31/10 and the pages, run `41215460767`, and the
 nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the server since
 2026-10-31 10:03 UTC, HTTPS by Caddy; Vercel kept as the backup).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation (from 2026-11-01, afternoon): pick up here -- start here
+## Next conversation (from 2026-11-04): pick up here -- start here
+
+- **Which branch.** Start from the session's branch `ccr-9826870f-qkgl6s`. Deployed: all
+  up to `4b5497b` (run `41324998201`). **Committed, not deployed** (deploying is the
+  owner's word, a push to `ccr-1361f1a7-dcpo60`; it prepares the catalogue again): the
+  main kind only (`concept_understanding.py`), with its tests and these notes. The live
+  check (`live-photos.yml`, session's branch only) now also reads "tablet" and the search
+  box's suggestions.
+- **The owner's word (03/11).** «Στα tablets .. tablet... Βγάζει και χάπια... Εφόσον το κύριο
+  είδος είναι tablet ... αυτό πρέπει να συμβαίνει γενικά παντού» (read as: a search for
+  tablets must not show pills; the main kind only, everywhere), and «έλεγξε αν υπάρχουν
+  προτάσεις κατά την πληκτρολόγηση». Also asked: is `AWIN_PUBLISHER_ID` still needed? No:
+  the account is found from the token (`fetch_offers.find_publisher`), unless the token
+  reaches more than one publisher account.
+- **Read on the live site** (run `41621931827`): "tablet", "tablets", "ipad", "android
+  tablet" and "vitamin tablets" gave the same 131 products: one tablet (Hannspree Lumo,
+  the Recommended) and eleven InStock UK pills among the first twelve (toothpaste,
+  mouthwash, electrolyte, chromium, green tea, biotin tablets). **The search box's
+  suggestions work**: `/suggest.json` holds 1,978 names; "tab" lists table, table lamp,
+  tablet, table legs, tablet screen protectors...; "κα" καλώδιο, καρέκλα, κάλτσες...; the
+  list and the ghost completion show on desktop and phone (local preview, Chromium). 261
+  of 261 photos loaded.
+- **Why** (the server's kind report): 72 of the 190 tablets got their kind from their title
+  alone; their shop's shelf ("Vitamins & Supplements", "Mouthwash", "Toothpaste", "Fish
+  Food") names nothing PicWise has a kind for. The aisle rule of 2026-10-25 read only
+  categories starting with an aisle of Google's, and computed the departments an aisle
+  holds from Google's shelves, where homonyms put computers in every aisle ("Toners",
+  "Highlighters", "Fertility Tests & Monitors", every "Cases" as phone cases).
+- **Built** (`docs/PICWISE_DECISION_CONTRACT.md`, "The main kind only"): `_AISLE_HOLDS`,
+  the departments each of Google's 21 aisles may hold, written down; `_shelf_aisles`, a
+  shop's own shelf found among Google's shelves by its name (US spelling), or by its last
+  word when it has two or more; `_aisle_may_hold` reads both. Checked against Google's
+  file: only 32 homonym shelves are refused. Seen on titles: the pills of the live site
+  are doubtful; tablets on "Tablets", "Computers & Tablets", "E-Readers", "Electronics",
+  Google's "Tablet Computers" or with no category keep their kind; a security camera on
+  Home & Garden too (AV added there). Changed with it: body jewellery is no barbell (a
+  test that pinned the opposite was rewritten).
+- **Not measured**: how many products of each kind the rule takes away on the server's
+  catalogue. The deployment's log prints it ("Kinds that may be wrong in the prepared
+  catalogue": "made doubtful by their aisle, per kind"); read it after the deployment, and
+  the live check again ("tablet").
+- **Tests.** `tests/test_picwise_main_kind_only.py` (4), `tests/test_picwise_title_on_another_aisle.py`
+  (8). The run of every module (but the 54-minute one) was still going when this was written: 189 of 284 done, 0 failing.
+- **Next, in order**: the owner's word to deploy; then the deployment's kind report and the
+  live check. Then as before: "bean bag" as a kind, the Awin applications, the trending
+  searches' source.
+
+## Before (2026-11-01, afternoon): photos, the offer Recommended without a barcode
 
 - **Which branch.** Start from the session's branch `ccr-9826870f-qkgl6s`. **Deployed:
   all up to `4b5497b`** (owner: «Ναι ανέβασε τα στο server»): run `41324998201`, success,

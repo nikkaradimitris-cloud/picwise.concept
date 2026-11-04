@@ -57,6 +57,10 @@ from .product_concepts import (
     get_qualifiers,
     spec_fields_for_mega_category,
 )
+from .product_concepts import _MEGA as _DEPARTMENT_BY_CODE
+
+# A department's short name ("CO") by its id ("computers_office_peripherals").
+_MEGA_CODES = {department: code for code, department in _DEPARTMENT_BY_CODE.items()}
 
 # --------------------------------------------------------------------------------------
 # Text normalisation and phonetic keys
@@ -1922,32 +1926,128 @@ def _aisle_departments() -> dict[str, frozenset[str]]:
     return {aisle: frozenset(found) for aisle, found in departments.items()}
 
 
+# Owner, 2026-11-03: «Στα tablets .. tablet... Βγάζει και χάπια ... αυτό πρέπει να
+# συμβαίνει γενικά παντού». A search for a kind shows that kind, never another thing its
+# word also names: on the live site "tablet" showed 11 toothpaste, mouthwash and
+# supplement tablets among its first 12. Which departments of PicWise's (the lexicon's
+# `mega_category_id`) each of Google's 21 aisles may hold, as a buyer would file them.
+# Read from Google's shelves themselves, every aisle held computers: "Toners" (skin care),
+# "Highlighters" (make-up), "Fertility Tests & Monitors" and "Practice Nets & Screens" read
+# as printer toner, markers and monitors, and every "Cases" as phone cases. An aisle not
+# listed holds every department.
+_AISLE_HOLDS = {
+    "animals & pet supplies": "BK FU BE",
+    "apparel & accessories": "CL FO JW PH",
+    "arts & entertainment": "AV BK FU",
+    "baby & toddler": "BK FU HE KI HA",
+    "cameras & optics": "AV CO PH",
+    "electronics": "CO AV PH HA FU HE TY",
+    "food, beverages & tobacco": "",
+    "furniture": "FU BK GA",
+    "hardware": "PT HT GA HA FU HE",
+    "health & beauty": "HE BE FO",
+    "home & garden": "KI FU HA GA HE HT BE AV",
+    "luggage & bags": "JW CO BK",
+    "mature": "",
+    "media": "",
+    "office supplies": "CO FU",
+    "religious & ceremonial": "",
+    "software": "CO AV",
+    # Camp furniture and camp kitchens are sold here too.
+    "sporting goods": "BK MO PH CL FO JW HE GA FU KI",
+    "toys & games": "BK AV",
+    "vehicles & parts": "CP TY MO AV PH",
+}
+# A shop's own shelf in Google's British or older names.
+_BRITISH_SHELF_NAMES = {"sweets & chocolate": "candy & chocolate", "jewellery": "jewelry"}
+
+
+def _us_shelf_name(name: str) -> str:
+    name = " ".join(str(name or "").lower().split())
+    name = _BRITISH_AISLE_NAMES.get(name, _BRITISH_SHELF_NAMES.get(name, name))
+    return " ".join(_BRITISH_SHELF_NAMES.get(word, word) for word in name.split())
+
+
+@lru_cache(maxsize=1)
+def _google_shelf_aisles() -> tuple[dict[str, frozenset[str]], dict[str, frozenset[str]]]:
+    """Per name of a shelf of Google's (as it is and in the singular), the aisles it is
+    found in; and per last word of a shelf's name, the aisles of the shelves that end in
+    it. Empty when the taxonomy file is not there."""
+    try:
+        lines = _TAXONOMY_PATH.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return {}, {}
+    by_name: dict[str, set[str]] = {}
+    by_word: dict[str, set[str]] = {}
+    for line in lines:
+        if not line.strip() or line.startswith("#"):
+            continue
+        names = [" ".join(name.lower().split()) for name in line.split(">")]
+        shelf = names[-1]
+        for form in {shelf, _in_the_singular(shelf)}:
+            by_name.setdefault(form, set()).add(names[0])
+        words = _in_the_singular(shelf).split()
+        if words:
+            by_word.setdefault(words[-1], set()).add(names[0])
+    return (
+        {name: frozenset(aisles) for name, aisles in by_name.items()},
+        {word: frozenset(aisles) for word, aisles in by_word.items()},
+    )
+
+
+def _shelf_aisles(shelf: str) -> frozenset[str]:
+    """The aisles of Google's a shop's own shelf is one of: those of Google's shelves of
+    the same name ("Vitamins & Supplements", "Mouthwash", "Fish Food"), else, for a name
+    of two words or more, of those whose name ends in the same word ("Sports Nutrition"
+    as "Fitness & Nutrition"). A shelf of one word Google has no shelf of ("Gadgets",
+    "Health") says nothing: as a last word it ends shelves of too many kinds. None when
+    Google has no such shelf."""
+    by_name, by_word = _google_shelf_aisles()
+    name = _us_shelf_name(shelf)
+    if not name:
+        return frozenset()
+    found = by_name.get(name) or by_name.get(_in_the_singular(name))
+    if found:
+        return found
+    words = _in_the_singular(name).split()
+    return by_word.get(words[-1], frozenset()) if len(words) > 1 else frozenset()
+
+
 def _aisle_may_hold(category: str, concept_id: str) -> bool:
-    """Does the aisle a category starts with hold, on some shelf of Google's, a kind of
-    this kind's department, or of a broader kind's: a smartwatch is a watch too, so an
-    aisle of watches may hold one. The first category field that is an aisle of
-    Google's is read at its first two levels, or at its top when Google's shelves there
-    name no kind at all ("Furniture > Furniture Sets" holds sofas the lexicon cannot
-    read off its shelves); an aisle whose own name names the kind holds it ("Toys &
-    Games", a toy). True when no field is an aisle of Google's."""
+    """May the aisle a product is filed in hold this kind (`_AISLE_HOLDS`): one of the
+    kind's department, or of a broader kind's (a smartwatch is a watch too). The first
+    category field that says which aisle decides: one that starts with an aisle of
+    Google's ("Health & Beauty > ..."), or a shop's own shelf found among Google's
+    shelves by its name ("Vitamins & Supplements", in Health & Beauty; owner,
+    2026-11-03). An aisle whose own name names the kind holds it ("Toys & Games", a toy),
+    and so does a shelf. True when no field says which aisle."""
     by_id = get_product_concepts_by_id()
-    aisles = _aisle_departments()
-    if concept_id not in by_id or not aisles:
+    if concept_id not in by_id:
         return True
     kinds = set(broader_concepts(concept_id))
-    departments = {by_id[kind].mega_category_id for kind in kinds if kind in by_id}
+    departments = {_MEGA_CODES.get(by_id[kind].mega_category_id, "") for kind in kinds if kind in by_id}
+    aisles_of_google = set(_AISLE_HOLDS) | set(_aisle_departments())
     for crumb in str(category or "").split(CATEGORY_FIELD_SEPARATOR.strip()):
         names = [
-            _BRITISH_AISLE_NAMES.get(name, name)
+            _us_shelf_name(name)
             for name in (" ".join(segment.lower().split()) for segment in _BREADCRUMB_SPLIT_RE.split(crumb))
             if name
         ]
-        if not names or names[0] not in aisles:
+        if not names:
             continue
-        if any(span.concept_id in kinds for name in names[:2] for span in _concepts_in_text(_in_the_singular(name))):
+        if names[0] in aisles_of_google:
+            aisles, named = {names[0]}, names[:2]
+        else:
+            aisles, named = set(_shelf_aisles(names[-1])), names[-1:]
+            if not aisles:
+                continue
+        if any(span.concept_id in kinds for name in named for span in _concepts_in_text(_in_the_singular(name))):
             return True
-        two = " > ".join(names[:2])
-        held = aisles.get(two) if len(names) > 1 and aisles.get(two) else aisles[names[0]]
+        held: set[str] = set()
+        for aisle in aisles:
+            if aisle not in _AISLE_HOLDS:
+                return True
+            held.update(_AISLE_HOLDS[aisle].split())
         return bool(departments & held)
     return True
 

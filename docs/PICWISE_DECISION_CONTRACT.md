@@ -527,6 +527,43 @@ that states no date never counts as fresher than one that does (an unknown date 
 a fresh one; put to the owner and accepted, «Εντάξει, συμφωνώ»). Not built: PicWise reads one network today; this applies when a
 second one comes in.
 
+## The main kind only, decided by the owner, 2026-11-03
+
+The owner, of the live site: «Στα tablets .. tablet... Βγάζει και χάπια... Εφόσον το κύριο
+είδος είναι tablet ... αυτό πρέπει να συμβαίνει γενικά παντού». Read on the live site
+(`.github/workflows/live-photos.yml`, run `41621931827`): "tablet", "tablets" and "ipad"
+showed one tablet and eleven of InStock UK's toothpaste, mouthwash, electrolyte and
+supplement tablets among their first twelve, of 131; the server's kind report counted
+72 of its 190 tablets as named by their title alone, among them fish food and mouthwash.
+
+1. **A title's kind needs an aisle that may hold it.** When neither a product's type nor
+   its shelf names a kind and its title does, the kind holds only where the aisle the
+   product is filed in may hold the kind's department, or a broader kind's (a smartwatch
+   is a watch too) (`concept_understanding._aisle_may_hold`). Otherwise the kind is
+   doubtful: the product is still found by its words, never by its kind, so a search for
+   the kind does not list it.
+2. **Which departments an aisle holds is written down**, per aisle of Google's 21
+   (`_AISLE_HOLDS`): Health & Beauty holds health devices, beauty and grooming, and
+   insoles; Food, Beverages & Tobacco, Media, Mature and Religious & Ceremonial hold none;
+   Business & Industrial, not listed, holds every department. Read from Google's own
+   shelves instead, as since 2026-10-25, every aisle held computers: "Toners" (skin care),
+   "Highlighters" (make-up), "Fertility Tests & Monitors" and "Practice Nets & Screens"
+   read as printer toner, markers and monitors. Checked against Google's file: every kind
+   Google files in an aisle under its exact name is held there, but for 32 shelves whose
+   names are homonyms ("Musical Keyboard Bags & Cases" as phone cases, "Workstations &
+   Cubicles" as computers, "Camera & Optics Manuals" as cameras).
+3. **The aisle comes from the category**: the first category field that starts with an
+   aisle of Google's ("Health & Beauty > ..."); or a shop's own shelf found among Google's
+   shelves by its name, in Google's US spelling ("Vitamins & Supplements", "Mouthwash",
+   "Fish Food", "Body Jewellery"), or, for a name of two words or more, by its last word
+   ("Sports Nutrition" as "Fitness & Nutrition"). A one-word shelf Google has no shelf of
+   ("Gadgets", "Health"), a shelf like nothing of Google's, or no category leaves the title
+   to decide, as before. An aisle or a shelf whose own name names the kind holds it.
+4. **What it changes**: the tablets of shelves of health, pets and sweets are no tablets;
+   tablets on a tablets, computers, e-readers or electronics shelf, or a shop's own one,
+   stay. Body jewellery is no barbell. Pinned by `tests/test_picwise_main_kind_only.py` and
+   `tests/test_picwise_title_on_another_aisle.py`.
+
 ## Offers first, decided by the owner, 2026-11-01
 
 The owner: «Ανά προϊόν... Όταν ψάχνει ένας πελάτης ένα προϊόν ή μία κατηγορία υπάρχει
