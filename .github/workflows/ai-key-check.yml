@@ -8,7 +8,8 @@
 # answers' status, the model that answered and the tokens it counted.
 # To check again: change this file and push it alone.
 # Checked: 2026-11-05, the key (run 42105499951); then with the layer's request (run
-# 42111149372); then the layer's answer with descriptions and the shops' words.
+# 42111149372); then the layer's answer with descriptions and the shops' words (run
+# 42116311350); then each yes with the product's own words that show it.
 name: ai-key-check
 on:
   push:

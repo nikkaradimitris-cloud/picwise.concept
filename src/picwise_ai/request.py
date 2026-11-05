@@ -45,20 +45,26 @@ noise 49 dB" fit "quiet").
 adult dog food is not for puppies).
 - "unclear": they do not say. Most products will be "unclear". Never guess from the price, \
 from a brand or a model name alone ("Sensi" does not say "sensitive"), or from what such \
-products usually are; "kids" or "children" does not say an age unless the age is stated.
+products usually are; "kids" or "children" does not say an age unless the age is stated, \
+and an age the product states must take in the age asked for ("1 - 2 Years" is not "for \
+school").
+For each "yes", copy into "words" the words of that product's own title or description \
+that show it, letter for letter, at most 12 words; leave "words" empty otherwise.
 
 2. If you answered "yes" for at least one product, write one sentence for the buyer, in \
 English, of at most 30 words: how many of these products fit what was asked, and the \
 lowest price among those you answered "yes", written exactly as it is given. Write it as \
-"N of these M <kind> say ..." (with one product only: "This <kind> says ..."). If no \
+"N of these M <kind> say ..." ("1 of these M <kind> says ..." when one fits). If no \
 product is "yes", leave the sentence empty: never write that nothing was found.
 
 3. If no product is "yes", give up to 3 words or short phrases that shops use in these \
 titles for what the buyer needs, so that the buyer can narrow the search with them: each \
 copied exactly from the titles above, at most 3 words, never a brand, never a word of \
 quality or price ("compact" for "for a small kitchen"; "Chromebook" or "lightweight" for \
-"for a student"; "waterproof" for "for the shower"). Give none if no title has such words, \
-and none when some products are "yes".
+"for a student"; "waterproof" for "for the shower"). Each must name what serves the need \
+itself ("memory foam" for "standing all day"), never any feature the products happen to \
+share ("lace-up"). Give none if no title has such words, and none when some products are \
+"yes".
 
 The sentence must not recommend, rank, praise or judge quality: never "best", "great", \
 "top", "ideal", "perfect", "quality", "recommended", "cheap", "deal"; no ratings, reviews \
@@ -79,8 +85,9 @@ SCHEMA: dict[str, Any] = {
                 "properties": {
                     "n": {"type": "integer"},
                     "fits": {"type": "string", "enum": ["yes", "no", "unclear"]},
+                    "words": {"type": "string"},
                 },
-                "required": ["n", "fits"],
+                "required": ["n", "fits", "words"],
                 "additionalProperties": False,
             },
         },

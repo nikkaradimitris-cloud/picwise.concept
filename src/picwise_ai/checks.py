@@ -5,6 +5,8 @@ Nothing fake (`PROJECT_RULES.md` section 4): a sentence is shown only when every
 passes; one that fails is not shown, and the page says nothing about it.
 
 - every product number answered is one that was sent, each once, all of them;
+- a `yes` counts only when the words it gives as its proof stand, letter for letter, in
+  that product's own title or description; otherwise it is read as `unclear`;
 - the counts in the sentence are its own `yes` answers ("4 of these 30");
 - every price in the sentence is the price of a product answered `yes`, and the lowest
   of them where it says "from";
@@ -80,14 +82,37 @@ class Checked:
     unclear: tuple[int, ...]
     failure: str
     shop_words: tuple[str, ...] = ()
+    # Each counted `yes`, with the product's own words that show it.
+    proof: tuple[tuple[int, str], ...] = ()
+    # The `yes` answers whose words do not stand in the product: read as `unclear`.
+    unproved: tuple[int, ...] = ()
 
     @property
     def shown(self) -> bool:
         return bool(self.sentence) and not self.failure
 
 
-def _withheld(failure: str, yes=(), no=(), unclear=()) -> Checked:
-    return Checked(sentence="", yes=tuple(yes), no=tuple(no), unclear=tuple(unclear), failure=failure)
+def _withheld(failure: str, yes=(), no=(), unclear=(), proof=(), unproved=()) -> Checked:
+    return Checked(
+        sentence="", yes=tuple(yes), no=tuple(no), unclear=tuple(unclear), failure=failure,
+        proof=tuple(proof), unproved=tuple(unproved),
+    )
+
+
+def _plain(text: str) -> str:
+    """Text as a proof is matched against it: one case, one kind of quote and dash, one space."""
+    text = str(text or "").lower()
+    for old, new in (("’", "'"), ("‘", "'"), ("“", '"'), ("”", '"'), ("–", "-"), ("—", "-"), ("\u00a0", " ")):
+        text = text.replace(old, new)
+    return " ".join(text.split())
+
+
+def _proved(words: Any, candidate) -> str:
+    """The words a `yes` gives, when they stand in the product's own title or description."""
+    proof = _plain(words).strip(" .,;:'\"…")
+    if len(proof) < 3:
+        return ""
+    return proof if proof in _plain(f"{candidate.title} {candidate.description}") else ""
 
 
 def _as_int(token: str) -> int | None:
@@ -125,7 +150,9 @@ def check_answer(answer: Any, complex_search: ComplexSearch, *, stop_reason: str
     if not isinstance(answer, dict) or not isinstance(answer.get("verdicts"), list):
         return _withheld("the answer is not in the agreed shape")
     count = len(complex_search.candidates)
+    by_number = {candidate.number: candidate for candidate in complex_search.candidates}
     seen: dict[int, str] = {}
+    proofs: dict[int, str] = {}
     for verdict in answer["verdicts"]:
         if not isinstance(verdict, dict):
             return _withheld("a verdict is not in the agreed shape")
@@ -136,22 +163,31 @@ def check_answer(answer: Any, complex_search: ComplexSearch, *, stop_reason: str
             return _withheld(f"a verdict that is not yes, no or unclear ({fits!r})")
         if number in seen:
             return _withheld(f"product {number} answered twice")
+        if fits == "yes":
+            proof = _proved(verdict.get("words"), by_number[number])
+            if proof:
+                proofs[number] = proof
+            else:
+                fits = "unproved"
         seen[number] = fits
     yes = tuple(sorted(number for number, fits in seen.items() if fits == "yes"))
     no = tuple(sorted(number for number, fits in seen.items() if fits == "no"))
-    unclear = tuple(sorted(number for number, fits in seen.items() if fits == "unclear"))
+    unproved = tuple(sorted(number for number, fits in seen.items() if fits == "unproved"))
+    unclear = tuple(sorted(number for number, fits in seen.items() if fits in ("unclear", "unproved")))
+    proof = tuple((number, proofs[number]) for number in yes)
     if len(seen) != count:
-        return _withheld(f"{count - len(seen)} of the {count} products not answered", yes, no, unclear)
+        return _withheld(f"{count - len(seen)} of the {count} products not answered", yes, no, unclear, proof, unproved)
 
     if not yes:
         # No sentence when nothing fits: the shops' words for the need, those that pass.
         words = shop_words_that_pass(answer.get("shop_words"), complex_search)
-        return Checked(sentence="", yes=yes, no=no, unclear=unclear, failure="", shop_words=words)
+        return Checked(sentence="", yes=yes, no=no, unclear=unclear, failure="", shop_words=words,
+                       unproved=unproved)
     sentence = " ".join(str(answer.get("sentence") or "").split())
     failure = _sentence_failure(sentence, complex_search, yes)
     if failure:
-        return _withheld(failure, yes, no, unclear)
-    return Checked(sentence=sentence, yes=yes, no=no, unclear=unclear, failure="")
+        return _withheld(failure, yes, no, unclear, proof, unproved)
+    return Checked(sentence=sentence, yes=yes, no=no, unclear=unclear, failure="", proof=proof, unproved=unproved)
 
 
 def shop_words_that_pass(words: Any, complex_search: ComplexSearch) -> tuple[str, ...]:
@@ -242,15 +278,15 @@ def _sentence_failure(sentence: str, complex_search: ComplexSearch, yes: tuple[i
         if yes:
             return f"'none' while {len(yes)} were answered yes"
         stated = True
-    if yes and not stated and len(complex_search.candidates) == 1 and rest.lstrip().lower().startswith("this "):
-        stated = True  # one product: "This tumble dryer says ..."
+    if len(yes) == 1 and not stated and rest.lstrip().lower().startswith("this "):
+        stated = True  # one product fits: "This kettle says ..."
     if yes and not stated:
         return "the sentence does not say how many fit"
 
     # Other numbers and named things: only from the search and the products' own data.
     sources = " ".join(
         [complex_search.search, complex_search.kind_name, *complex_search.words]
-        + [f"{c.title} {c.brand} {c.shop}" for c in complex_search.candidates]
+        + [f"{c.title} {c.brand} {c.shop} {c.description}" for c in complex_search.candidates]
     )
     known_numbers = {_number_key(text) for text in _NUMBER.findall(sources)}
     known_numbers |= {str(len(yes)), *(str(total) for total in totals)}

@@ -53,6 +53,7 @@ class Measured:
     yes: int = 0
     no: int = 0
     unclear: int = 0
+    unproved: int = 0
     seconds: float = 0.0
     search_seconds: float = 0.0
     tokens_in: int = 0
@@ -116,6 +117,7 @@ def measure_one(tag: str, search: str, *, resolve, ask, client, dry_run: bool, d
     measured.error = asked.error
     checked = check_answer(asked.answer, complex_search, stop_reason=asked.stop_reason)
     measured.yes, measured.no, measured.unclear = len(checked.yes), len(checked.no), len(checked.unclear)
+    measured.unproved = len(checked.unproved)
     measured.sentence = checked.sentence
     measured.failure = asked.error or checked.failure
     measured.proposed = tuple(str(word) for word in (asked.answer or {}).get("shop_words") or () if str(word).strip())
@@ -132,14 +134,26 @@ def measure_one(tag: str, search: str, *, resolve, ask, client, dry_run: bool, d
     if not checked.shown and sentence:
         measured.lines.append(f"    the sentence written: {sentence}")
     by_number = {candidate.number: candidate for candidate in complex_search.candidates}
-    for verdict, numbers, limit in (("yes", checked.yes, None), ("no", checked.no, None), ("unclear", checked.unclear, UNCLEAR_LISTED)):
+    proof = dict(checked.proof)
+    given = {
+        verdict.get("n"): " ".join(str(verdict.get("words") or "").split())
+        for verdict in (asked.answer or {}).get("verdicts") or ()
+        if isinstance(verdict, dict)
+    }
+    still_unclear = tuple(number for number in checked.unclear if number not in checked.unproved)
+    for verdict, numbers, limit in (
+        ("yes", checked.yes, None), ("unproved", checked.unproved, None), ("no", checked.no, None),
+        ("unclear", still_unclear, UNCLEAR_LISTED),
+    ):
         for number in numbers[:limit]:
             candidate = by_number[number]
             measured.lines.append(
                 f"    {verdict:7} {number:2}. {_short(candidate.title)} | {candidate.price_text} | {_short(candidate.shop, 30)}"
             )
-            if verdict == "yes" and candidate.description:
-                measured.lines.append(f"               description: {_short(candidate.description, 160)}")
+            if verdict == "yes":
+                measured.lines.append(f"               its words: {proof.get(number, '')}")
+            elif verdict == "unproved":
+                measured.lines.append(f"               its words, not in the product: {given.get(number, '') or '(none)'}")
         if limit is not None and len(numbers) > limit:
             measured.lines.append(f"    {verdict:7} … and {len(numbers) - limit} more")
     return measured
@@ -163,7 +177,8 @@ def print_measured(index: int, measured: Measured) -> None:
             print(f"    BUTTONS: {' · '.join(measured.buttons)}")
         else:
             print("    NOTHING: no product fits and no word of the shops to offer")
-        print(f"    yes {measured.yes}, no {measured.no}, unclear {measured.unclear};"
+        print(f"    yes {measured.yes}, no {measured.no}, unclear {measured.unclear}"
+              + (f" ({measured.unproved} a yes without its words in the product)" if measured.unproved else "") + ";"
               f" {measured.seconds:.1f} s; {measured.tokens_in:,} tokens in, {measured.tokens_out:,} out;"
               f" ${measured.cost:.5f}")
     for line in measured.lines:
@@ -200,7 +215,8 @@ def print_totals(results: list[Measured], budget_reached: bool) -> None:
         cost = sum(m.cost for m in asked)
         seconds = sorted(m.seconds for m in asked)
         print(f"  the AI's answers: yes {sum(m.yes for m in asked)}, no {sum(m.no for m in asked)},"
-              f" unclear {sum(m.unclear for m in asked)}")
+              f" unclear {sum(m.unclear for m in asked)}, of which {sum(m.unproved for m in asked)} a yes whose"
+              f" words do not stand in the product")
         print(f"  cost: ${cost:.4f} in all, ${cost / len(asked):.5f} a search;"
               f" tokens {sum(m.tokens_in for m in asked):,} in, {sum(m.tokens_out for m in asked):,} out")
         print(f"  time of an answer: {seconds[len(seconds) // 2]:.1f} s in the middle, {seconds[-1]:.1f} s at most")

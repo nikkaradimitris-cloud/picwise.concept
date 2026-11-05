@@ -402,6 +402,22 @@ the sentence passed the checks, $0.000228, 2.0 s).
   when some products fit, and the small fixes ("rated for", a stricter `yes`, the
   grammar of one product).
 
+**The second run** (2026-11-05, run `42120003523`, on the owner's word «Ναι»; the smarter
+answer of `5b91f71`: descriptions read, the shops' words instead of "none" sentences): of
+119 asked, a sentence for 39 (23 before), the shops' words for 11 (16 words, such as
+"Waterproof (8) · IP68 (5)" for «έξυπνο ρολόι για κολύμπι», "Waterproof Shell Jacket (171)"
+for «μπουφάν για πεζοπορία», "Cordless Handheld (2)" for "vacuum cleaner for stairs"; one
+wrong, "Lace-Up (12)" for «παπούτσια για ορθοστασία»), nothing for 58, withheld 11 (10 a
+right sentence about one fitting product, "This kettle says ...", which the check did not
+accept; one a number read in a description, "4,500 sq. ft."); `yes` 208 (87 before);
+$0.1111, $0.00093 a search; 4.1 s in the middle, 9.2 s at most. Read by hand: many `yes`
+come from descriptions the log showed cut at 160 characters, so they could not be checked
+by eye, and some look wrong (backpacks "1 - 2 Years" for school). Hence, before a third
+run: each `yes` must give the product's own words that show it, and counts only when
+those words stand, letter for letter, in its title or description (`checks._proved`); "This
+<kind> says" accepted when one product fits; numbers and names of a description allowed;
+the shops' words must name what serves the need, not any shared feature.
+
 **The bar to go live is the owner's** (section 6). Proposed: no wrong sentence among those
 that pass the checks. The query log is not configured on the server, so there are no
 logged searches to draw from; whether the text of real searches in the site's access log

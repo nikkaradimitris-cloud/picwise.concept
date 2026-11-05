@@ -72,9 +72,15 @@ def _run(search: str, words: tuple[str, ...], products: tuple, client) -> bool:
     print(f"tokens: {asked.input_tokens} in, {asked.output_tokens} out, cache written {asked.cache_write_tokens},"
           f" cache read {asked.cache_read_tokens}; cost ${asked.cost_usd:.6f}; {asked.seconds:.1f} s")
     answer = asked.answer or {}
-    fits = {verdict.get("n"): verdict.get("fits") for verdict in answer.get("verdicts") or () if isinstance(verdict, dict)}
+    fits = {
+        verdict.get("n"): (verdict.get("fits"), verdict.get("words") or "")
+        for verdict in answer.get("verdicts") or ()
+        if isinstance(verdict, dict)
+    }
     for number, (title, _brand, price, description) in enumerate(products, start=1):
-        print(f"  {fits.get(number, '(none)'):8} {number}. {title} | {price}" + (f" | {description}" if description else ""))
+        verdict, words = fits.get(number, ("(none)", ""))
+        print(f"  {verdict:8} {number}. {title} | {price}" + (f" | {description}" if description else "")
+              + (f"  <- its words: {words}" if words else ""))
     print(f"sentence written: {answer.get('sentence') or '(none)'}")
     print(f"shops' words written: {', '.join(answer.get('shop_words') or ()) or '(none)'}")
     checked = check_answer(asked.answer, complex_search, stop_reason=asked.stop_reason)

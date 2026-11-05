@@ -98,9 +98,17 @@ def _quiet():
     return complex_search_of("quiet washing machine", _resolution())
 
 
-def _answer(sentence, verdicts=("unclear", "yes", "unclear"), shop_words=()):
+# The words of each product's own title that show it is quiet, as a `yes` must give them.
+PROOF = {1: "1400rpm", 2: "Quiet Washing Machine", 3: "EcoWash"}
+
+
+def _answer(sentence, verdicts=("unclear", "yes", "unclear"), shop_words=(), words=None):
+    words = PROOF if words is None else words
     return {
-        "verdicts": [{"n": n, "fits": fits} for n, fits in enumerate(verdicts, start=1)],
+        "verdicts": [
+            {"n": n, "fits": fits, "words": words.get(n, "") if fits == "yes" else ""}
+            for n, fits in enumerate(verdicts, start=1)
+        ],
         "sentence": sentence,
         "shop_words": list(shop_words),
     }
@@ -173,6 +181,7 @@ class TheRequest(unittest.TestCase):
         self.assertEqual(EFFORT, "low")
         self.assertEqual(request["output_config"]["format"], {"type": "json_schema", "schema": SCHEMA})
         self.assertEqual(SCHEMA["required"], ["verdicts", "sentence", "shop_words"])
+        self.assertEqual(SCHEMA["properties"]["verdicts"]["items"]["required"], ["n", "fits", "words"])
         self.assertEqual(request["system"][0]["cache_control"], {"type": "ephemeral"})
         self.assertNotIn("temperature", request)
 
@@ -197,6 +206,38 @@ class TheChecks(unittest.TestCase):
         self.assertTrue(checked.shown)
         self.assertEqual(checked.sentence, GOOD)
         self.assertEqual((checked.yes, checked.no, checked.unclear), ((2,), (), (1, 3)))
+        self.assertEqual(checked.proof, ((2, "quiet washing machine"),))
+        self.assertEqual(checked.unproved, ())
+
+    def test_a_yes_counts_only_with_its_words_in_the_product(self) -> None:
+        # The words given are not the product's: the yes is read as unclear, and the
+        # sentence that counted it is withheld.
+        checked = check_answer(_answer(GOOD, words={2: "Whisper quiet drum"}), _quiet(), stop_reason="end_turn")
+        self.assertFalse(checked.shown)
+        self.assertEqual((checked.yes, checked.unproved, checked.unclear), ((), (2,), (1, 2, 3)))
+        # No words at all: the same.
+        self.assertEqual(check_answer(_answer(GOOD, words={}), _quiet(), stop_reason="end_turn").unproved, (2,))
+        # Case, spaces and curly quotes do not matter; the description counts as much as
+        # the title.
+        found = complex_search_of("quiet washing machine", _resolution(),
+                                  descriptions={"row-2": "Inverter motor, low noise: 49 dB."})
+        checked = check_answer(_answer(GOOD, words={2: "LOW  NOISE: 49 dB"}), found, stop_reason="end_turn")
+        self.assertTrue(checked.shown, checked.failure)
+        self.assertEqual(checked.proof, ((2, "low noise: 49 db"),))
+
+    def test_one_fitting_product_among_many_may_be_this_one(self) -> None:
+        checked = check_answer(_answer("This washing machine says quiet in its title, at 549.00 GBP."), _quiet(),
+                               stop_reason="end_turn")
+        self.assertTrue(checked.shown, checked.failure)
+
+    def test_numbers_and_names_from_a_description(self) -> None:
+        found = complex_search_of("quiet washing machine", _resolution(),
+                                  descriptions={"row-2": "Quiet Mark approved, 47 dB at night."})
+        checked = check_answer(
+            _answer("1 of these 3 washing machines say Quiet Mark, 47 dB, from 549.00 GBP."), found,
+            stop_reason="end_turn",
+        )
+        self.assertTrue(checked.shown, checked.failure)
 
     def test_no_sentence_when_none_fits(self) -> None:
         checked = check_answer(
@@ -232,7 +273,8 @@ class TheChecks(unittest.TestCase):
     def test_one_product_is_this_one(self) -> None:
         one = complex_search_of("quiet washing machine", _resolution(rows=_rows(WASHERS[1:2])))
         checked = check_answer(
-            _answer("This washing machine says quiet in its title, at 549.00 GBP.", ("yes",)), one,
+            _answer("This washing machine says quiet in its title, at 549.00 GBP.", ("yes",),
+                    words={1: "Quiet Washing Machine"}), one,
             stop_reason="end_turn",
         )
         self.assertTrue(checked.shown, checked.failure)
@@ -272,8 +314,10 @@ class TheChecks(unittest.TestCase):
         found = _quiet()
         cases = (
             (_answer(GOOD, ("unclear", "yes")), "end_turn", "1 of the 3 products not answered"),
-            ({"verdicts": [{"n": 4, "fits": "yes"}], "sentence": GOOD}, "end_turn", "a product number that was not sent"),
-            ({"verdicts": [{"n": 1, "fits": "yes"}, {"n": 1, "fits": "no"}], "sentence": GOOD}, "end_turn", "answered twice"),
+            ({"verdicts": [{"n": 4, "fits": "yes", "words": ""}], "sentence": GOOD}, "end_turn",
+             "a product number that was not sent"),
+            ({"verdicts": [{"n": 1, "fits": "yes", "words": "1400rpm"}, {"n": 1, "fits": "no", "words": ""}],
+              "sentence": GOOD}, "end_turn", "answered twice"),
             ({"verdicts": [{"n": 1, "fits": "maybe"}], "sentence": GOOD}, "end_turn", "not yes, no or unclear"),
             ({"sentence": GOOD}, "end_turn", "not in the agreed shape"),
             (None, "refusal", "stopped early (refusal)"),
@@ -432,6 +476,7 @@ class TheMeasure(unittest.TestCase):
         self.assertEqual((measured.yes, measured.no, measured.unclear), (1, 0, 2))
         self.assertIn("    yes      2. Testline Series 6 9kg Quiet Washing Machine | 549.00 GBP | Fictional Electricals",
                       measured.lines)
+        self.assertIn("               its words: quiet washing machine", measured.lines)
 
     def test_the_shops_words_when_nothing_fits(self) -> None:
         from measure_ai import measure_one

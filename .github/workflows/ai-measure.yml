@@ -21,7 +21,10 @@
 # "none of these say"), 2 withheld; $0.0623, $0.00052 a search; 3.5 s an answer in the
 # middle, 7.5 s at most. Off again after it.
 # Again on 2026-11-05 with the smarter answer (5b91f71: descriptions read, the shops' words
-# instead of "none" sentences), on the owner's word («Ναι»).
+# instead of "none" sentences), on the owner's word («Ναι»): run 42120003523; 119 asked: a
+# sentence for 39, the shops' words for 11 (16 words), nothing for 58, withheld 11 (10 for
+# "This kettle says", 1 for a number of a description); yes 208; $0.1111, $0.00093 a
+# search; 4.1 s in the middle, 9.2 s at most. Off again after it.
 name: AI measure (read-only, measured only)
 on:
   push:
@@ -39,7 +42,7 @@ jobs:
   measure:
     # Off until the owner gives the word for a run: it reads the server with the deploy key.
     # The commit pushed with the owner's word turns it on (true), the next one off again.
-    if: true
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:

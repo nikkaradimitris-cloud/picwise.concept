@@ -20,6 +20,14 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-05): pick up here -- start here
 
+- **Latest (05/11, about 22:45 UTC): the second measure run and read** (owner: «Ναι»; run
+  `42120003523`; off again): 119 asked, a sentence for 39 (23 before), the shops' words
+  for 11, nothing for 58, withheld 11 (10 for "This kettle says"); `yes` 208 (87 before);
+  $0.00093 a search. Many `yes` come from descriptions that could not be checked by eye.
+  **Built since, not yet measured:** each `yes` must quote the product's own words, and
+  counts only when they stand in its title or description; "This <kind> says" accepted;
+  numbers of a description allowed; stricter shops' words (the spec, 4.8). 37 tests.
+  **Next:** a third run, on the owner's word.
 - **Latest (05/11, about 22:00 UTC): the smarter answer built (owner: «ΣΩΣΤΑ»), the
   preflight passed; the second measure waits for the owner's word.** `5b91f71`: the AI
   reads each product's description too (`complex_search.description_of`, 400 characters,
