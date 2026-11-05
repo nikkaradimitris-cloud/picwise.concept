@@ -1939,8 +1939,7 @@ _AISLE_HOLDS = {
     "animals & pet supplies": "BK FU BE",
     "apparel & accessories": "CL FO JW PH",
     "arts & entertainment": "AV BK FU",
-    # Kids' backpacks and changing bags are filed here as well.
-    "baby & toddler": "BK FU HE KI HA JW",
+    "baby & toddler": "BK FU HE KI HA",
     "cameras & optics": "AV CO PH",
     "electronics": "CO AV PH HA FU HE TY",
     "food, beverages & tobacco": "",
@@ -1963,16 +1962,19 @@ _AISLE_HOLDS = {
 # Owner, 2026-11-05: «Πρώτα το 1», the main kind's few wrong results put right first. A
 # narrower aisle of Google's can hold fewer departments than the aisle it is in, or other
 # ones; written here by its path, the top aisle and the narrower shelf's name (the levels
-# between say where it is). Measured on the server's catalogue (run 41940401157): rings
-# of Finediam's titled "... Band Dress" were read as dresses, the aisle "Apparel &
-# Accessories" holding clothing; a swimsuit filed under "Wetsuits" and T-shirts under
-# riding clothing were no clothing, "Sporting Goods" holding none read off a title; a
-# jigsaw's blades and "Plasterboard Hammer-In Fixings" were read as the tools they go
-# with.
+# between say where it is). Measured on the server's catalogue against the first main-kind
+# rule (run 41998750052, 577,686 products): 56 of Finediam's rings titled "... Band Dress"
+# are no dresses and 8 "Ballet Shoe" charms no shoes, jewellery holding jewellery only;
+# 2 T-shirts filed under riding clothing are T-shirts; "Plasterboard Hammer-In Fixings", a
+# hammer tacker, jigsaw and multi-tool blade sets and a set of washers are not the tools or
+# the appliance they name (one socket set filed under "Tool Accessories" goes with them).
+# Left out, measured: Baby & Toddler holding bags would bring back 6 kids' backpacks and a
+# sling bag, and 5 nappy wallets and 2 breast-milk storage bags with them; Google's
+# water-sport clothing would take in wetsuits titled "Full Suit" as suits, for a swimsuit
+# filed among them.
 _SUB_AISLE_HOLDS = {
     ("apparel & accessories", "jewelry"): "JW",
-    # Google's own shelves of sport clothing, in its newer and older names.
-    ("sporting goods", "outdoor recreation", "boating & water sports", "boating & water sport apparel"): "CL FO",
+    # Riding clothing, in Google's newer and older names.
     ("sporting goods", "outdoor recreation", "equestrian", "riding apparel & accessories"): "CL FO",
     ("sporting goods", "outdoor recreation", "equestrian", "riding clothing & accessories"): "CL FO",
     # What goes on or with a tool is not the tool.

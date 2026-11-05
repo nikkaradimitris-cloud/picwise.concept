@@ -14,12 +14,33 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-05): pick up here -- start here
 
+- **Latest (05/11, morning): the owner's answer «Πρώτα το 1 μετά το 2»** (first fix the
+  main-kind rule's few wrong results and deploy it, then the same check for a kind the
+  shelf names), and «Ναι στείλε τη μέτρηση». **Built and measured, not deployed:** the
+  narrower aisles of Google's (`_SUB_AISLE_HOLDS`, `_shelf_paths`; the decision contract,
+  "The main kind only", point 5; tests `tests/test_picwise_main_kind_only.py`, 6). Measured
+  against the rule as first built (`print_confusions.py --part compare`, run
+  `41998750052`, the catalogue of 05/11, 577,686 products): 89 products read otherwise,
+  81 rightly (56 Finediam rings no dresses, 8 charms no shoes, 2 riding T-shirts kept,
+  fixings, blade sets and washers no tools); one socket set on "Tool Accessories" goes
+  wrongly. Two entries were measured and left out (Baby & Toddler holding bags: 7 right,
+  7 wrong; water-sport clothing: wetsuits as suits). Against the rules deployed, on that
+  catalogue: 500 products lose their kind, 202 gain one (the run's version still held the
+  Baby & Toddler entry: 14 of those gains are gone in the code). **Waiting for the owner's
+  «ανέβασε»** to deploy it (a push to `ccr-1361f1a7-dcpo60`, which prepares the
+  catalogue again); then the deployment's kind report and a live read (`server-confusions.yml`,
+  parts "searches" and "live"); then item 2.
+- **A push to the deploying branch needs the owner's word in the conversation:** on 05/11
+  the session's safety check stopped one as a production deploy, though it carried
+  `[skip actions]`; after the owner's «Ναι στείλε τη μέτρηση» it went through. Ask first,
+  say what the push does.
 - **Which branch.** This conversation's branch `ccr-5b36715a-qh6d95` holds all of
   `ccr-9826870f-qkgl6s` (fast-forwarded) and this work; start from it. **The deploying
-  branch `ccr-1361f1a7-dcpo60` is at `49722a8`**: it now holds the main-kind rule
-  (`cdd1eb3`, `92fd939`) and the audit, **not deployed** (deployed: `4b5497b`, run
-  `41324998201`). Its code went with `[skip actions]` (`8ca4407`; no run started, checked),
-  then the workflow alone (`49722a8`; only the audit ran). So the next push there that
+  branch `ccr-1361f1a7-dcpo60` is at `8ebb2ca`**: it now holds the main-kind rule
+  (`cdd1eb3`, `92fd939`), the narrower aisles as measured (`5ac3f1e`, with the Baby &
+  Toddler entry since taken out) and the audit, **not deployed** (deployed: `4b5497b`, run
+  `41324998201`). Each time its code went with `[skip actions]` (`8ca4407`, `5ac3f1e`; no
+  run started, checked), then the workflow alone (`49722a8`, `8ebb2ca`; only the audit ran). So the next push there that
   touches `src/**`, `deployment/server/**` and the rest of `server-deploy.yml`'s paths
   deploys the main-kind rule too: only with the owner's word.
 - **The owner's word (04/11).** «Θέλω να μάθω ποια προϊόντα δημιουργούν μπέρδεμα στην
@@ -89,10 +110,11 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   - **What the check cannot see:** a wrong product on an aisle that may hold its kind (the
     fixings read as a hammer, a baby comforter as a duvet) is flagged by nothing; such
     ones show only in the examples of what the rule changes.
-- **Waiting on the owner (put to them 05/11):** (1) deploy the main-kind rule as it is, or
-  first fix its few wrong ones (kids' backpacks, swimsuits, rings as dresses); (2) the same
-  rule for a kind the shelf names (388 products, measured above); (3) when the narrower
-  kind has no product (motorcycle helmet), show none instead of the broader kind.
+- **Put to the owner 05/11:** (1) deploy the main-kind rule as it is, or first fix its
+  few wrong ones (kids' backpacks, swimsuits, rings as dresses); (2) the same rule for a
+  kind the shelf names (388 products, measured above); (3) when the narrower kind has no
+  product (motorcycle helmet), show none instead of the broader kind. Answered «Πρώτα το 1
+  μετά το 2» (above); (3) not answered yet.
 - **How the logs were read:** `get_job_logs` with `return_content` and a `tail_lines`
   above the log's length saves the whole log to a file when it is long
   (`/root/.claude/projects/.../tool-results/`); the logs' own host

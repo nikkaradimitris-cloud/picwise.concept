@@ -136,5 +136,48 @@ class TheTabletSearchTests(unittest.TestCase):
                 self.assertEqual(sorted(ids), self.expected)
 
 
+# Owner, 2026-11-05: «Πρώτα το 1», the main kind's few wrong results put right first: the
+# narrower aisles of Google's (`_SUB_AISLE_HOLDS`), measured on the server's catalogue
+# against the first main-kind rule (run 41998750052). Titles as the shops wrote them.
+NOT_WHAT_THEIR_TITLE_NAMES = (
+    # Rings and charms: jewellery holds jewellery only.
+    ("Clothing & Accessories > Jewellery & Watches > Rings",
+     "Bold Men's 5mm-8mm Carved Gold Band Dress - 9k Rose Gold / 5mm"),
+    ("Rings", "Slim Men's 5mm-8mm Carved Gold Band Dress - 950 Platinum / 6mm"),
+    ("Clothing & Accessories > Jewellery & Watches > Charms & Pendants", "Ballet Shoe Silver Charm - Open Jump Ring"),
+    # What goes on or with a tool, or into a wall, is not the tool.
+    ("Hardware > Hardware Accessories > Hardware Fasteners", "TIMCO Plasterboard Hammer – -In Fixings - 4 x 30mm / 10"),
+    ("Hardware > Hardware Accessories > Hardware Fasteners > Nuts & Bolts",
+     "224Pc Small-Large Nuts Washers+Bolts Stainless Steel+Case Thin-Thick"),
+    ("Hardware > Tool Accessories > Tool Blades > Saw Blades",
+     "TIMCO Mixed Jigsaw Set – Wood & Metal – Cutting – High – Carbon Steel"),
+    ("Hardware > Tool Accessories", "TIMCO Multi-Tool Sets – 4 Piece Set – Mixed"),
+    # Left as the first rule read them (measured): Baby & Toddler holds no bags, so nappy
+    # wallets are no wallets, at the cost of kids' backpacks; a sauna suit is no suit.
+    ("Baby & Toddler", "Nappy Wallet - Blue Harlequin"),
+    ("Baby & Toddler", "Fern Trails Kids Backpack - 1 - 2 Years"),
+    ("Sporting Goods > Exercise & Fitness", "Fixturon Sauna Suit Weight Loss Sweat Suit"),
+)
+WHAT_THEIR_TITLE_NAMES = (
+    ("Sporting Goods > Outdoor Recreation > Equestrian > Riding Clothing & Accessories", "GHE T-Shirts - Large", "t_shirt"),
+    ("Clothing & Accessories > Jewellery & Watches > Rings", "Fixturon 9ct Gold Diamond Engagement Ring", "ring"),
+    ("Clothing & Accessories > Jewellery & Watches > Watches", "Fixturon Smart Watch Bluetooth Black", "smartwatch"),
+    ("Clothing & Accessories > Clothing", "Fixturon Floral Midi Dress", "dress"),
+    ("Hardware > Tools > Saws > Jigsaws", "Fixturon 18V Cordless Jigsaw", "jigsaw"),
+)
+
+
+class TheNarrowerAislesTests(unittest.TestCase):
+    def test_a_title_on_a_narrower_aisle_that_holds_no_such_kind_is_doubtful(self) -> None:
+        for category, title in NOT_WHAT_THEIR_TITLE_NAMES:
+            with self.subTest(category=category, title=title):
+                self.assertEqual(_kinds(category, title), {UNCERTAIN_MARKER})
+
+    def test_a_title_on_a_narrower_aisle_that_holds_its_kind_keeps_it(self) -> None:
+        for category, title, kind in WHAT_THEIR_TITLE_NAMES:
+            with self.subTest(category=category, title=title):
+                self.assertIn(kind, _kinds(category, title))
+
+
 if __name__ == "__main__":
     unittest.main()

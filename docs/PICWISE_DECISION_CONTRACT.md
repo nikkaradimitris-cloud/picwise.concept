@@ -564,6 +564,20 @@ supplement tablets among their first twelve, of 131; the server's kind report co
    tablets on a tablets, computers, e-readers or electronics shelf, or a shop's own one,
    stay. Body jewellery is no barbell. Pinned by `tests/test_picwise_main_kind_only.py` and
    `tests/test_picwise_title_on_another_aisle.py`.
+5. **A narrower aisle of Google's can hold fewer departments, or others** (owner,
+   2026-11-05: «Πρώτα το 1», the rule's few wrong results first; `_SUB_AISLE_HOLDS`),
+   written by its top aisle and its own name; the narrowest one written that a product's
+   path, or its shelf's paths among Google's (`_shelf_paths`), passes through decides.
+   Jewellery holds jewellery only (Finediam's rings titled "... Band Dress" are no
+   dresses, "Ballet Shoe" charms no shoes); riding clothing holds clothing and shoes (a
+   T-shirt filed there is one); tool accessories and hardware fasteners hold no kind read
+   off a title (a jigsaw's blades, "Plasterboard Hammer-In Fixings", a set of washers).
+   Measured on the server's catalogue against the rule as first built (run `41998750052`,
+   577,686 products): 89 products read otherwise, 81 rightly; one socket set filed under
+   "Tool Accessories" goes with them. Left out, measured: Baby & Toddler holding bags (6
+   kids' backpacks and a sling bag back, with 5 nappy wallets as wallets and 2 breast-milk
+   storage bags as bags), and Google's water-sport clothing holding clothing (wetsuits
+   titled "Full Suit" would be suits).
 
 ## Offers first, decided by the owner, 2026-11-01
 
