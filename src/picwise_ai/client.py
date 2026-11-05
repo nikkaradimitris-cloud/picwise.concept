@@ -87,7 +87,7 @@ def ask(request: dict[str, Any], *, client: Any) -> Asked:
     try:
         response = _as_dict(client.messages.create(**request))
     except Exception as error:  # nothing is shown; the caller records why
-        return Asked(None, "", model, 0, 0, 0, 0, 0.0, time.monotonic() - began, _error_name(error))
+        return Asked(None, "", "", 0, 0, 0, 0, 0.0, time.monotonic() - began, _error_name(error))
     seconds = time.monotonic() - began
     usage = dict(response.get("usage") or {})
     answered_model = str(response.get("model") or model)
