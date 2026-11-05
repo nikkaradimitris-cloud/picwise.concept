@@ -1,6 +1,8 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-11-05 (**item 2 live
+Current state for whoever picks the project up next. Updated 2026-11-05 (**next: the AI
+layer's implementation, in a new conversation; no more kind-by-kind fixes (the owner)**;
+**item 2 live
 since 2026-11-05 12:54 UTC, run `42028878547`: a shelf's kind read against its aisle,
 doubtful products found by their words; searches of a kind with a wrong card 31 -> 7 of
 the 284 measured**; the end-to-end check of the words that
@@ -17,6 +19,52 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-05): pick up here -- start here
 
+- **START HERE: the AI layer, its implementation.** The owner, 05/11, after item 2 went
+  live: «Σταματάμε εδώ αυτή τη λογική της απασφαλμάτωσης είδος με είδος θέλω να
+  προχωρήσουμε στην υλοποίηση της ένταξης του συστήματος ai και αυτό θέλω να γίνει σε άλλη
+  συζήτηση». So: **no more kind-by-kind fixes**; the open kind items below are parked
+  unless the owner raises them. The architecture the owner approved («συμφωνώ με την
+  αρχιτεκτονική και την εγκατάσταση Haiku», the bullet "Approved by the owner 05/11"
+  below): (a) a classifier of our own, standard library only like the rest of the site,
+  trained each night on the products whose type or shelf names their kind, a second
+  opinion on the doubtful ones, measured by the audit before it counts; (b) the summary
+  sentence written from the engine's own counts, no AI; (c) Haiku 5.5 only for what those
+  cannot do (a need no title states), with a daily cap in code and prepaid credits,
+  measured offline first. **Order:** a short spec in `docs/` first (PROJECT_RULES section 4:
+  no implementation before its spec), for the owner's approval; then (a) and (b); then
+  (c), for which the owner opens an Anthropic account and an API key, kept only as a
+  GitHub secret passed to the server (never in the repository, a log or the chat), the SDK
+  pinned with its hash in `requirements-server.txt` beside gunicorn (the site's first
+  library), and an offline measure of about 150 complex searches, Greek and English, shown
+  to the owner before anything goes live.
+  - **What the engine already gives the AI layer (05/11):** the doubtful products
+    (`UNCERTAIN_MARKER`: 37,998 on the catalogue of 05/11, the classifier's work list);
+    the products whose type or shelf names their kind, read against the aisle
+    (`_annotate_kinds`, the decision contract "The main kind only", points 1 to 7: the
+    training set, cleaner since item 2); the signals of a complex search: words no
+    product of the kind carries ("could not match", `_select_products_for_concept`), an
+    answer found by words (`_doubtful_products_by_words`, reason `product_named_by_words`,
+    `live_search_resolver.answered_by_words`), a fall-back to a broader kind
+    (`fallback_concept_id`). The audit to measure it: `deployment/server/print_confusions.py`
+    and `server-confusions.yml` (parts "kinds", "searches", "live", "compare"; 320 kinds'
+    names, the owner's words and 21 products' own names, `NAME_SEARCHES`).
+  - **The server's room:** 8 vCores, 24 GB, no GPU; the nightly preparation peaks at
+    9.8 GB and takes about 15 minutes (04:17 UTC), the site holds 6.7 GB; a search took
+    1.18 s on GitHub's runner (05/11).
+  - **Parked kind items** (the owner's word above): question (3), the broader kind shown
+    when the narrower has none (`electric bike`, `motorcycle helmet`, `robotic lawn mower`,
+    tyres); 22 paint pots and tins InStock UK files as craft paint (one line,
+    `_SUB_AISLE_HOLDS` for "art & craft paint" holding GA); 5 art marker sets; tool
+    backpacks and belts; "rubber gloves" read as router; `bed sheets` (duvet covers with
+    a pillow case as pillows); `sandals` (flip flops as slippers); "kids tablet" (the
+    owner: the search box's suggestions). Also: the two old test failures
+    (`test_picwise_search_index_generated_blind_stage4`,
+    `test_picwise_search_index_blind_evaluation_stage6a`: "amazon" and "galaxy"), and the
+    offers' token (Awin 401; the owner: «Δεν με ενδιαφέρει το νέο token τώρα»).
+  - **Branches:** start from `ccr-f9cf1b70-rzslft` (all of today's work and records). The
+    deploying branch `ccr-1361f1a7-dcpo60` is at `a7539b9`, deployed. A push there needs
+    the owner's word naming the commit and the branch, every time (the session's safety
+    check stops it otherwise, read-only workflows too).
 - **Latest (05/11, 12:57 UTC): item 2 deployed** (owner: «Ναι, στείλε το a7539b9 στο
   ccr-1361f1a7-dcpo60 για να ανέβει στο site»). Run `42028878547`, success: release
   `20261105T123843Z-a7539b9`, the site on it since 12:54:15 UTC, health ok; 577,670
