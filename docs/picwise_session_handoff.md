@@ -1,8 +1,9 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-11-04 (**built, not
-deployed: "tablet" without pills, the main kind only everywhere; waiting for the owner's
-word**; live since 2026-11-01 16:22 UTC, run `41324998201`: products whose photo is gone
+Current state for whoever picks the project up next. Updated 2026-11-05 (**the end-to-end
+check of the words that confuse the search done, run `41940401157`; three decisions wait
+for the owner**; built, not deployed: "tablet" without pills, the main kind only
+everywhere; live since 2026-11-01 16:22 UTC, run `41324998201`: products whose photo is gone
 left out, a card seen only once its photo has loaded, the offer recommended even without a
 barcode; live before: offers first and the
 Recommended on offer since 10:06 UTC, run `41295172671`; vouchers without their code no
@@ -11,7 +12,93 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 2026-10-31 10:03 UTC, HTTPS by Caddy; Vercel kept as the backup).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation (from 2026-11-04): pick up here -- start here
+## Next conversation (from 2026-11-05): pick up here -- start here
+
+- **Which branch.** This conversation's branch `ccr-5b36715a-qh6d95` holds all of
+  `ccr-9826870f-qkgl6s` (fast-forwarded) and this work; start from it. **The deploying
+  branch `ccr-1361f1a7-dcpo60` is at `49722a8`**: it now holds the main-kind rule
+  (`cdd1eb3`, `92fd939`) and the audit, **not deployed** (deployed: `4b5497b`, run
+  `41324998201`). Its code went with `[skip actions]` (`8ca4407`; no run started, checked),
+  then the workflow alone (`49722a8`; only the audit ran). So the next push there that
+  touches `src/**`, `deployment/server/**` and the rest of `server-deploy.yml`'s paths
+  deploys the main-kind rule too: only with the owner's word.
+- **The owner's word (04/11).** «Θέλω να μάθω ποια προϊόντα δημιουργούν μπέρδεμα στην
+  αναζήτηση.. όπως τα tablets... Banks...κτλ ... θέλω έναν ολοκληρωμένο έλεγχο από άκρη σε
+  άκρη», then «Ναι, προχώρα με τον έλεγχο» (to a read-only check pushed to the deploying
+  branch without deploying).
+- **Built** (`deployment/server/print_confusions.py`, tests
+  `tests/test_picwise_server_print_confusions.py` (5); `.github/workflows/server-confusions.yml`,
+  one job a part, each with its own log): every product of the server's prepared catalogue
+  read with the kinds the server stored (the rules deployed) and with this branch's (the
+  main kind only); where each kind comes from (the type or the shelf, or the title alone:
+  the reader's fall-back on the title, `_title_fallback_head`, recorded as it runs), and for
+  the title alone whether the aisle may hold the kind (`_aisle_may_hold`); per kind by
+  shelf; what the rule takes away and gives; kinds from a shelf on an aisle that may not
+  hold them; the words of the kinds' names that titles carry, by aisle; every kind's search
+  (320 words: the owner's and each kind's English name) on the copy with both sets of
+  kinds, the first 12 cards flagged (another aisle, another kind, no kind); and the same
+  searches on the live site, matched to the copy by product id (`data-choice-id`). Each part
+  ends in short. To read again: change the "Read:" line of the workflow and push it alone.
+- **What it found** (the catalogue of 04/11 04:24 UTC, **576,196 products**; run
+  `41940401157`):
+  - **The live site shows the copy's cards, card for card, on 317 of 317 pages read**; 3
+    of 320 pages did not answer within 60 s (`tablets`, `mouse`, `toner`, about 00:27 UTC;
+    not explained yet, the rest answered).
+  - **Searches whose first 12 cards hold a wrong product: 38 of 269 today, 20 with the
+    main-kind rule.** Fixed by it: `tablet` 11 → 0 (pills; 165 → 110 products), `case` and
+    `phone case` 10 → 0 (pencil, glasses, toothbrush cases), `fan` 7 → 0 (false eyelashes),
+    `angle grinder` 6 → 0 (pepper mills), `mirror` 5 → 1, `mouse` 2 → 0, and `iron`, `rug`,
+    `wallet`, `bracelet`, `duvet`, `lamp`, `towel`, `ladder`, `football`, `doll`, `hair
+    brush`.
+  - **The rule changes 513 products** (all to doubtful; 0 on an aisle that may not hold
+    their kind remain from the title alone), almost all rightly: pills and toothpaste
+    tablets, face toners (73), gift and treat bags (79), eyelash "fans" (66), make-up
+    "paint"/"primer", lip pencils "Red Carpet", pencil cases, salad servers, "DIM"
+    supplements as RAM, sanitary towels, wax heaters, curling irons. **Wrongly:** 6 kids'
+    backpacks on "Baby & Toddler", 5 swimsuits on "Wetsuits", 2 T-shirts on riding
+    clothing (sporting goods holds no clothing read off a title), a gift-set necklace and
+    earrings. **It also gives a kind to 272 doubtful products**, mostly rightly (86 safety
+    shoes, 14 trainers, 13 boots on "Work Safety", kids' cutlery, gazebo curtains, a PC
+    fan), some wrongly: **Finediam rings titled "... Band Dress" become dresses** (57
+    dresses gained; costumes "Fancy Dress" too), "Plasterboard Hammer-In Fixings" a hammer,
+    jigsaw blades a jigsaw, a baby comforter a duvet, an agility ladder a ladder.
+  - **Not fixed by the rule: a kind the shop's own shelf names in another sense, on an
+    aisle that may not hold it: 388 products in 19 kinds**: `bag` 165 (gift bags from
+    £0.60, nappy wet bags, storage bags), `toner` 88 (face toners on Google's "Toners &
+    Astringents"; the search `toner` shows 11 of 12 face toners even with the rule),
+    `monitor` 26 (blood-pressure and fertility monitors; 2 of the first 4 of `monitor`),
+    `marker` 23 (golf ball markers), `paint` 22, `mirror` 16 (shaving mirrors), `jacket`
+    10 (life jackets), `handbag` 8 (lunch bags), `server` 7 (cake servers: 7 of the first
+    12 of `server`), `gloves` 4 (rubber gloves), `television` 4 (digital downloads: 3 of
+    the first 4 of `tv`), `cable` 3 (rope), `drill` 1 (a nail drill), `scanner` 1 (a car
+    code reader), `skirt` 1, and tool backpacks and belts (rightly kinds).
+  - **Not fixed either: when no product of the narrower kind exists, the search answers
+    with the broader kind** (`_select_products_for_concept`, `fallback_concept_id`; the
+    page says «PicWise could not match: motorcycle»): `motorcycle helmet` 12 of 12 are
+    cycling and **construction safety helmets from £3.68**, `electric bike` 12 of 12 kids'
+    bicycles, `robotic lawn mower` 10 of 10 corded mowers, `summer tyres` and `winter
+    tyres` a boat trailer's jockey wheel.
+  - The owner's words: `banks` asks «which do you mean: power banks, water banks, money
+    banks, vibes banks, piggy banks, river banks»; `bank` shows nothing (too broad);
+    `power bank` 38, `ring` 141,615 and `watch` 1,853: no wrong card among the first 12;
+    `cable`, `bed`, `suit`, `charger`, `speaker`, `light` alike; of 104 titles carrying
+    "bank", 30 are "Banks" T-shirts and 28 piggy banks, none shown as a power bank.
+  - In the whole catalogue, 177,380 products take their kind from the title alone, 96,330
+    from the type or the shelf, 253,620 have none; 97.5% sit on a path of Google's, 1,156
+    on a shelf Google has no name for.
+  - **What the check cannot see:** a wrong product on an aisle that may hold its kind (the
+    fixings read as a hammer, a baby comforter as a duvet) is flagged by nothing; such
+    ones show only in the examples of what the rule changes.
+- **Waiting on the owner (put to them 05/11):** (1) deploy the main-kind rule as it is, or
+  first fix its few wrong ones (kids' backpacks, swimsuits, rings as dresses); (2) the same
+  rule for a kind the shelf names (388 products, measured above); (3) when the narrower
+  kind has no product (motorcycle helmet), show none instead of the broader kind.
+- **How the logs were read:** `get_job_logs` with `return_content` and a `tail_lines`
+  above the log's length saves the whole log to a file when it is long
+  (`/root/.claude/projects/.../tool-results/`); the logs' own host
+  (`results-receiver.actions.githubusercontent.com`) is blocked from a session.
+
+## Before (2026-11-03/04): the main kind only, built; the owner asked for the end-to-end check
 
 - **Which branch.** Start from the session's branch `ccr-9826870f-qkgl6s`. Deployed: all
   up to `4b5497b` (run `41324998201`). **Committed, not deployed** (deploying is the
