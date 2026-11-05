@@ -16,7 +16,10 @@
 # and addresses are masked, and the audit prints counts, kinds, shelves, titles, shops and
 # prices, never a link.
 #
-# Read: 2026-11-05, the catalogue of that morning
+# Read: 2026-11-05, the catalogue of 04/11 morning (run 41940401157: kinds, searches, live);
+# again the same day with the narrower aisles (owner, 2026-11-05: «Πρώτα το 1 μετά το 2»):
+# the kinds, and "compare", one change of the rules on its own: every product the rules of
+# COMPARE_WITH (the first main-kind rule) read otherwise than this commit's.
 name: Server confusions (read-only, measured only)
 on:
   push:
@@ -37,11 +40,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        part: [kinds, searches, live]
+        # The parts this run takes: "kinds", "searches", "live", "compare".
+        part: [kinds, compare]
+    env:
+      # For "compare": the commit whose rules are read against this commit's.
+      COMPARE_WITH: d44f8c4
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+          # The commit of COMPARE_WITH, for its worktree.
+          fetch-depth: 0
       - name: Connect with the key, check the server's identity, mask its names
         id: connect
         env:
@@ -152,13 +161,20 @@ jobs:
             || echo "no gone photos on the server: the copy shows every product"
           ssh -n picwise 'sudo cat /srv/picwise/shared/offers/offers.json' > "$RUNNER_TEMP/offers.json" \
             || echo "no offers on the server: the copy puts no product on offer"
+      - name: The kinds the rules of the commit compared with read
+        if: always() && steps.copy.outcome == 'success' && matrix.part == 'compare'
+        run: |
+          git worktree add --detach --quiet "$RUNNER_TEMP/rules-before" "$COMPARE_WITH"
+          python3 deployment/server/kinds_of.py "$RUNNER_TEMP/rules-before" "$RUNNER_TEMP/catalogue.json.gz" "$RUNNER_TEMP/kinds-before.txt"
       - name: Which products confuse the search (${{ matrix.part }})
         if: always() && steps.copy.outcome == 'success'
         run: |
           python3 deployment/server/print_confusions.py "$RUNNER_TEMP/catalogue.json.gz" --part "${{ matrix.part }}" \
-            --gone "$RUNNER_TEMP/gone.json" --offers "$RUNNER_TEMP/offers.json" --site https://picwise.subby.cloud
+            --gone "$RUNNER_TEMP/gone.json" --offers "$RUNNER_TEMP/offers.json" --site https://picwise.subby.cloud \
+            --compare "$RUNNER_TEMP/kinds-before.txt" --compare-name "$COMPARE_WITH"
       - name: Remove the key and the copies from the runner
         if: always()
         run: |
           rm -f ~/.ssh/deploy_key ~/.ssh/config "$RUNNER_TEMP/catalogue.json.gz"
-          rm -f "$RUNNER_TEMP/gone.json" "$RUNNER_TEMP/offers.json"
+          rm -f "$RUNNER_TEMP/gone.json" "$RUNNER_TEMP/offers.json" "$RUNNER_TEMP/kinds-before.txt"
+          rm -rf "$RUNNER_TEMP/rules-before"
