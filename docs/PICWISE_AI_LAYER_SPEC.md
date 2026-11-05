@@ -37,9 +37,10 @@ step.
   2.000 αναζητήσεις με 1 $ (εκτίμηση· η δοκιμή θα δώσει το πραγματικό). Ημερήσιο όριο
   μέσα στον κώδικα (προτείνω 1 $ τη μέρα) και προπληρωμένη πίστωση στον λογαριασμό. Η
   ίδια αναζήτηση την ίδια μέρα δεν πληρώνεται δεύτερη φορά.
-- **Από εσένα, όταν φτάσουμε στο (γ):** λογαριασμός στην Anthropic, προπληρωμένη
-  πίστωση, ένα κλειδί (API key) που θα το βάλεις μόνος σου στα μυστικά του GitHub, ποτέ
-  στη συζήτηση. Πριν ανέβει, βλέπεις τα αποτελέσματα σε περίπου 150 δοκιμαστικές
+- **Από εσένα, όταν φτάσουμε στο (γ):** λογαριασμός στην Anthropic και πίστωση για το
+  API (αν η συνδρομή σου είναι Max, Ultra ή Team, έχει ήδη δωρεάν μηνιαία πίστωση για το
+  API), ένα κλειδί (API key) που θα το βάλεις μόνος σου στα μυστικά του GitHub, ποτέ στη
+  συζήτηση. Πριν ανέβει, βλέπεις τα αποτελέσματα σε περίπου 150 δοκιμαστικές
   αναζητήσεις, ελληνικά και αγγλικά.
 - **Τι σου ζητάω τώρα:** μόνο να εγκρίνεις το σχέδιο ή να μου πεις τι αλλάζει. Τα
   υπόλοιπα (πόσο αυστηρός ο κριτής, το όριο κόστους) τα αποφασίζεις όταν δεις τα νούμερα
@@ -295,9 +296,25 @@ only it has the SDK. A visitor whose browser runs no script, as most bots, costs
 
 ### 4.6 The account, the key, the library
 
+- **The credit.** The owner's Claude plan (the owner, 05/11: «εχω ηδη συνδρομη στο
+  anthropic claud σε αυτο που μιλαμε»; which plan, not yet known) pays for Claude and
+  Claude Code, not for the API. But Max, Ultra and Team plans carry a monthly API credit
+  (Anthropic's page "API credits for Max, Ultra, and Team plans", read on 2026-11-05):
+  - $100 a month on Max, $200 on Ultra, on Team $20 or $100 a seat, pooled up to $500;
+    renewed each billing cycle, expired at its end, never carried over; claimable after 7
+    days on the plan; none on Pro or Enterprise;
+  - claimed on claude.ai, Settings > Billing (on Team: Organization settings > Billing),
+    section "API credits", by linking a Console organization to the plan (made there, or
+    at the Console first). One organization per plan, which only support can change
+    later: it should be the one PicWise is built in;
+  - no payment method is needed; when the credit runs out and none was bought, the API
+    stops until the next month's credit arrives, and nothing is charged to the plan.
+
+  On a plan without it, the owner buys credit instead (below).
 - **The owner**, on the Claude Console (`platform.claude.com`; Anthropic's pages on
   authentication and on rate limits, read on 2026-11-05):
-  - opens an account and buys credit, with automatic reload off if the page offers it;
+  - opens an account (or uses the one linked to the plan); without the plan's credit,
+    buys credit, with automatic reload off if the page offers it;
   - sets a monthly spend limit on the Billing page, below the tier's own cap (the Start
     tier's is $500 a month; a new organization may start lower, in an evaluation tier);
     past the limit the API refuses every request until the next month;
@@ -377,7 +394,7 @@ and the branch.
 | (a), with its numbers | the bar | right at least 99 times in 100 held out, and no rise of wrong cards in the 320 searches |
 | (a), with its numbers | may the classifier ever go against the aisle rule | no |
 | (b) | a Greek sentence for a Greek search | no: the site is in English |
-| (c), at the account | the credit, and the account's spend limit | $10 of credit, reload off; $30 a month on the account |
+| (c), at the account | the credit, and the account's spend limit | the plan's monthly API credit if the plan is Max, Ultra or Team, else $10 bought, reload off; $30 a month on the account |
 | (c), before it is built | the daily cap in code | $1 a day |
 | (c), with the measure | the bar to go live | no wrong sentence among those shown |
 | (c), with the measure | marks on the cards, or products left out | the sentence alone |

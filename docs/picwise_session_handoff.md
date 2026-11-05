@@ -42,8 +42,15 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   month on the Billing page, a workspace "PicWise", a key linked to the owner
   and scoped to that workspace (a key not scoped to one must name the workspace on
   every request), no expiry, put in GitHub's secrets as `ANTHROPIC_API_KEY`, never in the
-  chat. **Next:** the owner's word that the secret is in GitHub (never the key itself);
-  meanwhile (b), then (c) with the API faked. **Branch:**
+  chat. **Then the owner: «εχω ηδη συνδρομη στο anthropic claud σε αυτο που μιλαμε»:**
+  told that the plan pays for Claude and Claude Code, not for the API, but that Max, Ultra
+  and Team plans carry a monthly API credit ($100, $200, $20-100 a seat up to $500;
+  claimed on claude.ai, Settings > Billing, "API credits", by linking a Console
+  organization, one per plan, not changeable later without support; no card; the API
+  stops when it runs out, nothing charged to the plan; none on Pro or Enterprise). Which
+  plan the owner has is not known yet (the spec, 4.6). **Next:** the owner's word that the
+  secret is in GitHub (never the key itself); meanwhile (b), if the owner says yes, then
+  (c) with the API faked. **Branch:**
   `ccr-4f47068a-99ikwe` holds all of `ccr-f9cf1b70-rzslft` (fast-forwarded) and the spec;
   start from it.
 - **START HERE: the AI layer, its implementation.** The owner, 05/11, after item 2 went
