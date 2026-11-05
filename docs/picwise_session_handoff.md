@@ -36,7 +36,14 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   tokens, prompts up to 100,000), a cap of $1 a day proposed. Found while writing it: the
   lexicon holds 312 kinds (the map below still says 278); English "best", "cheap" are
   read as words to match, not as judgements (only the Greek ones are,
-  `_JUDGEMENT_QUALIFIERS`). **Next:** the owner's approval or changes; then (b). **Branch:**
+  `_JUDGEMENT_QUALIFIERS`). **Then the owner: «παμε για το απι κευ»**, taken as a yes to
+  the spec (told to the owner). Given the steps (the spec, 4.6): an account on the Claude
+  Console (`platform.claude.com`), $10 of credit with reload off, a spend limit of $30 a
+  month on the Billing page, a workspace "PicWise" with its own limit, a key linked to the
+  owner and scoped to that workspace (a key not scoped to one must name the workspace on
+  every request), no expiry, put in GitHub's secrets as `ANTHROPIC_API_KEY`, never in the
+  chat. **Next:** the owner's word that the secret is in GitHub (never the key itself);
+  meanwhile (b), then (c) with the API faked. **Branch:**
   `ccr-4f47068a-99ikwe` holds all of `ccr-f9cf1b70-rzslft` (fast-forwarded) and the spec;
   start from it.
 - **START HERE: the AI layer, its implementation.** The owner, 05/11, after item 2 went

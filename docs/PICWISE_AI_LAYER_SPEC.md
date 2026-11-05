@@ -2,7 +2,8 @@
 
 Written on 2026-11-05 for the owner's approval, before anything is built
 (`PROJECT_RULES.md` section 4: no implementation before its spec). **Nothing in it is
-built. Status: waiting for the owner's approval.**
+built.** Status: the owner, the same day, «παμε για το απι κευ»: going ahead with the
+account and the key (4.6), taken as a yes to this spec, which the owner was told.
 
 The architecture is the owner's of 05/11: «Εντάξει, πάμε σε άλλη συζήτηση συμφωνώ με την
 αρχιτεκτονική και την εγκατάσταση Haiku», then «Σταματάμε εδώ αυτή τη λογική της
@@ -294,10 +295,20 @@ only it has the SDK. A visitor whose browser runs no script, as most bots, costs
 
 ### 4.6 The account, the key, the library
 
-- **The owner** opens an Anthropic account, buys prepaid credit with automatic reload off,
-  so that the account itself cannot spend more than was paid (to confirm on the account),
-  creates an API key and puts it in GitHub's secrets as `ANTHROPIC_API_KEY`, never in the
-  chat; and reads in the account's terms how long Anthropic keeps what it is sent.
+- **The owner**, on the Claude Console (`platform.claude.com`; Anthropic's pages on
+  authentication and on rate limits, read on 2026-11-05):
+  - opens an account and buys credit, with automatic reload off if the page offers it;
+  - sets a monthly spend limit on the Billing page, below the tier's own cap (the Start
+    tier's is $500 a month; a new organization may start lower, in an evaluation tier);
+    past the limit the API refuses every request until the next month;
+  - creates a workspace "PicWise" with a spend limit of its own (none can be set on the
+    Default workspace);
+  - creates an API key linked to themselves, **scoped to that workspace** (a key not
+    scoped to one must name the workspace on every request), with no expiry, since it is
+    kept in GitHub's secrets and changed by hand; a key that leaks is disabled or deleted
+    at once on the Console's API keys page, and a new one put in GitHub;
+  - puts it in GitHub's secrets as `ANTHROPIC_API_KEY`, never in the chat;
+  - reads in the account's terms how long Anthropic keeps what it is sent.
 - **The deployment** (`server-deploy.yml`) writes the key to a file only `picwise-assist`
   reads (`/etc/picwise/assist.env`, mode 0600): not to `picwise.env`, not to the site's
   service.
@@ -366,7 +377,8 @@ and the branch.
 | (a), with its numbers | the bar | right at least 99 times in 100 held out, and no rise of wrong cards in the 320 searches |
 | (a), with its numbers | may the classifier ever go against the aisle rule | no |
 | (b) | a Greek sentence for a Greek search | no: the site is in English |
-| (c), before it is built | the daily cap, and the prepaid credit | $1 a day; $10 of credit, reload off |
+| (c), at the account | the credit, and the account's spend limit | $10 of credit, reload off; $30 a month on the account and on the workspace |
+| (c), before it is built | the daily cap in code | $1 a day |
 | (c), with the measure | the bar to go live | no wrong sentence among those shown |
 | (c), with the measure | marks on the cards, or products left out | the sentence alone |
 | (c), with the measure | real searches from the access log for the measure | written searches only |
