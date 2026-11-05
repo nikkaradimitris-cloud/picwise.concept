@@ -15,6 +15,9 @@ are doubtful, not verified: the decision contract, "The main kind only", point 7
 """
 from __future__ import annotations
 
+import html
+import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
@@ -31,6 +34,14 @@ from picwise_providers.decision_labels import format_price_display
 MAX_CANDIDATES = 30
 # The page holds products in fours; a search run for the AI asks for this many.
 SHOWN_FOR_CANDIDATES = 32
+# Of each product's own description, the AI reads this many characters at most (owner,
+# 2026-11-05: «ΣΩΣΤΑ», to the AI reading the description too): a need a shop states there
+# ("low noise 49 dB", "ages 6-10") is found, which the engine's filters never read
+# (`search_selection._FILTER_FIELDS`: title, type and brand).
+DESCRIPTION_CHARACTERS = 400
+# The feed's columns a description is read from, the first one given.
+_DESCRIPTION_COLUMNS = ("description", "product_short_description")
+_TAG = re.compile(r"<[^>]+>")
 
 # The buyer's judgements in English. The engine sets apart only the Greek ones
 # (`product_concepts._JUDGEMENT_QUALIFIERS`) and reads these as words to match, so a
@@ -58,6 +69,7 @@ class Candidate:
     price_text: str
     currency: str
     shop: str
+    description: str = ""
 
 
 @dataclass(frozen=True)
@@ -71,6 +83,7 @@ class ComplexSearch:
     fell_back: bool
     candidates: tuple[Candidate, ...]
     total: int
+    kind_id: str = ""
 
 
 def _key(text: str) -> str:
@@ -93,11 +106,33 @@ def why_not_asked(search: str, resolution: Any) -> str:
     return ""
 
 
-def complex_search_of(search: str, resolution: Any) -> ComplexSearch | None:
+def clean_description(text: Any, limit: int = DESCRIPTION_CHARACTERS) -> str:
+    """A shop's description as the AI reads it: no markup, one line, cut at a word."""
+    plain = " ".join(html.unescape(_TAG.sub(" ", str(text or ""))).split())
+    if len(plain) <= limit:
+        return plain
+    cut = plain[:limit].rsplit(" ", 1)[0]
+    return cut.rstrip(",;:-") + " …"
+
+
+def description_of(product: Any) -> str:
+    """A feed product's own description (`ProviderProduct.raw`), cleaned; "" if none."""
+    raw = getattr(product, "raw", None) or {}
+    for column in _DESCRIPTION_COLUMNS:
+        text = clean_description(raw.get(column))
+        if text:
+            return text
+    return ""
+
+
+def complex_search_of(
+    search: str, resolution: Any, *, descriptions: Mapping[str, str] | None = None
+) -> ComplexSearch | None:
     """The search as the AI is asked about it, or None when it is not complex.
 
     `resolution` is the live search resolver's answer (`resolve_live_search`), run with
-    `shown=SHOWN_FOR_CANDIDATES` so that it holds the products the AI reads.
+    `shown=SHOWN_FOR_CANDIDATES` so that it holds the products the AI reads;
+    `descriptions` gives each product's description by its id (`description_of`).
     """
     if why_not_asked(search, resolution):
         return None
@@ -119,6 +154,9 @@ def complex_search_of(search: str, resolution: Any) -> ComplexSearch | None:
             price_text=format_price_display(row),
             currency=str(row.get("currency") or "").strip(),
             shop=" ".join(str(row.get("merchant_name") or "").split()),
+            description=clean_description(
+                (descriptions or {}).get(str(row.get("provider_product_id") or "").strip(), "")
+            ),
         )
         for number, row in enumerate(_rows(resolution)[:MAX_CANDIDATES], start=1)
     )
@@ -129,6 +167,7 @@ def complex_search_of(search: str, resolution: Any) -> ComplexSearch | None:
         fell_back=fell_back,
         candidates=candidates,
         total=int(getattr(resolution, "provider_feed_total_count", 0) or 0),
+        kind_id=kind_id,
     )
 
 

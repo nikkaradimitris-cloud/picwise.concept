@@ -14,6 +14,11 @@ faked (no test reaches the network):
 - the code's checks withhold a sentence whose counts, prices, numbers or names are not
   the answer's own, that holds a forbidden word, a link, Greek, more than one sentence or
   more than 30 words, or an answer that stopped early or skipped a product;
+- when no product fits, no sentence (owner, 2026-11-05: «ΟΤΑΝ ΔΕΝ ΒΡΙΣΚΕΙ ΚΑΤΙ ΝΑ ΜΗΝ ΛΕΕΙ
+  ΔΕΝ ΒΡΕΘΗΚΕ», then «ΣΩΣΤΑ»): the shops' words for the need, kept only when they stand
+  in a title given and are no brand, judgement or the kind's name, then offered only when
+  their own search finds products of a kind, with that count;
+- each product's own description read too, cleaned and cut;
 - the call's cost from the tokens counted, and any failure an answer with nothing shown;
 - the measure (`deployment/server/measure_ai.py`) on a small prepared catalogue, without
   the AI, and its list of searches;
@@ -42,10 +47,17 @@ for path in (HERE, ROOT, ROOT / "src", ROOT / "deployment" / "server"):
         sys.path.insert(0, str(path))
 
 from fixture_support import fixture_description  # noqa: E402
-from picwise_ai.checks import FORBIDDEN_WORDS, check_answer  # noqa: E402
+from picwise_ai.checks import FORBIDDEN_WORDS, check_answer, shop_words_that_pass  # noqa: E402
 from picwise_ai.client import Asked, ask, cost_usd  # noqa: E402
-from picwise_ai.complex_search import MAX_CANDIDATES, complex_search_of, why_not_asked  # noqa: E402
+from picwise_ai.complex_search import (  # noqa: E402
+    MAX_CANDIDATES,
+    clean_description,
+    complex_search_of,
+    description_of,
+    why_not_asked,
+)
 from picwise_ai.request import EFFORT, MODEL, SCHEMA, request_kwargs, user_message  # noqa: E402
+from picwise_ai.shop_words import button_search, verified_shop_words  # noqa: E402
 
 WASHERS = [
     ("Fixturon WM1045 10kg 1400rpm Washing Machine", "Fixturon", "279.00", "Fictional Appliances"),
@@ -86,8 +98,12 @@ def _quiet():
     return complex_search_of("quiet washing machine", _resolution())
 
 
-def _answer(sentence, verdicts=("unclear", "yes", "unclear")):
-    return {"verdicts": [{"n": n, "fits": fits} for n, fits in enumerate(verdicts, start=1)], "sentence": sentence}
+def _answer(sentence, verdicts=("unclear", "yes", "unclear"), shop_words=()):
+    return {
+        "verdicts": [{"n": n, "fits": fits} for n, fits in enumerate(verdicts, start=1)],
+        "sentence": sentence,
+        "shop_words": list(shop_words),
+    }
 
 
 GOOD = "1 of these 3 washing machines say quiet in their titles, from 549.00 GBP."
@@ -156,7 +172,7 @@ class TheRequest(unittest.TestCase):
         self.assertEqual(request["output_config"]["effort"], EFFORT)
         self.assertEqual(EFFORT, "low")
         self.assertEqual(request["output_config"]["format"], {"type": "json_schema", "schema": SCHEMA})
-        self.assertEqual(SCHEMA["required"], ["verdicts", "sentence"])
+        self.assertEqual(SCHEMA["required"], ["verdicts", "sentence", "shop_words"])
         self.assertEqual(request["system"][0]["cache_control"], {"type": "ephemeral"})
         self.assertNotIn("temperature", request)
 
@@ -182,10 +198,42 @@ class TheChecks(unittest.TestCase):
         self.assertEqual(checked.sentence, GOOD)
         self.assertEqual((checked.yes, checked.no, checked.unclear), ((2,), (), (1, 3)))
 
-    def test_none_when_none_fit(self) -> None:
+    def test_no_sentence_when_none_fits(self) -> None:
         checked = check_answer(
             _answer("None of these 3 washing machines say quiet in their titles.", ("unclear",) * 3),
             _quiet(), stop_reason="end_turn",
+        )
+        self.assertFalse(checked.shown)
+        self.assertEqual((checked.sentence, checked.failure, checked.shop_words), ("", "", ()))
+
+    def test_the_shops_words_when_none_fits(self) -> None:
+        checked = check_answer(
+            _answer("", ("unclear",) * 3, shop_words=("EcoWash", "Fixturon", "best", "washing machine",
+                                                   "compact", "10kg 1400rpm", "1400rpm")),
+            _quiet(), stop_reason="end_turn",
+        )
+        # A brand, a judgement, the kind's name and a word in no title are dropped; three
+        # at most.
+        self.assertEqual(checked.shop_words, ("EcoWash", "10kg 1400rpm", "1400rpm"))
+        self.assertEqual(checked.sentence, "")
+
+    def test_the_shops_words_only_when_none_fits(self) -> None:
+        checked = check_answer(_answer(GOOD, shop_words=("EcoWash",)), _quiet(), stop_reason="end_turn")
+        self.assertTrue(checked.shown)
+        self.assertEqual(checked.shop_words, ())
+        self.assertEqual(shop_words_that_pass("EcoWash", _quiet()), ())
+
+    def test_a_rating_of_the_product_is_no_review(self) -> None:
+        rated = "1 of these 3 washing machines say quiet, rated for 10kg loads, from 549.00 GBP."
+        self.assertTrue(check_answer(_answer(rated), _quiet(), stop_reason="end_turn").shown)
+        reviewed = "1 of these 3 washing machines say quiet, rated highly, from 549.00 GBP."
+        self.assertIn("rated", check_answer(_answer(reviewed), _quiet(), stop_reason="end_turn").failure)
+
+    def test_one_product_is_this_one(self) -> None:
+        one = complex_search_of("quiet washing machine", _resolution(rows=_rows(WASHERS[1:2])))
+        checked = check_answer(
+            _answer("This washing machine says quiet in its title, at 549.00 GBP.", ("yes",)), one,
+            stop_reason="end_turn",
         )
         self.assertTrue(checked.shown, checked.failure)
 
@@ -240,6 +288,52 @@ class TheChecks(unittest.TestCase):
     def test_the_forbidden_words(self) -> None:
         for word in ("best", "recommended", "quality", "cheap", "deal", "rated", "tested", "perfect"):
             self.assertIn(word, FORBIDDEN_WORDS)
+
+
+class TheDescriptions(unittest.TestCase):
+    def test_cleaned_and_cut(self) -> None:
+        text = "<p>Low&nbsp;noise <b>49 dB</b> spin,\n\n quiet  wash.</p>"
+        self.assertEqual(clean_description(text), "Low noise 49 dB spin, quiet wash.")
+        long = " ".join(["word"] * 200)
+        cut = clean_description(long)
+        self.assertLessEqual(len(cut), 402)
+        self.assertTrue(cut.endswith(" …"))
+
+    def test_read_from_the_feeds_own_columns(self) -> None:
+        product = types.SimpleNamespace(raw={"description": "", "product_short_description": "Ages 6-10."})
+        self.assertEqual(description_of(product), "Ages 6-10.")
+        self.assertEqual(description_of(types.SimpleNamespace(raw={})), "")
+
+    def test_given_to_the_ai_under_each_product(self) -> None:
+        found = complex_search_of(
+            "quiet washing machine", _resolution(),
+            descriptions={"row-3": "<p>Low noise 49 dB spin</p>"},
+        )
+        self.assertEqual(found.candidates[2].description, "Low noise 49 dB spin")
+        self.assertEqual(found.candidates[0].description, "")
+        self.assertIn("3. Fixturon EcoWash 9kg Washing Machine White | brand Fixturon | 429.99 GBP | shop Fictional"
+                      " Appliances\n   description: Low noise 49 dB spin", user_message(found))
+
+
+class TheShopsWordsAsSearches(unittest.TestCase):
+    def test_kept_only_with_the_catalogues_own_count(self) -> None:
+        answers = {
+            "EcoWash washing machine": _resolution(unmatched=(), total=12),
+            "Fixturon washing machine": _resolution(unmatched=(), rows=[], total=0),
+            "1400rpm washing machine": _resolution(unmatched=("1400rpm",)),
+            "Steam washing machine": _resolution(unmatched=(), reasons=("provider_feed_selection_product_named_by_words",)),
+        }
+        asked = []
+
+        def resolve(search, shown):
+            asked.append((search, shown))
+            return answers[search]
+
+        kept = verified_shop_words(("EcoWash", "Fixturon", "1400rpm", "Steam"), _quiet(), resolve)
+        self.assertEqual([(word.word, word.search, word.count) for word in kept],
+                         [("EcoWash", "EcoWash washing machine", 12)])
+        self.assertEqual(asked[0], ("EcoWash washing machine", 4))
+        self.assertEqual(button_search("  compact  ", _quiet()), "compact washing machine")
 
 
 class _FakeMessages:
@@ -339,6 +433,26 @@ class TheMeasure(unittest.TestCase):
         self.assertIn("    yes      2. Testline Series 6 9kg Quiet Washing Machine | 549.00 GBP | Fictional Electricals",
                       measured.lines)
 
+    def test_the_shops_words_when_nothing_fits(self) -> None:
+        from measure_ai import measure_one
+
+        def resolve(search, shown):
+            if search == "EcoWash washing machine":
+                return _resolution(unmatched=(), total=7)
+            return _resolution()
+
+        def fake_ask(request, client):
+            answer = _answer("", ("unclear",) * 3, shop_words=("EcoWash", "Testline"))
+            return Asked(answer, "end_turn", "claude-haiku-5-5", 1800, 400, 0, 0, 0.00038, 1.2, "")
+
+        measured = measure_one("words", "quiet washing machine", resolve=resolve, ask=fake_ask, client=object(),
+                               dry_run=False)
+        self.assertEqual(measured.sentence, "")
+        self.assertEqual(measured.failure, "")
+        # "Testline" is a brand of the products: never offered.
+        self.assertEqual(measured.buttons, ("EcoWash (7)",))
+        self.assertEqual(measured.proposed, ("EcoWash", "Testline"))
+
     def test_a_dry_run_asks_nothing(self) -> None:
         from measure_ai import measure_one
 
@@ -415,7 +529,7 @@ class TheMeasureOnACatalogue(unittest.TestCase):
         self.assertIn("3 searches; the AI: not asked (a dry run)", out)
         self.assertIn("[1] words | washing machine for a narrow utility room", out)
         self.assertIn("read as washing machine; 8 products, 8 read; asked about: narrow, utility, room", out)
-        self.assertIn("characters of products", out)
+        self.assertIn("characters of products, 8 with a description", out)
         self.assertIn("[2] plain | washing machine\n    not asked: every word matched", out)
         self.assertIn("[3] judgement | best washing machine\n    not asked: only judgements or a condition not matched",
                       out)

@@ -12,6 +12,12 @@ passes; one that fails is not shown, and the page says nothing about it.
 - every word with a capital letter or a digit is in the search or the products' data;
 - no word of quality, testing, rating or urgency, no link or e-mail;
 - English, one sentence, at most 30 words.
+
+When no product fits, there is no sentence (owner, 2026-11-05: «ΟΤΑΝ ΔΕΝ ΒΡΙΣΚΕΙ ΚΑΤΙ ΝΑ
+ΜΗΝ ΛΕΕΙ ΔΕΝ ΒΡΕΘΗΚΕ», then «ΣΩΣΤΑ»), only the words the shops use for the need, each
+kept when it stands in a title of the products given, as a whole word, and is no brand,
+no word of quality or price, and not the kind's own name; the page offers each as a search
+only with the count the catalogue gives it (`shop_words.verified_shop_words`).
 """
 from __future__ import annotations
 
@@ -19,8 +25,8 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from picwise_ai.complex_search import ComplexSearch
-from picwise_ai.request import MAX_SENTENCE_WORDS
+from picwise_ai.complex_search import _ENGLISH_JUDGEMENTS, ComplexSearch
+from picwise_ai.request import MAX_SENTENCE_WORDS, MAX_SHOP_WORDS
 from picwise_providers.decision_labels import parse_price_amount
 
 # Words a sentence may never hold, whatever the titles say (`PROJECT_RULES.md` section 4:
@@ -35,6 +41,9 @@ FORBIDDEN_WORDS = frozenset(
     definitely
     """.split()
 )
+# "rated" is a word of reviews, except as a product's own rating: "rated for 20°F".
+_RATING_FOLLOWERS = frozenset({"for", "to", "at", "up"})
+_SHOP_WORD = re.compile(r"^[^\W_][\w'’&+./-]*(?: [^\W_][\w'’&+./-]*){0,2}$")
 # Capitalised words a sentence may use that no title needs to hold.
 _ALLOWED_CAPITALISED = frozenset({"picwise"})
 _NUMBER_WORDS = {
@@ -61,14 +70,16 @@ _WORD = re.compile(r"[^\W_][\w'’&+.-]*", re.UNICODE)
 
 @dataclass(frozen=True)
 class Checked:
-    """The answer as code read it: the sentence to show ("" when withheld), the product
-    numbers per verdict, and the first check that failed ("" when every check passed)."""
+    """The answer as code read it: the sentence to show ("" when withheld or when no
+    product fits), the product numbers per verdict, the first check that failed ("" when
+    every check passed), and, when no product fits, the shops' words that passed."""
 
     sentence: str
     yes: tuple[int, ...]
     no: tuple[int, ...]
     unclear: tuple[int, ...]
     failure: str
+    shop_words: tuple[str, ...] = ()
 
     @property
     def shown(self) -> bool:
@@ -132,11 +143,43 @@ def check_answer(answer: Any, complex_search: ComplexSearch, *, stop_reason: str
     if len(seen) != count:
         return _withheld(f"{count - len(seen)} of the {count} products not answered", yes, no, unclear)
 
+    if not yes:
+        # No sentence when nothing fits: the shops' words for the need, those that pass.
+        words = shop_words_that_pass(answer.get("shop_words"), complex_search)
+        return Checked(sentence="", yes=yes, no=no, unclear=unclear, failure="", shop_words=words)
     sentence = " ".join(str(answer.get("sentence") or "").split())
     failure = _sentence_failure(sentence, complex_search, yes)
     if failure:
         return _withheld(failure, yes, no, unclear)
     return Checked(sentence=sentence, yes=yes, no=no, unclear=unclear, failure="")
+
+
+def shop_words_that_pass(words: Any, complex_search: ComplexSearch) -> tuple[str, ...]:
+    """The words the AI gave for the need, each kept only when it stands as a whole word
+    or phrase in a title of the products it was given, is at most three words, and is
+    no brand of them, no word of quality, price or judgement, and not the kind's name."""
+    if not isinstance(words, list):
+        return ()
+    titles = [candidate.title for candidate in complex_search.candidates]
+    brands = {candidate.brand.lower() for candidate in complex_search.candidates if candidate.brand}
+    kind = complex_search.kind_name.lower()
+    kept: list[str] = []
+    for word in words:
+        phrase = " ".join(str(word or "").split())
+        lowered = phrase.lower()
+        if not phrase or len(phrase) > 40 or not _SHOP_WORD.match(phrase) or _GREEK.search(phrase):
+            continue
+        parts = set(re.split(r"[\s-]+", lowered))
+        if parts & (FORBIDDEN_WORDS | _ENGLISH_JUDGEMENTS) or lowered in brands or lowered in (kind, f"{kind}s"):
+            continue
+        pattern = re.compile(rf"(?<!\w){re.escape(phrase)}(?!\w)", re.IGNORECASE)
+        if not any(pattern.search(title) for title in titles):
+            continue
+        if lowered not in {k.lower() for k in kept}:
+            kept.append(phrase)
+        if len(kept) == MAX_SHOP_WORDS:
+            break
+    return tuple(kept)
 
 
 def _sentence_failure(sentence: str, complex_search: ComplexSearch, yes: tuple[int, ...]) -> str:
@@ -153,11 +196,13 @@ def _sentence_failure(sentence: str, complex_search: ComplexSearch, yes: tuple[i
         return "more than one sentence"
     if _LINK.search(sentence):
         return "a link or an e-mail"
-    lowered = {
-        part
-        for word in words
-        for part in word.strip(".,;:'’\"()").lower().replace("’", "'").split("-")
-    }
+    bare = [word.strip(".,;:'’\"()").lower().replace("’", "'") for word in words]
+    lowered = {part for word in bare for part in word.split("-")}
+    if "rated" in lowered and all(
+        index + 1 < len(bare) and bare[index + 1] in _RATING_FOLLOWERS
+        for index, word in enumerate(bare) if word == "rated"
+    ):
+        lowered.discard("rated")
     forbidden = sorted(lowered & FORBIDDEN_WORDS)
     if forbidden:
         return "a forbidden word: " + ", ".join(forbidden)
@@ -197,6 +242,8 @@ def _sentence_failure(sentence: str, complex_search: ComplexSearch, yes: tuple[i
         if yes:
             return f"'none' while {len(yes)} were answered yes"
         stated = True
+    if yes and not stated and len(complex_search.candidates) == 1 and rest.lstrip().lower().startswith("this "):
+        stated = True  # one product: "This tumble dryer says ..."
     if yes and not stated:
         return "the sentence does not say how many fit"
 

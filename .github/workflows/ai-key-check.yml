@@ -1,13 +1,14 @@
 # Checks that the Anthropic API key in GitHub's secrets (ANTHROPIC_API_KEY) works, then
 # sends one request of the AI layer end to end: the request it builds, through the SDK
 # installed from deployment/server/requirements-ai.txt with every hash, read by its own
-# code (deployment/server/ai_preflight.py, six fictional washing machines). Two calls of
+# code (deployment/server/ai_preflight.py, fictional washing machines). Three calls of
 # a few thousand tokens, well under a cent; nothing on the server or the site touched
 # (the AI layer's spec, docs/PICWISE_AI_LAYER_SPEC.md, 4.6 and 4.8).
 # The key is never printed (GitHub masks it as well); only whether it is there, the
 # answers' status, the model that answered and the tokens it counted.
 # To check again: change this file and push it alone.
-# Checked: 2026-11-05, the key (run 42105499951); then with the layer's request.
+# Checked: 2026-11-05, the key (run 42105499951); then with the layer's request (run
+# 42111149372); then the layer's answer with descriptions and the shops' words.
 name: ai-key-check
 on:
   push:
@@ -67,7 +68,7 @@ jobs:
           "$RUNNER_TEMP/ai/bin/pip" install -q --disable-pip-version-check --no-cache-dir --require-hashes \
             -r deployment/server/requirements-ai.txt
           "$RUNNER_TEMP/ai/bin/python" -c "import anthropic, sys; print('anthropic', anthropic.__version__, 'on Python', sys.version.split()[0])"
-      - name: One request of the AI layer, end to end
+      - name: Two requests of the AI layer, end to end
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |

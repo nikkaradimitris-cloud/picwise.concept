@@ -46,6 +46,8 @@ class Measured:
     total: int = 0
     read: int = 0
     sentence: str = ""
+    buttons: tuple[str, ...] = ()
+    proposed: tuple[str, ...] = ()
     failure: str = ""
     error: str = ""
     yes: int = 0
@@ -78,11 +80,14 @@ def _short(text: str, width: int = TITLE) -> str:
     return text if len(text) <= width else text[: width - 1] + "…"
 
 
-def measure_one(tag: str, search: str, *, resolve, ask, client, dry_run: bool) -> Measured:
-    """One search: the engine's answer, then the AI's when the search is complex."""
+def measure_one(tag: str, search: str, *, resolve, ask, client, dry_run: bool, descriptions=None) -> Measured:
+    """One search: the engine's answer, then the AI's when the search is complex: a
+    sentence when some products fit, else the shops' words as searches the catalogue
+    counts, else nothing."""
     from picwise_ai.checks import check_answer
     from picwise_ai.complex_search import SHOWN_FOR_CANDIDATES, complex_search_of, why_not_asked
     from picwise_ai.request import request_kwargs, user_message
+    from picwise_ai.shop_words import verified_shop_words
 
     measured = Measured(tag=tag, search=search)
     began = time.monotonic()
@@ -91,14 +96,16 @@ def measure_one(tag: str, search: str, *, resolve, ask, client, dry_run: bool) -
     measured.total = int(getattr(resolution, "provider_feed_total_count", 0) or 0)
     measured.kind = str(getattr(resolution, "understood_concept_name", "") or getattr(resolution, "understood_concept_id", "") or "")
     measured.why_not = why_not_asked(search, resolution)
-    complex_search = complex_search_of(search, resolution)
+    complex_search = complex_search_of(search, resolution, descriptions=descriptions)
     if complex_search is None:
         return measured
     measured.kind = complex_search.kind_name + (" (the broader kind)" if complex_search.fell_back else "")
     measured.words = complex_search.words
     measured.read = len(complex_search.candidates)
     if dry_run or client is None:
-        measured.lines.append(f"    the request: {len(user_message(complex_search)):,} characters of products")
+        described = sum(1 for candidate in complex_search.candidates if candidate.description)
+        measured.lines.append(f"    the request: {len(user_message(complex_search)):,} characters of products,"
+                              f" {described} with a description")
         return measured
     measured.asked = True
     asked = ask(request_kwargs(complex_search), client=client)
@@ -111,6 +118,16 @@ def measure_one(tag: str, search: str, *, resolve, ask, client, dry_run: bool) -
     measured.yes, measured.no, measured.unclear = len(checked.yes), len(checked.no), len(checked.unclear)
     measured.sentence = checked.sentence
     measured.failure = asked.error or checked.failure
+    measured.proposed = tuple(str(word) for word in (asked.answer or {}).get("shop_words") or () if str(word).strip())
+    if not measured.failure and not measured.sentence and checked.shop_words:
+        measured.buttons = tuple(
+            f"{word.word} ({word.count:,})" for word in verified_shop_words(checked.shop_words, complex_search, resolve)
+        )
+    if measured.proposed:
+        measured.lines.append(
+            f"    the shops' words proposed: {', '.join(measured.proposed)}; passed the checks:"
+            f" {', '.join(checked.shop_words) or 'none'}; answered by the catalogue: {len(measured.buttons)}"
+        )
     sentence = str((asked.answer or {}).get("sentence") or "")
     if not checked.shown and sentence:
         measured.lines.append(f"    the sentence written: {sentence}")
@@ -121,6 +138,8 @@ def measure_one(tag: str, search: str, *, resolve, ask, client, dry_run: bool) -
             measured.lines.append(
                 f"    {verdict:7} {number:2}. {_short(candidate.title)} | {candidate.price_text} | {_short(candidate.shop, 30)}"
             )
+            if verdict == "yes" and candidate.description:
+                measured.lines.append(f"               description: {_short(candidate.description, 160)}")
         if limit is not None and len(numbers) > limit:
             measured.lines.append(f"    {verdict:7} … and {len(numbers) - limit} more")
     return measured
@@ -138,8 +157,12 @@ def print_measured(index: int, measured: Measured) -> None:
     if measured.asked:
         if measured.sentence:
             print(f"    SHOWN: {measured.sentence}")
+        elif measured.failure:
+            print(f"    WITHHELD: {measured.failure}")
+        elif measured.buttons:
+            print(f"    BUTTONS: {' · '.join(measured.buttons)}")
         else:
-            print(f"    WITHHELD: {measured.failure or 'no reason'}")
+            print("    NOTHING: no product fits and no word of the shops to offer")
         print(f"    yes {measured.yes}, no {measured.no}, unclear {measured.unclear};"
               f" {measured.seconds:.1f} s; {measured.tokens_in:,} tokens in, {measured.tokens_out:,} out;"
               f" ${measured.cost:.5f}")
@@ -150,10 +173,16 @@ def print_measured(index: int, measured: Measured) -> None:
 def print_totals(results: list[Measured], budget_reached: bool) -> None:
     asked = [m for m in results if m.asked]
     shown = [m for m in asked if m.sentence]
+    buttons = [m for m in asked if not m.sentence and not m.failure and m.buttons]
+    nothing = [m for m in asked if not m.sentence and not m.failure and not m.buttons]
+    withheld_count = sum(1 for m in asked if m.failure)
     print()
     print("IN SHORT")
-    print(f"  searches: {len(results)}; the AI asked about {len(asked)}; a sentence shown for {len(shown)},"
-          f" withheld for {len(asked) - len(shown)}")
+    print(f"  searches: {len(results)}; the AI asked about {len(asked)}: a sentence shown for {len(shown)},"
+          f" the shops' words offered for {len(buttons)}, nothing for {len(nothing)}, withheld for {withheld_count}")
+    if buttons:
+        print(f"  words offered: {sum(len(m.buttons) for m in buttons)} in all;"
+              f" proposed {sum(len(m.proposed) for m in asked)}")
     for tag in TAGS:
         of_tag = [m for m in results if m.tag == tag]
         if not of_tag:
@@ -164,7 +193,7 @@ def print_totals(results: list[Measured], budget_reached: bool) -> None:
     not_asked = Counter(m.why_not for m in results if not m.words)
     if not_asked:
         print("  not complex, why: " + "; ".join(f"{why} {n}" for why, n in not_asked.most_common()))
-    withheld = Counter((m.failure.split(":")[0] if m.failure else "no reason") for m in asked if not m.sentence)
+    withheld = Counter(m.failure.split(":")[0] for m in asked if m.failure)
     if withheld:
         print("  withheld, why: " + "; ".join(f"{why} {n}" for why, n in withheld.most_common()))
     if asked:
@@ -236,8 +265,21 @@ def main(argv: list[str] | None = None) -> int:
         check=PreparedFileCheck("fresh", prepared, prepared.prepared_at),
     )
     state.remember_product_kinds({})
+    from picwise_ai.complex_search import description_of
+
+    by_id = {str(product.provider_product_id or "").strip(): product for product in prepared.products}
+
+    class _Descriptions:
+        """Each product's description by its id, read only when asked for."""
+
+        def get(self, product_id, default=""):
+            product = by_id.get(str(product_id or "").strip())
+            return description_of(product) if product is not None else default
+
+    descriptions = _Descriptions()
     dry_run = args.dry_run or not os.environ.get("ANTHROPIC_API_KEY")
-    client = None if dry_run else make_client()
+    # The measure waits longer than the site will, to see how long an answer takes.
+    client = None if dry_run else make_client(timeout=30.0)
     print(f"the prepared catalogue of {prepared.prepared_at.isoformat()}: {len(prepared.products):,} products,"
           f" read in {time.monotonic() - began:.0f} s; {len(searches)} searches; the AI: "
           + ("not asked (a dry run)" if dry_run else f"{MODEL}, effort {EFFORT}, a budget of ${args.budget:.2f}"))
@@ -250,7 +292,8 @@ def main(argv: list[str] | None = None) -> int:
         budget_reached = budget_reached or over
         try:
             measured = measure_one(tag, search, resolve=resolve_live_search, ask=ask,
-                                   client=None if over else client, dry_run=dry_run or over)
+                                   client=None if over else client, dry_run=dry_run or over,
+                                   descriptions=descriptions)
         except Exception as error:  # a measure only: the next search goes on
             measured = Measured(tag=tag, search=search, why_not=f"the search failed: {type(error).__name__}: {error}")
         spent += measured.cost
