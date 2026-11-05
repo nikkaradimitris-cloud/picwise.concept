@@ -35,14 +35,22 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   process each, four at a time, from `tests/`. All pass but
   `test_picwise_canonical_vocabulary_registry_stage2` (fails as before this work) and the 8
   `test_local_nlu_*`, which fail only when run from `tests/` (from the repository root they
-  pass: `python3 -m unittest tests.test_local_nlu_brand_resolver`, checked). **Not run: the
-  41 modules from `test_picwise_performance_stage1c` on, alphabetically** (among them the
-  search-index ones, `test_picwise_search_page`, the `test_picwise_server_print_*`,
-  `test_stage_22_live_deployment`, `test_surface_stages_10_to_15`; the kind-reading ones
-  among them passed in the 17-module run), and `test_picwise_learning_stage7b` (54
-  minutes). **First thing of the next conversation: run those, then ask the owner for
-  «ανέβασε»** (put to them 05/11, not answered yet), then deploy (`32f0c93` or later to
-  `ccr-1361f1a7-dcpo60`, without `[skip actions]`), read the deployment's kind report and
+  pass: `python3 -m unittest tests.test_local_nlu_brand_resolver`, checked). **The rest, run
+  to the end on 05/11** (branch `ccr-f9cf1b70-rzslft`, the code of `32f0c93`: only docs
+  after it): the 72 modules from `test_picwise_performance_stage1c` on, alphabetically (the
+  "41" left could not be told apart, so all 72), one process each, three at a time, from the
+  repository root with `tests/` on the path (`python3 -m unittest discover -s tests -t tests
+  -p <file>`), and `test_picwise_learning_stage7b` alone (808 s): **71 pass** (814 tests, 30
+  skipped); **2 fail, each the same on the live code `4b5497b`**, neither on the kind
+  reader: `test_picwise_search_index_generated_blind_stage4` (known: 32 of 184 misspelled
+  variants of the registry's terms, "act on caera", "xea", find nothing) and
+  `test_picwise_search_index_blind_evaluation_stage6a` (31 minutes, earlier left
+  unfinished: 1 of 13, `test_negative_broad_terms_are_included` expects "amazon" and
+  "galaxy" among the broad words; `blind_evaluation._NEGATIVE_BROAD_TERMS` never held them,
+  since the first commit `69aa5c7`, 25/05). The owner: «Ναι, ανέβασε αν περάσουν όλα», then,
+  told of the first, «Ναι, ανέβασε όταν περάσουν τα δύο αργά»; the second slow one failed,
+  so nothing was pushed and the owner was asked again. **Then:** deploy (`be1cbf9` or later
+  to `ccr-1361f1a7-dcpo60`, without `[skip actions]`), read the deployment's kind report and
   run `server-confusions.yml` with the parts "searches" and "live"; then item 2.
 - **Approved by the owner 05/11 (below): an AI layer for complex searches** («σε έναν
   κατάλογο που συνεχώς ανανεώνεται θα προκύπτουν πάντα νέες κατηγορίες... αλγόριθμος να
@@ -82,8 +90,10 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   the session's safety check stopped one as a production deploy, though it carried
   `[skip actions]`; after the owner's «Ναι στείλε τη μέτρηση» it went through. Ask first,
   say what the push does.
-- **Which branch.** This conversation's branch `ccr-5b36715a-qh6d95` holds all of
-  `ccr-9826870f-qkgl6s` (fast-forwarded) and this work; start from it. **The deploying
+- **Which branch.** `ccr-f9cf1b70-rzslft` (05/11, later) holds all of
+  `ccr-5b36715a-qh6d95` (fast-forwarded) and the test run's record; start from it. Before
+  it, `ccr-5b36715a-qh6d95` held all of `ccr-9826870f-qkgl6s` (fast-forwarded) and this
+  work. **The deploying
   branch `ccr-1361f1a7-dcpo60` is at `8ebb2ca`**: it now holds the main-kind rule
   (`cdd1eb3`, `92fd939`), the narrower aisles as measured (`5ac3f1e`, with the Baby &
   Toddler entry since taken out) and the audit, **not deployed** (deployed: `4b5497b`, run
