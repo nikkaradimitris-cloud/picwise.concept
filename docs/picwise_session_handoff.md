@@ -59,7 +59,16 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   stays the owner's rule; the NLU stays local (tests pin no live LLM there: AI as a layer
   of its own); a spec first (PROJECT_RULES section 4); an Anthropic API key as a secret
   only; Claude Opus 5.5 for the measurement, a cheaper model the owner's choice after the
-  numbers.
+  numbers. **Then the owner:** «Μήπως είναι καλύτερα να αναπτύξουμε custom για να μην
+  μπλέξουμε με χρεώσεις.. αν επέλεγα κάποιον θα έλεγα το Haiku 5.5». Proposed: no language
+  model of our own on the VPS (8 vCores, 24 GB, no GPU: slow, weaker in Greek, competing
+  with the nightly preparation's ~8 GB); custom where it pays: (a) a classifier of our own,
+  standard library only like the rest of the site, trained each night on the products
+  whose type or shelf names their kind, a second opinion on the doubtful ones, measured by
+  the audit before it counts; (b) the summary sentence written from the engine's own counts
+  ("12 of 40 power banks say iPhone; from £14.99"), no AI; (c) Claude Haiku 5.5 only for
+  what those cannot do (a need no title states: "for a 10-year-old", "quiet"), with a daily
+  cap in code and prepaid credits (to confirm on the account), measured offline first.
 - **A push to the deploying branch needs the owner's word in the conversation:** on 05/11
   the session's safety check stopped one as a production deploy, though it carried
   `[skip actions]`; after the owner's «Ναι στείλε τη μέτρηση» it went through. Ask first,
