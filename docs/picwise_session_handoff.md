@@ -27,7 +27,10 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   purchase, and made a key with «Get API key», which asked for no name, workspace or
   expiry: **it expires on 2026-12-05 at 20:37 UTC** (30 days; the owner read it on the
   Console), so the owner was asked to make a new one with no expiry («Create key» on the
-  API keys page), update the GitHub secret and delete the old key), then put it in
+  API keys page), update the GitHub secret and delete the old key. Done (owner: «OK»):
+  `picwise-server`, never expiring, linked to the owner, Default workspace; the check
+  run again (run `42105499951`, attempt 2, 20:49 UTC) passed the same way. Whether the
+  old key is deleted (so the check proves the new one): asked. The first key was put in
   GitHub's secrets
   as `ANTHROPIC_API_KEY`. Checked by `.github/workflows/ai-key-check.yml` (this branch
   only, run when its own file changes; never prints the key): run `42105499951`, the
