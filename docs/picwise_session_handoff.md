@@ -25,7 +25,10 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   credit with auto-reload turned off (the dashboard then showed $10.00 and «Turn on
   auto-reload»; the tier's cap $500 a month), entered a European VAT number at the
   purchase, and made a key with «Get API key», which asked for no name, workspace or
-  expiry (its expiry not known yet: asked of the owner), then put it in GitHub's secrets
+  expiry: **it expires on 2026-12-05 at 20:37 UTC** (30 days; the owner read it on the
+  Console), so the owner was asked to make a new one with no expiry («Create key» on the
+  API keys page), update the GitHub secret and delete the old key), then put it in
+  GitHub's secrets
   as `ANTHROPIC_API_KEY`. Checked by `.github/workflows/ai-key-check.yml` (this branch
   only, run when its own file changes; never prints the key): run `42105499951`, the
   secret 106 characters starting `sk-ant-`, HTTP 200, `claude-haiku-5-5` answered
