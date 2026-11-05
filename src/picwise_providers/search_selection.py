@@ -1790,6 +1790,22 @@ def _select_products_for_concept(
         for _product, fields in members
     ]
     kept, dropped, ordered = _price_first_answer(members, haystacks, units, page_size=safe_max)
+    # Owner, 2026-11-05 (the decision contract, "The main kind only", point 7): a word of
+    # the search no product of the kind carries ("vitamin tablets", "life jacket") may be
+    # what the products set aside as doubtful are, and those are found by their words.
+    if any(not any(_carries(unit, haystack) for haystack in haystacks) for unit in units):
+        by_words = _doubtful_products_by_words(
+            reading,
+            concept_id,
+            filters,
+            eligible,
+            eligible_fields,
+            safe_max=safe_max,
+            shown=shown,
+            condition_request=condition_request,
+        )
+        if by_words is not None:
+            return by_words
     return _price_first_result(
         ordered,
         kept,
@@ -1804,6 +1820,90 @@ def _select_products_for_concept(
         condition_request=condition_request,
         also_unmatched=tuple(reading.judgements) + tuple(unmatched_name_words) + condition_unmatched,
         reason_code="product_concept_understood",
+    )
+
+
+def _doubtful_products_by_words(
+    reading: ConceptReading,
+    concept_id: str,
+    filters: tuple[str, ...],
+    eligible: tuple[ProviderProduct, ...],
+    eligible_fields: tuple[dict[str, str], ...],
+    *,
+    safe_max: int,
+    shown: int,
+    condition_request: tuple[str, ...],
+) -> ProviderProductSelectionResult | None:
+    """The products whose kind is doubtful that carry every word of a search for a kind,
+    when some of its words are carried by none of the kind's products (owner, 2026-11-05;
+    the decision contract, "The main kind only", point 7).
+
+    A doubtful product is never found by its kind, so "tablet" lists tablets only; it is
+    found by its words: "vitamin tablets" lists the vitamin tablets a pharmacy files under
+    "Vitamins & Supplements", which carry "vitamin" and a name of the kind in their own
+    title or type. Each word is read as the kind's filters are, as a whole word with its
+    plural, and the kind's name as any of its names ("mice" for "mouse"). The page names
+    no kind for them. None when no doubtful product carries every word: the answer is
+    then the kind's products, and the page says which word it could not match.
+    """
+    kind_names = _kind_name_pattern(concept_id)
+    if not kind_names or not filters:
+        return None
+    rows = [
+        (product, fields)
+        for product, fields in zip(eligible, eligible_fields)
+        if UNCERTAIN_MARKER in _product_concepts(product, fields)
+    ]
+    if not rows:
+        return None
+    units = _filter_units(
+        filters,
+        reading.filter_sources,
+        spec_values=frozenset(spec.token for spec in reading.specs),
+    ) + (
+        _FilterUnit(
+            display=" ".join(reading.concept_words) or concept_id.replace("_", " "),
+            terms=tuple(reading.feed_terms) or (concept_id,),
+            pattern=re.compile(rf"(?<!\w)(?:{kind_names})(?!\w)", flags=re.IGNORECASE),
+            fields=_KIND_PHRASE_FIELDS,
+        ),
+    )
+    members: list[tuple[ProviderProduct, dict[str, str]]] = []
+    haystacks: list[dict[tuple[str, ...], str]] = []
+    for product, fields in rows:
+        haystack = {
+            scope: " ".join(fields[name] for name in scope if fields.get(name))
+            for scope in (_FILTER_FIELDS, _KIND_PHRASE_FIELDS)
+        }
+        if all(_carries(unit, haystack) for unit in units):
+            members.append((product, fields))
+            haystacks.append(haystack)
+    if not members:
+        return None
+    condition_unmatched: tuple[str, ...] = tuple()
+    if condition_request:
+        asked_for = [index for index, (product, _fields) in enumerate(members) if product_non_new_condition(product)]
+        if asked_for:
+            members = [members[index] for index in asked_for]
+            haystacks = [haystacks[index] for index in asked_for]
+        else:
+            condition_unmatched = (condition_request[0],)
+    kept, dropped, ordered = _price_first_answer(members, haystacks, units, page_size=safe_max)
+    return _price_first_result(
+        ordered,
+        kept,
+        dropped,
+        members,
+        haystacks,
+        safe_max=safe_max,
+        shown=shown,
+        understood_concept="",
+        effective_query=" ".join(dict.fromkeys(tuple(reading.feed_terms) + filters)),
+        name_terms=tuple(),
+        condition_request=condition_request,
+        also_unmatched=condition_unmatched,
+        reason_code="product_named_by_words",
+        strong_only_if_whole=True,
     )
 
 

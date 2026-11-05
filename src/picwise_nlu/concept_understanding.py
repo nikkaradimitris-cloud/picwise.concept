@@ -1247,8 +1247,9 @@ def annotate_product_concepts(product_type: str, category: str, title: str) -> f
 
 def kinds_before_the_aisle_rule(product_type: str, category: str, title: str) -> frozenset[str]:
     """The kinds `annotate_product_concepts` gave before a title's kind was read against
-    its aisle's departments (`_aisle_may_hold`, owner, 2026-10-25), so the build's note
-    can say which products that rule made doubtful. Measured only: no search reads it."""
+    its aisle's departments (`_aisle_may_hold`, owner, 2026-10-25), and a type's or
+    shelf's kind too (owner, 2026-11-05), so the build's note can say which products that
+    rule made doubtful. Measured only: no search reads it."""
     return _with_context_markers(
         _annotate_kinds(product_type, category, title, aisle_rule=False), category, title
     )
@@ -1369,6 +1370,22 @@ def _annotate_kinds(product_type: str, category: str, title: str, *, aisle_rule:
             lead_head = _head_of_text(_title_lead(title), first_phrase=True)
             if lead_head in bases:
                 bases = [lead_head]
+        if aisle_rule:
+            # Owner, 2026-11-05: «Εντάξει, προχώρα με το βήμα 2». A kind the type or the
+            # shelf names is read against the aisle as a title's is: "Toners & Astringents"
+            # (skin care) names no printer toner, "Washers" (fasteners) no washing machine,
+            # "Life Jackets" no jacket. The title then decides under the same rule: its
+            # own kind when the aisle may hold that one ("Biometric Monitors", "Digital
+            # Blood Pressure Monitor"), else the product is doubtful.
+            held = [base for base in bases if _aisle_may_hold(category, base)]
+            if not held:
+                head = _title_fallback_head(title, category)
+                if head is ACCESSORY_MARKER:
+                    return frozenset({ACCESSORY_MARKER})
+                if head is None or head is UNCERTAIN_MARKER:
+                    return frozenset({UNCERTAIN_MARKER})
+                held = [head]
+            bases = held
     concepts: set[str] = set()
     for base in bases:
         concepts.update(broader_concepts(base))
@@ -1974,9 +1991,11 @@ _AISLE_HOLDS = {
 # filed among them.
 _SUB_AISLE_HOLDS = {
     ("apparel & accessories", "jewelry"): "JW",
-    # Riding clothing, in Google's newer and older names.
-    ("sporting goods", "outdoor recreation", "equestrian", "riding apparel & accessories"): "CL FO",
-    ("sporting goods", "outdoor recreation", "equestrian", "riding clothing & accessories"): "CL FO",
+    # Riding clothing, in Google's newer and older names, and its accessories: riding
+    # gloves are gloves (owner, 2026-11-05: «Εντάξει, προχώρα με το βήμα 2»; read from
+    # the shelf too since then).
+    ("sporting goods", "outdoor recreation", "equestrian", "riding apparel & accessories"): "CL FO JW",
+    ("sporting goods", "outdoor recreation", "equestrian", "riding clothing & accessories"): "CL FO JW",
     # What goes on or with a tool is not the tool.
     ("hardware", "tool accessories"): "",
     ("hardware", "hardware accessories", "hardware fasteners"): "",

@@ -578,6 +578,33 @@ supplement tablets among their first twelve, of 131; the server's kind report co
    kids' backpacks and a sling bag back, with 5 nappy wallets as wallets and 2 breast-milk
    storage bags as bags), and Google's water-sport clothing holding clothing (wetsuits
    titled "Full Suit" would be suits).
+6. **A kind the shop's type or shelf names is read against the aisle too** (owner,
+   2026-11-05: «Πρώτα το 1 μετά το 2», then «Εντάξει, προχώρα με το βήμα 2»). A shelf can
+   name a kind in another sense: "Toners & Astringents" (skin care) names printer toner,
+   "Washers" (fasteners) washing machines, "Life Jackets" jackets, "Cake Servers"
+   servers, "Film & Television Digital Downloads" televisions. When the aisle the product
+   is filed in may not hold the kind its type or shelf names (the same tables, points 2
+   and 5), the title decides as in point 1: its own kind when the aisle may hold that one
+   ("Biometric Monitors", "Digital Blood Pressure Monitor": a blood-pressure monitor), else
+   the product is doubtful. Measured on the server's catalogue of 2026-11-05 morning (run
+   `41998750052`, part 4): 491 products in 20 kinds, among them 139 washers, 123 gift,
+   storage and lunch bags, 88 face toners, 26 health monitors, 23 golf and craft markers,
+   22 craft paints, 16 face mirrors, 10 life jackets, 7 cake servers and 4 digital
+   downloads. Riding clothing holds riding accessories too (riding gloves are gloves).
+   Tool bags, tool backpacks and tool belts are no fashion bags or belts: doubtful, and
+   found by their words (point 7).
+7. **A doubtful product is found by its words** (owner, the same day): when a search for
+   a kind has words besides the kind's name that none of the kind's products carry, the
+   doubtful products that carry every one of those words and a name of the kind in their
+   own title or type are the answer, price first, and the page names no kind for them
+   ("Results for: vitamin tablets"): "vitamin tablets" lists vitamin tablets, "sugar mice"
+   sugar mice and "life jacket" life jackets, while "tablet", "mouse" and "jacket" list
+   tablets, mice and jackets only (`search_selection._doubtful_products_by_words`). When no
+   doubtful product carries every word, the answer is the kind's products as before, and
+   the page says which word it could not match. The owner, of a word that could find the wrong thing
+   ("kids tablet" where no tablet says "kids"): «Όταν κάποιος γράψει kids. Το ευρετήριο θα
+   προτείνει την επόμενη συμπλήρωση λέξεις ...εκεί λοιπόν γίνεται η διόρθωση κατά τη χρήση
+   του χρήστη.. δεν χρειάζεται να το παιδεύουμε άλλο».
 
 ## Offers first, decided by the owner, 2026-11-01
 

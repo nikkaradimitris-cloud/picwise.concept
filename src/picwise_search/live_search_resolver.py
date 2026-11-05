@@ -504,6 +504,10 @@ def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
     provider_feed_recommendation_confidence: str | None = None
     provider_feed_price_first = False
     provider_feed_total_count = 0
+    # A search for a kind answered with the doubtful products its words found ("vitamin
+    # tablets"; the decision contract, "The main kind only", point 7): the page names no
+    # kind for them. What the search was read as is still kept for the query log.
+    answered_by_words = False
     provider_feed_cheapest_product_ids: tuple[str, ...] = ()
     provider_feed_shop_counts: tuple[tuple[str, int], ...] = ()
     provider_feed_price_ranks: tuple[tuple[str, int], ...] = ()
@@ -592,6 +596,12 @@ def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
                     products_exposed = bool(
                         expose_selection and selection.status == "selected"
                     )
+                    answered_by_words = bool(
+                        products_exposed
+                        and concept_understood
+                        and selection.price_first
+                        and not selection.understood_concept
+                    )
                     if products_exposed:
                         provider_feed_selected_products = tuple(
                             provider_product_to_backend_dict(
@@ -663,7 +673,7 @@ def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
     understood_concept_name = None
     kind_choices: tuple[str, ...] = ()
     kind_choices_name = ""
-    if concept_understood:
+    if concept_understood and not answered_by_words:
         concept = get_product_concepts_by_id().get(str(concept_reading.concept_id))
         if concept is not None:
             greek_query = concept_reading.head_language == "el"

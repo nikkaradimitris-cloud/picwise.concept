@@ -61,6 +61,17 @@ OWNER_WORDS = (
     "cable", "bed", "suit", "pad", "charger", "stand", "light", "speaker", "watch", "ring",
     "chain", "drill",
 )
+# Searches for a product by its own name, of the kinds the main-kind rule sets aside as
+# doubtful (owner, 2026-11-05: «Εντάξει, προχώρα με το βήμα 2»): found by their words
+# when none of the kind's products carries the other words (the decision contract, "The
+# main kind only", point 7). "kids tablet" is the case the owner left to the search box's
+# suggestions: «δεν χρειάζεται να το παιδεύουμε άλλο».
+NAME_SEARCHES = (
+    "vitamin tablets", "electrolyte tablets", "sugar mice", "lash fans", "life jacket", "face toner",
+    "golf ball marker", "cake server", "gift bag", "lunch bag", "rubber gloves", "riding gloves",
+    "shaving mirror", "tool backpack", "tool belt", "nail drill", "light therapy lamp",
+    "blood pressure monitor", "craft paint", "treat bags", "kids tablet",
+)
 # How many cards a search is read for: three pages of four.
 SHOWN = 12
 # Per kind or word: the shelves, aisles and other readings named, and the cheapest listed.
@@ -623,7 +634,7 @@ def search_queries(audit: Audit, limit: int = 0) -> list[str]:
     if limit:
         names = names[:limit]
     queries = list(OWNER_WORDS)
-    for name in names:
+    for name in (*NAME_SEARCHES, *names):
         if name not in queries:
             queries.append(name)
     return queries
@@ -659,6 +670,10 @@ def search_on_copy(audit: Audit, queries: list[str], name: str) -> list[Searched
             results.append(searched)
             continue
         searched.understood = str(resolution.understood_concept_id or "")
+        if "provider_feed_selection_product_named_by_words" in resolution.reason_codes:
+            # Found by their words, not by a kind ("vitamin tablets"; the decision contract,
+            # "The main kind only", point 7): read as the words' answer, of whatever kinds.
+            searched.understood = ""
         searched.total = int(resolution.provider_feed_total_count or 0)
         rows = list(resolution.provider_feed_selected_products) + list(resolution.provider_feed_more_products)
         for row in rows[:SHOWN]:
