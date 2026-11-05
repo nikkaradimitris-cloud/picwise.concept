@@ -47,8 +47,11 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   and Team plans carry a monthly API credit ($100, $200, $20-100 a seat up to $500;
   claimed on claude.ai, Settings > Billing, "API credits", by linking a Console
   organization, one per plan, not changeable later without support; no card; the API
-  stops when it runs out, nothing charged to the plan; none on Pro or Enterprise). Which
-  plan the owner has is not known yet (the spec, 4.6). **Next:** the owner's word that the
+  stops when it runs out, nothing charged to the plan; none on Pro or Enterprise). **The owner's plan is Pro** («ειναι προ»): no API
+  credit. So the steps: a Console account, $10 of credit bought ("Buy credits"), auto-reload
+  left off, so the $10 is the ceiling (credit expires a year after purchase; when it runs
+  out the API refuses until more is added), a workspace "PicWise", the key scoped to it,
+  the GitHub secret (the spec, 4.6). **Next:** the owner's word that the
   secret is in GitHub (never the key itself); meanwhile (b), if the owner says yes, then
   (c) with the API faked. **Branch:**
   `ccr-4f47068a-99ikwe` holds all of `ccr-f9cf1b70-rzslft` (fast-forwarded) and the spec;

@@ -297,7 +297,7 @@ only it has the SDK. A visitor whose browser runs no script, as most bots, costs
 ### 4.6 The account, the key, the library
 
 - **The credit.** The owner's Claude plan (the owner, 05/11: «εχω ηδη συνδρομη στο
-  anthropic claud σε αυτο που μιλαμε»; which plan, not yet known) pays for Claude and
+  anthropic claud σε αυτο που μιλαμε», then «ειναι προ»: Pro) pays for Claude and
   Claude Code, not for the API. But Max, Ultra and Team plans carry a monthly API credit
   (Anthropic's page "API credits for Max, Ultra, and Team plans", read on 2026-11-05):
   - $100 a month on Max, $200 on Ultra, on Team $20 or $100 a seat, pooled up to $500;
@@ -314,10 +314,15 @@ only it has the SDK. A visitor whose browser runs no script, as most bots, costs
 - **The owner**, on the Claude Console (`platform.claude.com`; Anthropic's pages on
   authentication and on rate limits, read on 2026-11-05):
   - opens an account (or uses the one linked to the plan); without the plan's credit,
-    buys credit, with automatic reload off if the page offers it;
-  - sets a monthly spend limit on the Billing page, below the tier's own cap (the Start
-    tier's is $500 a month; a new organization may start lower, in an evaluation tier);
-    past the limit the API refuses every request until the next month;
+    buys credit on the Billing page ("Buy credits"; Anthropic's Help Center, "How do I
+    pay for my Claude API usage?", read on 2026-11-05: the API is paid with credit
+    bought in advance, which expires a year after its purchase; when it runs out the
+    API refuses every request until more is added). Automatic reload stays off (the
+    page's "Set up auto-reload" is not pressed), so the credit bought is the ceiling;
+  - may set a monthly spend limit on the Billing page as well, below the tier's own cap
+    (the Start tier's is $500 a month; a new organization may start lower, in an
+    evaluation tier); past the limit the API refuses every request until the next
+    month. With the reload off it is not needed;
   - creates a workspace "PicWise", the key's home (a workspace may carry a spend limit
     of its own; the account's is enough here);
   - creates an API key linked to themselves, **scoped to that workspace** (a key not
@@ -394,7 +399,7 @@ and the branch.
 | (a), with its numbers | the bar | right at least 99 times in 100 held out, and no rise of wrong cards in the 320 searches |
 | (a), with its numbers | may the classifier ever go against the aisle rule | no |
 | (b) | a Greek sentence for a Greek search | no: the site is in English |
-| (c), at the account | the credit, and the account's spend limit | the plan's monthly API credit if the plan is Max, Ultra or Team, else $10 bought, reload off; $30 a month on the account |
+| (c), at the account | the credit, and the account's spend limit | the owner's plan is Pro, which carries no API credit: $10 bought, reload off, which is then the ceiling; a spend limit is not needed |
 | (c), before it is built | the daily cap in code | $1 a day |
 | (c), with the measure | the bar to go live | no wrong sentence among those shown |
 | (c), with the measure | marks on the cards, or products left out | the sentence alone |
