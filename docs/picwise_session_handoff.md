@@ -20,6 +20,12 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-05): pick up here -- start here
 
+- **Latest (05/11, about 21:00 UTC): the owner chose the AI part (c) first** («ΝΑΙ», to
+  «Να ξεκινήσω να το φτιάχνω;», after asking whether products are now indexed better,
+  especially in complex searches: not yet, nothing changed on the site). The order is
+  now (c), (a), (b) (the spec, section 5). First milestone: the offline measure of about
+  150 complex searches (the spec, 4.8), shown to the owner before anything is wired to
+  the site.
 - **Latest (05/11, 20:40 UTC): the Anthropic API key is in GitHub's secrets and works.**
   The owner made a Console account (Individual, «Νικος's Individual Org»), bought $10 of
   credit with auto-reload turned off (the dashboard then showed $10.00 and «Turn on

@@ -381,15 +381,21 @@ with the API faked: no test reaches the network. The NLU's guard tests stay and 
 Each step is told to the owner, and goes live only on the owner's word naming the commit
 and the branch.
 
-1. **This spec:** the owner approves it, or changes it.
-2. **(b) the sentence from the counts:** the smallest. Built and tested, shown to the
-   owner on the audit's searches, then deployed.
+Changed by the owner on 2026-11-05: (c) first, since what matters to the owner is the
+complex searches and the key was ready («ΝΑΙ», to «Να ξεκινήσω να το φτιάχνω;», the AI
+part, measured first on about 150 searches).
+
+1. **This spec:** the owner approves it, or changes it. Done (05/11, «παμε για το απι
+   κευ»).
+2. **(c) Haiku:** the owner opens the account and puts the key in GitHub (done 05/11,
+   checked by `.github/workflows/ai-key-check.yml`); built and tested; the offline measure
+   (4.8) to the owner; live with the cap on the owner's word; after a week, its use and
+   cost to the owner.
 3. **(a) the classifier, in the shade:** built and tested; measured on the server's
    catalogue (2.5); the numbers to the owner, who sets the bar; switched on with
    «ανέβασε».
-4. **(c) Haiku:** the owner opens the account and puts the key in GitHub; built and
-   tested; the offline measure (4.8) to the owner; live with the cap on the owner's word;
-   after a week, its use and cost to the owner.
+4. **(b) the sentence from the counts:** built and tested, shown to the owner on the
+   audit's searches, then deployed.
 
 ## 6. The owner's decisions
 
