@@ -44,7 +44,7 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   «ανέβασε»** (put to them 05/11, not answered yet), then deploy (`32f0c93` or later to
   `ccr-1361f1a7-dcpo60`, without `[skip actions]`), read the deployment's kind report and
   run `server-confusions.yml` with the parts "searches" and "live"; then item 2.
-- **Asked by the owner 05/11, not decided: an AI layer for complex searches** («σε έναν
+- **Approved by the owner 05/11 (below): an AI layer for complex searches** («σε έναν
   κατάλογο που συνεχώς ανανεώνεται θα προκύπτουν πάντα νέες κατηγορίες... αλγόριθμος να
   πιάνει τις σύνθετες αναζητήσεις (π.χ. από το μήκος του query ή λέξεις όπως "για", "στη")
   και τότε μόνο να ενεργοποιεί τοπικά το AI πάνω στους 20-30 επαληθευμένους τίτλους...
@@ -69,6 +69,15 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   ("12 of 40 power banks say iPhone; from £14.99"), no AI; (c) Claude Haiku 5.5 only for
   what those cannot do (a need no title states: "for a 10-year-old", "quiet"), with a daily
   cap in code and prepaid credits (to confirm on the account), measured offline first.
+  **The owner: «Εντάξει, πάμε σε άλλη συζήτηση συμφωνώ με την αρχιτεκτονική και την
+  εγκατάσταση Haiku»** (approved: the architecture (a), (b), (c) and Claude Haiku 5.5).
+  Order: item 1 (the remaining tests, then the owner's «ανέβασε», still not given), item 2,
+  then this: a spec first (`docs/`, PROJECT_RULES section 4) for the owner's approval; (a)
+  and (b); then (c): the owner opens an Anthropic account and an API key, the key only as a
+  GitHub secret passed to the server, never in the repository, a log or the chat; the
+  Anthropic SDK pinned with its hash beside gunicorn (`requirements-server.txt`), the
+  site's first library; a daily cap; the offline measure (about 150 complex searches,
+  Greek and English) shown to the owner before anything goes live.
 - **A push to the deploying branch needs the owner's word in the conversation:** on 05/11
   the session's safety check stopped one as a production deploy, though it carried
   `[skip actions]`; after the owner's «Ναι στείλε τη μέτρηση» it went through. Ask first,
