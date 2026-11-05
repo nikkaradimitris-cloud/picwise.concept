@@ -301,8 +301,8 @@ only it has the SDK. A visitor whose browser runs no script, as most bots, costs
   - sets a monthly spend limit on the Billing page, below the tier's own cap (the Start
     tier's is $500 a month; a new organization may start lower, in an evaluation tier);
     past the limit the API refuses every request until the next month;
-  - creates a workspace "PicWise" with a spend limit of its own (none can be set on the
-    Default workspace);
+  - creates a workspace "PicWise", the key's home (a workspace may carry a spend limit
+    of its own; the account's is enough here);
   - creates an API key linked to themselves, **scoped to that workspace** (a key not
     scoped to one must name the workspace on every request), with no expiry, since it is
     kept in GitHub's secrets and changed by hand; a key that leaks is disabled or deleted
@@ -377,7 +377,7 @@ and the branch.
 | (a), with its numbers | the bar | right at least 99 times in 100 held out, and no rise of wrong cards in the 320 searches |
 | (a), with its numbers | may the classifier ever go against the aisle rule | no |
 | (b) | a Greek sentence for a Greek search | no: the site is in English |
-| (c), at the account | the credit, and the account's spend limit | $10 of credit, reload off; $30 a month on the account and on the workspace |
+| (c), at the account | the credit, and the account's spend limit | $10 of credit, reload off; $30 a month on the account |
 | (c), before it is built | the daily cap in code | $1 a day |
 | (c), with the measure | the bar to go live | no wrong sentence among those shown |
 | (c), with the measure | marks on the cards, or products left out | the sentence alone |
