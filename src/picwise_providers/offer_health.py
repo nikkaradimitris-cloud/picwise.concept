@@ -37,6 +37,9 @@ _AVAILABILITY_RAW_KEYS = (
     "in_stock",
     "stock_status",
     "availability_text",
+    # What the shop's own catalogue says, written by `shop_catalogue.py` only when it
+    # says sold out (owner, 2026-10-26: the bot checks the feed's stock).
+    "shop_stock",
 )
 # Offer flags some feeds carry next to availability (Awin: is_for_sale, pre_order).
 _FOR_SALE_KEYS = ("is_for_sale",)

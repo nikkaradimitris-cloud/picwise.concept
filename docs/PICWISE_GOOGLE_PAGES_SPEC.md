@@ -17,6 +17,11 @@ rules are read again at the source: Google changes them.
   λέξεις-κλειδιά τις αντιστοιχίζει η ίδια η Google σε αυτές τις σελίδες.
 - Η Google βλέπει μόνο σελίδες που περνούν έλεγχο ποιότητας. Οι υπόλοιπες υπάρχουν για
   τους επισκέπτες, αλλά λένε στη Google να μην τις καταχωρίσει.
+- Κανόνας του ιδιοκτήτη (29/10, `PROJECT_RULES.md` §13): το PicWise στήνεται ολόκληρο,
+  και όλα τα προϊόντα βρίσκονται στη δική μας αναζήτηση. Στη Google δίνουμε τμηματικά
+  μόνο όσα διαλέγει ο ιδιοκτήτης και περνούν το όριο του είδους τους: αρκετά προϊόντα,
+  από αρκετά καταστήματα, ελεγμένα. Ένα είδος μπορεί να έχει 15.000 προϊόντα στην
+  αναζήτηση και η Google να βλέπει τις σελίδες 100 ελεγμένων.
 - Τρία είδη σελίδων: η σελίδα λέξης-κλειδιού (4 προϊόντα, σύγκριση, τιμές), η σελίδα
   προϊόντος από πολλά καταστήματα (όλες οι τιμές) και η σελίδα προϊόντος από ένα
   κατάστημα (ελεγμένο κείμενο AI, παρόμοια προϊόντα).
@@ -80,11 +85,17 @@ The order for `/search` matters. A page blocked by `robots.txt` is never fetched
 Google never sees its `noindex` and can still index the bare address. So `noindex`
 comes first, and `Disallow` only after Google has dropped those pages.
 
-**The gate**, for every page type:
+**The gate**, for every page type (and `PROJECT_RULES.md`, section 13, owner, 2026-10-29:
+built whole, given to Google part by part, the parts the owner chooses):
 
 - real data only;
-- at least 4 products of the kind on a list page
-  (`docs/pickwise_roadmap_step6_quality_index_gate.md`);
+- products of the kind on a list page, with no minimum: even one, shown on a layout of
+  its own, never as one small card in the middle (owner, 2026-10-31; before, at least 4,
+  `docs/pickwise_roadmap_step6_quality_index_gate.md`);
+- the kind's bar: products read as the right kind and checked (kind, price, stock); no
+  minimum of shops (owner, 2026-10-31: «Καταργείται το όριο των τριών καταστημάτων ανά
+  είδος»); further numbers are the owner's to set (TODO);
+- a part of the site the owner has chosen to open;
 - a set of products of its own;
 - no adult products (the feed's `adult` column);
 - for a product page, the conditions of its section below.
@@ -259,7 +270,8 @@ the plan's limit, with an alert at 70%.
 
 ## 9. Release in batches
 
-Pages reach Google in batches. First a small batch, a few hundred pages of one kind.
+Pages reach Google in batches, each one the owner chooses (`PROJECT_RULES.md`, section
+13). First a small batch, a few hundred pages of one kind.
 Then Search Console is read before the next batch goes out: pages indexed or refused,
 impressions, clicks.
 
@@ -282,8 +294,9 @@ Console, which is why section 9 exists.
      the site today. **Built on the branch on 23/10** (owner: «Ναι, βάλε το noindex στο
      /search και προστάτεψε το site από την google όσο το χτίζουμε»): the rows of
      section 2 for the search, the demo, `robots.txt` and the JSON routes
-     (`tests/test_picwise_google_protection.py`); live once on `main`, on the owner's
-     yes;
+     (`tests/test_picwise_google_protection.py`). **On `main` and live since 23/10
+     18:15 UTC** (merge `47cd76b`, owner: «Ναι, να μπει στο main και κάνε τον
+     έλεγχο»), seen by the live check at 18:16;
   2. the catalogue on the server;
   3. the pages.
 - The AI system and its cost, measured on a sample.

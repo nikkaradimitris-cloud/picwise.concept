@@ -16,6 +16,13 @@ are. The aisle's shelves are also read in the singular, an aisle naming no kind 
 first two levels counts at its top, and an aisle whose name names the kind holds it:
 the first version doubted dining sets, futon beds, tote bags, toys and massagers too.
 
+Changed on 2026-11-03 (owner: «Στα tablets .. tablet... Βγάζει και χάπια ... αυτό πρέπει
+να συμβαίνει γενικά παντού»): which departments an aisle holds is now written down per
+aisle of Google's (`_AISLE_HOLDS`), since Google's own shelves, read by the lexicon, put
+computers in every aisle ("Toners", "Highlighters", "Fertility Tests & Monitors"); and a
+shop's own shelf is looked up among Google's shelves by its name (`_shelf_aisles`), so
+"Vitamins & Supplements" is in Health & Beauty and its tablets are no tablets.
+
 The titles are the shops' own, from the server's list of 2026-10-25, or written in the
 same shape with fictional brands; the shelves are as the shops file them.
 """
@@ -101,11 +108,24 @@ class ATitlesKindOnAnotherDepartmentsAisleTests(unittest.TestCase):
             with self.subTest(title=title):
                 self.assertIn(kind, _kinds(category, title))
 
-    def test_no_aisle_of_googles_leaves_the_title_to_decide(self) -> None:
-        # A shop's own shelf, and no category at all, as before.
-        self.assertIn(
-            "barbell", _kinds("Body Jewellery", "G23 Titanium Gold Anodised Circular Barbell with Ball - 6mm")
+    def test_a_shops_own_shelf_found_among_googles_says_its_aisle(self) -> None:
+        # Owner, 2026-11-03 («Στα tablets .. tablet... Βγάζει και χάπια ... γενικά παντού»):
+        # a shop's own shelf is looked up among Google's shelves by its name, in Google's
+        # US spelling. "Body Jewellery" is Google's "Body Jewelry", in Apparel &
+        # Accessories, where no barbell is: until then the title decided.
+        self.assertEqual(
+            _kinds("Body Jewellery", "G23 Titanium Gold Anodised Circular Barbell with Ball - 6mm"),
+            {UNCERTAIN_MARKER},
         )
+
+    def test_no_aisle_and_no_shelf_of_googles_leaves_the_title_to_decide(self) -> None:
+        # A shop's shelf Google has nothing like, a one-word one it has no shelf of, and
+        # no category at all, as before.
+        for category in ("Fixturon Specials", "Gadgets", ""):
+            with self.subTest(category=category):
+                self.assertIn(
+                    "barbell", _kinds(category, "G23 Titanium Gold Anodised Circular Barbell with Ball - 6mm")
+                )
         self.assertIn("kettle", _kinds("", "Fixturon Electric Kettle"))
 
     def test_a_shelf_that_names_the_kind_still_decides(self) -> None:

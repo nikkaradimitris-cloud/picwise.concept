@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from html import escape
 import json
+import re
 import mimetypes
 from datetime import datetime, timezone
 from http import HTTPStatus
@@ -34,8 +35,17 @@ from picwise_providers.state import (
     search_suggestions,
 )
 from picwise_providers.normalization import extract_merchant_name, is_valid_http_url
+# Read, not changed: the columns a product's barcode and maker's code are read from, as
+# the selection reads them to know one product in several shops.
+from picwise_providers.search_selection import (
+    _GTIN_KEYS,
+    _GTIN_LENGTHS,
+    _MPN_KEYS,
+    _raw_value_any_case,
+)
 from picwise_surface import (
     provider_feed_cards_will_render,
+    render_about_page,
     render_affiliate_disclosure_page,
     render_branded_not_found_page,
     render_contact_page,
@@ -59,6 +69,7 @@ LOCAL_AVAILABLE_ROUTES = (
     "/cookies",
     "/affiliate-disclosure",
     "/contact",
+    "/about",
     "/search",
     "/results",
     "/picwise-reference",
@@ -77,6 +88,35 @@ LOCAL_AVAILABLE_ROUTES = (
 ROBOTS_TXT = "User-agent: *\nDisallow: /out/\nDisallow: /subby-proof\nDisallow: /cron/\n"
 # Answers that are not pages, such as the JSON routes, carry this header instead.
 NOINDEX_HEADER = ("X-Robots-Tag", "noindex")
+
+
+_GTIN_NAMES = {13: "EAN", 12: "UPC", 8: "EAN-8", 14: "GTIN"}
+
+
+def single_product_code(resolution: Any) -> str:
+    """The barcode, else the maker's part number, of the one product of an answer that
+    has only one, as its shop gives it: "EAN 5012345678900", "Part no. KT-17".
+
+    For that product's own layout (owner, 2026-10-31; the design's single product). Read
+    from the shop's row, found again by its id with the eligibility re-checked, as a
+    click on it is; "" when the shop gives neither, or for any other answer.
+    """
+    if not getattr(resolution, "provider_feed_price_first", False):
+        return ""
+    products = tuple(getattr(resolution, "provider_feed_selected_products", ()) or ())
+    if len(products) != 1 or int(getattr(resolution, "provider_feed_total_count", 0) or 0) > 1:
+        return ""
+    product = resolve_card_eligible_provider_feed_product_by_id(
+        str(products[0].get("provider_product_id") or "")
+    )
+    if product is None:
+        return ""
+    raw = product.raw if isinstance(product.raw, dict) else {}
+    gtin = re.sub(r"\D", "", _raw_value_any_case(raw, _GTIN_KEYS))
+    if len(gtin) in _GTIN_LENGTHS and gtin.strip("0"):
+        return f"{_GTIN_NAMES.get(len(gtin), 'GTIN')} {gtin}"
+    part_number = _raw_value_any_case(raw, _MPN_KEYS)
+    return f"Part no. {part_number}" if part_number else ""
 
 
 class PicwiseLocalApp:
@@ -143,13 +183,20 @@ class PicwiseLocalApp:
             source_page=source_page,
             catalogue=peek_search_catalogue_counts(),
             indexable=indexable,
+            single_product_code=single_product_code(resolution),
         )
         self.record_decision_impression(
             query=query,
             source_page=source_page,
             resolution=resolution,
         )
-        if resolution.resolver_state == "broad_query_suggestions":
+        # Where the feed's products answer, the catalogue asks which one is meant ("What
+        # kind of cable?") when it has several, and the vocabulary's older "too broad"
+        # list, of words the catalogue may not have, does not ask too: one question, one
+        # logic (owner, 2026-10-29). It stays for a broad word with nothing to show.
+        if resolution.resolver_state == "broad_query_suggestions" and not provider_feed_cards_will_render(
+            resolution
+        ):
             html = _inject_broad_query_suggestions(html, resolution)
         elif getattr(resolution, "did_you_mean", ()) and not provider_feed_cards_will_render(resolution):
             html = _inject_did_you_mean(html, resolution)
@@ -171,6 +218,9 @@ class PicwiseLocalApp:
 
     def contact_html(self) -> str:
         return render_contact_page()
+
+    def about_html(self) -> str:
+        return render_about_page()
 
     def not_found_html(self) -> str:
         return render_branded_not_found_page()
@@ -800,6 +850,10 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/contact":
             html = self.app.contact_html()
+            self._send_html(HTTPStatus.OK, html)
+            return
+        if parsed.path == "/about":
+            html = self.app.about_html()
             self._send_html(HTTPStatus.OK, html)
             return
         if parsed.path in {"/search", "/results"}:

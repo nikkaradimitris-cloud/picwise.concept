@@ -291,12 +291,25 @@ class RenderedCardContractTests(unittest.TestCase):
                     "decision_label": text(
                         r'<p class="pw-card-description">(.*?)</p>', inner
                     ),
-                    "risk": text(r'<p class="pw-warning">(.*?)</p>', inner),
+                    # The design of 2026-10-31 states the limitation in the card's note
+                    # and the key facts on their own lines: the shop, what it says of
+                    # its stock, and why the Recommended stands where it does.
+                    "risk": text(r'<p class="pw-warning">(.*?)</p>', inner)
+                    or text(r'<p class="pw-card-note">(.*?)</p>', inner),
                     "key_reasons": [
                         html.unescape(re.sub(r"<[^>]+>", "", item)).strip()
                         for item in re.findall(
                             r'<li class="pw-feature-item">(.*?)</li>', inner, re.S
                         )
+                    ]
+                    + [
+                        fact
+                        for fact in (
+                            text(r'<p class="pw-card-shop">(.*?)</p>', inner),
+                            text(r'<p class="pw-card-stock[^"]*">(.*?)</p>', inner),
+                            text(r'<p class="pw-card-extra">(.*?)</p>', inner),
+                        )
+                        if fact
                     ],
                 }
             )

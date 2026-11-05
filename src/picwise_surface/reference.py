@@ -1,17 +1,31 @@
 from __future__ import annotations
 
+import re
+from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
 from html import escape
 from urllib.parse import quote
 
 from picwise_providers.decision_labels import (
+    UNVERIFIED_RISK,
+    VERIFIED_RISK,
     build_fact_based_choice_labels,
     format_price_display,
     non_new_condition,
 )
 from picwise_search import LiveSearchResolution
 from picwise_search.live_search_resolver import MAX_SHOWN_PRODUCTS
+from .browser_lists import (
+    BROWSER_LISTS_SCRIPT,
+    BROWSER_LISTS_STYLES,
+    HEAD_SCRIPT,
+    favourite_button_html,
+    header_buttons_html,
+    panels_html,
+)
 from .legal import render_public_footer
 from .seo import NOINDEX_META
+from .trends import TRENDS_SCRIPT, TRENDS_STYLES, load_trends_panel, render_trends_panel
 
 
 _SAFE_DISCLAIMER_BY_STATE = {
@@ -115,6 +129,21 @@ _PRICE_FIRST_RECOMMENDED_LABEL = "Mid-priced for this category"
 _PRICE_FIRST_LOWEST_LABEL = "Lowest price"
 _PRICE_FIRST_SHOPS_LABEL = "Lowest price of {shops} shops"
 _PRICE_FIRST_SORTED = "Sorted by price, lowest first, from the shops connected to PicWise."
+# Owner, 2026-11-01: «Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο». A page
+# whose answer has products on offer says so where it says how it is sorted.
+_PRICE_FIRST_SORTED_WITH_OFFERS = (
+    "Products a current shop offer covers come first, then the rest by price, lowest first, "
+    "from the shops connected to PicWise."
+)
+_OFFER_LABEL = "Offer"
+# Owner, 2026-11-01: «Εάν υπάρχει προσφορά να προτείνει την προσφορά». A Recommended
+# chosen for its offer is not "mid-priced for this category", and says what it is.
+_PRICE_FIRST_RECOMMENDED_OFFER_LABEL = "On offer"
+_RECOMMENDED_MID_PRICED = "The Recommended is mid-priced for this category."
+_RECOMMENDED_ON_OFFER = (
+    "The Recommended is on offer: of the products on offer, the one nearest the middle of their prices."
+)
+_OFFERS_NOTE = "Offers are the shops' own, as they state them through Awin: check them on the shop's site."
 _PRICE_FIRST_FEED_NOTE = "Prices and stock are as the shops list them."
 _PRICE_FIRST_DISCLOSURES = {
     "recommended": (
@@ -133,7 +162,47 @@ _PRICE_FIRST_DISCLOSURES = {
         f"price to pick. {_PRICE_FIRST_FEED_NOTE}"
     ),
 }
-_PRICE_FIRST_PAGE_NOTE = "Real products from the shops' feeds, cheapest first."
+_PRICE_FIRST_PAGE_NOTE = (
+    "Real products from the shops' feeds, cheapest first. Prices and stock are as the shops "
+    "list them, read again every night: check them on the shop's site before you buy."
+)
+
+# The design of 2026-10-31 (`docs/design/picwise_design_proposal_2026-10-31.html`,
+# approved by the owner: «Υλοποίησε τα όλα»). The home page says what PicWise is above
+# the box, and how it chooses below it; a search page goes straight to its products.
+_HOME_HEADING = "Find the product you want in UK shops"
+_HOW_PICWISE_CHOOSES = (
+    ("Only what you asked for", "A search for a coffee machine shows coffee machines, not their filters."),
+    (
+        "In stock, offers first, then cheapest",
+        "Products a shop's current offer covers come first, then the rest by price, as the shops "
+        "list them, read again every night.",
+    ),
+    (
+        "One fair pick",
+        "The Recommended is a product on offer where there is one, else the one in the middle of "
+        "the prices, not the cheapest or the dearest, and never from commission.",
+    ),
+)
+
+# The card's lines say whose word each fact is. The stock line rewords, for a shopper,
+# the availability fact `decision_labels` states, and claims no more than it does: a
+# reason it does not know reads as not confirmed.
+_STOCK_LINES = (
+    ("Purchase availability verified on the merchant page", "Checked available on the shop's page", "verified"),
+    ("Listed as available by the provider feed, not verified", "Listed as available by the shop", "listed"),
+)
+_STOCK_NOT_CONFIRMED = ("Stock not confirmed by the shop's feed", "unconfirmed")
+# Every card states its limitation (docs/LANDING_PAGE_SPEC.md, "Card Structure"; the
+# Decision Contract's choice object): what the feed says is not new, or gives no
+# description, in its own words, then whether PicWise checked the purchase.
+_CARD_LIMITATION_NOTE = "Price and stock as the shop lists them, not verified by PicWise."
+_CARD_VERIFIED_NOTE = "Checked on the shop's page; the shop can still change price or stock."
+_SINGLE_PRODUCT_LINE = "This is the only product PicWise found for this search in its shops."
+_SINGLE_PRODUCT_DELIVERY = "See the shop's site"
+# A price reads as UK shoppers write it, "£12.74": the sign carries the currency.
+_CURRENCY_SIGNS = {"GBP": "£", "EUR": "€", "USD": "$"}
+_NUMBER_AND_CODE = re.compile(r"^(\d[\d,]*(?:\.\d+)?) ([A-Z]{3})$")
 
 # The search box (owner, 2026-10-17). "What are you looking for?" promises nothing a
 # shop reviewing PicWise for its affiliate programme could object to; "What is
@@ -141,7 +210,8 @@ _PRICE_FIRST_PAGE_NOTE = "Real products from the shops' feeds, cheapest first."
 _SEARCH_PLACEHOLDER = "What are you looking for?"
 _WHAT_IS_PICWISE = (
     "PicWise finds the product you want in the shops it is connected to, shows what the "
-    "shops list as in stock, cheapest first, and marks one mid-priced Recommended."
+    "shops list as in stock, products on offer first and then cheapest first, and marks one "
+    "Recommended: a product on offer where there is one, else a mid-priced one."
 )
 _MIC_TITLE = (
     "Search by voice. Your browser turns your words into text; in Chrome the audio is "
@@ -629,6 +699,47 @@ def _price_place_line(place: int | None, total: int, *, condition: str = "") -> 
     return line
 
 
+def _display_price(product: dict[str, object]) -> str:
+    """The price as a shopper reads it: "£12.74" for "12.74" in GBP.
+
+    Only a plain number with the feed's currency code is rewritten; any other text the
+    feed gave keeps the form `format_price_display` gives it, code and all.
+    """
+    shown = format_price_display(product)
+    match = _NUMBER_AND_CODE.match(shown)
+    if not match or match.group(2) not in _CURRENCY_SIGNS:
+        return shown
+    try:
+        amount = Decimal(match.group(1).replace(",", ""))
+    except InvalidOperation:
+        return shown
+    number = f"{amount:,.2f}" if amount != amount.to_integral_value() or "." in match.group(1) else f"{amount:,.0f}"
+    return f"{_CURRENCY_SIGNS[match.group(2)]}{number}"
+
+
+def _stock_line(label: object | None) -> tuple[str, str]:
+    """The card's stock line and its state: "verified", "listed" or "unconfirmed"."""
+    reasons = tuple(getattr(label, "key_reasons", ()) or ())
+    for reason, line, state in _STOCK_LINES:
+        if reason in reasons:
+            return line, state
+    return _STOCK_NOT_CONFIRMED
+
+
+def _card_note(label: object | None) -> str:
+    """The card's limitation, shorter than `decision_labels` words it but saying the same.
+
+    What is particular to the product (not new, no description) comes first in the
+    labels' own words; the general sentence they end with, whether PicWise checked the
+    purchase, is said in fewer words. A limitation in other words is shown whole.
+    """
+    risk = " ".join(str(getattr(label, "risk_or_limitation", "") or "").split())
+    for general, short in ((VERIFIED_RISK, _CARD_VERIFIED_NOTE), (UNVERIFIED_RISK, _CARD_LIMITATION_NOTE)):
+        if risk.endswith(general):
+            return " ".join(part for part in (risk[: -len(general)].strip(), short) if part)
+    return risk or _CARD_LIMITATION_NOTE
+
+
 def _build_price_first_cards(
     *,
     resolution: LiveSearchResolution,
@@ -660,6 +771,7 @@ def _build_price_first_cards(
     total = int(getattr(resolution, "provider_feed_total_count", 0) or 0)
     products = first_page + opened
     labels = build_fact_based_choice_labels(products)
+    offers = dict(getattr(resolution, "provider_feed_offers", ()) or ())
     cards: list[dict[str, object]] = []
     for index, product in enumerate(products):
         label = labels[index] if index < len(labels) else None
@@ -669,30 +781,25 @@ def _build_price_first_cards(
         shops_label = (
             _PRICE_FIRST_SHOPS_LABEL.format(shops=shop_count) if shop_count > 1 else ""
         )
+        offer = offers.get(product_id)
         if is_recommended:
-            role_label = _PRICE_FIRST_RECOMMENDED_LABEL
+            role_label = _PRICE_FIRST_RECOMMENDED_OFFER_LABEL if offer else _PRICE_FIRST_RECOMMENDED_LABEL
+        elif offer:
+            role_label = _OFFER_LABEL
         elif product_id in cheapest:
             role_label = shops_label or _PRICE_FIRST_LOWEST_LABEL
         else:
             # A dearer product on a short first page, or one "More" opened: it is not
             # the lowest price of the answer, only of the shops selling it.
             role_label = shops_label
-        # The price is on the card in large type; the reasons say what else is known.
-        bullets = [
-            reason
-            for reason in (label.key_reasons if label else ())
-            if not reason.startswith("Feed price:")
-        ]
-        if is_recommended and shops_label:
-            bullets.append(shops_label)
-        store_label = _provider_store_label(
-            str(product.get("provider_key") or "").strip(),
-            str(product.get("merchant_name") or ""),
-        )
+        # The design of 2026-10-31: the card names the shop, the price, what the shop
+        # says of its stock and where the price stands in the answer, each on its own
+        # line, and the button names the shop it goes to.
+        provider_key = str(product.get("provider_key") or "").strip()
+        shop = " ".join(str(product.get("merchant_name") or "").split()).strip()
+        stock_line, stock_state = _stock_line(label)
         cards.append(
             {
-                "badge": "REAL FEED",
-                "badge_class": "pw-badge-value",
                 "name": str(product.get("title") or "").strip(),
                 "role_label": role_label,
                 "choice_id": product_id,
@@ -700,13 +807,20 @@ def _build_price_first_cards(
                 "description": _price_place_line(
                     places.get(product_id), total, condition=non_new_condition(product)
                 ),
-                "rating": "",
-                "reviews": "",
-                "price": format_price_display(product),
-                "meta": _provider_feed_card_meta(product, store_label=store_label),
-                "bullets": bullets,
-                "warning": label.risk_or_limitation if label else "",
-                "cta": "View in Store",
+                "price": _display_price(product),
+                "shop": shop,
+                # The merchant from the feed row, never invented (`_provider_store_label`).
+                "shop_line": _provider_store_label(provider_key, shop),
+                "brand": str(product.get("brand") or "").strip(),
+                "stock_line": stock_line,
+                "stock_state": stock_state,
+                "extra_line": shops_label if is_recommended or (offer and shops_label) else "",
+                "offer": offer or None,
+                "note": _card_note(label),
+                "meta": "",
+                "bullets": [],
+                "warning": "",
+                "cta": f"View at {shop}" if shop else "View in Store",
                 "image": str(product.get("image_url") or "").strip(),
                 "recommended": is_recommended,
                 "rec_note": "",
@@ -755,60 +869,381 @@ def _price_first_more_html(
     return f'<nav class="pw-more" aria-label="More products">{counter}{button}</nav>'
 
 
-def _render_choice_card(card: dict[str, object], idx: int) -> str:
+def _offer_until(end: object) -> str:
+    """"until 31 Dec", with the year when it is not this year's."""
+    try:
+        moment = datetime.fromisoformat(str(end or "").replace("Z", "+00:00"))
+    except ValueError:
+        return ""
+    year = "" if moment.year == datetime.now(timezone.utc).year else f" {moment.year}"
+    return f"until {moment.day} {moment:%b}{year}"
+
+
+def _offer_html(offer: dict[str, object]) -> str:
+    """The shop's offer on a card, in the shop's own words, its end, its code where the
+    shop gives one, and its terms."""
+    title = escape(str(offer.get("title") or ""))
+    facts = [_offer_until(offer.get("end"))]
+    code = str(offer.get("code") or "").strip()
+    meta = escape(" · ".join(part for part in facts if part))
+    code_html = (
+        f'{" · " if meta else ""}Code: <strong class="pw-offer-code">{escape(code)}</strong>' if code else ""
+    )
+    terms = str(offer.get("terms") or "").strip()
+    terms_html = (
+        f'<details class="pw-offer-terms"><summary>Offer terms</summary><p>{escape(terms)}</p></details>'
+        if terms
+        else ""
+    )
+    return (
+        '<div class="pw-card-offer">'
+        f'<p class="pw-offer-title">{title}</p>'
+        f'<p class="pw-offer-meta">{meta}{code_html}</p>'
+        f"{terms_html}"
+        "</div>"
+    )
+
+
+def _single_product_facts_html(card: dict[str, object], *, product_code: str) -> str:
+    """What a product shown alone says of itself, each line only when its shop gives it
+    (the design's single product: shop, brand, product code, delivery). PicWise holds no
+    delivery details, so that line sends the buyer to the shop, and nothing is filled in."""
+    facts = [("Shop", str(card.get("shop_line") or ""))]
+    if str(card.get("brand") or "").strip():
+        facts.append(("Brand", str(card["brand"]).strip()))
+    if product_code.strip():
+        facts.append(("Product code", product_code.strip()))
+    facts.append(("Delivery", _SINGLE_PRODUCT_DELIVERY))
+    rows = "".join(
+        f'<li><span class="pw-fact-name">{escape(name)}</span><span class="pw-fact-value">{escape(value)}</span></li>'
+        for name, value in facts
+        if value
+    )
+    return f'<ul class="pw-single-facts">{rows}</ul>'
+
+
+def _render_choice_card(
+    card: dict[str, object], idx: int, *, single: bool = False, product_code: str = ""
+) -> str:
     """One choice card's HTML. Used for the four and for the second four alike,
-    so a card behind "see more" cannot drift from a card in front of it."""
-    rec_class = " pw-card-recommended" if bool(card["recommended"]) else ""
+    so a card behind "see more" cannot drift from a card in front of it.
+
+    The design of 2026-10-31: a square photo that is never cut, then the card's role,
+    a title of at most three lines, the shop, the price, the stock and the price's place,
+    the limitation, and the button at the foot, so that every card of a row has the same
+    height and its price and button sit on the same line as the others'. A product shown
+    alone (`single`) is the same card laid out on its own, with its facts listed.
+    """
+    recommended = bool(card["recommended"])
+    rec_class = " pw-card-recommended" if recommended else ""
+    name = str(card["name"])
+    choice_id = str(card.get("choice_id") or f"fixed-{idx}")
     rec_header = (
         f'<div class="pw-rec-badge">{card.get("rec_badge_html") or "Suggested by PicWise"}</div>'
-        if bool(card["recommended"])
+        if recommended
         else ""
     )
+    # A product shown alone is not "the lowest price" of anything: its own line says it
+    # is the only one.
+    offer = card.get("offer") if isinstance(card.get("offer"), dict) else None
+    role_label_html = ""
+    if str(card.get("role_label") or "") and not single:
+        # The offer's mark comes before the class, so that what reads the cards by their
+        # classes (tests, the deployment's comparison) reads this label as any other.
+        offer_mark = ' data-offer="1"' if offer and str(card.get("role_label")) == _OFFER_LABEL else ""
+        role_label_html = f'<p{offer_mark} class="pw-role-label">{escape(str(card.get("role_label")))}</p>'
     reasons = "".join(
         f'<li class="pw-feature-item"><span class="pw-feature-dot" aria-hidden="true"></span><span>{escape(str(reason))}</span></li>'
-        for reason in list(card["bullets"])
+        for reason in list(card.get("bullets") or ())
     )
-    warning_html = (
-        f'<p class="pw-warning"><span class="pw-warning-icon" aria-hidden="true">&#9651;</span>{escape(str(card["warning"]))}</p>'
-        if str(card["warning"])
-        else ""
-    )
-    rec_note = (
-        f'<p class="pw-rec-note">{escape(str(card["rec_note"]))}</p>' if str(card["rec_note"]) else ""
-    )
-    role_label_html = (
-        f'<p class="pw-role-label">{escape(str(card.get("role_label")))}</p>'
-        if str(card.get("role_label") or "")
-        else ""
-    )
-    cta = (
-        f'<a class="pw-card-cta pw-card-cta-link" href="{escape(str(card["href"]), quote=True)}" rel="nofollow sponsored noopener">{escape(str(card["cta"]))}</a>'
-        if card.get("href")
-        else f'<button class="pw-card-cta" type="submit">{escape(str(card["cta"]))}</button>'
-    )
+    lines = []
+    if str(card.get("shop_line") or ""):
+        lines.append(f'<p class="pw-card-shop">{escape(str(card["shop_line"]))}</p>')
+    lines.append(f'<p class="pw-price">{escape(str(card["price"]))}</p>')
+    if str(card.get("stock_line") or ""):
+        lines.append(
+            f'<p class="pw-card-stock pw-stock-{escape(str(card.get("stock_state") or "unconfirmed"), quote=True)}">'
+            f'{escape(str(card["stock_line"]))}</p>'
+        )
+    if offer:
+        lines.append(_offer_html(offer))
+    lines.append(f'<p class="pw-card-description">{escape(str(card["description"]))}</p>')
+    if str(card.get("extra_line") or ""):
+        lines.append(f'<p class="pw-card-extra">{escape(str(card["extra_line"]))}</p>')
+    if str(card.get("meta") or ""):
+        lines.append(f'<p class="pw-meta">{escape(str(card["meta"]))}</p>')
+    if reasons:
+        lines.append(f'<ul class="pw-feature-list">{reasons}</ul>')
+    if str(card.get("warning") or ""):
+        lines.append(
+            f'<p class="pw-warning"><span class="pw-warning-icon" aria-hidden="true">&#9651;</span>{escape(str(card["warning"]))}</p>'
+        )
+    if str(card.get("rec_note") or ""):
+        lines.append(f'<p class="pw-rec-note">{escape(str(card["rec_note"]))}</p>')
+    if single:
+        lines.append(_single_product_facts_html(card, product_code=product_code))
+    if str(card.get("note") or ""):
+        lines.append(f'<p class="pw-card-note">{escape(str(card["note"]))}</p>')
+    shop = str(card.get("shop") or "")
+    if card.get("href"):
+        label = (
+            f'View<span class="pw-cta-at"> at {escape(shop)}</span>'
+            if shop and str(card["cta"]) == f"View at {shop}"
+            else escape(str(card["cta"]))
+        )
+        cta = (
+            f'<a class="pw-card-cta pw-card-cta-link" href="{escape(str(card["href"]), quote=True)}" '
+            f'rel="nofollow sponsored noopener">{label}</a>'
+        )
+    else:
+        cta = f'<button class="pw-card-cta" type="submit">{escape(str(card["cta"]))}</button>'
     # Where "More" opens the page: the first card it added.
     anchor = (
         f'<span class="pw-anchor" id="{escape(str(card["anchor_id"]), quote=True)}"></span>'
         if card.get("anchor_id")
         else ""
     )
+    heart = (
+        favourite_button_html(
+            product_id=choice_id,
+            title=name,
+            price=str(card["price"]),
+            shop=shop,
+            image=str(card["image"]),
+        )
+        if card.get("href") and card.get("choice_id")
+        else ""
+    )
+    # The first row's photos load at once; the rest as the page is scrolled to them.
+    loading = "eager" if idx <= 4 else "lazy"
+    single_line = f'<p class="pw-single-only">{escape(_SINGLE_PRODUCT_LINE)}</p>' if single else ""
     return (
-        f'<article class="pw-card{rec_class}" data-choice-id="{escape(str(card.get("choice_id") or f"fixed-{idx}"), quote=True)}">'
+        f'<article class="pw-card{rec_class}" data-choice-id="{escape(choice_id, quote=True)}">'
         f"{anchor}"
-        f"{rec_header}"
-        f'<span class="pw-badge {escape(str(card["badge_class"]), quote=True)}">{escape(str(card["badge"]))}</span>'
-        f"{role_label_html}"
-        f'<h2 class="pw-card-title">{escape(str(card["name"]))}</h2>'
-        f'<p class="pw-card-description">{escape(str(card["description"]))}</p>'
-        f'<div class="pw-product-image-wrap"><img class="pw-product-image" src="{escape(str(card["image"]), quote=True)}" alt="{escape(str(card["name"]))} product image"></div>'
-        f'<p class="pw-price">{escape(str(card["price"]))}</p>'
-        f'<p class="pw-meta">{escape(str(card["meta"]))}</p>'
-        f'<ul class="pw-feature-list">{reasons}</ul>'
-        f"{warning_html}"
-        f"{rec_note}"
+        '<div class="pw-product-image-wrap">'
+        f'<img class="pw-product-image" src="{escape(str(card["image"]), quote=True)}" '
+        f'alt="{escape(name)} product image" width="400" height="400" loading="{loading}" decoding="async">'
+        f"{heart}</div>"
+        '<div class="pw-card-body">'
+        f"{single_line}"
+        f'<div class="pw-role">{rec_header}{role_label_html}</div>'
+        f'<h2 title="{escape(name, quote=True)}" class="pw-card-title">{escape(name)}</h2>'
+        f"{''.join(lines)}"
         f"{cta}"
+        "</div>"
         "</article>"
     )
+
+
+def _kind_choices_html(resolution: LiveSearchResolution) -> str:
+    """The question above the results of a search naming only a general kind, with the
+    searches that narrow it as links: "What kind of cable? extension cable, hdmi cable"
+    (owner, 2026-10-28: the search asks which cable is meant; `kind_choices.py`)."""
+    choices = tuple(str(text) for text in getattr(resolution, "kind_choices", ()) or () if str(text).strip())
+    name = str(getattr(resolution, "kind_choices_name", "") or "").strip()
+    if not choices or not name:
+        return ""
+    question = f"What kind of {name}?"
+    links = "".join(
+        f'<a class="pw-kind-choice" href="/search?q={quote(text, safe="")}">{escape(text)}</a>'
+        for text in choices
+    )
+    return (
+        f'<nav class="pw-kind-choices" aria-label="{escape(question, quote=True)}">'
+        f'<span class="pw-kind-choices-ask">{escape(question)}</span>{links}</nav>'
+    )
+
+
+# The page's styles, after the design of 2026-10-31. Every card of a row is as tall as
+# the others; the photo is square and shown whole (`object-fit:contain`) at a size fixed
+# before it loads, and the role, title and shop lines have fixed heights, so the prices
+# and the buttons of a row line up and nothing moves while the page loads.
+_PAGE_STYLES = (
+    ":root{--blue:#1a4fb7;--blue-2:#2f6fe4;--ink:#0f2442;--ink-2:#355174;--muted:#6b7f9e;--line:#dbe6f6;--bg:#f5f8fd;--card:#fff;--green:#1d8a4e;}"
+    "*{box-sizing:border-box;}html,body{min-height:100%;}"
+    "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--ink);background:var(--bg);-webkit-text-size-adjust:100%;}"
+    ".pw-reference-viewport{min-height:100vh;display:flex;flex-direction:column;}"
+    ".pw-topbar{position:relative;background:#fff;border-bottom:1px solid var(--line);z-index:20;}"
+    ".pw-topbar-inner{max-width:1190px;margin:0 auto;padding:12px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;}"
+    ".pw-brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--ink);min-width:0;}"
+    ".pw-logo{width:34px;height:34px;border-radius:11px;background:linear-gradient(160deg,#30a0ff 0%,#1f6cff 70%);position:relative;flex:0 0 auto;}"
+    ".pw-logo::before{content:'';position:absolute;left:7px;top:7px;width:13px;height:13px;border:3px solid #fff;border-right-color:transparent;border-radius:999px;}"
+    ".pw-logo::after{content:'';position:absolute;right:7px;bottom:7px;width:6px;height:6px;background:#fff;border-radius:999px;}"
+    ".pw-brand-text{display:flex;flex-direction:column;line-height:1;}"
+    ".pw-brand-name{font-size:26px;font-weight:800;letter-spacing:-.04em;text-transform:lowercase;}"
+    ".pw-brand-tagline{margin-top:3px;font-size:11px;letter-spacing:.02em;color:#3c5f8a;}"
+    ".pw-actions{display:flex;align-items:center;gap:8px;}"
+    ".pw-topbar-control{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 13px;border-radius:999px;font:inherit;font-size:14px;font-weight:600;line-height:1;border:1px solid transparent;white-space:nowrap;cursor:pointer;}"
+    ".pw-info-link{background:var(--blue-2);color:#fff;border-color:var(--blue-2);}"
+    ".pw-info-link:focus-visible{outline:2px solid var(--blue);outline-offset:3px;}"
+    ".pw-info-icon{display:none;font-weight:800;}"
+    ".pw-info-wrap{position:relative;display:inline-flex;}"
+    ".pw-tooltip{position:absolute;top:calc(100% + 10px);right:0;width:min(400px,calc(100vw - 24px));background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px rgba(16,40,80,.16);padding:12px 14px;font-size:14px;line-height:1.5;color:var(--ink);text-align:left;display:none;z-index:40;}"
+    ".pw-info-wrap.is-open .pw-tooltip{display:block;}"
+    ".pw-reference-frame{width:100%;max-width:1190px;margin:0 auto;padding:22px 22px 10px;flex:1;}"
+    ".pw-home{padding-top:46px;}"
+    ".pw-hero-home{text-align:center;margin:0 auto 22px;max-width:760px;}"
+    ".pw-hero-title{margin:0 0 10px;font-size:34px;line-height:1.15;letter-spacing:-.02em;color:var(--ink);}"
+    ".pw-hero-sub{margin:0 auto;max-width:620px;font-size:16px;line-height:1.55;color:var(--ink-2);}"
+    ".pw-search-wrap{position:relative;width:100%;max-width:700px;margin:0 auto 18px;}"
+    ".pw-search-shell{display:flex;align-items:center;gap:10px;width:100%;height:56px;background:#fff;border:2px solid var(--blue-2);border-radius:999px;padding:0 6px 0 18px;box-shadow:0 8px 24px rgba(47,111,228,.12);}"
+    ".pw-search-icon,.pw-search-button-icon{position:relative;width:16px;height:16px;display:inline-block;color:#7c93b7;flex:0 0 auto;}"
+    ".pw-search-icon::before,.pw-search-button-icon::before{content:'';position:absolute;left:0;top:0;width:10px;height:10px;border:2px solid currentColor;border-radius:999px;}"
+    ".pw-search-icon::after,.pw-search-button-icon::after{content:'';position:absolute;right:1px;bottom:2px;width:7px;height:2px;background:currentColor;border-radius:2px;transform:rotate(45deg);transform-origin:right center;}"
+    ".pw-input-wrap{position:relative;flex:1;display:flex;align-items:center;min-width:0;height:100%;}"
+    ".pw-search-input{flex:1;width:100%;height:52px;padding:0;border:0;background:transparent;outline:none;font-family:inherit;font-size:18px;color:var(--ink);font-weight:500;letter-spacing:normal;}"
+    ".pw-search-input::placeholder{color:#8ea2c0;}"
+    ".pw-ghost{position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;font-family:inherit;font-size:18px;font-weight:500;letter-spacing:normal;white-space:pre;overflow:hidden;pointer-events:none;max-width:100%;}"
+    ".pw-ghost-typed{visibility:hidden;}"
+    ".pw-ghost-rest{color:#bccbe0;pointer-events:auto;cursor:pointer;}"
+    ".pw-search-button{width:44px;height:44px;border-radius:999px;border:0;background:var(--blue-2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;}"
+    ".pw-search-button .pw-search-button-icon{color:#fff;}"
+    ".pw-mic-button{width:42px;height:42px;border-radius:999px;border:1px solid var(--line);background:#fff;color:#4f6f9c;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;padding:0;}"
+    ".pw-mic-button[hidden]{display:none;}"
+    ".pw-mic-button.is-listening{background:#ffecec;border-color:#f0b3b3;color:#c43c3c;}"
+    ".pw-mic-button:focus-visible,.pw-search-button:focus-visible{outline:2px solid var(--blue);outline-offset:3px;}"
+    ".pw-suggest{position:absolute;left:0;right:0;top:calc(100% + 6px);margin:0;padding:6px 0;list-style:none;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 40px rgba(16,40,80,.12);z-index:25;text-align:left;}"
+    ".pw-suggest[hidden]{display:none;}"
+    ".pw-suggest-item{padding:9px 18px;font-size:16px;color:var(--ink);cursor:pointer;}"
+    ".pw-suggest-item.is-active,.pw-suggest-item:hover{background:#eef4ff;}"
+    ".pw-results-head{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap;margin:8px 0 2px;}"
+    ".pw-query-line{margin:0;font-size:15px;color:#1a3d6b;font-weight:600;line-height:1.4;}"
+    ".pw-results-count{margin:0;font-size:13px;font-weight:700;color:var(--ink-2);background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 12px;white-space:nowrap;}"
+    ".pw-reference-disclaimer{margin:4px 0 14px;font-size:13px;line-height:1.5;color:var(--muted);}"
+    ".pw-reference-disclaimer a{color:var(--blue);font-weight:600;}"
+    # A search with nothing to show: its message is the page's answer, so it reads as one.
+    '.pw-reference-frame:has(.pw-grid[data-card-count="0"]) .pw-reference-disclaimer{max-width:760px;margin:10px auto 0;font-size:16px;line-height:1.55;color:var(--ink);text-align:center;}'
+    ".pw-kind-choices{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0 4px;}"
+    ".pw-kind-choices-ask{font-size:14px;font-weight:700;color:var(--ink);margin-right:4px;}"
+    ".pw-kind-choice{display:inline-flex;align-items:center;height:32px;padding:0 13px;border-radius:999px;background:#eaf1ff;color:var(--blue);font-size:13px;font-weight:600;text-decoration:none;}"
+    ".pw-kind-choice:hover{background:#dce8ff;}"
+    ".pw-kind-choice:focus-visible{outline:2px solid var(--blue-2);outline-offset:3px;}"
+    ".pw-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;align-items:stretch;width:100%;margin:0 auto;}"
+    '.pw-grid[data-card-count="2"],.pw-grid[data-card-count="3"]{grid-template-columns:repeat(auto-fit,minmax(0,280px));justify-content:center;}'
+    ".pw-card{position:relative;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;min-width:0;}"
+    ".pw-card-recommended{border:2px solid var(--blue-2);box-shadow:0 10px 26px rgba(47,111,228,.14);padding:11px;}"
+    ".pw-anchor{position:absolute;top:-80px;}"
+    ".pw-product-image-wrap{position:relative;aspect-ratio:1/1;width:100%;border-radius:12px;background:#fff;border:1px solid #edf2fa;display:flex;align-items:center;justify-content:center;overflow:hidden;}"
+    ".pw-product-image{display:block;width:100%;height:100%;object-fit:contain;color:transparent;}"
+    # A card is seen only once its photo has loaded, and one whose photo fails never
+    # (HEAD_SCRIPT marks them; owner, 2026-11-01). Its place is kept while the photo
+    # loads, so nothing moves when it appears.
+    ".pw-photo-guard .pw-card{visibility:hidden;opacity:0;}"
+    ".pw-photo-guard .pw-card.pw-photo-ok{visibility:visible;opacity:1;transition:opacity .15s ease-out;}"
+    ".pw-card.pw-no-photo{display:none;}"
+    ".pw-card-body{display:flex;flex-direction:column;flex:1;min-width:0;}"
+    ".pw-role{display:flex;flex-direction:column;align-items:flex-start;gap:4px;height:46px;margin:10px 0 4px;overflow:hidden;}"
+    ".pw-rec-badge{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:var(--blue-2);color:#fff;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}"
+    ".pw-role-label{margin:0;display:inline-flex;align-items:center;max-width:100%;height:22px;padding:0 9px;border-radius:999px;background:#eef3fb;color:var(--ink-2);font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}"
+    ".pw-card-recommended .pw-role-label{height:auto;padding:0;background:none;color:var(--blue);font-size:12px;letter-spacing:0;text-transform:none;}"
+    ".pw-card-title{margin:0;font-size:15px;line-height:1.35;font-weight:650;color:var(--ink);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;height:4.05em;}"
+    ".pw-card-shop{margin:6px 0 0;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}"
+    ".pw-price{margin:8px 0 2px;font-size:24px;line-height:1.15;font-weight:800;letter-spacing:-.02em;color:var(--ink);}"
+    ".pw-card-stock{margin:0;font-size:13px;font-weight:650;line-height:1.35;}"
+    ".pw-stock-listed,.pw-stock-verified{color:var(--green);}"
+    ".pw-stock-unconfirmed{color:var(--muted);}"
+    ".pw-card-description{margin:2px 0 0;font-size:12px;line-height:1.35;color:var(--muted);min-height:16px;}"
+    ".pw-card-extra{margin:2px 0 0;font-size:12px;font-weight:650;color:var(--blue);}"
+    ".pw-meta{margin:4px 0 0;font-size:12px;line-height:1.4;color:var(--muted);}"
+    ".pw-feature-list{margin:6px 0 0;padding:0;list-style:none;display:grid;gap:4px;}"
+    ".pw-feature-item{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--ink-2);line-height:1.35;}"
+    ".pw-feature-dot{width:7px;height:7px;border-radius:999px;background:#5b8ce5;flex:0 0 auto;margin-top:4px;}"
+    ".pw-warning{margin:6px 0 0;font-size:11px;color:#5a7498;line-height:1.35;display:flex;gap:6px;}"
+    ".pw-warning-icon{font-size:10px;color:#6f86ad;line-height:1.2;margin-top:1px;}"
+    ".pw-rec-note{margin:6px 0 0;font-size:11px;line-height:1.35;color:#2e4c7d;background:#eef4ff;border-radius:8px;padding:6px 8px;}"
+    ".pw-card-note{margin:8px 0 0;font-size:11.5px;line-height:1.4;color:#7b8ba3;}"
+    ".pw-role-label[data-offer]{background:#fff1e6;color:#b4471f;}"
+    ".pw-card-offer{margin:6px 0 0;padding:7px 9px;border-radius:10px;background:#fff7f0;border:1px solid #f6d9c2;}"
+    ".pw-offer-title{margin:0;font-size:12.5px;font-weight:700;line-height:1.35;color:#9a3b12;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}"
+    ".pw-offer-meta{margin:2px 0 0;font-size:11.5px;color:#8a5a3c;}"
+    ".pw-offer-code{font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:.04em;color:#9a3b12;}"
+    ".pw-offer-terms{margin:4px 0 0;font-size:11px;color:#8a5a3c;}"
+    ".pw-offer-terms summary{cursor:pointer;}"
+    ".pw-offer-terms p{margin:4px 0 0;line-height:1.4;}"
+    ".pw-card-body>:nth-last-child(2){margin-bottom:12px;}"
+    ".pw-card-cta{margin-top:auto;display:block;width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--blue-2);color:var(--blue-2);background:#fff;font:inherit;font-size:14px;font-weight:700;text-align:center;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;}"
+    ".pw-card-cta:hover{background:#eef4ff;}"
+    ".pw-card-recommended .pw-card-cta{background:var(--blue-2);color:#fff;}"
+    ".pw-card-recommended .pw-card-cta:hover{background:var(--blue);}"
+    ".pw-card-cta:focus-visible{outline:2px solid var(--blue);outline-offset:2px;}"
+    '.pw-grid[data-layout="single"]{display:block;max-width:980px;}'
+    '.pw-grid[data-layout="single"] .pw-card{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:26px;padding:20px;border-radius:18px;}'
+    '.pw-grid[data-layout="single"] .pw-role{height:auto;margin:0 0 6px;}'
+    '.pw-grid[data-layout="single"] .pw-role:empty{display:none;}'
+    '.pw-grid[data-layout="single"] .pw-card-title{font-size:22px;line-height:1.3;height:auto;-webkit-line-clamp:4;}'
+    '.pw-grid[data-layout="single"] .pw-price{font-size:32px;margin-top:12px;}'
+    '.pw-grid[data-layout="single"] .pw-card-cta{display:inline-block;width:auto;max-width:100%;align-self:flex-start;padding:12px 28px;background:var(--blue-2);color:#fff;}'
+    '.pw-grid[data-layout="single"] .pw-card-cta:hover{background:var(--blue);}'
+    ".pw-single-only{margin:0 0 12px;padding:10px 12px;background:#f0f5ff;border:1px solid #d6e3fb;border-radius:10px;color:var(--ink-2);font-size:14px;line-height:1.45;}"
+    ".pw-single-facts{list-style:none;margin:14px 0 0;padding:0;font-size:14px;color:var(--ink-2);}"
+    ".pw-single-facts li{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #eef2f8;}"
+    ".pw-fact-name{color:var(--muted);min-width:120px;}"
+    ".pw-more{display:flex;flex-direction:column;align-items:center;gap:10px;margin:24px auto 0;}"
+    ".pw-counter{margin:0;font-size:14px;font-weight:600;color:var(--ink-2);}"
+    ".pw-more-button{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 34px;border-radius:999px;background:#fff;border:1px solid var(--blue-2);color:var(--blue-2);font-size:15px;font-weight:700;text-decoration:none;}"
+    ".pw-more-button:hover{background:#eef4ff;}"
+    ".pw-more-button:focus-visible{outline:2px solid var(--blue);outline-offset:3px;}"
+    ".pw-demo-note{text-align:center;font-size:12px;line-height:1.5;color:var(--muted);margin:18px auto 0;max-width:760px;}"
+    ".pw-empty-state{max-width:760px;margin:12px auto 0;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;color:var(--ink-2);font-size:14px;line-height:1.6;text-align:left;}"
+    ".pw-how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:860px;margin:30px auto 0;}"
+    ".pw-how-item{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;}"
+    ".pw-how-title{margin:0 0 4px;font-size:15px;color:var(--ink);}"
+    ".pw-how-text{margin:0;font-size:14px;line-height:1.5;color:var(--ink-2);}"
+    ".pw-footer{margin-top:34px;padding:18px max(22px,calc((100% - 1146px) / 2));background:#fff;border-top:1px solid var(--line);}"
+    ".pw-footer-links{display:flex;flex-wrap:wrap;gap:8px;}"
+    ".pw-footer-link{display:inline-flex;align-items:center;padding:6px 11px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:13px;color:var(--ink-2);text-decoration:none;white-space:nowrap;}"
+    ".pw-footer-link:hover{background:#eef4ff;}"
+    ".pw-footer-disclosure{margin:10px 0 0;font-size:12px;line-height:1.5;color:var(--muted);max-width:820px;}"
+    ".pw-footer-meta{margin:6px 0 0;font-size:12px;color:var(--muted);}"
+    ".pw-scan{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(245,248,253,.94);display:flex;align-items:flex-start;justify-content:center;padding:22vh 16px 0;z-index:50;}"
+    ".pw-scan[hidden]{display:none;}"
+    ".pw-scan-card{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px;max-width:560px;box-shadow:0 16px 40px rgba(16,40,80,.12);}"
+    ".pw-scan-dot{width:12px;height:12px;border-radius:999px;background:var(--blue-2);flex:0 0 auto;animation:pw-pulse 1s ease-in-out infinite alternate;}"
+    "@keyframes pw-pulse{from{opacity:.35;}to{opacity:1;}}"
+    ".pw-scan-text{margin:0;font-size:16px;color:var(--ink);line-height:1.45;}"
+    "@media (prefers-reduced-motion:reduce){.pw-scan-dot{animation:none;}}"
+    "@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}"
+    "@media (max-width:760px){"
+    '.pw-grid[data-layout="single"] .pw-card{grid-template-columns:1fr;gap:14px;padding:14px;}'
+    ".pw-how{grid-template-columns:1fr;}"
+    "}"
+    "@media (max-width:699px){"
+    ".pw-topbar-inner{padding:10px 14px;}"
+    ".pw-brand-name{font-size:22px;}"
+    ".pw-brand-tagline{display:none;}"
+    ".pw-logo{width:30px;height:30px;border-radius:10px;}"
+    ".pw-logo::before{left:6px;top:6px;width:11px;height:11px;}"
+    ".pw-logo::after{right:6px;bottom:6px;width:5px;height:5px;}"
+    ".pw-actions{gap:6px;}"
+    ".pw-info-txt{display:none;}"
+    ".pw-info-icon{display:inline;}"
+    ".pw-info-link{width:36px;padding:0;}"
+    ".pw-reference-frame{padding:14px 12px 8px;}"
+    ".pw-home{padding-top:26px;}"
+    ".pw-hero-title{font-size:26px;}"
+    ".pw-hero-sub{font-size:15px;}"
+    ".pw-search-shell{height:52px;padding:0 5px 0 14px;}"
+    ".pw-search-input{height:48px;font-size:16px;}"
+    ".pw-ghost{font-size:16px;}"
+    ".pw-mic-button{width:38px;height:38px;}"
+    ".pw-search-button{width:40px;height:40px;}"
+    ".pw-query-line{font-size:14px;}"
+    ".pw-grid,.pw-grid[data-card-count]{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}"
+    ".pw-card{padding:9px;border-radius:14px;}"
+    ".pw-card-recommended{padding:8px;}"
+    ".pw-role{height:42px;margin:8px 0 4px;}"
+    ".pw-rec-badge,.pw-role-label{height:20px;padding:0 7px;font-size:10px;}"
+    ".pw-card-recommended .pw-role-label{height:auto;padding:0;font-size:11px;}"
+    ".pw-card-title{font-size:13px;}"
+    ".pw-card-shop{font-size:12px;}"
+    ".pw-price{font-size:19px;}"
+    ".pw-card-stock{font-size:12px;}"
+    ".pw-card-note{font-size:11px;}"
+    ".pw-cta-at{display:none;}"
+    ".pw-card-cta{padding:9px 8px;}"
+    ".pw-footer{padding:16px 14px;}"
+    "}"
+)
 
 
 def render_picwise_reference_surface(
@@ -818,6 +1253,7 @@ def render_picwise_reference_surface(
     source_page: str = "search",
     catalogue: tuple[int, int] | None = None,
     indexable: bool = False,
+    single_product_code: str = "",
 ) -> str:
     """The search page. `catalogue` is (products, shops) a search reads, when the server
     has the feed loaded, for the scanning screen; None makes it name no number.
@@ -826,6 +1262,9 @@ def render_picwise_reference_surface(
     the site's own search, which Google is told not to index (owner, 2026-10-23: «βάλε
     το noindex στο /search και προστάτεψε το site από την google όσο το χτίζουμε»);
     the pages meant for Google are in `docs/PICWISE_GOOGLE_PAGES_SPEC.md`.
+
+    `single_product_code` is the barcode or maker's code of the one product of an answer
+    that has only one, as its shop gives it, for that product's own layout.
     """
     display_query = str(query or "")
     query_line = ""
@@ -859,6 +1298,10 @@ def render_picwise_reference_surface(
                 disclosure = _PRICE_FIRST_DISCLOSURES[
                     str(resolution.provider_feed_decision_status)
                 ]
+                if any(card.get("offer") for card in price_first_cards):
+                    disclosure = disclosure.replace(_PRICE_FIRST_SORTED, _PRICE_FIRST_SORTED_WITH_OFFERS)
+                if any(card.get("offer") and card.get("recommended") for card in price_first_cards):
+                    disclosure = disclosure.replace(_RECOMMENDED_MID_PRICED, _RECOMMENDED_ON_OFFER)
         else:
             feed_cards, feed_live, feed_disclosure, feed_safe_note = (
                 _build_provider_feed_result_cards(
@@ -886,7 +1329,12 @@ def render_picwise_reference_surface(
         )
         if display_query.strip():
             if has_live_results and price_first_page:
-                query_line = f"Results for: {display_query}, cheapest first"
+                with_offers = any(card.get("offer") for card in card_specs)
+                query_line = (
+                    f"Results for: {display_query}, offers first, then cheapest first"
+                    if with_offers
+                    else f"Results for: {display_query}, cheapest first"
+                )
                 understood_name = str(getattr(resolution, "understood_concept_name", "") or "")
                 if understood_name and getattr(resolution, "understood_by_correction", False):
                     query_line += f"  ·  Understood as: {understood_name}"
@@ -974,7 +1422,20 @@ def render_picwise_reference_surface(
     if not card_specs:
         card_specs = []
 
-    card_html = [_render_choice_card(card, idx) for idx, card in enumerate(card_specs, start=1)]
+    is_home = not display_query.strip()
+    total_found = int(getattr(resolution, "provider_feed_total_count", 0) or 0) if resolution is not None else 0
+    # One product with no other: its own layout, never one small card in the middle
+    # (owner, 2026-10-31; PROJECT_RULES §2).
+    single_layout = price_first_page and len(card_specs) == 1 and total_found <= 1
+    card_html = [
+        _render_choice_card(
+            card,
+            idx,
+            single=single_layout,
+            product_code=single_product_code if single_layout else "",
+        )
+        for idx, card in enumerate(card_specs, start=1)
+    ]
     more_nav_html = (
         _price_first_more_html(
             resolution=resolution,
@@ -982,7 +1443,7 @@ def render_picwise_reference_surface(
             shown_cards=len(card_specs),
             source_page=source_page,
         )
-        if price_first_page and resolution is not None
+        if price_first_page and resolution is not None and not single_layout
         else ""
     )
 
@@ -992,13 +1453,68 @@ def render_picwise_reference_surface(
         page_note = _PRICE_FIRST_PAGE_NOTE if price_first_page else (
             "Selected real products from connected provider feed. Recommended from these 4."
         )
+        if price_first_page and any(card.get("offer") for card in card_specs):
+            page_note = page_note.replace(
+                "cheapest first.", "products on offer first, then cheapest first.", 1
+            )
+            page_note = f"{page_note} {_OFFERS_NOTE}"
         note_or_empty_html = f'<p class="pw-demo-note">&#9432; {escape(page_note)}</p>'
+    elif is_home:
+        note_or_empty_html = ""
     else:
         note_or_empty_html = (
             '<section class="pw-empty-state">PicWise safely shows no product cards until intent confidence '
             "and provider availability are both verified.</section>"
         )
     safe_note_html = f'<p class="pw-reference-disclaimer">{escape(safe_note_line)}</p>' if safe_note_line else ""
+    kind_choices_html = (
+        _kind_choices_html(resolution) if price_first_page and resolution is not None else ""
+    )
+    # The count above the cards, so that "4 of 45" is seen with them
+    # (docs/LANDING_PAGE_SPEC.md, above the fold); the one under them goes with "More".
+    results_count_html = (
+        f'<p class="pw-results-count">{len(card_specs)} of {max(total_found, len(card_specs))}</p>'
+        if price_first_page and card_specs
+        else ""
+    )
+    hero_html = (
+        '<section class="pw-hero-home">'
+        f'<h1 class="pw-hero-title">{escape(_HOME_HEADING)}</h1>'
+        f'<p class="pw-hero-sub">{escape(_WHAT_IS_PICWISE)}</p>'
+        "</section>"
+        if is_home
+        else ""
+    )
+    home_after_search_html = render_trends_panel(load_trends_panel()) if is_home else ""
+    how_html = (
+        '<section class="pw-how" aria-label="How PicWise chooses">'
+        + "".join(
+            f'<div class="pw-how-item"><h2 class="pw-how-title">{escape(title)}</h2>'
+            f'<p class="pw-how-text">{escape(text)}</p></div>'
+            for title, text in _HOW_PICWISE_CHOOSES
+        )
+        + "</section>"
+        if is_home
+        else ""
+    )
+    results_html = (
+        ""
+        if is_home
+        else (
+            '<div class="pw-results-head">'
+            f'<p class="pw-query-line">{escape(query_line)}</p>'
+            f"{results_count_html}"
+            "</div>"
+            f"{kind_choices_html}"
+            f'<p class="pw-reference-disclaimer">{escape(disclaimer_line)}</p>'
+            f"{safe_note_html}"
+            f'<section class="pw-grid" data-card-count="{len(card_html)}"'
+            f'{" data-layout=" + chr(34) + "single" + chr(34) if single_layout else ""}>'
+            f"{''.join(card_html)}"
+            "</section>"
+            f"{more_nav_html}"
+        )
+    )
 
     html = (
         "<!doctype html>"
@@ -1006,115 +1522,30 @@ def render_picwise_reference_surface(
         '<meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         f"{'' if indexable else NOINDEX_META}"
-        "<title>PicWise Reference — Buying Decision Preview</title>"
-        '<meta name="description" content="Preview how PicWise supports product comparison and buying decisions while provider integrations are being configured.">'
-        "<style>"
-        "*{box-sizing:border-box;}html,body{height:100%;}"
-        "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:#0f1f3a;background:#f8fbff;}"
-        ".pw-reference-viewport{min-height:100vh;padding:12px;display:flex;justify-content:center;align-items:flex-start;}"
-        ".pw-reference-scale-shell{position:relative;display:flex;justify-content:center;width:100%;}"
-        ".pw-reference-frame{width:100%;max-width:1280px;padding:18px 24px 26px;position:relative;background:#f8fbff;}"
-        ".pw-topbar{display:flex;justify-content:flex-end;align-items:center;height:52px;margin-bottom:18px;}"
-        ".pw-brand{display:flex;align-items:flex-start;justify-content:center;gap:10px;text-decoration:none;color:#0f1f3a;width:max-content;margin:0 auto;}"
-        ".pw-brand-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1;}"
-        ".pw-logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(160deg,#30a0ff 0%,#1f6cff 70%);position:relative;box-shadow:none;filter:none;margin-top:1px;}"
-        ".pw-logo::before{content:'';position:absolute;left:9px;top:9px;width:16px;height:16px;border:3px solid #fff;border-right-color:transparent;border-radius:999px;}"
-        ".pw-logo::after{content:'';position:absolute;right:9px;bottom:9px;width:7px;height:7px;background:#fff;border-radius:999px;}"
-        ".pw-brand-name{display:block;font-size:42px;line-height:1;font-weight:800;letter-spacing:-.04em;text-transform:lowercase;}"
-        ".pw-brand-tagline{display:block;margin-top:5px;font-size:12px;letter-spacing:.02em;color:#3c5f8a;line-height:1.2;}"
-        ".pw-actions{display:flex;align-items:center;gap:8px;padding-top:0;flex-wrap:wrap;justify-content:flex-end;row-gap:8px;}"
-        ".pw-topbar-control{display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 13px;border-radius:999px;font-size:13px;font-weight:600;line-height:1;border:1px solid transparent;white-space:nowrap;}"
-        ".pw-login-btn{background:#fff;color:#1d3a63;border-color:#ccdbf2;box-shadow:none;filter:none;cursor:pointer;}"
-        ".pw-register{background:#1f6dff;color:#fff;border-color:#1f6dff;text-decoration:none;box-shadow:none;filter:none;}"
-        ".pw-brand-wrap{margin:0 0 26px;display:flex;justify-content:center;}"
-        ".pw-search-wrap{width:100%;max-width:760px;height:58px;margin:0 auto 24px;}"
-        ".pw-search-shell{display:flex;align-items:center;gap:10px;width:100%;height:58px;background:#fff;border:1px solid #dbe8fb;border-radius:999px;padding:0 10px 0 18px;box-shadow:none;filter:none;}"
-        ".pw-search-icon,.pw-search-button-icon{position:relative;width:16px;height:16px;display:inline-block;color:#7c93b7;flex:0 0 auto;}"
-        ".pw-search-icon::before,.pw-search-button-icon::before{content:'';position:absolute;left:0;top:0;width:10px;height:10px;border:2px solid currentColor;border-radius:999px;}"
-        ".pw-search-icon::after,.pw-search-button-icon::after{content:'';position:absolute;right:1px;bottom:2px;width:7px;height:2px;background:currentColor;border-radius:2px;transform:rotate(45deg);transform-origin:right center;}"
-        ".pw-search-input{flex:1;height:56px;border:0;background:transparent;outline:none;font-size:19px;color:#95a8c7;font-weight:500;}"
-        ".pw-search-button{width:42px;height:42px;border-radius:999px;border:0;background:#1f6dff;display:inline-flex;align-items:center;justify-content:center;box-shadow:none;filter:none;}"
-        ".pw-search-button .pw-search-button-icon{color:#fff;}"
-        ".pw-info-wrap{position:relative;display:inline-flex;flex-direction:column;align-items:stretch;gap:0;z-index:3;}"
-        ".pw-info-link{background:#2d79f5;color:#fff;border-color:#2d79f5;cursor:pointer;box-shadow:none;filter:none;}"
-        ".pw-info-link:focus-visible{outline:2px solid #2a6deb;outline-offset:3px;}"
-        ".pw-tooltip{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);width:min(430px,calc(100vw - 24px));background:#fff;border:1px solid #dbe6f8;border-radius:12px;box-shadow:none;text-shadow:none;filter:none;padding:12px 14px;font-size:14px;line-height:1.5;color:#112849;text-align:left;display:none;z-index:2;}"
-        ".pw-tooltip::before{content:'';position:absolute;left:50%;top:-7px;transform:translateX(-50%) rotate(45deg);width:14px;height:14px;background:#fff;border-left:1px solid #dbe6f8;border-top:1px solid #dbe6f8;}"
-        ".pw-info-wrap.is-open .pw-tooltip{display:block;}"
-        ".pw-query-line{width:100%;max-width:760px;margin:0 auto 44px;text-align:left;font-size:15px;color:#1a3d6b;font-weight:500;min-height:18px;}"
-        ".pw-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;align-items:start;width:100%;max-width:1190px;margin:0 auto;justify-items:center;}"
-        ".pw-card{position:relative;background:#fff;border:1px solid #dbe8fb;border-radius:18px;box-shadow:none;text-shadow:none;filter:none;padding:14px 14px 12px;display:flex;flex-direction:column;min-height:472px;width:100%;max-width:284px;}"
-        ".pw-card-recommended{border:2px solid #2f78ff;box-shadow:none;text-shadow:none;filter:none;}"
-        ".pw-rec-badge{display:inline-block;background:#2a70f1;color:#fff;font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px;margin-bottom:9px;height:26px;line-height:14px;}"
-        ".pw-badge{display:inline-block;align-self:flex-start;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.05em;margin-bottom:8px;height:21px;line-height:13px;}"
-        ".pw-badge-budget,.pw-badge-premium{background:#eaf2ff;color:#3f72c4;}"
-        ".pw-badge-value{background:#e8f8ec;color:#2f9b57;}"
-        ".pw-badge-best{background:#f0ecff;color:#6e57cc;}"
-        ".pw-card-title{margin:0;font-size:24px;line-height:1.08;color:#112649;letter-spacing:-.03em;min-height:58px;}"
-        ".pw-role-label{margin:6px 0 0;font-size:12px;font-weight:700;letter-spacing:.01em;color:#1a4fb7;line-height:1.3;}"
-        ".pw-card-description{margin:4px 0 8px;font-size:12px;color:#5c7397;line-height:1.35;min-height:32px;}"
-        ".pw-product-image-wrap{height:84px;margin:0 0 10px;display:flex;align-items:center;justify-content:center;}"
-        ".pw-product-image{display:block;width:252px;height:84px;border-radius:12px;border:1px solid #dbe6f6;object-fit:cover;background:#eef3fb;}"
-        ".pw-price{margin:0;font-size:20px;line-height:1.1;font-weight:800;color:#2a70e6;letter-spacing:-.02em;min-height:26px;}"
-        ".pw-meta{margin:3px 0 8px;font-size:12px;color:#6f88ac;min-height:16px;}"
-        ".pw-feature-list{margin:0;padding:0;list-style:none;display:grid;gap:4px;min-height:56px;}"
-        ".pw-feature-item{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:#304b70;line-height:1.35;}"
-        ".pw-feature-dot{width:8px;height:8px;border-radius:999px;background:#5b8ce5;flex:0 0 auto;margin-top:4px;}"
-        ".pw-warning{margin:7px 0 0;font-size:11px;color:#5a7498;line-height:1.3;display:flex;gap:6px;min-height:29px;}"
-        ".pw-warning-icon{font-size:10px;color:#6f86ad;line-height:1.2;margin-top:1px;}"
-        ".pw-rec-note{margin:8px 0 0;font-size:11px;line-height:1.35;color:#2e4c7d;background:#eef4ff;border-radius:8px;padding:6px 8px;min-height:42px;}"
-        ".pw-card-cta{margin-top:auto;width:100%;height:40px;border-radius:11px;border:1px solid #2e75ee;color:#2e75ee;background:#fff;font-size:16px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;}"
-        ".pw-card-recommended .pw-card-cta{background:#1f6dff;color:#fff;border-color:#1f6dff;}"
-        ".pw-empty-state{max-width:760px;margin:0 auto;background:#fff;border:1px solid #dbe8fb;border-radius:14px;padding:14px 16px;color:#2d4f7c;font-size:14px;line-height:1.6;text-align:left;}"
-        ".pw-demo-note{text-align:center;font-size:12px;color:#7389ac;margin:16px 0 10px;}"
-        ".pw-reference-disclaimer{margin:0 auto 16px;max-width:900px;padding:10px 12px;border:1px solid #dbe8fb;border-radius:12px;background:#f6f9ff;color:#284a76;font-size:14px;line-height:1.6;text-align:center;}"
-        ".pw-footer{text-align:center;padding:6px 0 10px;font-size:12px;color:#6e83a3;}"
-        ".pw-footer a{color:#6e83a3;text-decoration:none;margin-left:22px;}"
-        "@media (min-width:1100px){.pw-reference-viewport{padding:8px;}.pw-reference-frame{padding:12px 20px 16px;}.pw-topbar{height:46px;margin-bottom:16px;}.pw-brand-wrap{margin:0 0 24px;}.pw-search-wrap{height:52px;margin:0 auto 20px;}.pw-query-line{margin:0 auto 40px;}.pw-card{padding:12px 12px 10px;min-height:444px;}.pw-product-image-wrap{height:74px;margin:0 0 8px;}.pw-product-image{width:228px;height:74px;}}"
-        ".pw-more{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:1190px;margin:24px auto 0;}"
-        ".pw-counter{margin:0;font-size:14px;font-weight:600;color:#3c5f8a;}"
-        ".pw-more-button{display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 30px;border-radius:999px;background:#1f6dff;color:#fff;font-size:15px;font-weight:700;text-decoration:none;}"
-        ".pw-more-button:focus-visible{outline:2px solid #2a6deb;outline-offset:3px;}"
-        ".pw-search-wrap{position:relative;}"
-        ".pw-input-wrap{position:relative;flex:1;display:flex;align-items:center;min-width:0;height:100%;}"
-        ".pw-input-wrap .pw-search-input{width:100%;padding:0;font-family:inherit;letter-spacing:normal;}"
-        ".pw-ghost{position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;font-family:inherit;font-size:19px;font-weight:500;letter-spacing:normal;white-space:pre;overflow:hidden;pointer-events:none;max-width:100%;}"
-        ".pw-ghost-typed{visibility:hidden;}"
-        ".pw-ghost-rest{color:#bccbe0;pointer-events:auto;cursor:pointer;}"
-        ".pw-mic-button{width:42px;height:42px;border-radius:999px;border:1px solid #dbe8fb;background:#fff;color:#4f6f9c;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;padding:0;}"
-        ".pw-mic-button[hidden]{display:none;}"
-        ".pw-mic-button.is-listening{background:#ffecec;border-color:#f0b3b3;color:#c43c3c;}"
-        ".pw-mic-button:focus-visible{outline:2px solid #2a6deb;outline-offset:3px;}"
-        ".pw-suggest{position:absolute;left:0;right:0;top:calc(100% + 6px);margin:0;padding:6px 0;list-style:none;background:#fff;border:1px solid #dbe8fb;border-radius:16px;z-index:5;text-align:left;}"
-        ".pw-suggest[hidden]{display:none;}"
-        ".pw-suggest-item{padding:9px 18px;font-size:16px;color:#112849;cursor:pointer;}"
-        ".pw-suggest-item.is-active,.pw-suggest-item:hover{background:#eef4ff;}"
-        ".pw-scan{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(248,251,255,.94);display:flex;align-items:flex-start;justify-content:center;padding:22vh 16px 0;z-index:20;}"
-        ".pw-scan[hidden]{display:none;}"
-        ".pw-scan-card{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #dbe8fb;border-radius:16px;padding:16px 20px;max-width:560px;}"
-        ".pw-scan-dot{width:12px;height:12px;border-radius:999px;background:#1f6dff;flex:0 0 auto;animation:pw-pulse 1s ease-in-out infinite alternate;}"
-        "@keyframes pw-pulse{from{opacity:.35;}to{opacity:1;}}"
-        ".pw-scan-text{margin:0;font-size:16px;color:#112849;line-height:1.45;}"
-        "@media (prefers-reduced-motion:reduce){.pw-scan-dot{animation:none;}}"
-        "@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:760px;}.pw-topbar{height:auto;gap:10px;}}"
-        "@media (max-width:640px){.pw-grid{grid-template-columns:1fr;max-width:420px;}}"
-        "@media (max-width:699px){.pw-reference-frame{padding:14px 12px 20px;}.pw-topbar{flex-direction:column;align-items:center;margin-bottom:20px;}.pw-actions{width:100%;justify-content:center;gap:8px;}.pw-brand-wrap{margin:0 0 24px;}.pw-brand-name{font-size:33px;}.pw-search-wrap{height:auto;}.pw-search-shell{height:52px;padding:0 8px 0 14px;}.pw-search-input{height:50px;font-size:16px;}.pw-ghost{font-size:16px;}.pw-mic-button{width:38px;height:38px;}.pw-query-line{font-size:14px;margin:0 auto 36px;}.pw-grid{grid-template-columns:1fr;max-width:360px;}.pw-card{max-width:360px;}.pw-tooltip{width:min(430px,calc(100% - 8px));}}"
-        ".pw-reference-viewport *,.pw-reference-viewport *::before,.pw-reference-viewport *::after{box-shadow:none!important;text-shadow:none!important;filter:none!important;}"
-        "</style></head><body>"
+        "<title>PicWise — Find the product you want in UK shops</title>"
+        # What PicWise does, in the owner's own words of 2026-10-17 ("What is PicWise?"),
+        # for Google to show under the home page (owner, 2026-10-31: the pages true).
+        f'<meta name="description" content="{escape(_WHAT_IS_PICWISE)}">'
+        f"<script>{HEAD_SCRIPT}</script>"
+        f"<style>{_PAGE_STYLES}{BROWSER_LISTS_STYLES}{TRENDS_STYLES if home_after_search_html else ''}</style>"
+        "</head><body>"
         '<main class="pw-reference-viewport">'
-        '<div class="pw-reference-scale-shell" id="pw-reference-scale-shell">'
-        '<div class="pw-reference-frame" id="pw-reference-frame">'
         '<header class="pw-topbar">'
-        '<div class="pw-actions"><button class="pw-topbar-control pw-login-btn" type="button">Login</button><a class="pw-topbar-control pw-register" href="#">Register</a><section class="pw-info-wrap" id="pw-info-wrap"><button class="pw-topbar-control pw-info-link" id="pw-info-button" type="button" aria-label="What is PicWise?" aria-expanded="false" aria-controls="pw-tooltip">What is PicWise?</button><div class="pw-tooltip" id="pw-tooltip">'
-        f"{escape(_WHAT_IS_PICWISE)}"
-        '</div></section></div>'
-        "</header>"
-        '<section class="pw-brand-wrap" aria-label="PicWise brand">'
+        '<div class="pw-topbar-inner">'
         '<a class="pw-brand" href="/" aria-label="PicWise home">'
         '<span class="pw-logo" aria-hidden="true"></span>'
         '<span class="pw-brand-text"><span class="pw-brand-name">picwise</span><span class="pw-brand-tagline">shopping decision assistant</span></span>'
         "</a>"
-        "</section>"
+        '<div class="pw-actions">'
+        f"{header_buttons_html()}"
+        '<section class="pw-info-wrap" id="pw-info-wrap"><button class="pw-topbar-control pw-info-link" id="pw-info-button" type="button" aria-label="What is PicWise?" aria-expanded="false" aria-controls="pw-tooltip"><span class="pw-info-txt">What is PicWise?</span><span class="pw-info-icon" aria-hidden="true">?</span></button><div class="pw-tooltip" id="pw-tooltip">'
+        f"{escape(_WHAT_IS_PICWISE)}"
+        "</div></section></div>"
+        "</div>"
+        "</header>"
+        f"{panels_html()}"
+        f'<div class="pw-reference-frame{" pw-home" if is_home else ""}" id="pw-reference-frame">'
+        f"{hero_html}"
         '<section class="pw-search-wrap" aria-label="Search">'
         '<form class="pw-search-shell" action="/search" method="get" role="search">'
         '<span class="pw-search-icon" aria-hidden="true"></span>'
@@ -1128,17 +1559,12 @@ def render_picwise_reference_surface(
         "</button></form>"
         '<ul class="pw-suggest" id="pw-suggest-list" role="listbox" aria-label="Suggestions" hidden></ul>'
         "</section>"
-        f'<p class="pw-query-line">{escape(query_line)}</p>'
-        f'<p class="pw-reference-disclaimer">{escape(disclaimer_line)}</p>'
-        f"{safe_note_html}"
-        f'<section class="pw-grid" data-card-count="{len(card_html)}">'
-        f"{''.join(card_html)}"
-        "</section>"
-        f"{more_nav_html}"
+        f"{home_after_search_html}"
+        f"{results_html}"
         f"{note_or_empty_html}"
+        f"{how_html}"
+        "</div>"
         f"{render_public_footer()}"
-        "</div>"
-        "</div>"
         '<script>'
         '(function(){'
         'var infoWrap=document.getElementById("pw-info-wrap");'
@@ -1163,6 +1589,8 @@ def render_picwise_reference_surface(
         "</script>"
         f"{_scanning_screen_html(catalogue)}"
         f"<script>{_SEARCH_SCRIPT}</script>"
+        f"<script>{BROWSER_LISTS_SCRIPT}</script>"
+        f"{'<script>' + TRENDS_SCRIPT + '</script>' if home_after_search_html else ''}"
         "</main>"
         "</body></html>"
     )

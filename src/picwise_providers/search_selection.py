@@ -33,6 +33,7 @@ from .normalization import extract_merchant_name
 from .decision_labels import parse_price_amount
 from .product_description import has_sufficient_description
 from .product_specs import read_product_specs
+from .product_offers import offers_covering
 from .product_identity import same_product_key
 from .product_condition import (
     non_new_condition,
@@ -1681,6 +1682,33 @@ def _median_recommendation(ordered: list[_PricedProduct]) -> tuple[int | None, s
     return best[1], "recommended"
 
 
+def _offer_recommendation(on_offer: list[_PricedProduct]) -> int | None:
+    """Which product on offer is the Recommended (owner, 2026-11-01: «Εάν υπάρχει
+    προσφορά να προτείνει την προσφορά», and, seeing a search with an offer and a
+    Recommended not on offer: «το recommended όταν υπάρχει προσφορά πρέπει να δείχνει
+    την προσφορά»), as its index in `on_offer`, cheapest first.
+
+    The products a current shop offer covers stand for the whole answer in the rules of
+    `_median_recommendation`: their middle price (a dearest costing at least twice the
+    next not counted), and the one nearest to it, the cheaper of two equally near; one
+    with an EAN/GTIN first, so that "not cheaper elsewhere" can still be known, and,
+    when none on offer carries one, the nearest of them all: an offer is recommended
+    whenever there is one. One product on offer is its own middle; of two, the cheaper
+    is. None only when nothing is on offer. Asked only of an answer that may have a
+    Recommended at all (three products or more).
+    """
+    if not on_offer:
+        return None
+    counted = max(1, _counted_products(on_offer))
+    middle_price = on_offer[(counted - 1) // 2].price
+    best: tuple[tuple[bool, float, float, int], int] | None = None
+    for index, candidate in enumerate(on_offer):
+        rank = (not candidate.key.startswith("gtin:"), abs(candidate.price - middle_price), candidate.price, index)
+        if best is None or rank < best[0]:
+            best = (rank, index)
+    return best[1] if best is not None else None
+
+
 def _select_products_for_concept(
     reading: ConceptReading,
     eligible: tuple[ProviderProduct, ...],
@@ -1762,6 +1790,22 @@ def _select_products_for_concept(
         for _product, fields in members
     ]
     kept, dropped, ordered = _price_first_answer(members, haystacks, units, page_size=safe_max)
+    # Owner, 2026-11-05 (the decision contract, "The main kind only", point 7): a word of
+    # the search no product of the kind carries ("vitamin tablets", "life jacket") may be
+    # what the products set aside as doubtful are, and those are found by their words.
+    if any(not any(_carries(unit, haystack) for haystack in haystacks) for unit in units):
+        by_words = _doubtful_products_by_words(
+            reading,
+            concept_id,
+            filters,
+            eligible,
+            eligible_fields,
+            safe_max=safe_max,
+            shown=shown,
+            condition_request=condition_request,
+        )
+        if by_words is not None:
+            return by_words
     return _price_first_result(
         ordered,
         kept,
@@ -1776,6 +1820,90 @@ def _select_products_for_concept(
         condition_request=condition_request,
         also_unmatched=tuple(reading.judgements) + tuple(unmatched_name_words) + condition_unmatched,
         reason_code="product_concept_understood",
+    )
+
+
+def _doubtful_products_by_words(
+    reading: ConceptReading,
+    concept_id: str,
+    filters: tuple[str, ...],
+    eligible: tuple[ProviderProduct, ...],
+    eligible_fields: tuple[dict[str, str], ...],
+    *,
+    safe_max: int,
+    shown: int,
+    condition_request: tuple[str, ...],
+) -> ProviderProductSelectionResult | None:
+    """The products whose kind is doubtful that carry every word of a search for a kind,
+    when some of its words are carried by none of the kind's products (owner, 2026-11-05;
+    the decision contract, "The main kind only", point 7).
+
+    A doubtful product is never found by its kind, so "tablet" lists tablets only; it is
+    found by its words: "vitamin tablets" lists the vitamin tablets a pharmacy files under
+    "Vitamins & Supplements", which carry "vitamin" and a name of the kind in their own
+    title or type. Each word is read as the kind's filters are, as a whole word with its
+    plural, and the kind's name as any of its names ("mice" for "mouse"). The page names
+    no kind for them. None when no doubtful product carries every word: the answer is
+    then the kind's products, and the page says which word it could not match.
+    """
+    kind_names = _kind_name_pattern(concept_id)
+    if not kind_names or not filters:
+        return None
+    rows = [
+        (product, fields)
+        for product, fields in zip(eligible, eligible_fields)
+        if UNCERTAIN_MARKER in _product_concepts(product, fields)
+    ]
+    if not rows:
+        return None
+    units = _filter_units(
+        filters,
+        reading.filter_sources,
+        spec_values=frozenset(spec.token for spec in reading.specs),
+    ) + (
+        _FilterUnit(
+            display=" ".join(reading.concept_words) or concept_id.replace("_", " "),
+            terms=tuple(reading.feed_terms) or (concept_id,),
+            pattern=re.compile(rf"(?<!\w)(?:{kind_names})(?!\w)", flags=re.IGNORECASE),
+            fields=_KIND_PHRASE_FIELDS,
+        ),
+    )
+    members: list[tuple[ProviderProduct, dict[str, str]]] = []
+    haystacks: list[dict[tuple[str, ...], str]] = []
+    for product, fields in rows:
+        haystack = {
+            scope: " ".join(fields[name] for name in scope if fields.get(name))
+            for scope in (_FILTER_FIELDS, _KIND_PHRASE_FIELDS)
+        }
+        if all(_carries(unit, haystack) for unit in units):
+            members.append((product, fields))
+            haystacks.append(haystack)
+    if not members:
+        return None
+    condition_unmatched: tuple[str, ...] = tuple()
+    if condition_request:
+        asked_for = [index for index, (product, _fields) in enumerate(members) if product_non_new_condition(product)]
+        if asked_for:
+            members = [members[index] for index in asked_for]
+            haystacks = [haystacks[index] for index in asked_for]
+        else:
+            condition_unmatched = (condition_request[0],)
+    kept, dropped, ordered = _price_first_answer(members, haystacks, units, page_size=safe_max)
+    return _price_first_result(
+        ordered,
+        kept,
+        dropped,
+        members,
+        haystacks,
+        safe_max=safe_max,
+        shown=shown,
+        understood_concept="",
+        effective_query=" ".join(dict.fromkeys(tuple(reading.feed_terms) + filters)),
+        name_terms=tuple(),
+        condition_request=condition_request,
+        also_unmatched=condition_unmatched,
+        reason_code="product_named_by_words",
+        strong_only_if_whole=True,
     )
 
 
@@ -1822,29 +1950,53 @@ def _price_first_result(
     every word of the search: a search PicWise did not understand is shown on its own
     strength (`is_strong_feed_opportunity_selection`), and a dropped word weakens it.
     """
-    recommended_index, recommendation_status = _median_recommendation(ordered)
-    if recommended_index is None:
-        display_order = list(ordered)
+    # Owner, 2026-11-01: «Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο» and
+    # «Εάν υπάρχει προσφορά να προτείνει την προσφορά». The Recommended is a product a
+    # current shop offer covers whenever there is one (`_offer_recommendation`); after it
+    # come the other products on offer, cheapest first, then the rest, cheapest first
+    # (`product_offers`). With no offer, the Recommended and the order are as before.
+    covered = offers_covering(entry.product for entry in ordered)
+    covered_entries = [entry for entry in ordered if id(entry.product) in covered]
+    # An answer of fewer than three products has no Recommended, on offer or not
+    # (`_RECOMMENDED_MIN_PRODUCTS`): its products on offer still come first.
+    offer_index = (
+        _offer_recommendation(covered_entries)
+        if _counted_products(ordered) >= _RECOMMENDED_MIN_PRODUCTS
+        else None
+    )
+    if offer_index is not None:
+        recommended = covered_entries[offer_index]
+        recommendation_status = "recommended"
     else:
-        display_order = (
-            [ordered[recommended_index]]
-            + ordered[:recommended_index]
-            + ordered[recommended_index + 1 :]
-        )
+        recommended_index, recommendation_status = _median_recommendation(ordered)
+        recommended = ordered[recommended_index] if recommended_index is not None else None
+    chosen_for_offer = offer_index is not None
+    rest = [entry for entry in ordered if entry is not recommended]
+    on_offer = {id(entry) for entry in rest if id(entry.product) in covered}
+    display_order = (
+        ([recommended] if recommended is not None else [])
+        + [entry for entry in rest if id(entry) in on_offer]
+        + [entry for entry in rest if id(entry) not in on_offer]
+    )
     page_size = max(safe_max, -(-max(int(shown or 0), safe_max) // safe_max) * safe_max)
     first_page = display_order[:safe_max]
     opened = display_order[safe_max:page_size]
 
-    recommended = ordered[recommended_index] if recommended_index is not None else None
     # "Lowest price" is for the cheap end of the answer: first-page products priced at
     # or below the Recommended or, with none, at or below the middle price (owner,
     # 2026-10-16 and 2026-10-17). Of three standing desks, the £630.99 one is not the
     # lowest price, though it is on the page.
-    lowest_price_ceiling = recommended.price if recommended is not None else _middle_price(ordered)
+    # A Recommended chosen for its offer may be priced anywhere: the cheap end is then
+    # measured against the middle price of the whole answer.
+    lowest_price_ceiling = (
+        recommended.price if recommended is not None and not chosen_for_offer else _middle_price(ordered)
+    )
+    # A product on offer is labelled with its offer, not "Lowest price".
     cheapest_ids = tuple(
         str(entry.product.provider_product_id or "").strip()
         for entry in first_page
         if entry is not recommended
+        and id(entry) not in on_offer
         and lowest_price_ceiling is not None
         and entry.price <= lowest_price_ceiling
     )
