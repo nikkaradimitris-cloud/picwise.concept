@@ -81,7 +81,9 @@ SHELF = 40
 CRUMB = 80
 # What a run prints: "kinds" (1 to 5), "searches" (6 and its short), "live" (7 and its
 # short), or "all"; GitHub's runner runs each part in a job of its own, with its own log.
-PARTS = ("kinds", "searches", "live", "all")
+PARTS = ("kinds", "searches", "live", "compare", "all")
+# Per change of one rule set against another ("compare"), the products listed in full.
+COMPARED_LISTED = 40
 # A visitor's browser, as `.github/scripts/live_photos.py` reads the site.
 BROWSER = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -584,6 +586,35 @@ def print_words(audit: Audit) -> None:
     print(f"  this checkout's rule changes the kind of {taken:,} products of {len(audit.products):,}")
 
 
+# -- the compare part: one change of the rules on its own ------------------------------------
+
+
+def print_compare(audit: Audit, path: str, name: str) -> None:
+    """Every product whose kind the rules of another checkout (`kinds_of.py`, one label a
+    line in the file's order) read otherwise than this checkout's, grouped by the change
+    and listed in full: what one change of the rules does on its own."""
+    print()
+    print(f"== Compare: the rules of {name} -> this checkout's, every product read otherwise (price | shop | title | shelf)")
+    try:
+        labels = Path(path).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        print(f"  the kinds of {name} could not be read")
+        return
+    if len(labels) != len(audit.products):
+        print(f"  the kinds of {name} are {len(labels):,}, for {len(audit.products):,} products: not compared")
+        return
+    changes: dict[tuple[str, str], list[int]] = defaultdict(list)
+    for index, (before, now) in enumerate(zip(labels, audit.labels_now)):
+        if before != now:
+            changes[(before, now)].append(index)
+    print(f"  {sum(map(len, changes.values())):,} products read otherwise, in {len(changes):,} changes")
+    for (before, now), indices in sorted(changes.items(), key=lambda item: (-len(item[1]), item[0])):
+        print(f"  {before} -> {now}: {len(indices):,}")
+        listed = sorted(indices, key=lambda index: (audit.price(index), str(audit.products[index].title or "")))
+        for index in listed[:COMPARED_LISTED]:
+            print(f"      {audit.example(index)} | {_short(audit.aisle(index), 40)}")
+
+
 # -- 6 and 7: every search, on the copy and live --------------------------------------------
 
 
@@ -856,6 +887,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--offers", default="")
     parser.add_argument("--site", default="")
     parser.add_argument("--part", default="all", choices=PARTS)
+    # The kinds another checkout's rules read (`kinds_of.py`), and its name, for "compare".
+    parser.add_argument("--compare", default="")
+    parser.add_argument("--compare-name", default="another checkout")
     # Only the first N kinds' names are searched (the owner's words always): for tests.
     parser.add_argument("--kinds", type=int, default=0)
     try:
@@ -913,6 +947,9 @@ def main(argv: list[str] | None = None) -> int:
             except Exception as error:  # a measure only: the next section goes on
                 print(f"  the section could not be measured: {type(error).__name__}: {error}")
             print(f"  ({time.monotonic() - began:.0f} s)")
+    if args.part == "compare":
+        print_compare(audit, args.compare, args.compare_name)
+        return 0
     if args.part == "kinds":
         return 0
     queries = search_queries(audit, args.kinds)

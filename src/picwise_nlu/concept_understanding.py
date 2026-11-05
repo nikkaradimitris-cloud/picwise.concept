@@ -1939,7 +1939,8 @@ _AISLE_HOLDS = {
     "animals & pet supplies": "BK FU BE",
     "apparel & accessories": "CL FO JW PH",
     "arts & entertainment": "AV BK FU",
-    "baby & toddler": "BK FU HE KI HA",
+    # Kids' backpacks and changing bags are filed here as well.
+    "baby & toddler": "BK FU HE KI HA JW",
     "cameras & optics": "AV CO PH",
     "electronics": "CO AV PH HA FU HE TY",
     "food, beverages & tobacco": "",
@@ -1959,6 +1960,25 @@ _AISLE_HOLDS = {
     "toys & games": "BK AV",
     "vehicles & parts": "CP TY MO AV PH",
 }
+# Owner, 2026-11-05: «Πρώτα το 1», the main kind's few wrong results put right first. A
+# narrower aisle of Google's can hold fewer departments than the aisle it is in, or other
+# ones; written here by its path, the top aisle and the narrower shelf's name (the levels
+# between say where it is). Measured on the server's catalogue (run 41940401157): rings
+# of Finediam's titled "... Band Dress" were read as dresses, the aisle "Apparel &
+# Accessories" holding clothing; a swimsuit filed under "Wetsuits" and T-shirts under
+# riding clothing were no clothing, "Sporting Goods" holding none read off a title; a
+# jigsaw's blades and "Plasterboard Hammer-In Fixings" were read as the tools they go
+# with.
+_SUB_AISLE_HOLDS = {
+    ("apparel & accessories", "jewelry"): "JW",
+    # Google's own shelves of sport clothing, in its newer and older names.
+    ("sporting goods", "outdoor recreation", "boating & water sports", "boating & water sport apparel"): "CL FO",
+    ("sporting goods", "outdoor recreation", "equestrian", "riding apparel & accessories"): "CL FO",
+    ("sporting goods", "outdoor recreation", "equestrian", "riding clothing & accessories"): "CL FO",
+    # What goes on or with a tool is not the tool.
+    ("hardware", "tool accessories"): "",
+    ("hardware", "hardware accessories", "hardware fasteners"): "",
+}
 # A shop's own shelf in Google's British or older names.
 _BRITISH_SHELF_NAMES = {"sweets & chocolate": "candy & chocolate", "jewellery": "jewelry"}
 
@@ -1970,40 +1990,40 @@ def _us_shelf_name(name: str) -> str:
 
 
 @lru_cache(maxsize=1)
-def _google_shelf_aisles() -> tuple[dict[str, frozenset[str]], dict[str, frozenset[str]]]:
-    """Per name of a shelf of Google's (as it is and in the singular), the aisles it is
-    found in; and per last word of a shelf's name, the aisles of the shelves that end in
+def _google_shelf_paths() -> tuple[dict[str, frozenset[tuple[str, ...]]], dict[str, frozenset[tuple[str, ...]]]]:
+    """Per name of a shelf of Google's (as it is and in the singular), the paths it is
+    found at; and per last word of a shelf's name, the paths of the shelves that end in
     it. Empty when the taxonomy file is not there."""
     try:
         lines = _TAXONOMY_PATH.read_text(encoding="utf-8").splitlines()
     except OSError:
         return {}, {}
-    by_name: dict[str, set[str]] = {}
-    by_word: dict[str, set[str]] = {}
+    by_name: dict[str, set[tuple[str, ...]]] = {}
+    by_word: dict[str, set[tuple[str, ...]]] = {}
     for line in lines:
         if not line.strip() or line.startswith("#"):
             continue
-        names = [" ".join(name.lower().split()) for name in line.split(">")]
+        names = tuple(" ".join(name.lower().split()) for name in line.split(">"))
         shelf = names[-1]
         for form in {shelf, _in_the_singular(shelf)}:
-            by_name.setdefault(form, set()).add(names[0])
+            by_name.setdefault(form, set()).add(names)
         words = _in_the_singular(shelf).split()
         if words:
-            by_word.setdefault(words[-1], set()).add(names[0])
+            by_word.setdefault(words[-1], set()).add(names)
     return (
-        {name: frozenset(aisles) for name, aisles in by_name.items()},
-        {word: frozenset(aisles) for word, aisles in by_word.items()},
+        {name: frozenset(paths) for name, paths in by_name.items()},
+        {word: frozenset(paths) for word, paths in by_word.items()},
     )
 
 
-def _shelf_aisles(shelf: str) -> frozenset[str]:
-    """The aisles of Google's a shop's own shelf is one of: those of Google's shelves of
-    the same name ("Vitamins & Supplements", "Mouthwash", "Fish Food"), else, for a name
-    of two words or more, of those whose name ends in the same word ("Sports Nutrition"
-    as "Fitness & Nutrition"). A shelf of one word Google has no shelf of ("Gadgets",
+def _shelf_paths(shelf: str) -> frozenset[tuple[str, ...]]:
+    """The paths of Google's a shop's own shelf is at: those of Google's shelves of the
+    same name ("Vitamins & Supplements", "Mouthwash", "Fish Food"), else, for a name of
+    two words or more, of those whose name ends in the same word ("Sports Nutrition" as
+    "Fitness & Nutrition"). A shelf of one word Google has no shelf of ("Gadgets",
     "Health") says nothing: as a last word it ends shelves of too many kinds. None when
     Google has no such shelf."""
-    by_name, by_word = _google_shelf_aisles()
+    by_name, by_word = _google_shelf_paths()
     name = _us_shelf_name(shelf)
     if not name:
         return frozenset()
@@ -2014,14 +2034,36 @@ def _shelf_aisles(shelf: str) -> frozenset[str]:
     return by_word.get(words[-1], frozenset()) if len(words) > 1 else frozenset()
 
 
+def _shelf_aisles(shelf: str) -> frozenset[str]:
+    """The aisles of Google's a shop's own shelf is in (`_shelf_paths`)."""
+    return frozenset(path[0] for path in _shelf_paths(shelf))
+
+
+def _written_holds(path: tuple[str, ...]) -> str | None:
+    """The departments the aisle at `path` may hold: those of the narrowest aisle written
+    in `_SUB_AISLE_HOLDS` that the path is in (its top aisle the same, its shelf's name in
+    the path), else of its top aisle (`_AISLE_HOLDS`); None when the top aisle is not
+    written, which holds every department."""
+    best: tuple[int, int] | None = None
+    held = None
+    for written, departments in _SUB_AISLE_HOLDS.items():
+        if written[0] != path[0] or written[-1] not in path[1:]:
+            continue
+        depth = (path.index(written[-1], 1), len(written))
+        if best is None or depth > best:
+            best, held = depth, departments
+    return held if best is not None else _AISLE_HOLDS.get(path[0])
+
+
 def _aisle_may_hold(category: str, concept_id: str) -> bool:
-    """May the aisle a product is filed in hold this kind (`_AISLE_HOLDS`): one of the
-    kind's department, or of a broader kind's (a smartwatch is a watch too). The first
-    category field that says which aisle decides: one that starts with an aisle of
-    Google's ("Health & Beauty > ..."), or a shop's own shelf found among Google's
-    shelves by its name ("Vitamins & Supplements", in Health & Beauty; owner,
-    2026-11-03). An aisle whose own name names the kind holds it ("Toys & Games", a toy),
-    and so does a shelf. True when no field says which aisle."""
+    """May the aisle a product is filed in hold this kind (`_AISLE_HOLDS`, and a narrower
+    aisle written in `_SUB_AISLE_HOLDS`): one of the kind's department, or of a broader
+    kind's (a smartwatch is a watch too). The first category field that says which aisle
+    decides: one that starts with an aisle of Google's ("Health & Beauty > ..."), or a
+    shop's own shelf found among Google's shelves by its name ("Vitamins & Supplements",
+    in Health & Beauty; owner, 2026-11-03). An aisle whose own name names the kind holds
+    it ("Toys & Games", a toy), and so does a shelf. True when no field says which
+    aisle."""
     by_id = get_product_concepts_by_id()
     if concept_id not in by_id:
         return True
@@ -2037,18 +2079,19 @@ def _aisle_may_hold(category: str, concept_id: str) -> bool:
         if not names:
             continue
         if names[0] in aisles_of_google:
-            aisles, named = {names[0]}, names[:2]
+            paths, named = {tuple(names)}, names[:2]
         else:
-            aisles, named = set(_shelf_aisles(names[-1])), names[-1:]
-            if not aisles:
+            paths, named = set(_shelf_paths(names[-1])), names[-1:]
+            if not paths:
                 continue
         if any(span.concept_id in kinds for name in named for span in _concepts_in_text(_in_the_singular(name))):
             return True
         held: set[str] = set()
-        for aisle in aisles:
-            if aisle not in _AISLE_HOLDS:
+        for path in paths:
+            written = _written_holds(path)
+            if written is None:
                 return True
-            held.update(_AISLE_HOLDS[aisle].split())
+            held.update(written.split())
         return bool(departments & held)
     return True
 
