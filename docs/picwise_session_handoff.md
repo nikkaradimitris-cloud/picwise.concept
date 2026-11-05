@@ -20,6 +20,15 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-05): pick up here -- start here
 
+- **Latest (05/11, about 22:00 UTC): the owner, of the "none" sentences: «ΟΤΑΝ ΔΕΝ ΒΡΙΣΚΕΙ
+  ΚΑΤΙ ΝΑ ΜΗΝ ΛΕΕΙ ΔΕΝ ΒΡΕΘΗΚΕ ΣΚΕΨΟΥ ΚΑΤΙ ΠΙΟ ΕΞΥΠΝΟ».** Proposed (not built): (1) the AI
+  reads each product's own description too, not the title alone (the prepared catalogue
+  keeps it, capped, in the search fields; the engine's filters read only title, type and
+  brand, `_FILTER_FIELDS`), so a need stated there ("low noise 49 dB", "ages 6-10") is
+  found; (2) when none fits, no sentence: the words the shops use for that need, from the
+  kind's own titles, as buttons that narrow the search, each with the count the catalogue
+  gives (never the AI's); (3) with neither, nothing. To be measured on the same 163
+  searches, on the owner's word, before anything reaches the site.
 - **Latest (05/11, about 21:45 UTC): the AI measure run, read by hand; the measure off
   again** (owner: «ΝΑΙ» to turning it on; run `42112519518`, the catalogue of 05/11 12:44
   UTC, the server matched the pin, nothing changed on it). 163 searches: 119 asked (the 15
