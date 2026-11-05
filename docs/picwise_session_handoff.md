@@ -29,8 +29,10 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   Console), so the owner was asked to make a new one with no expiry («Create key» on the
   API keys page), update the GitHub secret and delete the old key. Done (owner: «OK»):
   `picwise-server`, never expiring, linked to the owner, Default workspace; the check
-  run again (run `42105499951`, attempt 2, 20:49 UTC) passed the same way. Whether the
-  old key is deleted (so the check proves the new one): asked. The first key was put in
+  run again (run `42105499951`, attempt 2, 20:49 UTC) passed the same way. Then the
+  owner deleted the old key on the Console («EGINE»), and attempt 3 (20:53 UTC) passed:
+  HTTP 200, "ready", 18 tokens in and 4 out. **So the secret holds the new,
+  never-expiring key, and it works.** The first key was put in
   GitHub's secrets
   as `ANTHROPIC_API_KEY`. Checked by `.github/workflows/ai-key-check.yml` (this branch
   only, run when its own file changes; never prints the key): run `42105499951`, the
