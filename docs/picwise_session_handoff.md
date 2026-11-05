@@ -4,7 +4,7 @@ Current state for whoever picks the project up next. Updated 2026-11-05 (**the e
 check of the words that confuse the search done, run `41940401157`; three decisions wait
 for the owner**; **live since 2026-11-05 10:50 UTC, run `42011735026`: "tablet" without
 pills, the main kind only everywhere, with the narrower aisles**; **the offers not fetched
-since 2026-11-03 05:05 UTC: Awin answers 401**; live since 2026-11-01 16:22 UTC, run `41324998201`: products whose photo is gone
+since 2026-11-03 05:05 UTC: Awin answers 401** (a new token: not now, the owner); live since 2026-11-01 16:22 UTC, run `41324998201`: products whose photo is gone
 left out, a card seen only once its photo has loaded, the offer recommended even without a
 barcode; live before: offers first and the
 Recommended on offer since 10:06 UTC, run `41295172671`; vouchers without their code no
@@ -37,9 +37,10 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   offers file is the one fetched 2026-11-03 05:05 UTC (93 live, of 31 of the 84 shops), so
   the nightly fetches of 04/11 and 05/11 wrote none either (their reason not read). The
   site keeps showing an offer only while its own dates say it is live, so the ones that end
-  drop out and new ones do not come in. The owner to make a new API token in Awin and put
-  it in GitHub's secret `AWIN_API_TOKEN` (never in the chat); it reaches the server with the
-  next deployment (`server-deploy.yml` writes the secrets).
+  drop out and new ones do not come in. Told to the owner (a new API token in Awin, put in
+  GitHub's secret `AWIN_API_TOKEN`, never in the chat; it reaches the server with the next
+  deployment, `server-deploy.yml` writes the secrets). **The owner: «Δεν με ενδιαφέρει το
+  νέο token τώρα»**: not now; the offers stay as they are until the owner says otherwise.
 - **Before (05/11, morning): the owner's answer «Πρώτα το 1 μετά το 2»** (first fix the
   main-kind rule's few wrong results and deploy it, then the same check for a kind the
   shelf names), and «Ναι στείλε τη μέτρηση». **Built and measured, not deployed:** the
