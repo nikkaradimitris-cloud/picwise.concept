@@ -151,7 +151,7 @@ jobs:
           ssh -n picwise '
             echo "release in use: $(basename "$(readlink -f /srv/picwise/current)")"
             echo "site: $(systemctl is-active picwise-web), since $(systemctl show -p ActiveEnterTimestamp --value picwise-web)"
-            echo "listening (8016 inside the server only; nothing on 80 or 443):"
+            echo "listening (8016 inside the server only; 80 and 443 by Caddy, the site over HTTPS since 2026-10-31):"
             sudo ss -ltnH "( sport = :8016 or sport = :80 or sport = :443 )" | awk "{print \"  \" \$4}"
             echo "nightly preparation: $(systemctl list-timers picwise-prepare.timer --no-legend | awk "{print \$1, \$2, \$3, \$4}")"
             echo "the shops, every night: $(systemctl list-timers picwise-shops.timer --no-legend | awk "{print \$1, \$2, \$3, \$4}")"

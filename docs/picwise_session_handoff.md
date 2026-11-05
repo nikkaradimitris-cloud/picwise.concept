@@ -16,7 +16,38 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-05): pick up here -- start here
 
-- **Latest (05/11, 12:15 UTC): item 2 built and tested, not deployed, not yet measured**
+- **Latest (05/11, 12:45 UTC): item 2 measured; waiting for the owner's «ανέβασε».** Run
+  `42025667252` (the catalogue of 05/11 10:41 UTC, 577,676 products; against the rules
+  deployed, `7b55cf8`; pushed with the owner's word «Ναι, στείλε το 19d564e και μετά το
+  6975029 στο ccr-1361f1a7-dcpo60 για τη μέτρηση», `19d564e` with `[skip actions]`: no run).
+  **527 products read otherwise, all to doubtful, none gains a kind**: bags 165 (gift,
+  food-storage, rubbish, lunch, nappy wet bags), washers 139, face toners 88, health
+  monitors 26 (fertility, biometric, ovulation, one blood-pressure), markers 23 (18 golf
+  ball markers; **5 "Ohuhu" art marker sets, wrongly**), paints 22 (**InStock UK's "Paint
+  (All Colours)" test pots and 5 L tins filed as "Art & Craft Paint", most likely real
+  paint, wrongly**; an eye-shadow primer), face mirrors 16 (make-up and Hollywood mirrors;
+  a 60x80 cm "Crystal Pro Mirror Portrait" perhaps wrongly), life jackets 10, lunch and
+  tool bags as handbags 8, cake servers 7, rubber gloves 4, digital downloads 4, ropes 3,
+  pet food containers 3, tool backpacks 2 and tool belts 2 (debatable), light therapy
+  lamps 2, a nail drill, an OBD2 scanner, a storage tin. Riding gloves kept (6). Part 4
+  (a type's or shelf's kind on an aisle that may not hold it): 527 -> 0. **Searches of a
+  kind with a wrong product among their first 12: 31 of 284 -> 7 of 275** (9 now answered
+  by their words); left: item 3's 5 (`electric bike` 12, `motorcycle helmet` 12, `robotic
+  lawn mower` 10, `summer tyres`, `winter tyres` 1), `bed sheets` 4 (duvet covers with a
+  pillow case read as pillows), `sandals` 1 (flip flops as slippers). `washing machine`
+  142 -> 3 products, `toner` 229 -> 151, `bag` 1,483 -> 1,323, `paint` 32 -> 10, `server`
+  59 -> 52, `tv` 43 -> 39, `monitor` 821 -> 802, `mirror` 411 -> 395. **By their words**
+  (this commit's search): vitamin tablets 17, electrolyte tablets 1, sugar mice 1, lash
+  fans 36, life jacket 2, face toner 24, golf ball marker 24, cake server 2, gift bag 60,
+  lunch bag 23, tool backpack 2, tool belt 1, nail drill 1, craft paint 5; kids tablet 1
+  (a children's probiotic: the owner's accepted case). **Found, not item 2:** "rubber
+  gloves" is read as router (56 routers, a typo correction), "blood pressure monitor"
+  finds none, "light therapy lamp" lists 812 lamps. A search on GitHub's runner: 1,180 ms
+  against 1,110 (+6%). **To deploy:** the code is on the deploying branch already, so a
+  push deploys only if it touches `server-deploy.yml`'s paths: the next commit carries a
+  one-line fix of a stale line of the deployment's log ("nothing on 80 or 443", while
+  Caddy serves both since 31/10), pushed only with the owner's word naming it.
+- **Before (05/11, 12:15 UTC): item 2 built and tested, not deployed, not yet measured**
   (owner: «Εντάξει, προχώρα με το βήμα 2»; commit `fbe16d4`). (a) A kind the shop's type or
   shelf names is read against the aisle as a title's is (`_annotate_kinds`, `aisle_rule`):
   when the aisle may not hold it, the title decides under the same rule
