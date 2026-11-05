@@ -372,6 +372,36 @@ must not be asked about), `.github/workflows/ai-measure.yml`; first, one request
 end on six fictional products (`ai_preflight.py`, run `42111149372`: right on all six,
 the sentence passed the checks, $0.000228, 2.0 s).
 
+**The first run** (2026-11-05, run `42112519518`, on the owner's word; the catalogue of
+05/11 12:44 UTC, 577,670 products), read by hand: every sentence, every `yes` and every
+`no` listed, three `unclear`s a search.
+
+- **The switch:** of 163 searches, 119 complex for the engine and asked about; the 15
+  controls (every word read, or only a judgement) none; 29 of the 141 written needs were
+  answered by the engine itself (every word carried by some products: "dog food for
+  puppies"), 5 found no product of their kind, 1 was answered by its words.
+- **The sentences:** 117 shown, 2 withheld. 23 name products that fit, 15 of them for
+  Greek searches, whose words no English title carries («τροφή σκύλου για κουτάβια»: 2
+  puppy foods; «μπότες για χιόνι»: 14 snow boots; «σαμπουάν για πιτυρίδα»: an anti-dandruff
+  shampoo); 94 say that none of the titles says so ("None of these 30 laptops say they
+  are for a student"). None read false; one overstates (3 "Sensi" razors said to suit
+  sensitive skin), one is loose (toys "for children" for «παιδί 3 ετών», where the English
+  search had none). Withheld: one rightly (a price of a product not answered yes), one
+  wrongly ("rated for 20°F (-7°C)": "rated" is a forbidden word).
+- **The answers:** 87 `yes`, of which 81 plainly right and 6 debatable (the razors, the
+  toys); 64 `no`, mostly products of another kind on the page (a fridge magnet, cake pans,
+  dummy AirPods, a knitting pattern, citrus squeezers for leafy greens, bicycle and polo
+  helmets for a motorcycle) or another age (adult and senior pet foods, toddler backpacks
+  for school), a few guessed from a name ("Pro" drones for beginners); 2,354 `unclear`.
+- **The cost and the time:** $0.0623 in all, $0.00052 a search (292,496 tokens in,
+  85,983 out); an answer 3.5 s in the middle, 7.5 s at most (the time-out is 8 s); a
+  search on the copy 1.6 s.
+- **What it says:** the titles state the need in about one complex search of five, most
+  of all for Greek searches; the other four end in a true sentence that adds little to
+  the page's own "PicWise could not match". Put to the owner: to show the sentence only
+  when some products fit, and the small fixes ("rated for", a stricter `yes`, the
+  grammar of one product).
+
 **The bar to go live is the owner's** (section 6). Proposed: no wrong sentence among those
 that pass the checks. The query log is not configured on the server, so there are no
 logged searches to draw from; whether the text of real searches in the site's access log

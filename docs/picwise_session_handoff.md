@@ -20,6 +20,21 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-05): pick up here -- start here
 
+- **Latest (05/11, about 21:45 UTC): the AI measure run, read by hand; the measure off
+  again** (owner: «ΝΑΙ» to turning it on; run `42112519518`, the catalogue of 05/11 12:44
+  UTC, the server matched the pin, nothing changed on it). 163 searches: 119 asked (the 15
+  controls none), **117 sentences shown, 23 naming products that fit (15 of them Greek
+  searches: «τροφή σκύλου για κουτάβια», «μπότες για χιόνι», «σαμπουάν για πιτυρίδα»), 94
+  "none of these say"**, 2 withheld (one rightly, one wrongly: "rated for 20°F"). None
+  read false; one overstated ("Sensi" razors), one loose (toys "for children" for a
+  3-year-old). `yes` 87 (81 plainly right), `no` 64 (mostly products of another kind on
+  the page: a fridge magnet among fridges, cake pans among frying pans, dummy AirPods,
+  bicycle and polo helmets for a motorcycle), `unclear` 2,354. **$0.0623 in all,
+  $0.00052 a search; 3.5 s an answer in the middle, 7.5 s at most** (time-out 8 s). The
+  spec, 4.8, holds the details. **Put to the owner:** show the sentence only when some
+  products fit (the "none" ones add little to the page's "could not match"); the small
+  fixes; then wire it to the site (the service, the page, the key to the server), each
+  step on the owner's word.
 - **Latest (05/11, 21:20 UTC): the AI layer's core built and tested, one request proved end
   to end; the measure ready, not run** (branch `ccr-4f47068a-99ikwe`, nothing on the site
   or the deploying branch). `src/picwise_ai/`: `complex_search` (asked only when a search

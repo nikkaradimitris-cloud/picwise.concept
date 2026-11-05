@@ -15,7 +15,11 @@
 # below and push.
 #
 # Measured: 2026-11-05, the first run, on the owner's word («ΝΑΙ» to turning it on: one
-# commit on ccr-4f47068a-99ikwe that changes only `if: false` to `if: true`).
+# commit on ccr-4f47068a-99ikwe that changes only `if: false` to `if: true`): run
+# 42112519518, the catalogue of 05/11 12:44 UTC (577,670 products); 163 searches, 119
+# asked, 117 sentences shown (23 with products that fit, 15 of those Greek searches; 94
+# "none of these say"), 2 withheld; $0.0623, $0.00052 a search; 3.5 s an answer in the
+# middle, 7.5 s at most. Off again after it.
 name: AI measure (read-only, measured only)
 on:
   push:
@@ -33,7 +37,7 @@ jobs:
   measure:
     # Off until the owner gives the word for a run: it reads the server with the deploy key.
     # The commit pushed with the owner's word turns it on (true), the next one off again.
-    if: true
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
