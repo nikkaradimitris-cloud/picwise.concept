@@ -1,8 +1,9 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-11-05 (**item 2 built
-and tested, not measured, not deployed: a shelf's kind read against its aisle, doubtful
-products found by their words, `fbe16d4`**; the end-to-end check of the words that
+Current state for whoever picks the project up next. Updated 2026-11-05 (**item 2 live
+since 2026-11-05 12:54 UTC, run `42028878547`: a shelf's kind read against its aisle,
+doubtful products found by their words; searches of a kind with a wrong card 31 -> 7 of
+the 284 measured**; the end-to-end check of the words that
 confuse the search done, run `41940401157`; **live since 2026-11-05 10:50 UTC, run `42011735026`: "tablet" without
 pills, the main kind only everywhere, with the narrower aisles**; **the offers not fetched
 since 2026-11-03 05:05 UTC: Awin answers 401** (a new token: not now, the owner); live since 2026-11-01 16:22 UTC, run `41324998201`: products whose photo is gone
@@ -205,9 +206,9 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   `ccr-5b36715a-qh6d95` (fast-forwarded), the deployment's records and item 2 (`fbe16d4`);
   start from it. Before it, `ccr-5b36715a-qh6d95` held all of `ccr-9826870f-qkgl6s`
   (fast-forwarded) and this work. **The deploying branch `ccr-1361f1a7-dcpo60` is at
-  `f358808`**: deployed `7b55cf8` (run `42011735026`: the main-kind rule `cdd1eb3`,
-  `92fd939`, the narrower aisles `5ac3f1e`, `32f0c93`, the audit), then the records and the
-  audit's workflow alone (run `42016489822`). Item 2 is not there yet. A push there that
+  `a7539b9`, deployed** (run `42028878547`: item 2, `fbe16d4`, on the main-kind rule
+  `cdd1eb3`, `92fd939` and the narrower aisles `5ac3f1e`, `32f0c93`); this branch has the
+  records after it. A push there that
   touches `src/**`, `deployment/server/**` and the rest of `server-deploy.yml`'s paths
   deploys, unless its head commit says `[skip actions]` (then nothing runs); one that
   touches only `server-confusions.yml` runs the read-only audit.
