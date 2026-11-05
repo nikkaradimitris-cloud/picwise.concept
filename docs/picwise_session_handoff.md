@@ -16,7 +16,23 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-05): pick up here -- start here
 
-- **Latest (05/11, 12:45 UTC): item 2 measured; waiting for the owner's «ανέβασε».** Run
+- **Latest (05/11, 12:57 UTC): item 2 deployed** (owner: «Ναι, στείλε το a7539b9 στο
+  ccr-1361f1a7-dcpo60 για να ανέβει στο site»). Run `42028878547`, success: release
+  `20261105T123843Z-a7539b9`, the site on it since 12:54:15 UTC, health ok; 577,670
+  products from 80 shops prepared at 12:44:51 UTC (891 s, peak 9.8 GB); 15 of 15 pages and
+  12 of 12 searches the same; the log now says truly what listens (Caddy on 80 and 443).
+  The kind report: **274,821 products shown as a kind** (the measure's own number); made
+  doubtful by their aisle 3,160 (2,639 in the morning): `washing_machine` 141 doubted, 3
+  still of the kind; `toner` 161 and 155; `paint` 59 and 10; `bag` 586 and 1,393. The
+  offers: still 401 (the owner: not now). **Not done after it:** a live read
+  (`server-confusions.yml`, parts "searches" and "live": a push of the workflow alone,
+  with the owner's word); offered to the owner. **Next, the order agreed:** the AI layer's
+  spec (`docs/`, PROJECT_RULES section 4) for the owner's approval; open: question (3)
+  (the broader kind when the narrower has none), the paint pots filed as craft paint (one
+  line: `_SUB_AISLE_HOLDS` for "art & craft paint" holding GA), "rubber gloves" read as
+  router, `bed sheets` (duvet covers with a pillow case read as pillows), `sandals` (flip
+  flops as slippers).
+- **Before (05/11, 12:45 UTC): item 2 measured; waiting for the owner's «ανέβασε».** Run
   `42025667252` (the catalogue of 05/11 10:41 UTC, 577,676 products; against the rules
   deployed, `7b55cf8`; pushed with the owner's word «Ναι, στείλε το 19d564e και μετά το
   6975029 στο ccr-1361f1a7-dcpo60 για τη μέτρηση», `19d564e` with `[skip actions]`: no run).
