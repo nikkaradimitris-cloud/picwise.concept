@@ -1,0 +1,52 @@
+# Checks that the Anthropic API key in GitHub's secrets (ANTHROPIC_API_KEY) works: one
+# request of a few tokens to Claude Haiku 5.5, well under a cent, with nothing on the
+# server or the site touched (the AI layer's spec, docs/PICWISE_AI_LAYER_SPEC.md, 4.6).
+# The key is never printed (GitHub masks it as well); only whether it is there, the
+# answer's status, the model that answered and the tokens it counted.
+# To check again: change this file and push it alone.
+name: ai-key-check
+on:
+  push:
+    branches: [ccr-4f47068a-99ikwe]
+    paths:
+      - '.github/workflows/ai-key-check.yml'
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ask Claude Haiku 5.5 for one word
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "The secret ANTHROPIC_API_KEY is missing or empty."
+            exit 1
+          fi
+          case "$ANTHROPIC_API_KEY" in
+            sk-ant-*) shape="starts as an Anthropic API key does" ;;
+            *) shape="does NOT start as an Anthropic API key does (sk-ant-)" ;;
+          esac
+          echo "The secret is there: ${#ANTHROPIC_API_KEY} characters; it $shape."
+          status=$(curl -sS -o answer.json -w '%{http_code}' https://api.anthropic.com/v1/messages \
+            -H "Authorization: Bearer $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2026-10-21" \
+            -H "content-type: application/json" \
+            -d '{"model": "claude-haiku-5-5", "max_tokens": 200, "output_config": {"effort": "low"}, "messages": [{"role": "user", "content": "Reply with the single word: ready"}]}')
+          echo "HTTP status: $status"
+          python3 - <<'EOF'
+          import json
+          answer = json.load(open("answer.json", encoding="utf-8"))
+          if answer.get("type") == "error":
+              error = answer.get("error") or {}
+              print("Anthropic answered with an error:", error.get("type"), "-", error.get("message"))
+              raise SystemExit(1)
+          text = "".join(block.get("text", "") for block in answer.get("content", []) if block.get("type") == "text")
+          print("Model:", answer.get("model"))
+          print("Answer:", text.strip() or "(no text)")
+          print("Stop reason:", answer.get("stop_reason"))
+          usage = answer.get("usage") or {}
+          print("Tokens: in", usage.get("input_tokens"), "| out", usage.get("output_tokens"))
+          EOF
