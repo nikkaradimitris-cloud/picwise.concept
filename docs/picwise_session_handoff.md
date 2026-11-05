@@ -20,6 +20,19 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-05): pick up here -- start here
 
+- **Latest (05/11, about 22:00 UTC): the smarter answer built (owner: «ΣΩΣΤΑ»), the
+  preflight passed; the second measure waits for the owner's word.** `5b91f71`: the AI
+  reads each product's description too (`complex_search.description_of`, 400 characters,
+  markup removed); no sentence when nothing fits, but up to 3 shops' words from the given
+  titles (`checks.shop_words_that_pass`: no brand, judgement or the kind's name), each
+  offered only when its own search finds products of a kind with every word honoured,
+  with that count (`shop_words.verified_shop_words`); with neither, nothing; a stricter
+  `yes`; "rated for" allowed; one product as "This ... says". 34 tests. Preflight run
+  `42116311350`: "quiet washing machine" found the one saying "low noise 49 dB" only in its
+  description (3 of 6, the sentence passed); "washing machine for a small kitchen" read
+  the two "Compact" titles as fitting ("2 of these 4 washing machines say compact, ...",
+  passed), so the shops' words were not reached there; the second call read the cached
+  instructions (1,230 tokens at a tenth of the price).
 - **Latest (05/11, about 22:00 UTC): the owner, of the "none" sentences: «ΟΤΑΝ ΔΕΝ ΒΡΙΣΚΕΙ
   ΚΑΤΙ ΝΑ ΜΗΝ ΛΕΕΙ ΔΕΝ ΒΡΕΘΗΚΕ ΣΚΕΨΟΥ ΚΑΤΙ ΠΙΟ ΕΞΥΠΝΟ».** Proposed (not built): (1) the AI
   reads each product's own description too, not the title alone (the prepared catalogue
