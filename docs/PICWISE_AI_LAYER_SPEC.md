@@ -363,8 +363,14 @@ About 150 complex searches, Greek and English, written for it into the repositor
 marked with the signal it exercises (words not matched, a broader kind), run on the
 server's catalogue through a workflow (pushed with the owner's word), with the real key.
 For each: the candidates, the AI's answers, the sentence, the checks, the time and the
-cost. Every `yes` and `no` is read against the titles by hand. Then the owner sees how many
-sentences were right, wrong or withheld, the cost of a search and its time.
+cost. Every sentence and every `yes` is read against the titles by hand, and the `no`s
+and `unclear`s are sampled (the measure lists all the `no`s and three `unclear`s a
+search). Then the owner sees how many sentences were right, wrong or withheld, the cost
+of a search and its time. Built on 2026-11-05: `deployment/server/measure_ai.py`, its
+163 searches (`ai_measure_searches.txt`: 141 needs, 7 broader kinds, 15 controls the AI
+must not be asked about), `.github/workflows/ai-measure.yml`; first, one request end to
+end on six fictional products (`ai_preflight.py`, run `42111149372`: right on all six,
+the sentence passed the checks, $0.000228, 2.0 s).
 
 **The bar to go live is the owner's** (section 6). Proposed: no wrong sentence among those
 that pass the checks. The query log is not configured on the server, so there are no

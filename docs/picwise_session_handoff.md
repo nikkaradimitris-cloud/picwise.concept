@@ -20,6 +20,25 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-05): pick up here -- start here
 
+- **Latest (05/11, 21:20 UTC): the AI layer's core built and tested, one request proved end
+  to end; the measure ready, not run** (branch `ccr-4f47068a-99ikwe`, nothing on the site
+  or the deploying branch). `src/picwise_ai/`: `complex_search` (asked only when a search
+  for a kind is answered and some words are matched by no product of it, or a narrower kind
+  fell back; never for judgements, English ones too, a condition, no kind, or an answer
+  found by words; up to 30 products in the page's order, prices as shown), `request`
+  (Haiku 5.5, effort low, a JSON schema, products numbered, no links), `checks` (counts,
+  prices, numbers, names, forbidden words, links, Greek, one sentence, 30 words), `client`
+  (SDK imported only in `make_client`; cost from usage; any failure shows nothing).
+  `deployment/server/requirements-ai.txt`: anthropic 2.6.0 and 15 packages, every hash,
+  for Python 3.12. Tests: `tests/test_picwise_ai_layer.py` (25, the API faked; a dry run
+  on a small prepared catalogue); the 31 NLU, catalogue and boundary modules still pass.
+  **Preflight** (`ai_preflight.py`, run `42111149372`): the layer's own request on six
+  fictional washing machines: the two quiet ones "yes", the four others "unclear", the
+  sentence "2 of these 6 washing machines say they are quiet, the lowest price among them
+  being 499.00 GBP." passed the checks; 374 tokens in, 147 out, 936 cached; $0.000228;
+  2.0 s. **Next:** the measure (`.github/workflows/ai-measure.yml`, 163 searches, a budget of
+  $1): it copies the server's catalogue as the audit does (the deploy key, read only), so
+  it is pushed only with the owner's word naming the commit and the branch.
 - **Latest (05/11, about 21:00 UTC): the owner chose the AI part (c) first** («ΝΑΙ», to
   «Να ξεκινήσω να το φτιάχνω;», after asking whether products are now indexed better,
   especially in complex searches: not yet, nothing changed on the site). The order is
