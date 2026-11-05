@@ -40,7 +40,7 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   the spec (told to the owner). Given the steps (the spec, 4.6): an account on the Claude
   Console (`platform.claude.com`), $10 of credit with reload off, a spend limit of $30 a
   month on the Billing page, a workspace "PicWise", a key linked to the owner
-  and and scoped to that workspace (a key not scoped to one must name the workspace on
+  and scoped to that workspace (a key not scoped to one must name the workspace on
   every request), no expiry, put in GitHub's secrets as `ANTHROPIC_API_KEY`, never in the
   chat. **Next:** the owner's word that the secret is in GitHub (never the key itself);
   meanwhile (b), then (c) with the API faked. **Branch:**
