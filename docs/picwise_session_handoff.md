@@ -1,7 +1,8 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-11-05 (**next: the AI
-layer's implementation, in a new conversation; no more kind-by-kind fixes (the owner)**;
+Current state for whoever picks the project up next. Updated 2026-11-05 (**the AI layer's
+spec written, `docs/PICWISE_AI_LAYER_SPEC.md`, waiting for the owner's approval; nothing
+built; no more kind-by-kind fixes (the owner)**;
 **item 2 live
 since 2026-11-05 12:54 UTC, run `42028878547`: a shelf's kind read against its aisle,
 doubtful products found by their words; searches of a kind with a wrong card 31 -> 7 of
@@ -19,6 +20,25 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-05): pick up here -- start here
 
+- **Latest (05/11, later): the AI layer's spec written, waiting for the owner's approval**
+  (`docs/PICWISE_AI_LAYER_SPEC.md`; nothing built, nothing pushed to the deploying
+  branch). It holds the three parts as approved, what each may never do, how each is
+  measured before it counts, and the owner's decisions, each with a proposal (its section
+  6), with a summary in Greek for the owner. Its choices beyond the approval: (b) first,
+  the smallest; (a) a naive Bayes classifier, standard library, that judges a doubtful
+  product only between the kinds its own words name and its aisle may hold, and "none"
+  (never against the aisle rule; the 3,160 made doubtful by their aisle are only
+  reported), in the shade until the owner's «ανέβασε»; (c) asked only when the page says
+  "PicWise could not match" (not for the buyer's judgements, not when no kind is
+  understood), through a separate service `picwise-assist` that alone holds the key and
+  the SDK, so the page and the site's workers never wait; about $0.0005 a search at Haiku
+  5.5's prices (read on Anthropic's pricing page on 05/11: $0.10 / $0.50 per million
+  tokens, prompts up to 100,000), a cap of $1 a day proposed. Found while writing it: the
+  lexicon holds 312 kinds (the map below still says 278); English "best", "cheap" are
+  read as words to match, not as judgements (only the Greek ones are,
+  `_JUDGEMENT_QUALIFIERS`). **Next:** the owner's approval or changes; then (b). **Branch:**
+  `ccr-4f47068a-99ikwe` holds all of `ccr-f9cf1b70-rzslft` (fast-forwarded) and the spec;
+  start from it.
 - **START HERE: the AI layer, its implementation.** The owner, 05/11, after item 2 went
   live: «Σταματάμε εδώ αυτή τη λογική της απασφαλμάτωσης είδος με είδος θέλω να
   προχωρήσουμε στην υλοποίηση της ένταξης του συστήματος ai και αυτό θέλω να γίνει σε άλλη
@@ -61,7 +81,8 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
     (`test_picwise_search_index_generated_blind_stage4`,
     `test_picwise_search_index_blind_evaluation_stage6a`: "amazon" and "galaxy"), and the
     offers' token (Awin 401; the owner: «Δεν με ενδιαφέρει το νέο token τώρα»).
-  - **Branches:** start from `ccr-f9cf1b70-rzslft` (all of today's work and records). The
+  - **Branches:** start from `ccr-4f47068a-99ikwe` (05/11, later: all of
+    `ccr-f9cf1b70-rzslft`, today's work and records, and the AI layer's spec). The
     deploying branch `ccr-1361f1a7-dcpo60` is at `a7539b9`, deployed. A push there needs
     the owner's word naming the commit and the branch, every time (the session's safety
     check stops it otherwise, read-only workflows too).
