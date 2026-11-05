@@ -125,9 +125,10 @@ class CategoryBreadcrumbTests(unittest.TestCase):
     """A category is a path from the widest aisle to the narrowest shelf."""
 
     def test_the_first_shelf_that_names_a_product_decides(self) -> None:
-        # The cables are kept under the monitors; they are still cables.
+        # The cables are kept under the monitors; they are still cables -- of no kind
+        # the shelf or the title says (2026-10-27: no charging cable by "cables" alone).
         self.assertIn(
-            "charging_cable",
+            "cable",
             _kinds("", "electronics & accessories > cables > monitor > summer deals",
                    "Testline USB 2.0 to USB-A Mini-B - 18 m"),
         )

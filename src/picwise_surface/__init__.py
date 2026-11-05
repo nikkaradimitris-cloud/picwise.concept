@@ -14,6 +14,7 @@ from .landing import render_demo_info_page, render_landing_surface, render_revie
 from .legal import (
     FOOTER_LINKS,
     SHORT_AFFILIATE_NOTICE,
+    render_about_page,
     render_affiliate_disclosure_page,
     render_branded_not_found_page,
     render_contact_page,
@@ -54,6 +55,7 @@ __all__ = [
     "FOOTER_LINKS",
     "prepare_redirect_tracking",
     "SHORT_AFFILIATE_NOTICE",
+    "render_about_page",
     "render_affiliate_disclosure_page",
     "render_branded_not_found_page",
     "render_buying_page_surface",

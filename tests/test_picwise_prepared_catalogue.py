@@ -12,7 +12,10 @@
 - a server reads a file only when one is configured, or built into a Vercel deployment;
 - the readiness page says whether the server answers from a prepared file, and why not;
 - a deployment's build leaves a public note of what it prepared, and a failure while
-  preparing neither fails the build nor prints the error's text.
+  preparing neither fails the build nor prints the error's text;
+- beside the prepared file, the pool Google may be given from (owner, 2026-10-30: every
+  product stays in the search), kept for the next night as its starting point, counted
+  in the note without a row's id; a pool that fails keeps the night before's.
 
 Every row is written with fictional brands and `.invalid` URLs; the page tests are
 served through api/index.py, the deployed entry point.
@@ -46,6 +49,7 @@ from api.index import app as wsgi_app  # noqa: E402
 from fixture_support import fixture_description  # noqa: E402
 from picwise_providers import prepared_catalogue, state  # noqa: E402
 from picwise_providers.awin_adapter import clear_awin_feed_parse_cache  # noqa: E402
+from picwise_providers.catalogue_cap import google_pool_path, read_google_pool  # noqa: E402
 from picwise_providers.prepared_catalogue import (  # noqa: E402
     PREPARED_CATALOGUE_ENV,
     PREPARED_MAX_AGE_ENV,
@@ -411,6 +415,45 @@ class PrepareToolTests(_PreparedMixin, unittest.TestCase):
         self.assertIn("16 products a card can show", result.stdout)
         self.assertIsNotNone(read_prepared_catalogue(self.prepared_path))
 
+    def test_the_pool_google_may_be_given_from_is_kept_for_the_next_night(self) -> None:
+        # Owner, 2026-10-30: every product stays in the search; a cap of 15% a category
+        # chooses the pool Google may be given from, the night before's its starting
+        # point. Two categories are too few for the share to hold: all 16 are in it.
+        feed = self._write_feed(_feed_rows())
+        first = self._run("--feed-file", str(feed), "--out", str(self.prepared_path))
+        self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
+        pool = google_pool_path(self.prepared_path)
+        self.assertEqual(len(read_google_pool(pool)), 16)
+        self.assertIn(
+            "the pool Google may be given from: 16 of 16 products (at most all a category, 15%),"
+            " 0 of them kept the night before; every product stays in the search",
+            first.stdout,
+        )
+        second = self._run("--feed-file", str(feed), "--out", str(self.prepared_path))
+        self.assertIn("16 of 16 products", second.stdout)
+        # Counted in the categories over the cap only: none here.
+        self.assertIn("0 of them kept the night before", second.stdout)
+        self.assertEqual(len(read_prepared_catalogue(self.prepared_path).products), 16)
+
+    def test_a_pool_that_fails_keeps_the_night_before_s(self) -> None:
+        tool = _load_prepare_tool()
+        feed = self._write_feed(_feed_rows())
+        os.environ["AWIN_FEED_FILE"] = str(feed)
+        try:
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(tool.main(["--out", str(self.prepared_path)]), 0)
+            pool = google_pool_path(self.prepared_path)
+            before = pool.read_bytes()
+            printed = io.StringIO()
+            with patch("picwise_providers.catalogue_cap.cap_catalogue", side_effect=ValueError("no")):
+                with redirect_stdout(printed):
+                    self.assertEqual(tool.main(["--out", str(self.prepared_path)]), 0)
+        finally:
+            os.environ.pop("AWIN_FEED_FILE", None)
+        self.assertIn("the pool Google may be given from failed (ValueError at", printed.getvalue())
+        self.assertIn("the night before's is kept", printed.getvalue())
+        self.assertEqual(pool.read_bytes(), before)
+
     def test_without_a_feed_the_build_goes_on(self) -> None:
         out = self.folder / "none.json.gz"
         failed = self._run("--out", str(out))
@@ -434,12 +477,47 @@ class PrepareToolTests(_PreparedMixin, unittest.TestCase):
         prepared_at = read_prepared_catalogue(self.prepared_path).prepared_at
         self.assertLess(abs((datetime.fromisoformat(note["prepared_at"]) - prepared_at).total_seconds()), 1)
         self.assertEqual(
-            set(note), {"prepared", "prepared_at", "products", "shops", "freshness", "intake", "kinds", "written_at"}
+            set(note),
+            {"prepared", "prepared_at", "products", "shops", "freshness", "intake", "kinds", "title_alone",
+             "shop_catalogues", "balance", "google_pool", "written_at"},
+        )
+        # The pool Google may be given from (owner, 2026-10-30): counts only, never a row's id.
+        self.assertEqual(
+            note["google_pool"],
+            {"share": 0.15, "size": None, "products": 16, "kept": 16, "kept_from_before": 0, "over": []},
+        )
+        # The shares of the shown products and what a cap would cut (owner, 2026-10-26),
+        # measured only: one shop, so no cap holds by shop.
+        self.assertEqual(note["balance"]["products"], 16)
+        self.assertIsNone(note["balance"]["shop"]["cap"])
+        # What the shops' own catalogues and the barcodes gave (owner, 2026-10-26): no bot's
+        # file here, and every fixture row has its category.
+        self.assertEqual(
+            {key: note["shop_catalogues"][key] for key in ("file", "shops_known", "by_type", "sold_out")},
+            {"file": "none", "shops_known": 0, "by_type": 0, "sold_out": 0},
+        )
+        self.assertEqual(note["shop_catalogues"]["barcode"]["joined"], 0)
+        # How often a title alone gives the kind its shelf gives (owner, 2026-10-25): of the
+        # 16 fixture products, 15 titles give the shelf's kind and one is doubtful alone.
+        self.assertEqual(
+            {key: note["title_alone"][key] for key in ("products", "agrees", "differs", "doubtful")},
+            {"products": 16, "agrees": 15, "differs": 0, "doubtful": 1},
         )
         # Per kind, the products whose title does not name it (owner, 2026-10-23): every
-        # fixture title names its kettle or laptop.
+        # fixture title names its kettle or laptop; those whose title alone names it, and
+        # those their aisle made doubtful (owner, 2026-10-25): every fixture shelf names
+        # its kind.
         self.assertEqual(
-            note["kinds"], {"products": 16, "title_names_no_kind": 0, "by_kind": []}
+            note["kinds"],
+            {
+                "products": 16,
+                "title_names_no_kind": 0,
+                "by_kind": [],
+                "only_title_names_kind": 0,
+                "by_kind_only_title": [],
+                "doubted_by_aisle": 0,
+                "by_kind_doubted_by_aisle": [],
+            },
         )
         # How fresh the listings are (owner, 2026-10-18: "we show ghosts"), measured only.
         self.assertEqual(note["freshness"]["products"], 16)

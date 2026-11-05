@@ -1,0 +1,12 @@
+# Every night, after the preparation (picwise-prepare.timer, 04:17 UTC, some 12 minutes),
+# whose downloaded feed names PicWise's shops; the service waits for it when it runs late.
+# Installed by deployment/server/deploy.sh.
+[Unit]
+Description=PicWise: fetch the Awin offers of PicWise's shops every night
+
+[Timer]
+OnCalendar=*-*-* 05:05:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

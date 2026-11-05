@@ -178,10 +178,17 @@ class RuntimeTruthAlignmentUiTests(unittest.TestCase):
         self.assertIn("Availability not verified", html)
         # "What is PicWise?" says, on every page, that PicWise shows "what the shops list
         # as in stock" (owner, 2026-10-17): a description of the service, not a claim
-        # about these cards. The cards and the rest of the page claim no stock.
+        # about these cards. Since 2026-10-31 the same words are the page's description
+        # for Google (`<meta name="description">`). The cards and the rest of the page
+        # claim no stock.
         tooltip = re.search(r'<div class="pw-tooltip" id="pw-tooltip">.*?</div>', html)
         self.assertIsNotNone(tooltip)
-        self.assertNotIn("in stock", (html[: tooltip.start()] + html[tooltip.end():]).lower())
+        description = re.search(r'<meta name="description" content="[^"]*">', html)
+        self.assertIsNotNone(description)
+        self.assertIn(html[tooltip.start():tooltip.end()].split(">", 1)[1].rsplit("<", 1)[0], description.group(0))
+        rest = html[: tooltip.start()] + html[tooltip.end():]
+        rest = rest.replace(description.group(0), "")
+        self.assertNotIn("in stock", rest.lower())
         self.assertNotRegex(html, r"Availability:\s*1\b")
 
     def test_raw_availability_one_not_rendered(self) -> None:

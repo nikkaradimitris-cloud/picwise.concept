@@ -107,7 +107,9 @@ class UnknownKindLabelTests(unittest.TestCase):
     def test_a_kind_label_the_lexicon_lacks_is_not_replaced_by_the_title(self) -> None:
         for product_type, title in (
             ("Temperature & Humidity Sensors", "Fixturon Smart Temperature & Humidity Monitor"),
-            ("Networking Software", "Testline DXS-36 networking software Switch / Router 1 license"),
+            # "Networking Software" was this case until the vocabulary learned it as software
+            # (owner, 2026-10-26: `test_picwise_kinds_from_the_shops_types.py`).
+            ("KVM Switches", "Testline 4-Port KVM Switch with Router"),
             ("Servers", "Sampleworks ProServe DL325 24c 64GB 8SFF 2x480GB SSD"),
             ("Photo Paper", "Fixturon MP-101 Matte Photo Paper A4 - 50 Sheets"),
         ):

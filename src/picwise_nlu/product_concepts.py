@@ -83,6 +83,7 @@ air_conditioner|HA||air conditioner,air conditioners,air conditioning unit,airco
 dehumidifier|HA||dehumidifier,dehumidifiers|αφυγραντήρας,αφυγραντήρες
 air_purifier|HA||air purifier,air purifiers|καθαριστής αέρα,καθαριστές αέρα,ιονιστής
 fire_pit|GA||fire pit,fire pits,firepit,firepits,fire bowl,fire bowls,chiminea,chimineas|εστία φωτιάς,εστίες φωτιάς
+sauna|GA||sauna,saunas,outdoor sauna,outdoor saunas,infrared sauna,infrared saunas,sauna cabin,sauna cabins|σάουνα,σάουνες
 heater|HA||heater,heaters,electric heater,electric heaters,radiator heater,electric fire,electric fires,electric fireplace,electric fireplaces,fireplace,fireplaces,fireplace stove,fireplace stoves,log burner,log burners,wood burner,wood burners|θερμάστρα,θερμάστρες,καλοριφέρ λαδιού,αερόθερμο,τζάκι,ηλεκτρικό τζάκι
 fan|HA||fan,fans,electric fan|ανεμιστήρας,ανεμιστήρες
 heat_pump|HA||heat pump,heat pumps|αντλία θερμότητας,αντλίες θερμότητας
@@ -129,19 +130,32 @@ desk_phone|PH||ip phone,ip phones,voip phone,voip phones,sip phone,sip phones,co
 power_bank|PH||power bank,power banks,powerbank,portable charger,external battery|εξωτερική μπαταρία,εξωτερικές μπαταρίες,φορητή μπαταρία,φορητός φορτιστής,πάουερ μπανκ
 phone_charger|PH||charger,chargers,phone charger,wall charger,usb charger,power adapter,power adapters,ac adapter,ac adapters|φορτιστής,φορτιστές,φορτιστής κινητού
 wireless_charger|PH|phone_charger|wireless charger,wireless chargers,charging pad|ασύρματος φορτιστής,ασύρματοι φορτιστές
-charging_cable|PH||charging cable,usb cable,cable,cables,usb c cable,lightning cable|καλώδιο φόρτισης,καλώδιο,καλώδια
+cable|PH||cable,cables|καλώδιο,καλώδια
+charging_cable|PH|cable|charging cable,charging cables,charge cable,charge cables,charger cable,charger cables,phone charger cable,phone charger cables,usb charger cable,usb charger cables,usb cable,usb cables,usb c cable,usb c cables,type c cable,type c cables,lightning cable,lightning cables,iphone cable,iphone cables|καλώδιο φόρτισης,καλώδια φόρτισης
 phone_case|PH||phone case,phone cases,mobile phone case,mobile phone cases,cell phone case,cell phone cases,smartphone case,smartphone cases,case,~cover,phone cover|θήκη κινητού,θήκες κινητού,θήκη,θήκες
 screen_protector|PH||screen protector,screen protectors,screen back protector,screen back protectors,tempered glass|προστασία οθόνης,προστατευτικό οθόνης,τζαμάκι
 car_phone_holder|PH||car phone holder,car phone mount,phone holder|βάση κινητού αυτοκινήτου,βάση κινητού
 smartwatch|PH|watch|smartwatch,smartwatches,smart watch,fitness tracker,fitness trackers|έξυπνο ρολόι,έξυπνα ρολόγια
 laptop|CO||laptop,laptops,notebook computer,notebook computers|λάπτοπ,φορητός υπολογιστής,φορητοί υπολογιστές,φορητό
-desktop_pc|CO||desktop pc,desktop pcs,desktop computer,desktop computers,~desktop,~pc|υπολογιστής,υπολογιστές,σταθερός υπολογιστής,κομπιούτερ
+desktop_pc|CO||desktop pc,desktop pcs,desktop computer,desktop computers,workstation,workstations,~desktop,~pc|υπολογιστής,υπολογιστές,σταθερός υπολογιστής,κομπιούτερ,σταθμός εργασίας,σταθμοί εργασίας
 monitor|CO||monitor,monitors,computer monitor,computer monitors,pc monitor,pc monitors,pc screen,pc screens,computer screen,computer screens,~screen|οθόνη υπολογιστή,οθόνες υπολογιστή,οθόνη,οθόνες,μόνιτορ
 printer|CO||printer,printers,multifunction printer,multifunction printers,all in one printer|εκτυπωτής,εκτυπωτές,πολυμηχάνημα,πολυμηχανήματα
 label_printer|CO||label printer,label printers,label maker,label makers|ετικετογράφος,ετικετογράφοι,εκτυπωτής ετικετών
 toner|CO||toner,toners,toner cartridge,toner cartridges|τόνερ
 ink_cartridge|CO||ink cartridge,ink cartridges,printer ink,ink|μελάνι,μελάνια,μελάνι εκτυπωτή,μελάνια εκτυπωτή,φυσίγγιο μελανιού,αμπούλα,αμπούλες
 router|CO||router,routers,wifi router,network router,network routers,modem,modems|ρούτερ,μόντεμ
+access_point|CO||access point,access points,wireless access point,wireless access points,wifi access point,wifi access points|σημείο πρόσβασης,σημεία πρόσβασης
+firewall|CO||firewall,firewalls,hardware firewall,hardware firewalls,network firewall,network firewalls|τείχος προστασίας
+server|CO||server,servers,rack server,rack servers,tower server,tower servers,console server,console servers|διακομιστής,διακομιστές
+memory_card|CO||memory card,memory cards,sd card,sd cards,micro sd card,micro sd cards,microsd card,microsd cards,compactflash card,compactflash cards|κάρτα μνήμης,κάρτες μνήμης
+battery|CO||household battery,household batteries,rechargeable battery,rechargeable batteries,alkaline battery,alkaline batteries,aa battery,aa batteries,aaa battery,aaa batteries,~battery,~batteries|επαναφορτιζόμενη μπαταρία,επαναφορτιζόμενες μπαταρίες,αλκαλική μπαταρία,αλκαλικές μπαταρίες
+pen|CO||ballpoint pen,ballpoint pens,ballpoint,ballpoints,gel pen,gel pens,rollerball pen,rollerball pens,fountain pen,fountain pens,~pen,~pens|στυλό,στιλό
+marker|CO||marker,markers,marker pen,marker pens,permanent marker,permanent markers,whiteboard marker,whiteboard markers,highlighter,highlighters|μαρκαδόρος,μαρκαδόροι,υπογραμμιστής,υπογραμμιστές
+folder|CO||folder,folders,ring binder,ring binders,lever arch file,lever arch files,document folder,document folders|ντοσιέ,φάκελος εγγράφων,φάκελοι εγγράφων,κλασέρ
+network_switch|CO||network switch,network switches,ethernet switch,ethernet switches|μεταγωγέας δικτύου,μεταγωγείς δικτύου,switch δικτύου
+media_converter|CO||media converter,media converters,fibre media converter,fibre media converters,fiber media converter,fiber media converters|μετατροπέας μέσων,μετατροπείς μέσων
+network_card|CO||network card,network cards,network interface card,network interface cards|κάρτα δικτύου,κάρτες δικτύου
+software|CO||security software,antivirus software,antivirus,networking software,office software,operating system,operating systems|λογισμικό προστασίας,αντιικό πρόγραμμα,λειτουργικό σύστημα
 keyboard|CO||keyboard,keyboards|πληκτρολόγιο,πληκτρολόγια
 mouse|CO||mouse,mice,computer mouse|ποντίκι,ποντίκια
 webcam|CO||webcam,webcams,web camera,web cam|κάμερα υπολογιστή,κάμερες υπολογιστή,κάμερα web
@@ -155,6 +169,7 @@ soundbar|AV||soundbar,soundbars,sound bar|μπάρα ήχου
 headphones|AV||headphones,headphone,headset,headsets,earphones,earbuds|ακουστικά,ακουστικό,ακουστικά κεφαλής,ψείρες
 game_console|AV||games console,game console,gaming console,games consoles,game consoles|κονσόλα,κονσόλες,κονσόλα παιχνιδιών
 game_controller|AV||~controller,~controllers,gamepad,joystick,game controller,game controllers,gaming controller,gaming controllers|χειριστήριο,χειριστήρια
+video_game|AV||video game,video games,pc game,pc games,console game,console games|βιντεοπαιχνίδι,βιντεοπαιχνίδια,ηλεκτρονικό παιχνίδι,ηλεκτρονικά παιχνίδια
 camera|AV||camera,cameras,digital camera,mirrorless camera,dslr|φωτογραφική μηχανή,φωτογραφικές μηχανές,κάμερα,κάμερες
 action_camera|AV|camera|action camera,action cameras,action cam|κάμερα δράσης
 microphone|AV||microphone,microphones,mic|μικρόφωνο,μικρόφωνα
@@ -267,7 +282,7 @@ jeans|CL||jeans|τζιν
 jacket|CL||jacket,jackets,coat,coats|μπουφάν,παλτό,μπουφάν χειμερινό
 t_shirt|CL||t shirt,t shirts,tshirt,tee|μπλουζάκι,μπλουζάκια,κοντομάνικο,μπλούζα
 shirt|CL||shirt,shirts|πουκάμισο,πουκάμισα
-hoodie|CL||hoodie,hoodies,sweatshirt|φούτερ
+hoodie|CL||hoodie,hoodies,sweatshirt,sweatshirts|φούτερ
 sweater|CL||sweater,sweaters,jumper,cardigan|πουλόβερ,ζακέτα
 dress|CL||dress,dresses|φόρεμα,φορέματα
 skirt|CL||skirt,skirts|φούστα,φούστες
@@ -310,7 +325,7 @@ graphics_card|CO||graphics card,graphics cards,video card,gpu|κάρτα γρα�
 processor|CO||processor,processors,cpu|επεξεργαστής,επεξεργαστές
 ram_memory|CO||ram memory,ram module,ram modules,memory module,memory modules,ddr4 ram,ddr5 ram,dimm,dimms|μνήμη ram,μνήμες ram
 motherboard|CO||motherboard,motherboards|μητρική,μητρική κάρτα,μητρικές
-power_supply|CO||power supply unit,psu,pc power supply|τροφοδοτικό,τροφοδοτικά
+power_supply|CO||power supply unit,power supply units,psu,psus,pc power supply|τροφοδοτικό,τροφοδοτικά
 pc_case|CO||pc case,pc cases,computer case,computer cases,tower case|κουτί υπολογιστή
 pc_cooling|CO||case fan,case fans,pc fan,pc fans,cpu cooler,cpu coolers,computer cooling system,computer cooling systems,liquid cooler|ανεμιστήρας υπολογιστή,ψύκτρα,ψύξη υπολογιστή
 printer_paper|CO||printer paper,copy paper,a4 paper|χαρτί εκτυπωτή,χαρτί φωτοτυπικού,χαρτί a4
@@ -338,14 +353,16 @@ pool|GA||swimming pool,above ground pool,paddling pool|πισίνα,φουσκω
 flower_pot|GA||flower pot,flower pots,plant pot,plant pots,planter,planters,planter box,planter boxes,planter bed,planter beds,raised garden bed,raised garden beds,raised bed,raised beds,garden bed,garden beds,flower bed,flower beds,raised flower bed,raised flower beds|γλάστρα,γλάστρες,ζαρντινιέρα,ζαρντινιέρες
 greenhouse|GA||greenhouse,greenhouses,grow tent,grow tents,polytunnel,polytunnels,cold frame,cold frames|θερμοκήπιο,θερμοκήπια
 towels|FU||towel,towels,bath towel,beach towel|πετσέτα,πετσέτες,πετσέτα μπάνιου,πετσέτα θαλάσσης
-bed_linen|FU||bed sheets,bed linen,duvet cover,~sheets|σεντόνια,σετ σεντόνια,παπλωματοθήκη
-pillow|FU||pillow,pillows|μαξιλάρι,μαξιλάρια
-duvet|FU||duvet,duvets,quilt,comforter|πάπλωμα,παπλώματα,κουβέρτα
-bedspread|FU||bedspread,bedspreads,coverlet,coverlets|κουβερλί
+bedding|FU||bedding,bedding set,bedding sets|κλινοσκεπάσματα,είδη κρεβατιού
+bed_linen|FU|bedding|bed sheets,bed linen,duvet cover,~sheets|σεντόνια,σετ σεντόνια,παπλωματοθήκη
+pillow|FU|bedding|pillow,pillows|μαξιλάρι,μαξιλάρια
+duvet|FU|bedding|duvet,duvets,quilt,comforter|πάπλωμα,παπλώματα,κουβέρτα
+bedspread|FU|bedding|bedspread,bedspreads,coverlet,coverlets|κουβερλί
 curtains|FU||curtains,curtain,blinds|κουρτίνες,κουρτίνα,στόρια
 rug|FU||rug,rugs,carpet|χαλί,χαλιά
 bath_mat|FU||bath mat,bath mats,bathmat,bathmats,bath rug,bath rugs,shower mat,shower mats|πατάκι μπάνιου,πατάκια μπάνιου
 mirror|FU||mirror,mirrors,wall mirror|καθρέφτης,καθρέφτες
+photo_frame|FU||photo frame,photo frames,picture frame,picture frames|κορνίζα,κορνίζες
 wall_clock|FU||wall clock,alarm clock|ρολόι τοίχου,ξυπνητήρι
 baby_bottle|BK||baby bottle,baby bottles,feeding bottle|μπιμπερό
 breast_pump|BK||breast pump|θήλαστρο
