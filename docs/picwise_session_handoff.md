@@ -2,8 +2,9 @@
 
 Current state for whoever picks the project up next. Updated 2026-11-05 (**the end-to-end
 check of the words that confuse the search done, run `41940401157`; three decisions wait
-for the owner**; built, not deployed: "tablet" without pills, the main kind only
-everywhere; live since 2026-11-01 16:22 UTC, run `41324998201`: products whose photo is gone
+for the owner**; **live since 2026-11-05 10:50 UTC, run `42011735026`: "tablet" without
+pills, the main kind only everywhere, with the narrower aisles**; **the offers not fetched
+since 2026-11-03 05:05 UTC: Awin answers 401**; live since 2026-11-01 16:22 UTC, run `41324998201`: products whose photo is gone
 left out, a card seen only once its photo has loaded, the offer recommended even without a
 barcode; live before: offers first and the
 Recommended on offer since 10:06 UTC, run `41295172671`; vouchers without their code no
@@ -14,7 +15,32 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-05): pick up here -- start here
 
-- **Latest (05/11, morning): the owner's answer «Πρώτα το 1 μετά το 2»** (first fix the
+- **Latest (05/11, 10:53 UTC): the main kind only deployed** (owner: «Ναι, ανέβασε»; the
+  session's safety check stopped the push as a production deploy, then the owner: «Ναι,
+  στείλε το 7b55cf8 στο ccr-1361f1a7-dcpo60 για να ανέβει στο site»). `7b55cf8` pushed to
+  `ccr-1361f1a7-dcpo60` at 10:33 UTC; run `42011735026`, success: release
+  `20261105T103355Z-7b55cf8`, the site on it since 10:50:50 UTC, health ok; 577,676
+  products from 80 shops prepared at 10:41:40 UTC (973 s, peak 9.8 GB; the deploy step 17
+  minutes, against 11 on 01/11); 15 of 15 pages and 12 of 12 searches the same. The
+  deployment's kind report: 275,348 products shown as a kind; **2,639 made doubtful by their
+  aisle**: barbells on body jewellery 1,030, bags on sweets and party favours 411, phone
+  cases 137 (jewellery holders, pencil cases), jackets 116 (cat treats "Skin&Coat"), tablets
+  93 (fish food, electrolytes, sweets), ink cartridges 92 (extension cords "Ink - Lola's
+  Leads", a vest "Sonic Ink"), toners 73, fans 66 (eyelashes), dresses 57 (Finediam's
+  "Band Dress" rings), mice 57 (sugar mice, rat poison). Still there (item 2): `tv` shows
+  3 digital downloads among its first 4 (shelf "Film & Television Digital Downloads").
+  **The read-only check after it** (`394b86b` on this branch: `server-confusions.yml`,
+  parts "searches" and "live") **was stopped too by the session's safety check as a
+  production deploy: not pushed, the owner asked.**
+- **New (05/11): the offers are not fetched.** During the deployment, «offers: not fetched
+  (Awin's accounts call answered 401); the last file kept»: Awin refuses the token. The
+  offers file is the one fetched 2026-11-03 05:05 UTC (93 live, of 31 of the 84 shops), so
+  the nightly fetches of 04/11 and 05/11 wrote none either (their reason not read). The
+  site keeps showing an offer only while its own dates say it is live, so the ones that end
+  drop out and new ones do not come in. The owner to make a new API token in Awin and put
+  it in GitHub's secret `AWIN_API_TOKEN` (never in the chat); it reaches the server with the
+  next deployment (`server-deploy.yml` writes the secrets).
+- **Before (05/11, morning): the owner's answer «Πρώτα το 1 μετά το 2»** (first fix the
   main-kind rule's few wrong results and deploy it, then the same check for a kind the
   shelf names), and «Ναι στείλε τη μέτρηση». **Built and measured, not deployed:** the
   narrower aisles of Google's (`_SUB_AISLE_HOLDS`, `_shelf_paths`; the decision contract,
@@ -26,10 +52,9 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   wrongly. Two entries were measured and left out (Baby & Toddler holding bags: 7 right,
   7 wrong; water-sport clothing: wetsuits as suits). Against the rules deployed, on that
   catalogue: 500 products lose their kind, 202 gain one (the run's version still held the
-  Baby & Toddler entry: 14 of those gains are gone in the code). **Waiting for the owner's
-  «ανέβασε»** to deploy it (a push to `ccr-1361f1a7-dcpo60`, which prepares the
-  catalogue again); then the deployment's kind report and a live read (`server-confusions.yml`,
-  parts "searches" and "live"); then item 2.
+  Baby & Toddler entry: 14 of those gains are gone in the code). **Deployed 05/11 10:50 UTC
+  (above)**; then a live read (`server-confusions.yml`, parts "searches" and "live",
+  waiting for the owner's word for the push); then item 2.
 - **The full test run of the final code (`32f0c93`) was stopped half-way** when the owner
   moved to a new conversation («Πάμε σε άλλη συζήτηση»): 243 of the 284 modules run, one
   process each, four at a time, from `tests/`. All pass but
@@ -49,9 +74,7 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   "galaxy" among the broad words; `blind_evaluation._NEGATIVE_BROAD_TERMS` never held them,
   since the first commit `69aa5c7`, 25/05). The owner: «Ναι, ανέβασε αν περάσουν όλα», then,
   told of the first, «Ναι, ανέβασε όταν περάσουν τα δύο αργά»; the second slow one failed,
-  so nothing was pushed and the owner was asked again. **Then:** deploy (`be1cbf9` or later
-  to `ccr-1361f1a7-dcpo60`, without `[skip actions]`), read the deployment's kind report and
-  run `server-confusions.yml` with the parts "searches" and "live"; then item 2.
+  so nothing was pushed and the owner was asked again: «Ναι, ανέβασε». Deployed (above).
 - **Approved by the owner 05/11 (below): an AI layer for complex searches** («σε έναν
   κατάλογο που συνεχώς ανανεώνεται θα προκύπτουν πάντα νέες κατηγορίες... αλγόριθμος να
   πιάνει τις σύνθετες αναζητήσεις (π.χ. από το μήκος του query ή λέξεις όπως "για", "στη")
@@ -86,21 +109,20 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   Anthropic SDK pinned with its hash beside gunicorn (`requirements-server.txt`), the
   site's first library; a daily cap; the offline measure (about 150 complex searches,
   Greek and English) shown to the owner before anything goes live.
-- **A push to the deploying branch needs the owner's word in the conversation:** on 05/11
-  the session's safety check stopped one as a production deploy, though it carried
-  `[skip actions]`; after the owner's «Ναι στείλε τη μέτρηση» it went through. Ask first,
-  say what the push does.
+- **A push to the deploying branch needs the owner's word in the conversation, for that
+  push:** on 05/11 the session's safety check stopped one as a production deploy, though it
+  carried `[skip actions]`; after the owner's «Ναι στείλε τη μέτρηση» it went through. Later
+  that day it stopped the deployment after a plain «Ναι, ανέβασε», and passed it after the
+  owner named the commit and the branch; it stopped a read-only workflow's push too. Ask
+  first, say what the push does, name the commit and the branch.
 - **Which branch.** `ccr-f9cf1b70-rzslft` (05/11, later) holds all of
   `ccr-5b36715a-qh6d95` (fast-forwarded) and the test run's record; start from it. Before
   it, `ccr-5b36715a-qh6d95` held all of `ccr-9826870f-qkgl6s` (fast-forwarded) and this
-  work. **The deploying
-  branch `ccr-1361f1a7-dcpo60` is at `8ebb2ca`**: it now holds the main-kind rule
-  (`cdd1eb3`, `92fd939`), the narrower aisles as measured (`5ac3f1e`, with the Baby &
-  Toddler entry since taken out) and the audit, **not deployed** (deployed: `4b5497b`, run
-  `41324998201`). Each time its code went with `[skip actions]` (`8ca4407`, `5ac3f1e`; no
-  run started, checked), then the workflow alone (`49722a8`, `8ebb2ca`; only the audit ran). So the next push there that
-  touches `src/**`, `deployment/server/**` and the rest of `server-deploy.yml`'s paths
-  deploys the main-kind rule too: only with the owner's word.
+  work. **The deploying branch `ccr-1361f1a7-dcpo60` is at `7b55cf8`, deployed** (run
+  `42011735026`): the main-kind rule (`cdd1eb3`, `92fd939`), the narrower aisles
+  (`5ac3f1e`, `32f0c93`) and the audit. A push there that touches `src/**`,
+  `deployment/server/**` and the rest of `server-deploy.yml`'s paths deploys; one that
+  touches only `server-confusions.yml` runs the read-only audit.
 - **The owner's word (04/11).** «Θέλω να μάθω ποια προϊόντα δημιουργούν μπέρδεμα στην
   αναζήτηση.. όπως τα tablets... Banks...κτλ ... θέλω έναν ολοκληρωμένο έλεγχο από άκρη σε
   άκρη», then «Ναι, προχώρα με τον έλεγχο» (to a read-only check pushed to the deploying
