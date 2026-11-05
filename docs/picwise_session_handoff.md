@@ -44,6 +44,22 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   «ανέβασε»** (put to them 05/11, not answered yet), then deploy (`32f0c93` or later to
   `ccr-1361f1a7-dcpo60`, without `[skip actions]`), read the deployment's kind report and
   run `server-confusions.yml` with the parts "searches" and "live"; then item 2.
+- **Asked by the owner 05/11, not decided: an AI layer for complex searches** («σε έναν
+  κατάλογο που συνεχώς ανανεώνεται θα προκύπτουν πάντα νέες κατηγορίες... αλγόριθμος να
+  πιάνει τις σύνθετες αναζητήσεις (π.χ. από το μήκος του query ή λέξεις όπως "για", "στη")
+  και τότε μόνο να ενεργοποιεί τοπικά το AI πάνω στους 20-30 επαληθευμένους τίτλους...
+  παράγοντας τη "μία πρόταση" σύνοψης»). Proposed in chat: (a) first, AI each night only
+  on the products the rules leave doubtful (Message Batches, half price; measured by
+  `print_confusions.py` before anything ships); (b) at search time, AI only when the
+  engine's own signals say the search is complex (words it could not match, a relation
+  word with something after it, a fall-back to a broader kind, mixed kinds), on up to 30
+  verified candidates, after the page is shown (never delaying it), with a structured
+  answer (per candidate fits / no / unclear, one sentence), checked by code (ids exist,
+  every number in the sentence is in the data), cached 24 h per search. The Recommended
+  stays the owner's rule; the NLU stays local (tests pin no live LLM there: AI as a layer
+  of its own); a spec first (PROJECT_RULES section 4); an Anthropic API key as a secret
+  only; Claude Opus 5.5 for the measurement, a cheaper model the owner's choice after the
+  numbers.
 - **A push to the deploying branch needs the owner's word in the conversation:** on 05/11
   the session's safety check stopped one as a production deploy, though it carried
   `[skip actions]`; after the owner's «Ναι στείλε τη μέτρηση» it went through. Ask first,
