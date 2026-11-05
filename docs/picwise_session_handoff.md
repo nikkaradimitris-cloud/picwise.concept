@@ -30,6 +30,20 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   «ανέβασε»** to deploy it (a push to `ccr-1361f1a7-dcpo60`, which prepares the
   catalogue again); then the deployment's kind report and a live read (`server-confusions.yml`,
   parts "searches" and "live"); then item 2.
+- **The full test run of the final code (`32f0c93`) was stopped half-way** when the owner
+  moved to a new conversation («Πάμε σε άλλη συζήτηση»): 243 of the 284 modules run, one
+  process each, four at a time, from `tests/`. All pass but
+  `test_picwise_canonical_vocabulary_registry_stage2` (fails as before this work) and the 8
+  `test_local_nlu_*`, which fail only when run from `tests/` (from the repository root they
+  pass: `python3 -m unittest tests.test_local_nlu_brand_resolver`, checked). **Not run: the
+  41 modules from `test_picwise_performance_stage1c` on, alphabetically** (among them the
+  search-index ones, `test_picwise_search_page`, the `test_picwise_server_print_*`,
+  `test_stage_22_live_deployment`, `test_surface_stages_10_to_15`; the kind-reading ones
+  among them passed in the 17-module run), and `test_picwise_learning_stage7b` (54
+  minutes). **First thing of the next conversation: run those, then ask the owner for
+  «ανέβασε»** (put to them 05/11, not answered yet), then deploy (`32f0c93` or later to
+  `ccr-1361f1a7-dcpo60`, without `[skip actions]`), read the deployment's kind report and
+  run `server-confusions.yml` with the parts "searches" and "live"; then item 2.
 - **A push to the deploying branch needs the owner's word in the conversation:** on 05/11
   the session's safety check stopped one as a production deploy, though it carried
   `[skip actions]`; after the owner's «Ναι στείλε τη μέτρηση» it went through. Ask first,
