@@ -1,8 +1,9 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-11-05 (**the end-to-end
-check of the words that confuse the search done, run `41940401157`; three decisions wait
-for the owner**; **live since 2026-11-05 10:50 UTC, run `42011735026`: "tablet" without
+Current state for whoever picks the project up next. Updated 2026-11-05 (**item 2 built
+and tested, not measured, not deployed: a shelf's kind read against its aisle, doubtful
+products found by their words, `fbe16d4`**; the end-to-end check of the words that
+confuse the search done, run `41940401157`; **live since 2026-11-05 10:50 UTC, run `42011735026`: "tablet" without
 pills, the main kind only everywhere, with the narrower aisles**; **the offers not fetched
 since 2026-11-03 05:05 UTC: Awin answers 401** (a new token: not now, the owner); live since 2026-11-01 16:22 UTC, run `41324998201`: products whose photo is gone
 left out, a card seen only once its photo has loaded, the offer recommended even without a
@@ -15,7 +16,44 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-05): pick up here -- start here
 
-- **Latest (05/11, 10:53 UTC): the main kind only deployed** (owner: «Ναι, ανέβασε»; the
+- **Latest (05/11, 12:15 UTC): item 2 built and tested, not deployed, not yet measured**
+  (owner: «Εντάξει, προχώρα με το βήμα 2»; commit `fbe16d4`). (a) A kind the shop's type or
+  shelf names is read against the aisle as a title's is (`_annotate_kinds`, `aisle_rule`):
+  when the aisle may not hold it, the title decides under the same rule
+  (`_title_fallback_head`), else doubtful; riding clothing holds JW too (riding gloves).
+  (b) **Found by the live check below, a side effect of the rule deployed today:** a
+  search for the products it set aside, by their own name ("vitamin tablets", "sugar
+  mice", "lash fans"), showed the main kind ("could not match: vitamin"), where before it
+  found them by accident; step 2 alone would add "life jacket" (a puffer jacket), "tool
+  backpack". Fixed in the same commit (`search_selection._doubtful_products_by_words`):
+  when a search for a kind has words besides the kind's name that none of the kind's
+  products carry, the doubtful products carrying them and a name of the kind in their
+  title or type are the answer; the page names no kind ("Results for: vitamin tablets", no
+  "Understood as", `live_search_resolver.answered_by_words`); the query log keeps the
+  reading. The owner, of "kids tablet" (kids' vitamins if no tablet says "kids"): «Όταν
+  κάποιος γράψει kids. Το ευρετήριο θα προτείνει την επόμενη συμπλήρωση λέξεις ...εκεί
+  λοιπόν γίνεται η διόρθωση κατά τη χρήση του χρήστη.. δεν χρειάζεται να το παιδεύουμε
+  άλλο... Πιστεύω ότι υποδομή είναι επαρκής... Με δεδομένο ότι θα μπει και το άλλο σύστημα
+  ai..». The decision contract, "The main kind only", points 6 and 7; PROJECT_RULES section
+  2. Tests: `tests/test_picwise_shelf_kind_on_another_aisle.py` (6; 16 checks fail on the
+  deployed code); the 133 modules that read kinds, the search or the app: all pass (1,403
+  tests, the learning one included). The audit (`print_confusions.py`) searches 21
+  products by their own name too (`NAME_SEARCHES`) and reads an answer found by words as
+  such. **Next:** the measure on the server's catalogue (`server-confusions.yml`, parts
+  "kinds", "searches", "compare" against `7b55cf8`): code pushed with `[skip actions]`,
+  then the workflow alone, each push only with the owner's word naming commit and branch;
+  then «ανέβασε».
+- **The live check after the deployment** (run `42016489822`, the catalogue the deployment
+  prepared): the live site shows the copy's cards, card for card, on 320 of 320 pages (all
+  answered). Searches of a kind with a wrong product among their first 12: **21 of 270**
+  (38 of 269 on 04/11). Left: item 2's 14 (`washing machine` 12: the first cards TIMCO
+  washers from £0.81, read as washing machines off their shelf "Washers", as before
+  today's deployment, now flagged by the narrower aisle; `toner` 11, `bag` 10, `server` 7,
+  `paint` 5, `tv` 4, `handbag` 3, `belt` 2, `gloves` 2, `monitor` 2, `drill`, `mirror`,
+  `scanner`, `skirt` 1); item 3's 5 (`electric bike`, `motorcycle helmet`, `robotic lawn
+  mower` 10, `summer tyres`, `winter tyres`: the broader kind); not looked at yet: `bed
+  sheets` 4, `sandals` 1.
+- **Before (05/11, 10:53 UTC): the main kind only deployed** (owner: «Ναι, ανέβασε»; the
   session's safety check stopped the push as a production deploy, then the owner: «Ναι,
   στείλε το 7b55cf8 στο ccr-1361f1a7-dcpo60 για να ανέβει στο site»). `7b55cf8` pushed to
   `ccr-1361f1a7-dcpo60` at 10:33 UTC; run `42011735026`, success: release
@@ -117,12 +155,14 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   owner named the commit and the branch; it stopped a read-only workflow's push too. Ask
   first, say what the push does, name the commit and the branch.
 - **Which branch.** `ccr-f9cf1b70-rzslft` (05/11, later) holds all of
-  `ccr-5b36715a-qh6d95` (fast-forwarded) and the test run's record; start from it. Before
-  it, `ccr-5b36715a-qh6d95` held all of `ccr-9826870f-qkgl6s` (fast-forwarded) and this
-  work. **The deploying branch `ccr-1361f1a7-dcpo60` is at `7b55cf8`, deployed** (run
-  `42011735026`): the main-kind rule (`cdd1eb3`, `92fd939`), the narrower aisles
-  (`5ac3f1e`, `32f0c93`) and the audit. A push there that touches `src/**`,
-  `deployment/server/**` and the rest of `server-deploy.yml`'s paths deploys; one that
+  `ccr-5b36715a-qh6d95` (fast-forwarded), the deployment's records and item 2 (`fbe16d4`);
+  start from it. Before it, `ccr-5b36715a-qh6d95` held all of `ccr-9826870f-qkgl6s`
+  (fast-forwarded) and this work. **The deploying branch `ccr-1361f1a7-dcpo60` is at
+  `f358808`**: deployed `7b55cf8` (run `42011735026`: the main-kind rule `cdd1eb3`,
+  `92fd939`, the narrower aisles `5ac3f1e`, `32f0c93`, the audit), then the records and the
+  audit's workflow alone (run `42016489822`). Item 2 is not there yet. A push there that
+  touches `src/**`, `deployment/server/**` and the rest of `server-deploy.yml`'s paths
+  deploys, unless its head commit says `[skip actions]` (then nothing runs); one that
   touches only `server-confusions.yml` runs the read-only audit.
 - **The owner's word (04/11).** «Θέλω να μάθω ποια προϊόντα δημιουργούν μπέρδεμα στην
   αναζήτηση.. όπως τα tablets... Banks...κτλ ... θέλω έναν ολοκληρωμένο έλεγχο από άκρη σε
