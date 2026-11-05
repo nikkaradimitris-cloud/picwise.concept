@@ -20,6 +20,18 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-05): pick up here -- start here
 
+- **Latest (05/11, 20:40 UTC): the Anthropic API key is in GitHub's secrets and works.**
+  The owner made a Console account (Individual, «Νικος's Individual Org»), bought $10 of
+  credit with auto-reload turned off (the dashboard then showed $10.00 and «Turn on
+  auto-reload»; the tier's cap $500 a month), entered a European VAT number at the
+  purchase, and made a key with «Get API key», which asked for no name, workspace or
+  expiry (its expiry not known yet: asked of the owner), then put it in GitHub's secrets
+  as `ANTHROPIC_API_KEY`. Checked by `.github/workflows/ai-key-check.yml` (this branch
+  only, run when its own file changes; never prints the key): run `42105499951`, the
+  secret 106 characters starting `sk-ant-`, HTTP 200, `claude-haiku-5-5` answered
+  "ready", 18 tokens in and 4 out (well under a cent), in about 0.8 s from GitHub's
+  runner. Nothing on the server or the site touched; the deployment does not yet pass
+  the key to the server (part (c), the spec 4.6). **Next:** the owner's yes to start (b).
 - **Latest (05/11, later): the AI layer's spec written, waiting for the owner's approval**
   (`docs/PICWISE_AI_LAYER_SPEC.md`; nothing built, nothing pushed to the deploying
   branch). It holds the three parts as approved, what each may never do, how each is
