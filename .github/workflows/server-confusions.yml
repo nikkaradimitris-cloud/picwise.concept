@@ -22,7 +22,9 @@
 # COMPARE_WITH (the first main-kind rule) read otherwise than this commit's; again after
 # the main kind only was deployed (owner, 2026-11-05: «Ναι, στείλε το 7b55cf8 στο
 # ccr-1361f1a7-dcpo60 για να ανέβει στο site»; run 42011735026): the searches and the live
-# site, on the catalogue the deployment prepared.
+# site, on the catalogue the deployment prepared; then item 2 (owner, 2026-11-05: «Εντάξει,
+# προχώρα με το βήμα 2»; fbe16d4), measured against the rules deployed (COMPARE_WITH
+# 7b55cf8): the kinds, the searches (the products' own names too) and "compare".
 name: Server confusions (read-only, measured only)
 on:
   push:
@@ -44,10 +46,10 @@ jobs:
       fail-fast: false
       matrix:
         # The parts this run takes: "kinds", "searches", "live", "compare".
-        part: [searches, live]
+        part: [kinds, searches, compare]
     env:
       # For "compare": the commit whose rules are read against this commit's.
-      COMPARE_WITH: d44f8c4
+      COMPARE_WITH: 7b55cf8
     steps:
       - uses: actions/checkout@v5
         with:
