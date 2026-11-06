@@ -36,7 +36,12 @@
 # A fourth time on 2026-11-06 with the rules the third called for (afa7e53: a product of
 # another kind "no", "all skin types" no need, a stated age decides, a plain clause after
 # "say", the words in pieces; the preflight right on all four, run 42197118744), on the
-# owner's word («Προχώρα»).
+# owner's word («Προχώρα»): run 42197695021, the same catalogue; 118 asked: a sentence for
+# 57 (27 of them Greek searches), the shops' words for 10 (14 words), nothing for 50,
+# withheld 1; yes 231, 1 of them unproved, no 261; $0.1278, $0.00108 a search; 5.2 s in the
+# middle, 11.1 s at most. Read by hand: no sentence wrong, the third run's three right now;
+# 2 doubtful (kids' mattresses for back pain); one button doubtful ("Skinguard", the word
+# of a manual razor answered no). Off again after it.
 name: AI measure (read-only, measured only)
 on:
   push:
@@ -54,7 +59,7 @@ jobs:
   measure:
     # Off until the owner gives the word for a run: it reads the server with the deploy key.
     # The commit pushed with the owner's word turns it on (true), the next one off again.
-    if: true
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:

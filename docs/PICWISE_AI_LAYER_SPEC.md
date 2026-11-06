@@ -462,6 +462,44 @@ for a product that is not the kind asked for at all; "all skin types" or "for ev
 does not show a need; an age the title states decides, whatever the description says; a
 plain clause after "say"; pieces joined by ";" checked each).
 
+**The fourth run** (2026-11-06, run `42197695021`, on the owner's word «Προχώρα»; the
+changes of `afa7e53`, first checked on fictional products, run `42197118744`: the
+anti-vibration feet among washing machines `no`, the cream "suitable for all skin types"
+`unclear`, the backpack "1 - 2 Years" `no`; the same catalogue), read by hand:
+
+- **The numbers:** 118 asked; a sentence for 57 (52 in the third run; 27 of them for Greek
+  searches), the shops' words for 10 (14 words), nothing for 50, withheld 1; `yes` 231, of
+  which 1 unproved (6 in the third), `no` 261 (65 in the third: the products of another
+  kind on the pages, such as 27 manual razors among electric shavers, 21 washers and pegs
+  among washing machines, 16 cases and stands among tablets); $0.1278, $0.00108 a search;
+  5.2 s in the middle, 11.1 s at most.
+- **The sentences:** none wrong. The third run's three are right now: "electric shaver for
+  sensitive skin" has no sentence (the manual razors `no`); «κρέμα προσώπου για ξηρή
+  επιδερμίδα»: "3 of these 30 face creams say they suit dry skin, from 9.57 GBP"; «σακίδιο
+  για σχολείο»: "2 of these 30 backpacks say they are for school", the six "1 - 2 Years"
+  `no`. The English reads plainly ("14 of these 30 boots say they are for winter snow",
+  "This dehumidifier says it helps stop condensation and mould in bedrooms."). Two
+  doubtful: "mattress for back pain" and «στρώμα για πόνο στη μέση»: "2 of these 30
+  mattresses say they relieve built-up pressure and improve spinal alignment", both a
+  "Kids Spring Mattress". Two weak but true (a 350 ml cafetière "made for brewing at
+  work"; "1 of these 3 sofas says it suits your living space"); twice 15 blenders counted
+  where 16 say smoothies. New where the third had no sentence: «ηλεκτρική σκούπα για
+  τρίχες σκύλου» (6 of 29), "power bank for a long flight" (8 of 30, the words in pieces
+  read now), «καρέκλα γραφείου για πόνο στη μέση» (3 with lumbar back support), "monitor
+  for photo editing" (99% sRGB). One lost: "router for a large house", withheld for the
+  price of a `yes` whose words were not the product's.
+- **The shops' words:** right or fair: "Cordless Handheld" (stairs), "Compact" (a small
+  kitchen; a mouse for small hands), "Action cam" (vlog), "Waterproof", "IP68", "5ATM"
+  (swimming; no "IP67" now), "Outdoor Kettle Set" (travel). Loose: "Cordless (3)" for
+  "iron for travel", "Ryzen AI 5 (18) · Core i7 (14)" for video editing. Doubtful:
+  "Skinguard (1)" for "electric shaver for sensitive skin", from "Gillette Skinguard
+  Razor", a manual razor the AI itself answered `no`, which the button would show.
+
+The bar proposed (no wrong sentence among those shown) is met. Put to the owner: the
+numbers, the two doubtful sentences, and the decisions of section 6. A small change
+proposed, not built: the shops' words taken only from the titles of products not
+answered `no`.
+
 **The bar to go live is the owner's** (section 6). Proposed: no wrong sentence among those
 that pass the checks. The query log is not configured on the server, so there are no
 logged searches to draw from; whether the text of real searches in the site's access log

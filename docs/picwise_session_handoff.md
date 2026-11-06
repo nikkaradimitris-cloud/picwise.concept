@@ -1,10 +1,11 @@
 # PicWise — session handoff
 
 Current state for whoever picks the project up next. Updated 2026-11-06 (**next: the
-owner's answer on small changes to the AI layer and a fourth measure; its third measure run
-on 06/11 and read by hand, 49 of 52 sentences right; its core built, tested and measured
-three times on the server's catalogue, branch `ccr-4f47068a-99ikwe`, nothing on the site;
-the Anthropic key in GitHub's secrets; no more kind-by-kind fixes (the owner)**;
+owner's answers on the AI layer's decisions (its spec, section 6), asked after its fourth
+measure, run on 06/11 and read by hand: 57 sentences, none wrong; its core built, tested
+and measured four times on the server's catalogue, branch `ccr-4f47068a-99ikwe`, nothing
+on the site; the Anthropic key in GitHub's secrets; no more kind-by-kind fixes (the
+owner)**;
 **item 2 live
 since 2026-11-05 12:54 UTC, run `42028878547`: a shelf's kind read against its aisle,
 doubtful products found by their words; searches of a kind with a wrong card 31 -> 7 of
@@ -22,60 +23,65 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-06): pick up here -- start here
 
-- **START HERE: the owner's answer on the third AI measure.** Run `42192705450`, on the
-  owner's word «Ναι, τρέξ' την» (`8e0941c`; off again in the commit that records it), read
-  by hand on 06/11. The owner was told, in Greek, the numbers and the three sentences that
-  are not right, and asked «Να προχωρήσω;» to small changes to the AI's instructions and
-  its check, then a fourth measure (about $0.13). Nothing of it is built. On «ναι»: the
-  changes below with their tests, on the working branch; the preflight on fictional
-  products (`ai-key-check.yml`, its "Checked:" line changed and pushed alone); then the
-  fourth run as the third: one commit that changes only `if: false` to `if: true` in
-  `.github/workflows/ai-measure.yml` (it copies the server's prepared catalogue read only,
-  with the deploy key and the host key's pin, as `server-confusions.yml` does; 163
-  searches; a budget of $1), then one commit that turns it off again and records the run
-  in the file's "Measured:" lines. A push of that file with `if: false` runs nothing (the
-  job is skipped). The session's stop hook asks for every commit to be pushed: so the "on"
-  commit is made only with the word.
-- **What the third run found** (the catalogue of 06/11 04:24 UTC, 595,688 products; the
-  spec, 4.8, has it all): 118 asked; a sentence for 52 (39 in the second run, 23 in the
-  first; 24 of them for Greek searches), the shops' words for 7 (12 words), nothing for 58,
-  withheld 1; `yes` 218, 6 unproved, `no` 65; $0.1236, $0.00105 a search; 4.8 s in the
-  middle, 10.0 s at most. 49 sentences right (about ten in awkward English: "5 of these 30
-  toasters say wide slots"). Not right: "electric shaver for sensitive skin" (the one
-  product a Gillette Fusion manual razor), «κρέμα προσώπου για ξηρή επιδερμίδα» (two of
-  the five only "suitable for all skin types"), «σακίδιο για σχολείο» (six of the eight
-  "Kids Backpack - 1 - 2 Years"). The buttons reasonable, but "IP67 Waterproof" for
-  swimming.
-- **The changes proposed, not built:** in `picwise_ai.request.SYSTEM_PROMPT`, `no` for a
-  product that is not the kind asked for at all (a manual razor among electric shavers);
-  "suitable for all skin types" or "for everyone" does not show a need; an age the title
-  states decides, whatever the description says (the rule is there, with "1 - 2 Years" as
-  its very example, and was not kept: if it is not kept again, a check in code); after
-  "say", a plain clause ("say they have wide slots"); in `picwise_ai.checks._proved`, a
-  `yes` whose words are pieces joined by ";" counted when each piece stands in the product
-  (all six unproved were such).
-- **What it measures** (the code of `0631666`): each `yes` must give the words of its
-  product's title or description that show it, and counts only when they stand there
-  letter for letter (`picwise_ai.checks._proved`); "This kettle says ..." accepted when one
-  product fits; numbers and names of a description allowed; the shops' words must name
-  what serves the need. The preflight (`ai-key-check.yml`, run `42122881328`) proved it on
-  fictional products: "Quiet Mark Approved", "Low Noise 47dB" and a description's "low
-  noise: 49 dB when washing" quoted and found.
-- **The runs before:** the second (`42120003523`): of 119 asked, a sentence for 39, the
-  shops' words for 11 (16 words), nothing for 58, withheld 11 (10 of them the "This kettle
-  says" the check now accepts, 1 a description's "4,500"); `yes` 208; $0.00093 a search; an
-  answer 4.1 s in the middle, 9.2 s at most. The first (`42112519518`, titles only, "none"
-  sentences): 23 sentences with products, 94 "none".
+- **START HERE: the owner's answers on the AI layer's decisions (its spec, section 6).**
+  After the fourth measure (run `42197695021`, on the owner's word «Προχώρα»; on in
+  `2c02b5f`, off again in the commit that records it), the owner was told, in Greek, the
+  numbers and the two doubtful sentences, and asked four decisions, each with a proposal:
+  (1) is this enough to go on to wiring the site (no wrong sentence among 57)? yes
+  proposed, the one doubtful button fixed first (below); (2) the daily cap: $1 proposed
+  (about 900 complex searches; spent so far about $0.43 of the $10 credit); (3) a mark on
+  the cards the AI reads as fitting, or the sentence alone: the sentence alone proposed;
+  (4) a line in the privacy page that a complex search and the products shown are sent to
+  Anthropic to be read: yes proposed, the wording the owner's. Their answers decide the
+  wiring (below), each step on the owner's word.
+- **What the fourth run found** (the catalogue of 06/11 04:24 UTC, 595,688 products, as
+  the third; the spec, 4.8, has it all): 118 asked; a sentence for 57 (52 in the third; 27
+  of them for Greek searches), the shops' words for 10 (14 words), nothing for 50, withheld
+  1; `yes` 231, 1 unproved; `no` 261 (the products of another kind on the pages: manual
+  razors, washers and pegs, iPad cases); $0.1278, $0.00108 a search; 5.2 s in the middle,
+  11.1 s at most. No sentence wrong; the third run's three right now. Doubtful: "mattress
+  for back pain" and «στρώμα για πόνο στη μέση» (two "Kids Spring Mattress" saying they
+  "improve spinal alignment"). Weak but true: a 350 ml cafetière "made for brewing at
+  work"; "1 of these 3 sofas says it suits your living space". Twice 15 blenders counted
+  where 16 say smoothies. Lost: "router for a large house" (withheld for the price of an
+  unproved `yes`). Buttons: "Skinguard (1)" for "electric shaver for sensitive skin"
+  doubtful (the word of a manual razor the AI answered `no`); "Cordless" for a travel iron
+  and "Ryzen AI 5 · Core i7" for video editing loose.
+- **Proposed, not built:** the shops' words only from the titles of products not answered
+  `no` (`picwise_ai.checks.shop_words_that_pass`, given the verdicts), which drops
+  "Skinguard"; with a test, and a fifth measure only if the owner wants one.
+- **Built for the fourth run** (`afa7e53`, owner: «Προχώρα»): in
+  `picwise_ai.request.SYSTEM_PROMPT`, a product not of the kind shown is `no`; an age the
+  title states decides, whatever the description says; "suitable for all skin types" shows
+  no need; the kind in the plural and a plain clause after "say", "This <kind> says" when
+  one product was given. In `picwise_ai.checks._proved`, a `yes` whose words are pieces
+  joined by ";" or an ellipsis is read piece by piece. 39 tests. The preflight (`7ad7bf1`,
+  run `42197118744`, four requests on fictional products) read each rule right.
+- **The runs before:** the third (`42192705450`): a sentence for 52, three not right (a
+  manual razor called an electric shaver, "all skin types" counted as dry skin, "1 - 2
+  Years" backpacks for school); the second (`42120003523`): a sentence for 39, withheld 11;
+  the first (`42112519518`, titles only, "none" sentences): 23 sentences with products.
+- **What it measures, and how to run it again** (from `0631666`): each `yes` must give the
+  words of its product's title or description that show it, counted only when they stand
+  there letter for letter (in one run or in pieces); numbers and names of a description
+  allowed; the shops' words must name what serves the need. A run is one commit that
+  changes only `if: false` to `if: true` in `.github/workflows/ai-measure.yml`, pushed to
+  `ccr-4f47068a-99ikwe` (it copies the server's prepared catalogue read only, with the
+  deploy key and the host key's pin, as `server-confusions.yml` does; 163 searches; a
+  budget of $1), then one commit that turns it off again and records the run in the
+  file's lines. A push of that file with `if: false` runs nothing (the job is skipped).
+  The session's stop hook asks for every commit to be pushed: so the "on" commit is made
+  only with the owner's word.
 - **How to read it:** `get_job_logs` with `return_content` and `tail_lines` 20000 saves the
   log as JSON to a file; take its `logs_content`, strip each line's time stamp, then read
   the "IN SHORT" totals and every search: SHOWN, BUTTONS, NOTHING or WITHHELD, each `yes`
   with "its words" (now checkable by eye), the "unproved" ones, the shops' words proposed
   and answered by the catalogue. Read every sentence, every `yes` and every button by hand.
-- **After the fourth run, to the owner** (Greek, plain, short; the owner said «?» to a long
-  message): the numbers and a few examples; then the decisions of the spec's section 6
-  (the bar to go live; whether the cards the AI reads as fitting get a mark, which is what
-  the owner asked about: «ΕΥΡΕΤΗΡΙΑΖΟΝΤΑΙ ΚΑΛΥΤΕΡΑ ΤΑ ΠΡΟΙΟΝΤΑ ΤΩΡΑ ΕΙΔΙΚΑ ΣΤΙΣ ΣΥΝΘΕΤΕΣ
-  ΑΝΑΖΗΤΗΣΕΙΣ»; the daily cap, $1 proposed; the privacy note).
+- **The mark on the cards** is what the owner asked about on 05/11: «ΕΥΡΕΤΗΡΙΑΖΟΝΤΑΙ
+  ΚΑΛΥΤΕΡΑ ΤΑ ΠΡΟΙΟΝΤΑ ΤΩΡΑ ΕΙΔΙΚΑ ΣΤΙΣ ΣΥΝΘΕΤΕΣ ΑΝΑΖΗΤΗΣΕΙΣ». The AI changes neither which
+  products are shown nor their order: it adds the sentence above them (or the shops'
+  words). Write to the owner in Greek, plain and short (the owner said «?» to a long
+  message).
 - **Then, wiring it to the site** (the spec, 4.5 to 4.7), each step on the owner's word,
   deployed as always through `ccr-1361f1a7-dcpo60` with the owner naming the commit: the
   site's worker writes a job (the search, its 30 products with descriptions) to a folder;
@@ -85,15 +91,15 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   service), calls the API, checks and writes the result; the page holds an empty line and
   a small script that asks the site for the result; the shops' words become links to their
   search with the count the catalogue gives when the result is served; the cap per UTC day
-  and 30 calls a minute; the 24 h cache. The live time-out: answers took up to 9.2 s, and
-  the page never waits, so about 15 s.
+  and 30 calls a minute; the 24 h cache. The live time-out: answers took up to 11.1 s in
+  the fourth run, and the page never waits, so about 15 s.
 - **The account** (05/11): the Claude Console, an Individual organisation («Νικος's
   Individual Org»), $10 of credit bought with a European VAT number, auto-reload off (the
   dashboard showed «Turn on auto-reload»), the Start tier ($500 a month cap); the key
   `picwise-server`, never expiring, Default workspace, linked to the owner, in GitHub's
   secrets as `ANTHROPIC_API_KEY` (the first key, which expired on 5 December, deleted).
   Spent: the preflights a fraction of a cent each, the first measure $0.0623, the second
-  $0.1111, the third $0.1236.
+  $0.1111, the third $0.1236, the fourth $0.1278: about $0.43 in all.
 - **Branches:** `ccr-4f47068a-99ikwe` holds all of `ccr-f9cf1b70-rzslft` (fast-forwarded)
   and this work; start from it. The deploying branch `ccr-1361f1a7-dcpo60` was not touched
   (`a7539b9`, item 2 live). No workflow runs on a push to the working branch but
@@ -110,7 +116,10 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   among the 3 washing machines); kinds with no product (dishwasher, air purifier, child car
   seat, high chair); English "best" and "cheap" read as words to match. Material for (a).
   On the third run's pages: titles that say "Used- very good" shown as new (a curly-hair
-  dryer, board games), since the condition is read from its column only.
+  dryer, board games), since the condition is read from its column only. The fourth run's
+  `no` answers name more: 27 manual razors among electric shavers, 21 washers and weed
+  pegs among washing machines, 16 iPad cases and stands among tablets, PC case fans among
+  fans, cake pans, milk pans and saucepans among frying pans, earring backs among watches.
 - Small notes: `actions/setup-python@v5` warns that Node 20 is deprecated (it runs on
   Node 24); the lexicon holds 312 kinds (the map below says 278).
 
