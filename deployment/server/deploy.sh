@@ -104,12 +104,14 @@ if grep -q '^AWIN_API_TOKEN=' /etc/picwise/picwise.env; then echo "Awin token: s
 # the site writes no job and its pages are as before.
 if [ -n "$ASSIST_ENV_FILE" ] && [ -s "$ASSIST_ENV_FILE" ] && grep -q '^ANTHROPIC_API_KEY=' "$ASSIST_ENV_FILE"; then
   install -o root -g root -m 600 "$ASSIST_ENV_FILE" /etc/picwise/assist.env
+  # The site's drafts become jobs only when a page's script asks: no cost for a bot.
+  install -d -o picwise -g picwise-assist -m 2750 "$ASSIST/drafts"
   install -d -o picwise -g picwise-assist -m 2770 "$ASSIST/jobs"
   ASSIST_ON=yes
   echo "Anthropic key: set"
 else
   rm -f /etc/picwise/assist.env
-  rm -rf -- "${ASSIST:?}/jobs"
+  rm -rf -- "${ASSIST:?}/jobs" "${ASSIST:?}/drafts"
   ASSIST_ON=no
   echo "Anthropic key: not set; the site writes no job"
 fi

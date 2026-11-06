@@ -3,11 +3,13 @@ the small answer the page's script asks for (`docs/PICWISE_AI_LAYER_SPEC.md`, 4.
 4.5; the Decision Contract, "The products that fit a complex search first").
 
 The site never calls the API and never waits (the spec, 1.4): for a complex search with
-no answer stored it writes a job to the folder it shares with the service
+no answer stored it writes a draft to the folder it shares with the service
 `picwise-assist` (`picwise_ai.store`) and draws the page as before, with an empty place
-its script fills; with an answer stored, the search puts first the products whose own
-words show they fit (owner, 2026-11-06) and the page draws them marked, at once. Without
-the shared folder (`PICWISE_ASSIST_DIR`) nothing here changes the page.
+its script fills; the draft becomes a job only when that script asks, so a visitor whose
+browser runs no script, as most bots, costs nothing. With an answer stored, the search
+puts first the products whose own words show they fit (owner, 2026-11-06) and the page
+draws them marked, at once. Without the shared folder (`PICWISE_ASSIST_DIR`) nothing here
+changes the page.
 """
 from __future__ import annotations
 
@@ -20,13 +22,15 @@ from picwise_ai.complex_search import SHOWN_FOR_CANDIDATES, complex_search_of, d
 from picwise_ai.shop_words import verified_shop_words
 from picwise_ai.store import (
     AssistLookup,
+    activate_draft,
     assist_directory,
+    draft_waits,
     fitting_words,
     job_pending,
     read_result,
     read_served,
     valid_key,
-    write_job,
+    write_draft,
     write_served,
 )
 from picwise_providers.state import resolve_card_eligible_provider_feed_product_by_id
@@ -60,7 +64,7 @@ def resolve_with_assist(
 
     With an answer stored for the search and its products: the products that fit first,
     with the sentence and their words; or the shops' words, counted once (the place left
-    empty until the page's script has them counted). With none: a job, written once
+    empty until the page's script has them counted). With none: a draft, written once
     (never on a page the script reads again: `write_jobs` False), and the empty place.
     """
     directory = assist_directory()
@@ -83,12 +87,12 @@ def resolve_with_assist(
             buttons = _buttons(served)
             return page, (AssistView(buttons=buttons) if buttons else None)
         return page, None
-    if write_jobs and not job_pending(directory, key):
+    if write_jobs and not job_pending(directory, key) and not draft_waits(directory, key):
         complex_search = complex_search_of(query, full, descriptions=_Descriptions())
         if complex_search is None:
             return page, None
         try:
-            write_job(directory, complex_search, full.provider_feed_candidates_signature, now=now)
+            write_draft(directory, complex_search, full.provider_feed_candidates_signature, now=now)
         except OSError:
             return page, None
     return page, AssistView(pending_key=key)
@@ -121,13 +125,20 @@ def count_shop_words(result: dict[str, Any]) -> list[dict[str, Any]]:
 
 def assist_status(key: str, *, now: datetime | None = None) -> dict[str, str]:
     """What the page's script is told: "ready" (read the page again), "pending" (ask again
-    in a second) or "none" (stop: nothing will change the page)."""
+    in a second) or "none" (stop: nothing will change the page). Its first question makes
+    the page's draft a job for the service."""
     directory = assist_directory()
     if directory is None or not valid_key(key):
         return {"state": "none"}
     result = read_result(directory, key, now=now)
     if result is None:
-        return {"state": "pending" if job_pending(directory, key) else "none"}
+        if job_pending(directory, key):
+            return {"state": "pending"}
+        try:
+            activated = activate_draft(directory, key, now=now)
+        except OSError:
+            activated = False
+        return {"state": "pending" if activated else "none"}
     status = result.get("status")
     if status == "shown":
         return {"state": "ready"}

@@ -1,10 +1,12 @@
 """Where the AI layer's jobs and answers are kept on the server (the AI layer's spec,
 `docs/PICWISE_AI_LAYER_SPEC.md`, 4.5 and 4.7).
 
-The site never calls the API and never waits. For a complex search it writes a job (the
-search and the products the AI reads) to `jobs/`; the service `picwise-assist`, under a
-user of its own and the only one given the key, answers it, checks the answer and writes
-the result to `results/`; the site reads it. Each is a small JSON file named by a key of
+The site never calls the API and never waits. For a complex search it writes a draft (the
+search and the products the AI reads) to `drafts/`, which becomes a job in `jobs/` only
+when the page's script asks for its answer: a visitor whose browser runs no script, as
+most bots, costs nothing (the spec, 4.5). The service `picwise-assist`, under a user of
+its own and the only one given the key, answers the job, checks the answer and writes the
+result to `results/`; the site reads it. Each is a small JSON file named by a key of
 the search and the products read (`job_key`): the same search with the same products, at
 the same prices, is answered once and its answer kept for 24 hours. The shops' words a
 result offers are counted once by the site's own catalogue and kept in `served/`.
@@ -22,8 +24,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
+import time
 from collections.abc import Iterable
 from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
@@ -42,9 +46,14 @@ FAILED_MINUTES = 15
 # A job older than this is dropped unanswered: its visitor has long left, and a backlog
 # after the service was down must not spend the day's cap at once.
 JOB_MAX_MINUTES = 60
+# A draft no script asked for is removed after this long, and every folder's old files at
+# most once an hour by each process.
+DRAFT_HOURS = 24
+PRUNE_SECONDS = 3600
 FORMAT = 1
 STATUSES = ("shown", "buttons", "nothing", "withheld", "failed")
 _KEY = re.compile(r"^[0-9a-f]{32}$")
+_LAST_PRUNE: dict[str, float] = {}
 
 
 def assist_directory() -> Path | None:
@@ -190,6 +199,86 @@ def write_job(
         },
     )
     return key
+
+
+def draft_waits(directory: Path, key: str) -> bool:
+    return valid_key(key) and (_folder(directory, "drafts") / f"{key}.json").is_file()
+
+
+def write_draft(
+    directory: Path, complex_search: ComplexSearch, signature: str, *, now: datetime | None = None
+) -> str:
+    """A complex search's job, kept until the page's script asks for its answer
+    (`activate_draft`); nothing is written while an answer stands, a job waits or a draft
+    does. Returns the key the page asks about."""
+    key = job_key(complex_search.search, signature)
+    moment = now or utc_now()
+    if read_result(directory, key, now=moment) is not None or job_pending(directory, key) or draft_waits(directory, key):
+        return key
+    _write_json(
+        _folder(directory, "drafts") / f"{key}.json",
+        {
+            "v": FORMAT,
+            "key": key,
+            "signature": signature,
+            "written_at": moment.isoformat(),
+            "complex_search": complex_search_payload(complex_search),
+        },
+    )
+    prune(directory, "drafts", older_than=timedelta(hours=DRAFT_HOURS), now=moment)
+    prune(directory, "served", older_than=timedelta(hours=RESULT_HOURS + 1), now=moment)
+    return key
+
+
+def activate_draft(directory: Path, key: str, *, now: datetime | None = None) -> bool:
+    """The page's script asked for an answer: its draft becomes a job for the service,
+    dated now. False when there is no draft to make one of."""
+    if not valid_key(key):
+        return False
+    path = _folder(directory, "drafts") / f"{key}.json"
+    draft = read_job(path)
+    if draft is None:
+        return False
+    _key, signature, _written, complex_search = draft
+    if job_key(complex_search.search, signature) != key:
+        return False
+    write_job(directory, complex_search, signature, now=now)
+    try:
+        path.unlink()
+    except OSError:
+        pass
+    return True
+
+
+def prune(
+    directory: Path,
+    folder: str,
+    *,
+    older_than: timedelta,
+    now: datetime | None = None,
+    every_seconds: float = PRUNE_SECONDS,
+) -> int:
+    """Remove a folder's files written longer ago than `older_than`, at most once every
+    `every_seconds` in this process; how many were removed."""
+    mark = f"{Path(directory).resolve()}/{folder}"
+    tick = time.monotonic()
+    if every_seconds and tick - _LAST_PRUNE.get(mark, -math.inf) < every_seconds:
+        return 0
+    _LAST_PRUNE[mark] = tick
+    limit = (now or utc_now()).timestamp() - older_than.total_seconds()
+    removed = 0
+    try:
+        paths = list(_folder(directory, folder).glob("*.json"))
+    except OSError:
+        return 0
+    for path in paths:
+        try:
+            if path.stat().st_mtime < limit:
+                path.unlink()
+                removed += 1
+        except OSError:
+            continue
+    return removed
 
 
 def read_job(path: Path) -> tuple[str, str, datetime, ComplexSearch] | None:

@@ -56,6 +56,8 @@ from picwise_surface import (
     render_review_safe_landing_page,
     render_terms_page,
 )
+from picwise_ai.store import assist_directory
+
 from .assist_wiring import assist_status, resolve_with_assist
 from .buying_routes import render_best_slug_html, render_buying_sitemap_xml
 from .query_log_sink import QUERY_LOG_SINK
@@ -192,6 +194,9 @@ class PicwiseLocalApp:
         assist = None
         if is_empty_search_query(query):
             resolution = empty_landing_search_resolution(query)
+        elif assist_directory() is None:
+            # A server without the AI layer searches exactly as before it.
+            resolution = resolve_live_search(query, shown=shown)
         else:
             resolution, assist = resolve_with_assist(query, shown=shown, write_jobs=not assist_refresh)
         html = render_picwise_reference_surface(

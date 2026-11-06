@@ -229,12 +229,26 @@ class AssistService:
             except OSError:
                 pass
 
+    def give_back_taken(self) -> None:
+        """Jobs a stopped service had taken wait again: answered, or dropped as too old."""
+        for taken in self.jobs.glob(".*.taken"):
+            key = taken.name[1 : -len(".taken")]
+            if store.valid_key(key):
+                try:
+                    taken.rename(self.jobs / f"{key}.json")
+                except OSError:
+                    continue
+
     def run(self, *, once: bool = False, workers: int = WORKERS, poll_seconds: float = POLL_SECONDS) -> None:
         """Answer the jobs as they come; with `once`, those waiting now, then return."""
         self.jobs.mkdir(parents=True, exist_ok=True)
+        self.give_back_taken()
         with ThreadPoolExecutor(max_workers=workers) as pool:
             running: set[Any] = set()
             while True:
+                # The answers no search may use any more, at most once an hour.
+                store.prune(self.directory, "results", older_than=timedelta(hours=store.RESULT_HOURS + 1),
+                            now=self.now())
                 running = {future for future in running if not future.done()}
                 for path in self.waiting_jobs():
                     if len(running) >= workers:

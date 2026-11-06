@@ -135,6 +135,44 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(lookup(SIGNATURE), ())
         self.assertEqual(store.fitting_words(lookup.result), {})
 
+    def test_a_draft_becomes_a_job_only_when_asked_for(self) -> None:
+        key = store.write_draft(self.directory, _search(), SIGNATURE, now=NOW - timedelta(hours=3))
+        self.assertTrue(store.draft_waits(self.directory, key))
+        self.assertFalse(store.job_pending(self.directory, key))
+        # Written again: still the one draft.
+        first = (self.directory / "drafts" / f"{key}.json").read_text(encoding="utf-8")
+        store.write_draft(self.directory, _search(), SIGNATURE, now=NOW)
+        self.assertEqual((self.directory / "drafts" / f"{key}.json").read_text(encoding="utf-8"), first)
+        # Asked for: a job dated now, so that the service does not drop it as old.
+        self.assertTrue(store.activate_draft(self.directory, key, now=NOW))
+        self.assertFalse(store.draft_waits(self.directory, key))
+        _key, signature, written, complex_search = store.read_job(self.directory / "jobs" / f"{key}.json")
+        self.assertEqual((signature, written, complex_search), (SIGNATURE, NOW, _search()))
+        self.assertFalse(store.activate_draft(self.directory, key, now=NOW))
+        self.assertFalse(store.activate_draft(self.directory, "../jobs/" + key, now=NOW))
+        # While a job waits, or an answer stands, no draft is written.
+        store.write_draft(self.directory, _search(), SIGNATURE, now=NOW)
+        self.assertFalse(store.draft_waits(self.directory, key))
+
+    def test_old_files_are_removed_at_most_once_an_hour(self) -> None:
+        folder = self.directory / "drafts"
+        folder.mkdir()
+        old, new = folder / ("a" * 32 + ".json"), folder / ("b" * 32 + ".json")
+        old.write_text("{}", encoding="utf-8")
+        new.write_text("{}", encoding="utf-8")
+        day_ago = NOW.timestamp() - 25 * 3600
+        os.utime(old, (day_ago, day_ago))
+        os.utime(new, (NOW.timestamp(), NOW.timestamp()))
+        self.assertEqual(store.prune(self.directory, "drafts", older_than=timedelta(hours=24), now=NOW), 1)
+        self.assertEqual(sorted(path.name for path in folder.iterdir()), [new.name])
+        os.utime(new, (day_ago, day_ago))
+        # Within the hour: nothing is looked at again.
+        self.assertEqual(store.prune(self.directory, "drafts", older_than=timedelta(hours=24), now=NOW), 0)
+        self.assertEqual(store.prune(self.directory, "drafts", older_than=timedelta(hours=24), now=NOW,
+                                     every_seconds=0), 1)
+        self.assertEqual(store.prune(self.directory, "nothing-here", older_than=timedelta(hours=1), now=NOW,
+                                     every_seconds=0), 0)
+
     def test_the_shops_words_counted_once(self) -> None:
         key = store.job_key("smartwatch for swimming", SIGNATURE)
         self.assertIsNone(store.read_served(self.directory, key))
@@ -221,6 +259,15 @@ class ServiceTests(unittest.TestCase):
         self.assertIsNone(store.read_result(self.directory, key, now=NOW))
         self.assertFalse(store.job_pending(self.directory, key))
 
+    def test_a_job_taken_by_a_service_that_stopped_is_answered_after_all(self) -> None:
+        key = store.write_job(self.directory, _search(), SIGNATURE, now=NOW)
+        job = self.directory / "jobs" / f"{key}.json"
+        job.rename(job.with_name(f".{key}.taken"))
+        self._service().run(once=True)
+        self.assertEqual(self.asked, ["Search, as typed: quiet washing machine"])
+        self.assertEqual(store.read_result(self.directory, key, now=NOW)["status"], "shown")
+        self.assertEqual(list((self.directory / "jobs").iterdir()), [])
+
     def test_an_old_job_and_one_already_answered_are_not_asked(self) -> None:
         old = store.write_job(self.directory, _search("quiet washing machine"), SIGNATURE, now=NOW - timedelta(hours=2))
         done = store.write_job(self.directory, _search("silent washing machine"), SIGNATURE, now=NOW)
@@ -271,7 +318,8 @@ class DeploymentTests(unittest.TestCase):
         with_key = deploy[deploy.index("grep -q '^ANTHROPIC_API_KEY=' \"$ASSIST_ENV_FILE\"; then"):deploy.index('echo "Anthropic key: not set')]
         self.assertIn('install -o root -g root -m 600 "$ASSIST_ENV_FILE" /etc/picwise/assist.env', with_key)
         self.assertIn('install -d -o picwise -g picwise-assist -m 2770 "$ASSIST/jobs"', with_key)
-        self.assertIn('rm -rf -- "${ASSIST:?}/jobs"', deploy)
+        self.assertIn('install -d -o picwise -g picwise-assist -m 2750 "$ASSIST/drafts"', with_key)
+        self.assertIn('rm -rf -- "${ASSIST:?}/jobs" "${ASSIST:?}/drafts"', deploy)
         self.assertIn('install -m 644 "$RELEASE/deployment/server/picwise-assist.service" /etc/systemd/system/', deploy)
         self.assertIn("systemctl disable --now picwise-assist.service", deploy)
         self.assertIn('! -path "$VENV" ! -path "$AI_VENV" -exec rm -rf {} +', deploy)

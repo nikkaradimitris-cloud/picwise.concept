@@ -8,7 +8,9 @@ Owner, 2026-11-06: «...τα προϊόντα που υποδεικνύει πρ
 προχώρα» to the order, the time and the mark. Pinned here:
 
 - a complex search with no answer stored: the page as before, an empty place with its key
-  and the script, and one job written, never twice, never by the script's own reading;
+  and the script, and one draft written, never twice, never by the script's own reading;
+  the draft becomes a job for the service only when the script asks, so a visitor whose
+  browser runs no script, as most bots, costs nothing;
 - with a shown answer: the products that fit first, each with a ✓ and its own words (an
   empty line on the others), the Recommended among them, "Mid-priced of those that fit",
   the sentence and "Checked against the shops' own words", the page saying the order;
@@ -84,6 +86,9 @@ class _AssistMixin(_PageMixin):
     def _jobs(self) -> list[Path]:
         return sorted((self.directory / "jobs").glob("*.json")) if (self.directory / "jobs").is_dir() else []
 
+    def _drafts(self) -> list[Path]:
+        return sorted((self.directory / "drafts").glob("*.json")) if (self.directory / "drafts").is_dir() else []
+
     def _search_page(self, search: str = SEARCH, **params: str) -> str:
         return _get("/search", {"q": search, **params})[2]
 
@@ -95,7 +100,7 @@ class _AssistMixin(_PageMixin):
 
 
 class WaitingForTheAnswerTests(_AssistMixin, unittest.TestCase):
-    def test_a_job_once_and_an_empty_place_the_script_fills(self) -> None:
+    def test_a_draft_once_an_empty_place_and_a_job_only_when_the_script_asks(self) -> None:
         key = self._key()
         page = self._search_page()
         self.assertIn("PicWise could not match: quiet", page)
@@ -104,6 +109,17 @@ class WaitingForTheAnswerTests(_AssistMixin, unittest.TestCase):
         self.assertIn(ASSIST_SCRIPT, page)
         self.assertIn('<div class="pw-results" id="pw-results">', page)
         self.assertNotIn('class="pw-card-fit"', page)
+        # A visitor whose browser runs no script leaves a draft, and asks nothing.
+        drafts = self._drafts()
+        self.assertEqual([path.stem for path in drafts], [key])
+        self.assertEqual(self._jobs(), [])
+        first = drafts[0].read_text(encoding="utf-8")
+        self._search_page()
+        self.assertEqual(drafts[0].read_text(encoding="utf-8"), first)
+        self.assertNotIn("http", first)
+        # The page's script asks: the draft becomes the service's job.
+        self.assertEqual(json.loads(_get("/assist-status", {"k": key})[2]), {"state": "pending"})
+        self.assertEqual(self._drafts(), [])
         jobs = self._jobs()
         self.assertEqual([path.stem for path in jobs], [key])
         _key, signature, _written, job = store.read_job(jobs[0])
@@ -111,14 +127,13 @@ class WaitingForTheAnswerTests(_AssistMixin, unittest.TestCase):
         self.assertEqual([candidate.product_id for candidate in job.candidates],
                          ["k5", "k1", "k2", "k3", "k4", "k6", "k7", "k8", "k9"])
         self.assertTrue(all(candidate.description for candidate in job.candidates))
-        self.assertNotIn("http", jobs[0].read_text(encoding="utf-8"))
-        # Asked again: still one job. Read again by the script: no job at all.
-        first = jobs[0].read_text(encoding="utf-8")
+        self.assertEqual(json.loads(_get("/assist-status", {"k": key})[2]), {"state": "pending"})
+        # While the job waits, no draft; read again by the script, nothing written at all.
         self._search_page()
-        self.assertEqual(jobs[0].read_text(encoding="utf-8"), first)
+        self.assertEqual(self._drafts(), [])
         jobs[0].unlink()
         self._search_page(assist="1")
-        self.assertEqual(self._jobs(), [])
+        self.assertEqual((self._jobs(), self._drafts()), ([], []))
         # "More" holds what it held before.
         self.assertEqual(len(self._cards(self._search_page(shown="8"))), 8)
 
@@ -130,6 +145,7 @@ class WaitingForTheAnswerTests(_AssistMixin, unittest.TestCase):
         self.assertIn("noindex", " ".join(headers.values()))
         self._search_page()
         self.assertEqual(json.loads(_get("/assist-status", {"k": key})[2]), {"state": "pending"})
+        self.assertTrue(store.job_pending(self.directory, key))
         store.write_result(self.directory, key, {"status": "withheld"})
         self.assertEqual(json.loads(_get("/assist-status", {"k": key})[2]), {"state": "none"})
         for bad in ("../results/" + key, "x" * 32, ""):
@@ -207,7 +223,7 @@ class AsBeforeTests(_AssistMixin, unittest.TestCase):
         with_layer = self._search_page("kettle")
         os.environ.pop(store.ASSIST_DIR_ENV)
         self.assertEqual(self._search_page("kettle"), with_layer)
-        self.assertEqual(self._jobs(), [])
+        self.assertEqual((self._jobs(), self._drafts()), ([], []))
 
     def test_a_server_without_the_layer_writes_no_job(self) -> None:
         os.environ.pop(store.ASSIST_DIR_ENV)
@@ -223,6 +239,7 @@ class AsBeforeTests(_AssistMixin, unittest.TestCase):
         page = self._search_page()
         self.assertNotIn("pw-assist", page)
         self.assertFalse((self.directory / "jobs").exists())
+        self.assertEqual(self._drafts(), [])
 
 
 if __name__ == "__main__":
