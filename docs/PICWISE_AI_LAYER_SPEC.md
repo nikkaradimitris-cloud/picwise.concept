@@ -418,6 +418,50 @@ those words stand, letter for letter, in its title or description (`checks._prov
 <kind> says" accepted when one product fits; numbers and names of a description allowed;
 the shops' words must name what serves the need, not any shared feature.
 
+**The third run** (2026-11-06, run `42192705450`, on the owner's word «Ναι, τρέξ' την»;
+the proved `yes` of `0631666`; the catalogue of 06/11 04:24 UTC, 595,688 products), read
+by hand: every sentence, every `yes` with its words, every button.
+
+- **The numbers:** of 163 searches, 118 asked (the 15 controls none; of the 141 needs, 24
+  answered by the engine itself, 5 with no product of their kind, 1 by its words); a
+  sentence for 52 (39 in the second run, 23 in the first; 24 of them for Greek searches),
+  the shops' words for 7 (12 words), nothing for 58, withheld 1 (a price of a product
+  whose `yes` was unproved); `yes` 218, of which 6 unproved, `no` 65; $0.1236, $0.00105 a
+  search (712,535 tokens in, 133,721 out); an answer 4.8 s in the middle, 10.0 s at most;
+  a search on the copy 1.6 s.
+- **The sentences:** 49 right, such as «σαμπουάν για πιτυρίδα» ("1 of these 30 shampoos
+  says Anti Dandruff Shampoo in its title"), «αφυγραντήρας για υπόγειο» (2 of 10 say they
+  suit basements), «τροφή σκύλου για κουτάβια» (3 puppy foods; adult and senior ones `no`),
+  "router for a large house" ("covers up to 4,500 sq. ft", "whole-home coverage"). About
+  ten read awkwardly ("5 of these 30 toasters say wide slots", "9 of these 30 watches say
+  Nurse Fob Watch", "3 of these 3 sofa say small in their titles"); one counts 15 blenders
+  where 16 say smoothies; one is weak (a 350 ml cafetière "for home and work" for an
+  office). **Three are not right:** "electric shaver for sensitive skin": "1 of these 30
+  electric shavers says it works even on sensitive skin", of a Gillette Fusion manual razor
+  on the page; «κρέμα προσώπου για ξηρή επιδερμίδα»: "5 of these 30 face creams say they
+  suit dry skin", two of which say only "suitable for all skin types", one of them the price
+  given (7.25 GBP); «σακίδιο για σχολείο»: "8 of these 30 backpacks say they suit school
+  use", six of them "Kids Backpack - 1 - 2 Years", whose descriptions speak of school,
+  although the request says "1 - 2 Years" is not "for school".
+- **The unproved `yes`:** all six give two pieces joined by ";" ("TSA Carry-On Compliant;
+  Keep your devices charged all day"), which the check reads as one run of words; one
+  sentence was withheld for it ("power bank for a long flight") and two not written.
+- **The shops' words:** "Cordless Handheld (2)" for "vacuum cleaner for stairs", "5ATM
+  (2)" for swimming, "Action cam (3)" for «κάμερα για vlog», "Plantar Fasciitis (1)" for
+  "insoles for heel pain" right; "Memory Foam (1,028)" for back pain as the request's own
+  example allows; "IP68" fair; "IP67 Waterproof (8)" for swimming doubtful (rated for 1 m,
+  not for swimming); "Mirrorless Camera (193)" for vlog broad. Ten proposed words were not
+  offered, their own search not answered with every word by products of the kind
+  ("Lumbar Support" for office chairs, "Family Multi-Cooker" for air fryers).
+- **Seen on the pages, not the AI's doing:** products whose titles say "Used- very good"
+  shown as new (the condition is read from its column only), among them the cheaper of the
+  two curly-hair dryers; a manual razor among electric shavers; iPad cases among tablets.
+
+Put to the owner: the numbers, the three, and small changes before a fourth run (a `no`
+for a product that is not the kind asked for at all; "all skin types" or "for everyone"
+does not show a need; an age the title states decides, whatever the description says; a
+plain clause after "say"; pieces joined by ";" checked each).
+
 **The bar to go live is the owner's** (section 6). Proposed: no wrong sentence among those
 that pass the checks. The query log is not configured on the server, so there are no
 logged searches to draw from; whether the text of real searches in the site's access log

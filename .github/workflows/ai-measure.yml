@@ -26,7 +26,13 @@
 # "This kettle says", 1 for a number of a description); yes 208; $0.1111, $0.00093 a
 # search; 4.1 s in the middle, 9.2 s at most. Off again after it.
 # A third time on 2026-11-06, each yes proved by its product's own words (0631666), on the
-# owner's word («Ναι, τρέξ' την»).
+# owner's word («Ναι, τρέξ' την»): run 42192705450, the catalogue of 06/11 04:24 UTC
+# (595,688 products); 118 asked: a sentence for 52 (24 of them Greek searches), the shops'
+# words for 7 (12 words), nothing for 58, withheld 1 (a price of an unproved yes); yes 218,
+# 6 of them unproved; $0.1236, $0.00105 a search; 4.8 s in the middle, 10.0 s at most.
+# Read by hand: 49 sentences right, 3 not (a manual razor called an electric shaver; "all
+# skin types" counted as dry skin; backpacks "1 - 2 Years" counted for school). Off again
+# after it.
 name: AI measure (read-only, measured only)
 on:
   push:
@@ -44,7 +50,7 @@ jobs:
   measure:
     # Off until the owner gives the word for a run: it reads the server with the deploy key.
     # The commit pushed with the owner's word turns it on (true), the next one off again.
-    if: true
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
