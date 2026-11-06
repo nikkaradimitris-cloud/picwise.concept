@@ -328,8 +328,10 @@ those that fit" (a reading needed to build it):
 So the site's four workers never wait for the API, only that service holds the key, and
 only it has the SDK. A visitor whose browser runs no script, as most bots, costs nothing.
 
-**Built on 2026-11-06** (owner: «Ναι, συμφωνώ με όλα, προχώρα»; `5a86ff9` to `479f8cf`),
-not deployed:
+**Built on 2026-11-06** (owner: «Ναι, συμφωνώ με όλα, προχώρα»; `5a86ff9` to `479f8cf`);
+**live since 2026-11-06 20:41 UTC** (owner: «ανέβασε το 75fd3d0»; run `42287840883`,
+release `20261106T202256Z-75fd3d0`: "assist: active", "AI layer (picwise-assist): active,
+jobs folder: on", "AI spend today: none"):
 
 - **The order** (`search_selection._fitting_first`, `_price_first_result`): the products a
   stored answer read as fitting first, the Recommended among them by its own rules ("Mid-
@@ -611,8 +613,8 @@ part, measured first on about 150 searches).
    κευ»).
 2. **(c) Haiku:** the owner opens the account and puts the key in GitHub (done 05/11,
    checked by `.github/workflows/ai-key-check.yml`); built and tested; the offline measure
-   (4.8) to the owner; live with the cap on the owner's word; after a week, its use and
-   cost to the owner.
+   (4.8) to the owner; live with the cap on the owner's word (done 06/11, «ανέβασε το
+   75fd3d0», run `42287840883`); after a week, its use and cost to the owner.
 3. **(a) the classifier, in the shade:** built and tested; measured on the server's
    catalogue (2.5); the numbers to the owner, who sets the bar; switched on with
    «ανέβασε».

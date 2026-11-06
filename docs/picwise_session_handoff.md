@@ -1,11 +1,11 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-11-06 (**next: the
-owner's word to deploy the AI layer, naming the commit: built on 06/11 on «Ναι, συμφωνώ με
-όλα, προχώρα» (the products the AI reads as fitting first and marked, one euro a day, the
-privacy text naming no company), tested, branch `ccr-4f47068a-99ikwe`, nothing on the
-site; its fourth measure read by hand, 57 sentences, none wrong; the Anthropic key in
-GitHub's secrets; no more kind-by-kind fixes (the owner)**;
+Current state for whoever picks the project up next. Updated 2026-11-06 (**the AI layer
+live since 2026-11-06 20:41 UTC, run `42287840883`, `75fd3d0` (owner: «ανέβασε το
+75fd3d0»): in a complex search the products the AI reads as fitting first and marked, one
+euro a day, the privacy text naming no company; next: the owner's try of a complex search
+on the site, then its spend after a day or a week; no more kind-by-kind fixes (the
+owner)**;
 **item 2 live
 since 2026-11-05 12:54 UTC, run `42028878547`: a shelf's kind read against its aisle,
 doubtful products found by their words; searches of a kind with a wrong card 31 -> 7 of
@@ -23,27 +23,27 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-06): pick up here -- start here
 
-- **START HERE: the owner's word to deploy the AI layer, naming the commit.** After the
-  fourth measure the owner decided (06/11) that the products the AI reads as fitting are
-  marked and come first, a cap of one euro a day, and the privacy text naming no company;
-  then «Ναι, συμφωνώ με όλα, προχώρα» to the order (today's among them, the Recommended
-  among them), the time (the page at once, the fitting moving up when the answer comes),
-  the mark (a ✓ and the product's own words) and the privacy wording. Written into
-  `PROJECT_RULES.md` (sections 2 and 5), `docs/MISSION.md` and the Decision Contract ("The
-  products that fit a complex search first"), and built the same day (`d32e178` to the
-  last commit of the branch; the spec, 4.5, "Built on 2026-11-06"). Nothing is on the
-  site. To deploy, on the owner's word naming the commit: a fast-forward push of it to
-  `ccr-1361f1a7-dcpo60` (it holds `a7539b9`, item 2 live, and nothing since), which runs
-  `server-deploy.yml`: the catalogue prepared again (the selection's code changed; about
-  15 minutes), the SDK installed in `/srv/picwise/venv-ai`, the key written to
-  `/etc/picwise/assist.env`, `jobs/` and `drafts/` made, `picwise-assist` started after the
-  site answers. Read in its log: "Anthropic key: sent" and "set", "anthropic 2.6.0",
-  "assist: active", "AI layer (picwise-assist): active, jobs folder: on", "AI spend today".
-  A session cannot reach picwise.subby.cloud: ask the owner to try a complex search
-  («σακίδιο για σχολείο», "quiet washing machine") and say whether, a few seconds after
-  the page, a sentence appears and the products that fit move up with a ✓, and whether the
-  same search again comes at once that way. Then the spend on the Console after a day or
-  a week (the spec, 5: "after a week, its use and cost to the owner").
+- **START HERE: the owner's try of the AI layer on the site.** Deployed on 06/11 on the
+  owner's «ανέβασε το 75fd3d0»: `75fd3d0` pushed to `ccr-1361f1a7-dcpo60` (a fast-forward
+  from `a7539b9`), run `42287840883`, success; release `20261106T202256Z-75fd3d0`, the site
+  on it since 20:41:34 UTC. Its log: "Anthropic key: set", "anthropic 2.6.0", "assist:
+  active", "answering the jobs of /srv/picwise/assist; at most $1.00 a day", "AI layer
+  (picwise-assist): active, jobs folder: on", "AI spend today: none"; 595,751 products
+  from 80 shops prepared again (1,057.65 s, peak 10.08 GB); 15 of 15 pages and 12 of 12
+  searches the same as Vercel's; the site's memory 6,969 MB; the offers still not fetched
+  (401). A session cannot reach picwise.subby.cloud (the proxy answers 403): the owner was
+  asked to try a complex search («σακίδιο για σχολείο», "quiet washing machine") and say
+  whether, a few seconds after the page, a sentence appears and the products that fit
+  move up with a ✓, and whether the same search again comes at once that way. If nothing
+  comes, the first place to look is the service's own log on the server (`journalctl -u
+  picwise-assist`; no workflow prints it yet) and the files of `/srv/picwise/assist`.
+  Then the spend on the Console after a day or a week (the spec, 5: "after a week, its use
+  and cost to the owner"); each deploy's "AI spend today" line reads the day's file in
+  `/srv/picwise/assist/spend/`. The decisions behind it (06/11): the products the AI reads
+  as fitting marked and first, a cap of one euro a day, the privacy text naming no
+  company, then «Ναι, συμφωνώ με όλα, προχώρα» to the order, the time, the mark and the
+  wording; written into `PROJECT_RULES.md` (2 and 5), `docs/MISSION.md` and the Decision
+  Contract ("The products that fit a complex search first").
 - **What was built on 06/11** (the spec, 4.5): the selection puts the products a stored
   answer read as fitting first, the Recommended among them ("Mid-priced of those that
   fit"), found by a signature of the 30 products the AI reads; the page writes a draft
@@ -123,8 +123,9 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   Spent: the preflights a fraction of a cent each, the first measure $0.0623, the second
   $0.1111, the third $0.1236, the fourth $0.1278: about $0.43 in all.
 - **Branches:** `ccr-4f47068a-99ikwe` holds all of `ccr-f9cf1b70-rzslft` (fast-forwarded)
-  and this work; start from it. The deploying branch `ccr-1361f1a7-dcpo60` was not touched
-  (`a7539b9`, item 2 live). No workflow runs on a push to the working branch but
+  and this work; start from it. The deploying branch `ccr-1361f1a7-dcpo60` holds
+  `75fd3d0` (the AI layer, live), and the working branch only the records written after
+  it. No workflow runs on a push to the working branch but
   `ai-key-check.yml` and `ai-measure.yml`, each only when its own file changes. The two
   run only on `ccr-4f47068a-99ikwe`, whatever a conversation's own branch is: the
   conversation of 06/11 worked on its own `ccr-c4267777-9czn99`, kept equal to it (each
