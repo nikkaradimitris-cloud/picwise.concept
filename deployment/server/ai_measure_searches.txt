@@ -1,0 +1,194 @@
+# The AI layer's offline measure (docs/PICWISE_AI_LAYER_SPEC.md, 4.8): about 150 searches,
+# Greek and English, written for it on 2026-11-05 (the query log is not configured on the
+# server, so there are no logged searches to draw from). Each line: tag | search.
+#   words     a kind PicWise knows, and words that say what the buyer needs, which no
+#             title of the kind is expected to carry: the AI should be asked
+#   broader   a narrower kind with no product, answered with the broader one: asked
+#   plain     a control: every word the engine reads; the AI must not be asked
+#   judgement a control: only the buyer's judgement; the AI must not be asked
+# Whether a "words" search is complex depends on the catalogue: the measure says so.
+
+# Home appliances
+words | quiet washing machine
+words | quiet dishwasher
+words | quiet fridge for a studio flat
+words | quiet tumble dryer
+words | quiet dehumidifier for a bedroom
+words | air purifier for allergies
+words | fan for a bedroom at night
+words | vacuum cleaner for pet hair
+words | robot vacuum for pet hair
+words | vacuum cleaner for stairs
+words | iron for travel
+words | heater for a garage
+words | washing machine for a small kitchen
+words | αθόρυβο πλυντήριο
+words | αθόρυβο πλυντήριο πιάτων
+words | αθόρυβος ανεμιστήρας για υπνοδωμάτιο
+words | ηλεκτρική σκούπα για τρίχες σκύλου
+words | σκούπα ρομπότ για τρίχες γάτας
+words | αφυγραντήρας για υπόγειο
+
+# Kitchen
+words | air fryer for a family of four
+words | coffee machine for an office
+words | kettle for travel
+words | blender for smoothies
+words | juicer for leafy greens
+words | microwave for a small kitchen
+words | toaster for wide bagels
+words | knife set for beginners
+words | frying pan for eggs
+words | φριτέζα αέρος για τετραμελή οικογένεια
+words | καφετιέρα για γραφείο
+words | βραστήρας για ταξίδι
+words | μπλέντερ για smoothies
+words | σετ μαχαιριών για αρχάριους
+
+# Computers, phones, audio and video
+words | tablet for a 10 year old
+words | laptop for a student
+words | laptop for video editing
+words | laptop for programming
+words | monitor for photo editing
+words | keyboard for a programmer
+words | mouse for small hands
+words | printer for a home office
+words | router for a large house
+words | webcam for streaming
+words | headphones for running
+words | headphones for sleeping
+words | headphones for kids
+words | speaker for the shower
+words | speaker for a party
+words | projector for a home cinema
+words | camera for vlogging
+words | drone for beginners
+words | microphone for a podcast
+words | tv for gaming
+words | smartwatch for swimming
+words | smartwatch for kids
+words | mobile phone for the elderly
+words | power bank for camping
+words | power bank for a long flight
+words | τάμπλετ για παιδί 10 ετών
+words | λάπτοπ για φοιτητή
+words | λάπτοπ για μοντάζ βίντεο
+words | ακουστικά για τρέξιμο
+words | ακουστικά για ύπνο
+words | ηχείο για το μπάνιο
+words | κάμερα για vlog
+words | έξυπνο ρολόι για κολύμπι
+words | κινητό για ηλικιωμένους
+words | εξωτερική μπαταρία για κάμπινγκ
+words | ποντίκι για μικρά χέρια
+
+# Furniture and the home
+words | office chair for back pain
+words | mattress for back pain
+words | pillow for neck pain
+words | sofa for a small living room
+words | desk for a small room
+words | bed for a small bedroom
+words | lamp for reading
+words | rug for a nursery
+words | wardrobe for a child's room
+words | curtains for a nursery
+words | καρέκλα γραφείου για πόνο στη μέση
+words | στρώμα για πόνο στη μέση
+words | μαξιλάρι για πόνο στον αυχένα
+words | καναπές για μικρό σαλόνι
+words | φωτιστικό για διάβασμα
+
+# Footwear, clothing, bags
+words | running shoes for flat feet
+words | running shoes for wide feet
+words | hiking boots for wide feet
+words | shoes for standing all day
+words | boots for snow
+words | sandals for walking
+words | insoles for heel pain
+words | jacket for hiking
+words | raincoat for cycling
+words | leggings for yoga
+words | swimwear for pregnancy
+words | backpack for school
+words | backpack for travel
+words | suitcase for hand luggage
+words | handbag for work
+words | watch for nurses
+words | sunglasses for driving
+words | παπούτσια τρεξίματος για πλατυποδία
+words | ορειβατικά παπούτσια για φαρδύ πόδι
+words | παπούτσια για ορθοστασία
+words | μπότες για χιόνι
+words | μπουφάν για πεζοπορία
+words | σακίδιο για σχολείο
+words | ρολόι για νοσηλευτές
+
+# Baby, kids, pets, outdoors
+words | stroller for travel
+words | child car seat for a newborn
+words | high chair for a small kitchen
+words | toy for a 3 year old
+words | board game for a family
+words | doll for a toddler
+words | tent for a festival
+words | sleeping bag for winter
+words | dog food for puppies
+words | cat food for kittens
+words | καρότσι μωρού για ταξίδια
+words | παιχνίδι για παιδί 3 ετών
+words | επιτραπέζιο για οικογένεια
+words | σκηνή για φεστιβάλ
+words | τροφή σκύλου για κουτάβια
+words | τροφή γάτας για γατάκια
+
+# Tools and garden
+words | drill for beginners
+words | lawn mower for a small garden
+words | chainsaw for beginners
+words | pressure washer for a car
+words | ladder for a loft
+words | δράπανο για αρχάριους
+words | χλοοκοπτικό για μικρό κήπο
+
+# Beauty and health
+words | hair dryer for curly hair
+words | electric toothbrush for sensitive teeth
+words | electric shaver for sensitive skin
+words | shampoo for dandruff
+words | face cream for dry skin
+words | sunscreen for kids
+words | πιστολάκι για σγουρά μαλλιά
+words | ηλεκτρική οδοντόβουρτσα για ευαίσθητα δόντια
+words | σαμπουάν για πιτυρίδα
+words | κρέμα προσώπου για ξηρή επιδερμίδα
+
+# A narrower kind with no product, answered with the broader one
+broader | motorcycle helmet
+broader | electric bike
+broader | robotic lawn mower
+broader | summer tyres
+broader | winter tyres
+broader | κράνος μηχανής
+broader | ηλεκτρικό ποδήλατο
+
+# Controls: every word read, the AI must not be asked
+plain | washing machine
+plain | power bank
+plain | tablet
+plain | office chair
+plain | running shoes
+plain | coffee machine
+plain | πλυντήριο ρούχων
+plain | φριτέζα αέρος
+plain | ηλεκτρική σκούπα
+
+# Controls: only the buyer's judgement, the AI must not be asked
+judgement | best power bank
+judgement | cheap laptop
+judgement | good headphones
+judgement | budget smartphone
+judgement | φθηνό τάμπλετ
+judgement | καλό πλυντήριο

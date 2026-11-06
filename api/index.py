@@ -23,6 +23,7 @@ from picwise_integrations import (  # noqa: E402
 )
 from picwise_search.live_search_resolver import parse_shown_count  # noqa: E402
 from picwise_surface import (  # noqa: E402
+    render_about_page,
     render_affiliate_disclosure_page,
     render_branded_not_found_page,
     render_contact_page,
@@ -97,7 +98,9 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         params = parse_qs(query_string)
         query = params.get("q", [""])[0]
         html = _APP.root_landing_html(
-            query, shown=parse_shown_count(params.get("shown", [""])[0])
+            query,
+            shown=parse_shown_count(params.get("shown", [""])[0]),
+            assist_refresh=params.get("assist", [""])[0] == "1",
         )
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
@@ -134,6 +137,20 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
 
+    if path == "/about":
+        html = render_about_page()
+        body = html.encode("utf-8")
+        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+
+    if path == "/assist-status":
+        # The search page's script asking whether a complex search's answer is there
+        # (`picwise_app.assist_wiring`); never kept by a browser or a cache.
+        key = parse_qs(str(environ.get("QUERY_STRING", ""))).get("k", [""])[0]
+        body = _APP.assist_status_json(key).encode("utf-8")
+        return _response(
+            "200 OK", "application/json; charset=utf-8", body, start_response, cache_control="no-store"
+        )
+
     if path == "/suggest.json":
         # The search box's suggestions, fetched once by the page and kept by the
         # browser for an hour, so a keystroke costs no request (step 4).
@@ -155,6 +172,7 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
             query,
             source_page=source_page,
             shown=parse_shown_count(params.get("shown", [""])[0]),
+            assist_refresh=params.get("assist", [""])[0] == "1",
         )
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)

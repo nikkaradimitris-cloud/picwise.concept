@@ -45,9 +45,10 @@ class AppHttpEndpointTests(unittest.TestCase):
     @staticmethod
     def _assert_common_footer_links(body: str) -> None:
         expected_links = (
+            # The footer since the design of 2026-10-31: About in, Demo and PicWise
+            # Reference out (their routes still answer).
             ("/", "Home"),
-            ("/demo", "Demo"),
-            ("/picwise-reference", "PicWise Reference"),
+            ("/about", "About"),
             ("/terms", "Terms"),
             ("/privacy", "Privacy"),
             ("/cookies", "Cookies"),
@@ -60,13 +61,17 @@ class AppHttpEndpointTests(unittest.TestCase):
             assert f'href="{href}"' in body
         assert '<nav class="pw-footer-links" aria-label="PicWise public footer links">' in body
         assert (
-            "PicWise may earn commissions from qualifying purchases, referrals, or provider links "
-            "when affiliate or provider integrations are active."
+            # The footer's notice since Awin went live (2026-10-31).
+            "PicWise earns a commission from some shops, through Awin, when you buy after following "
+            "one of its links. The price you pay is the same, and the commission never changes the "
+            "order of the results."
         ) in body
         assert (
             "HomeDemoPicWise ReferenceTermsPrivacyCookiesAffiliate DisclosureContact"
             not in body.replace(" ", "").replace("\n", "")
         )
+        assert 'class="pw-footer-link" href="/demo"' not in body
+        assert 'class="pw-footer-link" href="/picwise-reference"' not in body
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -99,16 +104,19 @@ class AppHttpEndpointTests(unittest.TestCase):
         body = self._fetch("/")
         self.assertIn("What are you looking for?", body)
         self.assertIn("shopping decision assistant", body)
-        self.assertIn("shopping decision assistant", body)
-        self.assertIn("Live safe mode", body)
+        # The home page of the design of 2026-10-31 says what PicWise is above the box.
+        self.assertIn('<h1 class="pw-hero-title">Find the product you want in UK shops</h1>', body)
         self._assert_common_footer_links(body)
         self.assertIn('action="/search"', body)
         self.assertIn('method="get"', body)
         self.assertIn('name="q"', body)
         self.assertIn('class="pw-search-input"', body)
         self.assertIn("What is PicWise?", body)
-        self.assertIn("Login", body)
-        self.assertIn("Register", body)
+        # History and Favourites took the place of Login and Register, which did nothing.
+        self.assertIn('id="pw-history-button"', body)
+        self.assertIn('id="pw-favourites-button"', body)
+        self.assertNotIn(">Login<", body)
+        self.assertNotIn(">Register<", body)
         self.assertNotIn("search all amazon", body.lower())
         self.assertNotIn("live amazon search", body.lower())
         self.assertNotIn("mysubby.cloud@gmail.com", body)
@@ -161,7 +169,7 @@ class AppHttpEndpointTests(unittest.TestCase):
     def test_picwise_reference_route_renders_main_reference_shell(self) -> None:
         body = self._fetch("/picwise-reference")
         self.assertIn("What are you looking for?", body)
-        self.assertIn("Live safe mode", body)
+        self.assertIn('<h1 class="pw-hero-title">Find the product you want in UK shops</h1>', body)
         self.assertIn(
             'placeholder="What are you looking for?"',
             body,
@@ -193,7 +201,7 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertEqual(body.count('<article class="pw-card'), 0)
         self.assertEqual(body.count("Recommended by PicWise"), 0)
         self.assertNotIn("&middot;", body)
-        self.assertIn("PicWise safely shows no product cards", body)
+        self.assertNotIn("<article", body)
 
     def test_search_route_renders_broad_query_suggestions_without_product_cards(self) -> None:
         body = self._fetch("/search?q=power")
@@ -216,7 +224,8 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertIn('class="pw-grid"', body)
         self.assertIn("grid-template-columns:repeat(4,minmax(0,1fr));", body)
         self.assertIn("@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));", body)
-        self.assertIn("@media (max-width:640px){", body)
+        # The phone layout of the design of 2026-10-31: two cards a row, smaller.
+        self.assertIn("@media (max-width:699px){", body)
         self.assertEqual(body.count('<article class="pw-card'), 0)
         self.assertIn("pw-empty-state", body)
         self.assertNotIn("View on Amazon", body)
@@ -269,7 +278,9 @@ class AppHttpEndpointTests(unittest.TestCase):
 
     def test_search_route_renders_safe_no_result_for_empty_query(self) -> None:
         body = self._fetch("/search?q=")
-        self.assertIn("PicWise safely shows no product cards", body)
+        # An empty search is the page without a search: what PicWise is, and no cards.
+        self.assertIn('<h1 class="pw-hero-title">Find the product you want in UK shops</h1>', body)
+        self.assertNotIn("<article", body)
         self.assertNotIn(">View on Amazon<", body)
         self.assertNotIn("tag=picwise-20", body)
         self.assertNotIn('class="pw-card"', body)
@@ -285,10 +296,14 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertEqual(
             tooltip.group(1),
             "PicWise finds the product you want in the shops it is connected to, shows "
-            "what the shops list as in stock, cheapest first, and marks one mid-priced "
-            "Recommended.",
+            "what the shops list as in stock, products on offer first and then cheapest first, and marks one "
+            "Recommended: a product on offer where there is one, else a mid-priced one.",
         )
         lowered = (body[: tooltip.start()] + body[tooltip.end():]).lower()
+        # The head's description is the same text of the owner's (2026-10-31), for Google.
+        described = f'<meta name="description" content="{tooltip.group(1)}">'.lower()
+        self.assertIn(described, lowered)
+        lowered = lowered.replace(described, "")
         self.assertNotIn("eur ", lowered)
         self.assertNotIn("in stock", lowered)
         self.assertNotIn("prime", lowered)
@@ -394,6 +409,7 @@ class AppHttpEndpointTests(unittest.TestCase):
             ("/cookies", "Cookie Policy"),
             ("/affiliate-disclosure", "PicWise works with the Awin affiliate network"),
             ("/contact", "contact.picwise@subby.cloud"),
+            ("/about", "About PicWise"),
         ):
             body = self._fetch(path)
             self.assertIn(token, body)

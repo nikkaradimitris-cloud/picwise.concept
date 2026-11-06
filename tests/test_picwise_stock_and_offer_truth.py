@@ -272,10 +272,15 @@ class DeployedSurfaceStockTruthTests(unittest.TestCase):
         self.assertNotIn("k4", shown)
         self.assertEqual(sum(1 for card in cards if card["recommended"]), 1)
         for card in cards:
-            self.assertIn("Listed as available by the provider feed", card["text"])
-            self.assertTrue(str(card["price"]).endswith("GBP"), card["price"])
-            # The CTA says where it goes (CTA_AND_REDIRECT_SPEC: do not mask destination).
-            self.assertIn("View in Store", card["text"])
+            # Whose word it is, and that PicWise did not check it (the design of
+            # 2026-10-31 words the labels' "Listed as available by the provider feed,
+            # not verified" for a shopper).
+            self.assertIn("Listed as available by the shop", card["text"])
+            self.assertIn("not verified by PicWise", card["text"])
+            self.assertTrue(str(card["price"]).startswith("\u00a3"), card["price"])
+            # The CTA says where it goes (CTA_AND_REDIRECT_SPEC: do not mask destination):
+            # the shop itself.
+            self.assertIn("View at Fixture Store One", card["text"])
         status, _headers, _body = self._get("/out/feed", {"pid": "k1", "q": "kettle", "rec": "0"})
         self.assertEqual(status, "200 OK")  # the "no longer available" page, not a redirect
 

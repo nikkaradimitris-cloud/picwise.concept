@@ -1,0 +1,6 @@
+# The pin of PicWise's server's SSH host key: an HMAC of the key under a key derived from
+# the SERVER_SSH_KEY secret (.github/scripts/host_key_pin.py), so it names no server.
+# Workflows send the server a secret only when it matches. After a reinstall of the
+# server its host key changes: the read-only check (server-check.yml) prints the new pin.
+# Taken on 2026-10-25 (Ubuntu 24.04.5, key-only login since the reinstall of that day).
+ae529219ecb6f23ea68c2b241cdd47de03d92930a557499eb9072d4503d865ed
