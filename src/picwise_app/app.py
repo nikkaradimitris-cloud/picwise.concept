@@ -56,6 +56,7 @@ from picwise_surface import (
     render_review_safe_landing_page,
     render_terms_page,
 )
+from .assist_wiring import assist_status, resolve_with_assist
 from .buying_routes import render_best_slug_html, render_buying_sitemap_xml
 from .query_log_sink import QUERY_LOG_SINK
 
@@ -152,7 +153,7 @@ class PicwiseLocalApp:
         _ = query
         return render_demo_info_page()
 
-    def root_landing_html(self, query: str = "", *, shown: int = 0) -> str:
+    def root_landing_html(self, query: str = "", *, shown: int = 0, assist_refresh: bool = False) -> str:
         """Render the landing surface, honouring an inbound purchase-intent query.
 
         The mission requires that a visitor arriving from Google on
@@ -162,21 +163,37 @@ class PicwiseLocalApp:
         index; with one it is a search page like any other.
         """
         return self.picwise_reference_html(
-            query, source_page="search", shown=shown, indexable=is_empty_search_query(query)
+            query,
+            source_page="search",
+            shown=shown,
+            indexable=is_empty_search_query(query),
+            assist_refresh=assist_refresh,
         )
 
     def picwise_reference_html(
-        self, query: str = "", *, source_page: str = "search", shown: int = 0, indexable: bool = False
+        self,
+        query: str = "",
+        *,
+        source_page: str = "search",
+        shown: int = 0,
+        indexable: bool = False,
+        assist_refresh: bool = False,
     ) -> str:
         """The search page. `shown` is how many products "More" has opened the page to.
 
         Not `indexable` unless it is the home page without a search: Google is told not
         to index the site's own search (owner, 2026-10-23).
+
+        A complex search on a server with the AI layer (`assist_wiring`): the products that
+        fit first and marked, from the stored answer, or a job written and an empty place
+        the page's script fills (owner, 2026-11-06). `assist_refresh` is that script
+        reading the page again: no job is written and no second impression counted.
         """
+        assist = None
         if is_empty_search_query(query):
             resolution = empty_landing_search_resolution(query)
         else:
-            resolution = resolve_live_search(query, shown=shown)
+            resolution, assist = resolve_with_assist(query, shown=shown, write_jobs=not assist_refresh)
         html = render_picwise_reference_surface(
             query=query,
             resolution=resolution,
@@ -184,12 +201,14 @@ class PicwiseLocalApp:
             catalogue=peek_search_catalogue_counts(),
             indexable=indexable,
             single_product_code=single_product_code(resolution),
+            assist=assist,
         )
-        self.record_decision_impression(
-            query=query,
-            source_page=source_page,
-            resolution=resolution,
-        )
+        if not assist_refresh:
+            self.record_decision_impression(
+                query=query,
+                source_page=source_page,
+                resolution=resolution,
+            )
         # Where the feed's products answer, the catalogue asks which one is meant ("What
         # kind of cable?") when it has several, and the vocabulary's older "too broad"
         # list, of words the catalogue may not have, does not ask too: one question, one
@@ -234,8 +253,17 @@ class PicwiseLocalApp:
             separators=(",", ":"),
         )
 
-    def mvp_search_html(self, query: str, *, source_page: str = "search", shown: int = 0) -> str:
-        return self.picwise_reference_html(query, source_page=source_page, shown=shown)
+    def mvp_search_html(
+        self, query: str, *, source_page: str = "search", shown: int = 0, assist_refresh: bool = False
+    ) -> str:
+        return self.picwise_reference_html(
+            query, source_page=source_page, shown=shown, assist_refresh=assist_refresh
+        )
+
+    def assist_status_json(self, key: str) -> str:
+        """What the search page's script is told of a complex search's answer
+        (`assist_wiring.assist_status`)."""
+        return json.dumps(assist_status(key), separators=(",", ":"))
 
     def record_decision_impression(
         self,
@@ -801,6 +829,18 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
         if parsed.path == "/health":
             self._send_json(HTTPStatus.OK, self.app.health_payload())
             return
+        if parsed.path == "/assist-status":
+            # The search page's script asking whether a complex search's answer is there.
+            key = parse_qs(parsed.query).get("k", [""])[0]
+            body = self.app.assist_status_json(key).encode("utf-8")
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header(*NOINDEX_HEADER)
+            self.end_headers()
+            self.wfile.write(body)
+            return
         if parsed.path == "/suggest.json":
             body = self.app.search_suggestions_json().encode("utf-8")
             self.send_response(HTTPStatus.OK)
@@ -823,7 +863,9 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             params = parse_qs(parsed.query)
             query = params.get("q", [""])[0]
             html = self.app.root_landing_html(
-                query, shown=parse_shown_count(params.get("shown", [""])[0])
+                query,
+                shown=parse_shown_count(params.get("shown", [""])[0]),
+                assist_refresh=params.get("assist", [""])[0] == "1",
             )
             self._send_html(HTTPStatus.OK, html)
             return
@@ -864,6 +906,7 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
                 query,
                 source_page=source_page,
                 shown=parse_shown_count(params.get("shown", [""])[0]),
+                assist_refresh=params.get("assist", [""])[0] == "1",
             )
             self._send_html(HTTPStatus.OK, html)
             return

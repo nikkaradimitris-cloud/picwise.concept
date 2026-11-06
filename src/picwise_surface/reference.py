@@ -23,6 +23,7 @@ from .browser_lists import (
     header_buttons_html,
     panels_html,
 )
+from .assist import ASSIST_SCRIPT, ASSIST_STYLES, AssistView, assist_block_html, fit_line_html
 from .legal import render_public_footer
 from .seo import NOINDEX_META
 from .trends import TRENDS_SCRIPT, TRENDS_STYLES, load_trends_panel, render_trends_panel
@@ -145,6 +146,33 @@ _RECOMMENDED_ON_OFFER = (
 )
 _OFFERS_NOTE = "Offers are the shops' own, as they state them through Awin: check them on the shop's site."
 _PRICE_FIRST_FEED_NOTE = "Prices and stock are as the shops list them."
+# The products that fit a complex search first (owner, 2026-11-06; the Decision Contract,
+# "The products that fit a complex search first"). A Recommended chosen among them is the
+# middle of those, not of the category.
+_PRICE_FIRST_RECOMMENDED_FITTING_LABEL = "Mid-priced of those that fit"
+_PRICE_FIRST_SORTED_WITH_FITTING = (
+    "Products whose own words show they fit your search come first, then the rest, each by price, "
+    "lowest first, from the shops connected to PicWise."
+)
+_PRICE_FIRST_SORTED_WITH_FITTING_AND_OFFERS = (
+    "Products whose own words show they fit your search come first, then the rest; in each, products "
+    "a current shop offer covers come first, then by price, lowest first, from the shops connected to PicWise."
+)
+_RECOMMENDED_AMONG_FITTING = "The Recommended is mid-priced of those that fit."
+_RECOMMENDED_AMONG_FITTING_ON_OFFER = (
+    "The Recommended is on offer: of the products that fit and are on offer, the one nearest the middle "
+    "of their prices."
+)
+_NO_RECOMMENDED_TOO_FEW = "No Recommended here: these products have no middle price to pick."
+_NO_RECOMMENDED_NO_CODE = (
+    "No Recommended here: no mid-priced product carries a barcode number (EAN), which PicWise needs "
+    "to check that it is not cheaper in another shop."
+)
+_NO_RECOMMENDED_TOO_FEW_FITTING = "No Recommended here: too few products say they fit to have a middle price."
+_NO_RECOMMENDED_NO_CODE_FITTING = (
+    "No Recommended here: no mid-priced product of those that fit carries a barcode number (EAN), "
+    "which PicWise needs to check that it is not cheaper in another shop."
+)
 _PRICE_FIRST_DISCLOSURES = {
     "recommended": (
         f"{_PRICE_FIRST_SORTED} The Recommended is mid-priced for this category. "
@@ -744,6 +772,7 @@ def _build_price_first_cards(
     *,
     resolution: LiveSearchResolution,
     source_page: str = "search",
+    fit_words: dict[str, str] | None = None,
 ) -> list[dict[str, object]]:
     """The cards of a price-first answer, in the order shown.
 
@@ -751,6 +780,10 @@ def _build_price_first_cards(
     after it come the products "More" has opened. Only the Recommended carries a
     recommendation: nothing "More" opens is recommended (owner, 2026-10-15), and every
     other click is tracked with `rec=0`.
+
+    `fit_words` are the own words of the products the AI layer read as fitting a complex
+    search, by product id, which the search put first (owner, 2026-11-06): each gets a ✓
+    and its words, and every card of the page the line for them.
     """
     if not _price_first_display_allowed(resolution):
         return []
@@ -783,7 +816,13 @@ def _build_price_first_cards(
         )
         offer = offers.get(product_id)
         if is_recommended:
-            role_label = _PRICE_FIRST_RECOMMENDED_OFFER_LABEL if offer else _PRICE_FIRST_RECOMMENDED_LABEL
+            role_label = (
+                _PRICE_FIRST_RECOMMENDED_OFFER_LABEL
+                if offer
+                else _PRICE_FIRST_RECOMMENDED_FITTING_LABEL
+                if fit_words and getattr(resolution, "provider_feed_recommended_among_fitting", False)
+                else _PRICE_FIRST_RECOMMENDED_LABEL
+            )
         elif offer:
             role_label = _OFFER_LABEL
         elif product_id in cheapest:
@@ -823,6 +862,8 @@ def _build_price_first_cards(
                 "cta": f"View at {shop}" if shop else "View in Store",
                 "image": str(product.get("image_url") or "").strip(),
                 "recommended": is_recommended,
+                "fit_slot": bool(fit_words),
+                "fit": (fit_words or {}).get(product_id, ""),
                 "rec_note": "",
                 "rec_badge_html": _PRICE_FIRST_RECOMMENDED_BADGE if is_recommended else "",
                 "href": (
@@ -834,6 +875,26 @@ def _build_price_first_cards(
             }
         )
     return cards
+
+
+def _fitting_disclosure(
+    disclosure: str, cards: list[dict[str, object]], resolution: LiveSearchResolution
+) -> str:
+    """How the page is sorted and how its Recommended was chosen, when the products that
+    fit a complex search were put first (owner, 2026-11-06): said of those, truly."""
+    with_offers = any(card.get("offer") for card in cards)
+    text = disclosure.replace(
+        _PRICE_FIRST_SORTED,
+        _PRICE_FIRST_SORTED_WITH_FITTING_AND_OFFERS if with_offers else _PRICE_FIRST_SORTED_WITH_FITTING,
+    )
+    recommended = next((card for card in cards if card.get("recommended")), None)
+    if recommended is not None and getattr(resolution, "provider_feed_recommended_among_fitting", False):
+        text = text.replace(
+            _RECOMMENDED_MID_PRICED,
+            _RECOMMENDED_AMONG_FITTING_ON_OFFER if recommended.get("offer") else _RECOMMENDED_AMONG_FITTING,
+        )
+    text = text.replace(_NO_RECOMMENDED_TOO_FEW, _NO_RECOMMENDED_TOO_FEW_FITTING)
+    return text.replace(_NO_RECOMMENDED_NO_CODE, _NO_RECOMMENDED_NO_CODE_FITTING)
 
 
 def _price_first_more_html(
@@ -1028,6 +1089,7 @@ def _render_choice_card(
         f"{single_line}"
         f'<div class="pw-role">{rec_header}{role_label_html}</div>'
         f'<h2 title="{escape(name, quote=True)}" class="pw-card-title">{escape(name)}</h2>'
+        f"{fit_line_html(str(card.get('fit') or '')) if card.get('fit_slot') else ''}"
         f"{''.join(lines)}"
         f"{cta}"
         "</div>"
@@ -1254,6 +1316,7 @@ def render_picwise_reference_surface(
     catalogue: tuple[int, int] | None = None,
     indexable: bool = False,
     single_product_code: str = "",
+    assist: AssistView | None = None,
 ) -> str:
     """The search page. `catalogue` is (products, shops) a search reads, when the server
     has the feed loaded, for the scanning screen; None makes it name no number.
@@ -1265,8 +1328,19 @@ def render_picwise_reference_surface(
 
     `single_product_code` is the barcode or maker's code of the one product of an answer
     that has only one, as its shop gives it, for that product's own layout.
+
+    `assist` is the AI layer's part of a complex search (`picwise_surface.assist`): its
+    sentence and the fitting products' own words, when the search put those first
+    (owner, 2026-11-06); the shops' words; or, while the answer is awaited, the key the
+    page's script asks about. None draws the page as before the layer.
     """
     display_query = str(query or "")
+    fitting_ids = tuple(getattr(resolution, "provider_feed_fitting_product_ids", ()) or ()) if resolution else ()
+    fit_words = (
+        {product_id: str((assist.fit_words or {}).get(product_id, "")) for product_id in fitting_ids}
+        if assist is not None and assist.sentence and fitting_ids
+        else {}
+    )
     query_line = ""
     disclaimer_line = (
         "Live safe mode — no marketplace API, no scraping, and no fake live commerce claims."
@@ -1289,6 +1363,7 @@ def render_picwise_reference_surface(
             price_first_cards = _build_price_first_cards(
                 resolution=resolution,
                 source_page=source_page,
+                fit_words=fit_words or None,
             )
             if price_first_cards:
                 card_specs = price_first_cards
@@ -1298,6 +1373,8 @@ def render_picwise_reference_surface(
                 disclosure = _PRICE_FIRST_DISCLOSURES[
                     str(resolution.provider_feed_decision_status)
                 ]
+                if fit_words:
+                    disclosure = _fitting_disclosure(disclosure, price_first_cards, resolution)
                 if any(card.get("offer") for card in price_first_cards):
                     disclosure = disclosure.replace(_PRICE_FIRST_SORTED, _PRICE_FIRST_SORTED_WITH_OFFERS)
                 if any(card.get("offer") and card.get("recommended") for card in price_first_cards):
@@ -1335,6 +1412,12 @@ def render_picwise_reference_surface(
                     if with_offers
                     else f"Results for: {display_query}, cheapest first"
                 )
+                if fit_words:
+                    query_line = (
+                        f"Results for: {display_query}, those that fit first, then offers, then cheapest first"
+                        if with_offers
+                        else f"Results for: {display_query}, those that fit first, then cheapest first"
+                    )
                 understood_name = str(getattr(resolution, "understood_concept_name", "") or "")
                 if understood_name and getattr(resolution, "understood_by_correction", False):
                     query_line += f"  ·  Understood as: {understood_name}"
@@ -1453,6 +1536,10 @@ def render_picwise_reference_surface(
         page_note = _PRICE_FIRST_PAGE_NOTE if price_first_page else (
             "Selected real products from connected provider feed. Recommended from these 4."
         )
+        if price_first_page and fit_words:
+            page_note = page_note.replace(
+                "cheapest first.", "those that say they fit your search first, then cheapest first.", 1
+            )
         if price_first_page and any(card.get("offer") for card in card_specs):
             page_note = page_note.replace(
                 "cheapest first.", "products on offer first, then cheapest first.", 1
@@ -1497,6 +1584,19 @@ def render_picwise_reference_surface(
         if is_home
         else ""
     )
+    # The AI layer's part: its checked sentence when the products that fit were put first,
+    # the shops' words, or the empty place its script fills (owner, 2026-11-06).
+    assist_html = (
+        assist_block_html(
+            AssistView(
+                sentence=assist.sentence if fit_words else "",
+                buttons=assist.buttons,
+                pending_key=assist.pending_key,
+            )
+        )
+        if assist is not None and price_first_page and card_specs
+        else ""
+    )
     results_html = (
         ""
         if is_home
@@ -1508,6 +1608,7 @@ def render_picwise_reference_surface(
             f"{kind_choices_html}"
             f'<p class="pw-reference-disclaimer">{escape(disclaimer_line)}</p>'
             f"{safe_note_html}"
+            f"{assist_html}"
             f'<section class="pw-grid" data-card-count="{len(card_html)}"'
             f'{" data-layout=" + chr(34) + "single" + chr(34) if single_layout else ""}>'
             f"{''.join(card_html)}"
@@ -1516,6 +1617,9 @@ def render_picwise_reference_surface(
         )
     )
 
+    if assist is not None and results_html:
+        # One place the page's script can put the answer's results in, drawing no box.
+        results_html = f'<div class="pw-results" id="pw-results">{results_html}</div>'
     html = (
         "<!doctype html>"
         '<html lang="en"><head>'
@@ -1527,7 +1631,8 @@ def render_picwise_reference_surface(
         # for Google to show under the home page (owner, 2026-10-31: the pages true).
         f'<meta name="description" content="{escape(_WHAT_IS_PICWISE)}">'
         f"<script>{HEAD_SCRIPT}</script>"
-        f"<style>{_PAGE_STYLES}{BROWSER_LISTS_STYLES}{TRENDS_STYLES if home_after_search_html else ''}</style>"
+        f"<style>{_PAGE_STYLES}{BROWSER_LISTS_STYLES}{TRENDS_STYLES if home_after_search_html else ''}"
+        f"{ASSIST_STYLES if assist is not None else ''}</style>"
         "</head><body>"
         '<main class="pw-reference-viewport">'
         '<header class="pw-topbar">'
@@ -1591,6 +1696,7 @@ def render_picwise_reference_surface(
         f"<script>{_SEARCH_SCRIPT}</script>"
         f"<script>{BROWSER_LISTS_SCRIPT}</script>"
         f"{'<script>' + TRENDS_SCRIPT + '</script>' if home_after_search_html else ''}"
+        f"{'<script>' + ASSIST_SCRIPT + '</script>' if assist is not None and assist.pending_key else ''}"
         "</main>"
         "</body></html>"
     )

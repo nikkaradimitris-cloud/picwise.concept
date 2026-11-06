@@ -196,9 +196,21 @@ function toggleFavourite(button){
   }
   if(write(FKEY,items)){refresh();}
 }
-Array.prototype.forEach.call(document.querySelectorAll(".pw-fav"),function(button){
-  button.addEventListener("click",function(event){event.preventDefault();toggleFavourite(button);});
+/* A heart is found from the click, so that the cards the page puts in later, once the
+   shops' words have been read (picwise_surface.assist), have theirs too; and those are
+   marked when they come ("pw-cards"). */
+function heartOf(node){
+  while(node&&node!==document){
+    if(node.classList&&node.classList.contains("pw-fav")){return node;}
+    node=node.parentNode;
+  }
+  return null;
+}
+document.addEventListener("click",function(event){
+  var button=heartOf(event.target);
+  if(button){event.preventDefault();toggleFavourite(button);}
 });
+document.addEventListener("pw-cards",markHearts);
 
 /* The panels. */
 var historyBody=document.getElementById("pw-history-body");
