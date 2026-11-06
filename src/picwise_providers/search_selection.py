@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import re
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Any
@@ -459,10 +461,21 @@ class ProviderProductSelectionResult:
     # (product id, place in the whole answer by price) for shown products: 1 is the
     # cheapest, and products at one price share a place.
     price_ranks: tuple[tuple[str, int], ...] = field(default_factory=tuple)
+    # The products the AI layer reads for this answer, with their prices, in the usual
+    # order (`candidates_signature`); "" for an answer that is not price first.
+    candidates_signature: str = ""
+    # The products whose own words showed the AI they fit the buyer's need, put first
+    # (owner, 2026-11-06), in the order shown; empty when no answer of the AI is applied.
+    fitting_product_ids: tuple[str, ...] = field(default_factory=tuple)
+    # The Recommended was chosen among those products ("Mid-priced of those that fit").
+    recommended_among_fitting: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "price_first": self.price_first,
+            "candidates_signature": self.candidates_signature,
+            "fitting_product_ids": list(self.fitting_product_ids),
+            "recommended_among_fitting": self.recommended_among_fitting,
             "total_count": self.total_count,
             "recommended_product_id": self.recommended_product_id,
             "recommendation_status": self.recommendation_status,
@@ -1268,6 +1281,9 @@ _RECOMMENDED_MIN_PRODUCTS = 3
 # A dearest product costing at least twice the next dearest does not count towards the
 # middle, and again for the next one (owner, 2026-10-16). It stays in the list.
 _EXTREME_PRICE_FACTOR = 2.0
+# The AI layer reads at most this many products of a complex search's answer, in the
+# page's order (`docs/PICWISE_AI_LAYER_SPEC.md`, 4.2; `picwise_ai.complex_search`).
+AI_CANDIDATES = 30
 # The subset search over the buyer's words is exponential in their number.
 _MAX_RELAXABLE_FILTERS = 8
 _BARE_NUMBER_RE = re.compile(r"^\d+$")
@@ -1623,6 +1639,53 @@ def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduc
     return ordered
 
 
+def candidates_signature(products: Iterable[tuple[str, float]]) -> str:
+    """One digest of the products the AI layer reads for an answer, as (product id,
+    price) in the page's order: its answer is kept under it, and applied only to the very
+    products it read, at the prices it read (`docs/PICWISE_AI_LAYER_SPEC.md`, 4.7)."""
+    digest = hashlib.sha256()
+    for product_id, price in products:
+        digest.update(f"{str(product_id).strip()}\t{float(price):.2f}\n".encode("utf-8"))
+    return digest.hexdigest()[:32]
+
+
+def _fitting_first(
+    ordered: list[_PricedProduct], covered: dict[int, Any], fitting: frozenset[str]
+) -> tuple[list[_PricedProduct], _PricedProduct | None, str, bool]:
+    """The answer with the products that fit the buyer's need first (owner, 2026-11-06:
+    «...πρέπει να κατατάσσονται και πρώτα»; the Decision Contract, "The products that fit
+    a complex search first"): the Recommended chosen among them by its own rules (on offer
+    when an offer covers one of them, else the middle one in price with an EAN/GTIN; none
+    with fewer than three), then the others that fit, then the rest, each part in the
+    usual order (on offer first, then cheapest). Returns the order, the Recommended, its
+    status and whether it was chosen for its offer."""
+    fits = [entry for entry in ordered if _entry_id(entry) in fitting]
+    others = [entry for entry in ordered if _entry_id(entry) not in fitting]
+    covered_fits = [entry for entry in fits if id(entry.product) in covered]
+    offer_index = (
+        _offer_recommendation(covered_fits) if _counted_products(fits) >= _RECOMMENDED_MIN_PRODUCTS else None
+    )
+    if offer_index is not None:
+        recommended: _PricedProduct | None = covered_fits[offer_index]
+        status = "recommended"
+    else:
+        index, status = _median_recommendation(fits)
+        recommended = fits[index] if index is not None else None
+
+    def offers_first(entries: list[_PricedProduct]) -> list[_PricedProduct]:
+        entries = [entry for entry in entries if entry is not recommended]
+        return [entry for entry in entries if id(entry.product) in covered] + [
+            entry for entry in entries if id(entry.product) not in covered
+        ]
+
+    order = ([recommended] if recommended is not None else []) + offers_first(fits) + offers_first(others)
+    return order, recommended, status, offer_index is not None
+
+
+def _entry_id(entry: _PricedProduct) -> str:
+    return str(entry.product.provider_product_id or "").strip()
+
+
 def _counted_products(ordered: list[_PricedProduct]) -> int:
     """How many products of the answer, cheapest first, count towards its middle price.
 
@@ -1717,6 +1780,7 @@ def _select_products_for_concept(
     safe_max: int,
     condition_request: tuple[str, ...] = (),
     shown: int = 0,
+    fitting_for: Callable[[str], Iterable[str] | None] | None = None,
 ) -> ProviderProductSelectionResult:
     """Every instance of the concept the buyer means that carries their filters, cheapest first.
 
@@ -1820,6 +1884,7 @@ def _select_products_for_concept(
         condition_request=condition_request,
         also_unmatched=tuple(reading.judgements) + tuple(unmatched_name_words) + condition_unmatched,
         reason_code="product_concept_understood",
+        fitting_for=fitting_for,
     )
 
 
@@ -1940,6 +2005,7 @@ def _price_first_result(
     also_unmatched: tuple[str, ...],
     reason_code: str,
     strong_only_if_whole: bool = False,
+    fitting_for: Callable[[str], Iterable[str] | None] | None = None,
 ) -> ProviderProductSelectionResult:
     """One price-first answer as the page shows it.
 
@@ -1949,6 +2015,11 @@ def _price_first_result(
     `strong_only_if_whole`, the answer counts as a strong match only when it carries
     every word of the search: a search PicWise did not understand is shown on its own
     strength (`is_strong_feed_opportunity_selection`), and a dropped word weakens it.
+
+    `fitting_for`, given the signature of the products the AI layer reads
+    (`candidates_signature`), returns the ids of those of them the AI read as fitting
+    the buyer's need, from its stored answer, or nothing: those then come first
+    (`_fitting_first`). Without it, or with nothing back, the order is the usual one.
     """
     # Owner, 2026-11-01: «Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο» and
     # «Εάν υπάρχει προσφορά να προτείνει την προσφορά». The Recommended is a product a
@@ -1978,6 +2049,26 @@ def _price_first_result(
         + [entry for entry in rest if id(entry) in on_offer]
         + [entry for entry in rest if id(entry) not in on_offer]
     )
+    # The products the AI layer reads, in this usual order, and its stored answer for them.
+    signature = candidates_signature(
+        (_entry_id(entry), entry.price) for entry in display_order[:AI_CANDIDATES]
+    ) if display_order else ""
+    fitting: frozenset[str] = frozenset()
+    if fitting_for is not None and signature:
+        try:
+            given = fitting_for(signature) or ()
+        except Exception:  # a stored answer that cannot be read changes nothing
+            given = ()
+        read = {_entry_id(entry) for entry in display_order[:AI_CANDIDATES]}
+        fitting = frozenset(str(product_id).strip() for product_id in given) & read
+    recommended_among_fitting = False
+    if fitting:
+        display_order, recommended, recommendation_status, chosen_for_offer = _fitting_first(
+            ordered, covered, fitting
+        )
+        recommended_among_fitting = recommended is not None
+        rest = [entry for entry in ordered if entry is not recommended]
+        on_offer = {id(entry) for entry in rest if id(entry.product) in covered}
     page_size = max(safe_max, -(-max(int(shown or 0), safe_max) // safe_max) * safe_max)
     first_page = display_order[:safe_max]
     opened = display_order[safe_max:page_size]
@@ -1988,8 +2079,12 @@ def _price_first_result(
     # lowest price, though it is on the page.
     # A Recommended chosen for its offer may be priced anywhere: the cheap end is then
     # measured against the middle price of the whole answer.
+    # Products put first because they fit are priced anywhere: the cheap end is then the
+    # whole answer's, measured against its middle price.
     lowest_price_ceiling = (
-        recommended.price if recommended is not None and not chosen_for_offer else _middle_price(ordered)
+        recommended.price
+        if recommended is not None and not chosen_for_offer and not fitting
+        else _middle_price(ordered)
     )
     # A product on offer is labelled with its offer, not "Lowest price".
     cheapest_ids = tuple(
@@ -2067,6 +2162,9 @@ def _price_first_result(
         cheapest_product_ids=cheapest_ids,
         shop_counts=shop_counts,
         price_ranks=price_ranks,
+        candidates_signature=signature,
+        fitting_product_ids=tuple(_entry_id(entry) for entry in display_order if _entry_id(entry) in fitting),
+        recommended_among_fitting=recommended_among_fitting,
         **common,
     )
 
@@ -2424,13 +2522,16 @@ def select_provider_products_for_query(
     feed_ctx: FeedAvailabilityContext | None = None,
     shown: int = 0,
     catalogue: SearchCatalogue | None = None,
+    fitting_for: Callable[[str], Iterable[str] | None] | None = None,
 ) -> ProviderProductSelectionResult:
     """The products to show for one search.
 
     `shown` is how many products of a price-first answer the page holds: the first
     page, plus every four "More" has opened. 0 means the first page only.
     `catalogue` is `products` already judged (`build_search_catalogue`); without it they
-    are judged here.
+    are judged here. `fitting_for` puts first the products the AI layer read as fitting
+    a complex search (`_price_first_result`); only an answer for an understood kind takes
+    it, since the AI is never asked about an answer found by its words.
     """
     safe_max = max(1, int(max_products))
     if reading is None:
@@ -2482,6 +2583,7 @@ def select_provider_products_for_query(
             safe_max=safe_max,
             condition_request=condition_request,
             shown=shown,
+            fitting_for=fitting_for,
         )
     return _select_products_by_words(
         reading,

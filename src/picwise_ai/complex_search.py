@@ -28,10 +28,12 @@ from picwise_nlu.concept_understanding import (
 )
 from picwise_nlu.product_concepts import get_product_concepts_by_id
 from picwise_providers.decision_labels import format_price_display
+from picwise_providers.search_selection import AI_CANDIDATES
 
 # At most this many products of the answer are read, in the page's order: the
-# Recommended, the products on offer, then the rest, cheapest first.
-MAX_CANDIDATES = 30
+# Recommended, the products on offer, then the rest, cheapest first. One number with the
+# selection's, which keeps the AI's answer under these products' signature.
+MAX_CANDIDATES = AI_CANDIDATES
 # The page holds products in fours; a search run for the AI asks for this many.
 SHOWN_FOR_CANDIDATES = 32
 # Of each product's own description, the AI reads this many characters at most (owner,

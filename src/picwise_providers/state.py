@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timezone
 from typing import Any
@@ -662,6 +663,7 @@ def resolve_search_provider_feed_product_selection(
     max_products: int = 4,
     reading: ConceptReading | None = None,
     shown: int = 0,
+    fitting_for: Callable[[str], Iterable[str] | None] | None = None,
 ) -> ProviderProductSelectionResult:
     prepared = _active_prepared_catalogue() if feed_config is None else None
     if prepared is not None:
@@ -673,6 +675,7 @@ def resolve_search_provider_feed_product_selection(
             feed_ctx=prepared.availability_context,
             shown=shown,
             catalogue=_prepared_search_catalogue(prepared),
+            fitting_for=fitting_for,
         )
         return replace(selection, feed_availability_context=prepared.availability_context)
     config = feed_config or awin_feed_config_from_env()
@@ -698,6 +701,7 @@ def resolve_search_provider_feed_product_selection(
         feed_ctx=availability_context,
         shown=shown,
         catalogue=catalogue,
+        fitting_for=fitting_for,
     )
     if availability_context is None:
         return selection

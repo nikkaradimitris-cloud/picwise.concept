@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from collections.abc import Callable, Iterable
 from typing import Any
 
 from picwise_nlu import (
@@ -127,6 +128,13 @@ class LiveSearchResolution:
     # ("What kind of cable?"; owner, 2026-10-28/29). Empty for every other search.
     kind_choices: tuple[str, ...] = field(default_factory=tuple)
     kind_choices_name: str = ""
+    # The products the AI layer reads for a price-first answer, with their prices, in the
+    # usual order (`search_selection.candidates_signature`): its answer is kept under it.
+    provider_feed_candidates_signature: str = ""
+    # The products whose own words showed the AI they fit the buyer's need, put first
+    # (owner, 2026-11-06), in the order shown, and whether the Recommended is one of them.
+    provider_feed_fitting_product_ids: tuple[str, ...] = field(default_factory=tuple)
+    provider_feed_recommended_among_fitting: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -192,6 +200,9 @@ class LiveSearchResolution:
                 list(row) for row in self.provider_feed_price_ranks
             ]
             payload["provider_feed_offers"] = [list(row) for row in self.provider_feed_offers]
+            payload["provider_feed_candidates_signature"] = self.provider_feed_candidates_signature
+            payload["provider_feed_fitting_product_ids"] = list(self.provider_feed_fitting_product_ids)
+            payload["provider_feed_recommended_among_fitting"] = self.provider_feed_recommended_among_fitting
             if self.provider_feed_decision_status is not None:
                 payload["provider_feed_decision_status"] = self.provider_feed_decision_status
                 payload["provider_feed_recommended_product_id"] = self.provider_feed_recommended_product_id
@@ -316,9 +327,17 @@ def _query_eligible_for_feed_opportunity_attempt(
     return True
 
 
-def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
+def resolve_live_search(
+    query: str,
+    *,
+    shown: int = 0,
+    fitting_for: Callable[[str], Iterable[str] | None] | None = None,
+) -> LiveSearchResolution:
     """Resolve one search. `shown` is how many products of a price-first answer the
-    page holds: 4, then 8, 12 and so on as "More" is pressed. 0 means the first page."""
+    page holds: 4, then 8, 12 and so on as "More" is pressed. 0 means the first page.
+    `fitting_for` gives, for the signature of the products the AI layer reads, the ids of
+    those its stored answer read as fitting a complex search, which then come first
+    (owner, 2026-11-06; `search_selection._price_first_result`)."""
     raw_query = str(query or "")
     display_query = raw_query
     normalized_query = normalize_query(raw_query)
@@ -512,6 +531,9 @@ def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
     provider_feed_shop_counts: tuple[tuple[str, int], ...] = ()
     provider_feed_price_ranks: tuple[tuple[str, int], ...] = ()
     provider_feed_offers: tuple[tuple[str, dict[str, Any]], ...] = ()
+    provider_feed_candidates_signature = ""
+    provider_feed_fitting_product_ids: tuple[str, ...] = ()
+    provider_feed_recommended_among_fitting = False
     selection_query = canonicalized_query or normalized_query or raw_query
     standard_provider_feed_path = bool(
         mega_category_id
@@ -564,6 +586,7 @@ def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
                     query=selection_query,
                     reading=concept_reading,
                     shown=shown,
+                    fitting_for=fitting_for,
                 )
                 expose_selection = recognized_product_search or is_strong_feed_opportunity_selection(
                     selection
@@ -620,6 +643,9 @@ def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
                         provider_feed_cheapest_product_ids = selection.cheapest_product_ids
                         provider_feed_shop_counts = selection.shop_counts
                         provider_feed_price_ranks = selection.price_ranks
+                        provider_feed_candidates_signature = selection.candidates_signature
+                        provider_feed_fitting_product_ids = selection.fitting_product_ids
+                        provider_feed_recommended_among_fitting = selection.recommended_among_fitting
                         if selection.price_first:
                             shown_products = tuple(selection.selected_products) + tuple(selection.more_products)
                             covered = offers_covering(shown_products)
@@ -750,4 +776,7 @@ def resolve_live_search(query: str, *, shown: int = 0) -> LiveSearchResolution:
         provider_feed_offers=provider_feed_offers,
         kind_choices=kind_choices,
         kind_choices_name=kind_choices_name,
+        provider_feed_candidates_signature=provider_feed_candidates_signature,
+        provider_feed_fitting_product_ids=provider_feed_fitting_product_ids,
+        provider_feed_recommended_among_fitting=provider_feed_recommended_among_fitting,
     )
