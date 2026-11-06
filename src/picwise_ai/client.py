@@ -23,8 +23,9 @@ from typing import Any
 PRICES_PER_MILLION = {
     "claude-haiku-5-5": {"input": 0.10, "output": 0.50, "cache_write": 0.125, "cache_read": 0.01},
 }
-# No answer within this many seconds: nothing is shown (the spec, 4.3).
-TIMEOUT_SECONDS = 8.0
+# No answer within this many seconds: nothing is shown (the spec, 4.3). The fourth
+# measure's answers took 5.2 s in the middle and 11.1 s at most.
+TIMEOUT_SECONDS = 15.0
 # One retry, for a passing error of the network or an overloaded API.
 MAX_RETRIES = 1
 
