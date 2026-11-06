@@ -52,7 +52,14 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   answer draws the products that fit first with a ✓ and their own words, the sentence and
   "Checked against the shops' own words"; the shops' words as searches with their counts;
   the privacy page's "Complex searches"; the deployment that installs it all, and leaves
-  the site as before when GitHub holds no key. When the owner asked what "the button" was
+  the site as before when GitHub holds no key. **Every test module run on its own** (290, six at a
+  time, 20 minutes each at most): 287 pass with the final code (two performance modules,
+  whose mock of the search the build had bypassed, fixed and passing; the slow
+  `test_picwise_learning_stage7b` passing alone in 1,161 s, as on the deployed code,
+  1,171 s); `test_picwise_canonical_vocabulary_registry_stage2` and
+  `test_picwise_search_index_generated_blind_stage4` fail, as they do on `a7539b9`;
+  `test_picwise_search_index_blind_evaluation_stage6a` does not finish in 20 minutes on
+  either. When the owner asked what "the button" was
   (the shops' words of 05/11), it was told, and fixed: the shops' words never come from a
   product answered `no` (the fourth run's "Skinguard (1)" came from a manual razor).
 - **What the fourth run found** (the catalogue of 06/11 04:24 UTC, 595,688 products, as
