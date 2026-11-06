@@ -328,6 +328,41 @@ those that fit" (a reading needed to build it):
 So the site's four workers never wait for the API, only that service holds the key, and
 only it has the SDK. A visitor whose browser runs no script, as most bots, costs nothing.
 
+**Built on 2026-11-06** (owner: «Ναι, συμφωνώ με όλα, προχώρα»; `5a86ff9` to `479f8cf`),
+not deployed:
+
+- **The order** (`search_selection._fitting_first`, `_price_first_result`): the products a
+  stored answer read as fitting first, the Recommended among them by its own rules ("Mid-
+  priced of those that fit"), then the rest, each part offers first then cheapest; "More"
+  goes on in that order. The answer is found by a signature of the 30 products the AI
+  reads, their ids and prices in the usual order (`candidates_signature`), passed down from
+  the search as a lookup (`fitting_for`); without one nothing changes.
+- **The files** (`picwise_ai.store`), under `/srv/picwise/assist`: the page writes a draft
+  (`drafts/`, the site's own), which becomes a job (`jobs/`) only when the page's script
+  first asks `/assist-status`, so a bot costs nothing; the service writes the answer
+  (`results/`), kept 24 hours (a failed call 15 minutes), and the day's spend (`spend/`);
+  the site counts the shops' words once (`served/`). The key of each is the search (spaces
+  and letter case aside) and the products' signature. Old files are removed after a day.
+- **The service** (`picwise_ai.service`, `deployment/server/assist_service.py`,
+  `picwise-assist.service`): its own user, the only one given the key, three calls at a
+  time, the newest job first, at most $1.00 a day (the owner's one euro) and 30 calls a
+  minute; a job older than an hour is dropped; the call's time-out is 15 s.
+- **The page** (`picwise_app.assist_wiring`, `picwise_surface.assist`): a stored answer
+  draws the products that fit first, each with a ✓ and its own words in quotes (an empty
+  line on the others, so rows keep one height), the sentence and "Checked against the
+  shops' own words"; without one, an empty place and a small script that asks once a
+  second for 20 s, then reads the page again (`assist=1`: no draft, no second impression)
+  and puts its results in place; the shops' words as searches with their counts.
+- **The deployment** (`deploy.sh`, `server-deploy.yml`): the SDK in `/srv/picwise/venv-ai`,
+  the key in `/etc/picwise/assist.env` (root's, read by systemd for the service alone);
+  `jobs/` and `drafts/` made only when GitHub holds the key, so without it the site writes
+  nothing and its pages are as before; the site joins the service's group to share the
+  folder, and neither reads the other's files beyond it (checked with two users).
+- **The privacy page**: "Complex searches" in the accepted wording, naming no company, and
+  its legal basis; dated 6 November 2026.
+- **Tests**: `test_picwise_ai_fitting_first` (9), `test_picwise_ai_assist` (21),
+  `test_picwise_ai_page` (8), with the AI faked.
+
 ### 4.6 The account, the key, the library
 
 - **The credit.** The owner's Claude plan (the owner, 05/11: «εχω ηδη συνδρομη στο

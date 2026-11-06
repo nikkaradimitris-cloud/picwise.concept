@@ -1,12 +1,11 @@
 # PicWise — session handoff
 
 Current state for whoever picks the project up next. Updated 2026-11-06 (**next: the
-owner's answers on how the AI layer's fitting products are ranked first and marked, and
-on the privacy wording; decided by the owner on 06/11: marked and first, one euro a day,
-third parties not named; its fourth measure read by hand, 57 sentences, none wrong; its
-core built, tested and measured four times on the server's catalogue, branch
-`ccr-4f47068a-99ikwe`, nothing on the site; the Anthropic key in GitHub's secrets; no
-more kind-by-kind fixes (the owner)**;
+owner's word to deploy the AI layer, naming the commit: built on 06/11 on «Ναι, συμφωνώ με
+όλα, προχώρα» (the products the AI reads as fitting first and marked, one euro a day, the
+privacy text naming no company), tested, branch `ccr-4f47068a-99ikwe`, nothing on the
+site; its fourth measure read by hand, 57 sentences, none wrong; the Anthropic key in
+GitHub's secrets; no more kind-by-kind fixes (the owner)**;
 **item 2 live
 since 2026-11-05 12:54 UTC, run `42028878547`: a shelf's kind read against its aisle,
 doubtful products found by their words; searches of a kind with a wrong card 31 -> 7 of
@@ -24,24 +23,38 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-06): pick up here -- start here
 
-- **START HERE: the owner's answers to four proposals of 06/11, then the build.** After
-  the fourth measure (run `42197695021`, on the owner's word «Προχώρα»; on in `2c02b5f`,
-  off again in `a440390`) the owner decided (the spec, 4.4, 4.6, 4.7 and section 6, with
-  their words): the products the AI reads as fitting are marked in words and to the eye,
-  and ranked first; the daily cap is one euro ($1.00 in code); the privacy page says that
-  complex searches may be sent to third parties for processing, naming no company («δεν
-  θέλω να αναφέρω την εταιρεία»). Put to the owner, in Greek, not yet answered: (1) the
-  order: the fitting first, in today's order among them (offers, then cheapest), then the
-  rest; the Recommended chosen among the fitting; (2) the time: the page at once as today,
-  the fitting moving up with their mark when the answer comes (about 5 s, up to 11 s);
-  (3) the mark: a ✓ and the product's own words in quotes, and under the sentence
-  "Checked against the shops' own words", naming no AI; (4) the privacy draft (the spec,
-  4.6). With the answers: `PROJECT_RULES.md` sections 2 and 5, `docs/MISSION.md` and the
-  Decision Contract changed for the order, each with the owner's words; then the wiring
-  (below), each step on the owner's word. Built on 06/11, when the owner asked what "the
-  button" was (the shops' words of 05/11, offered as searches when no product fits): the
-  shops' words never come from the title of a product answered `no` (the fourth run's
-  "Skinguard (1)" came from a manual razor), 40 tests.
+- **START HERE: the owner's word to deploy the AI layer, naming the commit.** After the
+  fourth measure the owner decided (06/11) that the products the AI reads as fitting are
+  marked and come first, a cap of one euro a day, and the privacy text naming no company;
+  then «Ναι, συμφωνώ με όλα, προχώρα» to the order (today's among them, the Recommended
+  among them), the time (the page at once, the fitting moving up when the answer comes),
+  the mark (a ✓ and the product's own words) and the privacy wording. Written into
+  `PROJECT_RULES.md` (sections 2 and 5), `docs/MISSION.md` and the Decision Contract ("The
+  products that fit a complex search first"), and built the same day (`d32e178` to the
+  last commit of the branch; the spec, 4.5, "Built on 2026-11-06"). Nothing is on the
+  site. To deploy, on the owner's word naming the commit: a fast-forward push of it to
+  `ccr-1361f1a7-dcpo60` (it holds `a7539b9`, item 2 live, and nothing since), which runs
+  `server-deploy.yml`: the catalogue prepared again (the selection's code changed; about
+  15 minutes), the SDK installed in `/srv/picwise/venv-ai`, the key written to
+  `/etc/picwise/assist.env`, `jobs/` and `drafts/` made, `picwise-assist` started after the
+  site answers. Read in its log: "Anthropic key: sent" and "set", "anthropic 2.6.0",
+  "assist: active", "AI layer (picwise-assist): active, jobs folder: on", "AI spend today".
+  A session cannot reach picwise.subby.cloud: ask the owner to try a complex search
+  («σακίδιο για σχολείο», "quiet washing machine") and say whether, a few seconds after
+  the page, a sentence appears and the products that fit move up with a ✓, and whether the
+  same search again comes at once that way. Then the spend on the Console after a day or
+  a week (the spec, 5: "after a week, its use and cost to the owner").
+- **What was built on 06/11** (the spec, 4.5): the selection puts the products a stored
+  answer read as fitting first, the Recommended among them ("Mid-priced of those that
+  fit"), found by a signature of the 30 products the AI reads; the page writes a draft
+  that becomes a job only when its script asks, so a bot costs nothing; `picwise-assist`
+  (own user, own key, at most $1.00 a day and 30 calls a minute) answers it; a stored
+  answer draws the products that fit first with a ✓ and their own words, the sentence and
+  "Checked against the shops' own words"; the shops' words as searches with their counts;
+  the privacy page's "Complex searches"; the deployment that installs it all, and leaves
+  the site as before when GitHub holds no key. When the owner asked what "the button" was
+  (the shops' words of 05/11), it was told, and fixed: the shops' words never come from a
+  product answered `no` (the fourth run's "Skinguard (1)" came from a manual razor).
 - **What the fourth run found** (the catalogue of 06/11 04:24 UTC, 595,688 products, as
   the third; the spec, 4.8, has it all): 118 asked; a sentence for 57 (52 in the third; 27
   of them for Greek searches), the shops' words for 10 (14 words), nothing for 50, withheld
@@ -86,22 +99,15 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   the "IN SHORT" totals and every search: SHOWN, BUTTONS, NOTHING or WITHHELD, each `yes`
   with "its words" (now checkable by eye), the "unproved" ones, the shops' words proposed
   and answered by the catalogue. Read every sentence, every `yes` and every button by hand.
-- **The mark on the cards** is what the owner asked about on 05/11: «ΕΥΡΕΤΗΡΙΑΖΟΝΤΑΙ
-  ΚΑΛΥΤΕΡΑ ΤΑ ΠΡΟΙΟΝΤΑ ΤΩΡΑ ΕΙΔΙΚΑ ΣΤΙΣ ΣΥΝΘΕΤΕΣ ΑΝΑΖΗΤΗΣΕΙΣ». The AI changes neither which
-  products are shown nor their order: it adds the sentence above them (or the shops'
-  words). Write to the owner in Greek, plain and short (the owner said «?» to a long
-  message).
-- **Then, wiring it to the site** (the spec, 4.5 to 4.7), each step on the owner's word,
-  deployed as always through `ccr-1361f1a7-dcpo60` with the owner naming the commit: the
-  site's worker writes a job (the search, its 30 products with descriptions) to a folder;
-  a service of its own, `picwise-assist` (its own system user, its own virtual environment
-  from `deployment/server/requirements-ai.txt`, the key in `/etc/picwise/assist.env`
-  written by `server-deploy.yml` from the secret, never in `picwise.env` or the site's
-  service), calls the API, checks and writes the result; the page holds an empty line and
-  a small script that asks the site for the result; the shops' words become links to their
-  search with the count the catalogue gives when the result is served; the cap per UTC day
-  and 30 calls a minute; the 24 h cache. The live time-out: answers took up to 11.1 s in
-  the fourth run, and the page never waits, so about 15 s.
+- **The mark on the cards** was what the owner asked about on 05/11 («ΕΥΡΕΤΗΡΙΑΖΟΝΤΑΙ
+  ΚΑΛΥΤΕΡΑ ΤΑ ΠΡΟΙΟΝΤΑ ΤΩΡΑ ΕΙΔΙΚΑ ΣΤΙΣ ΣΥΝΘΕΤΕΣ ΑΝΑΖΗΤΗΣΕΙΣ»), decided on 06/11 and built:
+  the products that fit come first, marked. Write to the owner in Greek, plain and short
+  (the owner said «?» to a long message).
+- **Not yet built, for later:** a fifth measure, if the owner wants one, to see the new
+  order on the server's catalogue (the measure prints the AI's answers, not the page's
+  order); the doubtful sentences of the fourth run (kids' mattresses for back pain) and
+  the loose buttons ("Cordless" for a travel iron, processor names for video editing),
+  which the owner has not ruled on.
 - **The account** (05/11): the Claude Console, an Individual organisation («Νικος's
   Individual Org»), $10 of credit bought with a European VAT number, auto-reload off (the
   dashboard showed «Turn on auto-reload»), the Start tier ($500 a month cap); the key
