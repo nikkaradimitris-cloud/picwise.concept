@@ -56,7 +56,7 @@ from picwise_ai.complex_search import (  # noqa: E402
     description_of,
     why_not_asked,
 )
-from picwise_ai.request import EFFORT, MODEL, SCHEMA, request_kwargs, user_message  # noqa: E402
+from picwise_ai.request import EFFORT, MODEL, SCHEMA, SYSTEM_PROMPT, request_kwargs, user_message  # noqa: E402
 from picwise_ai.shop_words import button_search, verified_shop_words  # noqa: E402
 
 WASHERS = [
@@ -199,6 +199,22 @@ class TheRequest(unittest.TestCase):
         found = complex_search_of("motorcycle helmet", _resolution(concept="moto_helmet", unmatched=("motorcycle",)))
         self.assertIn("Kind of product shown: helmet (a broader kind than the one asked for)", user_message(found))
 
+    def test_the_rules_the_third_measure_called_for(self) -> None:
+        # The third measure (2026-11-06, run 42192705450), read by hand: a manual razor
+        # counted among electric shavers, "suitable for all skin types" as for dry skin,
+        # backpacks "1 - 2 Years" as for school although their age was stated, and
+        # sentences such as "14 of these 30 boots say Winter Snow Boots". The request
+        # states each rule plainly.
+        prompt = " ".join(SYSTEM_PROMPT.split())
+        self.assertIn("A product that is not the kind shown at all is \"no\", whatever it says", prompt)
+        self.assertIn("is \"no\", whatever its description says (\"Kids Backpack - 1 - 2 Years\" is not \"for"
+                      " school\", even when its description speaks of school)", prompt)
+        self.assertIn("(\"suitable for all skin types\", \"for all ages\") do not say that it fits the need"
+                      " asked for: \"unclear\"", prompt)
+        self.assertIn("the kind in the plural", prompt)
+        self.assertIn("never a title's words pasted in", prompt)
+        self.assertIn("\"This <kind> says ...\" when only one product was given", prompt)
+
 
 class TheChecks(unittest.TestCase):
     def test_a_true_sentence_is_shown(self) -> None:
@@ -224,6 +240,23 @@ class TheChecks(unittest.TestCase):
         checked = check_answer(_answer(GOOD, words={2: "LOW  NOISE: 49 dB"}), found, stop_reason="end_turn")
         self.assertTrue(checked.shown, checked.failure)
         self.assertEqual(checked.proof, ((2, "low noise: 49 db"),))
+
+    def test_a_yes_may_give_its_words_in_pieces(self) -> None:
+        # The third measure: all six unproved answers joined two pieces of their
+        # product's words with ";". Each piece is checked on its own, letter for letter.
+        found = complex_search_of("quiet washing machine", _resolution(),
+                                  descriptions={"row-2": "Inverter motor, low noise: 49 dB. Runs at night."})
+        for words in ("low noise: 49 dB; Runs at night", "low noise: 49 dB … runs at night",
+                      "Low noise: 49 dB...runs at night."):
+            checked = check_answer(_answer(GOOD, words={2: words}), found, stop_reason="end_turn")
+            self.assertTrue(checked.shown, (words, checked.failure))
+            self.assertEqual(checked.proof, ((2, "low noise: 49 db; runs at night"),))
+        # One piece not in the product, or too short to show anything: the yes is
+        # unproved and the sentence that counted it withheld.
+        for words in ("low noise: 49 dB; whisper quiet", "low noise: 49 dB; dB", ";;"):
+            checked = check_answer(_answer(GOOD, words={2: words}), found, stop_reason="end_turn")
+            self.assertFalse(checked.shown, words)
+            self.assertEqual(checked.unproved, (2,), words)
 
     def test_one_fitting_product_among_many_may_be_this_one(self) -> None:
         checked = check_answer(_answer("This washing machine says quiet in its title, at 549.00 GBP."), _quiet(),

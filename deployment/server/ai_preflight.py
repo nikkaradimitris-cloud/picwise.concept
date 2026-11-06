@@ -1,4 +1,4 @@
-"""Two requests of the AI layer, end to end, on fictional washing machines.
+"""Four requests of the AI layer, end to end, on fictional products.
 
 Before the offline measure (`measure_ai.py`, the AI layer's spec 4.8) reads the server's
 catalogue, this sends Claude Haiku 5.5 the very requests the layer builds
@@ -6,13 +6,18 @@ catalogue, this sends Claude Haiku 5.5 the very requests the layer builds
 the answers with the layer's own code (`picwise_ai.client`, `picwise_ai.checks`):
 
 1. "quiet washing machine": two titles say it, a third product only in its description;
-   the answer is a sentence;
+   the answer is a sentence; anti-vibration feet whose title says "Washing Machine" and
+   "Quiet" are no washing machine, so `no`;
 2. "washing machine for a small kitchen": no title or description says it, two titles say
    "Compact"; the answer is no sentence, but the shops' words (owner, 2026-11-05: «ΟΤΑΝ
-   ΔΕΝ ΒΡΙΣΚΕΙ ΚΑΤΙ ΝΑ ΜΗΝ ΛΕΕΙ ΔΕΝ ΒΡΕΘΗΚΕ ΣΚΕΨΟΥ ΚΑΤΙ ΠΙΟ ΕΞΥΠΝΟ», then «ΣΩΣΤΑ»).
+   ΔΕΝ ΒΡΙΣΚΕΙ ΚΑΤΙ ΝΑ ΜΗΝ ΛΕΕΙ ΔΕΝ ΒΡΕΘΗΚΕ ΣΚΕΨΟΥ ΚΑΤΙ ΠΙΟ ΕΞΥΠΝΟ», then «ΣΩΣΤΑ»);
+3. «κρέμα προσώπου για ξηρή επιδερμίδα»: a title and a description say dry skin; a cream
+   "suitable for all skin types" does not say it (the third measure counted two such);
+4. "backpack for school": a backpack "1 - 2 Years" whose description speaks of school is
+   `no` (the third measure counted six such), one "6-10 Years" for school `yes`.
 
 No catalogue, server or site is involved, so the words are not counted by a catalogue
-here; the products are fictional; the two calls cost well under a cent. Printed: each
+here; the products are fictional; the four calls cost well under a cent. Printed: each
 product's answer, the sentence or the words, whether the checks pass, the tokens, the
 cost, the time. Never the key.
 
@@ -38,6 +43,8 @@ QUIET = (
     ("Testline SilentDrive 8kg Washing Machine Low Noise 47dB", "Testline", "499.00 GBP", ""),
     ("Fixturon Compact 6kg Washing Machine", "Fixturon", "239.00 GBP", "A 6kg drum, 1200rpm."),
     ("Testline Steam Care 10kg Washing Machine", "Testline", "619.00 GBP", "Steam programmes for shirts."),
+    ("Testline Anti-Vibration Washing Machine Feet, Quiet Running, 4 Pack", "Testline", "12.99 GBP",
+     "Rubber pads that cut the noise of any washing machine."),
 )
 SMALL_KITCHEN = (
     ("Fixturon WM1045 10kg 1400rpm Washing Machine White", "Fixturon", "279.00 GBP", ""),
@@ -45,9 +52,24 @@ SMALL_KITCHEN = (
     ("Testline Compact Slim 7kg Washing Machine", "Testline", "329.00 GBP", "Steam programmes."),
     ("Testline Steam Care 10kg Washing Machine", "Testline", "619.00 GBP", ""),
 )
+DRY_SKIN = (
+    ("Fixturon Rich Repair Face Cream for Dry Skin 50ml", "Fixturon", "12.99 GBP", ""),
+    ("Testline Daily Face Moisturiser 50ml", "Testline", "8.49 GBP",
+     "A light daily cream, suitable for all skin types."),
+    ("Fixturon Mattifying Face Gel for Oily Skin 50ml", "Fixturon", "9.99 GBP", ""),
+    ("Testline Hydra Face Cream 30ml", "Testline", "10.50 GBP",
+     "Shea butter and ceramides soothe dry, tight skin."),
+)
+SCHOOL = (
+    ("Fixturon Kids Backpack - 1 - 2 Years", "Fixturon", "25.00 GBP",
+     "A brilliant first school bag, light on little shoulders for the school run."),
+    ("Testline Junior School Backpack 6-10 Years", "Testline", "19.99 GBP", ""),
+    ("Fixturon Hiking Daypack 20L", "Fixturon", "29.99 GBP", "A light pack for day walks."),
+)
 
 
-def _run(search: str, words: tuple[str, ...], products: tuple, client) -> bool:
+def _run(search: str, words: tuple[str, ...], products: tuple, client, *,
+         kind_name: str = "washing machine", kind_id: str = "washing_machine") -> bool:
     from picwise_ai.checks import check_answer
     from picwise_ai.client import ask
     from picwise_ai.complex_search import Candidate, ComplexSearch
@@ -56,14 +78,14 @@ def _run(search: str, words: tuple[str, ...], products: tuple, client) -> bool:
     complex_search = ComplexSearch(
         search=search,
         words=words,
-        kind_name="washing machine",
+        kind_name=kind_name,
         fell_back=False,
         candidates=tuple(
-            Candidate(number, f"preflight-{number}", title, brand, price, "GBP", "Fictional Appliances", description)
+            Candidate(number, f"preflight-{number}", title, brand, price, "GBP", "Fictional Shop", description)
             for number, (title, brand, price, description) in enumerate(products, start=1)
         ),
         total=len(products),
-        kind_id="washing_machine",
+        kind_id=kind_id,
     )
     asked = ask(request_kwargs(complex_search), client=client)
     print()
@@ -99,9 +121,14 @@ def main() -> int:
 
     client = make_client(timeout=30.0)
     print(f"model asked: {MODEL}, effort {EFFORT}")
-    first = _run("quiet washing machine", ("quiet",), QUIET, client)
-    second = _run("washing machine for a small kitchen", ("small", "kitchen"), SMALL_KITCHEN, client)
-    return 0 if first and second else 1
+    answered = [
+        _run("quiet washing machine", ("quiet",), QUIET, client),
+        _run("washing machine for a small kitchen", ("small", "kitchen"), SMALL_KITCHEN, client),
+        _run("κρέμα προσώπου για ξηρή επιδερμίδα", ("ξηρη", "επιδερμιδα"), DRY_SKIN, client,
+             kind_name="face cream", kind_id="face_cream"),
+        _run("backpack for school", ("school",), SCHOOL, client, kind_name="backpack", kind_id="backpack"),
+    ]
+    return 0 if all(answered) else 1
 
 
 if __name__ == "__main__":

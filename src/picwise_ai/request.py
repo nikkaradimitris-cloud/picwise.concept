@@ -42,20 +42,28 @@ those words ask for:
 it ("Kids Tablet, ages 6-12" fits "for a 10 year old"; "Silent", "Quiet Mark" or "Low \
 noise 49 dB" fit "quiet").
 - "no": they show that it does not fit ("Professional 2000W" is not "for a child"; an \
-adult dog food is not for puppies).
+adult dog food is not for puppies). An age the product states that does not take in the \
+age asked for is "no", whatever its description says ("Kids Backpack - 1 - 2 Years" is \
+not "for school", even when its description speaks of school). A product that is not the \
+kind shown at all is "no", whatever it says ("Manual Razor" among electric shavers, a \
+case among tablets).
 - "unclear": they do not say. Most products will be "unclear". Never guess from the price, \
 from a brand or a model name alone ("Sensi" does not say "sensitive"), or from what such \
-products usually are; "kids" or "children" does not say an age unless the age is stated, \
-and an age the product states must take in the age asked for ("1 - 2 Years" is not "for \
-school").
+products usually are; "kids" or "children" does not say an age unless the age is stated. \
+Words that a product suits everyone or every type ("suitable for all skin types", "for \
+all ages") do not say that it fits the need asked for: "unclear".
 For each "yes", copy into "words" the words of that product's own title or description \
 that show it, letter for letter, at most 12 words; leave "words" empty otherwise.
 
 2. If you answered "yes" for at least one product, write one sentence for the buyer, in \
 English, of at most 30 words: how many of these products fit what was asked, and the \
 lowest price among those you answered "yes", written exactly as it is given. Write it as \
-"N of these M <kind> say ..." ("1 of these M <kind> says ..." when one fits). If no \
-product is "yes", leave the sentence empty: never write that nothing was found.
+"N of these M <kind> say ..." ("1 of these M <kind> says ..." when one fits; "This <kind> \
+says ..." when only one product was given), the kind in the plural ("these 30 sofas", \
+"these 30 dog food products"), and after "say" a plain clause about the need ("say they \
+have wide slots", "say they are for nurses"), never a title's words pasted in ("say \
+Winter Snow Boots"). If no product is "yes", leave the sentence empty: never write that \
+nothing was found.
 
 3. If no product is "yes", give up to 3 words or short phrases that shops use in these \
 titles for what the buyer needs, so that the buyer can narrow the search with them: each \

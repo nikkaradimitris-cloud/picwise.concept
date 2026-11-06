@@ -6,7 +6,8 @@ passes; one that fails is not shown, and the page says nothing about it.
 
 - every product number answered is one that was sent, each once, all of them;
 - a `yes` counts only when the words it gives as its proof stand, letter for letter, in
-  that product's own title or description; otherwise it is read as `unclear`;
+  that product's own title or description (in one run, or in pieces joined by ";", each
+  standing there); otherwise it is read as `unclear`;
 - the counts in the sentence are its own `yes` answers ("4 of these 30");
 - every price in the sentence is the price of a product answered `yes`, and the lowest
   of them where it says "from";
@@ -68,6 +69,8 @@ _COUNT = re.compile(r"\b(?P<count>\w+)\s+(?:out\s+)?of\s+(?:these|the|those|all\
 _NONE_OF = re.compile(r"\bnone\s+of\b", re.IGNORECASE)
 _NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
 _WORD = re.compile(r"[^\W_][\w'’&+.-]*", re.UNICODE)
+# Where a `yes` joins pieces of its product's words: each piece is checked on its own.
+_PIECES = re.compile(r"\s*(?:;|…|\.{3})\s*")
 
 
 @dataclass(frozen=True)
@@ -108,11 +111,15 @@ def _plain(text: str) -> str:
 
 
 def _proved(words: Any, candidate) -> str:
-    """The words a `yes` gives, when they stand in the product's own title or description."""
-    proof = _plain(words).strip(" .,;:'\"…")
-    if len(proof) < 3:
+    """The words a `yes` gives, when they stand in the product's own title or description:
+    in one run, or in pieces joined by ";" or an ellipsis, each piece standing there
+    (the third measure: "TSA Carry-On Compliant; Keep your devices charged all day")."""
+    text = _plain(f"{candidate.title} {candidate.description}")
+    pieces = [piece.strip(" .,;:'\"…") for piece in _PIECES.split(_plain(words))]
+    pieces = [piece for piece in pieces if piece]
+    if not pieces or any(len(piece) < 3 or piece not in text for piece in pieces):
         return ""
-    return proof if proof in _plain(f"{candidate.title} {candidate.description}") else ""
+    return "; ".join(pieces)
 
 
 def _as_int(token: str) -> int | None:
