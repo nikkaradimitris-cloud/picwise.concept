@@ -1,8 +1,9 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-11-05 (**the AI layer's
-spec written, `docs/PICWISE_AI_LAYER_SPEC.md`, waiting for the owner's approval; nothing
-built; no more kind-by-kind fixes (the owner)**;
+Current state for whoever picks the project up next. Updated 2026-11-06 (**next: the AI
+layer's third measure, on the owner's word; its core built, tested and measured twice on
+the server's catalogue, branch `ccr-4f47068a-99ikwe`, nothing on the site; the Anthropic
+key in GitHub's secrets; no more kind-by-kind fixes (the owner)**;
 **item 2 live
 since 2026-11-05 12:54 UTC, run `42028878547`: a shelf's kind read against its aisle,
 doubtful products found by their words; searches of a kind with a wrong card 31 -> 7 of
@@ -18,7 +19,74 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 2026-10-31 10:03 UTC, HTTPS by Caddy; Vercel kept as the backup).
 `PROGRESS.md` is the chronological log; this file is the "where are we now".
 
-## Next conversation (from 2026-11-05): pick up here -- start here
+## Next conversation (from 2026-11-06): pick up here -- start here
+
+- **START HERE: the AI layer's third measure, waiting for the owner's word.** The owner, at
+  the end of 05/11: «Πάμε σε άλλη συζήτηση», asked «Να την ενεργοποιήσω;» and not having
+  answered it. Ask it again, short, in Greek: the run is one commit on `ccr-4f47068a-99ikwe`
+  that changes only `if: false` to `if: true` in `.github/workflows/ai-measure.yml` (it
+  copies the server's prepared catalogue read only, with the deploy key and the host key's
+  pin, as `server-confusions.yml` does; 163 searches; about $0.15, a budget of $1), then one
+  commit that turns it off again and records the run in the file's "Measured:" lines. A
+  push of that file with `if: false` runs nothing (the job is skipped). The session's stop
+  hook asks for every commit to be pushed: so the "on" commit is made only with the word.
+- **What it measures** (the code of `0631666`): each `yes` must give the words of its
+  product's title or description that show it, and counts only when they stand there
+  letter for letter (`picwise_ai.checks._proved`); "This kettle says ..." accepted when one
+  product fits; numbers and names of a description allowed; the shops' words must name
+  what serves the need. The preflight (`ai-key-check.yml`, run `42122881328`) proved it on
+  fictional products: "Quiet Mark Approved", "Low Noise 47dB" and a description's "low
+  noise: 49 dB when washing" quoted and found.
+- **To compare with the second run** (`42120003523`): of 119 asked, a sentence for 39,
+  the shops' words for 11 (16 words), nothing for 58, withheld 11 (10 of them the "This
+  kettle says" the check now accepts, 1 a description's "4,500"); `yes` 208; $0.00093 a
+  search; an answer 4.1 s in the middle, 9.2 s at most. The first run (`42112519518`, titles
+  only, "none" sentences): 23 sentences with products, 94 "none". Expect fewer `yes` (the
+  unproved ones read as unclear) and about ten more sentences.
+- **How to read it:** `get_job_logs` with `return_content` and `tail_lines` 20000 saves the
+  log as JSON to a file; take its `logs_content`, strip each line's time stamp, then read
+  the "IN SHORT" totals and every search: SHOWN, BUTTONS, NOTHING or WITHHELD, each `yes`
+  with "its words" (now checkable by eye), the "unproved" ones, the shops' words proposed
+  and answered by the catalogue. Read every sentence, every `yes` and every button by hand.
+- **Then, to the owner** (Greek, plain, short; the owner said «?» to a long message): the
+  numbers and a few examples; then the decisions of the spec's section 6 (the bar to go
+  live; whether the cards the AI reads as fitting get a mark, which is what the owner asked
+  about: «ΕΥΡΕΤΗΡΙΑΖΟΝΤΑΙ ΚΑΛΥΤΕΡΑ ΤΑ ΠΡΟΙΟΝΤΑ ΤΩΡΑ ΕΙΔΙΚΑ ΣΤΙΣ ΣΥΝΘΕΤΕΣ ΑΝΑΖΗΤΗΣΕΙΣ»;
+  the daily cap, $1 proposed; the privacy note).
+- **Then, wiring it to the site** (the spec, 4.5 to 4.7), each step on the owner's word,
+  deployed as always through `ccr-1361f1a7-dcpo60` with the owner naming the commit: the
+  site's worker writes a job (the search, its 30 products with descriptions) to a folder;
+  a service of its own, `picwise-assist` (its own system user, its own virtual environment
+  from `deployment/server/requirements-ai.txt`, the key in `/etc/picwise/assist.env`
+  written by `server-deploy.yml` from the secret, never in `picwise.env` or the site's
+  service), calls the API, checks and writes the result; the page holds an empty line and
+  a small script that asks the site for the result; the shops' words become links to their
+  search with the count the catalogue gives when the result is served; the cap per UTC day
+  and 30 calls a minute; the 24 h cache. The live time-out: answers took up to 9.2 s, and
+  the page never waits, so about 15 s.
+- **The account** (05/11): the Claude Console, an Individual organisation («Νικος's
+  Individual Org»), $10 of credit bought with a European VAT number, auto-reload off (the
+  dashboard showed «Turn on auto-reload»), the Start tier ($500 a month cap); the key
+  `picwise-server`, never expiring, Default workspace, linked to the owner, in GitHub's
+  secrets as `ANTHROPIC_API_KEY` (the first key, which expired on 5 December, deleted).
+  Spent: the preflights a fraction of a cent each, the first measure $0.0623, the second
+  $0.1111.
+- **Branches:** `ccr-4f47068a-99ikwe` holds all of `ccr-f9cf1b70-rzslft` (fast-forwarded)
+  and this work; start from it. The deploying branch `ccr-1361f1a7-dcpo60` was not touched
+  (`a7539b9`, item 2 live). No workflow runs on a push to the working branch but
+  `ai-key-check.yml` and `ai-measure.yml`, each only when its own file changes.
+- **The owner's order** (05/11): the AI part (c) first, then (a) the classifier, then (b)
+  the sentence from the counts (the spec, section 5).
+- **Seen through the AI's `no` answers** (the kind items stay parked, the owner's word):
+  products of another kind on a kind's page (a fridge magnet among fridges, cake pans and a
+  play set among frying pans, dummy AirPods among headphones, iPad cases among tablets,
+  galvanised iron plates among irons, manual razors among electric shavers, a filter washer
+  among the 3 washing machines); kinds with no product (dishwasher, air purifier, child car
+  seat, high chair); English "best" and "cheap" read as words to match. Material for (a).
+- Small notes: `actions/setup-python@v5` warns that Node 20 is deprecated (it runs on
+  Node 24); the lexicon holds 312 kinds (the map below says 278).
+
+## Before (2026-11-05): the AI layer's spec, the key, its core and two measures
 
 - **Latest (05/11, about 22:45 UTC): the second measure run and read** (owner: «Ναι»; run
   `42120003523`; off again): 119 asked, a sentence for 39 (23 before), the shops' words
