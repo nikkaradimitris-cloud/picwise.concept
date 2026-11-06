@@ -18,9 +18,10 @@ passes; one that fails is not shown, and the page says nothing about it.
 
 When no product fits, there is no sentence (owner, 2026-11-05: «ΟΤΑΝ ΔΕΝ ΒΡΙΣΚΕΙ ΚΑΤΙ ΝΑ
 ΜΗΝ ΛΕΕΙ ΔΕΝ ΒΡΕΘΗΚΕ», then «ΣΩΣΤΑ»), only the words the shops use for the need, each
-kept when it stands in a title of the products given, as a whole word, and is no brand,
-no word of quality or price, and not the kind's own name; the page offers each as a search
-only with the count the catalogue gives it (`shop_words.verified_shop_words`).
+kept when it stands as a whole word in a title of the products given and not answered
+`no`, and is no brand, no word of quality or price, and not the kind's own name; the page
+offers each as a search only with the count the catalogue gives it
+(`shop_words.verified_shop_words`).
 """
 from __future__ import annotations
 
@@ -186,8 +187,9 @@ def check_answer(answer: Any, complex_search: ComplexSearch, *, stop_reason: str
         return _withheld(f"{count - len(seen)} of the {count} products not answered", yes, no, unclear, proof, unproved)
 
     if not yes:
-        # No sentence when nothing fits: the shops' words for the need, those that pass.
-        words = shop_words_that_pass(answer.get("shop_words"), complex_search)
+        # No sentence when nothing fits: the shops' words for the need, those that pass,
+        # never from a product answered `no`.
+        words = shop_words_that_pass(answer.get("shop_words"), complex_search, rejected=no)
         return Checked(sentence="", yes=yes, no=no, unclear=unclear, failure="", shop_words=words,
                        unproved=unproved)
     sentence = " ".join(str(answer.get("sentence") or "").split())
@@ -197,13 +199,19 @@ def check_answer(answer: Any, complex_search: ComplexSearch, *, stop_reason: str
     return Checked(sentence=sentence, yes=yes, no=no, unclear=unclear, failure="", proof=proof, unproved=unproved)
 
 
-def shop_words_that_pass(words: Any, complex_search: ComplexSearch) -> tuple[str, ...]:
+def shop_words_that_pass(
+    words: Any, complex_search: ComplexSearch, *, rejected: tuple[int, ...] = ()
+) -> tuple[str, ...]:
     """The words the AI gave for the need, each kept only when it stands as a whole word
     or phrase in a title of the products it was given, is at most three words, and is
-    no brand of them, no word of quality, price or judgement, and not the kind's name."""
+    no brand of them, no word of quality, price or judgement, and not the kind's name.
+    A title of a product answered `no` (`rejected`) gives none: the fourth measure's
+    "Skinguard" came from a manual razor among electric shavers, and its button would
+    have shown that razor."""
     if not isinstance(words, list):
         return ()
-    titles = [candidate.title for candidate in complex_search.candidates]
+    rejected_numbers = set(rejected)
+    titles = [candidate.title for candidate in complex_search.candidates if candidate.number not in rejected_numbers]
     brands = {candidate.brand.lower() for candidate in complex_search.candidates if candidate.brand}
     kind = complex_search.kind_name.lower()
     kept: list[str] = []

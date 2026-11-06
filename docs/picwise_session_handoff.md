@@ -1,11 +1,12 @@
 # PicWise — session handoff
 
 Current state for whoever picks the project up next. Updated 2026-11-06 (**next: the
-owner's answers on the AI layer's decisions (its spec, section 6), asked after its fourth
-measure, run on 06/11 and read by hand: 57 sentences, none wrong; its core built, tested
-and measured four times on the server's catalogue, branch `ccr-4f47068a-99ikwe`, nothing
-on the site; the Anthropic key in GitHub's secrets; no more kind-by-kind fixes (the
-owner)**;
+owner's answers on how the AI layer's fitting products are ranked first and marked, and
+on the privacy wording; decided by the owner on 06/11: marked and first, one euro a day,
+third parties not named; its fourth measure read by hand, 57 sentences, none wrong; its
+core built, tested and measured four times on the server's catalogue, branch
+`ccr-4f47068a-99ikwe`, nothing on the site; the Anthropic key in GitHub's secrets; no
+more kind-by-kind fixes (the owner)**;
 **item 2 live
 since 2026-11-05 12:54 UTC, run `42028878547`: a shelf's kind read against its aisle,
 doubtful products found by their words; searches of a kind with a wrong card 31 -> 7 of
@@ -23,17 +24,24 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-06): pick up here -- start here
 
-- **START HERE: the owner's answers on the AI layer's decisions (its spec, section 6).**
-  After the fourth measure (run `42197695021`, on the owner's word «Προχώρα»; on in
-  `2c02b5f`, off again in the commit that records it), the owner was told, in Greek, the
-  numbers and the two doubtful sentences, and asked four decisions, each with a proposal:
-  (1) is this enough to go on to wiring the site (no wrong sentence among 57)? yes
-  proposed, the one doubtful button fixed first (below); (2) the daily cap: $1 proposed
-  (about 900 complex searches; spent so far about $0.43 of the $10 credit); (3) a mark on
-  the cards the AI reads as fitting, or the sentence alone: the sentence alone proposed;
-  (4) a line in the privacy page that a complex search and the products shown are sent to
-  Anthropic to be read: yes proposed, the wording the owner's. Their answers decide the
-  wiring (below), each step on the owner's word.
+- **START HERE: the owner's answers to four proposals of 06/11, then the build.** After
+  the fourth measure (run `42197695021`, on the owner's word «Προχώρα»; on in `2c02b5f`,
+  off again in `a440390`) the owner decided (the spec, 4.4, 4.6, 4.7 and section 6, with
+  their words): the products the AI reads as fitting are marked in words and to the eye,
+  and ranked first; the daily cap is one euro ($1.00 in code); the privacy page says that
+  complex searches may be sent to third parties for processing, naming no company («δεν
+  θέλω να αναφέρω την εταιρεία»). Put to the owner, in Greek, not yet answered: (1) the
+  order: the fitting first, in today's order among them (offers, then cheapest), then the
+  rest; the Recommended chosen among the fitting; (2) the time: the page at once as today,
+  the fitting moving up with their mark when the answer comes (about 5 s, up to 11 s);
+  (3) the mark: a ✓ and the product's own words in quotes, and under the sentence
+  "Checked against the shops' own words", naming no AI; (4) the privacy draft (the spec,
+  4.6). With the answers: `PROJECT_RULES.md` sections 2 and 5, `docs/MISSION.md` and the
+  Decision Contract changed for the order, each with the owner's words; then the wiring
+  (below), each step on the owner's word. Built on 06/11, when the owner asked what "the
+  button" was (the shops' words of 05/11, offered as searches when no product fits): the
+  shops' words never come from the title of a product answered `no` (the fourth run's
+  "Skinguard (1)" came from a manual razor), 40 tests.
 - **What the fourth run found** (the catalogue of 06/11 04:24 UTC, 595,688 products, as
   the third; the spec, 4.8, has it all): 118 asked; a sentence for 57 (52 in the third; 27
   of them for Greek searches), the shops' words for 10 (14 words), nothing for 50, withheld
@@ -47,9 +55,10 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   unproved `yes`). Buttons: "Skinguard (1)" for "electric shaver for sensitive skin"
   doubtful (the word of a manual razor the AI answered `no`); "Cordless" for a travel iron
   and "Ryzen AI 5 · Core i7" for video editing loose.
-- **Proposed, not built:** the shops' words only from the titles of products not answered
-  `no` (`picwise_ai.checks.shop_words_that_pass`, given the verdicts), which drops
-  "Skinguard"; with a test, and a fifth measure only if the owner wants one.
+- **Built since the fourth run:** the shops' words only from the titles of products not
+  answered `no` (`picwise_ai.checks.shop_words_that_pass`, given the verdicts), which
+  drops "Skinguard"; a test; not measured again (a fifth measure only if the owner wants
+  one).
 - **Built for the fourth run** (`afa7e53`, owner: «Προχώρα»): in
   `picwise_ai.request.SYSTEM_PROMPT`, a product not of the kind shown is `no`; an age the
   title states decides, whatever the description says; "suitable for all skin types" shows

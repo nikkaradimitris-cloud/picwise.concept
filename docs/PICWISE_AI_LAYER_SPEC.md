@@ -280,6 +280,31 @@ Whether the cards it reads as fitting may carry a mark, or the ones it reads as 
 fitting be left out, is the owner's (section 6). Proposed: the sentence alone first, since
 a mark would put an AI reading on a product, and leaving products out changes the answer.
 
+**Changed by the owner on 2026-11-06**, after the fourth measure: «Όταν η αναζήτηση είναι
+συνθετή και το ai έχει εμπλακεί στον ευρετηριασμό τα προϊόντα που υποδεικνύει πρέπει να
+έχουν λεκτική αναφορά αλλά και οπτική σημείωση καθώς πρέπει να κατατάσσονται και πρώτα».
+In a complex search the AI was asked about, the products it reads as fitting (each `yes`
+proved by the product's own words, `checks._proved`) carry a mark in words and one to the
+eye, and come first. Nothing is left out. When the checks withhold the answer, the page
+stays as it is.
+
+Proposed to the owner on 06/11, not yet answered; until then nothing of it is built, and
+`PROJECT_RULES.md` (sections 2 and 5), `docs/MISSION.md` and the Decision Contract keep
+today's order, to be changed with the answers:
+
+- **The order:** the products read as fitting first, in today's order among them (those
+  a current offer covers first, then cheapest first), then the rest in today's order; the
+  Recommended chosen among the fitting ones by today's rule.
+- **The time:** the page comes at once, as today: an answer takes about 5 s, up to 11 s,
+  and results are never held back (`PROJECT_RULES.md` section 9). When the answer comes,
+  the fitting products move to the top with their mark and the sentence appears; the same
+  search within the cache's 24 hours comes at once in that order.
+- **The mark:** a ✓ and, under the title, the product's own words that show it, in quotes
+  ("Quiet Mark Approved"); inside the card, the card's own markup unchanged (the working
+  gotchas of the handoff: no other class on its `article`).
+- **The line under the sentence:** "Checked against the shops' own words", naming no AI
+  (the owner, of the privacy page: «δεν θέλουμε να αποδομείται ο τρόπος που δουλεύουμε»).
+
 ### 4.5 Never delaying the page
 
 - The site's worker answers the search as today. For a complex search it writes a small
@@ -334,6 +359,22 @@ only it has the SDK. A visitor whose browser runs no script, as most bots, costs
 - **The deployment** (`server-deploy.yml`) writes the key to a file only `picwise-assist`
   reads (`/etc/picwise/assist.env`, mode 0600): not to `picwise.env`, not to the site's
   service.
+- **The privacy page** (`picwise_surface.legal.render_privacy_page`), changed when the
+  layer goes live, not before. The owner, 2026-11-06: «Σχετικά με το απόρρητο πρέπει να
+  γράψουμε ότι το picwise σε σύνθετη αναζήτηση ιόπου αυτό κρίνεται απαραίτητο στέλνει τα
+  δεδομένα για επεξεργασία σε τρίτα πρόσωπα για βελτίωση του ευρετηριασμού» (the meaning,
+  not the wording), and «δεν θέλω να αναφέρω την εταιρεία εμείς έχουμε απόρρητο και δεν
+  θέλουμε να αποδομείται ο τρόπος που δουλεύουμε». Recipients may be named by category
+  (UK GDPR and GDPR, article 13(1)(e)); a transfer outside the UK and the EEA is stated
+  (13(1)(f)). Drafted, put to the owner on 06/11, not yet answered: a section "Complex
+  searches": "For some searches that ask for something specific, such as “quiet washing
+  machine”, PicWise may send the words of the search and the details of the products
+  found to a service provider, which processes them for PicWise to improve how products
+  are matched to searches. Nothing that identifies you is sent with them: no IP address
+  and no browser or device details. The provider may process them outside the United
+  Kingdom and the European Economic Area."; and under "Legal basis": "Complex searches:
+  PicWise's legitimate interest in matching products to searches." Whether the transfer
+  needs more words (its safeguards) is for a lawyer to say, if the owner wishes.
 - **The library:** the Anthropic SDK for Python, as agreed on 05/11, pinned with its hash
   and with the hash of every package it needs (`pip --require-hashes` asks it of all), in
   a requirements file and a virtual environment of its own. The site's
@@ -350,7 +391,9 @@ figure from each answer's `usage`).
 - **The cap, in code:** the service adds up each answer's cost (its `usage` at the listed
   prices) per UTC day, and stops asking at the cap; and it asks at most 30 times a minute,
   so a burst cannot spend a day's cap in minutes. The amount is the owner's (section 6).
-  Proposed: $1 a day.
+  Proposed: $1 a day. **The owner, 2026-11-06:** «Το όριο μπορεί να παραμείνει στο 1
+  ευρώ»: one euro a day, kept in code as $1.00, which is below it (the API is priced in
+  dollars); at the fourth measure's $0.00108 a search, about 900 complex searches a day.
 - **The cache:** the same search with the same products (their ids and prices) is
   answered from the first answer for 24 hours: the second visitor costs nothing.
 - **The prepaid credit** is the ceiling above the code's.
@@ -540,11 +583,11 @@ part, measured first on about 150 searches).
 | (a), with its numbers | may the classifier ever go against the aisle rule | no |
 | (b) | a Greek sentence for a Greek search | no: the site is in English |
 | (c), at the account | the credit, and the account's spend limit | the owner's plan is Pro, which carries no API credit: $10 bought, reload off, which is then the ceiling; a spend limit is not needed |
-| (c), before it is built | the daily cap in code | $1 a day |
-| (c), with the measure | the bar to go live | no wrong sentence among those shown |
-| (c), with the measure | marks on the cards, or products left out | the sentence alone |
+| (c), before it is built | the daily cap in code | $1 a day; **the owner (06/11): one euro a day**, $1.00 in code (4.7) |
+| (c), with the measure | the bar to go live | no wrong sentence among those shown; met by the fourth measure (06/11) |
+| (c), with the measure | marks on the cards, or products left out | the sentence alone; **the owner (06/11): the fitting products marked in words and to the eye, and first**; nothing left out; the details put to the owner (4.4) |
 | (c), with the measure | real searches from the access log for the measure | written searches only |
-| (c), before it goes live | the privacy note: searches may be sent to Anthropic | wording and place, the owner's |
+| (c), before it goes live | the privacy note: searches may be sent to Anthropic | wording and place, the owner's; **the owner (06/11): "third parties", the company not named**; a draft put to the owner (4.6) |
 
 ## 7. Not in this spec
 

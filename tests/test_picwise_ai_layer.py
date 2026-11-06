@@ -291,6 +291,22 @@ class TheChecks(unittest.TestCase):
         self.assertEqual(checked.shop_words, ("EcoWash", "10kg 1400rpm", "1400rpm"))
         self.assertEqual(checked.sentence, "")
 
+    def test_the_shops_words_never_from_a_product_answered_no(self) -> None:
+        # The fourth measure: "Skinguard" came from "Gillette Skinguard Razor", a manual
+        # razor the AI itself answered `no` among electric shavers; its button would have
+        # shown that razor. A word standing only in such a title is dropped.
+        checked = check_answer(
+            _answer("", ("no", "unclear", "unclear"), shop_words=("1400rpm", "EcoWash")),
+            _quiet(), stop_reason="end_turn",
+        )
+        self.assertEqual(checked.shop_words, ("EcoWash",))
+        self.assertEqual(checked.no, (1,))
+        # The same words, no product answered `no`: both stand.
+        checked = check_answer(
+            _answer("", ("unclear",) * 3, shop_words=("1400rpm", "EcoWash")), _quiet(), stop_reason="end_turn",
+        )
+        self.assertEqual(checked.shop_words, ("1400rpm", "EcoWash"))
+
     def test_the_shops_words_only_when_none_fits(self) -> None:
         checked = check_answer(_answer(GOOD, shop_words=("EcoWash",)), _quiet(), stop_reason="end_turn")
         self.assertTrue(checked.shown)
