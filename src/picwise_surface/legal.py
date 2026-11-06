@@ -21,6 +21,8 @@ OPERATOR_ADDRESS = "53 N. Notara Street, Piraeus, Greece"
 OPERATOR_VAT = "EL120948460"
 PUBLIC_CONTACT_EMAIL = "contact.picwise@subby.cloud"
 LAST_UPDATED = "1 November 2026"
+# The privacy policy changed on its own, with the complex searches (owner, 2026-11-06).
+PRIVACY_LAST_UPDATED = "6 November 2026"
 
 SHORT_AFFILIATE_NOTICE = (
     "PicWise earns a commission from some shops, through Awin, when you buy after following "
@@ -203,6 +205,16 @@ def render_privacy_page() -> str:
         "Your browser does the listening with its own speech service, not PicWise: in Google Chrome the audio is sent to Google to be turned into text, "
         "and in Microsoft Edge and Apple Safari to Microsoft's or Apple's service, under their own privacy policies. "
         "PicWise receives only the words, as a typed search, and never the audio.</p>"
+        # The owner, 2026-11-06: «...το picwise σε σύνθετη αναζήτηση ιόπου αυτό κρίνεται
+        # απαραίτητο στέλνει τα δεδομένα για επεξεργασία σε τρίτα πρόσωπα για βελτίωση του
+        # ευρετηριασμού», naming no company («δεν θέλω να αναφέρω την εταιρεία»); this
+        # wording accepted («Ναι, συμφωνώ με όλα, προχώρα»; docs/PICWISE_AI_LAYER_SPEC.md, 4.6).
+        "<h2>Complex searches</h2>"
+        "<p>For some searches that ask for something specific, such as \u201cquiet washing machine\u201d, "
+        "PicWise may send the words of the search and the details of the products found to a service provider, "
+        "which processes them for PicWise to improve how products are matched to searches. Nothing that "
+        "identifies you is sent with them: no IP address and no browser or device details. The provider may "
+        "process them outside the United Kingdom and the European Economic Area.</p>"
         "<h2>Hosting</h2>"
         "<p>PicWise runs on a server of OVHcloud in London, United Kingdom, which processes the technical logs above for PicWise.</p>"
         "<h2>Links to shops</h2>"
@@ -211,7 +223,9 @@ def render_privacy_page() -> str:
         "<p>See the <a href=\"/cookies\">Cookie Policy</a>. PicWise sets no cookies. Your favourites, and your searches if "
         "you switch History on, are kept by your own browser in its local storage, and are never sent to PicWise.</p>"
         "<h2>Legal basis</h2>"
-        "<p>Technical logs: PicWise's legitimate interest in running a working and secure website. Emails: replying to your request. If PicWise ever uses non-essential cookies, it will ask for your consent first.</p>"
+        "<p>Technical logs: PicWise's legitimate interest in running a working and secure website. Emails: replying to your request. "
+        "Complex searches: PicWise's legitimate interest in matching products to searches. "
+        "If PicWise ever uses non-essential cookies, it will ask for your consent first.</p>"
         "<h2>How long data is kept</h2>"
         "<p>Technical logs are kept only as long as needed for operation and security, and emails as long as needed to answer them and for legal obligations.</p>"
         "<h2>Your rights</h2>"
@@ -221,7 +235,7 @@ def render_privacy_page() -> str:
         "<h2>Changes and contact</h2>"
         "<p>PicWise may update this policy as the service changes; the date below shows the latest version.</p>"
         f"<p>Email: {PUBLIC_CONTACT_EMAIL}</p>"
-        f"<p>Last updated: {LAST_UPDATED}</p>"
+        f"<p>Last updated: {PRIVACY_LAST_UPDATED}</p>"
     )
     return _render_legal_page(
         title="Privacy Policy — PicWise",

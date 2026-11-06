@@ -231,6 +231,70 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(list((self.directory / "jobs").iterdir()), [])
 
 
+class DeploymentTests(unittest.TestCase):
+    """The service on the server: its own user and key, nothing of the site's."""
+
+    SERVER = ROOT / "deployment" / "server"
+
+    def test_the_service_has_its_own_user_key_and_folder_only(self) -> None:
+        unit = (self.SERVER / "picwise-assist.service").read_text(encoding="utf-8")
+        for line in ("User=picwise-assist", "Group=picwise-assist", "EnvironmentFile=-/etc/picwise/assist.env",
+                     "ReadWritePaths=/srv/picwise/assist", "ProtectSystem=strict", "NoNewPrivileges=yes",
+                     "MemoryMax=384M", "Restart=on-failure", "/srv/picwise/venv-ai/bin/python",
+                     '"$$release/deployment/server/assist_service.py" --dir /srv/picwise/assist'):
+            self.assertIn(line, unit)
+        settings = "\n".join(line for line in unit.splitlines() if not line.lstrip().startswith("#"))
+        self.assertNotIn("/srv/picwise/shared", settings)
+        self.assertNotIn("picwise.env", settings)
+
+    def test_the_site_never_has_the_key(self) -> None:
+        web = (self.SERVER / "picwise-web.service").read_text(encoding="utf-8")
+        self.assertIn("Environment=PICWISE_ASSIST_DIR=/srv/picwise/assist", web)
+        self.assertIn("ReadWritePaths=/srv/picwise/shared -/srv/picwise/assist", web)
+        self.assertNotIn("EnvironmentFile", web)
+        self.assertNotIn("ANTHROPIC", web)
+        workflow = (ROOT / ".github" / "workflows" / "server-deploy.yml").read_text(encoding="utf-8")
+        site_file = workflow[workflow.index('echo "# The site\'s secrets'):workflow.index('> "$RUNNER_TEMP/picwise.env"')]
+        self.assertNotIn("ANTHROPIC", site_file)
+        self.assertIn("ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}", workflow)
+        self.assertIn("""printf "ANTHROPIC_API_KEY='%s'\\n" "$ai_key\"""", workflow)
+        self.assertIn("ssh picwise 'umask 077; cat > ~/picwise-assist.env' < \"$RUNNER_TEMP/assist.env\"", workflow)
+        self.assertIn("~/picwise.env ~/picwise-assist.env;", workflow)
+        self.assertNotIn('echo "$ai_key"', workflow)
+        self.assertNotIn("echo $ai_key", workflow)
+
+    def test_the_deployment_makes_the_jobs_folder_only_with_the_key(self) -> None:
+        deploy = (self.SERVER / "deploy.sh").read_text(encoding="utf-8")
+        self.assertIn("ASSIST_ENV_FILE=${4:-}", deploy)
+        self.assertIn("useradd --system --user-group", deploy)
+        self.assertIn("usermod -a -G picwise-assist picwise", deploy)
+        with_key = deploy[deploy.index("grep -q '^ANTHROPIC_API_KEY=' \"$ASSIST_ENV_FILE\"; then"):deploy.index('echo "Anthropic key: not set')]
+        self.assertIn('install -o root -g root -m 600 "$ASSIST_ENV_FILE" /etc/picwise/assist.env', with_key)
+        self.assertIn('install -d -o picwise -g picwise-assist -m 2770 "$ASSIST/jobs"', with_key)
+        self.assertIn('rm -rf -- "${ASSIST:?}/jobs"', deploy)
+        self.assertIn('install -m 644 "$RELEASE/deployment/server/picwise-assist.service" /etc/systemd/system/', deploy)
+        self.assertIn("systemctl disable --now picwise-assist.service", deploy)
+        self.assertIn('! -path "$VENV" ! -path "$AI_VENV" -exec rm -rf {} +', deploy)
+        self.assertIn('--require-hashes \\\n    -r "$AI_REQUIREMENTS"', deploy)
+
+
+class PrivacyPageTests(unittest.TestCase):
+    def test_the_privacy_page_says_it_as_the_owner_accepted_naming_no_company(self) -> None:
+        from picwise_surface.legal import render_privacy_page
+
+        page = render_privacy_page()
+        self.assertIn("<h2>Complex searches</h2>", page)
+        self.assertIn("PicWise may send the words of the search and the details of the products found to a "
+                      "service provider", page)
+        self.assertIn("Nothing that identifies you is sent with them: no IP address and no browser or device "
+                      "details.", page)
+        self.assertIn("outside the United Kingdom and the European Economic Area", page)
+        self.assertIn("Complex searches: PicWise's legitimate interest in matching products to searches.", page)
+        self.assertIn("Last updated: 6 November 2026", page)
+        for name in ("Anthropic", "Claude", "Haiku", "OpenAI", " AI "):
+            self.assertNotIn(name, page)
+
+
 class EntryTests(unittest.TestCase):
     def test_without_a_key_it_asks_nothing_and_stops(self) -> None:
         import assist_service

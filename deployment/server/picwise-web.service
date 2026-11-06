@@ -24,6 +24,12 @@ Environment=PICWISE_OFFERS_FILE=/srv/picwise/shared/offers/offers.json
 # shown (owner, 2026-11-01: «Όταν το προϊόν δεν φέρνει φωτογραφία δεν πρέπει να εμφανίζεται»).
 # Only the site reads it; the preparation keeps every product, so the check can ask again.
 Environment=PICWISE_GONE_PHOTOS_FILE=/srv/picwise/shared/photos/gone.json
+# The folder the site shares with picwise-assist, the AI layer's service: for a complex
+# search the site writes a job there and reads the answer; it never calls the API and is
+# never given the key (owner, 2026-11-06; docs/PICWISE_AI_LAYER_SPEC.md, 4.5). Without
+# its jobs/ folder, which the deployment makes only when the service has its key, the
+# site writes nothing there and its pages are as before.
+Environment=PICWISE_ASSIST_DIR=/srv/picwise/assist
 Environment=PYTHONDONTWRITEBYTECODE=1
 # The release in use is resolved once, at start: a worker gunicorn starts again later
 # loads the same code, even after a deployment has pointed `current` to a newer one.
@@ -41,7 +47,7 @@ PrivateTmp=yes
 PrivateDevices=yes
 ProtectSystem=strict
 ProtectHome=yes
-ReadWritePaths=/srv/picwise/shared
+ReadWritePaths=/srv/picwise/shared -/srv/picwise/assist
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectKernelLogs=yes

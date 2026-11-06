@@ -105,6 +105,8 @@ jobs:
           AWIN_FEED_URL: ${{ secrets.AWIN_FEED_URL }}
           AWIN_API_TOKEN: ${{ secrets.AWIN_API_TOKEN }}
           AWIN_PUBLISHER_ID: ${{ secrets.AWIN_PUBLISHER_ID }}
+          # The AI layer's key, for picwise-assist alone (owner, 2026-11-06; never the site's).
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           release_id="$(date -u +%Y%m%dT%H%M%SZ)-${GITHUB_SHA::7}"
           echo "RELEASE_ID=$release_id" >> "$GITHUB_ENV"
@@ -128,14 +130,24 @@ jobs:
           } > "$RUNNER_TEMP/picwise.env"
           if [ -n "$feed" ]; then echo "feed link: sent"; else echo "feed link: not in GitHub's secrets"; fi
           if [ -n "$token" ]; then echo "Awin token: sent"; else echo "Awin token: not in GitHub's secrets"; fi
+          # The AI layer's key in a file of its own, which deploy.sh gives only to
+          # picwise-assist (/etc/picwise/assist.env, root's, read by systemd); never printed.
+          ai_key=$(printf '%s' "$ANTHROPIC_API_KEY" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+          case "$ai_key" in *"'"*) echo "the Anthropic key holds a quote, which the file cannot carry"; exit 1 ;; esac
+          {
+            echo "# The AI layer's key, written by each deployment from GitHub's secrets; never in the repository."
+            if [ -n "$ai_key" ]; then printf "ANTHROPIC_API_KEY='%s'\n" "$ai_key"; fi
+          } > "$RUNNER_TEMP/assist.env"
+          if [ -n "$ai_key" ]; then echo "Anthropic key: sent"; else echo "Anthropic key: not in GitHub's secrets"; fi
           ssh picwise 'cat > ~/picwise-release.tar.gz' < "$RUNNER_TEMP/release.tar.gz"
           ssh picwise 'umask 077; cat > ~/picwise.env' < "$RUNNER_TEMP/picwise.env"
+          ssh picwise 'umask 077; cat > ~/picwise-assist.env' < "$RUNNER_TEMP/assist.env"
           ssh picwise 'cat > ~/picwise-deploy.sh' < deployment/server/deploy.sh
-          rm -f "$RUNNER_TEMP/picwise.env"
+          rm -f "$RUNNER_TEMP/picwise.env" "$RUNNER_TEMP/assist.env"
       - name: Deploy on the server
         run: |
-          ssh -n picwise "sudo bash ~/picwise-deploy.sh '$RELEASE_ID' ~/picwise-release.tar.gz ~/picwise.env;
-            status=\$?; rm -f ~/picwise-deploy.sh ~/picwise-release.tar.gz ~/picwise.env; exit \$status"
+          ssh -n picwise "sudo bash ~/picwise-deploy.sh '$RELEASE_ID' ~/picwise-release.tar.gz ~/picwise.env ~/picwise-assist.env;
+            status=\$?; rm -f ~/picwise-deploy.sh ~/picwise-release.tar.gz ~/picwise.env ~/picwise-assist.env; exit \$status"
       - name: Compare with the live site
         run: |
           ssh -f -N -M -S ~/.ssh/tunnel.sock -o ExitOnForwardFailure=yes -L 18016:127.0.0.1:8016 picwise
@@ -162,6 +174,9 @@ jobs:
             sudo journalctl -u picwise-photos.service -o cat --no-pager --since "-26h" | grep -E "^photos" | tail -n 2 || true
             sudo python3 -c "import json; d = json.load(open(\"/srv/picwise/shared/photos/gone.json\")); print(\"photos gone:\", len(d[\"gone\"]), \"of\", d[\"photos\"], \"checked\", d[\"checked_at\"])" 2>/dev/null || echo "photos gone: not checked yet"
             echo "memory of the site: $(ps -o rss= -u picwise | awk "{s+=\$1} END {printf \"%.0f MB\", s/1024}")"
+            echo "AI layer (picwise-assist): $(systemctl is-active picwise-assist), jobs folder: $(sudo test -d /srv/picwise/assist/jobs && echo on || echo off)"
+            spend="/srv/picwise/assist/spend/$(date -u +%F).json"
+            if sudo test -f "$spend"; then echo "AI spend today: $(sudo cat "$spend")"; else echo "AI spend today: none"; fi
             sudo python3 -c "import json; d = json.load(open(\"/srv/picwise/shared/public/prepared.json\")); print(\"prepared:\", d.get(\"prepared\"), d.get(\"prepared_at\", d.get(\"reason\")), d.get(\"products\"), \"products,\", d.get(\"shops\"), \"shops\")"
             echo "disk: $(sudo du -sh /srv/picwise | cut -f1) in /srv/picwise; $(df -h --output=avail / | tail -1 | tr -d " ") free"
           '

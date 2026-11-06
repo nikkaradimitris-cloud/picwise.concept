@@ -68,6 +68,8 @@ class _AssistMixin(_PageMixin):
     def setUp(self) -> None:
         self._serve(self._kettles(PRICES))
         self.directory = Path(tempfile.mkdtemp())
+        # The deployment makes `jobs/` only when the service has its key.
+        (self.directory / "jobs").mkdir()
         previous = os.environ.get(store.ASSIST_DIR_ENV)
         os.environ[store.ASSIST_DIR_ENV] = str(self.directory)
         self.addCleanup(
@@ -214,6 +216,13 @@ class AsBeforeTests(_AssistMixin, unittest.TestCase):
         self.assertNotIn('id="pw-results"', page)
         self.assertEqual(self._jobs(), [])
         self.assertEqual(json.loads(_get("/assist-status", {"k": "a" * 32})[2]), {"state": "none"})
+
+    def test_a_server_whose_service_has_no_key_writes_no_job(self) -> None:
+        # The deployment leaves `jobs/` out when GitHub holds no key.
+        (self.directory / "jobs").rmdir()
+        page = self._search_page()
+        self.assertNotIn("pw-assist", page)
+        self.assertFalse((self.directory / "jobs").exists())
 
 
 if __name__ == "__main__":

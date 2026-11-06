@@ -48,9 +48,14 @@ _KEY = re.compile(r"^[0-9a-f]{32}$")
 
 
 def assist_directory() -> Path | None:
-    """The shared folder, when the server names one; None for a site without the layer."""
+    """The shared folder, when the server names one and it holds `jobs/`; None for a site
+    without the layer. The deployment makes `jobs/` only when the service has its key
+    (`deploy.sh`), so a server without the key writes no job and its pages are as before."""
     configured = str(os.environ.get(ASSIST_DIR_ENV) or "").strip()
-    return Path(configured) if configured else None
+    if not configured:
+        return None
+    directory = Path(configured)
+    return directory if (directory / "jobs").is_dir() else None
 
 
 def utc_now() -> datetime:
