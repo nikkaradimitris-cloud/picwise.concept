@@ -454,7 +454,9 @@ sales figure between them. In their place:
    ruled on 2026-10-12; specifications and codes are shown when present, never required
 4. cheapest first, by product price alone, with no delivery cost; **after the Recommended,
    the products a current shop offer covers come first**, cheapest first among them, then
-   the rest (owner, 2026-11-01; "Offers first" below)
+   the rest (owner, 2026-11-01; "Offers first" below); in a complex search, the products
+   that fit the buyer's need before all (owner, 2026-11-06; "The products that fit a
+   complex search first" below)
 5. the same product (same EAN/GTIN or, without it, same brand and manufacturer code,
    MPN; owner, 2026-10-16) shown once, from the cheapest shop that has it in stock;
    neither code, no joining
@@ -616,6 +618,8 @@ of offers above the results, or products with an offer first), whether that chan
 
 1. **The order.** The Recommended first; then the products a current shop offer covers,
    cheapest first; then the rest, cheapest first. "More" opens the next four in that order.
+   In a complex search, the products that fit the buyer's need come first, in this order
+   among them (owner, 2026-11-06; "The products that fit a complex search first" below).
 2. **The Recommended** (asked whether the Recommended should be the offer, with the choices
    put to them; the engineer's advice was to keep it neutral: «Εάν υπάρχει προσφορά να
    προτείνει την προσφορά»; then, of a live search with an offer and a Recommended not on
@@ -654,3 +658,41 @@ of offers above the results, or products with an offer first), whether that chan
    cheapest first").
 5. **No one pays for a place.** PicWise is paid nothing to show an offer or to put it
    first; commission still never decides the order.
+
+## The products that fit a complex search first, decided by the owner, 2026-11-06
+
+> «Όταν η αναζήτηση είναι συνθετή και το ai έχει εμπλακεί στον ευρετηριασμό τα προϊόντα
+> που υποδεικνύει πρέπει να έχουν λεκτική αναφορά αλλά και οπτική σημείωση καθώς πρέπει
+> να κατατάσσονται και πρώτα»
+
+Then, to the order, the time and the mark proposed: «Ναι, συμφωνώ με όλα, προχώρα».
+
+1. **When.** A complex search: a search for a kind answered with products, of which the
+   page says "PicWise could not match" some words of need (`docs/PICWISE_AI_LAYER_SPEC.md`,
+   4.1). The AI reads up to 30 products of the answer in the page's order; a product fits
+   only where its own title or description shows it, in words code finds there letter for
+   letter (4.3). Nothing else changes the order: no answer, an answer the checks withhold,
+   an answer with no product that fits, or the day's cap reached leave the page as it is.
+2. **The order.** The products that fit first, in the order of "Offers first" among them
+   (the products a current shop offer covers, cheapest first, then the rest, cheapest
+   first); then the other products, in that same order. "More" opens the next four in
+   that order.
+3. **The Recommended** is chosen among the products that fit, by the rules of "Price
+   first" (7) and "Offers first" (2) applied to them: on offer when an offer covers one of
+   them, else the middle one in price with an EAN/GTIN; with fewer than three that fit,
+   none, as for any answer of fewer than three. Its line reads "On offer" when it was
+   chosen for its offer, else "Mid-priced of those that fit": "Mid-priced for this
+   category" would not be true of the middle of a part of the answer (a reading needed to
+   build the rule).
+4. **The mark.** Each product that fits carries a ✓ and, under its title, its own words
+   that show it, in quotes ("Quiet Mark Approved"): the shop's words, never the AI's.
+   Above the products stand the AI's sentence ("3 of these 30 washing machines say they
+   are quiet, from 429.99 GBP") and, under it, "Checked against the shops' own words",
+   naming no AI (the owner: «δεν θέλουμε να αποδομείται ο τρόπος που δουλεύουμε»).
+5. **The time.** The page never waits (`PROJECT_RULES.md` section 9): it comes at once in
+   the usual order; when the answer comes (about 5 s in the fourth measure, 11 s at most),
+   the products that fit move up with their mark and the sentence appears. The same search
+   within 24 hours comes at once in that order.
+6. **Not commission.** Fitting a need the buyer typed is the buyer's own criterion; no one
+   pays for it, and commission still never decides the order.
+7. **Google.** Only the site's own search does this; its pages carry `noindex`.

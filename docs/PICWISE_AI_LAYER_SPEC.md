@@ -52,8 +52,11 @@ step.
    products a current shop offer covers, then the rest, each cheapest first), the
    Recommended's rule, "in stock only" or "the kind asked for only" (`PROJECT_RULES.md`
    sections 2, 3 and 5; `docs/PICWISE_DECISION_CONTRACT.md`). Part (a) can only settle
-   the kind of a product the rules left doubtful, never against the aisle rule; parts (b)
-   and (c) only add a sentence.
+   the kind of a product the rules left doubtful, never against the aisle rule; part (b)
+   only adds a sentence. Part (c) adds a sentence and, as the owner decided on
+   2026-11-06, puts first the products whose own words show they fit the need, the
+   Recommended chosen among them by its own rule (4.4; the Decision Contract, "The
+   products that fit a complex search first").
 2. **Nothing fake** (`PROJECT_RULES.md` section 4; `concept.picwise.txt` section 20):
    every number on the page is computed from the products of the answer. A sentence
    written with AI says so, states no confidence or score, and is checked by code before
@@ -268,8 +271,9 @@ say is bounded by the checks.
 - one sentence, at most 30 words.
 
 A failed check, a refusal (`stop_reason: "refusal"`; Haiku 5.5 has no server-side
-fallback), no answer within 8 s, or the day's cap reached: nothing is shown, the page
-stays as it is, and the service's log says why.
+fallback), no answer within 15 s (the fourth measure's answers took up to 11.1 s), or the
+day's cap reached: nothing is shown, the page stays as it is, and the service's log says
+why.
 
 ### 4.4 What the page shows
 
@@ -288,9 +292,11 @@ proved by the product's own words, `checks._proved`) carry a mark in words and o
 eye, and come first. Nothing is left out. When the checks withhold the answer, the page
 stays as it is.
 
-Proposed to the owner on 06/11, not yet answered; until then nothing of it is built, and
-`PROJECT_RULES.md` (sections 2 and 5), `docs/MISSION.md` and the Decision Contract keep
-today's order, to be changed with the answers:
+Proposed to the owner on 06/11, and **accepted, all of it** («Ναι, συμφωνώ με όλα,
+προχώρα»); written the same day into `PROJECT_RULES.md` (sections 2 and 5),
+`docs/MISSION.md` and the Decision Contract ("The products that fit a complex search
+first"), where the Recommended's line among the products that fit reads "Mid-priced of
+those that fit" (a reading needed to build it):
 
 - **The order:** the products read as fitting first, in today's order among them (those
   a current offer covers first, then cheapest first), then the rest in today's order; the
@@ -313,8 +319,11 @@ today's order, to be changed with the answers:
 - A separate service, `picwise-assist` (systemd, like the server's other services, under
   a system user of its own), reads the jobs, calls the API, checks the answer and writes
   the result.
-- The script asks the site for the result for up to 10 s; the site reads a file, never the
-  API. A page whose result does not come shows nothing more.
+- The script asks the site for the result for up to 20 s; the site reads a file, never the
+  API. A page whose result does not come shows nothing more. When it comes with products
+  that fit, the script reads the same page again, which the site now answers in the new
+  order from the stored result, and puts its results in place: one rendering, on the
+  server, for both.
 
 So the site's four workers never wait for the API, only that service holds the key, and
 only it has the SDK. A visitor whose browser runs no script, as most bots, costs nothing.
@@ -375,6 +384,7 @@ only it has the SDK. A visitor whose browser runs no script, as most bots, costs
   Kingdom and the European Economic Area."; and under "Legal basis": "Complex searches:
   PicWise's legitimate interest in matching products to searches." Whether the transfer
   needs more words (its safeguards) is for a lawyer to say, if the owner wishes.
+  **Accepted by the owner on 06/11** («Ναι, συμφωνώ με όλα, προχώρα»).
 - **The library:** the Anthropic SDK for Python, as agreed on 05/11, pinned with its hash
   and with the hash of every package it needs (`pip --require-hashes` asks it of all), in
   a requirements file and a virtual environment of its own. The site's
@@ -585,9 +595,9 @@ part, measured first on about 150 searches).
 | (c), at the account | the credit, and the account's spend limit | the owner's plan is Pro, which carries no API credit: $10 bought, reload off, which is then the ceiling; a spend limit is not needed |
 | (c), before it is built | the daily cap in code | $1 a day; **the owner (06/11): one euro a day**, $1.00 in code (4.7) |
 | (c), with the measure | the bar to go live | no wrong sentence among those shown; met by the fourth measure (06/11) |
-| (c), with the measure | marks on the cards, or products left out | the sentence alone; **the owner (06/11): the fitting products marked in words and to the eye, and first**; nothing left out; the details put to the owner (4.4) |
+| (c), with the measure | marks on the cards, or products left out | the sentence alone; **the owner (06/11): the fitting products marked in words and to the eye, and first**; nothing left out; the order, the time and the mark proposed, accepted («Ναι, συμφωνώ με όλα, προχώρα»; 4.4) |
 | (c), with the measure | real searches from the access log for the measure | written searches only |
-| (c), before it goes live | the privacy note: searches may be sent to Anthropic | wording and place, the owner's; **the owner (06/11): "third parties", the company not named**; a draft put to the owner (4.6) |
+| (c), before it goes live | the privacy note: searches may be sent to Anthropic | wording and place, the owner's; **the owner (06/11): "third parties", the company not named**; the draft accepted (4.6) |
 
 ## 7. Not in this spec
 

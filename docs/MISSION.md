@@ -7,6 +7,11 @@
 >
 > Changed on 2026-11-01 by the owner: products a current shop offer covers come first
 > («Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο»; `PROJECT_RULES.md` §5).
+>
+> Changed on 2026-11-06 by the owner: in a complex search, the products whose own words
+> show they fit the buyer's need come first, marked («...πρέπει να έχουν λεκτική αναφορά
+> αλλά και οπτική σημείωση καθώς πρέπει να κατατάσσονται και πρώτα»; `PROJECT_RULES.md`
+> §2 and §5).
 
 Picwise finds the product the buyer asked for, shows only what is in stock, the products
 a current shop offer covers first and then cheapest first, and makes one honest pick.
@@ -27,6 +32,9 @@ For every purchase-intent query, Picwise must:
 - after the Recommended, put the products a current shop offer covers first, cheapest
   first among them, with the offer in the shop's own words and its end date (owner,
   2026-11-01)
+- in a complex search ("quiet washing machine"), put the products whose own words show
+  they fit the need first, in that same order among them, the Recommended chosen among
+  them, each marked with a ✓ and its own words (owner, 2026-11-06)
 - offer "More": the next 4 in that order, as often as the buyer asks
 - explain the recommendation briefly and clearly
 - include a clear CTA per choice
@@ -63,8 +71,9 @@ Picwise must not become:
 - The order, after the kind asked for and availability: the Recommended, then the
   products a current shop offer covers, then the rest, each cheapest first (owner,
   2026-11-01). The Recommended is a product on offer whenever a current shop offer covers
-  one, else the middle product in price order. No ratings are used. No
-  one pays for a place.
+  one, else the middle product in price order. In a complex search, the products that fit
+  the need come first in that order, and the Recommended is one of them (owner,
+  2026-11-06). No ratings are used. No one pays for a place.
 
 ## First Phase Boundary
 
