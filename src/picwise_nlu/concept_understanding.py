@@ -659,6 +659,15 @@ class ConceptReading:
     spec_fields: tuple[str, ...] = ()
     # "el" when the product was named in Greek or greeklish, "en" in English.
     head_language: str = ""
+    # Owner, 2026-11-07 (the debugging, «Ναι σε όλα» to "Did you mean ...?" rather than a
+    # guess): where each word the kind's name leaves stands. `need_words`: after a purpose
+    # word, what the product is for ("for school"). `words_after_name`: between the name
+    # and any purpose word, where English puts the noun that names the product ("tv
+    # stand", "laptop bag"). `product_words`: every word before the purpose word but the
+    # ones set aside, the words that name what is wanted.
+    need_words: tuple[str, ...] = ()
+    words_after_name: tuple[str, ...] = ()
+    product_words: tuple[str, ...] = ()
 
     @property
     def understood(self) -> bool:
@@ -1067,6 +1076,12 @@ def _understand_product_query(query: str, greek: bool) -> ConceptReading:
     concept = get_product_concepts_by_id()[head.concept_id]
     spec_fields = spec_fields_for_mega_category(concept.mega_category_id)
     head_positions = set(range(head.start, head.end))
+    purpose_at = next(
+        (i for i, token in enumerate(tokens) if token in _PURPOSE_WORDS and i not in head_positions),
+        len(tokens),
+    )
+    need_words: list[str] = []
+    words_after_name: list[str] = []
 
     filters: list[str] = []
     sources: dict[str, str] = {}
@@ -1109,6 +1124,11 @@ def _understand_product_query(query: str, greek: bool) -> ConceptReading:
         if token not in filters:
             filters.append(token)
             sources[token] = token
+        position = index - 1
+        if position > purpose_at:
+            need_words.append(token)
+        elif position >= head.end:
+            words_after_name.append(token)
 
     unknown_words = [term for term in filters if sources.get(term) == term and term not in {spec.token for spec in specs}]
     if head.cost >= 0.5 and head.end - head.start == 1 and len(unknown_words) >= 2:
@@ -1148,10 +1168,19 @@ def _understand_product_query(query: str, greek: bool) -> ConceptReading:
         exact=head.cost < 0.5,
         spec_fields=spec_fields,
         head_language=head.kind,
+        need_words=tuple(dict.fromkeys(need_words)),
+        words_after_name=tuple(dict.fromkeys(words_after_name)),
+        product_words=tuple(
+            token
+            for i, token in enumerate(tokens[:purpose_at])
+            if i not in condition.positions
+            and token not in CONNECTIVE_WORDS
+            and token not in _lexicon().english_judgements
+        ),
     )
 
 
-def suggest_product_names(query: str, *, limit: int = 3) -> tuple[str, ...]:
+def suggest_product_names(query: str, *, limit: int = 3, covering: tuple[str, ...] = ()) -> tuple[str, ...]:
     """Product names a query PicWise could not act on might have meant, to ask about.
 
     Used only to offer "Did you mean ...?" links when nothing was understood. A
@@ -1161,8 +1190,12 @@ def suggest_product_names(query: str, *, limit: int = 3) -> tuple[str, ...]:
     non-retail words are never turned into suggestions.
     """
     tokens = tuple(normalize_understanding_text(query).split())
-    if not tokens or understand_product_query(query).understood:
+    if not tokens or (not covering and understand_product_query(query).understood):
         return tuple()
+    # With `covering`, asked of a search whose reading left those words unexplained
+    # (`search_selection`): only names that take in one of them, so "laptop bgs" asks
+    # about a laptop bag, not a laptop.
+    covered = {normalize_understanding_text(word) for word in covering}
     if any(token in _NON_RETAIL_WORDS for token in tokens):
         # "car insurance" is not a misspelled car product.
         return tuple()
@@ -1203,9 +1236,14 @@ def suggest_product_names(query: str, *, limit: int = 3) -> tuple[str, ...]:
                 and span.cost >= 0.5
                 and is_known_english_word(tokens[span.start])
             )
+            and (not covered or any(token in covered for token in tokens[span.start:span.end]))
         ),
         key=lambda span: (span.cost, -(span.end - span.start), span.concept_id),
     )
+    if covered and any(span.end - span.start > 1 for span in spans):
+        # A name of several words that joins an unexplained word to the words the
+        # reading explained is the question: "laptop bgs" is a laptop bag, not a bag.
+        spans = [span for span in spans if span.end - span.start > 1]
     by_id = get_product_concepts_by_id()
     names: list[str] = []
     for span in spans:
@@ -2128,6 +2166,12 @@ def is_known_english_word(token: str) -> bool:
     if not token or not token.isascii():
         return False
     return token in _lexicon().english_spellings or token in _known_english_words()
+
+
+def kinds_named_by_word(word: str) -> frozenset[str]:
+    """The kinds whose English names hold this word: "coffee" is a word of coffee
+    machines' names, so a "coffee grinder" may be no angle grinder."""
+    return _lexicon().english_word_concepts.get(normalize_understanding_text(word), frozenset())
 
 
 def _in_the_singular(text: str) -> str:

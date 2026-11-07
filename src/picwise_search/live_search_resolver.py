@@ -734,6 +734,16 @@ def resolve_live_search(
                     if feed_opportunity_search and expose_selection:
                         reason_codes.append("provider_feed_opportunity_gate")
 
+    unsure_reading = provider_feed_selection_status == "unsure_reading"
+    if unsure_reading:
+        # The reading of a kind left words the kind's products cannot explain ("laptop
+        # bgs", "tv stand") and no product is what all the words name: the search is not
+        # said to be understood, nothing is shown, and the page asks which product was
+        # meant (owner, 2026-11-07: «Ναι σε όλα», "Did you mean ...?" rather than a guess).
+        concept_understood = False
+        resolver_state = "not_understood"
+        result_allowed = False
+        reason_codes.append("unsure_reading")
     if (
         not concept_understood
         and not provider_feed_selected_products
@@ -757,8 +767,11 @@ def resolve_live_search(
         and _normalized_text(raw_query)
     ):
         # Only when nothing else understood the search either: the index may have
-        # recognised it ("cordless dril") where the concept lexicon did not.
-        did_you_mean = suggest_product_names(raw_query)
+        # recognised it ("cordless dril") where the concept lexicon did not. For a
+        # reading unsure of its kind, the names that take in the words it left.
+        did_you_mean = suggest_product_names(
+            raw_query, covering=provider_feed_unmatched_query_terms if unsure_reading else ()
+        )
     understood_concept_name = None
     kind_choices: tuple[str, ...] = ()
     kind_choices_name = ""

@@ -95,7 +95,9 @@ class QualifiedQueriesStillDeliverTests(_FeedTestCase):
         ("comfortable office chair", "Office & Computer Chairs", ("comfortable",)),
         ("running shoes for men", "Athletic Shoes", ("men",)),
         ("quiet lawn mower", "Lawn Mowers", ("quiet",)),
-        ("cheap washing machine", "Washing Machines", ("cheap",)),
+        # "cheap" is set aside, as the words that judge are (owner, 2026-11-07;
+        # `tests/test_picwise_reading_rules_by_cause.py`): nothing to report.
+        ("cheap washing machine", "Washing Machines", ()),
         ("bicycle helmet for kids", "Bicycle Helmets", ("kids",)),
         ("coffee machine for office", "Coffee Machines", ("office",)),
     )
@@ -193,11 +195,12 @@ class PrecisionIsPreservedTests(_FeedTestCase):
     def test_the_product_named_before_with_is_the_one_bought(self) -> None:
         # "smartphone with good battery" names one product and a wish about it. The
         # wish cannot be confirmed from feed text, so it is reported, not guessed at,
-        # and "battery" never pulls in car batteries.
+        # and "battery" never pulls in car batteries. "good" judges, and is set aside
+        # (owner, 2026-11-07).
         selection = self._select("smartphone with good battery")
         self.assertEqual(selection.status, "selected")
         self.assertEqual(self._families(selection), {"Mobile Phones"})
-        self.assertEqual(set(selection.unmatched_query_terms), {"good", "battery"})
+        self.assertEqual(set(selection.unmatched_query_terms), {"battery"})
 
 
 class AccessoryProtectionTests(_FeedTestCase):

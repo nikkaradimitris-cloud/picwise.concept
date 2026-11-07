@@ -3,7 +3,8 @@ from __future__ import annotations
 import hashlib
 import re
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass, field
+from collections import Counter
+from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from typing import Any
 from urllib.parse import urlparse
@@ -21,9 +22,11 @@ from picwise_nlu.concept_understanding import (
     KindWordReading,
     read_kind_word,
     product_text_names_concept,
+    kinds_named_by_word,
     query_allows_context,
     read_condition_request,
     strip_accents_if_needed,
+    suggest_product_names,
     understand_product_query,
     words_after_product_name,
 )
@@ -1853,6 +1856,31 @@ def _select_products_for_concept(
         }
         for _product, fields in members
     ]
+    # Owner, 2026-11-07: a word the kind cannot explain ("laptop bgs", "tv stand") means
+    # the search is not for the kind: never its products (`_unexplained_words`).
+    unexplained = _unexplained_words(reading, concept_id, units, haystacks, eligible_fields)
+    if unexplained:
+        by_words = _doubtful_products_by_words(
+            reading,
+            concept_id,
+            filters,
+            eligible,
+            eligible_fields,
+            safe_max=safe_max,
+            shown=shown,
+            condition_request=condition_request,
+        )
+        if by_words is not None:
+            return by_words
+        return _unsure_reading_selection(
+            reading,
+            unexplained,
+            eligible,
+            eligible_fields,
+            safe_max=safe_max,
+            shown=shown,
+            condition_request=condition_request,
+        )
     kept, dropped, ordered = _price_first_answer(members, haystacks, units, page_size=safe_max)
     # Owner, 2026-11-05 (the decision contract, "The main kind only", point 7): a word of
     # the search no product of the kind carries ("vitamin tablets", "life jacket") may be
@@ -1885,6 +1913,131 @@ def _select_products_for_concept(
         also_unmatched=tuple(reading.judgements) + tuple(unmatched_name_words) + condition_unmatched,
         reason_code="product_concept_understood",
         fitting_for=fitting_for,
+    )
+
+
+# Owner, 2026-11-07 (the debugging): «Ναι σε όλα», to "Did you mean ...?" rather than a
+# guess. Words that describe a product, never rename it, wherever they stand in a search:
+# "kettle chrome", "small washing machine", "sofa navy".
+_DESCRIBING_WORDS = frozenset(
+    """
+    black white grey gray silver gold red blue green yellow orange pink purple brown beige
+    cream navy teal ivory charcoal khaki olive burgundy turquoise lilac mint coral mustard
+    multicolour multicolor clear transparent matt matte gloss glossy metallic
+    wood wooden oak pine walnut bamboo metal steel stainless chrome aluminium aluminum brass
+    copper glass ceramic plastic leather faux fabric cotton linen wool velvet silk polyester
+    rubber marble stone granite mesh
+    small medium large big little mini tiny compact slim thin thick wide narrow tall long
+    short huge giant double single twin king queen super extra xl xxl xs
+    modern vintage retro classic rustic industrial contemporary luxury premium deluxe
+    professional heavy duty lightweight light strong powerful fast silent quiet soft hard
+    warm round square rectangular oval folding foldable adjustable portable outdoor indoor
+    new latest set
+    """.split()
+)
+# Words of a size or a count: "shoes size 9", "batteries pack of 4".
+_MEASURE_WORDS = frozenset(
+    "size sizes pack packs pcs piece pieces pair pairs count litre litres liter liters ml inch inches".split()
+)
+_BRAND_NAMES: list[object] = [None, frozenset()]
+
+
+def _catalogue_brand_names(eligible_fields: tuple[dict[str, str], ...]) -> frozenset[str]:
+    """The brands of the catalogue a search reads, each as its whole name, kept where
+    three products or more carry it: "bosch" in "bosch washing machine" asks for a brand,
+    never for another kind. Worked out once for each catalogue."""
+    if _BRAND_NAMES[0] is eligible_fields:
+        return _BRAND_NAMES[1]  # type: ignore[return-value]
+    counts = Counter(" ".join(str(fields.get("brand") or "").split()) for fields in eligible_fields)
+    names = frozenset(name for name, count in counts.items() if name and count >= 3)
+    _BRAND_NAMES[0], _BRAND_NAMES[1] = eligible_fields, names
+    return names
+
+
+def _unexplained_words(
+    reading: ConceptReading,
+    concept_id: str,
+    units: tuple[_FilterUnit, ...],
+    haystacks: list[dict[tuple[str, ...], str]],
+    eligible_fields: tuple[dict[str, str], ...],
+) -> tuple[str, ...]:
+    """The words of a search for a kind that say it means another thing, which no product
+    of the kind carries (owner, 2026-11-07: «Ναι σε όλα», to "Did you mean ...?" rather
+    than a guess; the debugging found "laptop bgs" answered with laptops, "tv stand" with
+    televisions, "coffee grinder" with angle grinders).
+
+    A word explains itself when the kind's products carry it, or it is a preference, a
+    spec, a number, a size, a word that describes (`_DESCRIBING_WORDS`), a brand of the
+    catalogue, or what the product is for (after "for", "with"). Of the rest:
+    - one after the kind's name renames it: English puts the noun that names the product
+      last ("tv stand", "table saw", "laptop bgs");
+    - one before it is a need, as "quiet" or "comfortable" are, unless it is a word of
+      another kind's name ("coffee grinder", "garden chair") or, with the kind's name,
+      close to another kind's name ("gme table" for game table, "pant pot" for plant
+      pot): a word the vocabulary does not hold is not taken for a slip on its own.
+    """
+    after = set(reading.words_after_name)
+    needs = set(reading.need_words)
+    named = set(reading.product_words)
+    related = set(broader_concepts(concept_id)) | {
+        kind for kind in get_product_concepts_by_id() if concept_id in broader_concepts(kind)
+    }
+    brands: frozenset[str] | None = None
+    found: list[str] = []
+    for unit in units:
+        if unit.known or any(_carries(unit, haystack) for haystack in haystacks):
+            continue
+        if any(char.isdigit() for term in unit.terms for char in term):
+            continue
+        word = unit.terms[-1]
+        if word in needs or word not in named or word in _MEASURE_WORDS or word in _DESCRIBING_WORDS:
+            continue
+        if brands is None:
+            brands = _catalogue_brand_names(eligible_fields)
+        if unit.display in brands or word in brands:
+            continue
+        if word in after:
+            found.append(unit.display)
+        elif kinds_named_by_word(word) - related or suggest_product_names(
+            " ".join(reading.product_words), covering=(word,)
+        ):
+            found.append(unit.display)
+    return tuple(found)
+
+
+def _unsure_reading_selection(
+    reading: ConceptReading,
+    unexplained: tuple[str, ...],
+    eligible: tuple[ProviderProduct, ...],
+    eligible_fields: tuple[dict[str, str], ...],
+    *,
+    safe_max: int,
+    shown: int,
+    condition_request: tuple[str, ...],
+) -> ProviderProductSelectionResult:
+    """What a search is answered with when its reading of a kind left words it cannot
+    explain: the products that are what all its words name ("tv stand": the stands
+    carrying "tv"), as a search for words is answered; else nothing, and the page asks
+    "Did you mean ...?" (`live_search_resolver`), never the kind's products."""
+    by_words = _select_products_by_words(
+        reading,
+        tuple(reading.product_words),
+        eligible,
+        eligible_fields,
+        safe_max=safe_max,
+        condition_request=condition_request,
+        shown=shown,
+    )
+    if by_words.status == "selected" and by_words.selected_products:
+        return replace(
+            by_words,
+            reason_codes=tuple(by_words.reason_codes) + ("unsure_reading_answered_by_words",),
+        )
+    return ProviderProductSelectionResult(
+        status="unsure_reading",
+        reason_codes=("unsure_reading",),
+        unmatched_query_terms=unexplained,
+        condition_request=condition_request,
     )
 
 
