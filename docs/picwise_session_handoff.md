@@ -40,19 +40,52 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   `src/picwise_taxonomy` unchanged), so the boots came before the AI, which only reads the
   products the engine chose. In English "battery", "aaa battery", "aa battery" and "battery
   aaa" are read rightly; a like fault in English seen before: "rubber gloves" read as
-  router (05/11). **Proposed for the new conversation** (put it to the owner first, short,
-  in Greek): (1) the engine's reading run offline over a wide list of English shopper
-  searches (every kind's names, plurals, common typos, a need or a size added) and every
-  search whose kind is not the one asked listed by cause (a fuzzy guess, a word no kind
-  holds, a kind's word that names another thing); (2) the same searches on the server's
-  catalogue, through a workflow as `server-confusions.yml` does, reading the first cards'
-  kinds; (3) fixed by cause, not kind by kind (the owner, 05/11), measured before and
-  after; (4) the AI fixes kept (below) in the same build. Greek only where it is cheap.
+  router (05/11). The method: the next bullet, proposed to the owner on 07/11.
   **The scope** (the owner asked, 07/11: «Πόσες κατηγορίες και υποκατηγορίες έχει?»): 18
   categories (`product_concepts._MEGA`), 312 kinds (278 main, 34 narrower, two levels at
   most), 1,263 English and 762 Greek names; of the 595,751 products of 06/11, 279,619
   carry a kind. The design-time packs (`picwise_taxonomy.deep_packs`: 128 departments,
   591 subcategories, 1,140 product families) are not read by the search.
+- **The debugging method proposed to the owner (07/11)**, after «Η απασφαλμάτωση πρέπει να
+  είναι στοχευμένη ανακατηγορία και εκτενέστερη.. κάθε φορά βρίσκουμε λάθη και κενά...
+  Πρότεινε τον καλύτερο τρόπο απασφαλμάτωσης για το βέλτιστο.» ("ανακατηγορία": per
+  category; this replaces the owner's 05/11 "no more kind-by-kind fixes" with a planned
+  sweep). **Waiting for the owner's word** on the method, the bar and the AI audit's cost.
+  - **Category by category**, the 18 of `product_concepts._MEGA`, English first (Greek
+    only where it is cheap), each checked at the three places errors are born:
+    1. *The search read* (free, offline, `understand_product_query`): for every kind, each
+       of its names in singular and plural, with common typos (a letter missing, doubled,
+       swapped, a neighbouring key) and with a brand, a size or a need added; also the
+       design-time packs' 591 subcategories and 1,140 product families and the shops' own
+       shelf names, each with the category it belongs to. Listed: every search read as
+       another kind, or sent by a fuzzy guess to a kind of another category, or read as
+       nothing (a gap).
+    2. *The products put in each kind* (the server's catalogue, through a workflow as
+       `server-confusions.yml` does): every product the reports flag (the title names none
+       of the kind's words, 16,987 on 06/11; only the title names it, 10,352; doubted by
+       the aisle, 3,496; accessory words such as "case", "cover", "strap", "replacement",
+       "compatible", "for"; a price far from the kind's) and 60 unflagged ones per kind,
+       judged offline by Haiku ("is this a <kind>?"); about 10,000 of the 316,000 products
+       with no kind, Haiku naming one of the 312 or none (the gaps). About $3 in all, at
+       the measures' $0.0011 a call of 30 products; the AI's verdicts checked by hand on a
+       sample.
+    3. *What the visitor sees* (the server's catalogue): about 2,000 searches, several per
+       kind; the first 12 cards of each judged by their kind and the AI's verdicts: the
+       share right, the absurd cards (boots for batteries), the searches with nothing or
+       "could not match".
+  - **Fixed by cause** where a rule can say it (an accessory for X is not X; a fuzzy guess
+    on a real word, or to a kind of another category, not trusted: "did you mean ...?"
+    rather than wrong products, the owner's decision when it comes), else per kind (a
+    missing name or kind).
+  - **Nothing comes back:** each error found becomes a test (searches with their kind,
+    titles with theirs), run with every change; the scoreboard printed by every deploy.
+  - **A scoreboard per category**, before and after: searches read right, cards right on
+    the first page, products with no kind, absurd cards. A category is ready when it
+    passes the owner's bar (proposed: no absurd card, at least 98% of the first page's
+    cards right).
+  - **Order:** one full measure of all 18 first (the map of errors), then the worst
+    category first unless the owner chooses, each deployed on the owner's «ανέβασε»; the
+    three AI fixes kept go with the first build. Several conversations.
 - **The AI layer live (06/11), and the owner's first try.** Deployed on 06/11 on the
   owner's «ανέβασε το 75fd3d0»: `75fd3d0` pushed to `ccr-1361f1a7-dcpo60` (a fast-forward
   from `a7539b9`), run `42287840883`, success; release `20261106T202256Z-75fd3d0`, the site
