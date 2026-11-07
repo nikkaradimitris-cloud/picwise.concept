@@ -34,7 +34,18 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   (401). A session cannot reach picwise.subby.cloud (the proxy answers 403): the owner was
   asked to try a complex search («σακίδιο για σχολείο», "quiet washing machine") and say
   whether, a few seconds after the page, a sentence appears and the products that fit
-  move up with a ✓, and whether the same search again comes at once that way. If nothing
+  move up with a ✓, and whether the same search again comes at once that way. **The
+  owner's first try** (07/11, 09:47 UTC, a phone's screenshot of «σακίδιο για σχολείο»):
+  "Results for: σακίδιο για σχολείο, those that fit first, then cheapest first · PicWise
+  could not match: σχολειο", 12 of 251; the sentence "2 of these 30 backpacks say they
+  suit school days or heading to school, lowest price 8.99 GBP." with "Checked against the
+  shops' own words"; first a Disney Cars "junior School Backpack" (✓ "School Backpack",
+  £8.99, 5th cheapest) and "Backpack Stay Cool & Stylish on the Go" (✓ "heading to a
+  picnic, school, work", £9.99, 6th), a cooler bag: weak but true; "No Recommended here:
+  too few products say they fit to have a middle price." Told to the owner: it works as
+  built; the cooler bag; the AI reads only the first 30 of the 251; the sentence writes
+  "8.99 GBP" where the cards write "£8.99"; asked whether it came a few seconds after the
+  page, at once the second time, and "quiet washing machine". If nothing
   comes, the first place to look is the service's own log on the server (`journalctl -u
   picwise-assist`; no workflow prints it yet) and the files of `/srv/picwise/assist`.
   Then the spend on the Console after a day or a week (the spec, 5: "after a week, its use
