@@ -4,8 +4,10 @@ Current state for whoever picks the project up next. Updated 2026-11-07 (**next:
 general debugging of the search, category by category, asked by the owner on 07/11
 («ζητάω μία μεγάλη γενική απασφαλμάτωση»: the site not yet trusted as a production page;
 «μπαταρία» read as boots); its method, its bar and about $3 of AI audit approved («Ναι σε
-όλα, πάμε σε νέα συζήτηση»); first the full measure of all 18 categories; the AI fixes
-kept in a list go in the first build**; **the AI layer live since 2026-11-06 20:41 UTC, run `42287840883`,
+όλα, πάμε σε νέα συζήτηση»); first the full measure of all 18 categories: its step 1, the
+search read offline, measured on 07/11 (`print_search_reading.py`, `57e8050`: 280 of
+89,540 searches read as a kind of another category, six causes); next its steps 2 and 3
+on the server's catalogue; the AI fixes kept in a list go in the first build**; **the AI layer live since 2026-11-06 20:41 UTC, run `42287840883`,
 `75fd3d0` (owner: «ανέβασε το 75fd3d0»): in a complex search the products the AI reads as
 fitting first and marked, one euro a day, the privacy text naming no company; its spend
 after a day or a week**;
@@ -26,7 +28,59 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-06): pick up here -- start here
 
-- **START HERE: a big general debugging of the search, its method approved (owner, 07/11:
+- **START HERE: the debugging's step 1 measured (07/11), the search read, offline; next
+  its steps 2 and 3 on the server's catalogue (the next bullet: their workflow, `if:
+  false` until the owner's word, about $3).** `deployment/server/print_search_reading.py`
+  (`57e8050`; 15 tests in `tests/test_picwise_server_print_search_reading.py`; `python3
+  deployment/server/print_search_reading.py [--category XX] [--json file]`, 19 s, no
+  network, the same searches read the same way each time): per kind, every English name
+  and its other number, with the words buyers add (two brands, a size, a word before, a
+  need after, "best", "cheap": `CATEGORY_WORDS`), every typing slip (a letter left out,
+  doubled, two swapped, a neighbouring key; never a word's first letter); every Greek name,
+  a one-word one in its other number, its slips; the packs' 591 subcategories and their
+  families without the generated tails; every word of the names, of Google's taxonomy and
+  of the packs, alone; every shelf of Google's, read against its aisle (`_aisle_may_hold`).
+  **89,540 searches; the names as written or in the other number 97.6% right (9 read as
+  another category's kind, 27 as nothing); with the words added 99.8%; the slips 96.4% (151
+  another category, 1,681 nothing); Greek 92.1% (116 another category); 280 searches in all
+  read as a kind of another category, the absurd; 244 words spelt right read by a
+  correction as a kind none of whose names holds them (51 of another category's words);
+  450 of Google's shelves read as a kind their aisle may not hold; of the packs' 1,084
+  names, 443 read as nothing (kinds missing) and 80 as another category's kind.** Per
+  category, English right, absurd, nothing | Greek right, absurd: HA 98.3%, 2, 68 | 93.6%,
+  2; KI 97.6%, 8, 103 | 93.6%, 1; FU 96.2%, 6, 173 | 91.5%, 9; PH 94.9%, 29, 244 | 90.0%, 7;
+  CO 98.0%, 10, 235 | 93.1%, 7; AV 99.0%, 3, 30 | 94.2%, 7; CP 98.5%, 2, 16 | 87.4%, 8; TY
+  93.5%, 6, 67 | 94.6%, 4; MO 95.7%, 0, 45 | 93.4%, 6; PT 98.6%, 4, 24 | 94.5%, 0; HT 97.0%,
+  10, 34 | 89.8%, 2; GA 97.1%, 16, 145 | 91.5%, 15; HE 98.2%, 7, 31 | 93.8%, 6; BE 97.5%, 3,
+  56 | 93.1%, 3; BK 95.7%, 50, 179 | 92.8%, 17; CL 92.6%, 1, 129 | 85.4%, 0; FO 95.5%, 0, 35
+  | 93.7%, 2; JW 94.6%, 7, 94 | 84.5%, 20. **The causes, each to be fixed by a rule where
+  one can say it (the fixes on the owner's word, each error a test):**
+  1. *A slip in one word of a two-word name leaves the other word read as its own kind*
+     (a word of three letters is never corrected, `_max_distance`): "laptop bgs" as
+     laptop, "desk pone" as desk, "hat pump" as hat, "bby monitor" as monitor, "hgh chair"
+     as chair, "gme table" as table, "drill bts" as drill, "pc gme" as a desktop PC.
+  2. *A name's other number missing from the lexicon*: "drill bit" read as drill,
+     "dishwasher pod" as dishwasher, "external batteries" and "vehicle batteries" as AA
+     batteries; "boot", "sock", "sneaker", "nappy", "hair brushes", "settees", "buggies",
+     "tees", "mics", "paints" as nothing.
+  3. *A word spelt right corrected into another product's word*: "boxes" as boxers
+     (underwear: "tool boxes", "lunch boxes", "litter boxes"), "chains" as chairs, "plants"
+     as pants, "sports" as shorts, "tools" as toys, "pulse" as purse (wallets), "laser" as
+     ladder, "receiver" as recliner, "protector" as projector, "types" as tires,
+     "electrical" as a fan; «μπαταρία» as «μποτάκια» (boots), «πλάτης» as plates, «σκόνες»
+     as «σκηνές» (tents).
+  4. *English read as greeklish*: "pones" as «πάνες» (nappies: "mobile pones"), "couches"
+     as «κούκλες» (dolls), "labels" as «λάμπες», "pati" as «πάτοι» (insoles).
+  5. *A word that names two things, read as the kind's*: Google's shelves "Coffee
+     Grinders" and "Spice Grinders" as angle grinders, "Decorative Fans" as fans, "Nail
+     Drills" and "Drill Chucks" as drills, "Jigsaw Puzzles" as jigsaws, "Curling Irons" as
+     irons, "Washers" as washing machines.
+  6. *A kind missing*: the packs' "table saws" read as tables, "concrete mixers" as
+     mixers, "nailers and staplers" as strollers, "workbench vises" as taps; "tile
+     cutters", "reciprocating saws", "polishers", "spray guns" as nothing.
+  Not in step 1: the shops' own shelf names (in the server's catalogue: step 2). Told to
+  the owner in Greek, short, with the numbers per category.
+- **The big general debugging of the search, its method approved (owner, 07/11:
   «Ναι σε όλα, πάμε σε νέα συζήτηση»): the method, the bar (no absurd card, at least 98%
   of the first page's cards right) and about $3 for the AI audit; the method is the next
   bullet but one.** Begin with the full measure of all 18 categories, the map of errors:
@@ -220,7 +274,9 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   Spent: the preflights a fraction of a cent each, the first measure $0.0623, the second
   $0.1111, the third $0.1236, the fourth $0.1278: about $0.43 in all.
 - **Branches:** `ccr-4f47068a-99ikwe` holds all of `ccr-f9cf1b70-rzslft` (fast-forwarded)
-  and this work; start from it. The deploying branch `ccr-1361f1a7-dcpo60` holds
+  and this work; start from it. The conversation of 07/11 (step 1) worked on its own
+  `ccr-8aef8908-2u46pb`, fast-forwarded from `c59ec8a` of `ccr-4f47068a-99ikwe`; its
+  commits go to `ccr-4f47068a-99ikwe` too only on the owner's word (asked on 07/11). The deploying branch `ccr-1361f1a7-dcpo60` holds
   `75fd3d0` (the AI layer, live), and the working branch only the records written after
   it. No workflow runs on a push to the working branch but
   `ai-key-check.yml` and `ai-measure.yml`, each only when its own file changes. The two
