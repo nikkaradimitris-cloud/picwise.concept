@@ -1,10 +1,11 @@
 # PicWise — session handoff
 
 Current state for whoever picks the project up next. Updated 2026-11-07 (**next: a big
-general debugging of the search, asked by the owner on 07/11 («ζητάω μία μεγάλη γενική
-απασφαλμάτωση»: the site not yet trusted as a production page; «μπαταρία» read as boots),
-English first, fixed by cause, not kind by kind; the AI fixes kept in a list go in the
-same build**; **the AI layer live since 2026-11-06 20:41 UTC, run `42287840883`,
+general debugging of the search, category by category, asked by the owner on 07/11
+(«ζητάω μία μεγάλη γενική απασφαλμάτωση»: the site not yet trusted as a production page;
+«μπαταρία» read as boots); its method, its bar and about $3 of AI audit approved («Ναι σε
+όλα, πάμε σε νέα συζήτηση»); first the full measure of all 18 categories; the AI fixes
+kept in a list go in the first build**; **the AI layer live since 2026-11-06 20:41 UTC, run `42287840883`,
 `75fd3d0` (owner: «ανέβασε το 75fd3d0»): in a complex search the products the AI reads as
 fitting first and marked, one euro a day, the privacy text naming no company; its spend
 after a day or a week**;
@@ -25,7 +26,18 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-06): pick up here -- start here
 
-- **START HERE: a big general debugging of the search (owner, 07/11).** The owner's words:
+- **START HERE: a big general debugging of the search, its method approved (owner, 07/11:
+  «Ναι σε όλα, πάμε σε νέα συζήτηση»): the method, the bar (no absurd card, at least 98%
+  of the first page's cards right) and about $3 for the AI audit; the method is the next
+  bullet but one.** Begin with the full measure of all 18 categories, the map of errors:
+  step 1 offline first (free: build the searches per kind and read them with
+  `understand_product_query`, a table per category), then steps 2 and 3 on the server's
+  catalogue through a workflow of their own, built as `ai-measure.yml` is (the key from
+  GitHub's secrets, the catalogue copied read only as `server-confusions.yml` does, `if:
+  false` until it runs, a budget in code that stops at about $3); tell the owner before a
+  run that spends, then read it by hand and give the owner the numbers per category,
+  short, in Greek; then the worst category first. The "did you mean" rule is still the
+  owner's to decide when it comes. How it started, the owner's words:
   «Θα πάμε σε άλλες συζήτηση έχω κάνει και άλλα τεστ βέβαια είναι στα ελληνικά που δεν με
   ενδιαφέρουνε αλαφαντάζομαι ότι και στα αγγλικά θα υπάρχουν παράδειγμα μπαταρίες 3α
   βγάζει μπότες δεν μπορώ να εμπιστευτώ ακόμα αυτό το service για production σελίδα..
@@ -50,7 +62,8 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   είναι στοχευμένη ανακατηγορία και εκτενέστερη.. κάθε φορά βρίσκουμε λάθη και κενά...
   Πρότεινε τον καλύτερο τρόπο απασφαλμάτωσης για το βέλτιστο.» ("ανακατηγορία": per
   category; this replaces the owner's 05/11 "no more kind-by-kind fixes" with a planned
-  sweep). **Waiting for the owner's word** on the method, the bar and the AI audit's cost.
+  sweep). **Approved** («Ναι σε όλα, πάμε σε νέα συζήτηση», 07/11): the method, the bar
+  and the AI audit's cost, about $3.
   - **Category by category**, the 18 of `product_concepts._MEGA`, English first (Greek
     only where it is cheap), each checked at the three places errors are born:
     1. *The search read* (free, offline, `understand_product_query`): for every kind, each
