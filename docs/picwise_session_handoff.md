@@ -6,8 +6,12 @@ general debugging of the search, category by category, asked by the owner on 07/
 «μπαταρία» read as boots); its method, its bar and about $3 of AI audit approved («Ναι σε
 όλα, πάμε σε νέα συζήτηση»); first the full measure of all 18 categories: its step 1, the
 search read offline, measured on 07/11 (`print_search_reading.py`, `57e8050`: 280 of
-89,540 searches read as a kind of another category, six causes); next its steps 2 and 3
-on the server's catalogue; the AI fixes kept in a list go in the first build**; **the AI layer live since 2026-11-06 20:41 UTC, run `42287840883`,
+89,540 searches read as a kind of another category, six causes); then, on the owner's word
+(«Ναι σε όλα, κλείσε και τα δύο»), built and tested, not deployed, **waiting for the
+owner's «ανέβασε»**: Greek and greeklish closed, the searches' text kept on the server,
+each name read in both numbers, no word spelt right corrected, "Did you mean ...?" where a
+word means the search is not for the kind read (`828d15f`..`8db74c2`); next its steps 2
+and 3 on the server's catalogue; the AI fixes kept in a list go in the first build**; **the AI layer live since 2026-11-06 20:41 UTC, run `42287840883`,
 `75fd3d0` (owner: «ανέβασε το 75fd3d0»): in a complex search the products the AI reads as
 fitting first and marked, one euro a day, the privacy text naming no company; its spend
 after a day or a week**;
@@ -28,9 +32,93 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-06): pick up here -- start here
 
-- **START HERE: the debugging's step 1 measured (07/11), the search read, offline; next
-  its steps 2 and 3 on the server's catalogue (the next bullet: their workflow, `if:
-  false` until the owner's word, about $3).** `deployment/server/print_search_reading.py`
+- **START HERE (07/11, later): the rules by cause built on the owner's word, tested, not
+  deployed: waiting for the owner's «ανέβασε»** (push `8db74c2`, or what is newest on
+  `ccr-4f47068a-99ikwe`, to the deploying branch `ccr-1361f1a7-dcpo60`: `src/picwise_nlu`
+  changed, so the deployment prepares the catalogue again). How it came: told step 1's
+  causes, the owner: «αυτά που μου προτείνεις είναι πολύ συγκεκριμένα από αυτά θα
+  βγάλουμε άλλες λέξεις και ούτω καθεξής... Εξήγησέ μου με ποια λογική πιστεύεις ότι
+  μπορείς να έχεις ένα search το οποίο να δουλεύει σωστά»; told, in Greek: words are
+  endless, causes few: one rule per cause for every word; the catalogue (595,751 titles)
+  and the names as the dictionary, a word spelt right never corrected; every word of a
+  search accounted for by the products shown; when unsure, no guess but "Did you mean
+  ...?" or the products carrying all the words; everything measured before and after,
+  each error a test; no search understands everything, the aims being no absurd card and
+  more searches right week by week, best measured on visitors' real searches, which the
+  site did not keep. Then the owner: «Μήπως να αφαιρούσαμε τα ελληνικά και τα greeklish
+  διότι το site είναι για αγγλία...» (measured in a scratch run: English searches read as
+  another category's kind 164 -> 138, words spelt right corrected into another product
+  244 -> 204, with greeklish off), and «Ναι σε όλα, κλείσε και τα δύο»: Greek and
+  greeklish closed, "Did you mean ...?" rather than a guess, the server keeping the text of
+  visitors' searches (no IP) to measure them each week. Built, each with its tests:
+  1. `828d15f` (and `555ec22`): **the search reads English only**
+     (`concept_understanding.greek_search_on`, `PICWISE_GREEK_SEARCH`, off unless "on"): a
+     word in Greek letters names nothing, one in Latin letters is never read as greeklish
+     or as Greek typed on the English layout; a search in Greek letters is answered by
+     "PicWise searches in English. Please type the product's name in English." and nothing
+     else (`live_search_resolver.searches_in_greek_letters`); with the shops' products
+     connected, an older vocabulary's category alone ("psygeio") is no longer said to be
+     understood; the search box offers no Greek name; the 9 test modules that test Greek
+     turn it on for themselves (`tests/greek_search_switch.py`); the print tools follow
+     (`print_search_choices` skips the Greek names). The AI layer: a Greek complex search
+     ("σακίδιο για σχολείο") is no longer understood, so no longer asked (the owner should
+     try "school backpack"); `ai_measure_searches.txt` still lists Greek searches.
+  2. `e464846`: **the searches' words kept on the server** (`picwise_app.search_log`): the
+     search page's script reports a search's first page once loaded in a browser
+     (`/searched?q=`, 204, no-store), so crawlers, "More" and the AI's refresh add nothing;
+     one line `{"q": ...}` in the day's file under `PICWISE_SEARCH_LOG_DIR`
+     (`/srv/picwise/shared/searches`, set in `picwise-web.service`, made by `deploy.sh`);
+     no time of day, IP, browser or cookie; a day's file stops at 20 MB; files older than
+     12 months deleted. The privacy page's new "Searches" section, its legal basis and
+     how long (12 months), "Last updated: 7 November 2026" (wording not yet shown to the
+     owner). The weekly measure of them is not built: a workflow copying the files read
+     only, printing counts and only searches seen often (the repository and its logs are
+     public), once a week of searches is there.
+  3. `ac74857`: **each name in both numbers, no word spelt right corrected, judgement
+     words set aside** (`picwise_nlu.english_number`; `is_known_english_word`): every
+     English name read in both numbers as a form only a search reads (a weak name keeps
+     one number; feed products classified as before); a word of the names, of Google's
+     taxonomy or of the packs (each in both numbers) never corrected ("iphone" was read
+     as an IP desk phone through "ip phone", "rubber" as router, "boxes" as boxers);
+     "Did you mean" asks about such a word only with a word typed exactly; "pones" read
+     (a dropped h after a first p); "best", "cheap", "deals", "uk" and the like set aside,
+     never filters, never "could not match".
+  4. `8db74c2`: **"Did you mean ...?" where a word means the search is not for the kind
+     read** (`search_selection._unexplained_words`, `_unsure_reading_selection`; the
+     reading's `need_words`, `words_after_name`, `product_words`): a word no product of
+     the kind carries, and which is no preference, spec, number, size, describing word
+     (`_DESCRIBING_WORDS`), brand of the catalogue (three products or more) or need
+     (after "for"/"with"), means another product when it stands after the kind's name
+     (English names the product last: "tv stand", "table saw", "laptop bgs") or, before
+     it, is a word of another kind's name ("coffee grinder", "garden chair") or makes
+     with it a name close to another kind's ("gme table"); the answer is then the
+     products all the words name (the words search of part 3b), else none, the page
+     asking "Did you mean: laptop bag?" without "Understood as". A word before the name
+     that the vocabulary lacks is a need ("comfortable office chair"), not a slip.
+  **The measure after** (`print_search_reading.py`, English): the names as written or in
+  the other number 97.7% -> 99.4% (the 10 left: weak names in the other number:
+  "stoves", "covers", "screens"); words spelt right read as another product by a
+  correction 176 -> 0; Google's shelves read as a kind their aisle may not hold 422 ->
+  301; typing slips read as another category's kind 126 -> 138, of which, by an offline
+  estimate (each one's word is one no product of the kind read would carry), 133 of the
+  142 absurd readings no longer reach a card; the 9 left are one-word corrections to
+  another kind ("mirrr" as a microphone, "kettleell" as a kettle, "bikii" as a bicycle,
+  "bby monitor": the doubled b collapses in the key). New finds on the way: "iphone",
+  "airpods", "macbook", "kindle", "samsung galaxy" name no kind (product lines to add,
+  per kind); "used iphone" was read as a desk phone.
+  **Tests:** every test module run on its own, six at a time, on `828d15f` (292 modules)
+  and on `8db74c2` (295): only the two that fail on the session's first commit `d761ddb`
+  too fail (`test_picwise_canonical_vocabulary_registry_stage2`,
+  `test_picwise_search_index_generated_blind_stage4`, the same tests);
+  `test_picwise_learning_stage7b` passes alone in 1,106 s; and
+  `test_picwise_search_index_blind_evaluation_stage6a` does not finish in 20 minutes, as
+  before. **Next:** the owner's «ανέβασε»; then the debugging's steps 2 and 3 on the
+  server's catalogue with these rules (the method below), the weekly measure of the kept
+  searches, and the gaps per kind (product lines; missing kinds: table saw, tile cutter,
+  reciprocating saw, polisher...).
+- **The debugging's step 1 measured (07/11), the search read, offline; next its steps 2
+  and 3 on the server's catalogue (the bullet but one: their workflow, `if: false`
+  until the owner's word, about $3).** `deployment/server/print_search_reading.py`
   (`57e8050`; 15 tests in `tests/test_picwise_server_print_search_reading.py`; `python3
   deployment/server/print_search_reading.py [--category XX] [--json file]`, 19 s, no
   network, the same searches read the same way each time): per kind, every English name
@@ -276,7 +364,8 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 - **Branches:** `ccr-4f47068a-99ikwe` holds all of `ccr-f9cf1b70-rzslft` (fast-forwarded)
   and this work; start from it. The conversation of 07/11 (step 1) worked on its own
   `ccr-8aef8908-2u46pb`, fast-forwarded from `c59ec8a` of `ccr-4f47068a-99ikwe`; its
-  commits go to `ccr-4f47068a-99ikwe` too only on the owner's word (asked on 07/11). The deploying branch `ccr-1361f1a7-dcpo60` holds
+  commits are pushed to `ccr-4f47068a-99ikwe` too (the owner, 07/11: «Ναι» to keeping it
+  up to date). The deploying branch `ccr-1361f1a7-dcpo60` holds
   `75fd3d0` (the AI layer, live), and the working branch only the records written after
   it. No workflow runs on a push to the working branch but
   `ai-key-check.yml` and `ai-measure.yml`, each only when its own file changes. The two
