@@ -57,10 +57,12 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 
+from .english_number import english_other_number, english_word_in_other_number
 from .misspelling_variants import english_layout_text_to_greek
 from .product_concepts import (
     broader_concepts,
     get_condition_request_words,
+    get_english_judgement_words,
     get_product_concepts,
     get_product_concepts_by_id,
     get_qualifiers,
@@ -470,16 +472,52 @@ class _Lexicon:
                     # The same name typed without spaces: "πλυντηριορουχων".
                     joined = (identities[0][0], "".join(key for _, key in identities))
                     self._add(_Form(concept.concept_id, (joined,), weak), words)
+        # Owner, 2026-11-07 (the debugging: «ζητάω μία μεγάλη γενική απασφαλμάτωση»):
+        # every English name is read in both numbers, one rule for all, so "drill bit" is
+        # drill bits and "boot" boots (`english_number`). A form only a query reads
+        # (`_find_spans(query=True)`): a feed product is still classified by the names as
+        # written, and a form that is a name already, of any kind, is left to it. A weak
+        # name ("cover", "case", "ball", "screen") keeps its one number: an ordinary word
+        # in many things' names, it would read "book covers" as phone cases.
+        self.query_forms_by_first: dict[tuple[str, str], list[_Form]] = {}
+        written = {
+            normalize_understanding_text(text)
+            for concept in get_product_concepts()
+            for text in concept.english + concept.greek
+        }
+        other_number_tokens: set[str] = set()
+        for concept in get_product_concepts():
+            weak_forms = {normalize_understanding_text(form) for form in concept.weak}
+            for text in concept.english:
+                if normalize_understanding_text(text) in weak_forms:
+                    continue
+                other = normalize_understanding_text(english_other_number(normalize_understanding_text(text)) or "")
+                if not other or other in written:
+                    continue
+                written.add(other)
+                tokens = other.split()
+                identities = tuple(_word_identity(token) for token in tokens)
+                form = _Form(concept.concept_id, identities)
+                self.query_forms_by_first.setdefault(identities[0], []).append(form)
+                for kind, key in identities:
+                    words[kind].add(key)
+                other_number_tokens.update(tokens)
         self.fuzzy = {kind: _FuzzyIndex(keys) for kind, keys in words.items()}
         # English names as spelled, to tell an exact word from one that only shares
         # its key once doubled letters collapse ("bots" and "boots").
-        self.english_spellings = frozenset(
+        spellings = {
             token
             for concept in get_product_concepts()
             for text in concept.english + concept.greek
             for token in normalize_understanding_text(text).split()
             if not is_greek_word(token)
-        )
+        } | other_number_tokens
+        # Each in its other number too: "iphones" is spelt right as "iphone" is.
+        spellings |= {other for token in spellings for other in [english_word_in_other_number(token)] if other}
+        self.english_spellings = frozenset(spellings)
+        # Words that judge or shop rather than name what is wanted ("best", "cheap"):
+        # understood, never a filter, never corrected.
+        self.english_judgements = frozenset(get_english_judgement_words())
         # Which kinds each English word belongs to, and which kinds each Greek key
         # belongs to: "patio" is a word of "patio furniture", not of «πάτοι».
         english_word_concepts: dict[str, set[str]] = {}
@@ -677,6 +715,10 @@ def _token_candidates(token: str, *, fuzzy: bool = True) -> dict[tuple[str, str]
             0.0,
             exact_key_cost=0.0 if token in lexicon.english_spellings else 0.5,
         )
+        if fuzzy and len(token) >= 4 and token.startswith("p") and not token.startswith("ph"):
+            # "pones" for "phones": "ph" is keyed as "f", so a dropped h changes the first
+            # letter the index keeps; the h is one mistake.
+            offer("en", english_key("ph" + token[1:]), 1.0)
         if not greek:
             # Never read as greeklish, nor as Greek typed on the English layout.
             return candidates
@@ -722,12 +764,18 @@ def _find_spans(
     candidates: list[dict[tuple[str, str], float]],
     *,
     safe_only: bool = True,
+    query: bool = False,
 ) -> list[_Span]:
+    """The names found in the tokens. `query` adds the forms only a query reads, the
+    names in their other number (`_Lexicon.query_forms_by_first`)."""
     lexicon = _lexicon()
     spans: list[_Span] = []
     for start in range(len(tokens)):
         for identity, first_cost in candidates[start].items():
-            for form in lexicon.forms_by_first.get(identity, ()):
+            forms = lexicon.forms_by_first.get(identity, [])
+            if query:
+                forms = forms + lexicon.query_forms_by_first.get(identity, [])
+            for form in forms:
                 end = start + len(form.words)
                 if end > len(tokens):
                     continue
@@ -853,12 +901,15 @@ def _qualifier_tables(token: str) -> tuple[dict[str, str | None], _FuzzyIndex, s
 
 
 def _is_exact_qualifier(token: str) -> bool:
+    if token in _lexicon().english_judgements:
+        return True
     tables = _qualifier_tables(token)
     return tables is not None and tables[2] in tables[0]
 
 
 def _qualifier_for(token: str) -> tuple[bool, str | None]:
-    """Is this a known preference word, and which feed word expresses it?"""
+    """Is this a known preference word, and which feed word expresses it? None for a
+    judgement, understood but never a filter («φθηνό»)."""
     tables = _qualifier_tables(token)
     if tables is None:
         return False, None
@@ -997,11 +1048,12 @@ def _understand_product_query(query: str, greek: bool) -> ConceptReading:
                 or token in CONNECTIVE_WORDS
                 or token in _COMMON_WORDS
                 or _is_exact_qualifier(token)
+                or is_known_english_word(token)
             ),
         )
         for i, token in enumerate(tokens)
     ]
-    spans = _choose_spans(_find_spans(tokens, candidates))
+    spans = _choose_spans(_find_spans(tokens, candidates, query=True))
     head = _pick_head(spans, tokens)
 
     if head is None:
@@ -1038,6 +1090,11 @@ def _understand_product_query(query: str, greek: bool) -> ConceptReading:
         token = tokens[index]
         index += 1
         if token in CONNECTIVE_WORDS or len(token) < 2 and not token.isdigit():
+            continue
+        if token in _lexicon().english_judgements:
+            # "best", "cheap", "deals", "uk": no feed text confirms them and price first
+            # already lists the cheapest first, so they are read and set aside, and the
+            # page does not say it "could not match" them (owner, 2026-11-07).
             continue
         is_qualifier, english = _qualifier_for(token)
         if is_qualifier:
@@ -1135,7 +1192,18 @@ def suggest_product_names(query: str, *, limit: int = 3) -> tuple[str, ...]:
                 found[identity] = min(found.get(identity, 99.0), float(distance))
         candidates.append(found)
     spans = sorted(
-        _find_spans(tokens, candidates, safe_only=False),
+        (
+            span
+            for span in _find_spans(tokens, candidates, safe_only=False, query=True)
+            # A word spelt right is asked about as another word only where a word typed
+            # exactly makes the name with it ("laptop bad": laptop bag), never alone
+            # ("chains" is no chair, "iphone" no "ip phone").
+            if not (
+                span.end - span.start == 1
+                and span.cost >= 0.5
+                and is_known_english_word(tokens[span.start])
+            )
+        ),
         key=lambda span: (span.cost, -(span.end - span.start), span.concept_id),
     )
     by_id = get_product_concepts_by_id()
@@ -2003,6 +2071,63 @@ _BRITISH_AISLE_NAMES = {
     "jewellery cleaning & care": "jewelry cleaning & care",
     "healthcare": "health care",
 }
+
+
+@lru_cache(maxsize=1)
+def _known_english_words() -> frozenset[str]:
+    """The English words a query never corrects into a product's word, each in both
+    numbers: the words of Google's product taxonomy (`_TAXONOMY_PATH`) and of the
+    taxonomy packs (`picwise_taxonomy.deep_packs`). Empty when neither can be read."""
+    texts: list[str] = []
+    try:
+        texts.extend(
+            line for line in _TAXONOMY_PATH.read_text(encoding="utf-8").splitlines() if not line.startswith("#")
+        )
+    except OSError:
+        pass
+    import importlib
+
+    for name in (
+        "home_living_appliances",
+        "tech_electronics_office",
+        "auto_moto_mobility",
+        "tools_diy_garden_repair",
+        "health_beauty_family_lifestyle",
+        "fashion_footwear_jewelry_accessories",
+    ):
+        try:
+            module = importlib.import_module(f"picwise_taxonomy.deep_packs.{name}")
+            pack = getattr(module, f"get_{name}_pack")()
+        except (ImportError, AttributeError):
+            continue
+        for record in pack.get("mega_categories", []):
+            for field_name in ("departments", "subcategories", "product_families"):
+                texts.extend(str(text) for text in record.get(field_name) or ())
+    words: set[str] = set()
+    for text in texts:
+        for word in normalize_understanding_text(text).split():
+            if len(word) >= 3 and word.isascii() and word.isalpha():
+                words.add(word)
+                other = english_word_in_other_number(word)
+                if other:
+                    words.add(other)
+    return frozenset(words)
+
+
+def is_known_english_word(token: str) -> bool:
+    """Is this a word spelt right, which a query reads as it is and never corrects?
+
+    Owner, 2026-11-07 (the debugging; «...κάθε φορά βρίσκουμε λάθη και κενά... Πρότεινε
+    τον καλύτερο τρόπο»): a word spelt right was corrected into another product's word,
+    "rubber" into router, "boxes" into boxers, "chains" into chairs, "iphone" (a word of
+    "iphone cable") into "ip phone", a desk phone. One rule for every word: a word of the
+    lexicon's names (in both numbers), of Google's product taxonomy or of the taxonomy
+    packs is read as it is, and where it names nothing the search says so rather than
+    guess; only a word none of them holds is corrected ("wahsing" to washing).
+    """
+    if not token or not token.isascii():
+        return False
+    return token in _lexicon().english_spellings or token in _known_english_words()
 
 
 def _in_the_singular(text: str) -> str:

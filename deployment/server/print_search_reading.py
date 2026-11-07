@@ -84,6 +84,7 @@ from picwise_nlu.concept_understanding import (  # noqa: E402
     normalize_understanding_text,
     understand_product_query,
 )
+from picwise_nlu.english_number import english_other_number, english_word_in_other_number  # noqa: E402
 from picwise_nlu.misspelling_variants import _QWERTY_NEIGHBOURS  # noqa: E402
 from picwise_nlu.product_concepts import (  # noqa: E402
     _MEGA,
@@ -172,61 +173,9 @@ Reader = Callable[[str], ConceptReading]
 # Grammatical number
 # --------------------------------------------------------------------------------------
 
-# Words with no other number a buyer types, or whose other number means another thing
-# ("glasses" are no glass).
-_NO_OTHER_NUMBER = frozenset(
-    """
-    clothing shelving cookware luggage jewellery jewelry footwear underwear sportswear
-    workwear nightwear swimwear activewear knitwear outerwear equipment furniture software
-    hardware glasses sunglasses goggles binoculars trousers jeans shorts leggings tights
-    pants pyjamas pajamas scissors pliers tongs headphones earphones clothes overalls
-    dungarees briefs knickers boxers lingerie hosiery bedding cutlery crockery bakeware
-    tableware glassware stationery luggage aircon wifi gps ups hifi
-    """.split()
-)
-_PLURAL_OF = {
-    "shelf": "shelves", "knife": "knives", "scarf": "scarves", "foot": "feet",
-    "mouse": "mice", "child": "children", "man": "men", "woman": "women", "tooth": "teeth",
-    "person": "people", "lens": "lenses", "canvas": "canvases", "hoodie": "hoodies",
-    "onesie": "onesies", "beanie": "beanies", "tie": "ties", "bootie": "booties",
-    "nightie": "nighties", "series": "series", "chassis": "chassis", "gpu": "gpus",
-    "cpu": "cpus", "psu": "psus",
-}
-_SINGULAR_OF = {plural: singular for singular, plural in _PLURAL_OF.items()}
-
-
-def _english_word_in_other_number(word: str) -> str | None:
-    lowered = word.lower()
-    if not lowered.isalpha() or len(lowered) < 3 or lowered in _NO_OTHER_NUMBER:
-        return None
-    if lowered in _PLURAL_OF:
-        return _PLURAL_OF[lowered]
-    if lowered in _SINGULAR_OF:
-        return _SINGULAR_OF[lowered]
-    if lowered.endswith("ies") and len(lowered) > 4:
-        return lowered[:-3] + "y"
-    if lowered.endswith(("sses", "shes", "ches", "xes", "zes")):
-        return lowered[:-2]
-    if lowered.endswith("s") and not lowered.endswith(("ss", "us", "is")):
-        return lowered[:-1]
-    if lowered.endswith("y") and lowered[-2] not in "aeiou":
-        return lowered[:-1] + "ies"
-    if lowered.endswith(("s", "sh", "ch", "x", "z")):
-        return lowered + "es"
-    return lowered + "s"
-
-
-def english_other_number(name: str) -> str | None:
-    """The name with its head word in the other number: the last word, or the word before
-    "of" ("chests of drawers"). None when the word has no other number a buyer types."""
-    words = str(name or "").split()
-    if not words:
-        return None
-    index = words.index("of") - 1 if "of" in words[1:] else len(words) - 1
-    other = _english_word_in_other_number(words[index])
-    if not other:
-        return None
-    return " ".join(words[:index] + [other] + words[index + 1:])
+# The English names in their other number: the same rule the search reads them by
+# (`picwise_nlu.english_number`), so the measure checks what the reader does.
+_english_word_in_other_number = english_word_in_other_number
 
 
 # Endings whose number is plain, as they are written with their accent: «μπαταρία»

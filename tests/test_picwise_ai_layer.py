@@ -629,8 +629,9 @@ class TheMeasureOnACatalogue(unittest.TestCase):
         self.assertIn("read as washing machine; 8 products, 8 read; asked about: narrow, utility, room", out)
         self.assertIn("characters of products, 8 with a description", out)
         self.assertIn("[2] plain | washing machine\n    not asked: every word matched", out)
-        self.assertIn("[3] judgement | best washing machine\n    not asked: only judgements or a condition not matched",
-                      out)
+        # "best" is set aside, as the words that judge or shop are (owner, 2026-11-07;
+        # `tests/test_picwise_reading_rules_by_cause.py`): not asked, every word matched.
+        self.assertIn("[3] judgement | best washing machine\n    not asked: every word matched", out)
         self.assertIn("words: 1 searches, 1 complex for the engine (expected: complex)", out)
         self.assertIn("plain: 1 searches, 0 complex for the engine (expected: not complex)", out)
         self.assertNotIn("shop.invalid", out)

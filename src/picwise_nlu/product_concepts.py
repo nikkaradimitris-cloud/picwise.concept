@@ -437,6 +437,23 @@ _JUDGEMENT_QUALIFIERS = (
 )
 
 
+# English words that judge, or that shop, rather than say what is wanted: "best laptop",
+# "cheap kettle", "air fryer deals uk". Understood and never a filter: no feed text can
+# confirm a judgement, and price first already puts the cheapest first (the debugging,
+# owner, 2026-11-07: "best" and "cheap" were read as words to match, «could not match:
+# best»). Read only where they are not a product's name: "crop top" stays a name.
+_ENGLISH_JUDGEMENT_WORDS = (
+    "best,top,cheap,cheaper,cheapest,budget,affordable,inexpensive,good,great,quality,decent,"
+    "reliable,recommended,popular,value,deal,deals,bargain,bargains,discount,discounted,sale,"
+    "buy,online,uk,price,prices,review,reviews,rated"
+)
+
+
+@lru_cache(maxsize=1)
+def get_english_judgement_words() -> tuple[str, ...]:
+    return tuple(word.strip() for word in _ENGLISH_JUDGEMENT_WORDS.split(",") if word.strip())
+
+
 # Words a buyer uses to ask for an item that is not new. PicWise shows refurbished and
 # used products only when they are asked for (owner decision, 2026-10-10), so these
 # words are read as a request about the item's condition and are never matched against
