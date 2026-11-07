@@ -30,6 +30,9 @@ Environment=PICWISE_GONE_PHOTOS_FILE=/srv/picwise/shared/photos/gone.json
 # its jobs/ folder, which the deployment makes only when the service has its key, the
 # site writes nothing there and its pages are as before.
 Environment=PICWISE_ASSIST_DIR=/srv/picwise/assist
+# The words of the searches visitors make, one line each, a file a day, nothing else: no
+# IP, no browser, no cookie (owner, 2026-11-07: «Ναι σε όλα»; picwise_app.search_log).
+Environment=PICWISE_SEARCH_LOG_DIR=/srv/picwise/shared/searches
 Environment=PYTHONDONTWRITEBYTECODE=1
 # The release in use is resolved once, at start: a worker gunicorn starts again later
 # loads the same code, even after a deployment has pointed `current` to a newer one.

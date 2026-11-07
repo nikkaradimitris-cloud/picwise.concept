@@ -17,6 +17,7 @@ from picwise_app import PicwiseLocalApp  # noqa: E402
 from picwise_app.app import NOINDEX_HEADER, ROBOTS_TXT  # noqa: E402
 from picwise_app.buying_routes import render_best_slug_html, render_buying_sitemap_xml  # noqa: E402
 from picwise_app.prepared_renewal import RENEWAL_PATH, request_prepared_feed_renewal  # noqa: E402
+from picwise_app.search_log import SEARCH_LOG_PATH, record_search  # noqa: E402
 from picwise_integrations import (  # noqa: E402
     UrllibSubbyBridgeEventSender,
     send_subby_live_proof_event,
@@ -149,6 +150,15 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         body = _APP.assist_status_json(key).encode("utf-8")
         return _response(
             "200 OK", "application/json; charset=utf-8", body, start_response, cache_control="no-store"
+        )
+
+    if path == SEARCH_LOG_PATH:
+        # The search page's script reporting a search once the page has loaded in a
+        # browser: its words are kept where the server keeps searches (owner,
+        # 2026-11-07; `picwise_app.search_log`), and nowhere else.
+        record_search(parse_qs(str(environ.get("QUERY_STRING", ""))).get("q", [""])[0])
+        return _response(
+            "204 No Content", "application/json; charset=utf-8", b"", start_response, cache_control="no-store"
         )
 
     if path == "/suggest.json":

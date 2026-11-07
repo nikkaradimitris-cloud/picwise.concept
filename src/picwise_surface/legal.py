@@ -22,7 +22,7 @@ OPERATOR_VAT = "EL120948460"
 PUBLIC_CONTACT_EMAIL = "contact.picwise@subby.cloud"
 LAST_UPDATED = "1 November 2026"
 # The privacy policy changed on its own, with the complex searches (owner, 2026-11-06).
-PRIVACY_LAST_UPDATED = "6 November 2026"
+PRIVACY_LAST_UPDATED = "7 November 2026"
 
 SHORT_AFFILIATE_NOTICE = (
     "PicWise earns a commission from some shops, through Awin, when you buy after following "
@@ -215,6 +215,12 @@ def render_privacy_page() -> str:
         "which processes them for PicWise to improve how products are matched to searches. Nothing that "
         "identifies you is sent with them: no IP address and no browser or device details. The provider may "
         "process them outside the United Kingdom and the European Economic Area.</p>"
+        # The owner, 2026-11-07: «Ναι σε όλα», to keeping the searches' text on the server,
+        # without IP or anything else (`picwise_app.search_log`).
+        "<h2>Searches</h2>"
+        "<p>To improve its search, PicWise keeps the words of the searches made on its pages, on its own server: "
+        "only the words and the day, and nothing that identifies you: no IP address, no browser or device details "
+        "and no cookie. They are kept for 12 months.</p>"
         "<h2>Hosting</h2>"
         "<p>PicWise runs on a server of OVHcloud in London, United Kingdom, which processes the technical logs above for PicWise.</p>"
         "<h2>Links to shops</h2>"
@@ -225,9 +231,11 @@ def render_privacy_page() -> str:
         "<h2>Legal basis</h2>"
         "<p>Technical logs: PicWise's legitimate interest in running a working and secure website. Emails: replying to your request. "
         "Complex searches: PicWise's legitimate interest in matching products to searches. "
+        "Searches: PicWise's legitimate interest in improving its search. "
         "If PicWise ever uses non-essential cookies, it will ask for your consent first.</p>"
         "<h2>How long data is kept</h2>"
-        "<p>Technical logs are kept only as long as needed for operation and security, and emails as long as needed to answer them and for legal obligations.</p>"
+        "<p>Technical logs are kept only as long as needed for operation and security, the words of searches for 12 months, "
+        "and emails as long as needed to answer them and for legal obligations.</p>"
         "<h2>Your rights</h2>"
         "<p>In the European Economic Area and the United Kingdom, the GDPR and the UK GDPR give you these rights. You may ask for access to, correction or deletion of your data, restrict or object to its processing, or ask for a copy, by emailing PicWise. You may also complain to a data protection authority: in Greece, where PicWise's operator is based, the Hellenic Data Protection Authority; in the United Kingdom, the Information Commissioner's Office.</p>"
         "<h2>Children</h2>"

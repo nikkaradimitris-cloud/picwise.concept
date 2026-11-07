@@ -290,6 +290,14 @@ form.addEventListener("submit",function(){
 });
 var more=document.querySelector(".pw-more-button");
 if(more){more.addEventListener("click",function(){scanFor(input.defaultValue.trim());});}
+(function(){
+  // The words of a search, kept on the server to measure the search (owner, 2026-11-07;
+  // picwise_app.search_log): only from a browser, only a search's first page.
+  var q=input.defaultValue.trim();
+  var path=location.pathname;
+  if(!q||!window.fetch||(path!=="/search"&&path!=="/results")||/[?&](shown|assist)=/.test(location.search)){return;}
+  try{fetch("/searched?q="+encodeURIComponent(q),{cache:"no-store",credentials:"omit",keepalive:true}).catch(function(){});}catch(e){}
+})();
 function norm(s){
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()
     .replace(/\u03c2/g,"\u03c3").replace(/\s+/g," ");

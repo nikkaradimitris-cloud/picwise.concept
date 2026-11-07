@@ -39,7 +39,7 @@ id picwise > /dev/null 2>&1 || useradd --system --user-group --home-dir "$APP" -
   --shell /usr/sbin/nologin picwise
 install -d -o root -g root -m 755 "$APP" "$APP/releases" "$APP/venvs"
 install -d -o picwise -g picwise -m 750 "$SHARED" "$SHARED/prepared" "$SHARED/public" "$SHARED/cache" \
-  "$SHARED/shops" "$SHARED/offers" "$SHARED/photos"
+  "$SHARED/shops" "$SHARED/offers" "$SHARED/photos" "$SHARED/searches"
 install -d -o root -g picwise -m 750 /etc/picwise
 # The AI layer's service, under a user of its own that never reads the site's files or
 # secrets; the site joins its group to share /srv/picwise/assist with it. Its jobs/ folder

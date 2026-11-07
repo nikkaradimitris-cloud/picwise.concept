@@ -338,7 +338,9 @@ class PrivacyPageTests(unittest.TestCase):
                       "details.", page)
         self.assertIn("outside the United Kingdom and the European Economic Area", page)
         self.assertIn("Complex searches: PicWise's legitimate interest in matching products to searches.", page)
-        self.assertIn("Last updated: 6 November 2026", page)
+        # Updated again on 7 November 2026, for the searches the server keeps
+        # (`tests/test_picwise_search_log.py`).
+        self.assertIn("Last updated: 7 November 2026", page)
         for name in ("Anthropic", "Claude", "Haiku", "OpenAI", " AI "):
             self.assertNotIn(name, page)
 

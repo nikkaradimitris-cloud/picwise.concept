@@ -62,6 +62,7 @@ from picwise_ai.store import assist_directory
 from .assist_wiring import assist_status, resolve_with_assist
 from .buying_routes import render_best_slug_html, render_buying_sitemap_xml
 from .query_log_sink import QUERY_LOG_SINK
+from .search_log import SEARCH_LOG_PATH, record_search
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 LOCAL_AVAILABLE_ROUTES = (
@@ -855,6 +856,15 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             self.send_header(*NOINDEX_HEADER)
             self.end_headers()
             self.wfile.write(body)
+            return
+        if parsed.path == SEARCH_LOG_PATH:
+            # The search page's script reporting a search (`picwise_app.search_log`).
+            record_search(parse_qs(parsed.query).get("q", [""])[0])
+            self.send_response(HTTPStatus.NO_CONTENT)
+            self.send_header("Content-Length", "0")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header(*NOINDEX_HEADER)
+            self.end_headers()
             return
         if parsed.path == "/suggest.json":
             body = self.app.search_suggestions_json().encode("utf-8")
