@@ -262,10 +262,15 @@ class AppHttpEndpointTests(unittest.TestCase):
         self._assert_common_footer_links(body)
 
     def test_search_route_random_garbage_query_shows_not_understood_message(self) -> None:
-        body = self._fetch("/search?q=7437%CE%B7%CF%86%CF%83%CE%B4%CE%BD%CF%89%3D%3D")
+        body = self._fetch("/search?q=7437hfsdnw%3D%3D")
         self.assertIn("PicWise could not understand this search safely.", body)
         self.assertNotIn(">View on Amazon<", body)
         self.assertNotIn("ASIN: B0GR1257LT", body)
+        self.assertNotIn('class="pw-card"', body)
+        # The same in Greek letters is told that PicWise searches in English (owner,
+        # 2026-11-07: «Ναι σε όλα, κλείσε και τα δύο»).
+        body = self._fetch("/search?q=7437%CE%B7%CF%86%CF%83%CE%B4%CE%BD%CF%89%3D%3D")
+        self.assertIn("PicWise searches in English.", body)
         self.assertNotIn('class="pw-card"', body)
 
     def test_search_route_provider_not_connected_shows_explicit_message(self) -> None:
