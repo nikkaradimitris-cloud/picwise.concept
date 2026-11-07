@@ -32,6 +32,11 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-06): pick up here -- start here
 
+- **The daily work (owner, 2026-11-07):** every day at about 12:00 Greek time a scheduled
+  task starts a new session that follows `docs/PICWISE_DAILY_WORK.md`: the next step of
+  this section, its tests and measures, a report in Greek by email, and the site changed
+  only after the owner's «ναι» to that day's report. The AI at most $2 a day.
+
 - **START HERE (07/11, later): the rules by cause built on the owner's word, tested, not
   deployed: waiting for the owner's «ανέβασε»** (push `8db74c2`, or what is newest on
   `ccr-4f47068a-99ikwe`, to the deploying branch `ccr-1361f1a7-dcpo60`: `src/picwise_nlu`
