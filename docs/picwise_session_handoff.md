@@ -1,12 +1,13 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-11-06 (**the AI layer
-live since 2026-11-06 20:41 UTC, run `42287840883`, `75fd3d0` (owner: «ανέβασε το
-75fd3d0»): in a complex search the products the AI reads as fitting first and marked, one
-euro a day, the privacy text naming no company; next: the owner's tries of complex
-searches on the site, the fixes they show kept in a list and built all together on the
-owner's word (07/11), then its spend after a day or a week; no more kind-by-kind fixes
-(the owner)**;
+Current state for whoever picks the project up next. Updated 2026-11-07 (**next: a big
+general debugging of the search, asked by the owner on 07/11 («ζητάω μία μεγάλη γενική
+απασφαλμάτωση»: the site not yet trusted as a production page; «μπαταρία» read as boots),
+English first, fixed by cause, not kind by kind; the AI fixes kept in a list go in the
+same build**; **the AI layer live since 2026-11-06 20:41 UTC, run `42287840883`,
+`75fd3d0` (owner: «ανέβασε το 75fd3d0»): in a complex search the products the AI reads as
+fitting first and marked, one euro a day, the privacy text naming no company; its spend
+after a day or a week**;
 **item 2 live
 since 2026-11-05 12:54 UTC, run `42028878547`: a shelf's kind read against its aisle,
 doubtful products found by their words; searches of a kind with a wrong card 31 -> 7 of
@@ -24,7 +25,30 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-06): pick up here -- start here
 
-- **START HERE: the owner's try of the AI layer on the site.** Deployed on 06/11 on the
+- **START HERE: a big general debugging of the search (owner, 07/11).** The owner's words:
+  «Θα πάμε σε άλλες συζήτηση έχω κάνει και άλλα τεστ βέβαια είναι στα ελληνικά που δεν με
+  ενδιαφέρουνε αλαφαντάζομαι ότι και στα αγγλικά θα υπάρχουν παράδειγμα μπαταρίες 3α
+  βγάζει μπότες δεν μπορώ να εμπιστευτώ ακόμα αυτό το service για production σελίδα..
+  ζητάω μία μεγάλη γενική απασφαλμάτωση». Read: Greek searches matter less to the owner
+  (the site is in English, for the UK); the owner expects the same faults in English; the
+  site is not yet trusted as a production page. **The example, traced on 07/11** with
+  `picwise_nlu.concept_understanding.understand_product_query`: «μπαταρίες 3α» and
+  «Μπαταρίες 3Α» (plural) are read rightly as `battery`; the singular «μπαταρία» or
+  «μπαταρια» (with "3α", with "aaa" or alone) as `boots`: no kind holds the word, and the
+  fuzzy match takes it for «μποτάκια» (two letters off), the page saying "could not match:
+  μπαταρια". The engine's reading is the same since `a7539b9` (`src/picwise_nlu` and
+  `src/picwise_taxonomy` unchanged), so the boots came before the AI, which only reads the
+  products the engine chose. In English "battery", "aaa battery", "aa battery" and "battery
+  aaa" are read rightly; a like fault in English seen before: "rubber gloves" read as
+  router (05/11). **Proposed for the new conversation** (put it to the owner first, short,
+  in Greek): (1) the engine's reading run offline over a wide list of English shopper
+  searches (every kind's names, plurals, common typos, a need or a size added) and every
+  search whose kind is not the one asked listed by cause (a fuzzy guess, a word no kind
+  holds, a kind's word that names another thing); (2) the same searches on the server's
+  catalogue, through a workflow as `server-confusions.yml` does, reading the first cards'
+  kinds; (3) fixed by cause, not kind by kind (the owner, 05/11), measured before and
+  after; (4) the AI fixes kept (below) in the same build. Greek only where it is cheap.
+- **The AI layer live (06/11), and the owner's first try.** Deployed on 06/11 on the
   owner's «ανέβασε το 75fd3d0»: `75fd3d0` pushed to `ccr-1361f1a7-dcpo60` (a fast-forward
   from `a7539b9`), run `42287840883`, success; release `20261106T202256Z-75fd3d0`, the site
   on it since 20:41:34 UTC. Its log: "Anthropic key: set", "anthropic 2.6.0", "assist:
