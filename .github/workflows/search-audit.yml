@@ -16,6 +16,15 @@
 # prints counts, kinds, titles, brands, shops and prices, never a link.
 # A run is one commit that changes only `if: false` to `if: true`, pushed to the working
 # branch, then one that turns it off again and records the run here.
+# Run 42390049201 (2026-11-07, this file at c7110cc against 75fd3d0; the server's catalogue
+# prepared at 04:25 that day, 597,270 products a card can show): 1,338 searches (807 names,
+# 265 brands, 266 read as another kind offline), 2 h 18 min, the AI $0.80 of the $3 (1,845
+# calls, 34 with no answer). A search took 1.96 s in the middle with this commit and 1.95 s
+# with the rules deployed, but 4,172 s in all against 2,797 s. Of the first 12 cards judged,
+# right: 73.2% against 65.0%; absurd 778 against 1,233; right cards 7,438 against 7,627;
+# searches with no card 258 (143 asking "Did you mean") against 125. Worse in CL (absurd 52
+# against 12), TY (12 against 0) and FU (40 against 35), and GA and CO hold fewer right
+# cards: nothing deployed. Of 10,000 products with no kind, the AI read 2,873 as rings.
 name: Search audit (read-only, measured only)
 on:
   push:
