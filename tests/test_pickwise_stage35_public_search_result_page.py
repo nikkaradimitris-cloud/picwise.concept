@@ -60,8 +60,10 @@ class PickWiseStage35PublicSearchResultPageTests(unittest.TestCase):
     def test_search_route_handles_no_data_honestly(self) -> None:
         status, _headers, body = _call_wsgi("/search", f"q={quote('   ')}")
         self.assertEqual(status, "200 OK")
-        self.assertIn("PicWise safely shows no product cards", body)
-        self.assertIn('data-card-count="0"', body)
+        # A search of blanks is the page without a search (the design of 2026-10-31):
+        # what PicWise is, and no cards at all.
+        self.assertIn('<h1 class="pw-hero-title">Find the product you want in UK shops</h1>', body)
+        self.assertNotIn("<article", body)
         self.assertNotIn("manual_amazon_affiliate", body)
         self.assertNotIn("provider_not_connected", body)
         self.assertNotIn("not_understood", body)

@@ -11,11 +11,15 @@ Mandatory operating rulebook for Picwise Production.
 
 ## 2) Core Identity
 
-Changed on 2026-10-16 by the owner: "price first" (`docs/picwise_price_first_plan_2026-10-15.md`).
+Changed on 2026-10-16 by the owner: "price first" (`docs/picwise_price_first_plan_2026-10-15.md`). Changed again on 2026-11-01 by the owner: products a current shop offer covers come first (owner, 2026-11-01: «Ανά προϊόν... Όταν ψάχνει ένας πελάτης ένα προϊόν ή μία κατηγορία υπάρχει προσφορά σε αυτό το προϊόν ... προϊόντα με προσφορές πρώτα», and, asked whether that changes "cheapest first": «Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο»).
 
-- Picwise finds the product the buyer asked for, shows only what is in stock, cheapest first, and makes one honest pick.
+- Picwise finds the product the buyer asked for, shows only what is in stock, the products a current shop offer covers first and then cheapest first, and makes one honest pick.
 - Picwise must reduce search-to-decision time.
-- Every purchase-intent query must lead to 4 choices first, with exactly 1 honest recommended choice among them, and a "More" that opens the next 4 cheapest as often as the buyer asks.
+- Every purchase-intent query must lead to 4 choices first, with exactly 1 honest recommended choice among them, and a "More" that opens the next 4 in that order as often as the buyer asks.
+- Fewer than four right products are shown as they are (`docs/PICWISE_DECISION_CONTRACT.md`, 2026-10-16). Even one product is shown when there is no other, on a layout of its own, never as one small card in the middle (owner, 2026-10-31: «Το ευρετήριο μπορεί να εμφανίσει και ένα προϊόν εάν δεν υπάρχουν άλλα σε αυτή την περίπτωση το εμφανίζει διαφορετικά»).
+- A product whose photo is gone is not shown, counted or recommended (owner, 2026-11-01: «Όταν το προϊόν δεν φέρνει φωτογραφία δεν πρέπει να εμφανίζεται... Στις περισσότερες περιπτώσεις είναι not found»): the server asks every photo each night (`deployment/server/check_photos.py`), only a link to nothing (HTTP 404, 410) is gone, and the site leaves those products out (`picwise_providers.product_photos`); in the visitor's browser a card is seen only once its photo has loaded, and one whose photo fails never (owner: «να μην μπορεί να εμφανιστεί ένα προϊόν αν δεν έχει φωτογραφία στο ui») (`docs/PICWISE_DECISION_CONTRACT.md`, "What a product must carry to be shown").
+- In a complex search, one whose words of need no product of the kind carries in its title ("quiet washing machine", «σακίδιο για σχολείο»), the products whose own words show that they fit the need, as the AI layer reads them and code checks letter for letter, come first, the Recommended among them, each marked with a ✓ and its own words (owner, 2026-11-06: «Όταν η αναζήτηση είναι συνθετή και το ai έχει εμπλακεί στον ευρετηριασμό τα προϊόντα που υποδεικνύει πρέπει να έχουν λεκτική αναφορά αλλά και οπτική σημείωση καθώς πρέπει να κατατάσσονται και πρώτα», then «Ναι, συμφωνώ με όλα, προχώρα» to the order, the time and the mark proposed) (`docs/PICWISE_DECISION_CONTRACT.md`, "The products that fit a complex search first"; `docs/PICWISE_AI_LAYER_SPEC.md`, 4.4). The page never waits for the AI: it comes at once, and the products that fit move up when the answer comes.
+- A search for a kind shows that kind, never another thing its word names (owner, 2026-11-03: «Στα tablets .. tablet... Βγάζει και χάπια... Εφόσον το κύριο είδος είναι tablet ... αυτό πρέπει να συμβαίνει γενικά παντού»): a product whose title alone names the kind is of that kind only where the aisle it is filed in may hold the kind's department, written per aisle of Google's (`concept_understanding._AISLE_HOLDS`), and per narrower aisle where Google's narrows it (`_SUB_AISLE_HOLDS`: jewellery holds jewellery only, owner, 2026-11-05); the aisle is read from a path of Google's, or from a shop's own shelf found among Google's shelves by its name (`_shelf_aisles`: "Vitamins & Supplements" is in Health & Beauty, which holds no computer); a kind the shop's type or shelf names is read against the aisle the same way ("Toners & Astringents" names no printer toner; owner, 2026-11-05: «Εντάξει, προχώρα με το βήμα 2»); a product whose kind is doubtful is still found by its words when a search's words are carried by none of its kind's products ("vitamin tablets") (`docs/PICWISE_DECISION_CONTRACT.md`, "The main kind only").
 
 ## 3) Required Output Contract (Always)
 
@@ -50,7 +54,7 @@ The project must never:
 
 - Picwise may earn through affiliate/referral/lead/conversion models.
 - Commission is never part of recommendation logic.
-- The order is the price, after the kind asked for and availability. The Recommended is the middle product in price order, the median, with a dearest product costing at least twice the next one left out of the count (`docs/PICWISE_DECISION_CONTRACT.md`, "Price first"; changed on 2026-10-16 by the owner).
+- The order, after the kind asked for and availability: the Recommended first; then the products a current shop offer covers, cheapest first; then the rest, cheapest first (owner, 2026-11-01). In a complex search, the products that fit the buyer's need (section 2) come first, in that same order among them, then the rest in that order; the Recommended is chosen among those that fit, by the same rule (owner, 2026-11-06). Fitting a need the buyer typed is no commission criterion. An offer covers a product only where its own words leave no doubt: the whole shop, or the product's kind named in it, live now by its own dates, and, for a voucher, only with its code, which Awin gives for the programmes PicWise is joined to (`picwise_providers.product_offers`; `docs/PICWISE_DECISION_CONTRACT.md`, "Offers first"). PicWise is paid nothing to put an offer first; commission still never decides the order. When the answer holds three products or more and a current shop offer covers one of them, the Recommended is a product on offer: of those on offer, the one nearest the middle of their prices, one with an EAN/GTIN first (owner, 2026-11-01: «Εάν υπάρχει προσφορά να προτείνει την προσφορά», and «το recommended όταν υπάρχει προσφορά πρέπει να δείχνει την προσφορά»). Otherwise the Recommended is the middle product in price order, the median, with a dearest product costing at least twice the next one left out of the count (`docs/PICWISE_DECISION_CONTRACT.md`, "Price first"; changed on 2026-10-16 by the owner).
 - A shop in several networks is one shop, known by its own site's domain. Its price and availability come from the freshest feed (the latest update date the network states) with a real stock state, never chosen by commission; only when the networks give the same offer is the link taken from the network that pays best, the highest commission first (`docs/PICWISE_DECISION_CONTRACT.md`, "One shop in several networks"; owner, 2026-10-22).
 
 ## 6) Brain Model
@@ -110,6 +114,17 @@ Before and during every change:
 
 - First phase is docs/spec/contracts foundation.
 - Do not build live product UI until mission docs and contracts are created and reviewed.
+
+## 13) Google Rule
+
+Set on 2026-10-29 by the owner: «Θα στήσουμε ολοκληρωμένα και θα δώσουμε στη Google αυτά που θέλουμε τμηματικά».
+
+- PicWise is built whole: every product a card can show is in PicWise's own search, whether or not Google sees it.
+- Google is given only what the owner chooses, part by part. Google indexes pages, not products: only the pages meant for Google (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`, section 2), never the site's own search, whose pages carry `noindex`.
+- A page opens to Google only when its kind passes the bar and the owner chooses its part. The bar: products of the kind read as the right kind and checked (kind, price, stock). No minimum of shops (owner, 2026-10-31: «Καταργείται το όριο των τριών καταστημάτων ανά είδος»), and no minimum of products: even one product, on a layout of its own. Further numbers of the bar are the owner's to set (TODO). A page that does not pass is still shown to visitors, carries `noindex` and stays out of the sitemaps.
+- A page meant for Google may choose its products among all of its kind's products; whatever Google sees on it must be true.
+- A visitor who comes from Google finds the whole catalogue through PicWise's own search: a kind may have 15,000 products while Google sees the pages of 100 checked ones.
+- Parts go out one at a time, and a part Google does not keep is fixed or withdrawn before the next (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`, section 9).
 
 ## Enforcement
 

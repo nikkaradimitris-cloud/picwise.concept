@@ -1,0 +1,34 @@
+# Which shops the Awin feed link in use holds and, once the owner has made a new link with
+# more shops, whether the new one still holds every one of them (owner, 2026-10-31: «πως
+# θα ξέρω οτι συμπεριλαμβάνονται και τα παλιότερα μέσα στο καινούργιο?»). The new link
+# waits in the secret AWIN_FEED_URL_NEW; it replaces AWIN_FEED_URL only when this says it
+# lacks no shop. The work is .github/scripts/compare_feeds.py, on GitHub's runner.
+#
+# Read-only: nothing on the server or the site changes. Runs when this file or the script
+# is pushed to the working branch; to compare again, change the line below and push. The
+# repository is public and so is this log: the links are secrets, never printed; shop
+# names and row counts only.
+#
+# Compared: 2026-10-31, the link in use alone
+name: Feed compare (read-only)
+on:
+  push:
+    branches: [ccr-1361f1a7-dcpo60]
+    paths:
+      - '.github/workflows/feed-compare.yml'
+      - '.github/scripts/compare_feeds.py'
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: The shops of the feed in use, and of the new one
+        env:
+          AWIN_FEED_URL: ${{ secrets.AWIN_FEED_URL }}
+          AWIN_FEED_URL_NEW: ${{ secrets.AWIN_FEED_URL_NEW }}
+        run: python3 .github/scripts/compare_feeds.py

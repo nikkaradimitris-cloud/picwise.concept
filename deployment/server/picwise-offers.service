@@ -1,0 +1,43 @@
+# Fetches the live Awin offers of PicWise's own shops into /srv/picwise/shared/offers
+# (deployment/server/fetch_offers.py; owner, 2026-11-01: «Οκ να φέρνει τις προσφορές των
+# δικών μας καταστημάτων»). The file is served to no one: how offers show on the site is
+# the owner's later talk. Run every night by picwise-offers.timer, after the preparation,
+# whose downloaded feed names the shops, and once by each deployment.
+# Installed by deployment/server/deploy.sh.
+[Unit]
+Description=PicWise: fetch the Awin offers of PicWise's shops
+# A preparation still running is waited for: its feed is read here.
+After=network-online.target picwise-prepare.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=picwise
+Group=picwise
+WorkingDirectory=/srv/picwise/current
+# The Awin token, written by the deployment from GitHub's secrets; never in the repository.
+EnvironmentFile=-/etc/picwise/picwise.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/bin/python3 deployment/server/fetch_offers.py \
+    --feed-cache-dir /srv/picwise/shared/cache --out /srv/picwise/shared/offers/offers.json
+TimeoutStartSec=30min
+Nice=10
+MemoryHigh=768M
+MemoryMax=1G
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/picwise/shared
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=

@@ -1,0 +1,47 @@
+# The AI layer's service: it answers the site's complex searches with Claude Haiku 5.5
+# (docs/PICWISE_AI_LAYER_SPEC.md, 4.5 to 4.7; deployment/server/assist_service.py).
+# Installed by deployment/server/deploy.sh, and run only when GitHub holds the key.
+#
+# Its own user, the only one given the key: the key is in /etc/picwise/assist.env, which
+# only systemd reads (root's, 0600), never in picwise.env or the site's service. It never
+# reads the catalogue or the site's secrets: it shares with the site only
+# /srv/picwise/assist (the site writes jobs, it writes the answers), and asks at most one
+# euro a day (owner, 2026-11-06), kept as $1.00, and 30 calls a minute.
+[Unit]
+Description=PicWise assist (the AI layer for complex searches)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=picwise-assist
+Group=picwise-assist
+EnvironmentFile=-/etc/picwise/assist.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+# The release in use is resolved at start, as for the site; the deployment restarts it.
+ExecStart=/bin/sh -c 'release=$$(readlink -f /srv/picwise/current) && exec /srv/picwise/venv-ai/bin/python \
+    "$$release/deployment/server/assist_service.py" --dir /srv/picwise/assist'
+Restart=on-failure
+RestartSec=10
+MemoryHigh=256M
+MemoryMax=384M
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/picwise/assist
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target
