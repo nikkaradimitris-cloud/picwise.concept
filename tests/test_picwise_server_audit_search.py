@@ -21,6 +21,7 @@ Every product is local test data: fictional brands and shops, `.invalid` address
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -143,6 +144,18 @@ class AuditTests(unittest.TestCase):
         self.assertEqual(answered[0]["total"], 15)
         unsure = audit_search.search_cards([{"q": "laptop bgs", "kind": "laptop_bag", "category": "JW", "how": "x"}])
         self.assertEqual(unsure[0]["cards"], [])
+        # Why each search was answered so, for the searches made worse and the slowest.
+        self.assertIn("unsure_reading", unsure[0]["why"])
+
+    def test_the_time_a_search_took_and_the_slowest(self) -> None:
+        answered = [{"q": f"q{n}", "seconds": n / 10, "why": ["price_first"]} for n in range(1, 51)]
+        answered.append({"q": "slow one", "seconds": 7.5, "why": ["unsure_reading"]})
+        lines = audit_search.search_times(answered)
+        self.assertEqual(
+            lines[0], "time a search: 2.60 s in the middle, 4.60 s at the 90th in 100, 7.50 s the slowest; 11 over 4 s"
+        )
+        self.assertEqual(lines[1], '  7.50 s "slow one": unsure_reading')
+        self.assertEqual(len(lines), 1 + audit_search.SLOWEST)
 
     def test_the_flags_cheapest_first_and_a_sample_of_the_rest(self) -> None:
         chosen = audit_search.flagged_and_sampled(self.prepared)
@@ -189,6 +202,38 @@ class AuditTests(unittest.TestCase):
         self.assertEqual((row["judged"], row["right"], row["absurd"]), (12, 0, 12))
         self.assertIn('  absurd cards with this commit: 12 listed', "\n".join(lines))
 
+    def test_the_searches_this_commit_makes_worse_asked_about_the_cards_only(self) -> None:
+        searches = [
+            {"q": "kettle", "kind": "kettle", "category": "KI", "how": "name"},
+            {"q": "laptop", "kind": "laptop", "category": "CO", "how": "name"},
+        ]
+        before = audit_search.search_cards(searches)
+        aqua = [str(product.provider_product_id) for product in self.prepared.products if "Aqua Boil" in product.title]
+        after = [
+            dict(search, cards=aqua, why=["unsure_reading_answered_by_words"]) if search["q"] == "kettle" else search
+            for search in before
+        ]
+        lines: list[str] = []
+        report = audit_search.judge(
+            self.prepared, searches, {"75fd3d0": before, "this commit": after},
+            asker=audit_search.Asker(object(), 3.0, _fake_ask), out=lines.append, cards_only=True,
+        )
+        out = "\n".join(lines)
+        self.assertIn("== THE SEARCHES THIS COMMIT MAKES WORSE THAN 75fd3d0", out)
+        self.assertIn("KI: 1 worse, 0 better, 0 the same", out)
+        self.assertIn(
+            '  "kettle" (kettle): 11 of 12 right, 0 absurd -> 0 of 2 right, 0 absurd; unsure_reading_answered_by_words',
+            out,
+        )
+        self.assertIn("      Fixturon Aqua Boil 1 1.7L | 30.00 GBP", out)
+        self.assertIn("CO: 0 worse, 0 better, 1 the same", out)
+        self.assertEqual(report["worse"], {"KI": ["kettle"], "CO": []})
+        # The cards only: neither the products of each kind nor the gaps are asked about.
+        self.assertNotIn("== THE PRODUCTS IN EACH KIND", out)
+        self.assertNotIn("== THE PRODUCTS WITH NO KIND", out)
+        self.assertIn("to ask: ", out)
+        self.assertIn(" 0 products with no kind in 0 calls", out)
+
     def test_the_budget_stops_the_calls(self) -> None:
         asker = audit_search.Asker(object(), 0.0015, _fake_ask)
         lines: list[str] = []
@@ -203,7 +248,9 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("    branches: [ccr-4f47068a-99ikwe]", text)
         self.assertIn("      - '.github/workflows/search-audit.yml'", text)
         self.assertIn("    if: false\n", text)
-        self.assertIn("      BUDGET: '3.00'", text)
+        budget = re.search(r"\n      BUDGET: '(\d+\.\d\d)'\n", text)
+        self.assertTrue(budget and float(budget.group(1)) <= 3.0, "the budget, at most $3")
+        self.assertIn('--budget "$BUDGET" $CARDS_ONLY', text)
         self.assertIn("      COMPARE_WITH: 75fd3d0", text)
         self.assertIn("  group: server-setup", text)
         for part in ("audit_search.py searches", "audit_search.py cards", "--src \"$RUNNER_TEMP/rules-before\"",

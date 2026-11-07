@@ -37,8 +37,51 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   this section, its tests and measures, a report in Greek by email, and the site changed
   only after the owner's «ναι» to that day's report. The AI at most $2 a day.
 
+- **START HERE (08/11, night): the debugging's steps 2 and 3 measured on the server's
+  catalogue (run `42390049201`): better on the whole, worse in three categories, so
+  nothing deployed; one cause found and fixed; the next run measures the cards again.**
+  The owner had said «Ανέβασε μετά τη μέτρηση..», told: deployed if the new rules come
+  out better and break nothing, else stop and ask. The measure,
+  `deployment/server/audit_search.py` (`1d22739`, its tests in
+  `tests/test_picwise_server_audit_search.py`) run by `.github/workflows/search-audit.yml`
+  (`c7110cc` against the rules deployed, `75fd3d0`; turned off by the daily session's
+  `236937a`, recorded in `d995e56`): the
+  server's catalogue prepared 07/11 04:25, 597,270 products a card can show; 1,338
+  searches (807 names, 265 brands, 266 read as another kind offline); the AI $0.80 of
+  the $3. Of the first 12 cards judged, right 65.0% -> 73.2%; absurd 1,233 -> 778; right
+  cards 7,627 -> 7,438; searches with no card 125 -> 258, 143 of them asking "Did you
+  mean". Right and absurd per category, deployed -> new: HA 75.6% 25 -> 79.8% 1; KI 68.5%
+  38 -> 71.7% 28; FU 70.3% 35 -> 72.5% 40; PH 62.4% 0 -> 93.3% 0; CO 69.4% 114 -> 78.8%
+  13; AV 79.0% 38 -> 81.6% 24; CP 93.1% 0 -> 93.1% 0; TY 29.6% 0 -> 20.5% 12; MO 38.7% 0
+  -> 63.5% 0; PT 60.0% 36 -> 82.9% 0; HT 70.6% 64 -> 83.6% 2; GA 55.6% 156 -> 56.3% 125;
+  HE 45.8% 72 -> 80.0% 1; BE 69.1% 36 -> 73.1% 0; BK 35.8% 523 -> 44.8% 480; CL 78.3% 12
+  -> 76.0% 52; FO 86.8% 0 -> 97.6% 0; JW 75.7% 84 -> 87.6% 0. Worse: CL, TY and FU in
+  absurd cards; GA and CO in right cards (CO 1,471 -> 1,321).
+  **Found and fixed** (the commit after `d995e56`, with a test in
+  `tests/test_picwise_unsure_reading.py`): an unsure reading was answered by a words
+  search that had dropped a word ("fire pots" with pen pots, "desk lam" with a horse feed,
+  "electric fire bowl" with a spice grinder): `_unsure_reading_selection` now takes the
+  words answer only when it keeps every word, else "Did you mean ...?", as its own
+  docstring said. **The time:** 1.96 s a search in the middle, as before (1.95 s), but
+  4,172 s in all against 2,797 s: the likely cost is the unsure path, a words search over
+  the whole catalogue (`_select_products_by_words` builds each product's text on every
+  search), against the 4-second aim; the next run prints the time per search and the
+  slowest searches, each with why it was answered so (`audit_search.search_times`).
+  **The next run** (the commit after that one, the cards only, at most $1, `--cards-only`):
+  the cards with this fix and, per category, the searches it makes worse than the rules
+  deployed, each with why it was answered so and its first wrong card
+  (`audit_search._worse_searches`). **Then:** fix those causes (CL, TY, FU, GA, CO), make
+  the unsure path fast, measure again; the owner's «ανέβασε» asked only when nothing
+  comes out worse. **Also found:** the scanning screen names the feed's eligible products
+  (`prepared.eligible_count`, the about 730,000 the owner saw), while a card can show
+  597,270 (`len(prepared.products)`): to put to the owner. Of 10,000 products with no
+  kind, the AI read 2,873 as rings (a gap in the ring kind, JW: to find why), 59 as
+  cables, 37 phone cases, 26 trainers, 26 t-shirts. The kinds holding most products not
+  of them (of those judged): storage_drive 174, dinnerware 155, watch 124, battery 118,
+  software 91, football 78, cookware 68, garden_hose 62 (the run's log lists them, with
+  five examples each).
 - **Daily session 2026-11-08: the search audit read (run `42390049201`, on `c7110cc`, success, 2 h 19 min, the AI 1,845 calls, 34 without an answer, $0.7972 of the $3).** The workflow is off again (`if: false`). The cards a visitor sees, first 12 of each search, judged by Haiku, the rules deployed (`75fd3d0`) -> this branch (`8db74c2`): right 75.6% -> 79.8% HA; 68.5 -> 71.7 KI; 70.3 -> 72.5 FU; 62.4 -> 93.3 PH; 69.4 -> 78.8 CO; 79.0 -> 81.6 AV; 38.7 -> 63.5 MO; 60.0 -> 82.9 PT; 70.6 -> 83.6 HT; 55.6 -> 56.3 GA; 45.8 -> 80.0 HE; 69.1 -> 73.1 BE; 35.8 -> 44.8 BK; 86.8 -> 97.6 FO; 75.7 -> 87.6 JW; CP the same 93.1. **Worse: CL 78.3 -> 76.0 (absurd cards 12 -> 52), TY 29.6 -> 20.5 (absurd 0 -> 12), FU absurd 35 -> 40.** Searches with no card rise (PH 9->36, CO 6->42: the "Did you mean" asks, by design). Left on both: BK 480 absurd cards of 1,117, GA 125 of 744; the Geepas kettle-and-toaster sets under "toaster"/"kettle"; 11 gardenista cushion covers under "pillow"; "electric fire pit" read as a heater. Gaps: 5,962 of 9,242 sampled products with no kind read as none (rings 2,873 judged as the ring kind, clothing and shoes with the kind in the variant only). **Because CL, TY and FU came out worse, nothing goes on the site until they are read and fixed.**
-- **START HERE (07/11, later): the rules by cause built on the owner's word, tested, not
+- **Built (07/11, later): the rules by cause built on the owner's word, tested, not
   deployed: waiting for the owner's «ανέβασε»** (push `8db74c2`, or what is newest on
   `ccr-4f47068a-99ikwe`, to the deploying branch `ccr-1361f1a7-dcpo60`: `src/picwise_nlu`
   changed, so the deployment prepares the catalogue again). How it came: told step 1's

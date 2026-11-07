@@ -4,7 +4,7 @@
     python3 deployment/server/audit_search.py cards CATALOGUE.json.gz SEARCHES.json CARDS.json \
         [--src CHECKOUT] [--gone GONE.json] [--offers OFFERS.json]
     python3 deployment/server/audit_search.py judge CATALOGUE.json.gz SEARCHES.json CARDS.json \
-        [--before CARDS-BEFORE.json --before-name NAME] [--budget 3.00] [--dry-run]
+        [--before CARDS-BEFORE.json --before-name NAME] [--budget 3.00] [--cards-only] [--dry-run]
 
 Owner, 2026-11-07: «ζητάω μία μεγάλη γενική απασφαλμάτωση», the method's steps 2 and 3 and
 about $3 for them («Ναι σε όλα»), not every product («Κατάλαβα τη διευκρίνιση δεν χρειάζεται
@@ -17,7 +17,8 @@ the server's prepared catalogue; nothing on the server or the site changes.
    its name, and the searches the offline measure (`print_search_reading.py`) found read as
    another kind; each with the kind it is for.
 2. `cards`: each search on the copy as the site answers it with a checkout's code (this
-   one, or `--src`: the rules deployed), its first 12 cards.
+   one, or `--src`: the rules deployed), its first 12 cards and why it was answered so;
+   the time a search took, and the slowest searches.
 3. `judge`: Haiku asked, 40 products a call, whether each is what was asked for:
    a. the products of each kind (by this checkout's rules) the reports flag -- the title
       names none of the kind's words, an accessory word in it, a price under a quarter of
@@ -28,9 +29,11 @@ the server's prepared catalogue; nothing on the server or the site changes.
    Printed per category (`print_search_reading.CATEGORY_CODES`): the share of each kind's
    products that are not of it, flagged and not; the gaps; for each set of rules, the
    share of the first 12 cards that are right, the absurd ones (not right, and of no kind
-   of the search's category) and the searches with no card; then in short. The calls stop
-   at `--budget` dollars. Without `ANTHROPIC_API_KEY`, or with `--dry-run`, nothing is
-   asked: the run says what would be.
+   of the search's category) and the searches with no card; then, with two sets of rules,
+   the searches where this commit's cards are worse (fewer right, or more absurd), with why
+   it answered so and its first wrong card. `--cards-only` asks about the cards alone (a. and
+   b. do not change with the search's rules). The calls stop at `--budget` dollars. Without
+   `ANTHROPIC_API_KEY`, or with `--dry-run`, nothing is asked: the run says what would be.
 
 The repository and its logs are public: titles, brands, prices and shops are printed,
 never a link, never the key. Always exits 0.
@@ -63,6 +66,9 @@ NO_KIND_SAMPLE = 10_000
 WORKERS = 8
 TITLE = 90
 EXAMPLES = 5
+# The slowest searches printed, and the searches worse than the rules deployed, a category.
+SLOWEST = 10
+WORSE_A_CATEGORY = 6
 # Words that make a product something used with another, not the thing: a title carrying
 # one, of a kind whose names do not, is flagged.
 ACCESSORY_WORDS = frozenset(
@@ -275,11 +281,31 @@ def search_cards(searches: list[dict[str, str]]) -> list[dict[str, Any]]:
                 "state": str(resolution.resolver_state),
                 "total": int(resolution.provider_feed_total_count or len(products)),
                 "did_you_mean": list(getattr(resolution, "did_you_mean", ()) or ()),
+                "why": [str(code) for code in getattr(resolution, "reason_codes", ()) or ()],
                 "cards": [str(product.get("provider_product_id") or "") for product in products[:CARDS]],
                 "seconds": round(time.monotonic() - began, 2),
             }
         )
     return answered
+
+
+def search_times(answered: list[dict[str, Any]]) -> list[str]:
+    """The time a search took, in the middle, at the 90th in 100 and at most, and the
+    searches over 4 seconds; then the slowest searches, each with why it was answered so."""
+    seconds = sorted(float(search.get("seconds") or 0.0) for search in answered)
+    if not seconds:
+        return []
+    lines = [
+        f"time a search: {seconds[len(seconds) // 2]:.2f} s in the middle,"
+        f" {seconds[min(len(seconds) - 1, len(seconds) * 9 // 10)]:.2f} s at the 90th in 100,"
+        f" {seconds[-1]:.2f} s the slowest; {sum(1 for value in seconds if value > 4.0):,} over 4 s"
+    ]
+    for search in sorted(answered, key=lambda search: -float(search.get("seconds") or 0.0))[:SLOWEST]:
+        lines.append(
+            f'  {float(search.get("seconds") or 0.0):.2f} s "{search["q"]}": '
+            + (", ".join(search.get("why") or ()) or search.get("error", ""))
+        )
+    return lines
 
 
 # --------------------------------------------------------------------------------------
@@ -411,8 +437,10 @@ def judge(
     *,
     asker: Asker | None,
     out: Callable[[str], None] = print,
+    cards_only: bool = False,
 ) -> dict[str, Any]:
-    """Every judgement the measure needs, asked or (without `asker`) counted; the report."""
+    """Every judgement the measure needs, asked or (without `asker`) counted; the report.
+    With `cards_only`, the cards alone: not the products of each kind, not the gaps."""
     import print_search_reading as reading_measure
     from picwise_nlu.product_concepts import _MEGA, get_product_concepts
 
@@ -430,7 +458,7 @@ def judge(
 
     # Every (what was asked for, product) pair, once.
     pairs: dict[tuple[str, str], list[int]] = defaultdict(list)
-    chosen = flagged_and_sampled(prepared)
+    chosen = {} if cards_only else flagged_and_sampled(prepared)
     for kind, groups in chosen.items():
         for i in groups["flagged"] + groups["sample"]:
             pairs[(asked_for(kind), kind)].append(i)
@@ -447,7 +475,7 @@ def judge(
         i for i, kinds in enumerate(prepared.kinds) if not [kind for kind in kinds if not kind.startswith("__")]
     ]
     no_kind.sort(key=lambda i: _hash(str(prepared.products[i].provider_product_id)))
-    no_kind = no_kind[:NO_KIND_SAMPLE]
+    no_kind = [] if cards_only else no_kind[:NO_KIND_SAMPLE]
 
     kind_calls = [(key, batch) for key, indexes in pairs.items() for batch in _batches(indexes)]
     gap_calls = list(_batches(no_kind))
@@ -498,8 +526,11 @@ def _report(prepared, searches, cards, chosen, pairs, verdict, gaps, no_kind, as
         return f"{_short(product.title)} | {product.price_text} {product.currency} | {_short(product.brand, 30)}"
 
     board: dict[str, dict[str, Any]] = {code: Counter() for code in reading_measure.CATEGORY_CODES}
-    out("")
-    out("== THE PRODUCTS IN EACH KIND (the kinds by this checkout's rules)")
+    # Asked about with the cards only (`cards_only`), they are not printed.
+    out_kinds = out if chosen else (lambda _line: None)
+    out_gaps = out if no_kind else (lambda _line: None)
+    out_kinds("")
+    out_kinds("== THE PRODUCTS IN EACH KIND (the kinds by this checkout's rules)")
     misfiled: dict[str, list[int]] = defaultdict(list)
     for kind in sorted(chosen, key=lambda k: (code_of(k), k)):
         groups = chosen[kind]
@@ -517,25 +548,25 @@ def _report(prepared, searches, cards, chosen, pairs, verdict, gaps, no_kind, as
         row["flagged"] += groups["flagged_all"][0]
     for code in reading_measure.CATEGORY_CODES:
         row = board[code]
-        out(
+        out_kinds(
             f"{code}: {row['members']:,} products of a kind, {row['flagged']:,} flagged; judged {row['flagged judged']:,}"
             f" flagged, {row['flagged no']:,} not of their kind; judged {row['sample judged']:,} others,"
             f" {row['sample no']:,} not of their kind"
         )
     for kind in sorted(misfiled, key=lambda k: (-len(misfiled[k]), k)):
         sample_no = sum(1 for i in misfiled[kind] if i in set(chosen[kind]["sample"]))
-        out(f"  {kind} ({code_of(kind)}): {len(misfiled[kind])} not of it ({sample_no} of the {len(chosen[kind]['sample'])} unflagged)")
+        out_kinds(f"  {kind} ({code_of(kind)}): {len(misfiled[kind])} not of it ({sample_no} of the {len(chosen[kind]['sample'])} unflagged)")
         for i in misfiled[kind][:EXAMPLES]:
-            out(f"      {describe(i)}")
+            out_kinds(f"      {describe(i)}")
 
-    out("")
-    out("== THE PRODUCTS WITH NO KIND (the gaps)")
+    out_gaps("")
+    out_gaps("== THE PRODUCTS WITH NO KIND (the gaps)")
     named = Counter(kind for kind in gaps.values() if kind in by_id)
-    out(f"judged {len(gaps):,} of {len(no_kind):,} sampled; {sum(named.values()):,} read as one of the kinds, "
+    out_gaps(f"judged {len(gaps):,} of {len(no_kind):,} sampled; {sum(named.values()):,} read as one of the kinds, "
         f"{sum(1 for kind in gaps.values() if kind == 'none'):,} as none")
     for kind, count in named.most_common(40):
         examples = [i for i, said in gaps.items() if said == kind][:3]
-        out(f"  {kind} ({code_of(kind)}): {count}, e.g. " + "; ".join(_short(prepared.products[i].title, 60) for i in examples))
+        out_gaps(f"  {kind} ({code_of(kind)}): {count}, e.g. " + "; ".join(_short(prepared.products[i].title, 60) for i in examples))
 
     out("")
     out("== WHAT THE VISITOR SEES: the first 12 cards of each search, for the kind it is for")
@@ -543,8 +574,13 @@ def _report(prepared, searches, cards, chosen, pairs, verdict, gaps, no_kind, as
     index_of = {str(product.provider_product_id): i for i, product in enumerate(prepared.products)}
     scores: dict[str, dict[str, Counter]] = {}
     absurd_examples: dict[str, list[str]] = defaultdict(list)
+    # Per set of rules, each search's cards counted, and its first card not right.
+    searched: dict[str, dict[str, Counter]] = {}
+    first_wrong: dict[str, dict[str, str]] = {}
     for rules, answered in cards.items():
         per: dict[str, Counter] = defaultdict(Counter)
+        each = searched.setdefault(rules, {})
+        wrong = first_wrong.setdefault(rules, {})
         for search in answered:
             meta = kind_of_search.get(search["q"])
             if not meta:
@@ -552,9 +588,12 @@ def _report(prepared, searches, cards, chosen, pairs, verdict, gaps, no_kind, as
             kind, code = meta["kind"], meta["category"]
             row = per[code]
             row["searches"] += 1
+            one = each.setdefault(search["q"], Counter())
             if not search.get("cards"):
                 row["no card"] += 1
                 row["did you mean"] += int(bool(search.get("did_you_mean")))
+                one["no card"] = 1
+                one["asking"] = int(bool(search.get("did_you_mean")))
                 continue
             what = asked_for(kind, search["q"])
             for product_id in search["cards"]:
@@ -565,9 +604,14 @@ def _report(prepared, searches, cards, chosen, pairs, verdict, gaps, no_kind, as
                 row["cards"] += 1
                 row["judged"] += int(bool(said))
                 row["right"] += int(said == "yes")
+                one["judged"] += int(bool(said))
+                one["right"] += int(said == "yes")
+                if said == "no":
+                    wrong.setdefault(search["q"], describe(i))
                 own = {code_of(k) for k in prepared.kinds[i] if not k.startswith("__")}
                 if said == "no" and code not in own:
                     row["absurd"] += 1
+                    one["absurd"] += 1
                     if len(absurd_examples[rules]) < 40:
                         absurd_examples[rules].append(f'"{search["q"]}" ({kind}): {describe(i)}')
         scores[rules] = per
@@ -585,7 +629,59 @@ def _report(prepared, searches, cards, chosen, pairs, verdict, gaps, no_kind, as
         out(f"  absurd cards with {rules}: {len(examples)} listed")
         for line in examples:
             out(f"      {line}")
-    return {"board": board, "scores": scores}
+    worse = _worse_searches(cards, searched, first_wrong, kind_of_search, reading_measure.CATEGORY_CODES, out)
+    return {"board": board, "scores": scores, "worse": worse}
+
+
+def _worse_searches(cards, searched, first_wrong, kind_of_search, codes, out) -> dict[str, list[str]]:
+    """With two sets of rules, the searches whose cards the second (this commit) makes
+    worse: fewer right cards, or more absurd ones. Per category, how many are worse,
+    better and the same; then the worst, the most absurd cards added first, each with what
+    both answered, why this commit answered so, and its first card not right."""
+    if len(cards) != 2:
+        return {}
+    before_name, after_name = list(cards)
+    before, after = searched.get(before_name, {}), searched.get(after_name, {})
+    why = {search["q"]: search.get("why") or [] for search in cards[after_name]}
+    worse: dict[str, list[tuple[int, int, str]]] = defaultdict(list)
+    counted: dict[str, Counter] = defaultdict(Counter)
+    for query, meta in kind_of_search.items():
+        if query not in before or query not in after:
+            continue
+        was, now = before[query], after[query]
+        code = meta["category"]
+        if now["absurd"] > was["absurd"] or now["right"] < was["right"]:
+            counted[code]["worse"] += 1
+            worse[code].append((now["absurd"] - was["absurd"], was["right"] - now["right"], query))
+        elif now["absurd"] < was["absurd"] or now["right"] > was["right"]:
+            counted[code]["better"] += 1
+        else:
+            counted[code]["same"] += 1
+
+    def shown(row: Counter) -> str:
+        if row["no card"]:
+            return "no card, asking" if row["asking"] else "no card"
+        return f"{row['right']} of {row['judged']} right, {row['absurd']} absurd"
+
+    out("")
+    out(f"== THE SEARCHES {after_name.upper()} MAKES WORSE THAN {before_name} (fewer right cards, or more absurd)")
+    listed: dict[str, list[str]] = {}
+    for code in codes:
+        if not counted[code]:
+            continue
+        row = counted[code]
+        out(f"{code}: {row['worse']} worse, {row['better']} better, {row['same']} the same")
+        listed[code] = []
+        for _more_absurd, _fewer_right, query in sorted(worse[code], reverse=True)[:WORSE_A_CATEGORY]:
+            line = (
+                f'  "{query}" ({kind_of_search[query]["kind"]}): {shown(before[query])} -> {shown(after[query])};'
+                f' {", ".join(why.get(query, [])) or "-"}'
+            )
+            out(line)
+            listed[code].append(query)
+            if first_wrong.get(after_name, {}).get(query):
+                out(f"      {first_wrong[after_name][query]}")
+    return listed
 
 
 # --------------------------------------------------------------------------------------
@@ -603,6 +699,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--before", default="")
     parser.add_argument("--before-name", default="the rules deployed")
     parser.add_argument("--budget", type=float, default=3.0)
+    parser.add_argument("--cards-only", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
     _use_checkout(args.src or None)
@@ -632,6 +729,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{len(answered):,} searches answered in {time.monotonic() - began:.0f} s"
               f" ({seconds[len(seconds) // 2] if seconds else 0:.2f} s in the middle);"
               f" {sum(1 for search in answered if not search.get('cards')):,} with no card")
+        for line in search_times(answered):
+            print(line)
         return 0
     cards = {"this commit": json.loads(Path(args.cards).read_text(encoding="utf-8"))}
     if args.before and Path(args.before).is_file():
@@ -643,7 +742,7 @@ def main(argv: list[str] | None = None) -> int:
         asker = Asker(make_client(max_retries=4, timeout=60.0), args.budget, ask)
     else:
         print("the AI: not asked (a dry run, or no key)")
-    judge(prepared, searches, cards, asker=asker)
+    judge(prepared, searches, cards, asker=asker, cards_only=args.cards_only)
     return 0
 
 

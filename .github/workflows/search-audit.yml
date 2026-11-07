@@ -44,9 +44,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 330
     env:
-      BUDGET: '3.00'
+      # At most $3 in all for the debugging's measure: run 42390049201 spent $0.80.
+      BUDGET: '1.00'
       # The rules the site runs now: the AI layer's deployment, 2026-11-06.
       COMPARE_WITH: 75fd3d0
+      # The cards alone: the products of each kind and the gaps do not change with the
+      # search's rules, and run 42390049201 asked about them. Empty to ask again.
+      CARDS_ONLY: '--cards-only'
     steps:
       - uses: actions/checkout@v5
         with:
@@ -198,7 +202,7 @@ jobs:
         run: |
           "$RUNNER_TEMP/ai/bin/python" deployment/server/audit_search.py judge "$RUNNER_TEMP/catalogue.json.gz" \
             "$RUNNER_TEMP/searches.json" "$RUNNER_TEMP/cards.json" --before "$RUNNER_TEMP/cards-before.json" \
-            --before-name "$COMPARE_WITH" --budget "$BUDGET"
+            --before-name "$COMPARE_WITH" --budget "$BUDGET" $CARDS_ONLY
       - name: Remove the key and the copies from the runner
         if: always()
         run: |

@@ -2028,7 +2028,15 @@ def _unsure_reading_selection(
         condition_request=condition_request,
         shown=shown,
     )
-    if by_words.status == "selected" and by_words.selected_products:
+    # Every word, or no answer: a words answer that had to drop one of them is a guess.
+    # The debugging's server measure (2026-11-07) found "fire pots" answered with pen
+    # pots and "desk lam" with a horse feed, "fire" and "desk" dropped (`_price_first_result`
+    # counts no product strong when a word was dropped).
+    if (
+        by_words.status == "selected"
+        and by_words.selected_products
+        and by_words.strong_matched_count == by_words.matched_count
+    ):
         return replace(
             by_words,
             reason_codes=tuple(by_words.reason_codes) + ("unsure_reading_answered_by_words",),

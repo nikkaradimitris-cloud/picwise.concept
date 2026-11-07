@@ -120,6 +120,30 @@ class SelectionTests(unittest.TestCase):
         self.assertTrue(all(pid.startswith("ket") for pid in _ids(result)), _ids(result))
         self.assertIn("brandex", result.unmatched_query_terms)
 
+    def test_a_words_answer_that_drops_a_word_is_no_answer(self) -> None:
+        # The debugging's server measure (2026-11-07): "fire pots" was answered with pen
+        # pots and "desk lam" with a horse feed, the words search having dropped "fire"
+        # and "desk". Every word, or "Did you mean ...?".
+        pits = "Home & Garden > Lawn & Garden > Outdoor Living > Outdoor Fireplaces & Fire Pits"
+        pots = "Office Supplies > Desk Pen Pots"
+        feed = "Animals & Pet Supplies > Horse Feed Lams"
+        lamps = "Home & Garden > Lighting > Lamps"
+        extra = []
+        for i in range(1, 5):
+            extra.append(_product(f"pit{i}", f"Testline Steel Fire Pit {i}0cm", pits, brand="Testline", price=f"{90 + i}.00"))
+            extra.append(_product(f"pot{i}", "Sampleworks Metal Pen Pot - Black", pots, brand="Sampleworks", price=f"{1 + i}.50"))
+            extra.append(_product(f"lam{i}", "Horsefix Anti Lam 15kg", feed, brand="Horsefix", price=f"{30 + i}.00"))
+            extra.append(_product(f"lamp{i}", f"Fixturon LED Desk Lamp {i}", lamps, price=f"{15 + i}.00"))
+        catalogue = _catalogue() + tuple(extra)
+        for query in ("fire pots", "desk lam"):
+            result = select_provider_products_for_query(query, catalogue, max_products=4)
+            self.assertEqual(result.status, "unsure_reading", query)
+            self.assertEqual(result.selected_products, (), query)
+        for query, prefix in (("fire pit", "pit"), ("desk lamp", "lamp"), ("tv stand", "stand")):
+            result = select_provider_products_for_query(query, catalogue, max_products=4)
+            self.assertTrue(result.selected_products, query)
+            self.assertTrue(all(pid.startswith(prefix) for pid in _ids(result)), (query, _ids(result)))
+
     def test_a_word_the_kinds_products_carry_is_a_filter_as_before(self) -> None:
         result = _select("laptop 8gb")
         self.assertTrue(result.selected_products)
