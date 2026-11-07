@@ -3,9 +3,10 @@
 Current state for whoever picks the project up next. Updated 2026-11-06 (**the AI layer
 live since 2026-11-06 20:41 UTC, run `42287840883`, `75fd3d0` (owner: «ανέβασε το
 75fd3d0»): in a complex search the products the AI reads as fitting first and marked, one
-euro a day, the privacy text naming no company; next: the owner's try of a complex search
-on the site, then its spend after a day or a week; no more kind-by-kind fixes (the
-owner)**;
+euro a day, the privacy text naming no company; next: the owner's tries of complex
+searches on the site, the fixes they show kept in a list and built all together on the
+owner's word (07/11), then its spend after a day or a week; no more kind-by-kind fixes
+(the owner)**;
 **item 2 live
 since 2026-11-05 12:54 UTC, run `42028878547`: a shelf's kind read against its aisle,
 doubtful products found by their words; searches of a kind with a wrong card 31 -> 7 of
@@ -55,6 +56,16 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   company, then «Ναι, συμφωνώ με όλα, προχώρα» to the order, the time, the mark and the
   wording; written into `PROJECT_RULES.md` (2 and 5), `docs/MISSION.md` and the Decision
   Contract ("The products that fit a complex search first").
+- **Fixes kept, to be built all together** (owner, 07/11: «Κράτα τη διόρθωση και θα κάνουμε
+  και άλλες όλες μαζί»): nothing built; add each fix the owner's tries show, then build
+  them in one go on the owner's word (a change to the AI's request needs a measure before
+  it is deployed). So far, from «σακίδιο για σχολείο»:
+  1. A product made for something else, whose words name the need only among other uses,
+     read as fitting: "Backpack Stay Cool & Stylish on the Go", a cooler bag, ✓ "heading
+     to a picnic, school, work". To tighten in `picwise_ai.request.SYSTEM_PROMPT`.
+  2. The AI reads only the first 30 products of the usual order (mostly the cheapest), here
+     of 251 backpacks: dearer products that fit are never seen.
+  3. The sentence writes "8.99 GBP" where the cards write "£8.99".
 - **What was built on 06/11** (the spec, 4.5): the selection puts the products a stored
   answer read as fitting first, the Recommended among them ("Mid-priced of those that
   fit"), found by a signature of the 30 products the AI reads; the page writes a draft
