@@ -32,6 +32,10 @@ for path in (HERE, ROOT, SRC):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
+# This module reads Greek and greeklish, closed on the site (owner, 2026-11-07: «Ναι σε
+# όλα, κλείσε και τα δύο»); the switch is on for its tests (`greek_search_switch`).
+from greek_search_switch import setUpModule, tearDownModule  # noqa: E402,F401
+
 from api.index import app as wsgi_app  # noqa: E402
 from fixture_support import fixture_description  # noqa: E402
 from picwise_nlu.concept_understanding import (  # noqa: E402

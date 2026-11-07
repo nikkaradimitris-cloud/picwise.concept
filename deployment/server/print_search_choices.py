@@ -14,7 +14,8 @@ general kind, the largest first: the search for its English name, how many produ
 it finds and its first card (the Recommended, at the middle price, when there is one;
 else the cheapest), or the vocabulary's "too broad" when that answers instead, and each
 choice it asks with how many products that choice's own search finds and whether they
-are of the kind; then the Greek name of the first few, the kinds' own names the
+are of the kind; then the Greek name of the first few, when Greek is read
+(`PICWISE_GREEK_SEARCH`; the site reads English only since 2026-11-07), the kinds' own names the
 vocabulary's "too broad" list once answered alone ("chair", "bag", "jacket") and what
 each finds now, and the suggestions the box would hold. Run by
 .github/workflows/server-cap.yml on GitHub's runner, from a copy of the server's file;
@@ -56,7 +57,7 @@ def main(argv: list[str]) -> int:
     os.environ["PICWISE_PREPARED_CATALOGUE_FILE"] = str(path)
     os.environ["PICWISE_PREPARED_MAX_AGE_HOURS"] = "100000"
     try:
-        from picwise_nlu.concept_understanding import annotate_product_concepts
+        from picwise_nlu.concept_understanding import annotate_product_concepts, greek_search_on
         from picwise_nlu.product_concepts import broader_concepts, get_product_concepts_by_id
         from picwise_providers import state
         from picwise_providers.awin_adapter import feed_file_cache_key
@@ -156,7 +157,10 @@ def main(argv: list[str]) -> int:
             of_kind = "yes" if understood and kind in broader_concepts(understood) else f"no: {understood or 'none'}"
             found.append(f"{text} {narrowed.provider_feed_total_count:,} ({of_kind})")
         print("      each found: " + "; ".join(found))
-    for kind in general[:GREEK_SEARCHED]:
+    if not greek_search_on():
+        # The site reads English only (owner, 2026-11-07: «Ναι σε όλα, κλείσε και τα δύο»).
+        print("  the Greek names: not searched, the site reads English only")
+    for kind in general[:GREEK_SEARCHED] if greek_search_on() else ():
         concept = by_id.get(kind)
         if concept is None or not concept.greek:
             continue

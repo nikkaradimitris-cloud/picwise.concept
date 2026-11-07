@@ -23,6 +23,12 @@ if str(SRC) not in sys.path:
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+# This module reads Greek and greeklish, closed on the site (owner, 2026-11-07: «Ναι σε
+# όλα, κλείσε και τα δύο»); the switch is on for its tests (`greek_search_switch`).
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+from greek_search_switch import setUpModule, tearDownModule  # noqa: E402,F401
+
 from api.index import app as wsgi_app  # noqa: E402
 from picwise_providers.awin_adapter import clear_awin_feed_parse_cache  # noqa: E402
 from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402

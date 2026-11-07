@@ -14,6 +14,7 @@ Every row is local test data: fictional brands and shops, `.invalid` addresses.
 """
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import tempfile
@@ -93,9 +94,12 @@ def _write(path: Path) -> None:
     write_prepared_catalogue(prepared, path)
 
 
-def _run(path: Path) -> subprocess.CompletedProcess:
+def _run(path: Path, *, greek: bool = False) -> subprocess.CompletedProcess:
+    env = {key: value for key, value in os.environ.items() if key != "PICWISE_GREEK_SEARCH"}
+    if greek:
+        env["PICWISE_GREEK_SEARCH"] = "on"
     return subprocess.run(
-        [sys.executable, str(SCRIPT), str(path)], capture_output=True, text=True, check=False, timeout=600
+        [sys.executable, str(SCRIPT), str(path)], capture_output=True, text=True, check=False, timeout=600, env=env
     )
 
 
@@ -114,13 +118,15 @@ class PrintSearchChoicesTests(unittest.TestCase):
         self.assertIn(
             "      each found: hdmi cable 30 (yes); coaxial cable 25 (yes); speaker cable 22 (yes)", out
         )
-        self.assertIn("  the Greek καλώδιο: 77 products; asks: hdmi cable, coaxial cable, speaker cable", out)
+        # The site reads English only (owner, 2026-11-07: «Ναι σε όλα, κλείσε και τα δύο»).
+        self.assertIn("  the Greek names: not searched, the site reads English only", out)
+        self.assertNotIn("  the Greek καλώδιο", out)
         # "chair" has five of the vocabulary's suggestions, which once answered it alone.
         self.assertIn("  chair: 55 products, the first card 40.00 GBP 'Fixturon Velvet Dining Chair 1'", out)
         self.assertIn("      What kind of chair? dining chair, office chair", out)
         self.assertIn("      each found: dining chair 30 (yes); office chair 25 (yes)", out)
         self.assertNotIn("  chair: no products", out)
-        self.assertIn("  the Greek καρέκλα: 55 products; asks: dining chair, office chair", out)
+        self.assertNotIn("  the Greek καρέκλα", out)
         # Every kind's own name that list once answered alone, what it finds now.
         self.assertRegex(out, r"the kinds' own names the vocabulary's \"too broad\" list once answered alone: \d+")
         self.assertIn("  chair: 55 products; asks: dining chair, office chair\n", out)
@@ -128,6 +134,16 @@ class PrintSearchChoicesTests(unittest.TestCase):
         self.assertRegex(out, r"the search box: \d+ suggestions, 5 of them choices")
         self.assertNotIn("kettle:", out)
         self.assertNotIn("shop.invalid", out)
+
+    def test_with_greek_read_the_greek_names_ask_the_same(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "catalogue.json.gz"
+            _write(path)
+            result = _run(path, greek=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("  the Greek καλώδιο: 77 products; asks: hdmi cable, coaxial cable, speaker cable", result.stdout)
+        self.assertIn("  the Greek καρέκλα: 55 products; asks: dining chair, office chair", result.stdout)
+        self.assertNotIn("not searched, the site reads English only", result.stdout)
 
     def test_an_unreadable_file_says_so(self) -> None:
         with tempfile.TemporaryDirectory() as folder:

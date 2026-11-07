@@ -177,8 +177,22 @@ class KindChoicesOnThePageTests(unittest.TestCase):
         self.assertNotIn("Fixturon Velvet Dining Chair", page)
         self.assertNotIn('<nav class="pw-kind-choices"', page)
 
-    def test_the_greek_word_asks_the_same(self) -> None:
+    def test_the_greek_word_is_told_picwise_searches_in_english(self) -> None:
+        # The site is English (owner, 2026-11-07: «Ναι σε όλα, κλείσε και τα δύο»).
         page = self._get("/search", "q=%CE%BA%CE%B1%CE%BB%CF%8E%CE%B4%CE%B9%CE%BF")
+        self.assertIn("PicWise searches in English.", page)
+        self.assertNotIn("What kind of cable?", page)
+
+    def test_with_greek_on_the_greek_word_asks_the_same(self) -> None:
+        previous = os.environ.get("PICWISE_GREEK_SEARCH")
+        os.environ["PICWISE_GREEK_SEARCH"] = "on"
+        try:
+            page = self._get("/search", "q=%CE%BA%CE%B1%CE%BB%CF%8E%CE%B4%CE%B9%CE%BF")
+        finally:
+            if previous is None:
+                os.environ.pop("PICWISE_GREEK_SEARCH", None)
+            else:
+                os.environ["PICWISE_GREEK_SEARCH"] = previous
         self.assertIn("What kind of cable?", page)
 
     def test_each_choice_finds_what_it_names(self) -> None:

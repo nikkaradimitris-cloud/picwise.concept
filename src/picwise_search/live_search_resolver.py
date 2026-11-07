@@ -11,7 +11,13 @@ from picwise_nlu import (
     normalize_greeklish_and_typos,
     normalize_query,
 )
-from picwise_nlu.concept_understanding import suggest_product_names, understand_product_query
+from picwise_nlu.concept_understanding import (
+    greek_search_on,
+    is_greek_word,
+    normalize_understanding_text,
+    suggest_product_names,
+    understand_product_query,
+)
 from picwise_nlu.product_concepts import get_product_concepts_by_id
 from picwise_search_memory.canonical_registry import get_cached_canonical_vocabulary_registry
 from picwise_search_memory.broad_query_suggestions import (
@@ -269,6 +275,46 @@ def empty_landing_search_resolution(query: str = "") -> LiveSearchResolution:
     )
 
 
+# Owner, 2026-11-07: «Ναι σε όλα, κλείσε και τα δύο», to closing Greek and greeklish: the
+# site is English, for the UK. A search with a word in Greek letters is answered by the
+# note that PicWise searches in English, and nothing else is read from it.
+SEARCH_IN_ENGLISH_REASON = "search_not_in_english"
+
+
+def searches_in_greek_letters(query: str) -> bool:
+    """Whether a search has a word in Greek letters while Greek is not read
+    (`concept_understanding.greek_search_on`)."""
+    if greek_search_on():
+        return False
+    return any(is_greek_word(word) for word in normalize_understanding_text(str(query or "")).split())
+
+
+def search_in_english_resolution(query: str) -> LiveSearchResolution:
+    """What a search in Greek letters is answered with: nothing understood, no product, and
+    a reason the page reads to say that PicWise searches in English."""
+    raw_query = str(query or "")
+    return LiveSearchResolution(
+        raw_query=raw_query,
+        display_query=raw_query,
+        normalized_query=normalize_query(raw_query),
+        canonical_query="",
+        canonical_category=None,
+        mega_category_id=None,
+        display_name=None,
+        lower_level_provider_category=None,
+        intent="unknown",
+        query_type="unknown",
+        confidence=0.0,
+        status="insufficient_data",
+        needs_review=False,
+        provider_key="not_connected",
+        provider_status="not_connected",
+        result_allowed=False,
+        resolver_state="not_understood",
+        reason_codes=(SEARCH_IN_ENGLISH_REASON, "resolver_state_not_understood"),
+    )
+
+
 def _safe_confidence(value: Any) -> float:
     try:
         score = float(value)
@@ -339,6 +385,8 @@ def resolve_live_search(
     those its stored answer read as fitting a complex search, which then come first
     (owner, 2026-11-06; `search_selection._price_first_result`)."""
     raw_query = str(query or "")
+    if searches_in_greek_letters(raw_query):
+        return search_in_english_resolution(raw_query)
     display_query = raw_query
     normalized_query = normalize_query(raw_query)
     canonicalized_query = normalize_greeklish_and_typos(normalized_query)
@@ -685,6 +733,21 @@ def resolve_live_search(
                     )
                     if feed_opportunity_search and expose_selection:
                         reason_codes.append("provider_feed_opportunity_gate")
+
+    if (
+        not concept_understood
+        and not provider_feed_selected_products
+        and provider_feed_status == "provider_feed_ready"
+        and resolver_state in {"connected_provider_results", "understood_provider_not_connected"}
+    ):
+        # With the shops' products connected, a search is said to be understood only
+        # where the reading of its kind understood it, or where products are shown: an
+        # older vocabulary's category alone ("psygeio", greeklish, closed on 2026-11-07)
+        # shows nothing and understands nothing (owner, 2026-11-07: «Ναι σε όλα», to
+        # "Did you mean ...?" rather than a guess).
+        resolver_state = "not_understood"
+        result_allowed = False
+        reason_codes.append("resolver_state_not_understood_by_the_reading")
 
     did_you_mean: tuple[str, ...] = ()
     if (

@@ -47,6 +47,10 @@ for path in (HERE, ROOT, ROOT / "src", ROOT / "deployment" / "server"):
         sys.path.insert(0, str(path))
 
 from fixture_support import fixture_description  # noqa: E402
+# This module reads Greek and greeklish, closed on the site (owner, 2026-11-07: «Ναι σε
+# όλα, κλείσε και τα δύο»); the switch is on for its tests (`greek_search_switch`).
+from greek_search_switch import setUpModule, tearDownModule  # noqa: E402,F401
+
 from picwise_ai.checks import FORBIDDEN_WORDS, check_answer, shop_words_that_pass  # noqa: E402
 from picwise_ai.client import Asked, ask, cost_usd  # noqa: E402
 from picwise_ai.complex_search import (  # noqa: E402

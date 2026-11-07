@@ -171,9 +171,13 @@ class SuggestionTests(unittest.TestCase):
         cls.suggestions = build_search_suggestions(_catalogue())
         cls.texts = [suggestion.text for suggestion in cls.suggestions]
 
-    def test_the_kinds_with_products_are_offered_in_english_and_greek(self) -> None:
-        for text in ("kettle", "βραστήρας", "laptop", "λάπτοπ"):
+    def test_the_kinds_with_products_are_offered_in_english(self) -> None:
+        for text in ("kettle", "laptop"):
             self.assertIn(text, self.texts)
+        # The site is English: no Greek name is offered (owner, 2026-11-07: «Ναι σε όλα,
+        # κλείσε και τα δύο»; `tests/test_picwise_english_only_search.py`).
+        for text in ("βραστήρας", "λάπτοπ"):
+            self.assertNotIn(text, self.texts)
 
     def test_a_kind_without_products_is_not_offered(self) -> None:
         self.assertNotIn("washing machine", self.texts)
@@ -268,7 +272,7 @@ class SuggestEndpointTests(unittest.TestCase):
         _status, _headers, body = self._get("/suggest.json")
         suggestions = json.loads(body)["suggestions"]
         self.assertIn("laptop", suggestions)
-        self.assertIn("λάπτοπ", suggestions)
+        self.assertNotIn("λάπτοπ", suggestions)
         self.assertEqual(len(suggestions), len(set(suggestions)))
 
 

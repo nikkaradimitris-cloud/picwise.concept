@@ -1,5 +1,13 @@
 """Understand which product a buyer means, however they spelled it.
 
+The site is English, for the UK and the US: a query is read as English only (owner,
+2026-11-07, «Ναι σε όλα, κλείσε και τα δύο», to closing Greek and greeklish). A word in
+Greek letters names nothing, and a word in Latin letters is never read as greeklish or
+as Greek typed with the English keyboard layout on: "pones" was read as «πάνες»
+(nappies), "couches" as «κούκλες» (dolls), "skinny" as «σκηνή» (a tent). Everything
+below stays, for a Greek site one day: with `PICWISE_GREEK_SEARCH=on`
+(`greek_search_on`) a query is read in Greek, greeklish and English, as before.
+
 Buyers in Greece type product searches in Greek without accents, with the wrong vowel
 for a sound (ι for η, ο for ω, ε for αι), in greeklish under whatever transliteration
 habit they have, with the English keyboard layout still on, or in English with a slipped
@@ -42,6 +50,7 @@ is spelled correctly and a fuzzy match there would invent concepts.
 """
 from __future__ import annotations
 
+import os
 import re
 import unicodedata
 from dataclasses import dataclass, field
@@ -61,6 +70,16 @@ from .product_concepts import _MEGA as _DEPARTMENT_BY_CODE
 
 # A department's short name ("CO") by its id ("computers_office_peripherals").
 _MEGA_CODES = {department: code for code, department in _DEPARTMENT_BY_CODE.items()}
+
+# Owner, 2026-11-07: «Μήπως να αφαιρούσαμε τα ελληνικά και τα greeklish διότι το site
+# είναι για αγγλία...», then «Ναι σε όλα, κλείσε και τα δύο». Off unless set: a query is
+# read as English only. Read at each query, so a test may turn it on for itself.
+GREEK_SEARCH_ENV = "PICWISE_GREEK_SEARCH"
+
+
+def greek_search_on() -> bool:
+    """Whether a query is read in Greek and greeklish too (`GREEK_SEARCH_ENV` "on")."""
+    return str(os.environ.get(GREEK_SEARCH_ENV) or "").strip().lower() in {"1", "on", "true", "yes"}
 
 # --------------------------------------------------------------------------------------
 # Text normalisation and phonetic keys
@@ -486,6 +505,19 @@ class _Lexicon:
                     self.qualifiers[identity[1]] = qualifier.english
                     qualifier_keys.add(identity[1])
         self.qualifier_fuzzy = _FuzzyIndex(qualifier_keys)
+        # The preference words written in Latin letters ("inverter", "gaming"): the only
+        # ones an English-only reading takes.
+        self.english_qualifiers = {
+            key: english for key, english in self.qualifiers.items()
+            if key in {
+                english_key(normalize_understanding_text(form))
+                for qualifier in get_qualifiers()
+                for form in qualifier.greek
+                if " " not in normalize_understanding_text(form)
+                and not is_greek_word(normalize_understanding_text(form))
+            }
+        }
+        self.english_qualifier_fuzzy = _FuzzyIndex(set(self.english_qualifiers))
         # The feed's own language for the same preferences ("black", "wireless"), used
         # to tell a word that only describes a product from one that renames it.
         self.english_qualifier_words = frozenset(
@@ -510,6 +542,18 @@ class _Lexicon:
             else:
                 self.condition_phrases.add(" ".join(keys))
         self.condition_fuzzy = _FuzzyIndex(self.condition_words)
+        # The English words alone, for an English-only reading.
+        self.english_condition_words: set[str] = set()
+        self.english_condition_phrases: set[str] = set()
+        for form in condition.english:
+            keys = [english_key(token) for token in normalize_understanding_text(form).split()]
+            if not keys or not all(keys):
+                continue
+            if len(keys) == 1:
+                self.english_condition_words.add(keys[0])
+            else:
+                self.english_condition_phrases.add(" ".join(keys))
+        self.english_condition_fuzzy = _FuzzyIndex(self.english_condition_words)
 
     def _add(self, form: _Form, words: dict[str, set[str]]) -> None:
         self.forms_by_first.setdefault(form.words[0], []).append(form)
@@ -617,7 +661,11 @@ def _token_candidates(token: str, *, fuzzy: bool = True) -> dict[tuple[str, str]
 
     if not any(ch.isalpha() for ch in token):
         return candidates
+    greek = greek_search_on()
     if is_greek_word(token):
+        if not greek:
+            # The site is English: a word in Greek letters names nothing.
+            return candidates
         offer("el", greek_key(token), 0.0)
         # English words written in Greek letters: "λαπτοπ", "πρίντερ".
         offer("en", greek_key(token), 0.2)
@@ -629,6 +677,9 @@ def _token_candidates(token: str, *, fuzzy: bool = True) -> dict[tuple[str, str]
             0.0,
             exact_key_cost=0.0 if token in lexicon.english_spellings else 0.5,
         )
+        if not greek:
+            # Never read as greeklish, nor as Greek typed on the English layout.
+            return candidates
         offer("el", greeklish_key(token), 0.1)
         # Greeklish letters with two habits: x is χ to most people and ξ to some
         # ("exoteriki"); h is η by shape and χ by sound.
@@ -789,22 +840,36 @@ def _spec_field_for(unit: str, spec_fields: tuple[str, ...]) -> str | None:
     return None
 
 
+def _qualifier_tables(token: str) -> tuple[dict[str, str | None], _FuzzyIndex, str] | None:
+    """Where a token is looked up as a preference word, and by which key: Greek and
+    greeklish by sound with the switch on (`greek_search_on`), else English words only."""
+    lexicon = _lexicon()
+    if greek_search_on():
+        key = greek_key(token) if is_greek_word(token) else greeklish_key(token)
+        return lexicon.qualifiers, lexicon.qualifier_fuzzy, key
+    if is_greek_word(token):
+        return None
+    return lexicon.english_qualifiers, lexicon.english_qualifier_fuzzy, english_key(token)
+
+
 def _is_exact_qualifier(token: str) -> bool:
-    key = greek_key(token) if is_greek_word(token) else greeklish_key(token)
-    return key in _lexicon().qualifiers
+    tables = _qualifier_tables(token)
+    return tables is not None and tables[2] in tables[0]
 
 
 def _qualifier_for(token: str) -> tuple[bool, str | None]:
     """Is this a known preference word, and which feed word expresses it?"""
-    lexicon = _lexicon()
-    key = greek_key(token) if is_greek_word(token) else greeklish_key(token)
-    if key in lexicon.qualifiers:
-        return True, lexicon.qualifiers[key]
+    tables = _qualifier_tables(token)
+    if tables is None:
+        return False, None
+    qualifiers, fuzzy, key = tables
+    if key in qualifiers:
+        return True, qualifiers[key]
     if len(key) >= 5:
-        matches = lexicon.qualifier_fuzzy.lookup(key, _max_distance(len(token)))
+        matches = fuzzy.lookup(key, _max_distance(len(token)))
         if matches:
             best = min(matches, key=lambda word: (matches[word], word))
-            return True, lexicon.qualifiers[best]
+            return True, qualifiers[best]
     return False, None
 
 
@@ -821,30 +886,43 @@ class ConditionRequest:
 
 
 def _condition_keys_for_token(token: str) -> tuple[str, ...]:
-    """The keys this typed word could be: Greek by sound, Latin as English or greeklish."""
+    """The keys this typed word could be: Greek by sound, Latin as English or greeklish;
+    with the switch off (`greek_search_on`), a Latin word as English only."""
+    greek = greek_search_on()
     if is_greek_word(token):
-        return (greek_key(token),)
+        return (greek_key(token),) if greek else ()
+    if not greek:
+        return (english_key(token),)
     return tuple(dict.fromkeys((english_key(token), greeklish_key(token))))
 
 
-def _token_asks_for_non_new(token: str) -> bool:
+def _condition_tables() -> tuple[set[str], set[str], _FuzzyIndex]:
+    """The condition words, phrases and their fuzzy index: in every language with the
+    switch on, else English only."""
     lexicon = _lexicon()
+    if greek_search_on():
+        return lexicon.condition_words, lexicon.condition_phrases, lexicon.condition_fuzzy
+    return lexicon.english_condition_words, lexicon.english_condition_phrases, lexicon.english_condition_fuzzy
+
+
+def _token_asks_for_non_new(token: str) -> bool:
+    words, _phrases, fuzzy = _condition_tables()
     keys = _condition_keys_for_token(token)
-    if any(key in lexicon.condition_words for key in keys):
+    if any(key in words for key in keys):
         return True
     # Only long words are corrected, as with preference words: at four letters "used"
     # is one mistake away from ordinary words, and reading those as a request for a
     # second-hand item would hide every new product the buyer actually wanted.
     return any(
-        len(key) >= 5 and lexicon.condition_fuzzy.lookup(key, _max_distance(len(token)))
+        len(key) >= 5 and fuzzy.lookup(key, _max_distance(len(token)))
         for key in keys
     )
 
 
 def _pair_asks_for_non_new(first: str, second: str) -> bool:
-    lexicon = _lexicon()
+    _words, phrases, _fuzzy = _condition_tables()
     return any(
-        f"{left} {right}" in lexicon.condition_phrases
+        f"{left} {right}" in phrases
         for left in _condition_keys_for_token(first)
         for right in _condition_keys_for_token(second)
     )
@@ -867,13 +945,18 @@ def _read_condition_request(tokens: tuple[str, ...]) -> ConditionRequest:
     return ConditionRequest(words=tuple(dict.fromkeys(words)), positions=frozenset(positions))
 
 
-@lru_cache(maxsize=4096)
 def read_condition_request(query: str) -> ConditionRequest:
     """Read a query for a request for a non-new item, without reading anything else.
 
     The selection needs this for queries that name no known product too, where there
     is no concept reading to carry it.
     """
+    return _read_condition_request_cached(query, greek_search_on())
+
+
+@lru_cache(maxsize=4096)
+def _read_condition_request_cached(query: str, greek: bool) -> ConditionRequest:
+    # `greek` keys the cache: the reading differs with the switch.
     return _read_condition_request(tuple(normalize_understanding_text(query).split()))
 
 
@@ -886,9 +969,15 @@ def _words_of_concept(concept_id: str) -> set[tuple[str, str]]:
     return words
 
 
-@lru_cache(maxsize=4096)
 def understand_product_query(query: str) -> ConceptReading:
-    """Read which product the buyer means and what else they asked for."""
+    """Read which product the buyer means and what else they asked for: in English only,
+    unless the switch reads Greek and greeklish too (`greek_search_on`)."""
+    return _understand_product_query(query, greek_search_on())
+
+
+@lru_cache(maxsize=4096)
+def _understand_product_query(query: str, greek: bool) -> ConceptReading:
+    # `greek` keys the cache: the reading differs with the switch.
     tokens = tuple(normalize_understanding_text(query).split())
     if not tokens:
         return ConceptReading(query=str(query or ""), tokens=tokens)
@@ -1033,11 +1122,13 @@ def suggest_product_names(query: str, *, limit: int = 3) -> tuple[str, ...]:
             continue
         found: dict[tuple[str, str], float] = {}
         limit_for_token = max(1, _max_distance(len(token)))
-        readings = (
-            [("el", greek_key(token))]
-            if is_greek_word(token)
-            else [("en", english_key(token)), ("el", greeklish_key(token))]
-        )
+        if not greek_search_on():
+            # English only: a word in Greek letters is asked about as nothing.
+            readings = [] if is_greek_word(token) else [("en", english_key(token))]
+        elif is_greek_word(token):
+            readings = [("el", greek_key(token))]
+        else:
+            readings = [("en", english_key(token)), ("el", greeklish_key(token))]
         for kind, key in readings:
             for word, distance in lexicon.fuzzy[kind].lookup(key, limit_for_token).items():
                 identity = (kind, word)

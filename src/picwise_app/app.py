@@ -21,6 +21,7 @@ from picwise_mvp import build_mvp_private_beta_readiness_report
 from picwise_nlu import adapt_local_nlu_intent_for_router, build_local_nlu_intent
 from picwise_search import resolve_live_search, route_search_query
 from picwise_search.live_search_resolver import (
+    SEARCH_IN_ENGLISH_REASON,
     empty_landing_search_resolution,
     is_empty_search_query,
     parse_shown_count,
@@ -224,6 +225,8 @@ class PicwiseLocalApp:
             html = _inject_broad_query_suggestions(html, resolution)
         elif getattr(resolution, "did_you_mean", ()) and not provider_feed_cards_will_render(resolution):
             html = _inject_did_you_mean(html, resolution)
+        elif SEARCH_IN_ENGLISH_REASON in tuple(getattr(resolution, "reason_codes", ()) or ()):
+            html = _inject_search_in_english(html)
         if is_empty_search_query(query):
             schedule_search_warmup_if_needed()
         return html
@@ -794,6 +797,13 @@ def _inject_did_you_mean(html: str, resolution: Any) -> str:
     if not links:
         return html
     text = "PicWise did not recognise this search. Did you mean: " + ", ".join(links) + "?"
+    return _replace_disclaimer(html, f'<p class="pw-reference-disclaimer">{text}</p>')
+
+
+def _inject_search_in_english(html: str) -> str:
+    """Say that PicWise searches in English, for a search in Greek letters (owner,
+    2026-11-07: «Ναι σε όλα, κλείσε και τα δύο»)."""
+    text = "PicWise searches in English. Please type the product's name in English."
     return _replace_disclaimer(html, f'<p class="pw-reference-disclaimer">{text}</p>')
 
 

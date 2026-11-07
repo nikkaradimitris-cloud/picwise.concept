@@ -18,6 +18,12 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+# This module reads Greek and greeklish, closed on the site (owner, 2026-11-07: «Ναι σε
+# όλα, κλείσε και τα δύο»); the switch is on for its tests (`greek_search_switch`).
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+from greek_search_switch import setUpModule, tearDownModule  # noqa: E402,F401
+
 from picwise_nlu.concept_understanding import (  # noqa: E402
     annotate_product_concepts,
     damerau_levenshtein,

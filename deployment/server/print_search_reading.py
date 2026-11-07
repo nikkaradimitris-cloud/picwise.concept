@@ -22,7 +22,10 @@ Searched, per kind of the lexicon (`picwise_nlu.product_concepts`, its 18 catego
    swapped, a neighbouring key pressed, at every letter but the first of each word of four
    letters or more (the reader corrects none in a shorter word);
 4. every Greek name, a one-word name in its other number where its ending says which, and
-   a letter left out, doubled or two swapped (Greek where it is cheap: the site is English).
+   a letter left out, doubled or two swapped (Greek where it is cheap: the site is English),
+   only when Greek is read (`PICWISE_GREEK_SEARCH=on`): since 2026-11-07 the site reads
+   English only (owner: «Ναι σε όλα, κλείσε και τα δύο»), and a Greek search is answered
+   by the note that PicWise searches in English, so it is not measured.
 
 Each is read as one of: the kind; a broader or a narrower kind of it; another kind of its
 category; a kind of another category (the absurd: boots for batteries); nothing. A slip or
@@ -70,6 +73,7 @@ for _folder in (ROOT, ROOT / "src"):
 from picwise_nlu.concept_understanding import (  # noqa: E402
     _TAXONOMY_PATH,
     CONNECTIVE_WORDS,
+    greek_search_on,
     _aisle_may_hold,
     ConceptReading,
     damerau_levenshtein,
@@ -337,6 +341,8 @@ def kind_searches(categories: Iterable[str] | None = None) -> list[Search]:
         for name in concept.english:
             for how, text in slips(name, keyboard=True):
                 add(text, "en", how, name)
+        if not greek_search_on():
+            continue
         for name in concept.greek:
             add(name, "el", "name", name)
         for name in concept.greek:
@@ -413,6 +419,8 @@ def pack_searches(categories: Iterable[str] | None = None) -> list[Search]:
                 if key and key not in seen:
                     seen.add(key)
                     language = "el" if any(is_greek_word(word) for word in key.split()) else "en"
+                    if language == "el" and not greek_search_on():
+                        continue
                     searches.append(Search(name, code, None, language, how, name))
     return searches
 
@@ -532,7 +540,12 @@ def _words_with_holders() -> dict[str, tuple[str, set[str]]]:
             for text in record.get(field_name) or ():
                 for word in normalize_understanding_text(text).split():
                     words.setdefault(word, ("the packs", set()))
-    return {word: found for word, found in words.items() if len(word) >= 4 and word.isalpha()}
+    greek = greek_search_on()
+    return {
+        word: found
+        for word, found in words.items()
+        if len(word) >= 4 and word.isalpha() and (greek or not is_greek_word(word))
+    }
 
 
 def _nearest_name_word(word: str, kind: str) -> str:
@@ -887,6 +900,8 @@ def main(argv: list[str] | None = None) -> int:
 
     kinds = len({r.search.kind for r in readings if r.search.kind})
     print("PicWise: how the search reads every kind's searches (the debugging's first measure)")
+    if not greek_search_on():
+        print("Greek: not read (the site reads English only since 2026-11-07), so not measured.")
     print(
         f"Read: {len(searches):,} searches built for {kinds} kinds of {len(categories)} categories"
         f" and from the packs, {read_words:,} words alone, {read_shelves:,} of Google's shelves;"

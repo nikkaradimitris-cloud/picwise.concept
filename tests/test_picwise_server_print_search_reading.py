@@ -22,6 +22,7 @@ test of the measure:
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -129,9 +130,22 @@ class SearchesBuiltTests(unittest.TestCase):
         texts = {s.text for s in searches}
         self.assertIn("electric bike", texts)
         self.assertIn("Shimano electric bike", texts)
-        self.assertIn("ηλεκτρικό ποδήλατο", texts)
         self.assertTrue(all(s.category == "MO" for s in searches))
         self.assertEqual(len(texts), len(searches))
+        # The site reads English only (owner, 2026-11-07): no Greek search is measured.
+        self.assertFalse([s for s in searches if s.language == "el"])
+
+    def test_a_kinds_greek_searches_when_greek_is_read(self) -> None:
+        previous = os.environ.get("PICWISE_GREEK_SEARCH")
+        os.environ["PICWISE_GREEK_SEARCH"] = "on"
+        try:
+            searches = [s for s in measure.kind_searches(["MO"]) if s.kind == "e_bike"]
+        finally:
+            if previous is None:
+                os.environ.pop("PICWISE_GREEK_SEARCH", None)
+            else:
+                os.environ["PICWISE_GREEK_SEARCH"] = previous
+        self.assertIn("ηλεκτρικό ποδήλατο", {s.text for s in searches})
         self.assertEqual({s.how for s in searches if s.language == "el"} - {"name", "number"}, {"missing", "doubled", "swapped"})
 
     def test_the_packs_families_without_their_generated_tails(self) -> None:
@@ -198,7 +212,15 @@ class ReadingTests(unittest.TestCase):
         def every_word_as_boots(text: str) -> ConceptReading:
             return ConceptReading(query=text, tokens=(text,), concept_id="boots", exact=False)
 
-        read, guesses = measure.word_guesses(every_word_as_boots)
+        previous = os.environ.get("PICWISE_GREEK_SEARCH")
+        os.environ["PICWISE_GREEK_SEARCH"] = "on"
+        try:
+            read, guesses = measure.word_guesses(every_word_as_boots)
+        finally:
+            if previous is None:
+                os.environ.pop("PICWISE_GREEK_SEARCH", None)
+            else:
+                os.environ["PICWISE_GREEK_SEARCH"] = previous
         self.assertGreater(read, 1000)
         by_word = {guess.word: guess for guess in guesses}
         battery = by_word["μπαταρια"]
@@ -209,6 +231,10 @@ class ReadingTests(unittest.TestCase):
         # A word of the boots' own names is no guess.
         self.assertNotIn("μποτακια", by_word)
         self.assertNotIn("boots", by_word)
+        # With the site's English only, no Greek word is read alone.
+        _read, english_guesses = measure.word_guesses(every_word_as_boots)
+        self.assertFalse([guess for guess in english_guesses if measure.is_greek_word(guess.word)])
+        self.assertIn("rubber", {guess.word for guess in english_guesses})
 
     def test_a_word_read_exactly_or_as_nothing_is_no_guess(self) -> None:
         read, guesses = measure.word_guesses(_reader({"rubber": ("router", True)}))
