@@ -48,6 +48,11 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   catalogue, through a workflow as `server-confusions.yml` does, reading the first cards'
   kinds; (3) fixed by cause, not kind by kind (the owner, 05/11), measured before and
   after; (4) the AI fixes kept (below) in the same build. Greek only where it is cheap.
+  **The scope** (the owner asked, 07/11: «Πόσες κατηγορίες και υποκατηγορίες έχει?»): 18
+  categories (`product_concepts._MEGA`), 312 kinds (278 main, 34 narrower, two levels at
+  most), 1,263 English and 762 Greek names; of the 595,751 products of 06/11, 279,619
+  carry a kind. The design-time packs (`picwise_taxonomy.deep_packs`: 128 departments,
+  591 subcategories, 1,140 product families) are not read by the search.
 - **The AI layer live (06/11), and the owner's first try.** Deployed on 06/11 on the
   owner's «ανέβασε το 75fd3d0»: `75fd3d0` pushed to `ccr-1361f1a7-dcpo60` (a fast-forward
   from `a7539b9`), run `42287840883`, success; release `20261106T202256Z-75fd3d0`, the site
