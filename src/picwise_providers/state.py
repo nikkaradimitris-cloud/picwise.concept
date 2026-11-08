@@ -55,6 +55,7 @@ from .search_selection import (
     product_non_new_condition,
     remember_product_kinds,
     select_provider_products_for_query,
+    warm_word_lookup,
 )
 
 
@@ -542,6 +543,8 @@ def _prepared_search_catalogue(prepared: PreparedCatalogue) -> SearchCatalogue:
         }
     )
     _PREPARED_STATE["catalogue"] = ((today, photos), catalogue)
+    # The words search's lookup, built in the background: no search waits for it.
+    warm_word_lookup(catalogue.new_fields)
     return catalogue
 
 

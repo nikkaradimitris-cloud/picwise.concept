@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import re
+import threading
+from array import array
 from collections.abc import Callable, Iterable
 from collections import Counter
 from dataclasses import dataclass, field, replace
@@ -1495,6 +1497,138 @@ def _carries(unit: _FilterUnit, texts: dict[str, str]) -> bool:
     return bool(unit.pattern.search(texts.get(unit.fields, "")))
 
 
+def _haystack(fields: dict[str, str]) -> dict[tuple[str, ...], str]:
+    """A product's text as a filter reads it: the fields that say what it is, and its own
+    title and type (`_FilterUnit.fields`)."""
+    return {
+        scope: " ".join(fields[name] for name in scope if fields.get(name))
+        for scope in (_FILTER_FIELDS, _KIND_PHRASE_FIELDS)
+    }
+
+
+_WORD_RE = re.compile(r"\w+")
+
+
+def _looked_up(word: str) -> bool:
+    """Is the word kept in the word lookup? Not a number alone, nor a word of one or two
+    letters ("tv", "7l"): many and short, they would cost the lookup memory and narrow
+    little. A unit with such a form is read in every product, as before."""
+    return len(word) >= 3 and not word.isdigit()
+
+
+# Per catalogue a search reads (its tuple of search fields), each whole word of the
+# products' titles, types and brands with the places of the products carrying it
+# (`_word_lookup`). Two at most: the new products, and all of them for a condition.
+_WORD_LOOKUPS: dict[int, tuple[tuple[dict[str, str], ...], dict[str, array]]] = {}
+_WORD_LOOKUPS_LOCK = threading.Lock()
+
+
+def _word_lookup(eligible_fields: tuple[dict[str, str], ...]) -> dict[str, array]:
+    """Each whole word of the products' titles, types and brands (`_FILTER_FIELDS`), case
+    folded, with the places in `eligible_fields` of the products carrying it: built once
+    for a catalogue and kept with it, so that a search for words reads only the products
+    carrying them. The debugging's server measure (2026-11-08) found a search with a word
+    the kind could not explain taking 8 to 9 s on 597,270 products, every product's text
+    read on every search; and the site's four workers each hold their own copy, so the
+    lookup keeps places (4 bytes each), not texts."""
+    entry = _WORD_LOOKUPS.get(id(eligible_fields))
+    if entry is not None and entry[0] is eligible_fields:
+        return entry[1]
+    with _WORD_LOOKUPS_LOCK:
+        entry = _WORD_LOOKUPS.get(id(eligible_fields))
+        if entry is not None and entry[0] is eligible_fields:
+            return entry[1]
+        lookup: dict[str, array] = {}
+        for place, fields in enumerate(eligible_fields):
+            words: set[str] = set()
+            for name in _FILTER_FIELDS:
+                text = fields.get(name)
+                if text:
+                    words.update(_WORD_RE.findall(text.casefold()))
+            for word in words:
+                if not _looked_up(word):
+                    continue
+                row = lookup.get(word)
+                if row is None:
+                    row = lookup[word] = array("I")
+                row.append(place)
+        if len(_WORD_LOOKUPS) >= 2:
+            _WORD_LOOKUPS.clear()
+        _WORD_LOOKUPS[id(eligible_fields)] = (eligible_fields, lookup)
+        return lookup
+
+
+def _unit_words(unit: _FilterUnit) -> tuple[str, ...] | None:
+    """The words, one of which a product's text must carry as a whole word for `unit` to
+    match it: each of its word's forms (`_word_forms`), by the longest part of the form.
+    None when the unit can match inside a word, a count fused to its noun ("3seater"), or
+    a form's part is not kept in the lookup (`_looked_up`).
+    """
+    if len(unit.terms) != 1:
+        return None
+    words: list[str] = []
+    for form in _word_forms(unit.terms[0]):
+        parts = _WORD_RE.findall(form.casefold())
+        if not parts:
+            return None
+        word = max(parts, key=len)
+        if not _looked_up(word):
+            return None
+        words.append(word)
+    return tuple(dict.fromkeys(words))
+
+
+def warm_word_lookup(eligible_fields: tuple[dict[str, str], ...]) -> None:
+    """Build a catalogue's word lookup in the background, so that no search waits for it
+    (a few seconds for 600,000 products, once a day for each of the site's workers)."""
+    threading.Thread(
+        target=_word_lookup, args=(eligible_fields,), name="picwise-word-lookup", daemon=True
+    ).start()
+
+
+def _places_carrying(
+    units: Iterable[_FilterUnit], eligible_fields: tuple[dict[str, str], ...]
+) -> list[int] | None:
+    """The places in `eligible_fields`, in feed order, of the products whose text may
+    carry every unit, by the catalogue's word lookup: a product left out carries none of
+    some unit's words, so cannot match it; each one kept is then read as before. None
+    when no unit can be looked up (every product may)."""
+    lookup = _word_lookup(eligible_fields)
+    found_rows = []
+    for unit in units:
+        words = _unit_words(unit)
+        if words is not None:
+            found_rows.append([row for row in (lookup.get(word) for word in words) if row])
+    if not found_rows:
+        return None
+    found_rows.sort(key=lambda rows: sum(len(row) for row in rows))
+    places: set[int] | None = None
+    for rows in found_rows:
+        here: set[int] = set()
+        for row in rows:
+            if places is None:
+                here.update(row)
+            else:
+                here.update(place for place in row if place in places)
+        places = here
+        if not places:
+            return []
+    return sorted(places or ())
+
+
+def _carrying_every(
+    units: tuple[_FilterUnit, ...], eligible_fields: tuple[dict[str, str], ...]
+) -> list[int]:
+    """The places in `eligible_fields` of the products carrying every unit."""
+    places = _places_carrying(units, eligible_fields)
+    candidates = range(len(eligible_fields)) if places is None else places
+    return [
+        place
+        for place in candidates
+        if all(_carries(unit, _haystack(eligible_fields[place])) for unit in units)
+    ]
+
+
 def _honoured_filter_units(
     units: tuple[_FilterUnit, ...], haystacks: list[dict[tuple[str, ...], str]], *, page_size: int
 ) -> tuple[tuple[_FilterUnit, ...], tuple[_FilterUnit, ...]]:
@@ -2019,6 +2153,20 @@ def _unsure_reading_selection(
     explain: the products that are what all its words name ("tv stand": the stands
     carrying "tv"), as a search for words is answered; else nothing, and the page asks
     "Did you mean ...?" (`live_search_resolver`), never the kind's products."""
+    filters = tuple(token for token in reading.product_words if token not in _CONNECTIVE_TOKENS)
+    spec_values = frozenset(spec.token for spec in reading.specs) | frozenset(
+        token for token in filters if any(char.isdigit() for char in token)
+    )
+    units = _filter_units(filters, {}, spec_values=spec_values)
+    # No product carrying every word: the words search could only drop one, and its answer
+    # would not be taken (below), so it is not run ("bth rugs" took 9 s on the server).
+    if units and not _carrying_every(units, eligible_fields):
+        return ProviderProductSelectionResult(
+            status="unsure_reading",
+            reason_codes=("unsure_reading",),
+            unmatched_query_terms=unexplained,
+            condition_request=condition_request,
+        )
     by_words = _select_products_by_words(
         reading,
         tuple(reading.product_words),
@@ -2075,18 +2223,27 @@ def _doubtful_products_by_words(
     kind_names = _kind_name_pattern(concept_id)
     if not kind_names or not filters:
         return None
+    filter_units = _filter_units(
+        filters,
+        reading.filter_sources,
+        spec_values=frozenset(spec.token for spec in reading.specs),
+    )
+    # Only a product that may carry every filter word is read (`_places_carrying`): the
+    # members below must carry them all.
+    places = _places_carrying(filter_units, eligible_fields)
+    pairs = (
+        zip(eligible, eligible_fields)
+        if places is None
+        else ((eligible[place], eligible_fields[place]) for place in places)
+    )
     rows = [
         (product, fields)
-        for product, fields in zip(eligible, eligible_fields)
+        for product, fields in pairs
         if UNCERTAIN_MARKER in _product_concepts(product, fields)
     ]
     if not rows:
         return None
-    units = _filter_units(
-        filters,
-        reading.filter_sources,
-        spec_values=frozenset(spec.token for spec in reading.specs),
-    ) + (
+    units = filter_units + (
         _FilterUnit(
             display=" ".join(reading.concept_words) or concept_id.replace("_", " "),
             terms=tuple(reading.feed_terms) or (concept_id,),
@@ -2349,14 +2506,15 @@ def _search_head_word(
     tokens: tuple[str, ...],
     units: tuple[_FilterUnit, ...],
     members: list[tuple[ProviderProduct, dict[str, str]]],
-    haystacks: list[dict[tuple[str, ...], str]],
+    carriers_of: Callable[[_FilterUnit], list[int]],
 ) -> _FilterUnit | None:
     """The word that names the product a search asks for, as the unit that matches it.
 
     The last word before "for", "with" or "without" that is a word, and not a number, a
     spec, a count's noun ("3 seater"), a preference the lexicon knows or a brand: "dog
     crate", "lamb for bedroom", "inc cartridge epson". A word is read as a brand when
-    most of the products carrying it carry it in their brand.
+    most of the products carrying it carry it in their brand. `carriers_of` gives the
+    members carrying a unit.
     """
     cut = next((i for i, token in enumerate(tokens) if token in _PURPOSE_TOKENS), len(tokens))
     for index in range(cut - 1, -1, -1):
@@ -2372,7 +2530,7 @@ def _search_head_word(
         unit = next((unit for unit in units if unit.terms == (word,)), None)
         if unit is None:
             continue
-        carriers = [i for i, haystack in enumerate(haystacks) if _carries(unit, haystack)]
+        carriers = carriers_of(unit)
         in_brand = sum(1 for i in carriers if word in members[i][1].get("brand", "").split())
         if carriers and in_brand * 2 >= len(carriers):
             continue
@@ -2501,31 +2659,6 @@ def _ambiguous_selection(
     )
 
 
-_HAYSTACK_CACHE: dict[int, tuple[tuple[dict[str, str], ...], list[dict[tuple[str, ...], str]]]] = {}
-
-
-def _catalogue_haystacks(
-    eligible_fields: tuple[dict[str, str], ...],
-) -> list[dict[tuple[str, ...], str]]:
-    """Each product's search text, built once per catalogue and kept (the unsure path's
-    words search built every product's text on every search: 8 to 9 s on 597,270
-    products). The entry holds the fields tuple itself, so its id cannot be reused."""
-    entry = _HAYSTACK_CACHE.get(id(eligible_fields))
-    if entry is not None and entry[0] is eligible_fields:
-        return entry[1]
-    built = [
-        {
-            scope: " ".join(fields[name] for name in scope if fields.get(name))
-            for scope in (_FILTER_FIELDS, _KIND_PHRASE_FIELDS)
-        }
-        for fields in eligible_fields
-    ]
-    if len(_HAYSTACK_CACHE) >= 2:
-        _HAYSTACK_CACHE.clear()
-    _HAYSTACK_CACHE[id(eligible_fields)] = (eligible_fields, built)
-    return built
-
-
 def _select_products_by_words(
     reading: ConceptReading,
     tokens: tuple[str, ...],
@@ -2552,11 +2685,14 @@ def _select_products_by_words(
       ask which product is meant.
     """
     members = list(zip(eligible, eligible_fields))
+    # The place in `eligible_fields` of each member, when they are not all of them.
+    member_places: list[int] | None = None
     condition_unmatched: tuple[str, ...] = tuple()
     if condition_request:
-        asked_for = [row for row in members if product_non_new_condition(row[0])]
+        asked_for = [place for place, product in enumerate(eligible) if product_non_new_condition(product)]
         if asked_for:
-            members = asked_for
+            member_places = asked_for
+            members = [members[place] for place in asked_for]
         else:
             condition_unmatched = (condition_request[0],)
     filters = tuple(token for token in tokens if token not in _CONNECTIVE_TOKENS)
@@ -2564,21 +2700,44 @@ def _select_products_by_words(
         token for token in filters if any(char.isdigit() for char in token)
     )
     units = _filter_units(filters, {}, spec_values=spec_values)
-    all_haystacks = _catalogue_haystacks(eligible_fields)
-    if len(members) == len(eligible_fields):
-        haystacks = all_haystacks
-    else:
-        wanted = {id(row[1]) for row in members}
-        haystacks = [
-            all_haystacks[i] for i, fields in enumerate(eligible_fields) if id(fields) in wanted
-        ]
-    head = _search_head_word(tokens, units, members, haystacks)
+    # Each member's text is read only when a word of the search may be in it: the
+    # catalogue's word lookup gives the members that may carry a set of words
+    # (`_places_carrying`), and each of them is then read as before.
+    position_of = (
+        None if member_places is None else {place: position for position, place in enumerate(member_places)}
+    )
+    texts: dict[int, dict[tuple[str, ...], str]] = {}
+
+    def haystack_at(position: int) -> dict[tuple[str, ...], str]:
+        text = texts.get(position)
+        if text is None:
+            text = texts[position] = _haystack(members[position][1])
+        return text
+
+    def may_carry(wanted: tuple[_FilterUnit, ...]) -> Iterable[int]:
+        places = _places_carrying(wanted, eligible_fields)
+        if places is None:
+            return range(len(members))
+        if position_of is None:
+            return places
+        return [position_of[place] for place in places if place in position_of]
+
+    carrier_lists: dict[int, list[int]] = {}
+
+    def carriers_of(unit: _FilterUnit) -> list[int]:
+        carriers = carrier_lists.get(id(unit))
+        if carriers is None:
+            carriers = carrier_lists[id(unit)] = [
+                position for position in may_carry((unit,)) if _carries(unit, haystack_at(position))
+            ]
+        return carriers
+
+    head = _search_head_word(tokens, units, members, carriers_of)
     readings: dict[int, KindWordReading] = {}
     if head is not None:
         forms = _word_forms(head.terms[0])
-        for i, ((product, _fields), haystack) in enumerate(zip(members, haystacks)):
-            if not _carries(head, haystack):
-                continue
+        for i in carriers_of(head):
+            product = members[i][0]
             raw = product.raw if isinstance(product.raw, dict) else {}
             kind_reading = read_kind_word(
                 str(raw.get("product_type") or ""), str(product.title or ""), forms
@@ -2590,11 +2749,11 @@ def _select_products_by_words(
     chosen = sorted(readings)
     understood_concept = ""
     if not chosen:
-        carrying_all = [
-            members[i]
-            for i, haystack in enumerate(haystacks)
-            if units and all(_carries(unit, haystack) for unit in units)
-        ]
+        carrying_all = (
+            [members[i] for i in may_carry(units) if all(_carries(unit, haystack_at(i)) for unit in units)]
+            if units
+            else []
+        )
         concept_id = _dominant_known_kind(carrying_all)
         if not concept_id:
             families = _families_of(carrying_all)
@@ -2610,7 +2769,7 @@ def _select_products_by_words(
                 and _context_allows_member(concepts, concept_id, tokens)
             ]
     answer_members = [members[i] for i in chosen]
-    answer_haystacks = [haystacks[i] for i in chosen]
+    answer_haystacks = [haystack_at(i) for i in chosen]
     kept, dropped, ordered = _price_first_answer(
         answer_members, answer_haystacks, units, page_size=safe_max
     )
