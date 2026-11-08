@@ -74,6 +74,10 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   offered with the searches made worse, measure again (the cards only, about $0.25), and
   ask the owner's «ανέβασε» once nothing comes out slower or worse. The AI so far $1.05 of
   the $3.
+  **Put to the owner (08/11, by this session's last message; the answer may come in the
+  daily session):** for an obvious typing slip that the site guesses right ("sof bed"),
+  show that kind's products with "Showing results for: sofa bed" rather than only "Did you
+  mean"; and the scanning screen's count (about 730,000 named, 597,270 a card can show).
 - **Before (08/11, night): the debugging's steps 2 and 3 measured on the server's
   catalogue (run `42390049201`): better on the whole, worse in three categories, so
   nothing deployed; one cause found and fixed; the next run measures the cards again.**
