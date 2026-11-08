@@ -25,6 +25,11 @@
 # searches with no card 258 (143 asking "Did you mean") against 125. Worse in CL (absurd 52
 # against 12), TY (12 against 0) and FU (40 against 35), and GA and CO hold fewer right
 # cards: nothing deployed. Of 10,000 products with no kind, the AI read 2,873 as rings.
+# Run 42427367069 (2026-11-08, be77d8d: the words answer keeps every word; the cards only,
+# the AI $0.25): right 65.1% -> 78.4%, absurd 1,229 -> 160, searches with no card 125 ->
+# 346 (231 asking "Did you mean"); no category with more absurd cards but CL, by one. But
+# 254 searches over 4 s against 15 (6.56 s at the 90th in 100 against 2.36 s): nothing
+# deployed until the unsure path is fast.
 name: Search audit (read-only, measured only)
 on:
   push:
@@ -40,7 +45,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   audit:
-    if: true
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 330
     env:

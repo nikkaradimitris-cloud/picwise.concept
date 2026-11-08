@@ -39,13 +39,42 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   **The site seen (08/11):** on the owner's «στείλε το», the cloud environment
   «picwise.concept» (personal; it allows only `picwise.subby.cloud`, the package
   managers and the MCP servers) was created and this session moved onto it; the daily
-  task runs on it once the owner picks it in the task's settings (General, Cloud
-  environment). Read with `curl` (no script, so no search kept as a visitor's), never a
+  task runs on it: the owner picked it in the task's settings (General, Cloud
+  environment) at 00:17 UTC. Read with `curl` (no script, so no search kept as a visitor's), never a
   shop's link. The live site, rules `75fd3d0`, 08/11 00:00 UTC: the home page 0.8 s; a
   search 2.3-2.5 s ("kettle" again, "fire pots"), 6.2 s ("kettle" the first time) and
   6.4 s ("laptop bag"), against the 4-second aim.
 
-- **START HERE (08/11, night): the debugging's steps 2 and 3 measured on the server's
+- **START HERE (08/11, morning): the fix measured (run `42427367069`, `be77d8d`, the cards
+  only, the AI $0.25): right enough, too slow, so nothing deployed: speed first.** Of the
+  first 12 cards judged, the rules deployed -> this branch: right 65.1% -> 78.4%; absurd
+  1,229 -> 160; searches with no card 125 -> 346 (231 asking "Did you mean"). No category
+  has more absurd cards than the site but CL, by one (12 -> 13: "work pans" with a
+  cookbook); FU 35 -> 35, TY 0 -> 0, GA 156 -> 0, BK 519 -> 96, CO 114 -> 1. Right per
+  category, deployed -> new: HA 72.1 -> 76.1; KI 67.9 -> 72.1; FU 71.0 -> 75.3; PH 63.9
+  -> 92.4; CO 70.0 -> 80.1; AV 77.8 -> 84.6; CP 91.4 -> 91.4; TY 29.6 -> 29.6; MO 39.1 ->
+  64.0; PT 59.2 -> 81.7; HT 69.4 -> 85.9; GA 56.2 -> 70.0; HE 45.8 -> 80.9; BE 68.2 ->
+  72.2; BK 36.3 -> 67.1; CL 80.3 -> 87.3; FO 82.8 -> 93.1; JW 75.4 -> 86.1 (the AI's
+  verdicts on the same cards vary by a few points from run to run: the deployed rules' CL
+  78.3% in run `42390049201`, 80.3% here). The searches made worse, 64 (93 better): mostly
+  typing slips the site guesses right that now ask "Did you mean" ("sof bed", "sd cars",
+  "pen dive", "phone cas", "plan pot", "flag iron", "laptop bats": the owner chose asking
+  over guessing; the audit does not yet print what is offered); a few wrong cards:
+  "mirrrs" 12 microphones (a one-word correction to another kind, known since step 1),
+  "pen dries" a dry-wipe pen ("dries" read as "dry"), "work pans" a cookbook, "t shorts"
+  cargo shorts. **Too slow:** a search 1.71 s in the middle (1.76 s with the rules
+  deployed), but 6.56 s at the 90th in 100 against 2.36 s, and 254 searches over 4 s
+  against 15: the unsure path, 8 to 9 s ("bah rugs", "bth rugs", "laptop bas", "case fas",
+  "dishwasher pos", "pc fns", "laptop sleees", "wall mirrr"), the words search over the
+  whole catalogue (`_select_products_by_words` builds every product's text on each
+  search). "ring" takes 9 to 10 s with both (the ring kind's 200,000 products). The live
+  site (rules `75fd3d0`): "laptop bag" 6.4 s. **Next:** make the unsure path fast (find
+  the products carrying every word without building every product's text on each search,
+  e.g. a word lookup built once with the search catalogue), print the "Did you mean"
+  offered with the searches made worse, measure again (the cards only, about $0.25), and
+  ask the owner's «ανέβασε» once nothing comes out slower or worse. The AI so far $1.05 of
+  the $3.
+- **Before (08/11, night): the debugging's steps 2 and 3 measured on the server's
   catalogue (run `42390049201`): better on the whole, worse in three categories, so
   nothing deployed; one cause found and fixed; the next run measures the cards again.**
   The owner had said «Ανέβασε μετά τη μέτρηση..», told: deployed if the new rules come
