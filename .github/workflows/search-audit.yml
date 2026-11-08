@@ -45,7 +45,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   audit:
-    if: false
+    if: true
     runs-on: ubuntu-latest
     timeout-minutes: 330
     env:
