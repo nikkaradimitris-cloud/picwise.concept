@@ -2501,6 +2501,31 @@ def _ambiguous_selection(
     )
 
 
+_HAYSTACK_CACHE: dict[int, tuple[tuple[dict[str, str], ...], list[dict[tuple[str, ...], str]]]] = {}
+
+
+def _catalogue_haystacks(
+    eligible_fields: tuple[dict[str, str], ...],
+) -> list[dict[tuple[str, ...], str]]:
+    """Each product's search text, built once per catalogue and kept (the unsure path's
+    words search built every product's text on every search: 8 to 9 s on 597,270
+    products). The entry holds the fields tuple itself, so its id cannot be reused."""
+    entry = _HAYSTACK_CACHE.get(id(eligible_fields))
+    if entry is not None and entry[0] is eligible_fields:
+        return entry[1]
+    built = [
+        {
+            scope: " ".join(fields[name] for name in scope if fields.get(name))
+            for scope in (_FILTER_FIELDS, _KIND_PHRASE_FIELDS)
+        }
+        for fields in eligible_fields
+    ]
+    if len(_HAYSTACK_CACHE) >= 2:
+        _HAYSTACK_CACHE.clear()
+    _HAYSTACK_CACHE[id(eligible_fields)] = (eligible_fields, built)
+    return built
+
+
 def _select_products_by_words(
     reading: ConceptReading,
     tokens: tuple[str, ...],
@@ -2539,13 +2564,14 @@ def _select_products_by_words(
         token for token in filters if any(char.isdigit() for char in token)
     )
     units = _filter_units(filters, {}, spec_values=spec_values)
-    haystacks = [
-        {
-            scope: " ".join(fields[name] for name in scope if fields.get(name))
-            for scope in (_FILTER_FIELDS, _KIND_PHRASE_FIELDS)
-        }
-        for _product, fields in members
-    ]
+    all_haystacks = _catalogue_haystacks(eligible_fields)
+    if len(members) == len(eligible_fields):
+        haystacks = all_haystacks
+    else:
+        wanted = {id(row[1]) for row in members}
+        haystacks = [
+            all_haystacks[i] for i, fields in enumerate(eligible_fields) if id(fields) in wanted
+        ]
     head = _search_head_word(tokens, units, members, haystacks)
     readings: dict[int, KindWordReading] = {}
     if head is not None:

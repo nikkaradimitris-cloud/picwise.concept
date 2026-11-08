@@ -45,6 +45,7 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   search 2.3-2.5 s ("kettle" again, "fire pots"), 6.2 s ("kettle" the first time) and
   6.4 s ("laptop bag"), against the 4-second aim.
 
+- **Daily session 2026-11-08 (noon): first step of the speed work, built and tested, not deployed, not yet measured on the server.** `_select_products_by_words` built every product's search text on each search; now `_catalogue_haystacks` builds it once per catalogue and keeps it (`tests/test_picwise_words_search_cache.py`; the unsure-reading, search-catalogue, English-only and live-resolver modules pass). Offline, on 597,270 synthetic products: 0.65 s the first time, 0.000005 s after. That is a small part of the 8-9 s: what is left is the regex scan of every word over all haystacks (`_search_head_word`, `_carries`, `carrying_all`), to be replaced by a word lookup built once with the catalogue, then measured on the server (cards only, about $0.25). The AI today: $0.
 - **START HERE (08/11, morning): the fix measured (run `42427367069`, `be77d8d`, the cards
   only, the AI $0.25): right enough, too slow, so nothing deployed: speed first.** Of the
   first 12 cards judged, the rules deployed -> this branch: right 65.1% -> 78.4%; absurd
