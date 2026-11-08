@@ -6,11 +6,13 @@
 
 Reads the configured feed (`AWIN_FEED_URL` or `AWIN_FEED_FILE`), or the file given,
 judges it as a search does and writes `prepared/catalogue.json.gz`
-(`src/picwise_providers/prepared_catalogue.py`). Beside it, the pool Google may be given
-from (`google_pool.json.gz`, `picwise_providers.catalogue_cap`; owner, 2026-10-30): no
-category over 15% of it, the night before's pool its starting point; every product stays
-in the search. It prints counts and sizes, never the feed's link, which carries the
-account's API key.
+(`src/picwise_providers/prepared_catalogue.py`): the products the cap of 15% a category
+keeps (`picwise_providers.catalogue_cap`), the night before's its starting point; owner,
+2026-11-08: «μπορούμε να κρατήσουμε αυτόν τον κανόνα και για το search έτσι ώστε να
+επιτυγχάνουμε καλύτερες ταχύτητες». The same products, beside it, are the pool Google may
+be given from (`google_pool.json.gz`). A cap that fails keeps every product a card can
+show in the search and the night before's pool. It prints counts and sizes, never the
+feed's link, which carries the account's API key.
 
 `--keep-going` is for a deployment's build (`vercel.json`): when the feed cannot be read,
 or preparing it fails, it says so and exits 0, writing nothing, and the server then
@@ -73,7 +75,8 @@ def main(argv: list[str] | None = None) -> int:
         from picwise_providers.prepared_catalogue import write_prepared_catalogue
         from picwise_providers.state import prepare_feed_catalogue
 
-        prepared = prepare_feed_catalogue()
+        capping = _Cap(args.out)
+        prepared = prepare_feed_catalogue(cap=capping)
         size = write_prepared_catalogue(prepared, args.out) if prepared is not None else 0
     except Exception as error:
         if not args.keep_going:
@@ -85,22 +88,26 @@ def main(argv: list[str] | None = None) -> int:
         print("prepare_catalogue: the feed could not be read; nothing written")
         _write_static_note(args.static_dir, {"prepared": False, "reason": "feed_not_readable"})
         return 0 if args.keep_going else 1
-    pool = _google_pool(prepared, args.out)
+    pool = capping.write_pool(prepared)
     print(
         f"prepare_catalogue: {prepared.feed_status.product_count} rows, "
-        f"{len(prepared.products)} products a card can show "
+        f"{len(prepared.products)} products in the search "
         f"({sum(1 for condition in prepared.non_new if not condition)} new), "
         f"{prepared.shop_count} shops, {len(prepared.suggestions)} suggestions, "
         f"{len(prepared.choices)} kinds asking which one is meant; "
         f"{size / 1e6:.1f} MB written to {args.out} in {time.perf_counter() - started:.1f} s"
     )
     if "error" in pool:
-        print(f"prepare_catalogue: the pool Google may be given from failed ({pool['error']}); the night before's is kept")
+        print(
+            f"prepare_catalogue: the pool Google may be given from failed ({pool['error']}); the night before's is"
+            " kept, and the search holds every product a card can show"
+        )
     else:
         print(
-            f"prepare_catalogue: the pool Google may be given from: {pool['kept']:,} of {pool['products']:,} products"
+            f"prepare_catalogue: the cap: {pool['kept']:,} of {pool['products']:,} products a card can show kept"
             f" (at most {pool['size'] if pool['size'] is not None else 'all'} a category, {pool['share']:.0%}),"
-            f" {pool['kept_from_before']:,} of them kept the night before; every product stays in the search"
+            f" {pool['kept_from_before']:,} of them kept the night before; the search and the pool Google may be"
+            " given from hold the same"
         )
     if args.static_dir is not None:
         _write_static_note(
@@ -122,38 +129,49 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def _google_pool(prepared, out: Path) -> dict[str, object]:
-    """The pool Google may be given from (owner, 2026-10-30: every product stays in the
-    search; `picwise_providers.catalogue_cap`): no category over 15% of it, worked out
+class _Cap:
+    """The cap of 15% a category (`picwise_providers.catalogue_cap`), worked out once
     from every product a card can show with the night before's pool as its starting
-    point, and kept beside the prepared file for the next night. A failure here keeps
-    the night before's pool and is only noted."""
-    try:
-        from picwise_providers.catalogue_cap import (
-            cap_catalogue,
-            google_pool_path,
-            read_google_pool,
-            write_google_pool,
-        )
+    point, for the search (`state.prepare_feed_catalogue`) and the pool Google may be
+    given from alike (owner, 2026-11-08). A failure keeps every product in the search
+    and the night before's pool, and is only noted."""
 
-        path = google_pool_path(out)
-        result = cap_catalogue(
-            prepared.products,
-            prepared.kinds,
-            feed_ctx=prepared.availability_context,
-            kept_before=read_google_pool(path),
-        )
-        write_google_pool(result, path, prepared_at=prepared.prepared_at)
-    except Exception as error:
-        return {"error": _where(error)}
-    return {
-        "share": result.share,
-        "size": result.size,
-        "products": len(result.keep),
-        "kept": result.kept,
-        "kept_from_before": result.kept_from_before,
-        "over": sorted(result.inside),
-    }
+    def __init__(self, out: Path) -> None:
+        self.out = out
+        self.result = None
+        self.error = ""
+
+    def __call__(self, products, kinds, feed_ctx):
+        try:
+            from picwise_providers.catalogue_cap import cap_catalogue, google_pool_path, read_google_pool
+
+            self.result = cap_catalogue(
+                products, kinds, feed_ctx=feed_ctx, kept_before=read_google_pool(google_pool_path(self.out))
+            )
+        except Exception as error:
+            self.result, self.error = None, _where(error)
+            return None
+        return self.result.keep
+
+    def write_pool(self, prepared) -> dict[str, object]:
+        """Keep the pool beside the prepared file for the next night; what it holds."""
+        if self.result is None:
+            return {"error": self.error or "the cap was not worked out"}
+        try:
+            from picwise_providers.catalogue_cap import google_pool_path, write_google_pool
+
+            write_google_pool(self.result, google_pool_path(self.out), prepared_at=prepared.prepared_at)
+        except Exception as error:
+            return {"error": _where(error)}
+        result = self.result
+        return {
+            "share": result.share,
+            "size": result.size,
+            "products": len(result.keep),
+            "kept": result.kept,
+            "kept_from_before": result.kept_from_before,
+            "over": sorted(result.inside),
+        }
 
 
 def _freshness(prepared) -> dict[str, object]:

@@ -28,14 +28,18 @@ are one group. Then:
   the dearest, so every search keeps cheap, middle and dear choices; ties go by the
   row's id, so the same ones come each night.
 
-Nothing is deleted. Owner, 2026-10-30 («Όλα στο search», by `PROJECT_RULES.md` §13, «Θα
-στήσουμε ολοκληρωμένα και θα δώσουμε στη Google αυτά που θέλουμε τμηματικά»): every
-product a card can show stays in PicWise's own search; the cap chooses only the pool
-Google may be given from, the pages meant for Google choosing their products among
-those kept. Each night the preparation works it out with the night before's pool as its
-starting point and keeps it beside the prepared catalogue (`GOOGLE_POOL_NAME`,
-`write_google_pool`, `read_google_pool`); a product left out comes back when there is
-room. Measured first (`deployment/server/print_cap.py`).
+The search holds what the cap keeps. Owner, 2026-11-08: «Το 15% που είχα πει αφορούσε
+ένα πλαφόν ... έτσι ώστε να μην μπει κάποιο κατάστημα με έναν τεράστιο όγκο και αλλάξει
+την ταυτότητα του site ... μπορούμε να κρατήσουμε αυτόν τον κανόνα και για το search
+έτσι ώστε να επιτυγχάνουμε καλύτερες ταχύτητες»: each night the preparation works the
+cap out once, with the night before's pool as its starting point, and the prepared
+catalogue holds only the products it keeps (`tools/prepare_catalogue.py`,
+`state.prepare_feed_catalogue`); the same products are the pool Google may be given
+from, kept beside it (`GOOGLE_POOL_NAME`, `write_google_pool`, `read_google_pool`), the
+pages meant for Google choosing among them. A product left out comes back when there is
+room; as shops are added, 15% of more is more. Before (2026-10-30, «Όλα στο search»),
+the search held every product and the cap chose only the pool. Measured first
+(`deployment/server/print_cap.py`).
 """
 from __future__ import annotations
 

@@ -412,25 +412,26 @@ class PrepareToolTests(_PreparedMixin, unittest.TestCase):
         feed = self._write_feed(_feed_rows())
         result = self._run("--feed-file", str(feed), "--out", str(self.prepared_path))
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("16 products a card can show", result.stdout)
+        self.assertIn("16 products in the search", result.stdout)
         self.assertIsNotNone(read_prepared_catalogue(self.prepared_path))
 
     def test_the_pool_google_may_be_given_from_is_kept_for_the_next_night(self) -> None:
-        # Owner, 2026-10-30: every product stays in the search; a cap of 15% a category
-        # chooses the pool Google may be given from, the night before's its starting
-        # point. Two categories are too few for the share to hold: all 16 are in it.
+        # Owner, 2026-11-08: the cap of 15% a category holds for the search too; the
+        # products it keeps are the search and the pool Google may be given from, the
+        # night before's its starting point. Two categories are too few for the share
+        # to hold: all 16 are kept.
         feed = self._write_feed(_feed_rows())
         first = self._run("--feed-file", str(feed), "--out", str(self.prepared_path))
         self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
         pool = google_pool_path(self.prepared_path)
         self.assertEqual(len(read_google_pool(pool)), 16)
         self.assertIn(
-            "the pool Google may be given from: 16 of 16 products (at most all a category, 15%),"
-            " 0 of them kept the night before; every product stays in the search",
+            "the cap: 16 of 16 products a card can show kept (at most all a category, 15%),"
+            " 0 of them kept the night before; the search and the pool Google may be given from hold the same",
             first.stdout,
         )
         second = self._run("--feed-file", str(feed), "--out", str(self.prepared_path))
-        self.assertIn("16 of 16 products", second.stdout)
+        self.assertIn("16 of 16 products a card can show kept", second.stdout)
         # Counted in the categories over the cap only: none here.
         self.assertIn("0 of them kept the night before", second.stdout)
         self.assertEqual(len(read_prepared_catalogue(self.prepared_path).products), 16)
@@ -453,6 +454,44 @@ class PrepareToolTests(_PreparedMixin, unittest.TestCase):
         self.assertIn("the pool Google may be given from failed (ValueError at", printed.getvalue())
         self.assertIn("the night before's is kept", printed.getvalue())
         self.assertEqual(pool.read_bytes(), before)
+        # A cap that fails leaves every product a card can show in the search.
+        self.assertEqual(len(read_prepared_catalogue(self.prepared_path).products), 16)
+
+    def test_the_search_holds_only_the_products_the_cap_keeps(self) -> None:
+        # Owner, 2026-11-08: «μπορούμε να κρατήσουμε αυτόν τον κανόνα και για το search».
+        # A cap that keeps every other product: the prepared catalogue, its suggestions
+        # and the pool hold those only.
+        from dataclasses import replace
+
+        from picwise_providers import catalogue_cap
+
+        real = catalogue_cap.cap_catalogue
+
+        def every_other(products, kinds, **kwargs):
+            result = real(products, kinds, **kwargs)
+            keep = tuple(place % 2 == 0 for place in range(len(products)))
+            keys = frozenset(catalogue_cap.row_key(product) for product, kept in zip(products, keep) if kept)
+            return replace(result, keep=keep, kept_keys=keys)
+
+        tool = _load_prepare_tool()
+        feed = self._write_feed(_feed_rows())
+        os.environ["AWIN_FEED_FILE"] = str(feed)
+        printed = io.StringIO()
+        try:
+            with patch("picwise_providers.catalogue_cap.cap_catalogue", side_effect=every_other):
+                with redirect_stdout(printed):
+                    self.assertEqual(tool.main(["--out", str(self.prepared_path)]), 0)
+        finally:
+            os.environ.pop("AWIN_FEED_FILE", None)
+        prepared = read_prepared_catalogue(self.prepared_path)
+        self.assertEqual(len(prepared.products), 8)
+        self.assertEqual(len(prepared.kinds), 8)
+        self.assertEqual(len(prepared.search_fields), 8)
+        kept = {catalogue_cap.row_key(product) for product in prepared.products}
+        self.assertEqual(read_google_pool(google_pool_path(self.prepared_path)), frozenset(kept))
+        self.assertTrue(all(suggestion.products <= 8 for suggestion in prepared.suggestions))
+        self.assertIn("8 products in the search", printed.getvalue())
+        self.assertIn("the cap: 8 of 16 products a card can show kept", printed.getvalue())
 
     def test_without_a_feed_the_build_goes_on(self) -> None:
         out = self.folder / "none.json.gz"

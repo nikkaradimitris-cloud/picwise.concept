@@ -119,11 +119,11 @@ Before and during every change:
 
 Set on 2026-10-29 by the owner: «Θα στήσουμε ολοκληρωμένα και θα δώσουμε στη Google αυτά που θέλουμε τμηματικά».
 
-- PicWise is built whole: every product a card can show is in PicWise's own search, whether or not Google sees it.
+- PicWise is built whole within its cap: every product a card can show and the cap of 15% a category keeps is in PicWise's own search, whether or not Google sees it (owner, 2026-11-08: «Το 15% που είχα πει αφορούσε ένα πλαφόν ... έτσι ώστε να μην μπει κάποιο κατάστημα με έναν τεράστιο όγκο και αλλάξει την ταυτότητα του site ... μπορούμε να κρατήσουμε αυτόν τον κανόνα και για το search έτσι ώστε να επιτυγχάνουμε καλύτερες ταχύτητες»; `picwise_providers.catalogue_cap`; until then, 2026-10-30: «Όλα στο search»). As shops are added, 15% of more is more; the server is upgraded as the project earns.
 - Google is given only what the owner chooses, part by part. Google indexes pages, not products: only the pages meant for Google (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`, section 2), never the site's own search, whose pages carry `noindex`.
 - A page opens to Google only when its kind passes the bar and the owner chooses its part. The bar: products of the kind read as the right kind and checked (kind, price, stock). No minimum of shops (owner, 2026-10-31: «Καταργείται το όριο των τριών καταστημάτων ανά είδος»), and no minimum of products: even one product, on a layout of its own. Further numbers of the bar are the owner's to set (TODO). A page that does not pass is still shown to visitors, carries `noindex` and stays out of the sitemaps.
 - A page meant for Google may choose its products among all of its kind's products; whatever Google sees on it must be true.
-- A visitor who comes from Google finds the whole catalogue through PicWise's own search: a kind may have 15,000 products while Google sees the pages of 100 checked ones.
+- A visitor who comes from Google finds the whole kept catalogue through PicWise's own search: a kind may have 15,000 products while Google sees the pages of 100 checked ones.
 - Parts go out one at a time, and a part Google does not keep is fixed or withdrawn before the next (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`, section 9).
 
 ## Enforcement

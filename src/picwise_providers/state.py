@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timezone
 from typing import Any
@@ -375,9 +375,19 @@ def prepare_feed_catalogue(
     feed_config: ProviderFeedConfig | None = None,
     *,
     now: datetime | None = None,
+    cap: Callable[
+        [tuple[ProviderProduct, ...], tuple[frozenset[str], ...], FeedAvailabilityContext],
+        Sequence[bool] | None,
+    ]
+    | None = None,
 ) -> PreparedCatalogue | None:
     """The configured feed read and judged as a search reads it, ready to be written
-    (`tools/prepare_catalogue.py`), or None when the feed cannot be read."""
+    (`tools/prepare_catalogue.py`), or None when the feed cannot be read.
+
+    `cap`, when given, says which of the products a card can show the search keeps, in
+    their order (owner, 2026-11-08: the cap of 15% a category holds for the search too,
+    `catalogue_cap`): the prepared catalogue, its suggestions and its choices then hold
+    only those. None from it keeps every product."""
     config = feed_config or awin_feed_config_from_env()
     pipeline = resolve_provider_feed_pipeline(config, include_graph_projection=False)
     if pipeline.feed_status.status != "provider_feed_ready" or pipeline.availability_context is None:
@@ -387,6 +397,19 @@ def prepare_feed_catalogue(
     kinds = tuple(
         _product_concepts(product, fields) for product, fields in zip(catalogue.products, catalogue.fields)
     )
+    if cap is not None:
+        keep = cap(catalogue.products, kinds, pipeline.availability_context)
+        if keep is not None and not all(keep):
+            places = [place for place, kept in enumerate(keep) if kept]
+            products = tuple(catalogue.products[place] for place in places)
+            kinds = tuple(kinds[place] for place in places)
+            catalogue = build_search_catalogue(
+                products,
+                feed_ctx=pipeline.availability_context,
+                card_eligible=tuple(True for _product in products),
+                non_new=tuple(product_non_new_condition(product) for product in products),
+                fields=tuple(catalogue.fields[place] for place in places),
+            )
     choices = _catalogue_kind_choices(catalogue, kinds)
     return PreparedCatalogue(
         prepared_at=now or datetime.now(timezone.utc),

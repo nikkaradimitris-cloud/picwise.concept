@@ -46,7 +46,26 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   6.4 s ("laptop bag"), against the 4-second aim.
 
 - **Daily session 2026-11-08 (noon): first step of the speed work, built and tested, not deployed, not yet measured on the server.** `_select_products_by_words` built every product's search text on each search; now `_catalogue_haystacks` builds it once per catalogue and keeps it (`tests/test_picwise_words_search_cache.py`; the unsure-reading, search-catalogue, English-only and live-resolver modules pass). Offline, on 597,270 synthetic products: 0.65 s the first time, 0.000005 s after. That is a small part of the 8-9 s: what is left is the regex scan of every word over all haystacks (`_search_head_word`, `_carries`, `carrying_all`), to be replaced by a word lookup built once with the catalogue, then measured on the server (cards only, about $0.25). The AI today: $0.
-- **START HERE (08/11, afternoon): fast and right, put to the owner: waiting for «ανέβασε»**
+- **START HERE (08/11, evening): the cap of 15% in the search too, built and tested; it goes
+  with everything below in one deployment, waiting for the owner's «ανέβασε».** The owner:
+  «Το 15% που είχα πει αφορούσε ένα πλαφόν ησος πρέπει να ισχύει για όλα τα καταστήματα
+  έτσι ώστε να μην μπει κάποιο κατάστημα με έναν τεράστιο όγκο και αλλάξει την ταυτότητα
+  του site ... μπορούμε να κρατήσουμε αυτόν τον κανόνα και για το search έτσι ώστε να
+  επιτυγχάνουμε καλύτερες ταχύτητες αργότερα με την ανάπτυξη αν καταφέρουμε να βγάλουμε
+  λεφτά από αυτό το project θα αναβαθμίσουμε και το server». Built: each night the
+  preparation works the cap out once (`tools/prepare_catalogue.py`, `_Cap`), the night
+  before's pool its starting point, and the prepared catalogue, its suggestions and its
+  choices hold only the products it keeps (`state.prepare_feed_catalogue(cap=...)`); the
+  same products are the pool Google may be given from; a cap that fails keeps every
+  product in the search. `PROJECT_RULES.md` §13 now says so, with the owner's words. The
+  cap per category as chosen on 27/10 (the first two levels of the shop's Google shelf). On
+  30/10 it kept 168,730 of 527,911 (jewellery 381,204 -> 25,309, clothing 28,595 ->
+  25,309); the deployment's preparation prints today's. Tests: the preparation's 25
+  (one new: the search holds only what the cap keeps), the cap's, the choices on the page,
+  the daily renewal, the server tools' (82 in all). **To put to the owner with it:** the
+  scanning screen names the feed's eligible products (about 730,000), the search will hold
+  about 170,000-200,000: `PROJECT_RULES.md` §9 wants the screen to state only true facts.
+- **Before (08/11, afternoon): fast and right, put to the owner: waiting for «ανέβασε»**
   (then push the newest commit of `ccr-4f47068a-99ikwe`, its tests passed, to the deploying
   branch `ccr-1361f1a7-dcpo60`; `src/picwise_nlu` changed since `75fd3d0`, so the deployment
   prepares the catalogue again). Run `42474826414` (`71e9bab`, the cards only, $0.25; the
