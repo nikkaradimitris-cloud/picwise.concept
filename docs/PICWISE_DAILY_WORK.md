@@ -20,7 +20,11 @@ by email and to their phone. The owner answers in that session, once a day.
    `PROGRESS.md`. Read the session's notifications.
 2. **Look.** What the last day left: an answer of the owner's in the last session (a
    «ναι» not yet acted on), a run to read, a deployment to check (the server's logs come
-   only through the read-only workflows; the session never reaches the site itself).
+   only through the read-only workflows). On the cloud environment «picwise.concept»
+   (owner, 2026-11-08: «στείλε το»; it allows only `picwise.subby.cloud`) a session may
+   read the site's pages as a visitor sees them, with `curl`, which runs no script, so no
+   search of the session's is kept among the visitors' searches (`/searched`); never a
+   shop's link (an Awin tracked link), never a form.
 3. **Work.** The next step of the handoff's "START HERE", in small, closed steps: fix
    by cause, never word by word; every fix with its tests; the measures before and
    after (`deployment/server/print_search_reading.py` offline and free; the server's

@@ -36,6 +36,14 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   task starts a new session that follows `docs/PICWISE_DAILY_WORK.md`: the next step of
   this section, its tests and measures, a report in Greek by email, and the site changed
   only after the owner's «ναι» to that day's report. The AI at most $2 a day.
+  **The site seen (08/11):** on the owner's «στείλε το», the cloud environment
+  «picwise.concept» (personal; it allows only `picwise.subby.cloud`, the package
+  managers and the MCP servers) was created and this session moved onto it; the daily
+  task runs on it once the owner picks it in the task's settings (General, Cloud
+  environment). Read with `curl` (no script, so no search kept as a visitor's), never a
+  shop's link. The live site, rules `75fd3d0`, 08/11 00:00 UTC: the home page 0.8 s; a
+  search 2.3-2.5 s ("kettle" again, "fire pots"), 6.2 s ("kettle" the first time) and
+  6.4 s ("laptop bag"), against the 4-second aim.
 
 - **START HERE (08/11, night): the debugging's steps 2 and 3 measured on the server's
   catalogue (run `42390049201`): better on the whole, worse in three categories, so
