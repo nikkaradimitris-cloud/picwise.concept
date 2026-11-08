@@ -30,6 +30,10 @@
 # 346 (231 asking "Did you mean"); no category with more absurd cards but CL, by one. But
 # 254 searches over 4 s against 15 (6.56 s at the 90th in 100 against 2.36 s): nothing
 # deployed until the unsure path is fast.
+# Run 42474826414 (2026-11-08, 71e9bab: the word lookup; the cards only, the AI $0.25): a
+# search 1.97 s in the middle, 2.14 s at the 90th in 100, 10 over 4 s (the rules deployed:
+# 1.98 s, 2.56 s, 18); right 64.8% -> 78.0%, absurd 1,226 -> 153, no card 125 -> 346 (231
+# asking "Did you mean", 230 of them offering the kind searched for). Put to the owner.
 name: Search audit (read-only, measured only)
 on:
   push:
@@ -45,7 +49,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   audit:
-    if: true
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 330
     env:

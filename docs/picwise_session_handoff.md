@@ -46,7 +46,35 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   6.4 s ("laptop bag"), against the 4-second aim.
 
 - **Daily session 2026-11-08 (noon): first step of the speed work, built and tested, not deployed, not yet measured on the server.** `_select_products_by_words` built every product's search text on each search; now `_catalogue_haystacks` builds it once per catalogue and keeps it (`tests/test_picwise_words_search_cache.py`; the unsure-reading, search-catalogue, English-only and live-resolver modules pass). Offline, on 597,270 synthetic products: 0.65 s the first time, 0.000005 s after. That is a small part of the 8-9 s: what is left is the regex scan of every word over all haystacks (`_search_head_word`, `_carries`, `carrying_all`), to be replaced by a word lookup built once with the catalogue, then measured on the server (cards only, about $0.25). The AI today: $0.
-- **START HERE (08/11, morning): the fix measured (run `42427367069`, `be77d8d`, the cards
+- **START HERE (08/11, afternoon): fast and right, put to the owner: waiting for «ανέβασε»**
+  (then push the newest commit of `ccr-4f47068a-99ikwe`, its tests passed, to the deploying
+  branch `ccr-1361f1a7-dcpo60`; `src/picwise_nlu` changed since `75fd3d0`, so the deployment
+  prepares the catalogue again). Run `42474826414` (`71e9bab`, the cards only, $0.25; the
+  catalogue of 08/11 04:25, 597,275 products): a search, the rules deployed -> this branch,
+  1.98 -> 1.97 s in the middle, 2.56 -> 2.14 s at the 90th in 100, 18 -> 10 over 4 s (the
+  "ring" searches 8 to 11 s with both: the ring kind's 200,000 products; "washing machine"
+  7.2 s, "laptop bas" 6.6 s). The cards: right 64.8% -> 78.0%; absurd 1,226 -> 153, in
+  every category as few as the site's or fewer but CL (12 -> 13); no card 125 -> 346, 231
+  asking "Did you mean", 230 of them offering the kind searched for (the audit's new
+  section); those offering nothing are mostly kinds the catalogue lacks (dishwasher, oil
+  filter, alloy wheels, blood pressure monitor, high chair...). The searches made worse, 61
+  (93 better): mostly typing slips now asking "Did you mean" with the right offer; wrong
+  cards: "mirrrs" 12 microphones (a one-word correction to another kind), "pen dries" a
+  dry-wipe pen ("dries" read as "dry"), "work pans" a cookbook, "t shorts" cargo shorts.
+  The word lookup (`74f04f6`): `search_selection._word_lookup`, built in the background for
+  each catalogue (`warm_word_lookup`, from `state.py`), numbers alone and words of one or
+  two letters left out; the daily session's cache of every product's text (`6a6680d`)
+  dropped (each of the four workers would have held about 300 MB). Tests: all 296 modules
+  on `74f04f6` but stage 6a (skipped, as before): 294 OK, the 2 that fail on the base too
+  (stage2 registry, stage4 blind index). The AI so far $1.30 of the $3. Deploying puts on
+  the site everything built since `75fd3d0`: English only, the searches' words kept on the
+  server with the privacy page's "Searches" section (its words put to the owner in the
+  report of 08/11 afternoon), each name in both numbers, no word spelt right corrected,
+  "Did you mean" where the reading is unsure, every word kept by a words answer, the word
+  lookup. **After it:** follow the deployment's run, check the site with `curl` (the
+  environment «picwise.concept»), then the wrong cards above, the weekly measure of the
+  kept searches, and the ring gap (2,873 of 10,000 products with no kind are rings).
+- **Before (08/11, morning): the fix measured (run `42427367069`, `be77d8d`, the cards
   only, the AI $0.25): right enough, too slow, so nothing deployed: speed first.** Of the
   first 12 cards judged, the rules deployed -> this branch: right 65.1% -> 78.4%; absurd
   1,229 -> 160; searches with no card 125 -> 346 (231 asking "Did you mean"). No category
