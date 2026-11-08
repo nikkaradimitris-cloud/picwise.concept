@@ -37,6 +37,10 @@ by email and to their phone. The owner answers in that session, once a day.
    proposed to go on the site, ending with «Να το ανεβάσω;»; the questions that need the
    owner, each one line; what comes next. No link to a shop, no secret, nothing invented,
    nothing claimed that was not checked.
+   Then, every day, even when nothing was done, the session calls `PushNotification` with
+   a short Greek summary of the report: the email and the phone notification go out only
+   through it (2026-11-08: a session that skipped it left the owner without the day's
+   email; the scheduled task's prompt says so too, its step 6).
 5. **The owner's answer.** «ναι» or «ανέβασε» to what the report proposed: deploy it
    (push the commit the report named, its tests passed, to `ccr-1361f1a7-dcpo60`), follow
    the deployment's run to its end, read its log, record it, and go on with the work.
