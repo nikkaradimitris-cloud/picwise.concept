@@ -74,6 +74,15 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   lookup. **After it:** follow the deployment's run, check the site with `curl` (the
   environment «picwise.concept»), then the wrong cards above, the weekly measure of the
   kept searches, and the ring gap (2,873 of 10,000 products with no kind are rings).
+  **The agenda for 09/11, as told to the owner (08/11):** 1. if the owner has said
+  «ανέβασε», check the deployment (its run, the site with `curl`, the speed of a few
+  searches); if not, ask again in the report; 2. the wrong cards, by cause: "mirrrs" (a
+  one-word correction to another kind), "pen dries" ("dries" read as "dry"), "work pans"
+  (a cookbook), "t shorts" (cargo shorts); 3. the ring gap: why 2,873 of 10,000 products
+  with no kind are rings no rule reads; 4. the kinds holding most products not theirs
+  (storage_drive 174, dinnerware 155, watch 124, battery 118 of those judged); 5. the
+  "ring" searches' 8 to 11 s. Each with its tests and a measure (the cards only, about
+  $0.25; the AI at most $2 a day); the report and its notification at the end of the day.
 - **Before (08/11, morning): the fix measured (run `42427367069`, `be77d8d`, the cards
   only, the AI $0.25): right enough, too slow, so nothing deployed: speed first.** Of the
   first 12 cards judged, the rules deployed -> this branch: right 65.1% -> 78.4%; absurd
