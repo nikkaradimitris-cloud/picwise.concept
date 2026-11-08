@@ -234,6 +234,31 @@ class AuditTests(unittest.TestCase):
         self.assertIn("to ask: ", out)
         self.assertIn(" 0 products with no kind in 0 calls", out)
 
+    def test_what_did_you_mean_offers_for_the_searches_with_no_card(self) -> None:
+        searches = [
+            {"q": "kettel", "kind": "kettle", "category": "KI", "how": "x"},
+            {"q": "ketle", "kind": "kettle", "category": "KI", "how": "x"},
+            {"q": "kettl", "kind": "kettle", "category": "KI", "how": "x"},
+            {"q": "kettle", "kind": "kettle", "category": "KI", "how": "name"},
+        ]
+        answered = [
+            {"q": "kettel", "cards": [], "did_you_mean": ["kettle"]},
+            {"q": "ketle", "cards": [], "did_you_mean": ["laptop"]},
+            {"q": "kettl", "cards": [], "did_you_mean": []},
+            {"q": "kettle", "cards": ["1"], "did_you_mean": []},
+        ]
+        lines: list[str] = []
+        report = audit_search.judge(
+            self.prepared, searches, {"this commit": answered}, asker=None, out=lines.append, cards_only=True
+        )
+        out = "\n".join(lines)
+        self.assertIn('== WHAT "DID YOU MEAN" OFFERS WITH THIS COMMIT, for the searches with no card', out)
+        self.assertIn("KI: 3 with no card, 2 asking, 1 offering the kind searched for, 1 offering nothing", out)
+        self.assertIn('  "ketle" (kettle): offered laptop', out)
+        self.assertIn('  "kettl" (kettle): nothing offered', out)
+        self.assertNotIn('"kettel" (kettle): offered', out)
+        self.assertEqual(report["offers"]["KI"]["the kind"], 1)
+
     def test_the_budget_stops_the_calls(self) -> None:
         asker = audit_search.Asker(object(), 0.0015, _fake_ask)
         lines: list[str] = []

@@ -31,7 +31,8 @@ the server's prepared catalogue; nothing on the server or the site changes.
    share of the first 12 cards that are right, the absurd ones (not right, and of no kind
    of the search's category) and the searches with no card; then, with two sets of rules,
    the searches where this commit's cards are worse (fewer right, or more absurd), with why
-   it answered so and its first wrong card. `--cards-only` asks about the cards alone (a. and
+   it answered so and its first wrong card; and, for the searches with no card, whether
+   what "Did you mean" offers is the kind searched for. `--cards-only` asks about the cards alone (a. and
    b. do not change with the search's rules). The calls stop at `--budget` dollars. Without
    `ANTHROPIC_API_KEY`, or with `--dry-run`, nothing is asked: the run says what would be.
 
@@ -630,7 +631,50 @@ def _report(prepared, searches, cards, chosen, pairs, verdict, gaps, no_kind, as
         for line in examples:
             out(f"      {line}")
     worse = _worse_searches(cards, searched, first_wrong, kind_of_search, reading_measure.CATEGORY_CODES, out)
-    return {"board": board, "scores": scores, "worse": worse}
+    offers = _offers(cards, kind_of_search, reading_measure.CATEGORY_CODES, out)
+    return {"board": board, "scores": scores, "worse": worse, "offers": offers}
+
+
+def _offers(cards, kind_of_search, codes, out) -> dict[str, Counter]:
+    """With the last set of rules (this commit), the searches with no card: how many ask
+    "Did you mean", and whether what is offered is the kind the search was for, read as a
+    search is (`understand_product_query`): the owner, 2026-11-08, «το ευρετήριο προτείνει
+    τη σωστή διατύπωση.. οπότε δεν χρειάζεται» (no results shown for a guess), so what is
+    offered must be right. The others listed, with what was offered."""
+    from picwise_nlu.concept_understanding import understand_product_query
+
+    rules = list(cards)[-1] if cards else ""
+    per: dict[str, Counter] = defaultdict(Counter)
+    listed: dict[str, list[str]] = defaultdict(list)
+    for search in cards.get(rules, []):
+        meta = kind_of_search.get(search["q"])
+        if not meta or search.get("cards"):
+            continue
+        code, kind = meta["category"], meta["kind"]
+        per[code]["no card"] += 1
+        offered = [str(text) for text in search.get("did_you_mean") or ()]
+        if not offered:
+            per[code]["nothing offered"] += 1
+            listed[code].append(f'  "{search["q"]}" ({kind}): nothing offered')
+            continue
+        per[code]["asking"] += 1
+        if kind in {understand_product_query(text).concept_id for text in offered}:
+            per[code]["the kind"] += 1
+        else:
+            listed[code].append(f'  "{search["q"]}" ({kind}): offered ' + " / ".join(offered[:3]))
+    out("")
+    out(f'== WHAT "DID YOU MEAN" OFFERS WITH {rules.upper()}, for the searches with no card')
+    for code in codes:
+        row = per.get(code)
+        if not row:
+            continue
+        out(
+            f"{code}: {row['no card']} with no card, {row['asking']} asking, {row['the kind']} offering the kind"
+            f" searched for, {row['nothing offered']} offering nothing"
+        )
+        for line in listed[code][:WORSE_A_CATEGORY]:
+            out(line)
+    return per
 
 
 def _worse_searches(cards, searched, first_wrong, kind_of_search, codes, out) -> dict[str, list[str]]:

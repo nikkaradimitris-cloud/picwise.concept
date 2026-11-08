@@ -49,8 +49,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 330
     env:
-      # At most $3 in all for the debugging's measure: run 42390049201 spent $0.80.
-      BUDGET: '1.00'
+      # At most $3 in all for the debugging's measure: $1.05 spent in its first two runs.
+      BUDGET: '0.50'
       # The rules the site runs now: the AI layer's deployment, 2026-11-06.
       COMPARE_WITH: 75fd3d0
       # The cards alone: the products of each kind and the gaps do not change with the
