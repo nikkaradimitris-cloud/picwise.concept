@@ -515,6 +515,10 @@ class _Lexicon:
         # Each in its other number too: "iphones" is spelt right as "iphone" is.
         spellings |= {other for token in spellings for other in [english_word_in_other_number(token)] if other}
         self.english_spellings = frozenset(spellings)
+        by_key: dict[str, set[str]] = {}
+        for spelling in spellings:
+            by_key.setdefault(english_key(spelling), set()).add(spelling)
+        self.spellings_by_key = by_key
         # Words that judge or shop rather than name what is wanted ("best", "cheap"):
         # understood, never a filter, never corrected.
         self.english_judgements = frozenset(get_english_judgement_words())
@@ -691,6 +695,17 @@ class ConceptReading:
         }
 
 
+def _spelling_is_near(token: str, key_word: str, limit: int) -> bool:
+    """Whether some English spelling that makes this key is within a slip of the token.
+
+    Keys collapse doubled letters, so two words a key apart may be spelt three letters
+    apart. A key with no known spelling is taken as near."""
+    spellings = _lexicon().spellings_by_key.get(key_word)
+    if not spellings:
+        return True
+    return any(damerau_levenshtein(token, spelling, limit + 1) <= limit + 1 for spelling in spellings)
+
+
 def _token_candidates(token: str, *, fuzzy: bool = True) -> dict[tuple[str, str], float]:
     """Every lexicon word this token could be, with a cost: lower is more certain."""
     lexicon = _lexicon()
@@ -701,6 +716,10 @@ def _token_candidates(token: str, *, fuzzy: bool = True) -> dict[tuple[str, str]
         if not key:
             return
         for word, distance in lexicon.fuzzy[kind].lookup(key, limit).items():
+            if distance and kind == "en" and not _spelling_is_near(token, word, limit):
+                # The key hides doubled letters: "mirrrs" is "mirs", one letter from
+                # "mics", but no spelling of "mics" is within a slip of "mirrrs".
+                continue
             cost = (distance or exact_key_cost) + bias
             identity = (kind, word)
             if cost < candidates.get(identity, 99.0):

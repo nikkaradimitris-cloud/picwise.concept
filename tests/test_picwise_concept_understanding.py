@@ -317,5 +317,25 @@ class LexiconIntegrityTests(unittest.TestCase):
         self.assertEqual(broader_concepts("running_shoes"), ("running_shoes", "athletic_shoes", "shoes"))
 
 
+class CollapsedLettersTests(unittest.TestCase):
+    def test_a_triple_letter_is_not_corrected_to_a_word_two_edits_away(self) -> None:
+        # "mirrrs" collapses to the key "mirs", one letter from "mics" (microphones).
+        self.assertIsNone(understand_product_query("mirrrs").concept_id)
+
+    def test_a_doubled_letter_slip_is_still_corrected(self) -> None:
+        self.assertEqual(understand_product_query("bootss").concept_id, "boots")
+        self.assertEqual(understand_product_query("mirror").concept_id, "mirror")
+
+
+class CollapsedLettersTests(unittest.TestCase):
+    def test_a_key_match_far_in_spelling_is_not_a_correction(self) -> None:
+        # "mirrrs" collapses to the key "mirs", one letter from "mics" (microphones).
+        self.assertIsNone(understand_product_query("mirrrs").concept_id)
+
+    def test_doubled_letter_slips_still_read(self) -> None:
+        self.assertEqual(understand_product_query("bootss").concept_id, "boots")
+        self.assertEqual(understand_product_query("mirror").concept_id, "mirror")
+
+
 if __name__ == "__main__":
     unittest.main()
