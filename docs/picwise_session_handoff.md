@@ -63,9 +63,16 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   30/10 it kept 168,730 of 527,911 (jewellery 381,204 -> 25,309, clothing 28,595 ->
   25,309); the deployment's preparation prints today's. Tests: the preparation's 25
   (one new: the search holds only what the cap keeps), the cap's, the choices on the page,
-  the daily renewal, the server tools' (82 in all). **To put to the owner with it:** the
-  scanning screen names the feed's eligible products (about 730,000), the search will hold
-  about 170,000-200,000: `PROJECT_RULES.md` §9 wants the screen to state only true facts.
+  the daily renewal, the server tools' (82 in all). **Deployed 09/11** (the daily session,
+  on the owner's «ναι, ανέβασε»: `ace8468`, run `42606594412`, the site active since
+  11:23:29 UTC): the cap kept 242,869 of 597,876 products a card can show (at most 36,430
+  a category); the site's memory 3,816 MB just after the start (6.7 GB before); the live
+  searches 1.3-1.9 s ("ring" 1.9 s, "laptop bag" 1.5 s); a Greek search answered "PicWise
+  searches in English"; "bth rugs" asks "Did you mean: bath mat?"; the offers not fetched
+  (Awin 401, as since 03/11). **The scanning screen** still says "Searching 734,954
+  products from 80 shops" (`prepared.eligible_count`), the search holding 242,869: put to
+  the owner, who answered (09/11) «Να περιμένεις το design»: left as it is until the
+  design work.
 - **Before (08/11, afternoon): fast and right, put to the owner: waiting for «ανέβασε»**
   (then push the newest commit of `ccr-4f47068a-99ikwe`, its tests passed, to the deploying
   branch `ccr-1361f1a7-dcpo60`; `src/picwise_nlu` changed since `75fd3d0`, so the deployment
