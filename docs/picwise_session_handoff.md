@@ -32,6 +32,17 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-06): pick up here -- start here
 
+- **`main` brought up to the live site (09/11, afternoon; owner: «Ανέλαβε τη διόρθωση
+  όλων να έρθει στην κατάσταση που πρέπει και ότι έχει μείνει σε κρεμότητα κλείστο»):**
+  `main` had stayed at `3608da0` (25/10), 298 commits behind this work; it was moved by a
+  fast-forward to this branch (no merge commit), so `main` holds the code live since
+  09/11 (`ace8468`) and these records. The 13 open pull requests are closed: 11 marked
+  merged by GitHub once their commits were on `main`, #15 (`ccr-4f9ef4ee-j1nafx`, the
+  same tree as `aa7f7eb` here, a rebased copy) and #6 (a handoff of 10/10) closed unmerged.
+  No branch deleted. `README.md` and the opening sections of `PROGRESS.md` now say what is
+  live; the two doc conflicts are settled by dated notes ("Known doc conflict", at the
+  end). `main` still moves only on the owner's yes, by a fast-forward to this branch;
+  a push to `main` makes Vercel build the backup (PROGRESS, 09/11).
 - **The daily work (owner, 2026-11-07):** every day at about 12:00 Greek time a scheduled
   task starts a new session that follows `docs/PICWISE_DAILY_WORK.md`: the next step of
   this section, its tests and measures, a report in Greek by email, and the site changed
@@ -3411,8 +3422,8 @@ Read in this order before touching anything, every session:
 2. `docs/MISSION.md` — the mission lock: what every purchase-intent query owes the
    buyer, the product promise ("Enter confused. Leave decided."), the identity PicWise
    must never drift into, and the trust/neutrality commitments. **Every piece of work
-   is measured against this file.** Its "First Phase Boundary" section is stale (it
-   predates the live app) — see "Known doc conflict" below.
+   is measured against this file.** Its "First Phase Boundary" section is the record of
+   the first phase, closed on 2026-05-06 — see "Known doc conflict" below.
 3. `concept.picwise.txt` — the product concept source of truth
 4. `docs/` contracts and specs — implementation contracts
 5. this file, then the last entries of `PROGRESS.md`
@@ -3438,6 +3449,12 @@ In short:
 - the business runs on Google search, Ads and social media second (owner, 2026-10-23):
   low-volume, low-competition keywords in large markets with many products; every page
   meant for Google meets Google's own published requirements end to end
+- never commit a feed file the owner sends: the repository is public, and a feed file
+  holds the shops' data and every row's Awin tracked link with the owner's publisher ID,
+  which crawlers would follow as clicks (owner offered one, 23/10; declined for that
+  reason; first written only on `ccr-c30938cf-v749ay`, carried here on 09/11)
+- `main` is what is live plus its records: moved only on the owner's yes, by a
+  fast-forward to the work's branch, so the two stay one line (09/11)
 
 ## Map of the code that matters now
 
@@ -3680,11 +3697,25 @@ Vercel, every day), `docs/picwise_query_understanding.md`,
    Greek) and the concept reading into one layer.
 5. Investigate the two pre-existing registry failures.
 
-## Known doc conflict (unresolved, owner's call)
+## Known doc conflict (settled on 2026-11-09)
 
 **Settled on 2026-10-16:** the price-first plan contradicted `concept.picwise.txt`,
 `docs/MISSION.md` and `PROJECT_RULES.md`; the owner chose to change them, and they
 were changed (details in `docs/picwise_price_first_plan_2026-10-15.md`).
+
+**Settled on 2026-11-09** (owner: «Ανέλαβε τη διόρθωση όλων να έρθει στην κατάσταση
+που πρέπει και ότι έχει μείνει σε κρεμότητα κλείστο»), both conflicts below, by dated
+notes that keep the old text:
+
+- The SEO waves: `concept.picwise.txt` section 17 and `docs/SEO_WAVES_SPEC.md` now say
+  that long-tail queries stay the aim, each mapped to the page whose own set of products
+  answers it, never a page per wording, as `PROJECT_RULES.md` section 13 (owner,
+  2026-10-29) and `docs/PICWISE_GOOGLE_PAGES_SPEC.md` already required.
+- The first phase: `docs/MISSION.md` ("First Phase Boundary"), `PROJECT_RULES.md`
+  section 12 and `docs/IMPLEMENTATION_ROADMAP.md` ("Current Phase") now say the first
+  phase closed on 2026-05-06; "No fake business metrics" stays binding.
+
+As raised, for the record:
 
 **Raised on 2026-10-23, the owner's call:** `concept.picwise.txt` section 17 ("SEO
 Strategy — Waves Model") and `docs/SEO_WAVES_SPEC.md` ("Each landing targets a specific
@@ -3694,7 +3725,7 @@ wording of a search scaled content abuse. `docs/PICWISE_GOOGLE_PAGES_SPEC.md` fo
 Google: one page per distinct set of products, never per wording. The two files are
 unchanged until the owner says so.
 
-Older, and still open:
+Older:
 
 Three files still describe the project as being in the documentation-only phase:
 

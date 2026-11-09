@@ -77,6 +77,10 @@ Picwise must not become:
 
 ## First Phase Boundary
 
+Closed on 2026-05-06, when the docs contract review passed (`PROGRESS.md`); the app has
+been built since and is live (`README.md`). Kept below as the record of the first phase;
+its "No fake business metrics" stays binding (`PROJECT_RULES.md` section 4).
+
 Current phase is documentation/spec/contracts foundation.
 
 No frontend implementation.

@@ -7,7 +7,7 @@ Official human-readable progress tracker for Picwise Production.
 - Project: Picwise Production
 - Primary domain: picwise.subby.cloud
 - Product type: decision engine, not search engine
-- Current phase: Local app implementation + live-production integration readiness through stage 26
+- Current phase (2026-11-09): live on PicWise's own server with the real Awin feed; the big general debugging of the search (owner, 2026-11-07); nothing given to Google yet. Where the work is: the first section of `docs/picwise_session_handoff.md`.
 
 ## 2) Source Of Truth Order
 
@@ -17,6 +17,16 @@ Official human-readable progress tracker for Picwise Production.
 4. PROGRESS.md for progress tracking only
 
 ## 3) Current Verified Status
+
+Live now (2026-11-09; each item's proof is in the log below):
+- `picwise.subby.cloud` served by PicWise's own server (OVHcloud VPS-4, London) since 2026-10-31, HTTPS by Caddy; Vercel kept as the backup.
+- The last deployment: `ace8468`, run `42606594412`, active since 2026-11-09 11:23:29 UTC, checked the same day.
+- The real Awin feed (first live proof 2026-10-11); on the server, the owner's Create-a-Feed link with the Google-format shops: on 2026-11-09, 597,876 products a card can show, 242,869 of them kept by the cap of 15% a category.
+- Price first with the products on a current shop offer first and one honest Recommended (`PROJECT_RULES.md` section 2); the search in English only; the AI layer for complex searches since 2026-11-06.
+- The site's own search kept out of Google (`noindex`, `robots.txt`) since 2026-10-23.
+- Not live: Awin's offers since 2026-11-03 (Awin answers 401), the Subby dashboard, any page for Google, any click, commission or conversion tracking.
+
+The roadmap of May 2026, as recorded:
 
 PASSED:
 - Root rules created
@@ -60,6 +70,8 @@ PASSED:
 
 ## 4) Locked Implementation Roadmap Status
 
+The roadmap of May 2026, kept as recorded; the owner's decisions since October are in the log below and in the handoff. The site is live (stage 22, and every deployment to PicWise's own server since 2026-10-31). Stages 20-21 and 23-25 stay non-PASSED: no live Subby proof, and no click or commission proof of the shops' Awin links, which a session never clicks (an automated click is a fake click).
+
 | # | Roadmap Step | Status |
 |---|---|---|
 | 1 | Root rules and concept lock | PASSED |
@@ -102,12 +114,12 @@ A step may only be marked PASSED when there is:
 
 ## 6) Current Next Step
 
-Obtain real feed/affiliate provider credentials and proof, plus live Subby endpoint/key proof and dashboard-ingested event proof, before upgrading stages 23-25 to PASSED.
+The first section of `docs/picwise_session_handoff.md` ("START HERE"), carried on by the daily session (`docs/PICWISE_DAILY_WORK.md`). On 2026-11-09 it lists: the wrong cards "pen dries", "work pans" and "t shorts", fixed by cause; the ring gap (2,873 of 10,000 products with no kind are rings); the kinds holding most products not theirs; then the debugging's steps 2 and 3 on the server's catalogue, toward the bar the owner set on 2026-11-07 (no absurd card, at least 98% of the first page's cards right; 78.0% right in the measure of 2026-11-08, run `42474826414`). Stages 23-25 of the May roadmap still wait on live Subby proof and on click or commission proof.
 
 ## 7) Do-Not-Claim Rules
 
 - Do not claim live dashboard/Subby integration.
-- Do not claim real product feed integration.
+- The real product feed is live, with proof (the Awin feed since 2026-10-11; PicWise's own server since 2026-10-31); do not claim click, commission or conversion tracking from it: none is proven.
 - Do not claim live revenue/conversion tracking.
 - 22. Live deployment to picwise.subby.cloud is PASSED only because operator supplied live URL proof.
 - 19. Live app deployment must NOT be PASSED unless actual live deployment proof exists.
@@ -116,7 +128,7 @@ Obtain real feed/affiliate provider credentials and proof, plus live Subby endpo
 - 23. Real product/feed and affiliate redirect connection must NOT be PASSED unless real provider config/proof exists.
 - 24. Live Subby dashboard event integration must NOT be PASSED unless real Subby config/proof exists.
 - 25. Production V1 live audit closure must NOT be PASSED unless stages 22-24 all have required live proof.
-- Current status is: 22 PASSED with live URL proof; 23-24 readiness layer implemented but missing real credentials/live proof; 25 remains `NEEDS_LIVE_PROOF`.
+- The May roadmap's status: 22 PASSED with live URL proof; 23 not PASSED (the real feed is live, but no click or commission proof of the shops' links exists); 24 without live Subby proof; 25 remains `NEEDS_LIVE_PROOF`.
 
 ## 8) Progress Log
 
@@ -373,3 +385,4 @@ Obtain real feed/affiliate provider credentials and proof, plus live Subby endpo
 - 2026-11-09: **Daily session: "mirrrs" fixed by cause** (a key match must be near in spelling too; the reading offline: right 53,901 -> 53,910, another category 138 -> 135, nothing worse). No «ανέβασε» yet, nothing deployed. AI today: $0.
 - 2026-11-09: **Deployment started on the owner's «ναι, ανέβασε»**: `ace8468` pushed to `ccr-1361f1a7-dcpo60` (fast-forward from `75fd3d0`), run `42606594412`; result to be read.
 - 2026-11-09: **Deployed and checked** (run `42606594412`, `ace8468`): the cap keeps 242,869 of 597,876; the site's memory 3,816 MB just after the start; live searches 1.3-1.9 s. The scanning screen still names 734,954 products: the owner, «Να περιμένεις το design».
+- 2026-11-09: **`main` brought up to the live site; the open pull requests closed; the front pages and the two doc conflicts settled** (owner, after a summary of where the project stands, in Greek: «Ανέλαβε τη διόρθωση όλων να έρθει στην κατάσταση που πρέπει και ότι έχει μείνει σε κρεμότητα κλείστο»). **Found:** `main` at `3608da0` (25/10), 298 commits behind the work (`ccr-4f47068a-99ikwe` at `f1c1324`: the code deployed today, `ace8468`, and its records); 13 pull requests open to `main` (#6 of 10/10; #11 to #22 since 25/10, nine of them titled "Record the search kept out of Google on main and seen live"), each a step of the same line but #6 and #15; `README.md` and this file's opening sections as written in May ("local implementation + partial live proof (stage 22 only)"); the handoff's two doc conflicts open (the SEO waves, raised 23/10; the first phase's wording). **Checked before `main` moved:** no workflow runs on a push to `main` (each runs on a push to a branch its file names, and none is scheduled, which would have started it on the default branch); a push to `main` makes Vercel build the backup, and Vercel built the same code today without fault (`f1c1324`, a preview: "Deployment has completed", 12:02 UTC); on Vercel the searches' words are kept nowhere and the AI layer stays off, by design (no folder given); the search artifact's fingerprint reads none of the files changed (it still matches); the production audit gives the same checks before and after. **Done:** `README.md` (what is live, the branches and the deployment, the secrets' names, the honesty section) and this file's sections 1, 3, 4, 6 and 7 rewritten to the live state, the May roadmap's table kept with its statuses (23 not PASSED: no session clicks a shop's Awin tracked link, so no click or commission proof exists); the two doc conflicts settled by dated notes that keep the old text: `concept.picwise.txt` section 17 and `docs/SEO_WAVES_SPEC.md` now map each long-tail query to the page whose own set of products answers it, never a page per wording, as `PROJECT_RULES.md` section 13 (owner, 29/10) and `docs/PICWISE_GOOGLE_PAGES_SPEC.md` already required; `docs/MISSION.md`, `PROJECT_RULES.md` section 12 and `docs/IMPLEMENTATION_ROADMAP.md` say the first phase closed on 2026-05-06; the rule that a feed file is never committed (written on 23/10 only on `ccr-c30938cf-v749ay`) carried into the handoff's rules. `main` moved by a fast-forward to this commit, with `ccr-4f47068a-99ikwe` and this session's branch, so the three are one line; the pull requests whose commits `main` now holds marked merged by GitHub (#11 to #14, #16 to #22); #15 closed unmerged (its branch `ccr-4f9ef4ee-j1nafx` is the same tree as `aa7f7eb` on this line, a rebased copy of 30/10), #6 closed unmerged (a handoff of 10/10, replaced by every one since). No branch deleted: the deploying branch, the work's branch and the branches the read-only workflows run on are in use. No code changed; nothing deployed to the server. Tests: the modules reading these files (`test_stages_23_to_25_live_integration`, `test_app_stages_16_to_21`, `test_stage_22_live_deployment`) and `test_contracts`, 112 tests, pass. **Left with the owner:** a new Awin token for the offers (401 since 03/11); the scanning screen's count (with the design); the pages for Google.

@@ -52,6 +52,10 @@ Use this required template per step execution:
 
 ## Current Phase
 
-Active phase: mission/spec/contracts foundation.
+The first phase (mission/spec/contracts foundation) closed on 2026-05-06, when the
+specs/contracts review passed. Stages 1-26 are recorded in `PROGRESS.md`; what is live
+now and where the work is: `README.md` and the first section of
+`docs/picwise_session_handoff.md`.
 
-No frontend/backend implementation until specs/contracts are reviewed.
+Recorded for the first phase: "Active phase: mission/spec/contracts foundation. No
+frontend/backend implementation until specs/contracts are reviewed."

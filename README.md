@@ -1,27 +1,75 @@
 # Picwise Production
 
-Current status: **local implementation + partial live proof (stage 22 only)**.
+Current status (2026-11-09): **live on PicWise's own server with the real Awin feed; the
+search is in its big general debugging (owner, 2026-11-07); nothing is given to Google
+yet.**
+
+Where the work is now: the first section of `docs/picwise_session_handoff.md` ("START
+HERE"). `PROGRESS.md` is the chronological log.
 
 ## Mandatory Reading Order
 
 1. `PROJECT_RULES.md` (mandatory first read)
 2. `concept.picwise.txt` (product concept source of truth)
 3. `docs/` (implementation contracts/specs)
+4. `docs/picwise_session_handoff.md`, its first section, and the last entries of `PROGRESS.md`
 
-## Repository Scope (Current Phase)
+## What Is Live (2026-11-09)
 
-- This repository now includes contracts, engine, surface, and local app implementation layers.
-- Docs in `docs/` define implementation contracts and readiness notes.
-- Local app endpoints exist: `GET /health` and `GET /demo`.
-- Demo data is explicitly marked `local_test_fixture` and `not_production_data`.
-- No fake revenue/conversion metrics are introduced.
+- `https://picwise.subby.cloud` is served by PicWise's own server since 2026-10-31
+  (OVHcloud VPS-4, London; HTTPS by Caddy; `docs/PICWISE_SERVER_ARCHITECTURE.md`).
+  Vercel is kept as the backup: deleting the domain's A record puts the site back there.
+- The catalogue: Awin's Create-a-Feed link with the Google-format shops (`AWIN_FEED_URL`),
+  prepared each night on the server. On 2026-11-09: 597,876 products a card can show,
+  242,869 of them kept by the cap of 15% a category (`PROJECT_RULES.md` section 13).
+- A search: 4 choices with exactly 1 Recommended, only products in stock, those on a
+  current shop offer first and then the cheapest first, commission never a criterion
+  (`PROJECT_RULES.md` section 2, `docs/PICWISE_DECISION_CONTRACT.md`). The search reads
+  English only. An AI layer marks the products that fit a complex search, since
+  2026-11-06, at most one euro a day (`docs/PICWISE_AI_LAYER_SPEC.md`).
+- The site's own search pages carry `noindex`. No page is given to Google yet: its pages
+  are specified, not built (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`).
+- The work goes on every day: a scheduled session at about 12:00 Greek time, a report in
+  Greek by email, the site changed only after the owner's «ναι»
+  (`docs/PICWISE_DAILY_WORK.md`).
+
+## Branches And Deployment
+
+- **Work:** `ccr-4f47068a-99ikwe`. Each session starts from it and pushes its commits
+  there too (`docs/PICWISE_DAILY_WORK.md`).
+- **The server:** a push to `ccr-1361f1a7-dcpo60` deploys the pushed commit
+  (`.github/workflows/server-deploy.yml`, `deployment/server/deploy.sh`), only on the
+  owner's word for that push («ανέβασε»).
+- **`main`:** what is live plus its records, moved only on the owner's yes (last on
+  2026-11-09), by a fast-forward to the work's branch, so the two stay one line. A push
+  to `main` makes Vercel build the backup (`vercel.json`, `api/index.py`), and Vercel
+  rebuilds `main` each morning (`/cron/renew-prepared-feed`).
+- **Read-only checks:** each workflow in `.github/workflows` runs on a push to the branch
+  its file names, never on `main`; some name an older session branch (`server-setup.yml`
+  on `ccr-baaad713-r3uvvs`, `live-check.yml` on `ccr-fd5dc1bc-4vgsgl`), which is why
+  those branches are kept.
+- WSGI entrypoints: `wsgi.py` (`app`) and `api/index.py` (`app`); the server runs them
+  through `deployment/server/wsgi_server.py`.
 
 ## Build Policy
 
 - Keep recommendation logic revenue-neutral and non-fake.
-- Do not commit real credentials or API keys.
-- Do not claim live deployment or live Subby integration without proof.
-- Do not claim live feed/affiliate integration without provider proof.
+- Do not commit real credentials or API keys, nor a feed file: the repository is public,
+  and a feed file carries every row's Awin tracked link with the owner's publisher ID.
+- Do not claim live Subby integration without proof.
+- Do not claim click, commission or conversion tracking without proof.
+
+## Secrets (Names Only, Never In The Repository)
+
+- GitHub Actions secrets, passed to the server by the workflows: `SERVER_HOST`,
+  `SERVER_USER`, `SERVER_SSH_KEY`, `AWIN_FEED_URL`, `AWIN_FEED_URL_NEW` (only for the
+  check before the feed link is replaced), `AWIN_API_TOKEN`, `AWIN_PUBLISHER_ID`,
+  `ANTHROPIC_API_KEY`.
+- Vercel, for the backup: its own `AWIN_FEED_URL`, `PICWISE_DEPLOY_HOOK_URL` and
+  `CRON_SECRET` among others.
+- The May design's names (`PICWISE_FEED_SOURCE_*`, `PICWISE_AFFILIATE_*`,
+  `PICWISE_SUBBY_*`, in `deployment/app.env.template`) belong to the adapters of stages
+  23 and 24; the live site does not use them.
 
 ## Local Run
 
@@ -29,31 +77,12 @@ Current status: **local implementation + partial live proof (stage 22 only)**.
 - Local URL: `http://127.0.0.1:8016`
 - Demo URL: `http://127.0.0.1:8016/demo?q=power+bank+20000mah+for+iphone`
 
-## Deployment Readiness
-
-- Deployment target domain: `picwise.subby.cloud`
-- WSGI entrypoint for deployment: `wsgi.py` (`app`)
-- Vercel function entrypoint: `api/index.py` (`app`)
-- Vercel routing config: `vercel.json`
-
-## Required Env Variable Names (No Secrets In Repo)
-
-- Feed/source:
-  - `PICWISE_FEED_SOURCE_TYPE`
-  - `PICWISE_FEED_SOURCE_URL`
-  - `PICWISE_FEED_API_KEY`
-- Affiliate/redirect:
-  - `PICWISE_AFFILIATE_PROVIDER`
-  - `PICWISE_AFFILIATE_TRACKING_ID`
-  - `PICWISE_AFFILIATE_REDIRECT_TEMPLATE`
-- Subby:
-  - `PICWISE_SUBBY_ENDPOINT`
-  - `PICWISE_SUBBY_PROJECT_ID`
-  - `PICWISE_SUBBY_API_KEY`
-
 ## Tests
 
 - Command: `python -m unittest discover -s tests`
+- Two modules are known to fail, the same test each since before 2026-10-23:
+  `test_picwise_canonical_vocabulary_registry_stage2` and
+  `test_picwise_search_index_generated_blind_stage4`.
 
 ### Search runtime artifact
 
@@ -92,14 +121,18 @@ See `docs/picwise_product_type_coverage_matrix.md`.
 
 ## Live Status Honesty
 
-- Primary domain plan remains `picwise.subby.cloud`.
-- Optional future standalone domain remains `picwise.cloud`.
-- Stages 23-25 are currently not live.
-- Stage 19 is deployment-ready only unless live deploy proof exists.
-- Stage 20 is integration-ready only unless live Subby proof exists.
-- Stage 22 is PASSED because operator proof exists for:
+- Primary domain: `picwise.subby.cloud`. `picwise.cloud` remains an optional future
+  standalone domain.
+- Live, with proof recorded in `PROGRESS.md`: the site on PicWise's own server (its
+  deployments and checks, the last run `42606594412` on 2026-11-09) and the real Awin
+  feed (first live proof 2026-10-11).
+- Not live: the Subby dashboard (stages 20 and 24, no live Subby proof); Awin's offers
+  since 2026-11-03 (Awin answers 401: a new token is the owner's to make); any page for
+  Google; any click, commission or conversion tracking.
+- The roadmap table of May 2026 in `PROGRESS.md` keeps its statuses. Stage 22 is PASSED
+  because operator proof exists for:
   - `https://picwise.subby.cloud/health`
   - `https://picwise.subby.cloud/demo`
-- Stage 23 remains non-PASSED until real feed/affiliate config and live proof exist.
-- Stage 24 remains non-PASSED until real Subby config and live dashboard proof exist.
-- Stage 25 remains `NEEDS_LIVE_PROOF` until stages 23 and 24 have live proof.
+- Stages 19-21 and 23-25 stay as recorded there. 23 is not PASSED: no session ever
+  clicks a shop's Awin tracked link (an automated click is a fake click), so no click
+  or commission proof is recorded. 24 needs live Subby proof; 25 needs 23 and 24.

@@ -6,6 +6,13 @@ Grow traffic through long-tail intent waves, not only through broad head keyword
 
 ## Core Model
 
+Aligned on 2026-11-09 with `PROJECT_RULES.md` section 13 (owner, 2026-10-29) and
+`docs/PICWISE_GOOGLE_PAGES_SPEC.md`, which govern the pages meant for Google: long-tail
+queries stay the aim, but a landing stands for one distinct set of products (a category,
+a kind, a kind with a property) or one product. Each long-tail query maps to the page
+whose set answers it, never to a page of its own per wording: Google calls separate
+pages for every wording of a search scaled content abuse.
+
 - Each landing targets a specific purchase-intent query.
 - Many intent-specific pages combine into a larger traffic wave.
 - Page copy must align tightly with the incoming query intent.

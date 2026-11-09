@@ -114,6 +114,7 @@ Before and during every change:
 
 - First phase is docs/spec/contracts foundation.
 - Do not build live product UI until mission docs and contracts are created and reviewed.
+- Met on 2026-05-06: the mission docs and contracts were created and their review passed (`PROGRESS.md`); the app has been built since and is live on `picwise.subby.cloud`.
 
 ## 13) Google Rule
 
