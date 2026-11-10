@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import logging
+import os
+import tempfile
+import threading
 from collections.abc import Callable, Iterable, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timezone
 from typing import Any
@@ -48,15 +53,21 @@ from .search_selection import (
     SearchCatalogue,
     _product_concepts,
     _product_search_fields,
+    _kind_index,
+    _word_lookup,
     build_search_catalogue,
     decide_recommended_provider_product,
+    forget_search_indexes,
     is_strong_feed_opportunity_selection,
     product_kind_key,
     product_non_new_condition,
     remember_product_kinds,
     select_provider_products_for_query,
+    warm_kind_index,
     warm_word_lookup,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -172,6 +183,7 @@ def clear_provider_feed_pipeline_cache() -> None:
     """Drop the resolved-pipeline cache. For tests and for forcing a re-resolve."""
     _PIPELINE_CACHE.clear()
     _PREPARED_STATE.clear()
+    _KEEPER.pop("refused", None)
     remember_product_kinds({})
 
 
@@ -369,6 +381,21 @@ def _catalogue_counts(pipeline: ProviderFeedPipelineResult) -> tuple[int, int]:
 # The prepared feed this process read (`prepared_catalogue.py`), with the file identity
 # it was read from, and its search catalogue for the day it was built on.
 _PREPARED_STATE: dict[str, Any] = {}
+# Held while a prepared file is read where a request may be reading it too, so that it
+# is read once; never while a search runs.
+_PREPARED_LOCK = threading.RLock()
+# The keeper of the server's site (`keep_prepared_catalogue_loaded`): its thread, the
+# process that started it, and the prepared file it refused last.
+_KEEPER: dict[str, Any] = {}
+
+
+def _keeper_on() -> bool:
+    """Is this process's keeper at work? Then a request never loads a new prepared file
+    or builds a new day's catalogue itself while it has one to answer from: the keeper
+    does, off to the side. Not in a process forked from the one that started it, nor
+    once its thread has ended: a request then loads as without a keeper."""
+    thread = _KEEPER.get("thread")
+    return thread is not None and thread.is_alive() and _KEEPER.get("pid") == os.getpid()
 
 
 def prepare_feed_catalogue(
@@ -483,12 +510,18 @@ def _active_prepared_catalogue() -> PreparedCatalogue | None:
     if file_key is None:
         return None
     if _PREPARED_STATE.get("file_key") != file_key:
-        check = check_prepared_catalogue(path)
-        _PREPARED_STATE.clear()
-        _PREPARED_STATE["file_key"] = file_key
-        _PREPARED_STATE["prepared"] = check.catalogue
-        _PREPARED_STATE["check"] = check
-        remember_product_kinds({})
+        kept = _PREPARED_STATE.get("prepared") if _keeper_on() else None
+        if kept is None or not _is_fresh(kept):
+            with _PREPARED_LOCK:
+                # Unless another thread of this process read it while this one waited.
+                if _PREPARED_STATE.get("file_key") != file_key:
+                    check = check_prepared_catalogue(path)
+                    _PREPARED_STATE.clear()
+                    _PREPARED_STATE["file_key"] = file_key
+                    _PREPARED_STATE["prepared"] = check.catalogue
+                    _PREPARED_STATE["check"] = check
+                    remember_product_kinds({})
+        # Else the keeper is reading the new file: the one loaded answers until then.
     prepared = _PREPARED_STATE.get("prepared")
     # Older than the limit, the feed itself is read again until a new file comes.
     return prepared if prepared is not None and _is_fresh(prepared) else None
@@ -544,8 +577,29 @@ def _prepared_search_catalogue(prepared: PreparedCatalogue) -> SearchCatalogue:
     today = _today()
     photos = gone_photos_key()
     cached = _PREPARED_STATE.get("catalogue")
-    if cached is not None and cached[0] == (today, photos):
+    if cached is not None and (cached[0] == (today, photos) or _keeper_on()):
+        # With a keeper, the catalogue of the day before, or of before the night's photo
+        # check, answers for the seconds the keeper takes to build the new one.
         return cached[1]
+    with _PREPARED_LOCK:
+        cached = _PREPARED_STATE.get("catalogue")
+        if cached is not None and cached[0] == (today, photos):
+            return cached[1]
+        catalogue, kinds, new_kinds = _build_prepared_search_catalogue(prepared, today)
+        remember_product_kinds(kinds)
+        _PREPARED_STATE["catalogue"] = ((today, photos), catalogue)
+    # The search's indexes, built in the background: no search waits for them.
+    warm_word_lookup(catalogue.new_fields)
+    warm_kind_index(catalogue.new_products, catalogue.new_fields, new_kinds)
+    return catalogue
+
+
+def _build_prepared_search_catalogue(
+    prepared: PreparedCatalogue, today: date
+) -> tuple[SearchCatalogue, dict[tuple[str, str, str], frozenset[str]], tuple[frozenset[str], ...]]:
+    """The prepared products a search reads on `today` with the photos gone now; their
+    kinds as `remember_product_kinds` takes them; and the kinds of the new ones, in
+    order, for their kind index."""
     gone = gone_photos()
     open_today = tuple(
         not offer_validity_reason_codes(product, today=today) and not photo_is_gone(product, gone)
@@ -559,16 +613,150 @@ def _prepared_search_catalogue(prepared: PreparedCatalogue) -> SearchCatalogue:
         fields=prepared.search_fields or None,
     )
     kinds_of = {id(product): kinds for product, kinds in zip(prepared.products, prepared.kinds)}
-    remember_product_kinds(
-        {
-            product_kind_key(product, fields): kinds_of[id(product)]
-            for product, fields in zip(catalogue.products, catalogue.fields)
-        }
-    )
-    _PREPARED_STATE["catalogue"] = ((today, photos), catalogue)
-    # The words search's lookup, built in the background: no search waits for it.
-    warm_word_lookup(catalogue.new_fields)
-    return catalogue
+    kinds = {
+        product_kind_key(product, fields): kinds_of[id(product)]
+        for product, fields in zip(catalogue.products, catalogue.fields)
+    }
+    new_kinds = tuple(kinds_of[id(product)] for product in catalogue.new_products)
+    return catalogue, kinds, new_kinds
+
+
+@contextmanager
+def _one_process_at_a_time():
+    """Held by a keeper while it reads a new prepared file: the site's workers each
+    keep their own copy, and reading it in all of them at once would hold every old
+    copy, every new one and the files' text together. Without `fcntl`, or where the
+    lock cannot be made, each reads as it comes."""
+    handle = None
+    try:
+        import fcntl
+
+        handle = open(os.path.join(tempfile.gettempdir(), "picwise-prepared-catalogue.lock"), "a+b")
+        fcntl.flock(handle, fcntl.LOCK_EX)
+    except (ImportError, OSError):
+        if handle is not None:
+            handle.close()
+            handle = None
+    try:
+        yield
+    finally:
+        if handle is not None:
+            handle.close()
+
+
+def refresh_prepared_catalogue() -> str:
+    """One look by the keeper: the prepared file and the day's catalogue this process
+    answers from, brought up to date off to the side; what was done.
+
+    - "loaded": nothing was loaded yet (a worker just started): the file is read as a
+      request reads it, and the day's catalogue and its indexes built, before a visitor
+      asks. The audit of 2026-11-10 measured the first request of each worker after the
+      night's preparation waiting 5.4 to 5.7 s for the file, and its first search 3 s.
+    - "changed": a new prepared file was read, its catalogue and indexes built, and put
+      in the place of the one loaded in one step. Requests go on answering from the old
+      one until that step.
+    - "refused": the new file cannot stand in for the feed (written by other code, as
+      during a deployment before this process is restarted; unreadable): the one loaded
+      goes on answering while it is fresh, and the file is not read again.
+    - "rebuilt": the day changed, or the photos found gone did: the day's catalogue was
+      built again and put in place in one step.
+    - "current" when there was nothing to do; "not_used" when no prepared file stands
+      in for the feed here.
+    """
+    path = prepared_catalogue_path()
+    if path is None or resolve_purchasability_cache() is not None:
+        return "not_used"
+    file_key = feed_file_cache_key(str(path))
+    if file_key is None:
+        return "not_used"
+    if _PREPARED_STATE.get("file_key") != file_key and _KEEPER.get("refused") != file_key:
+        loaded = _PREPARED_STATE.get("prepared")
+        if loaded is None or not _is_fresh(loaded):
+            # Nothing here answers yet, so there is no old copy to hold beside the new:
+            # only the reading of the file is taken in turns.
+            with _one_process_at_a_time():
+                prepared = _active_prepared_catalogue()
+            if prepared is None:
+                return "refused"
+            catalogue = _prepared_search_catalogue(prepared)
+            _word_lookup(catalogue.new_fields)
+            _kind_index(catalogue.new_products, catalogue.new_fields)
+            return "loaded"
+        with _one_process_at_a_time():
+            check = check_prepared_catalogue(path)
+            if check.catalogue is None:
+                _KEEPER["refused"] = file_key
+                return "refused"
+            _put_in_place(check.catalogue, file_key=file_key, check=check)
+        return "changed"
+    prepared = _PREPARED_STATE.get("prepared")
+    if prepared is None or not _is_fresh(prepared):
+        return "current"
+    cached = _PREPARED_STATE.get("catalogue")
+    if cached is None or cached[0] != (_today(), gone_photos_key()):
+        _put_in_place(prepared)
+        return "rebuilt"
+    return "current"
+
+
+def _put_in_place(prepared: PreparedCatalogue, *, file_key: Any = None, check: Any = None) -> None:
+    """Build `prepared`'s catalogue of today and its indexes off to the side, then put
+    them in the place of what this process answers from, in one step. With `file_key`,
+    `prepared` is a new file's; without, the one already loaded, for a new day or
+    newly gone photos."""
+    today, photos = _today(), gone_photos_key()
+    catalogue, kinds, new_kinds = _build_prepared_search_catalogue(prepared, today)
+    _word_lookup(catalogue.new_fields)
+    _kind_index(catalogue.new_products, catalogue.new_fields, new_kinds)
+    change: dict[str, Any] = {"catalogue": ((today, photos), catalogue)}
+    if file_key is not None:
+        change.update(
+            file_key=file_key,
+            prepared=prepared,
+            check=check,
+            by_id={str(product.provider_product_id or "").strip(): product for product in prepared.products},
+        )
+    with _PREPARED_LOCK:
+        before = _PREPARED_STATE.get("catalogue")
+        # A product's kinds are the same in both catalogues: the same code read them.
+        remember_product_kinds(kinds, keep_indexes=True)
+        # One step: a request reads all of the old or all of the new.
+        _PREPARED_STATE.update(change)
+    if before is not None and before[1] is not catalogue:
+        forget_search_indexes(before[1].fields, before[1].new_fields)
+
+
+def keep_prepared_catalogue_loaded(
+    *, every_seconds: float = 10.0, once_loaded: Callable[[], object] | None = None
+) -> threading.Event | None:
+    """Start this process's keeper: a thread that looks every few seconds
+    (`refresh_prepared_catalogue`), so that no request loads the prepared file or builds
+    a day's catalogue itself. For the server's site, whose workers live for days
+    (`deployment/server/wsgi_server.py`); never on a serverless host, whose process is
+    frozen between requests. `once_loaded` is called once, by the keeper's thread, when
+    this process first has a catalogue to answer from: the site makes its first search
+    there, so that no visitor's is. Returns the event that stops it, or None where no
+    prepared file is configured or a keeper already runs here."""
+    if prepared_catalogue_path() is None or _keeper_on():
+        return None
+    stop = threading.Event()
+
+    def look() -> None:
+        waiting = once_loaded
+        while not stop.is_set():
+            try:
+                refresh_prepared_catalogue()
+                if waiting is not None and _PREPARED_STATE.get("catalogue") is not None:
+                    waiting, call = None, waiting
+                    call()
+            except Exception:  # the next look tries again; requests load as without a keeper
+                logger.exception("the prepared catalogue's keeper could not refresh it")
+            stop.wait(every_seconds)
+
+    thread = threading.Thread(target=look, name="picwise-prepared-keeper", daemon=True)
+    _KEEPER.update(thread=thread, pid=os.getpid())
+    thread.start()
+    return stop
 
 
 def peek_search_catalogue_counts() -> tuple[int, int] | None:
