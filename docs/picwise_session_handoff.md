@@ -32,6 +32,7 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-06): pick up here -- start here
 
+- **Daily session 2026-11-10 (noon): site checked, nothing built.** The live site answers ("ring" 1.9 s, "laptop bag" 1.7 s, "pen dries" 1.6 s, with `curl`); the concept-understanding tests pass (37). The ring gap, "pen dries", "work pans" and "t shorts" need the server's catalogue (a read-only workflow, one to two hours); this session had no way to schedule a check-in, so none was started. Next: run the kinds/gap read for the ring gap, then fix by cause. Nothing proposed for the site. AI today: $0.
 - **`main` brought up to the live site (09/11, afternoon; owner: «Ανέλαβε τη διόρθωση
   όλων να έρθει στην κατάσταση που πρέπει και ότι έχει μείνει σε κρεμότητα κλείστο»):**
   `main` had stayed at `3608da0` (25/10), 298 commits behind this work; it was moved by a
