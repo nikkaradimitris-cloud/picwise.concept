@@ -27,14 +27,15 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-concurrency:
-  group: tests-${{ github.ref }}
-  cancel-in-progress: true
 jobs:
   modules:
     name: Every module but the two slow ones
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # A newer push makes this run of an older commit pointless.
+    concurrency:
+      group: tests-modules-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v5
@@ -46,6 +47,11 @@ jobs:
     name: The two slow modules
     runs-on: ubuntu-latest
     timeout-minutes: 150
+    # Never cut short by a newer push: they take long and a session pushes each step, so
+    # a run a push could cancel would never finish. A newer one waits its turn.
+    concurrency:
+      group: tests-slow-${{ github.ref }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v5

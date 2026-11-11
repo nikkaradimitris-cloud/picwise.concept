@@ -12,7 +12,8 @@ here, without running the suite inside itself:
 - a known module that fails in another test is wrong; one that passes is said;
 - a module really run: one that passes, one that fails;
 - the workflow runs the tool on a push of code to a session's branch, reads the
-  repository and nothing else, and holds no key.
+  repository and nothing else, and holds no key; a newer push never cuts the slow
+  modules short.
 """
 from __future__ import annotations
 
@@ -160,6 +161,14 @@ class TheWorkflowTests(unittest.TestCase):
         self.assertIn("run: python tools/run_test_modules.py --only-slow", self.workflow)
         # Never on `main`, as every workflow of the repository (`README.md`).
         self.assertNotIn("main", re.sub(r"#.*", "", self.workflow))
+
+    def test_a_newer_push_never_cuts_the_slow_modules_short(self) -> None:
+        # A session pushes each step: a slow job a push could cancel would never finish.
+        modules, slow = self.workflow.split("\n  modules:\n", 1)[1].split("\n  slow:\n", 1)
+        self.assertIn("group: tests-slow-${{ github.ref }}\n      cancel-in-progress: false", slow)
+        self.assertIn("group: tests-modules-${{ github.ref }}\n      cancel-in-progress: true", modules)
+        # No rule for the whole run, which would cancel the slow job with the rest.
+        self.assertNotIn("\nconcurrency:", self.workflow)
 
     def test_it_reads_the_repository_and_holds_no_key(self) -> None:
         self.assertIn("permissions:\n  contents: read\n", self.workflow)

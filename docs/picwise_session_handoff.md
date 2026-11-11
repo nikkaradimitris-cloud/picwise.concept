@@ -44,11 +44,17 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   "Phones: two cards a row" of 31/10: the owner must see it first**), `canonical`,
   `/sitemap.xml`, icons and structured data for the seven indexable pages, security
   headers, the night's note on shrunk feeds and on kinds few shops sell, the tests run
-  on each push (`.github/workflows/tests.yml`). `main` and `ccr-4f47068a-99ikwe` are
-  still at `214f4b9`; pull request #23 (this branch to `main`) is open, not to be
-  merged without the owner's word. The owner's plan (11/11): the site stays on
+  on each push (`.github/workflows/tests.yml`). `ccr-4f47068a-99ikwe` is still at
+  `214f4b9` and `main` at `8c093ca`; pull request #23 (this branch to `main`) is open,
+  not to be merged without the owner's word. The daily session starts from
+  `ccr-4f47068a-99ikwe` and does not know this branch: the owner was asked to pause it
+  while this work is in hand. The owner's plan (11/11): the site stays on
   `picwise.subby.cloud`; more shops will be applied to for the kinds that lack them.
-  Next: that file's section 3 (what is not yet proven), then section 4 in order.
+  Next: that file's section 3 (what is not yet proven), then its section 4: three small
+  steps now (A), the deployment's checks and the speed measured on the site after the
+  owner's «ανέβασε» (B), then the pages for Google (D). The file was re-examined on
+  11/11: a memory of answers, a faster words search and "More" without a new page are
+  **not** to be built now (its group C says why).
 - **Daily session 2026-11-10 (noon): site checked, nothing built.** The live site answers ("ring" 1.9 s, "laptop bag" 1.7 s, "pen dries" 1.6 s, with `curl`); the concept-understanding tests pass (37). The ring gap, "pen dries", "work pans" and "t shorts" need the server's catalogue (a read-only workflow, one to two hours); this session had no way to schedule a check-in, so none was started. Next: run the kinds/gap read for the ring gap, then fix by cause. Nothing proposed for the site. AI today: $0.
 - **`main` brought up to the live site (09/11, afternoon; owner: «Ανέλαβε τη διόρθωση
   όλων να έρθει στην κατάσταση που πρέπει και ότι έχει μείνει σε κρεμότητα κλείστο»):**

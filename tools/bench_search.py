@@ -2,9 +2,17 @@
 what each search answered, so two checkouts can be compared answer for answer.
 
     python tools/bench_search.py <repo checkout> <prepared catalogue> <answers.json> [rounds]
+    python tools/bench_search.py --compare <answers.json> <answers.json>
+
+It times the search (`resolve_live_search`) and the whole page a visitor gets, the best
+of the rounds each. `--compare` says which answers and pages differ between two files
+and exits 1 when any does (the times are not compared).
+
+Run it on a machine doing nothing else. A measure taken beside other work (a test run,
+another measure) once showed 2.9 s for a search that takes 0.1 s.
 
 The prepared file is read whatever code wrote it (its fingerprint is taken as this
-checkout's): a speed measure, never the site.
+checkout's): a speed measure, never the site (`docs/PICWISE_AUDIT_FIXES.md`, section 7).
 """
 import gzip
 import hashlib
@@ -14,6 +22,14 @@ import statistics
 import sys
 import time
 from pathlib import Path
+
+if len(sys.argv) > 1 and sys.argv[1] == "--compare":
+    one, other = (json.loads(Path(name).read_text(encoding="utf-8"))["answers"] for name in sys.argv[2:4])
+    differing = sorted(key for key in set(one) | set(other) if one.get(key) != other.get(key))
+    for key in differing:
+        print(f"differs: {key}")
+    print(f"{len(set(one) | set(other))} answers and pages compared, {len(differing)} differ")
+    raise SystemExit(1 if differing else 0)
 
 REPO = Path(sys.argv[1]).resolve()
 PREPARED = Path(sys.argv[2]).resolve()
@@ -68,6 +84,7 @@ print(f"first search, catalogue loaded with it: {load_seconds:.2f} s; total {get
 
 answers = {}
 timings = {}
+page_timings = {}
 for query in QUERIES:
     samples = []
     for shown in (0,):
@@ -78,7 +95,12 @@ for query in QUERIES:
     if query:
         answers[query] = answer(resolution)
         answers[query + " |shown=12"] = answer(resolve_live_search(query, shown=12))
-        html = site._APP.picwise_reference_html(query)
+        page_samples = []
+        for _round in range(ROUNDS):
+            began = time.perf_counter()
+            html = site._APP.picwise_reference_html(query)
+            page_samples.append(time.perf_counter() - began)
+        page_timings[query] = min(page_samples)
         answers[query + " |page"] = hashlib.sha256(html.encode("utf-8")).hexdigest()[:16]
     timings[query] = min(samples)
 
@@ -87,4 +109,6 @@ for query, seconds in sorted(timings.items(), key=lambda item: -item[1]):
     print(f"{seconds * 1000:9.1f} ms  {query!r:34} total={row.get('total', '')} state={row.get('state', '')}")
 values = [seconds for query, seconds in timings.items() if query]
 print(f"median {statistics.median(values) * 1000:.1f} ms, mean {statistics.mean(values) * 1000:.1f} ms, max {max(values) * 1000:.1f} ms over {len(values)} searches")
-OUT.write_text(json.dumps({"timings": timings, "answers": answers}, indent=1, sort_keys=True))
+pages = list(page_timings.values())
+print(f"the page: median {statistics.median(pages) * 1000:.1f} ms, max {max(pages) * 1000:.1f} ms over {len(pages)} pages")
+OUT.write_text(json.dumps({"timings": timings, "page_timings": page_timings, "answers": answers}, indent=1, sort_keys=True))

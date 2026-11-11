@@ -15,9 +15,14 @@ A later session reviews what is done from here on against section 6.
 
 1. Read, in this order: `PROJECT_RULES.md`, `README.md`, the first section of
    `docs/picwise_session_handoff.md`, this file. `PROJECT_RULES.md` wins over everything.
-2. The work is on the branch **`ccr-99b47f03-l8t4dj`**. `main` and the work's branch
-   `ccr-4f47068a-99ikwe` are behind it, at `214f4b9`. Start your own branch from it:
+2. The work is on the branch **`ccr-99b47f03-l8t4dj`**. Behind it: the work's branch
+   `ccr-4f47068a-99ikwe`, at `214f4b9`, and `main`, at `8c093ca` (one commit earlier).
+   Start your own branch from it:
    `git fetch origin ccr-99b47f03-l8t4dj && git checkout -B <your branch> origin/ccr-99b47f03-l8t4dj`.
+   The daily session (`docs/PICWISE_DAILY_WORK.md`) starts from `ccr-4f47068a-99ikwe`
+   and pushes there: it does not know this branch. The owner was asked to pause it
+   while this work is in hand. If `ccr-4f47068a-99ikwe` is past `214f4b9` when you
+   start, stop and tell the owner: the two lines must be joined before anything else.
    A pull request from it to `main` is open (#23, opened from the owner's account on
    11/11). Do not merge it, close it or open another: `main` moves only on the owner's
    yes, by a fast-forward.
@@ -52,7 +57,8 @@ every proposal). The owner then asked for the fixes: «Ζητώ διόρθωση
 | `e04ba8b` | five security headers on every answer (a content security policy among them), what may be cached, the server's note kept out of Google | `picwise_app/app.py` (`SECURITY_HEADERS`), `api/index.py`, `wsgi_server.py` | `test_picwise_security_headers` |
 | `249cc06` | the night's note says which shops' feeds came with fewer than half the rows, and which kinds one or two shops sell | `tools/prepare_catalogue.py` (`_intake_change`), `picwise_providers/catalogue_balance.py`, `deployment/server/print_shops.py` | `test_picwise_feed_shrink_note` |
 | `d412b28` | the tests run on each push of code: every module in its own process | `tools/run_test_modules.py`, `.github/workflows/tests.yml` | `test_picwise_run_test_modules` |
-| this commit | the offers test reads the same on GitHub's runner; the speed measure's two scripts kept | `tests/test_picwise_awin_offers.py`, `tools/bench_make_feed.py`, `tools/bench_search.py` | |
+| `619f963` | the offers test reads the same on GitHub's runner; the speed measure's two scripts kept | `tests/test_picwise_awin_offers.py`, `tools/bench_make_feed.py`, `tools/bench_search.py` | |
+| the re-examination's commit | a newer push never cancels the slow modules' job; the measure times the page too and compares two runs | `.github/workflows/tests.yml`, `tools/bench_search.py` | `test_picwise_run_test_modules` |
 
 Measured, offline, on a synthetic catalogue of 242,400 products (about the live size
 after the cap; `tools/bench_search.py`, 33 searches):
@@ -62,23 +68,29 @@ after the cap; `tools/bench_search.py`, 33 searches):
 - through `wsgi_server` with the keeper: a worker ready 7.3 s after it starts, a
   visitor's first search 56 to 68 ms (live on 10/11: 5.4 to 5.7 s for the first request
   of a worker after the night's file, 2.9 to 3.2 s for its first search of the day);
-- 60 searches answered while the catalogue was being changed, the slowest 0.9 s.
+- 60 searches answered while the catalogue was being changed, the slowest 0.9 s;
+- on a machine doing nothing else, `619f963`: a search for a kind 15 to 170 ms; a search
+  read as no kind or as unsure ("keepsake piece", "giftware", "bth rugs", "laptop bag")
+  60 to 240 ms; the whole page a visitor gets 13 to 175 ms.
 
 Phones, rendered offline in Chromium at 360x640 and 390x664: a card 265 to 281 px tall;
 the Recommended and its button on the first screen. The layout at 700 px and wider is
 untouched.
 
-Tests on `d412b28`, each module in its own process: 303 modules, 2,671 tests; 301 pass,
-2 fail as known (`README.md` names them), 0 fail otherwise. The two slow modules
-(`SLOW` in the tool) were not finished here: GitHub's run says.
+Tests, each module in its own process: 303 modules; 301 pass, 2 fail as known
+(`README.md` names them), 0 fail otherwise: here on `d412b28` (2,671 tests) and on
+GitHub's runner on `619f963` (run `43068207518`, the first job). The two slow modules
+(`SLOW` in the tool) have not finished anywhere yet: GitHub's second job says.
 
 ## 3. Not yet proven: check before anyone relies on it
 
-1. **GitHub's "Tests" run on the branch's last commit.** The first run (`43063549262`,
-   on `d412b28`) was red for one old test that failed only on GitHub's runner
-   (`test_picwise_awin_offers`: the runner sets `GITHUB_ACTIONS`, the tool then prints a
-   mask line); fixed in this file's commit. Read the next run: both jobs. If a slow
-   module does not finish in its 7,200 s, say so in `PROGRESS.md`; do not skip it.
+1. **The two slow modules on GitHub.** Of the "Tests" run, the job of every other
+   module is green on `619f963` (run `43068207518`; the first run, `43063549262`, was
+   red for one old test that failed only on GitHub's runner, since fixed). The job of
+   the two slow modules had finished nowhere when this was written: read it, on the
+   branch's last commit that has a run (a commit of documents alone starts none). If a
+   slow module fails or does not finish in its 7,200 s, change nothing by yourself: say
+   which and what it printed, in `PROGRESS.md` and to the owner. Never skip it.
 2. **The keeper has never run on the server**, with gunicorn and the real catalogue.
    At the night's change each worker builds the new catalogue beside the old one, one
    worker at a time: the service's memory (3,816 MB on 09/11; ceiling 11 GB) rises by
@@ -105,56 +117,77 @@ workflows' output; `prepared.json` the morning after (`intake_change`,
 
 ## 4. What is left, in order
 
-Each step: look first, change little, tests with it, measure, record. Steps 1 to 6 need
-no decision of the owner to be built (they change no wording and no rule); like
-everything, they reach the site only on «ανέβασε».
+Each step: look first, change little, tests with it, measure, record.
 
-1. **Remember a search's answer** (small). The same search asked twice works twice.
-   Keep, per worker, the answers of the last few hundred searches, the key being the
-   catalogue in memory (its identity, as `_KIND_INDEXES` does), the offers' state, the
-   search as typed, `shown` and every other argument of `resolve_live_search`; drop them
-   all when the catalogue changes (`state._put_in_place`,
-   `clear_provider_feed_pipeline_cache`). Not for `/out/...`, not for the AI layer's
-   jobs, and the searches' log must still get its line each time. Test: the same answer
-   with and without it; nothing kept across a catalogue change; bounded size.
-   Then `Cache-Control` for a search's page only if the test of
-   `test_picwise_security_headers` ("a search's page never says so") is changed with a
-   reason: a browser's copy must not outlive the catalogue. Ask the owner first if in
-   doubt; leaving the HTML uncached is fine.
-2. **The words search** (medium). A search read as no kind, or unsure, goes through
-   `_select_products_by_words` (`search_selection.py`) and `_word_lookup`; on the server
-   such searches took 2 to 4 s (run `42474826414`). Measure with
-   `tools/bench_search.py` ("giftware", "blue ornament", "keepsake piece", "bundle 42"
-   are of this path), profile, and bring it under a second without changing an answer
-   (compare the answers file with the one of the commit before).
-3. **Photos** (small). In `reference.py`: the first card's photo with
-   `fetchpriority="high"` and not lazy, the rest `loading="lazy" decoding="async"`
-   (check what is there first), and a fixed box so the page does not jump when a photo
-   arrives. The rule "a card is seen only once its photo has loaded" stays. Asking a
-   Shopify shop's server for a smaller photo (`width=` in the address) is **not** to be
-   built until it is proven on real addresses from the server (the nightly photo check
-   is the place; a session cannot reach a shop).
-4. **"More" brings the next four cards only** (small to medium). Today it loads the
-   whole page again. A route that answers the next cards as HTML, asked by the page's
-   script and added under the others; the link stays and works without a script; the
-   same cards in the same order as today's full page (test both ways); `noindex`; it is
-   not a new search for the searches' log.
-5. **How many products two or more shops sell** (small). Counted by barcode in the
-   night's note (`catalogue_balance.py`, `prepared.json`), per category. Nobody knows
-   the number today, and the product pages for Google start from those.
-6. **Know when the night failed** (small). The site keeps answering from an old file
-   and shows no product after 30 hours; nobody is told. Smallest step: the daily
-   session reads `/prepared.json` with `curl` and says in its report when the file is
-   older than a day (`docs/PICWISE_DAILY_WORK.md`). An email from the server itself
-   needs the owner's choice of address and sender: ask.
-7. **A shop's feed that came broken keeps last night's rows** (medium; the owner's yes
+**Re-examined on 2026-11-11** (owner: «Εξέταση πάλι το κείμενο που μου δίνεις είναι σωστό
+για αυτό που θέλουμε να κάνουμε?»), each step against the code and a measure on a quiet
+machine. The first version of this section asked for two speed steps the numbers do not
+ask for, and a third that was mostly in place. Group C says which and why, so that
+nobody builds them on the strength of the first version.
+
+### A. To build now (small; no decision of the owner needed)
+
+1. **The first card's photo asked for first** (tiny). `fetchpriority="high"` on the
+   first card's `<img>` and on no other (`picwise_surface/reference.py`, where
+   `loading` is chosen). The rest is already there: a 400x400 box, the first row
+   `eager`, the others `lazy`, `decoding="async"`. Test: one photo of a page carries
+   it, the first card's. The rule "a card is seen only once its photo has loaded"
+   stays. Asking a Shopify shop's server for a smaller photo (`width=` in the address)
+   is **not** to be built: it is proven on no real address, and a session cannot reach
+   a shop.
+2. **How many products two or more shops sell** (small). Counted by barcode, over the
+   products the prepared catalogue holds, in all and per category, in the night's note
+   (`picwise_providers/catalogue_balance.py`, `prepared.json`) and in
+   `deployment/server/print_shops.py`. Nobody knows the number today, and the product
+   pages for Google start from those products. Tests with fixture rows: a barcode two
+   shops carry counts once, one shop's twice-listed barcode does not count, no barcode
+   never counts.
+3. **Know when the night failed** (small). The site keeps answering from an old file
+   and shows no product after 30 hours; nobody is told. The daily session reads
+   `/prepared.json` with `curl` (`prepared_at`, `intake_change`) and puts first in its
+   report a file older than 30 hours, or a shop whose feed shrank
+   (`docs/PICWISE_DAILY_WORK.md`). An email from the server itself needs the owner's
+   choice of address and sender: ask, do not build.
+
+### B. After the deployment (only on the owner's «ανέβασε»; nothing of B before it)
+
+4. **The deployment and its checks**: the end of section 3.
+5. **The real speed, on the site.** With `curl` (it leaves no line in the searches'
+   log), about 30 searches: kinds, typing slips, searches read as no kind, and the
+   first search after the next night's file; the time to the first byte and in all,
+   each written in `PROGRESS.md` beside 10/11's (a search 0.85 to 1.22 s; 2.9 to 3.2 s
+   the first of a worker's day; 5.4 to 5.7 s the first after the night's file). Never
+   a shop's link. The next speed step, if any, is chosen from these numbers.
+
+### C. Not to build unless B's numbers ask for it
+
+- **A memory of searches' answers** (the first version's step 1). Little to gain at
+  the times above, and a real way to go wrong: an answer depends on more than the
+  search and the catalogue. A stored answer of the AI layer arrives after the first
+  page and must then put the fitting products first
+  (`provider_feed_fitting_product_ids`); the offers' file, the photos' file and the
+  date change it too. A memory that misses one of them shows yesterday's cards. If it
+  is ever built: all of them in its key, a switch that turns it off, and the measure
+  timing the answer worked out, not the one remembered.
+- **A faster words search** (the first version's step 2). No measure shows it slow.
+  The 2 to 4 s of run `42474826414` were on 597,270 products, before the cap (242,817
+  now) and before the kind index; and my 2.9 s for "keepsake piece" was taken with
+  other work running on the machine: alone, it is 0.1 to 0.25 s.
+- **"More" without a new page** (the first version's step 4). The link already lands
+  on the first new card (`#pw-choice-N`), and the page now takes about a tenth of a
+  second to make. With the design work, if the owner wants it.
+
+### D. Larger, each on the owner's word
+
+6. **A shop's feed that came broken keeps last night's rows** (medium; the owner's yes
    first: for one night the site would show a shop's products of the night before).
    The note of `249cc06` only says it. Needs the night before's rows per shop kept on
    the server. Write the design, put it to the owner, then build.
-8. **One table of routes** (medium, no change a visitor sees). `picwise_app/app.py`
-   (the local server) and `api/index.py` (the deployment) each list the routes; the
-   tests of both must pass unchanged. Only when nothing else is waiting.
-9. **The pages for Google** (large; `docs/PICWISE_GOOGLE_PAGES_SPEC.md`, section 11:
+7. **One table of routes; May's packages that serve no page set aside** (medium, no
+   change a visitor sees). `picwise_app/app.py` (the local server) and `api/index.py`
+   (the deployment) each list the routes; the tests of both must pass unchanged. List
+   first what nothing imports. Only when nothing else is waiting.
+8. **The pages for Google** (large; `docs/PICWISE_GOOGLE_PAGES_SPEC.md`, section 11:
    step 1 done, next step 2). In order: the catalogue's memory in a database on the
    server (first seen, last seen, price history: the 30-day rule and a true `lastmod`);
    the kinds' pages written each night as finished HTML, by the same rules as the
@@ -163,11 +196,12 @@ everything, they reach the site only on «ανέβασε».
    shops sell (`Product`, `AggregateOffer`; never a rating or review that does not
    exist); a sitemap per kind of page. Every batch on the owner's word, measured two to
    four weeks in Search Console before the next. This is where the project earns: it
-   lives on search engines alone, and today Google may index seven pages.
+   lives on search engines alone, and today Google may index seven pages. It waits for
+   the owner's decisions 6 and 7 of section 5.
 
 Also open from before the audit, in the handoff's first section: the ring gap, "pen
-dries", "work pans" (wrong cards from the words search: step 2 touches the same code,
-measure them together on the server's catalogue).
+dries", "work pans" (wrong cards): they need the server's catalogue, a read-only
+workflow, after the deployment.
 
 ## 5. The owner's decisions
 
@@ -197,9 +231,11 @@ The reviewing session will hold each step to this:
 - `python tools/run_test_modules.py --skip-slow` ends 0 on the last commit (about 8
   minutes), and GitHub's "Tests" run is green; no test skipped, weakened or deleted to
   get there (the two known failures stay known, each with its one test);
-- a step that claims speed has its numbers before and after, by the same measure, and
-  the answers compared: `tools/bench_search.py` writes what each search answered; two
-  commits' files must be equal unless the step says which answers change and why;
+- a step that claims speed has its numbers before and after, by the same measure, on a
+  machine doing nothing else, and the answers compared: `tools/bench_search.py` writes
+  what each search answered and `--compare` must find no difference between two
+  commits' files, unless the step says which answers change and why;
+- a step taken for speed names the measure that asks for it (section 4, C);
 - nothing a visitor reads, and no rule, changed without the owner's words quoted in
   `PROGRESS.md`;
 - at 700 px and wider the pages are as they were, unless the step is about them;
@@ -214,7 +250,10 @@ The reviewing session will hold each step to this:
   `python tools/prepare_catalogue.py --feed-file <folder>/feed.csv --out <folder>/catalogue.json.gz`,
   then `python tools/bench_search.py . <folder>/catalogue.json.gz <folder>/answers.json`.
   For the commit before: `git worktree add <folder>/base <commit>` and give that
-  checkout as the first argument. Keep `<folder>` outside the repository.
+  checkout as the first argument; then
+  `python tools/bench_search.py --compare <one answers.json> <the other>`. Keep
+  `<folder>` outside the repository, and run nothing else on the machine meanwhile:
+  no test run, no second measure.
 - Running tests rewrites `src/picwise_search_memory/artifacts/search_runtime_v1.json.gz`:
   `git checkout --` it before a commit.
 - A new test module that needs another module's helpers imports the module and
