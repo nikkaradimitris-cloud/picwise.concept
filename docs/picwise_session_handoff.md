@@ -34,6 +34,19 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-06): pick up here -- start here
 
+- **Group A reviewed (12/11): correct. Everything is on `ccr-99b47f03-l8t4dj` again:
+  start from that branch.** The three steps the session of 11/11 built on
+  `audit-group-a-2026-11-11` (the next item) were read against section 6 of
+  `docs/PICWISE_AUDIT_FIXES.md` and brought onto `ccr-99b47f03-l8t4dj` by a
+  fast-forward; the two `audit-group-a-...` branches hold nothing more. The slow
+  module's red test was six months old, not this work's: the blind evaluation's list of
+  broad negative terms lacked "amazon" and "galaxy" since 21/05, and the module had
+  never been run to its end. Fixed, with a 20-second test of the same
+  (`tests/test_picwise_blind_negative_terms.py`). **Still to read: GitHub's slow job on
+  the review's commit** (the whole module, about an hour). Nothing is left to build
+  before the owner's word: «ανέβασε», once the owner has seen the phone layout, opens
+  group B (the deployment's checks, the speed timed on the site); the pages for Google
+  (D) wait for the owner's decisions 6 and 7 of that file's section 5. Not deployed.
 - **Group A of the audit's fixes (11/11, evening), on `audit-group-a-2026-11-11`, from
   `56aefb3` of `ccr-99b47f03-l8t4dj`; not deployed.** Step 1 done: `fetchpriority="high"`
   on the first card's photo only (`tests/test_picwise_first_photo_priority.py`). Step 2

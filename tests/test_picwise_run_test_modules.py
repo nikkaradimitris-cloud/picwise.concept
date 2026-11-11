@@ -153,7 +153,9 @@ class TheWorkflowTests(unittest.TestCase):
         self.workflow = (ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
 
     def test_it_runs_the_tool_on_a_push_of_code_to_a_sessions_branch(self) -> None:
-        self.assertIn('branches: ["ccr-**"]', self.workflow)
+        # The names sessions' branches have had: the cloud's, the app's, and the one the
+        # session of 2026-11-11 chose (which the first rule did not name: no run started).
+        self.assertIn('branches: ["ccr-**", "claude/**", "audit-**"]', self.workflow)
         self.assertIn("workflow_dispatch:", self.workflow)
         for path in ('"src/**"', '"api/**"', '"tests/**"', '"tools/**"', '"deployment/**"'):
             self.assertIn(f"- {path}", self.workflow)

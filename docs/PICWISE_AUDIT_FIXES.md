@@ -15,7 +15,11 @@ A later session reviews what is done from here on against section 6.
 
 1. Read, in this order: `PROJECT_RULES.md`, `README.md`, the first section of
    `docs/picwise_session_handoff.md`, this file. `PROJECT_RULES.md` wins over everything.
-2. The work is on the branch **`ccr-99b47f03-l8t4dj`**. Behind it: the work's branch
+2. The work is on the branch **`ccr-99b47f03-l8t4dj`**: the audit's fixes, group A of
+   section 4 (built by another session on `audit-group-a-2026-11-11`, reviewed, and
+   brought here by a fast-forward on 12/11) and the review's own fix. The branches
+   `audit-group-a-2026-11-11` and `audit-group-a-2026-11-12` hold nothing this one does
+   not: start from here, not from them. Behind it: the work's branch
    `ccr-4f47068a-99ikwe`, at `214f4b9`, and `main`, at `8c093ca` (one commit earlier).
    Start your own branch from it:
    `git fetch origin ccr-99b47f03-l8t4dj && git checkout -B <your branch> origin/ccr-99b47f03-l8t4dj`.
@@ -58,7 +62,11 @@ every proposal). The owner then asked for the fixes: «Ζητώ διόρθωση
 | `249cc06` | the night's note says which shops' feeds came with fewer than half the rows, and which kinds one or two shops sell | `tools/prepare_catalogue.py` (`_intake_change`), `picwise_providers/catalogue_balance.py`, `deployment/server/print_shops.py` | `test_picwise_feed_shrink_note` |
 | `d412b28` | the tests run on each push of code: every module in its own process | `tools/run_test_modules.py`, `.github/workflows/tests.yml` | `test_picwise_run_test_modules` |
 | `619f963` | the offers test reads the same on GitHub's runner; the speed measure's two scripts kept | `tests/test_picwise_awin_offers.py`, `tools/bench_make_feed.py`, `tools/bench_search.py` | |
-| the re-examination's commit | a newer push never cancels the slow modules' job; the measure times the page too and compares two runs | `.github/workflows/tests.yml`, `tools/bench_search.py` | `test_picwise_run_test_modules` |
+| `56aefb3` | a newer push never cancels the slow modules' job; the measure times the page too and compares two runs | `.github/workflows/tests.yml`, `tools/bench_search.py` | `test_picwise_run_test_modules` |
+| `a145201` | the first card's photo asked for first (`fetchpriority="high"`, on no other) | `picwise_surface/reference.py` | `test_picwise_first_photo_priority` |
+| `abd2225` | the night's note counts the products two or more shops sell, by barcode, in all and per category | `picwise_providers/catalogue_balance.py`, `deployment/server/print_shops.py` | `test_picwise_shared_products` |
+| `f587ba7` | the daily session reads the night's note and reports first a failed night, a file over 30 hours old, a feed that shrank | `docs/PICWISE_DAILY_WORK.md` | `test_picwise_daily_night_check` |
+| the review's commit | the blind evaluation's broad negative terms are the eleven its test expects (nine since 21/05: section 3, point 1); "Tests" also on branches named `claude/...` and `audit-...` | `picwise_search_memory/blind_evaluation.py`, `.github/workflows/tests.yml` | `test_picwise_blind_negative_terms` |
 
 Measured, offline, on a synthetic catalogue of 242,400 products (about the live size
 after the cap; `tools/bench_search.py`, 33 searches):
@@ -84,13 +92,23 @@ GitHub's runner on `619f963` (run `43068207518`, the first job). The two slow mo
 
 ## 3. Not yet proven: check before anyone relies on it
 
-1. **The two slow modules on GitHub.** Of the "Tests" run, the job of every other
-   module is green on `619f963` (run `43068207518`; the first run, `43063549262`, was
-   red for one old test that failed only on GitHub's runner, since fixed). The job of
-   the two slow modules had finished nowhere when this was written: read it, on the
-   branch's last commit that has a run (a commit of documents alone starts none). If a
-   slow module fails or does not finish in its 7,200 s, change nothing by yourself: say
-   which and what it printed, in `PROGRESS.md` and to the owner. Never skip it.
+1. **The slow modules' job on GitHub, on the review's commit.** Until 11/11 the two
+   slow modules had finished nowhere. That day `test_picwise_learning_stage7b` passed,
+   and `test_picwise_search_index_blind_evaluation_stage6a` finished for the first time
+   (3,256 to 4,020 s) and failed one test of 13,
+   `test_negative_broad_terms_are_included`, alike on `619f963`, `56aefb3` and `925f211`
+   (runs `43068207518`, `43071701101`, `43081356387`). The cause, found in the review
+   (12/11): since 2026-05-21 (`6944f94`) that test expects eleven broad terms among the
+   generated cases and the generator's list held nine ("amazon" and "galaxy" were put
+   into the test and into the unsafe broad queries, not into the list). It could never
+   pass; nobody saw it, the module never having been run to its end. Neither the
+   audit's fixes nor group A touch those files. Fixed in the review's commit: the two
+   terms in the list, and `tests/test_picwise_blind_negative_terms.py`, which says the
+   same in 20 seconds on every push. Checked here with the fix: that test, the slow
+   module's failing test and its thresholds test. **Still to read: GitHub's slow job on
+   the review's commit, the whole module** (about an hour after the push). If it is
+   red, change nothing by yourself: say which test and what it printed, in
+   `PROGRESS.md` and to the owner. Never skip it.
 2. **The keeper has never run on the server**, with gunicorn and the real catalogue.
    At the night's change each worker builds the new catalogue beside the old one, one
    worker at a time: the service's memory (3,816 MB on 09/11; ceiling 11 GB) rises by
@@ -125,7 +143,24 @@ machine. The first version of this section asked for two speed steps the numbers
 ask for, and a third that was mostly in place. Group C says which and why, so that
 nobody builds them on the strength of the first version.
 
-### A. To build now (small; no decision of the owner needed)
+### A. Built on 11/11 by another session; reviewed on 12/11: correct
+
+**The review, against section 6.** Each step is one commit with its tests in it
+(`a145201`, `abd2225`, `f587ba7`); no test was weakened (the one changed,
+`test_picwise_server_print_shops`, now checks one line more, word for word); every
+module but the slow ones passes on `925f211`, here in a clean copy and on GitHub (run
+`43081356387`, started by hand: the branch's name started none by itself); nothing a
+visitor reads changed, nothing was deployed, `main` and #23 were not touched, the log
+and the handoff were written. Read against the live site's note (11/11 22:49 UTC, with
+`curl`): its keys are those step 3 names (`prepared`, `prepared_at`, `written_at`); the
+balance is measured over the 244,494 products the cap keeps, so step 2's count is too;
+the server's report runs on that note without a fault. Three notes, none a fault: on a
+page "More" drew, the photo asked for first is the first card's while the visitor lands
+on the fifth (the first is already in the browser from the page before); step 2 counts
+by barcode alone, so products the site joins by brand and part number are not in it:
+the number is a floor; the session ran the suite on each commit, not before it, for the
+reason section 7 now gives. The steps as they were asked for:
+
 
 1. **The first card's photo asked for first** (tiny). `fetchpriority="high"` on the
    first card's `<img>` and on no other (`picwise_surface/reference.py`, where
@@ -257,6 +292,12 @@ The reviewing session will hold each step to this:
   no test run, no second measure.
 - Running tests rewrites `src/picwise_search_memory/artifacts/search_runtime_v1.json.gz`:
   `git checkout --` it before a commit.
+- Run the whole suite on the commit, with nothing uncommitted, and push only when it
+  ends 0: `test_picwise_search_graph_contracts_stage1db1` reads `git diff HEAD` and
+  fails while some files (`picwise_surface/reference.py` among them) have an edit not
+  yet committed (found by the session of 11/11).
+- GitHub's "Tests" starts by itself on a push of code to a branch named `ccr-...`,
+  `claude/...` or `audit-...`; on any other name, start it by hand on the last commit.
 - A new test module that needs another module's helpers imports the module and
   subclasses (`import test_x as x`; `class Mine(x.Base)`); importing the class by name
   runs its tests twice.

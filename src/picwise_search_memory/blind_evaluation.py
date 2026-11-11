@@ -38,6 +38,13 @@ _NEGATIVE_BROAD_TERMS: tuple[str, ...] = (
     "erp",
     "crm",
     "accounting software",
+    # A shop and a range of products, never one product: unsafe broad queries since
+    # 2026-05-21 (`broad_query_suggestions`), when the blind evaluation's own test began
+    # to expect them among these cases and this list was left without them. Nobody saw
+    # it: that module takes about an hour and was first run to its end on 2026-11-11
+    # (`tests/test_picwise_blind_negative_terms.py` now says it in seconds).
+    "amazon",
+    "galaxy",
 )
 
 _PREFERRED_VARIANT_TYPES: tuple[str, ...] = (

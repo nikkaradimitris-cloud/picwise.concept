@@ -3,7 +3,9 @@
 # The audit of 2026-11-10 found that no workflow ran the tests and that a deployment did
 # not wait for them: whether they had passed rested on the session having run them by
 # hand. This runs each module in a process of its own (tools/run_test_modules.py) on a
-# push that changes code, on any session's branch, and by hand. It reads the repository
+# push that changes code, on any session's branch (named ccr-..., claude/... or
+# audit-...: the session of 2026-11-11 worked on one the first rule did not name and
+# had to start this by hand), and by hand. It reads the repository
 # and nothing else: no key, no server, nothing deployed. It is red only when a module
 # fails that is not known to fail (the two README.md names, each with its one test, run
 # and reported every time), or does not finish.
@@ -14,7 +16,7 @@
 name: Tests
 on:
   push:
-    branches: ["ccr-**"]
+    branches: ["ccr-**", "claude/**", "audit-**"]
     paths:
       - "src/**"
       - "api/**"
