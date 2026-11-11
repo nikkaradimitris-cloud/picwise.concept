@@ -14,7 +14,12 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from picwise_app import PicwiseLocalApp  # noqa: E402
-from picwise_app.app import NOINDEX_HEADER  # noqa: E402
+from picwise_app.app import (  # noqa: E402
+    ASSET_CACHE_CONTROL,
+    INFO_PAGE_CACHE_CONTROL,
+    NOINDEX_HEADER,
+    SECURITY_HEADERS,
+)
 from picwise_app.buying_routes import render_best_slug_html, render_buying_sitemap_xml  # noqa: E402
 from picwise_app.prepared_renewal import RENEWAL_PATH, request_prepared_feed_renewal  # noqa: E402
 from picwise_app.search_log import SEARCH_LOG_PATH, record_search  # noqa: E402
@@ -53,6 +58,7 @@ def _response(
     headers = [
         ("Content-Type", content_type),
         ("Content-Length", str(len(body))),
+        *SECURITY_HEADERS,
     ]
     if cache_control:
         headers.append(("Cache-Control", cache_control))
@@ -87,7 +93,7 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         asset_result = _asset_response(path)
         if asset_result is not None:
             content_type, body = asset_result
-            return _response("200 OK", content_type, body, start_response)
+            return _response("200 OK", content_type, body, start_response, cache_control=ASSET_CACHE_CONTROL)
 
     if path == "/robots.txt":
         body = robots_txt().encode("utf-8")
@@ -122,32 +128,44 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
     if path == "/terms":
         html = render_terms_page()
         body = html.encode("utf-8")
-        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+        return _response(
+            "200 OK", "text/html; charset=utf-8", body, start_response, cache_control=INFO_PAGE_CACHE_CONTROL
+        )
 
     if path == "/privacy":
         html = render_privacy_page()
         body = html.encode("utf-8")
-        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+        return _response(
+            "200 OK", "text/html; charset=utf-8", body, start_response, cache_control=INFO_PAGE_CACHE_CONTROL
+        )
 
     if path == "/cookies":
         html = render_cookies_page()
         body = html.encode("utf-8")
-        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+        return _response(
+            "200 OK", "text/html; charset=utf-8", body, start_response, cache_control=INFO_PAGE_CACHE_CONTROL
+        )
 
     if path == "/affiliate-disclosure":
         html = render_affiliate_disclosure_page()
         body = html.encode("utf-8")
-        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+        return _response(
+            "200 OK", "text/html; charset=utf-8", body, start_response, cache_control=INFO_PAGE_CACHE_CONTROL
+        )
 
     if path == "/contact":
         html = render_contact_page()
         body = html.encode("utf-8")
-        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+        return _response(
+            "200 OK", "text/html; charset=utf-8", body, start_response, cache_control=INFO_PAGE_CACHE_CONTROL
+        )
 
     if path == "/about":
         html = render_about_page()
         body = html.encode("utf-8")
-        return _response("200 OK", "text/html; charset=utf-8", body, start_response)
+        return _response(
+            "200 OK", "text/html; charset=utf-8", body, start_response, cache_control=INFO_PAGE_CACHE_CONTROL
+        )
 
     if path == "/assist-status":
         # The search page's script asking whether a complex search's answer is there
@@ -274,6 +292,9 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
                 ("Content-Type", "text/plain; charset=utf-8"),
                 ("Content-Length", "0"),
                 ("Location", resolved["redirect_url"]),
+                # A click is never answered from a browser's or a cache's memory.
+                ("Cache-Control", "no-store"),
+                *SECURITY_HEADERS,
             ],
         )
         return [b""]

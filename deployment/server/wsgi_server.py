@@ -18,6 +18,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from api.index import StartResponse, app as picwise_app  # noqa: E402
+from picwise_app.app import NOINDEX_HEADER, SECURITY_HEADERS  # noqa: E402
 from picwise_providers.state import keep_prepared_catalogue_loaded  # noqa: E402
 from picwise_search import resolve_live_search  # noqa: E402
 
@@ -42,8 +43,13 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
         if static.is_file():
             body = static.read_bytes()
             content_type = mimetypes.guess_type(name)[0] or "application/octet-stream"
+            headers = [("Content-Length", str(len(body))), *SECURITY_HEADERS]
+            if content_type == "application/json":
+                # Not a page (`prepared.json`, the preparation's public note): kept out of
+                # Google, as the app's own JSON answers are (owner, 2026-10-23).
+                headers.append(NOINDEX_HEADER)
             if content_type.startswith("text/") or content_type == "application/json":
                 content_type += "; charset=utf-8"
-            start_response("200 OK", [("Content-Type", content_type), ("Content-Length", str(len(body)))])
+            start_response("200 OK", [("Content-Type", content_type), *headers])
             return [body]
     return picwise_app(environ, start_response)

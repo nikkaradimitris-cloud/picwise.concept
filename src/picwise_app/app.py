@@ -96,6 +96,30 @@ LOCAL_AVAILABLE_ROUTES = (
 ROBOTS_TXT = robots_txt()
 # Answers that are not pages, such as the JSON routes, carry this header instead.
 NOINDEX_HEADER = ("X-Robots-Tag", "noindex")
+# What every answer tells the browser to refuse (the audit, 2026-11-10: the live site sent
+# only Strict-Transport-Security, from its front door). A page of the site runs its own
+# scripts and styles, written into it; shows the shops' photos from the shops' servers;
+# asks only the site itself for anything; is never shown inside another site's page; and
+# sends a form nowhere but here. A photo's address is the shop's, http or https, as the
+# feed gives it. The microphone is for the search by voice, asked for only when the
+# visitor presses its button; nothing else of the device is used.
+CONTENT_SECURITY_POLICY = (
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' https: http: data:; connect-src 'self'; manifest-src 'self'; "
+    "object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+)
+SECURITY_HEADERS = (
+    ("Content-Security-Policy", CONTENT_SECURITY_POLICY),
+    ("X-Content-Type-Options", "nosniff"),
+    ("X-Frame-Options", "DENY"),
+    ("Referrer-Policy", "strict-origin-when-cross-origin"),
+    ("Permissions-Policy", "camera=(), geolocation=(), payment=(), usb=(), microphone=(self)"),
+)
+# How long a browser may keep what does not change between deployments or within the
+# hour: the site's own files (its icons), and the pages that say who runs PicWise. A
+# search's page is never kept: its products are the catalogue's of that moment.
+ASSET_CACHE_CONTROL = "public, max-age=604800"
+INFO_PAGE_CACHE_CONTROL = "public, max-age=3600"
 
 
 _GTIN_NAMES = {13: "EAN", 12: "UPC", 8: "EAN-8", 14: "GTIN"}
@@ -1037,6 +1061,12 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
     def log_message(self, _format: str, *_args: Any) -> None:
         return
 
+    def end_headers(self) -> None:
+        # Every answer of the local server, as every answer of the deployment's.
+        for name, value in SECURITY_HEADERS:
+            self.send_header(name, value)
+        super().end_headers()
+
     def _send_json(self, status: HTTPStatus, payload: dict[str, Any]) -> None:
         body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
         self.send_response(status)
@@ -1078,6 +1108,7 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", ASSET_CACHE_CONTROL)
         self.end_headers()
         self.wfile.write(body)
         return True
