@@ -1093,13 +1093,17 @@ def _render_choice_card(
     )
     # The first row's photos load at once; the rest as the page is scrolled to them.
     loading = "eager" if idx <= 4 else "lazy"
+    # The first card's photo is asked for before the page's other photos: the browser
+    # shows a card only once its photo has loaded, so the first card waits on it
+    # (docs/PICWISE_AUDIT_FIXES.md, section 4, A.1). One photo a page, never more.
+    priority = ' fetchpriority="high"' if idx == 1 else ""
     single_line = f'<p class="pw-single-only">{escape(_SINGLE_PRODUCT_LINE)}</p>' if single else ""
     return (
         f'<article class="pw-card{rec_class}" data-choice-id="{escape(choice_id, quote=True)}">'
         f"{anchor}"
         '<div class="pw-product-image-wrap">'
         f'<img class="pw-product-image" src="{escape(str(card["image"]), quote=True)}" '
-        f'alt="{escape(name)} product image" width="400" height="400" loading="{loading}" decoding="async">'
+        f'alt="{escape(name)} product image" width="400" height="400" loading="{loading}"{priority} decoding="async">'
         f"{heart}</div>"
         '<div class="pw-card-body">'
         f"{single_line}"

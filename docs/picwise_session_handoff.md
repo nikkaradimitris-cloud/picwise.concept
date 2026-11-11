@@ -34,6 +34,12 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-06): pick up here -- start here
 
+- **Group A of the audit's fixes (11/11, evening), on `audit-group-a-2026-11-11`, from
+  `56aefb3` of `ccr-99b47f03-l8t4dj`; not deployed.** Step 1 done: `fetchpriority="high"`
+  on the first card's photo only (`tests/test_picwise_first_photo_priority.py`). Steps 2
+  and 3 next (`docs/PICWISE_AUDIT_FIXES.md`, 4.A); groups B, C and D not started. The
+  "Tests" run of `56aefb3` and the slow job of `619f963` were still running when this
+  began: read them before relying on this line.
 - **START HERE (11/11): the audit's fixes. Read `docs/PICWISE_AUDIT_FIXES.md` first.**
   The owner asked for a full audit (10/11; the report is a Claude doc of the owner's),
   then for its fixes (11/11), then for a file from which another session continues and
