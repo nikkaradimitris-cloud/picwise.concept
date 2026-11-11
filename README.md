@@ -47,7 +47,9 @@ HERE"). `PROGRESS.md` is the chronological log.
 - **Read-only checks:** each workflow in `.github/workflows` runs on a push to the branch
   its file names, never on `main`; some name an older session branch (`server-setup.yml`
   on `ccr-baaad713-r3uvvs`, `live-check.yml` on `ccr-fd5dc1bc-4vgsgl`), which is why
-  those branches are kept.
+  those branches are kept. One runs on every session's branch: `tests.yml` (2026-11-11),
+  every test module on each push that changes code; it reads the repository only and does
+  not stand in front of a deployment, so whoever deploys looks at its run of the commit.
 - WSGI entrypoints: `wsgi.py` (`app`) and `api/index.py` (`app`); the server runs them
   through `deployment/server/wsgi_server.py`.
 
@@ -79,10 +81,17 @@ HERE"). `PROGRESS.md` is the chronological log.
 
 ## Tests
 
-- Command: `python -m unittest discover -s tests`
+- Command: `python tools/run_test_modules.py` runs every module in a process of its own,
+  as many at a time as the machine has processors, and exits 0 only when nothing fails
+  that is not known to fail (`--skip-slow` leaves out the two modules that take many
+  minutes each, `test_picwise_learning_stage7b` and
+  `test_picwise_search_index_blind_evaluation_stage6a`; `--only-slow` runs those). The
+  whole suite in one process, `python -m unittest discover -s tests`, takes more than 25
+  minutes.
 - Two modules are known to fail, the same test each since before 2026-10-23:
   `test_picwise_canonical_vocabulary_registry_stage2` and
-  `test_picwise_search_index_generated_blind_stage4`.
+  `test_picwise_search_index_generated_blind_stage4`. The tool runs and reports them
+  every time (`KNOWN_FAILING`), never skips them.
 
 ### Search runtime artifact
 
