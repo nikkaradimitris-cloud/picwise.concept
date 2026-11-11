@@ -26,6 +26,8 @@ import sys
 REASONS = 3
 # How many shops, those with the most rows without a category, show their types and titles.
 DETAILED = 15
+# How many of the largest kinds only one or two shops sell are printed.
+FEW_SHOPS_LISTED = 25
 
 
 def main() -> int:
@@ -59,10 +61,32 @@ def main() -> int:
             f"{shop['shop']}{': ' + reasons if reasons else ''}"
         )
     print()
+    print_intake_change(note)
     print_without_category(intake)
     print_shop_catalogues(note)
     print_balance(note)
     return 0
+
+
+def print_intake_change(note: dict) -> None:
+    """The shops whose feed shrank or vanished since the preparation before, and the new
+    ones (`tools/prepare_catalogue.py`, `_intake_change`); nothing for a note without it."""
+    change = note.get("intake_change")
+    if not isinstance(change, dict) or not change.get("compared_with"):
+        return
+    print(f"since the preparation of {change['compared_with']}:")
+    for label, key in (("no rows now", "gone"), ("fewer than half the rows", "shrunk")):
+        entries = change.get(key) or []
+        if entries:
+            print(
+                f"  {label}: "
+                + "; ".join(f"{entry['shop']} ({entry['rows_before']:,} -> {entry['rows']:,})" for entry in entries)
+            )
+    if change.get("new"):
+        print("  new shops: " + ", ".join(change["new"]))
+    if not (change.get("gone") or change.get("shrunk") or change.get("new")):
+        print("  every shop's feed came as large as before or larger; no new shop")
+    print()
 
 
 def _kinds(buckets: dict | None) -> str:
@@ -234,6 +258,16 @@ def print_balance(note: dict) -> None:
         f"(from one shop {spread['one_shop']:,}, from two {spread['two_shops']:,}); shown with no kind "
         f"{found['no_kind']:,}"
     )
+    few = found.get("kinds_from_few_shops") or []
+    if few:
+        # Where a shop added counts most: the largest kinds only one or two shops sell.
+        print(
+            "  the largest kinds from one or two shops: "
+            + "; ".join(
+                f"{entry['kind']} {entry['products']:,} ({', '.join(entry['shops'])})"
+                for entry in few[:FEW_SHOPS_LISTED]
+            )
+        )
 
 
 def print_hints(hints: dict | None) -> None:

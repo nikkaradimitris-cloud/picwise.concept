@@ -18,7 +18,8 @@ For each, the largest groups and their shares, and what a cap of `CAP_SHARE` of 
 total would keep: each group keeps at most the same number C, the largest C such that
 no group keeps more than that share of what all keep, which needs at least 1/share
 groups (7 for 15%); with fewer, no C holds and the note says so. Also the owner's
-"enough" put to them on 26/10: how many kinds have products from at least 3 shops.
+"enough" put to them on 26/10: how many kinds have products from at least 3 shops, and
+(2026-11-10) which kinds only one or two shops sell, with those shops' names.
 Counts and names only; the note never holds a link.
 """
 from __future__ import annotations
@@ -37,6 +38,8 @@ from .normalization import extract_merchant_name
 CAP_SHARE = 0.15
 # How many of the largest groups, and of the groups a cap cuts most, the note lists.
 _LISTED = 10
+# How many of the kinds only one or two shops sell the note names, the largest first.
+_FEW_SHOPS_LISTED = 200
 OWN_CATEGORIES = "(the shops' own categories)"
 NO_SHOP = "(no shop named)"
 
@@ -144,6 +147,18 @@ def measure_catalogue_balance(
             by_kind[kind] += 1
             shops_by_kind.setdefault(kind, set()).add(shop)
     spread = Counter(len(found) for found in shops_by_kind.values())
+    # The kinds only one or two shops sell, the largest first: where a page of four has
+    # nothing to compare between shops, and so where a shop added counts most (the audit,
+    # 2026-11-10: of 265 kinds, 99 came from one shop and 76 from two; owner, the same
+    # day: «Θα προσθέσουμε καταστήματα ... στις κατηγορίες που λείπουν»).
+    few_shops = sorted(
+        (
+            {"kind": kind, "products": by_kind[kind], "shops": sorted(found)}
+            for kind, found in shops_by_kind.items()
+            if len(found) <= 2
+        ),
+        key=lambda entry: (-entry["products"], entry["kind"]),
+    )
     return {
         "share": share,
         "products": len(products),
@@ -158,4 +173,5 @@ def measure_catalogue_balance(
             "two_shops": spread.get(2, 0),
             "three_or_more": sum(count for shops_count, count in spread.items() if shops_count >= 3),
         },
+        "kinds_from_few_shops": few_shops[:_FEW_SHOPS_LISTED],
     }
