@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from html import unescape
+
+from .seo import SITE_LANGUAGE, icon_links_html, indexable_head_html
+
 
 # The footer of every public page. "Demo" and "PicWise Reference" left it with the design
 # of 2026-10-31 (`docs/design/picwise_design_proposal_2026-10-31.html`): pages of the
@@ -96,11 +100,12 @@ def render_public_footer() -> str:
 def render_branded_not_found_page() -> str:
     return (
         "<!doctype html>"
-        '<html lang="en"><head>'
+        f'<html lang="{SITE_LANGUAGE}"><head>'
         '<meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         "<title>Page not found — PicWise</title>"
         '<meta name="description" content="Page not found on PicWise. Return to the home page and continue comparing options with clear informational guidance.">'
+        f"{icon_links_html()}"
         f"<style>{_base_styles()}</style></head><body>"
         '<main class="pw-wrap">'
         '<a class="pw-brand" href="/" aria-label="PicWise home">PicWise</a>'
@@ -114,14 +119,20 @@ def render_branded_not_found_page() -> str:
     )
 
 
-def _render_legal_page(*, title: str, meta_description: str, heading: str, intro: str, sections: str) -> str:
+def _render_legal_page(
+    *, path: str, title: str, meta_description: str, heading: str, intro: str, sections: str
+) -> str:
+    """One of the pages that say who runs PicWise and how, at `path`: Google may index
+    it, so it says its one address (`seo.indexable_head_html`)."""
     return (
         "<!doctype html>"
-        '<html lang="en"><head>'
+        f'<html lang="{SITE_LANGUAGE}"><head>'
         '<meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         f"<title>{title}</title>"
         f'<meta name="description" content="{meta_description}">'
+        f"{icon_links_html()}"
+        f"{indexable_head_html(path, title=unescape(title), description=unescape(meta_description))}"
         f"<style>{_base_styles()}</style></head><body>"
         '<main class="pw-wrap">'
         '<a class="pw-brand" href="/" aria-label="PicWise home">PicWise</a>'
@@ -171,6 +182,7 @@ def render_terms_page() -> str:
         f"<p>Last updated: {LAST_UPDATED}</p>"
     )
     return _render_legal_page(
+        path="/terms",
         title="Terms of Use — PicWise",
         meta_description=(
             "The terms of use of PicWise, a product search that shows UK shops' products in stock, "
@@ -249,6 +261,7 @@ def render_privacy_page() -> str:
         f"<p>Last updated: {PRIVACY_LAST_UPDATED}</p>"
     )
     return _render_legal_page(
+        path="/privacy",
         title="Privacy Policy — PicWise",
         meta_description=(
             "How PicWise handles data: who is responsible, the technical logs its server keeps, no cookies "
@@ -282,6 +295,7 @@ def render_cookies_page() -> str:
         f"<p>Last updated: {LAST_UPDATED}</p>"
     )
     return _render_legal_page(
+        path="/cookies",
         title="Cookie Policy — PicWise",
         meta_description=(
             "PicWise sets no cookies of its own and uses no tracking pixels; Awin and the shops set their own "
@@ -312,6 +326,7 @@ def render_affiliate_disclosure_page() -> str:
         f"<p>Last updated: {LAST_UPDATED}</p>"
     )
     return _render_legal_page(
+        path="/affiliate-disclosure",
         title="Affiliate Disclosure — PicWise",
         meta_description=(
             "How PicWise earns: a commission from shops through Awin when you buy, at no extra cost to you, "
@@ -340,6 +355,7 @@ def render_contact_page() -> str:
         f"<p>Last updated: {LAST_UPDATED}</p>"
     )
     return _render_legal_page(
+        path="/contact",
         title="Contact — PicWise",
         meta_description=(
             "Contact PicWise about the site, a product shown wrongly, privacy, cookies or the affiliate disclosure."
@@ -369,6 +385,7 @@ def render_about_page() -> str:
         f"<p>Last updated: {LAST_UPDATED}</p>"
     )
     return _render_legal_page(
+        path="/about",
         title="About PicWise — PicWise",
         meta_description=(
             "PicWise is a product search for UK shoppers: only the kind you asked for, in stock, offers first, then cheapest first, "

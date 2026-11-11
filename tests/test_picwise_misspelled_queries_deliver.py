@@ -80,7 +80,7 @@ class _FeedCase(unittest.TestCase):
             "wsgi.url_scheme": "https",
         }
         body = b"".join(wsgi_app(environ, lambda status, headers: None)).decode("utf-8")
-        found = re.search(r'<p class="pw-query-line">(.*?)</p>', body, re.S)
+        found = re.search(r'<h1 class="pw-query-line">(.*?)</h1>', body, re.S)
         line = html.unescape(re.sub(r"<[^>]+>", "", found.group(1))).strip() if found else ""
         return len(re.findall(r'<article class="pw-card', body)), line
 

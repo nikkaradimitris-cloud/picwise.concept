@@ -116,8 +116,16 @@ class DeploymentRoutesTests(_NoFeedMixin, unittest.TestCase):
         self.assertEqual(headers["Content-Type"], "text/plain; charset=utf-8")
         rules = [line.strip() for line in body.splitlines() if line.strip()]
         self.assertEqual(rules[0], "User-agent: *")
+        # And it names the sitemap of the pages Google may index (2026-11-10;
+        # `tests/test_picwise_google_basics.py`).
         self.assertEqual(
-            sorted(rules[1:]), ["Disallow: /cron/", "Disallow: /out/", "Disallow: /subby-proof"]
+            sorted(rules[1:]),
+            [
+                "Disallow: /cron/",
+                "Disallow: /out/",
+                "Disallow: /subby-proof",
+                "Sitemap: https://picwise.subby.cloud/sitemap.xml",
+            ],
         )
 
     def test_json_routes_are_kept_out_of_the_index(self) -> None:

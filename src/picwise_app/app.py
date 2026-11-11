@@ -57,6 +57,7 @@ from picwise_surface import (
     render_review_safe_landing_page,
     render_terms_page,
 )
+from picwise_surface.seo import SITEMAP_PATH, robots_txt, sitemap_xml
 from picwise_ai.store import assist_directory
 
 from .assist_wiring import assist_status, resolve_with_assist
@@ -82,6 +83,7 @@ LOCAL_AVAILABLE_ROUTES = (
     "/private-beta-readiness",
     "/best/{slug}",
     "/sitemap-buying-pages.xml",
+    "/sitemap.xml",
     "/robots.txt",
 )
 
@@ -90,7 +92,8 @@ LOCAL_AVAILABLE_ROUTES = (
 # records a click, and two routes that act when called. The search is not blocked here:
 # its pages carry `noindex`, which Google reads only on a page it may fetch, so it is
 # blocked once Google has dropped them (docs/PICWISE_GOOGLE_PAGES_SPEC.md, section 2).
-ROBOTS_TXT = "User-agent: *\nDisallow: /out/\nDisallow: /subby-proof\nDisallow: /cron/\n"
+# It also names the sitemap of the pages Google may index (`picwise_surface.seo`).
+ROBOTS_TXT = robots_txt()
 # Answers that are not pages, such as the JSON routes, carry this header instead.
 NOINDEX_HEADER = ("X-Robots-Tag", "noindex")
 
@@ -877,12 +880,15 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(body)
             return
         if parsed.path == "/robots.txt":
-            body = ROBOTS_TXT.encode("utf-8")
+            body = robots_txt().encode("utf-8")
             self.send_response(HTTPStatus.OK)
             self.send_header("Content-Type", "text/plain; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
+            return
+        if parsed.path == SITEMAP_PATH:
+            self._send_xml(HTTPStatus.OK, sitemap_xml())
             return
         if parsed.path == "/":
             params = parse_qs(parsed.query)

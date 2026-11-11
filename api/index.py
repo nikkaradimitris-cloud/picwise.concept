@@ -14,7 +14,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from picwise_app import PicwiseLocalApp  # noqa: E402
-from picwise_app.app import NOINDEX_HEADER, ROBOTS_TXT  # noqa: E402
+from picwise_app.app import NOINDEX_HEADER  # noqa: E402
 from picwise_app.buying_routes import render_best_slug_html, render_buying_sitemap_xml  # noqa: E402
 from picwise_app.prepared_renewal import RENEWAL_PATH, request_prepared_feed_renewal  # noqa: E402
 from picwise_app.search_log import SEARCH_LOG_PATH, record_search  # noqa: E402
@@ -23,6 +23,7 @@ from picwise_integrations import (  # noqa: E402
     send_subby_live_proof_event,
 )
 from picwise_search.live_search_resolver import parse_shown_count  # noqa: E402
+from picwise_surface.seo import SITEMAP_PATH, robots_txt, sitemap_xml  # noqa: E402
 from picwise_surface import (  # noqa: E402
     render_about_page,
     render_affiliate_disclosure_page,
@@ -89,8 +90,13 @@ def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes
             return _response("200 OK", content_type, body, start_response)
 
     if path == "/robots.txt":
-        body = ROBOTS_TXT.encode("utf-8")
+        body = robots_txt().encode("utf-8")
         return _response("200 OK", "text/plain; charset=utf-8", body, start_response)
+
+    if path == SITEMAP_PATH:
+        # The pages Google may index, each at its one address (`picwise_surface.seo`).
+        body = sitemap_xml().encode("utf-8")
+        return _response("200 OK", "application/xml; charset=utf-8", body, start_response)
 
     if path == "/":
         # Honour an inbound purchase-intent query: a visitor arriving from Google

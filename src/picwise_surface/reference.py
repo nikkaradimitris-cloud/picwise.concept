@@ -25,7 +25,14 @@ from .browser_lists import (
 )
 from .assist import ASSIST_SCRIPT, ASSIST_STYLES, AssistView, assist_block_html, fit_line_html
 from .legal import render_public_footer
-from .seo import NOINDEX_META
+from .seo import (
+    NOINDEX_META,
+    SITE_LANGUAGE,
+    home_structured_data_html,
+    icon_links_html,
+    indexable_head_html,
+    search_page_title,
+)
 from .trends import TRENDS_SCRIPT, TRENDS_STYLES, load_trends_panel, render_trends_panel
 
 
@@ -199,6 +206,7 @@ _PRICE_FIRST_PAGE_NOTE = (
 # approved by the owner: «Υλοποίησε τα όλα»). The home page says what PicWise is above
 # the box, and how it chooses below it; a search page goes straight to its products.
 _HOME_HEADING = "Find the product you want in UK shops"
+_HOME_TITLE = f"PicWise — {_HOME_HEADING}"
 _HOW_PICWISE_CHOOSES = (
     ("Only what you asked for", "A search for a coffee machine shows coffee machines, not their filters."),
     (
@@ -1645,8 +1653,14 @@ def render_picwise_reference_surface(
         if is_home
         else (
             '<div class="pw-results-head">'
-            f'<p class="pw-query-line">{escape(query_line)}</p>'
-            f"{results_count_html}"
+            # The page's heading when the search has an answer: what was searched and how
+            # the answer is ordered. With none, the message under it is the page's answer.
+            + (
+                f'<h1 class="pw-query-line">{escape(query_line)}</h1>'
+                if query_line
+                else '<p class="pw-query-line"></p>'
+            )
+            + f"{results_count_html}"
             "</div>"
             f"{kind_choices_html}"
             f'<p class="pw-reference-disclaimer">{escape(disclaimer_line)}</p>'
@@ -1663,17 +1677,27 @@ def render_picwise_reference_surface(
     if assist is not None and results_html:
         # One place the page's script can put the answer's results in, drawing no box.
         results_html = f'<div class="pw-results" id="pw-results">{results_html}</div>'
+    # A search's page is named after the search; the home page keeps the site's title.
+    page_title = (not is_home and search_page_title(display_query)) or _HOME_TITLE
     html = (
         "<!doctype html>"
-        '<html lang="en"><head>'
+        f'<html lang="{SITE_LANGUAGE}"><head>'
         '<meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         f"{'' if indexable else NOINDEX_META}"
-        "<title>PicWise — Find the product you want in UK shops</title>"
+        f"<title>{escape(page_title)}</title>"
         # What PicWise does, in the owner's own words of 2026-10-17 ("What is PicWise?"),
         # for Google to show under the home page (owner, 2026-10-31: the pages true).
         f'<meta name="description" content="{escape(_WHAT_IS_PICWISE)}">'
-        f"<script>{HEAD_SCRIPT}</script>"
+        f"{icon_links_html()}"
+        # Only the page Google may index says where it lives and who publishes it.
+        + (
+            indexable_head_html("/", title=_HOME_TITLE, description=_WHAT_IS_PICWISE)
+            + home_structured_data_html()
+            if indexable and is_home
+            else ""
+        )
+        + f"<script>{HEAD_SCRIPT}</script>"
         f"<style>{_PAGE_STYLES}{BROWSER_LISTS_STYLES}{TRENDS_STYLES if home_after_search_html else ''}"
         f"{ASSIST_STYLES if assist is not None else ''}</style>"
         "</head><body>"
