@@ -13,7 +13,9 @@ many could be shown by the shop's own product type or by the title alone, read a
 kind, and for the shops with the most, a few of their types and titles; and (owner,
 2026-10-26) where else their category may hide: their filled columns, the values of
 those named like a category, and the shelves their shop's address names; then what the
-shops' own catalogues and the rows' barcodes gave them (`shop_catalogues`). Counts, shop
+shops' own catalogues and the rows' barcodes gave them (`shop_catalogues`); and how many
+products, by barcode, two or more shops sell, in all and per category
+(`balance.shared_products`; 2026-11-11). Counts, shop
 names, types, titles and words only; the note never holds a link. Always exits 0: a
 deployment never fails because of this list.
 """
@@ -28,6 +30,8 @@ REASONS = 3
 DETAILED = 15
 # How many of the largest kinds only one or two shops sell are printed.
 FEW_SHOPS_LISTED = 25
+# How many categories are printed with the products two or more shops sell, the most first.
+SHARED_LISTED = 10
 
 
 def main() -> int:
@@ -266,6 +270,22 @@ def print_balance(note: dict) -> None:
             + "; ".join(
                 f"{entry['kind']} {entry['products']:,} ({', '.join(entry['shops'])})"
                 for entry in few[:FEW_SHOPS_LISTED]
+            )
+        )
+    shared = found.get("shared_products")
+    if isinstance(shared, dict):
+        # The products the pages for Google start from (docs/PICWISE_AUDIT_FIXES.md, 4.A.2).
+        print(
+            f"  products two or more shops sell, by barcode: {shared['two_or_more_shops']:,} of the "
+            f"{shared['barcodes']:,} with a barcode"
+            + (
+                "; by category: "
+                + "; ".join(
+                    f"{entry['category']} {entry['two_or_more_shops']:,} of {entry['barcodes']:,}"
+                    for entry in shared["by_category"][:SHARED_LISTED]
+                )
+                if shared["by_category"]
+                else ""
             )
         )
 

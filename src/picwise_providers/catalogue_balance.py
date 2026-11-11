@@ -20,6 +20,17 @@ no group keeps more than that share of what all keep, which needs at least 1/sha
 groups (7 for 15%); with fewer, no C holds and the note says so. Also the owner's
 "enough" put to them on 26/10: how many kinds have products from at least 3 shops, and
 (2026-11-10) which kinds only one or two shops sell, with those shops' names.
+
+Also how many products two or more shops sell (`shared_products`; the audit's fixes,
+2026-11-11, `docs/PICWISE_AUDIT_FIXES.md` 4.A.2: the product pages for Google start
+from those products, and nobody knew how many there are). A product is a barcode whose
+check digit agrees (`product_identity.valid_gtin`, padded to 14 digits so the UPC-12 and
+EAN-13 forms of one code agree), counted once however many shops and rows carry it; it
+is sold by two or more shops when two shop names or more carry it, so one shop listing
+it twice does not make it so, and a row with no barcode never counts. Per category, the
+category being the first two levels of the shop's Google shelf as the cap reads it
+(`catalogue_cap`; "aisle" above), each barcode counted once, under the category most of
+its rows name (ties by name), so the categories add up to the whole.
 Counts and names only; the note never holds a link.
 """
 from __future__ import annotations
@@ -34,12 +45,15 @@ from picwise_nlu.product_concepts import broader_concepts
 
 from .contracts import ProviderProduct
 from .normalization import extract_merchant_name
+from .product_identity import valid_gtin
 
 CAP_SHARE = 0.15
 # How many of the largest groups, and of the groups a cap cuts most, the note lists.
 _LISTED = 10
 # How many of the kinds only one or two shops sell the note names, the largest first.
 _FEW_SHOPS_LISTED = 200
+# How many categories the count of products two or more shops sell lists, the most first.
+_SHARED_LISTED = 200
 OWN_CATEGORIES = "(the shops' own categories)"
 NO_SHOP = "(no shop named)"
 
@@ -122,6 +136,31 @@ def _narrowest_kind(kinds: Collection[str]) -> str:
     return max(real, key=lambda kind: (_depth(kind), kind))
 
 
+def _shared_products(barcodes: Mapping[str, tuple[set[str], Counter]]) -> dict[str, Any]:
+    """How many products, by barcode, two or more shops sell, in all and per category
+    (module docstring). `barcodes` maps each barcode to the shops and the categories of
+    its rows."""
+    by_category: dict[str, list[int]] = {}
+    shared = 0
+    for shops, categories in barcodes.values():
+        category = min(categories.items(), key=lambda item: (-item[1], item[0]))[0]
+        counts = by_category.setdefault(category, [0, 0])
+        counts[0] += 1
+        if len(shops) >= 2:
+            counts[1] += 1
+            shared += 1
+    listed = sorted(by_category.items(), key=lambda item: (-item[1][1], -item[1][0], item[0]))
+    return {
+        "barcodes": len(barcodes),
+        "two_or_more_shops": shared,
+        "categories": len(by_category),
+        "by_category": [
+            {"category": name, "barcodes": counts[0], "two_or_more_shops": counts[1]}
+            for name, counts in listed[:_SHARED_LISTED]
+        ],
+    }
+
+
 def measure_catalogue_balance(
     products: Sequence[ProviderProduct],
     kinds: Sequence[Collection[str]],
@@ -135,6 +174,7 @@ def measure_catalogue_balance(
     shops: Counter = Counter()
     by_kind: Counter = Counter()
     shops_by_kind: dict[str, set[str]] = {}
+    barcodes: dict[str, tuple[set[str], Counter]] = {}
     for product, product_kinds in zip(products, kinds):
         raw = product.raw if isinstance(product.raw, Mapping) else {}
         department, aisle = _shelf_groups(product.category_text)
@@ -142,6 +182,11 @@ def measure_catalogue_balance(
         aisles[aisle] += 1
         shop = " ".join(str(extract_merchant_name(raw) or "").split()) or NO_SHOP
         shops[shop] += 1
+        gtin = valid_gtin(raw)
+        if gtin:
+            sellers, shelves = barcodes.setdefault(gtin.zfill(14), (set(), Counter()))
+            sellers.add(shop)
+            shelves[aisle] += 1
         kind = _narrowest_kind(product_kinds)
         if kind:
             by_kind[kind] += 1
@@ -174,4 +219,5 @@ def measure_catalogue_balance(
             "three_or_more": sum(count for shops_count, count in spread.items() if shops_count >= 3),
         },
         "kinds_from_few_shops": few_shops[:_FEW_SHOPS_LISTED],
+        "shared_products": _shared_products(barcodes),
     }

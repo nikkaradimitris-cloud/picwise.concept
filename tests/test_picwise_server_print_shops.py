@@ -81,9 +81,17 @@ class PrintShopsTests(unittest.TestCase):
         self.assertEqual(lines[6:8], ["", "rows without a category: 0; held for that alone 0, 0 of them with the shop's own type"])
         # Then what the shops' catalogues and the barcodes gave (no bot's file here), and the
         # shares of the shown products with what a cap would cut.
-        # The last line names the largest kinds only one or two shops sell (2026-11-10).
-        self.assertEqual(len(lines), 2 + 4 + 1 + 7 + 3 + 11 + 1)
-        self.assertTrue(lines[-1].startswith("  the largest kinds from one or two shops: "), lines[-1])
+        # Then a line naming the largest kinds only one or two shops sell (2026-11-10), and
+        # the last, the products two or more shops sell, by barcode (2026-11-11; the
+        # fixture's 15 shown rows each carry a barcode of their own, in no shop's Google
+        # shelf).
+        self.assertEqual(len(lines), 2 + 4 + 1 + 7 + 3 + 11 + 1 + 1)
+        self.assertTrue(lines[-2].startswith("  the largest kinds from one or two shops: "), lines[-2])
+        self.assertEqual(
+            lines[-1],
+            "  products two or more shops sell, by barcode: 0 of the 15 with a barcode; "
+            "by category: (the shops' own categories) 0 of 15",
+        )
         self.assertEqual(lines[15], "the shops' catalogues: the bot's file none; 0 shops in it")
         self.assertEqual(
             lines[18],

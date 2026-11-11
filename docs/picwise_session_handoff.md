@@ -36,8 +36,10 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 - **Group A of the audit's fixes (11/11, evening), on `audit-group-a-2026-11-11`, from
   `56aefb3` of `ccr-99b47f03-l8t4dj`; not deployed.** Step 1 done: `fetchpriority="high"`
-  on the first card's photo only (`tests/test_picwise_first_photo_priority.py`). Steps 2
-  and 3 next (`docs/PICWISE_AUDIT_FIXES.md`, 4.A); groups B, C and D not started. The
+  on the first card's photo only (`tests/test_picwise_first_photo_priority.py`). Step 2
+  done: the note counts the products two or more shops sell, by barcode, in all and per
+  category (the cap's category, the note's "aisle"; `balance.shared_products`,
+  `print_shops.py`; the real number the first night after a deployment). Step 3 next (`docs/PICWISE_AUDIT_FIXES.md`, 4.A); groups B, C and D not started. The
   "Tests" run of `56aefb3` and the slow job of `619f963` were still running when this
   began: read them before relying on this line.
 - **START HERE (11/11): the audit's fixes. Read `docs/PICWISE_AUDIT_FIXES.md` first.**
