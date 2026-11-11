@@ -73,7 +73,10 @@ def _base_styles() -> str:
         ".pw-footer-link:hover{background:#eef5ff;border-color:#cddffc;color:#24496f;}"
         ".pw-footer-disclosure{margin:10px 0 0;font-size:12px;line-height:1.5;color:#5f7ea6;max-width:760px;}"
         ".pw-footer-meta{margin:6px 0 0;font-size:12px;color:#6b86ac;}"
-        "@media (max-width:760px){.pw-wrap{padding:24px 14px 16px;}.pw-title{font-size:28px;}.pw-legal h2{font-size:18px;}}"
+        "@media (max-width:760px){.pw-wrap{padding:24px 14px 16px;}.pw-title{font-size:28px;}.pw-legal h2{font-size:18px;}"
+        # On a phone whatever is tapped is at least 44 px and no word under 13 (the audit, 2026-11-10).
+        ".pw-brand{min-height:44px;}.pw-footer-link{min-height:44px;padding:0 14px;font-size:14px;}"
+        ".pw-footer-disclosure,.pw-footer-meta{font-size:13px;}}"
     )
 
 

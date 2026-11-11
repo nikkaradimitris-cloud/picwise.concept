@@ -1287,31 +1287,66 @@ _PAGE_STYLES = (
     ".pw-actions{gap:6px;}"
     ".pw-info-txt{display:none;}"
     ".pw-info-icon{display:inline;}"
-    ".pw-info-link{width:36px;padding:0;}"
-    ".pw-reference-frame{padding:14px 12px 8px;}"
+    # A phone (the audit, 2026-11-10; owner, the same day: «Ζητώ διόρθωση και βελτίωση ...
+    # στη ορατότητα σε κινητές συσκευές»). Measured at 360 and 390 px with two cards a
+    # row: no "View" button on the first screen, the four cards 2.5 screens long, words
+    # at 10 to 13 px, "Mid-priced for this catego" cut, buttons 36 to 40 px. Now one
+    # product a row, its photo beside its words, so the Recommended and its button are
+    # on the first screen; no word under 12 px; whatever is tapped at least 44 px.
+    ".pw-info-link{width:44px;height:44px;padding:0;}"
+    ".pw-brand{min-height:44px;}"
+    ".pw-reference-frame{padding:12px 12px 8px;}"
     ".pw-home{padding-top:26px;}"
     ".pw-hero-title{font-size:26px;}"
     ".pw-hero-sub{font-size:15px;}"
-    ".pw-search-shell{height:52px;padding:0 5px 0 14px;}"
-    ".pw-search-input{height:48px;font-size:16px;}"
+    ".pw-search-wrap{margin-bottom:12px;}"
+    ".pw-search-shell{height:56px;padding:0 6px 0 14px;}"
+    ".pw-search-input{height:52px;font-size:16px;}"
     ".pw-ghost{font-size:16px;}"
-    ".pw-mic-button{width:38px;height:38px;}"
-    ".pw-search-button{width:40px;height:40px;}"
+    ".pw-mic-button{width:44px;height:44px;}"
+    ".pw-search-button{width:44px;height:44px;}"
+    ".pw-suggest-item{padding:12px 18px;}"
+    ".pw-results-head{margin:4px 0 2px;}"
     ".pw-query-line{font-size:14px;}"
-    ".pw-grid,.pw-grid[data-card-count]{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}"
-    ".pw-card{padding:9px;border-radius:14px;}"
-    ".pw-card-recommended{padding:8px;}"
-    ".pw-role{height:42px;margin:8px 0 4px;}"
-    ".pw-rec-badge,.pw-role-label{height:20px;padding:0 7px;font-size:10px;}"
-    ".pw-card-recommended .pw-role-label{height:auto;padding:0;font-size:11px;}"
-    ".pw-card-title{font-size:13px;}"
-    ".pw-card-shop{font-size:12px;}"
-    ".pw-price{font-size:19px;}"
-    ".pw-card-stock{font-size:12px;}"
-    ".pw-card-note{font-size:11px;}"
+    ".pw-reference-disclaimer{margin:2px 0 10px;line-height:1.45;}"
+    # "Did you mean: bath mat?": the link takes the taps around it, the sentence unmoved.
+    ".pw-reference-disclaimer a{position:relative;}"
+    ".pw-reference-disclaimer a::after{content:'';position:absolute;top:-13px;right:-8px;bottom:-13px;left:-8px;}"
+    ".pw-kind-choice{height:44px;padding:0 15px;font-size:14px;}"
+    ".pw-grid,.pw-grid[data-card-count]{grid-template-columns:minmax(0,1fr);gap:10px;}"
+    # The photo beside the words that say what the product is; under them, across the
+    # card, its limitation, then the price with the button beside it. The card's words
+    # stay in their order for a screen reader; only their places on the screen change.
+    # A product alone keeps its own layout.
+    '.pw-grid:not([data-layout="single"]) .pw-card{display:grid;grid-template-columns:96px minmax(0,1fr);column-gap:12px;row-gap:0;align-items:start;padding:10px;border-radius:14px;}'
+    '.pw-grid:not([data-layout="single"]) .pw-card-recommended{padding:9px;}'
+    '.pw-grid:not([data-layout="single"]) .pw-product-image-wrap{grid-column:1;grid-row:1 / span 16;border-radius:10px;}'
+    '.pw-grid:not([data-layout="single"]) .pw-card-body{display:contents;}'
+    '.pw-grid:not([data-layout="single"]) .pw-card-body>*{grid-column:2;min-width:0;}'
+    '.pw-grid:not([data-layout="single"]) .pw-card-body>.pw-card-offer{grid-column:1 / -1;grid-row:17;margin-top:8px;}'
+    '.pw-grid:not([data-layout="single"]) .pw-card-body>.pw-rec-note{grid-column:1 / -1;grid-row:18;margin-top:8px;}'
+    '.pw-grid:not([data-layout="single"]) .pw-card-body>.pw-card-note{grid-column:1 / -1;grid-row:19;margin:8px 0 0;}'
+    '.pw-grid:not([data-layout="single"]) .pw-card-body>.pw-price{grid-column:1 / -1;grid-row:20;align-self:center;margin:10px 0 0;font-size:24px;}'
+    '.pw-grid:not([data-layout="single"]) .pw-card-body>.pw-card-cta{grid-column:1 / -1;grid-row:20;justify-self:end;width:52%;min-width:140px;margin:10px 0 0;}'
+    '.pw-grid:not([data-layout="single"]) .pw-card-body>:nth-last-child(2){margin-bottom:0;}'
+    ".pw-role{flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px 8px;height:auto;margin:0 0 5px;overflow:visible;}"
+    ".pw-rec-badge,.pw-role-label{height:22px;padding:0 8px;font-size:12px;letter-spacing:.02em;}"
+    ".pw-role-label{white-space:normal;}"
+    ".pw-card-recommended .pw-role-label{height:auto;padding:0;font-size:13px;}"
+    ".pw-card-title{font-size:15px;line-height:1.3;-webkit-line-clamp:2;height:auto;max-height:2.6em;}"
+    ".pw-card-shop{margin-top:4px;font-size:13px;white-space:normal;}"
+    ".pw-card-stock{margin-top:4px;font-size:13px;}"
+    ".pw-card-description,.pw-card-extra,.pw-meta,.pw-feature-item{font-size:13px;}"
+    ".pw-warning,.pw-rec-note,.pw-offer-meta,.pw-offer-terms{font-size:12px;}"
+    ".pw-card-note{font-size:12px;}"
     ".pw-cta-at{display:none;}"
-    ".pw-card-cta{padding:9px 8px;}"
+    ".pw-card-cta{display:flex;align-items:center;justify-content:center;min-height:44px;padding:0 12px;font-size:15px;}"
+    '.pw-grid[data-layout="single"] .pw-card-cta{display:flex;width:100%;}'
+    ".pw-more-button{height:48px;}"
+    ".pw-demo-note{font-size:13px;}"
     ".pw-footer{padding:16px 14px;}"
+    ".pw-footer-link{min-height:44px;padding:0 14px;font-size:14px;}"
+    ".pw-footer-disclosure,.pw-footer-meta{font-size:13px;}"
     "}"
 )
 
