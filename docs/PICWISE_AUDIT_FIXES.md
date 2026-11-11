@@ -66,7 +66,7 @@ every proposal). The owner then asked for the fixes: «Ζητώ διόρθωση
 | `a145201` | the first card's photo asked for first (`fetchpriority="high"`, on no other) | `picwise_surface/reference.py` | `test_picwise_first_photo_priority` |
 | `abd2225` | the night's note counts the products two or more shops sell, by barcode, in all and per category | `picwise_providers/catalogue_balance.py`, `deployment/server/print_shops.py` | `test_picwise_shared_products` |
 | `f587ba7` | the daily session reads the night's note and reports first a failed night, a file over 30 hours old, a feed that shrank | `docs/PICWISE_DAILY_WORK.md` | `test_picwise_daily_night_check` |
-| the review's commit | the blind evaluation's broad negative terms are the eleven its test expects (nine since 21/05: section 3, point 1); "Tests" also on branches named `claude/...` and `audit-...` | `picwise_search_memory/blind_evaluation.py`, `.github/workflows/tests.yml` | `test_picwise_blind_negative_terms` |
+| `52a9f20` | the blind evaluation's broad negative terms are the eleven its test expects (nine since 21/05: section 3, point 1); "Tests" also on branches named `claude/...` and `audit-...` | `picwise_search_memory/blind_evaluation.py`, `.github/workflows/tests.yml` | `test_picwise_blind_negative_terms` |
 
 Measured, offline, on a synthetic catalogue of 242,400 products (about the live size
 after the cap; `tools/bench_search.py`, 33 searches):
@@ -85,14 +85,14 @@ Phones, rendered offline in Chromium at 360x640 and 390x664: a card 265 to 281 p
 the Recommended and its button on the first screen. The layout at 700 px and wider is
 untouched.
 
-Tests, each module in its own process: 303 modules; 301 pass, 2 fail as known
-(`README.md` names them), 0 fail otherwise: here on `d412b28` (2,671 tests) and on
-GitHub's runner on `619f963` (run `43068207518`, the first job). The two slow modules
-(`SLOW` in the tool) have not finished anywhere yet: GitHub's second job says.
+Tests on `52a9f20`, each module in its own process: 307 modules, 2,693 tests; 305
+pass, 2 fail as known (`README.md` names them), 0 fail otherwise, here and on GitHub's
+runner (run `43116890274`, the first job). The two slow modules (`SLOW` in the tool)
+pass here in full on that commit; GitHub's second job: section 3, point 1.
 
 ## 3. Not yet proven: check before anyone relies on it
 
-1. **The slow modules' job on GitHub, on the review's commit.** Until 11/11 the two
+1. **The slow modules' job on GitHub, on the review's commit (`52a9f20`).** Until 11/11 the two
    slow modules had finished nowhere. That day `test_picwise_learning_stage7b` passed,
    and `test_picwise_search_index_blind_evaluation_stage6a` finished for the first time
    (3,256 to 4,020 s) and failed one test of 13,
@@ -104,11 +104,12 @@ GitHub's runner on `619f963` (run `43068207518`, the first job). The two slow mo
    pass; nobody saw it, the module never having been run to its end. Neither the
    audit's fixes nor group A touch those files. Fixed in the review's commit: the two
    terms in the list, and `tests/test_picwise_blind_negative_terms.py`, which says the
-   same in 20 seconds on every push. Checked here with the fix: that test, the slow
-   module's failing test and its thresholds test. **Still to read: GitHub's slow job on
-   the review's commit, the whole module** (about an hour after the push). If it is
-   red, change nothing by yourself: say which test and what it printed, in
-   `PROGRESS.md` and to the owner. Never skip it.
+   same in 20 seconds on every push. Checked here on `52a9f20`, with the fix: both slow
+   modules in full, the 13 tests of stage 6a and the 10 of stage 7b all pass. On GitHub
+   (run `43116890274`, the same commit) every other module is green; its slow job was
+   still running at 23:22 UTC of 11/11: **read it**. If it is red, change nothing by
+   yourself: say which test and what it printed, in `PROGRESS.md` and to the owner.
+   Never skip it.
 2. **The keeper has never run on the server**, with gunicorn and the real catalogue.
    At the night's change each worker builds the new catalogue beside the old one, one
    worker at a time: the service's memory (3,816 MB on 09/11; ceiling 11 GB) rises by

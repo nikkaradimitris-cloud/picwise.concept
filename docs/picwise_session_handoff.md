@@ -42,8 +42,9 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   module's red test was six months old, not this work's: the blind evaluation's list of
   broad negative terms lacked "amazon" and "galaxy" since 21/05, and the module had
   never been run to its end. Fixed, with a 20-second test of the same
-  (`tests/test_picwise_blind_negative_terms.py`). **Still to read: GitHub's slow job on
-  the review's commit** (the whole module, about an hour). Nothing is left to build
+  (`tests/test_picwise_blind_negative_terms.py`). Both slow modules pass here in full on
+  the review's commit, `52a9f20`; **GitHub's slow job on it (run `43116890274`) was
+  still running at 23:22 UTC of 11/11: read it**. Nothing is left to build
   before the owner's word: «ανέβασε», once the owner has seen the phone layout, opens
   group B (the deployment's checks, the speed timed on the site); the pages for Google
   (D) wait for the owner's decisions 6 and 7 of that file's section 5. Not deployed.
