@@ -296,7 +296,18 @@ Console, which is why section 9 exists.
      section 2 for the search, the demo, `robots.txt` and the JSON routes
      (`tests/test_picwise_google_protection.py`). **On `main` and live since 23/10
      18:15 UTC** (merge `47cd76b`, owner: «Ναι, να μπει στο main και κάνε τον
-     έλεγχο»), seen by the live check at 18:16;
+     έλεγχο»), seen by the live check at 18:16.
+     **Added on a branch on 2026-11-11, not deployed** (the audit of 10/11; owner:
+     «Ζητώ διόρθωση και βελτίωση ... τις προδιαγραφές google»): what each of the seven
+     pages Google may already index says of itself, adding no page to Google: its one
+     address on the primary domain (`rel="canonical"`, whatever host answered, the
+     backup's too), `/sitemap.xml` with those seven addresses and its line in
+     `robots.txt`, the site's icon, `Organization` and `WebSite` data on the home page
+     (no rating, no review, no search box), a search's own title and heading, `en-GB`
+     (`picwise_surface.seo`, `tests/test_picwise_google_basics.py`). The home page's
+     data and the icon were checked against this file's rules only, not against
+     Google's pages (they cannot be opened from a session): to be read at the source,
+     and tried in Search Console's own tools, before the first batch;
   2. the catalogue on the server;
   3. the pages.
 - The AI system and its cost, measured on a sample.

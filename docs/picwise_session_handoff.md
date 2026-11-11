@@ -1,6 +1,8 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-11-07 (**next: a big
+Current state for whoever picks the project up next. Updated 2026-11-11 (**the audit of
+10/11 and its fixes: built on `ccr-99b47f03-l8t4dj`, not deployed, waiting for the owner's
+«ανέβασε»; what is left and how it is checked in `docs/PICWISE_AUDIT_FIXES.md`**; **before that: a big
 general debugging of the search, category by category, asked by the owner on 07/11
 («ζητάω μία μεγάλη γενική απασφαλμάτωση»: the site not yet trusted as a production page;
 «μπαταρία» read as boots); its method, its bar and about $3 of AI audit approved («Ναι σε
@@ -32,6 +34,21 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-06): pick up here -- start here
 
+- **START HERE (11/11): the audit's fixes. Read `docs/PICWISE_AUDIT_FIXES.md` first.**
+  The owner asked for a full audit (10/11; the report is a Claude doc of the owner's),
+  then for its fixes (11/11), then for a file from which another session continues and
+  a later one reviews. Built on `ccr-99b47f03-l8t4dj` from `214f4b9`, tested, **not
+  deployed, waiting for the owner's «ανέβασε»**: a search about eight times faster
+  offline (a kind index per catalogue, patterns compiled once), each worker keeps the
+  catalogue loaded (no visitor waits for it), phones one product a row (**changes
+  "Phones: two cards a row" of 31/10: the owner must see it first**), `canonical`,
+  `/sitemap.xml`, icons and structured data for the seven indexable pages, security
+  headers, the night's note on shrunk feeds and on kinds few shops sell, the tests run
+  on each push (`.github/workflows/tests.yml`). `main` and `ccr-4f47068a-99ikwe` are
+  still at `214f4b9`; pull request #23 (this branch to `main`) is open, not to be
+  merged without the owner's word. The owner's plan (11/11): the site stays on
+  `picwise.subby.cloud`; more shops will be applied to for the kinds that lack them.
+  Next: that file's section 3 (what is not yet proven), then section 4 in order.
 - **Daily session 2026-11-10 (noon): site checked, nothing built.** The live site answers ("ring" 1.9 s, "laptop bag" 1.7 s, "pen dries" 1.6 s, with `curl`); the concept-understanding tests pass (37). The ring gap, "pen dries", "work pans" and "t shorts" need the server's catalogue (a read-only workflow, one to two hours); this session had no way to schedule a check-in, so none was started. Next: run the kinds/gap read for the ring gap, then fix by cause. Nothing proposed for the site. AI today: $0.
 - **`main` brought up to the live site (09/11, afternoon; owner: «Ανέλαβε τη διόρθωση
   όλων να έρθει στην κατάσταση που πρέπει και ότι έχει μείνει σε κρεμότητα κλείστο»):**
@@ -1277,7 +1294,10 @@ The design of 31/10 is built and deployed with the pages (owner, 31/10: «Υλο
     for a flag that is the same on every row), and every card states its limitation
     ("... not verified by PicWise", after a not-new or no-description note in the
     labels' words). The owner's labels stay ("Recommended", "Mid-priced for this
-    category", "Lowest price"). "4 of 45" also above the cards. Phones: two cards a row.
+    category", "Lowest price"). "4 of 45" also above the cards. Phones: two cards a row
+    (changed on a branch on 2026-11-11, not deployed: one product a row, its photo beside
+    its words, the price with the button beside it; `tests/test_picwise_phone_layout.py`;
+    the first section of this file).
   - **One product alone** (owner, 31/10): the same card laid out on its own, "This is
     the only product PicWise found for this search in its shops.", with Shop, Brand,
     Product code (barcode, else the maker's part number, read from the shop's row by
