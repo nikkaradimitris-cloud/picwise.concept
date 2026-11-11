@@ -44,9 +44,11 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   not `true`: such a note has no `prepared_at`), a file over 30 hours old, or a shop
   shrunk or gone (`docs/PICWISE_DAILY_WORK.md`, step 2); the server's own email waits
   for the owner (`docs/PICWISE_AUDIT_FIXES.md`, section 5, row 14). Group A is done;
-  groups B, C and D not started (B only on the owner's «ανέβασε»). The "Tests" run of
-  `56aefb3` and the slow job of `619f963` were still running when this began: read them
-  before relying on this line.
+  groups B, C and D not started (B only on the owner's «ανέβασε»). **GitHub's slow job
+  red on `619f963`** (run `43068207518`): stage 6a finished for the first time (4,020 s)
+  and failed `test_negative_broad_terms_are_included` ('amazon' and 'galaxy' missing from
+  the broad negative cases); stage 7b passed. Nothing changed for it: the owner's to
+  decide. The slow job of `56aefb3` (run `43071701101`) was still running.
 - **START HERE (11/11): the audit's fixes. Read `docs/PICWISE_AUDIT_FIXES.md` first.**
   The owner asked for a full audit (10/11; the report is a Claude doc of the owner's),
   then for its fixes (11/11), then for a file from which another session continues and
