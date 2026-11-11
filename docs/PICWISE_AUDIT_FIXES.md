@@ -222,6 +222,7 @@ Asked or to be asked, in Greek, one short question each; build only on the answe
 | 11 | A lasting record of clicks to shops, and `clickref` on the link | Changes the privacy page's text |
 | 12 | A limit of requests per visitor; closing `/subby-proof` and `/private-beta-readiness` | The first counts by address for a moment (privacy); the second touches May's proof pages and their tests |
 | 13 | The scanning screen's count | The owner: with the design work |
+| 14 | An email from the server itself when the night's preparation fails (4.A.3) | To be asked: which address it goes to and who sends it; until then the daily session reports it first (`docs/PICWISE_DAILY_WORK.md`, step 2) |
 
 ## 6. How the work is checked
 

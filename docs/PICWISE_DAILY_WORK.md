@@ -25,6 +25,23 @@ by email and to their phone. The owner answers in that session, once a day.
    read the site's pages as a visitor sees them, with `curl`, which runs no script, so no
    search of the session's is kept among the visitors' searches (`/searched`); never a
    shop's link (an Awin tracked link), never a form.
+   **Whether the night's preparation worked** (the audit's fixes, 2026-11-11,
+   `docs/PICWISE_AUDIT_FIXES.md` 4.A.3): read `https://picwise.subby.cloud/prepared.json`
+   with `curl`, the public note the night's preparation writes (04:17 UTC,
+   `picwise-prepare.timer`). The site answers from the last prepared file only until it
+   is 30 hours old (`PICWISE_PREPARED_MAX_AGE_HOURS`); then it shows no product, and
+   nothing else tells anyone. The report puts first, before anything else, any of:
+   - `"prepared"` not `true`: the night failed (its `reason`); such a note carries no
+     `prepared_at`, and the site still answers from the file before it, until that one
+     is 30 hours old;
+   - `prepared_at` missing, or more than 30 hours before the time it was read (also when
+     the note itself was not rewritten: then `written_at` is old too);
+   - in `intake_change`, a shop under `shrunk` (fewer than half the night before's rows)
+     or `gone`, with its rows before and now. A note written before `249cc06` was
+     deployed has no `intake_change`: say it is not there yet.
+   The note, never a link from it; the time it was read, in UTC. An email from the
+   server itself when the night fails is not built: it needs the owner's choice of
+   address and sender.
 3. **Work.** The next step of the handoff's "START HERE", in small, closed steps: fix
    by cause, never word by word; every fix with its tests; the measures before and
    after (`deployment/server/print_search_reading.py` offline and free; the server's

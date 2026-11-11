@@ -39,9 +39,14 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
   on the first card's photo only (`tests/test_picwise_first_photo_priority.py`). Step 2
   done: the note counts the products two or more shops sell, by barcode, in all and per
   category (the cap's category, the note's "aisle"; `balance.shared_products`,
-  `print_shops.py`; the real number the first night after a deployment). Step 3 next (`docs/PICWISE_AUDIT_FIXES.md`, 4.A); groups B, C and D not started. The
-  "Tests" run of `56aefb3` and the slow job of `619f963` were still running when this
-  began: read them before relying on this line.
+  `print_shops.py`; the real number the first night after a deployment). Step 3 done:
+  the daily session reads `/prepared.json` and reports first a failed night (`"prepared"`
+  not `true`: such a note has no `prepared_at`), a file over 30 hours old, or a shop
+  shrunk or gone (`docs/PICWISE_DAILY_WORK.md`, step 2); the server's own email waits
+  for the owner (`docs/PICWISE_AUDIT_FIXES.md`, section 5, row 14). Group A is done;
+  groups B, C and D not started (B only on the owner's «ανέβασε»). The "Tests" run of
+  `56aefb3` and the slow job of `619f963` were still running when this began: read them
+  before relying on this line.
 - **START HERE (11/11): the audit's fixes. Read `docs/PICWISE_AUDIT_FIXES.md` first.**
   The owner asked for a full audit (10/11; the report is a Claude doc of the owner's),
   then for its fixes (11/11), then for a file from which another session continues and
