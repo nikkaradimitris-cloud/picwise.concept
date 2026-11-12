@@ -70,16 +70,16 @@ def _base_styles() -> str:
         ".pw-legal li{margin:0 0 8px;line-height:1.6;}"
         ".pw-legal .pw-emphasis{padding:12px 14px;border:1px solid #dbe8fb;border-radius:12px;background:#f6f9ff;}"
         ".pw-footer{margin-top:18px;padding-top:14px;border-top:1px solid #dbe8fb;}"
-        ".pw-footer-links{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}"
-        ".pw-footer-link{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;"
-        "border:1px solid #d8e6fb;border-radius:999px;background:#f7faff;font-size:13px;"
-        "line-height:1.2;color:#335983;text-decoration:none;white-space:nowrap;}"
-        ".pw-footer-link:hover{background:#eef5ff;border-color:#cddffc;color:#24496f;}"
+        # The footer's links as plain words, as on the search page (owner, 2026-11-12).
+        ".pw-footer-links{display:flex;flex-wrap:wrap;gap:0 20px;align-items:center;}"
+        ".pw-footer-link{display:inline-flex;align-items:center;padding:6px 0;font-size:13px;"
+        "line-height:1.2;color:#3d4f66;text-decoration:none;white-space:nowrap;}"
+        ".pw-footer-link:hover{color:#0f2442;text-decoration:underline;}"
         ".pw-footer-disclosure{margin:10px 0 0;font-size:12px;line-height:1.5;color:#5f7ea6;max-width:760px;}"
         ".pw-footer-meta{margin:6px 0 0;font-size:12px;color:#6b86ac;}"
         "@media (max-width:760px){.pw-wrap{padding:24px 14px 16px;}.pw-title{font-size:28px;}.pw-legal h2{font-size:18px;}"
         # On a phone whatever is tapped is at least 44 px and no word under 13 (the audit, 2026-11-10).
-        ".pw-brand{min-height:44px;}.pw-footer-link{min-height:44px;padding:0 14px;font-size:14px;}"
+        ".pw-brand{min-height:44px;}.pw-footer-link{min-height:44px;padding:0;font-size:14px;}"
         ".pw-footer-disclosure,.pw-footer-meta{font-size:13px;}}"
     )
 

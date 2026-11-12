@@ -116,7 +116,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self.assertIn("What are you looking for?", body)
         # The home page of the design of 2026-10-31 says what PicWise is above the box.
         self.assertIn('<h1 class="pw-hero-title">Find the product you want in UK shops</h1>', body)
-        self.assertIn("shopping decision assistant", body)
+        self.assertIn('<ul class="pw-facts">', body)
         self.assertIn("<title>PicWise — Find the product you want in UK shops</title>", body)
         self.assertIn('<meta name="description"', body)
         self._assert_common_footer_links(body)
@@ -171,9 +171,9 @@ class DeploymentEntrypointTests(unittest.TestCase):
         self._assert_common_footer_links(body)
         self.assertEqual(body.count('<article class="pw-card'), 0)
         self.assertNotIn("&middot;", body)
-        # Without a search, the page says what PicWise is and how it chooses; it shows
-        # no cards and no empty search state.
-        self.assertIn('<section class="pw-how" aria-label="How PicWise chooses">', body)
+        # Without a search, the page has its heading, the box and three short facts
+        # (owner, 2026-11-12); it shows no cards and no empty search state.
+        self.assertIn('<ul class="pw-facts">', body)
 
     def test_search_route_renders_main_shell_without_amazon_for_power_bank_query(self) -> None:
         # Amazon has been removed from the product: power banks resolve through the same

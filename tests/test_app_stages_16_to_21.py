@@ -103,7 +103,8 @@ class AppHttpEndpointTests(unittest.TestCase):
     def test_root_route_shows_main_picwise_reference_ui(self) -> None:
         body = self._fetch("/")
         self.assertIn("What are you looking for?", body)
-        self.assertIn("shopping decision assistant", body)
+        # Under the box, three short facts (owner, 2026-11-12).
+        self.assertIn('<ul class="pw-facts">', body)
         # The home page of the design of 2026-10-31 says what PicWise is above the box.
         self.assertIn('<h1 class="pw-hero-title">Find the product you want in UK shops</h1>', body)
         self._assert_common_footer_links(body)

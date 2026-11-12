@@ -98,7 +98,9 @@ class PreparedCatalogue:
     products: tuple[ProviderProduct, ...]
     non_new: tuple[str, ...]
     kinds: tuple[frozenset[str], ...]
-    # What the scanning screen names: the feed's eligible products and their shops.
+    # The feed's products a card can show, before the cap; and the shops of the products
+    # the search keeps, after it (the home page names them with `products`: owner,
+    # 2026-11-12).
     eligible_count: int
     shop_count: int
     suggestions: tuple[SearchSuggestion, ...]

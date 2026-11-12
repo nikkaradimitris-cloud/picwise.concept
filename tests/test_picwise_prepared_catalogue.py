@@ -62,8 +62,10 @@ from picwise_providers.purchasability_cache import (  # noqa: E402
     clear_purchasability_cache_configuration,
     configure_purchasability_cache,
 )
+from picwise_providers.normalization import extract_merchant_name  # noqa: E402
 from picwise_providers.state import (  # noqa: E402
     clear_provider_feed_pipeline_cache,
+    peek_search_catalogue_counts,
     prepare_feed_catalogue,
     resolve_card_eligible_provider_feed_product_by_id,
     search_suggestions,
@@ -196,6 +198,32 @@ class PreparedFileTests(_PreparedMixin, unittest.TestCase):
         self.assertEqual(again.non_new[ids.index("k1")], "")
         self.assertIn("kettle", again.kinds[ids.index("k1")])
         self.assertIn("laptop", again.kinds[ids.index("l1")])
+
+    def test_the_page_counts_the_products_and_shops_the_search_keeps(self) -> None:
+        # Owner, 2026-11-12: the home page names the products and shops a search holds,
+        # after the cap; the scanning screen had named the feed's products before it
+        # (about 735,000 while the search held about 251,000).
+        rows = _feed_rows()
+        for row in rows[:5]:
+            row[10] = "Fixture Store Two"
+        self._write_feed(rows)
+
+        def store_one_only(products, kinds, context):
+            return tuple(
+                extract_merchant_name(product.raw) == "Fixture Store One" for product in products
+            )
+
+        everything = prepare_feed_catalogue()
+        capped = prepare_feed_catalogue(cap=store_one_only)
+        self.assertIsNotNone(everything)
+        self.assertIsNotNone(capped)
+        self.assertEqual(everything.shop_count, 2)
+        self.assertEqual(capped.shop_count, 1)
+        self.assertLess(len(capped.products), len(everything.products))
+        # The feed's own count is kept as it was, for the night's log.
+        self.assertEqual(capped.eligible_count, everything.eligible_count)
+        with patch.dict(state._PREPARED_STATE, {"prepared": capped}):
+            self.assertEqual(peek_search_catalogue_counts(), (len(capped.products), 1))
 
     def test_each_text_is_written_once(self) -> None:
         # A server holds the file in memory (2 GB on Vercel's free plan), so a text that

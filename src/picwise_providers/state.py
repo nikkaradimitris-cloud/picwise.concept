@@ -371,11 +371,15 @@ def _catalogue_counts(pipeline: ProviderFeedPipelineResult) -> tuple[int, int]:
     when a page is drawn, and judging 40,000 products takes seconds.
     """
     products = [row.product for row in pipeline.eligibility_results if row.status == "eligible"]
-    shops = {
+    return len(products), len(_shops_of(products))
+
+
+def _shops_of(products: Sequence[ProviderProduct]) -> set[str]:
+    """The shops the products come from, each named once."""
+    return {
         str(extract_merchant_name(product.raw if isinstance(product.raw, dict) else {}) or "").strip().lower()
         for product in products
     } - {""}
-    return len(products), len(shops)
 
 
 # The prepared feed this process read (`prepared_catalogue.py`), with the file identity
@@ -420,7 +424,7 @@ def prepare_feed_catalogue(
     if pipeline.feed_status.status != "provider_feed_ready" or pipeline.availability_context is None:
         return None
     catalogue = _search_catalogue(pipeline, leave_out_gone_photos=False)
-    eligible_count, shop_count = _catalogue_counts(pipeline)
+    eligible_count = _catalogue_counts(pipeline)[0]
     kinds = tuple(
         _product_concepts(product, fields) for product, fields in zip(catalogue.products, catalogue.fields)
     )
@@ -438,6 +442,9 @@ def prepare_feed_catalogue(
                 fields=tuple(catalogue.fields[place] for place in places),
             )
     choices = _catalogue_kind_choices(catalogue, kinds)
+    # The shops of the products the search keeps: a shop the cap left nothing of is not
+    # one the search reads (the home page names them, owner, 2026-11-12).
+    shop_count = len(_shops_of(catalogue.products))
     return PreparedCatalogue(
         prepared_at=now or datetime.now(timezone.utc),
         feed_status=pipeline.feed_status,
@@ -762,14 +769,17 @@ def keep_prepared_catalogue_loaded(
 def peek_search_catalogue_counts() -> tuple[int, int] | None:
     """(products, shops) a search reads, when this process has the feed loaded, else None.
 
-    For the scanning screen (step 4): "Searching 39,815 products from 2 shops". It reads
-    only the feed this process already holds, the one loaded last: it never loads one,
-    and never reads the feed configuration either, which for a feed URL can start a
-    download. A page drawn before the first search stays fast and names no number.
+    For the home page's first fact, "250,000+ products from 80 UK shops" (owner,
+    2026-11-12). From a prepared catalogue, the products the search keeps after the cap
+    and their shops, never the feed's products before it (the scanning screen had named
+    about 735,000 while the search held about 251,000). It reads only the feed this
+    process already holds, the one loaded last: it never loads one, and never reads the
+    feed configuration either, which for a feed URL can start a download. A page drawn
+    before the first search stays fast and names no number.
     """
     prepared = _PREPARED_STATE.get("prepared")
     if prepared is not None and _is_fresh(prepared):
-        return prepared.eligible_count, prepared.shop_count
+        return len(prepared.products), prepared.shop_count
     try:
         entries = list(_PIPELINE_CACHE.items())
     except RuntimeError:

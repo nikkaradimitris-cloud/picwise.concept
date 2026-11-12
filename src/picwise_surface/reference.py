@@ -206,23 +206,66 @@ _PRICE_FIRST_PAGE_NOTE = (
 )
 
 # The design of 2026-10-31 (`docs/design/picwise_design_proposal_2026-10-31.html`,
-# approved by the owner: «Υλοποίησε τα όλα»). The home page says what PicWise is above
-# the box, and how it chooses below it; a search page goes straight to its products.
+# approved by the owner: «Υλοποίησε τα όλα»), made shorter on 2026-11-12 (owner: the
+# site «μοιάζει πιο πολύ με εφημερίδα και όχι με search αγορών πρέπει να γράψουμε
+# λιγότερα»; then «Έχεις δίκιο για αυτά», and the heading kept: «3»). The home page
+# keeps its heading above the box and, under it, three short facts a buyer can hold it
+# to, instead of a paragraph and three boxes of how it chooses; what PicWise does stays
+# in "What is PicWise?" and the page's description. A search page goes straight to its
+# products.
 _HOME_HEADING = "Find the product you want in UK shops"
 _HOME_TITLE = f"PicWise — {_HOME_HEADING}"
-_HOW_PICWISE_CHOOSES = (
-    ("Only what you asked for", "A search for a coffee machine shows coffee machines, not their filters."),
-    (
-        "In stock, offers first, then cheapest",
-        "Products a shop's current offer covers come first, then the rest by price, as the shops "
-        "list them, read again every night.",
-    ),
-    (
-        "One fair pick",
-        "The Recommended is a product on offer where there is one, else the one in the middle of "
-        "the prices, not the cheapest or the dearest, and never from commission.",
-    ),
+# Each true of every answer: only what the shops list in stock, read again every night;
+# commission never a criterion (PROJECT_RULES.md 2 and 5). Before them, when the counts
+# are known, the products and shops a search holds (`_home_facts_html`).
+_HOME_FACTS = (
+    ("night", "In stock only, updated every night"),
+    ("fair", "Never ranked by commission"),
 )
+_FACT_ICONS = {
+    "shop": '<path d="M4 9.5 5.5 4h13L20 9.5"/><path d="M4 9.5h16v1a3 3 0 0 1-5.33 1.9A3 3 0 0 1 12 13.5a3 3 0 0 1-2.67-1.1A3 3 0 0 1 4 10.5z"/><path d="M5.5 13v7h13v-7"/>',
+    "night": '<path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/><path d="m8.5 12 2.5 2.5 4.5-5"/>',
+    "fair": '<path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/>',
+}
+
+
+def _at_least(count: int) -> str:
+    """A count as a buyer reads it and never more than it is: its first two figures,
+    and a "+" for what was left off (251,235 reads "250,000+"; 39 reads "39"). A few of
+    the products a search holds may be left out of an answer that night (a photo gone),
+    so the exact figure could be a little more than a buyer can find."""
+    count = max(int(count), 0)
+    if count < 100:
+        return f"{count:,}"
+    step = 10 ** (len(str(count)) - 2)
+    floor = count // step * step
+    return f"{floor:,}" + ("+" if floor < count else "")
+
+
+def _home_facts_html(catalogue: tuple[int, int] | None) -> str:
+    """The home page's facts under the box: the products and shops a search holds when
+    this process knows them (`state.peek_search_catalogue_counts`), then `_HOME_FACTS`."""
+    items: list[tuple[str, str]] = []
+    if catalogue and catalogue[0] > 0 and catalogue[1] > 0:
+        products, shops = int(catalogue[0]), int(catalogue[1])
+        items.append(
+            (
+                "shop",
+                f"<b>{_at_least(products)}</b> {'product' if products == 1 else 'products'} from "
+                f"<b>{shops:,}</b> UK {'shop' if shops == 1 else 'shops'}",
+            )
+        )
+    items.extend((icon, escape(text)) for icon, text in _HOME_FACTS)
+    return (
+        '<ul class="pw-facts">'
+        + "".join(
+            '<li class="pw-fact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+            'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+            f"{_FACT_ICONS[icon]}</svg><span>{text}</span></li>"
+            for icon, text in items
+        )
+        + "</ul>"
+    )
 
 # The card's lines say whose word each fact is. The stock line rewords, for a shopper,
 # the availability fact `decision_labels` states, and claims no more than it does: a
@@ -1211,23 +1254,12 @@ def render_picwise_reference_surface(
     hero_html = (
         '<section class="pw-hero-home">'
         f'<h1 class="pw-hero-title">{escape(_HOME_HEADING)}</h1>'
-        f'<p class="pw-hero-sub">{escape(_WHAT_IS_PICWISE)}</p>'
         "</section>"
         if is_home
         else ""
     )
+    home_facts_html = _home_facts_html(catalogue) if is_home else ""
     home_after_search_html = render_trends_panel(load_trends_panel()) if is_home else ""
-    how_html = (
-        '<section class="pw-how" aria-label="How PicWise chooses">'
-        + "".join(
-            f'<div class="pw-how-item"><h2 class="pw-how-title">{escape(title)}</h2>'
-            f'<p class="pw-how-text">{escape(text)}</p></div>'
-            for title, text in _HOW_PICWISE_CHOOSES
-        )
-        + "</section>"
-        if is_home
-        else ""
-    )
     # The AI layer's part: its checked sentence when the products that fit were put first,
     # the shops' words, or the empty place its script fills (owner, 2026-11-06).
     assist_html = (
@@ -1300,7 +1332,7 @@ def render_picwise_reference_surface(
         '<div class="pw-topbar-inner">'
         '<a class="pw-brand" href="/" aria-label="PicWise home">'
         '<span class="pw-logo" aria-hidden="true"></span>'
-        '<span class="pw-brand-text"><span class="pw-brand-name">picwise</span><span class="pw-brand-tagline">shopping decision assistant</span></span>'
+        '<span class="pw-brand-text"><span class="pw-brand-name">picwise</span></span>'
         "</a>"
         '<div class="pw-actions">'
         f"{header_buttons_html()}"
@@ -1325,10 +1357,10 @@ def render_picwise_reference_surface(
         "</button></form>"
         '<ul class="pw-suggest" id="pw-suggest-list" role="listbox" aria-label="Suggestions" hidden></ul>'
         "</section>"
+        f"{home_facts_html}"
         f"{home_after_search_html}"
         f"{results_html}"
         f"{note_or_empty_html}"
-        f"{how_html}"
         "</div>"
         f"{render_public_footer()}"
         '<script>'

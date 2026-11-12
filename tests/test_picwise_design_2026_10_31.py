@@ -66,9 +66,11 @@ from picwise_surface.legal import (  # noqa: E402
 from picwise_surface.reference import (  # noqa: E402
     _PAGE_STYLES,
     _STOCK_LINES,
+    _at_least,
     _card_note,
     _display_price,
     _stock_line,
+    render_picwise_reference_surface,
 )
 from picwise_surface.trends import (  # noqa: E402
     TRENDS_SOURCE_STATUS,
@@ -392,17 +394,48 @@ class HomePageTests(unittest.TestCase):
     def setUp(self) -> None:
         self.page = _call("/")
 
-    def test_the_home_page_says_what_picwise_is_and_how_it_chooses(self) -> None:
+    def test_the_home_page_keeps_its_heading_and_three_short_facts(self) -> None:
+        # Made shorter on 2026-11-12 (owner: the site «μοιάζει πιο πολύ με εφημερίδα ...
+        # πρέπει να γράψουμε λιγότερα»; «Έχεις δίκιο για αυτά»; the heading kept, «3»):
+        # no paragraph and no boxes of how it chooses, three facts under the box.
         self.assertIn('<h1 class="pw-hero-title">Find the product you want in UK shops</h1>', self.page)
-        self.assertIn('<p class="pw-hero-sub">PicWise finds the product you want', self.page)
-        # The order since the owner's word of 2026-11-01: offers first, then cheapest.
-        for title in ("Only what you asked for", "In stock, offers first, then cheapest", "One fair pick"):
-            self.assertIn(f'<h2 class="pw-how-title">{title}</h2>', self.page)
-        self.assertIn("never from commission", self.page)
+        self.assertNotIn('class="pw-hero-sub"', self.page)
+        self.assertNotIn('class="pw-how', self.page)
+        self.assertIn('<ul class="pw-facts">', self.page)
+        for fact in ("In stock only, updated every night", "Never ranked by commission"):
+            self.assertIn(f"<span>{fact}</span></li>", self.page)
+        # What PicWise does stays a tap away and in the page's description.
+        self.assertIn('<div class="pw-tooltip" id="pw-tooltip">PicWise finds the product you want', self.page)
+        self.assertIn('<meta name="description" content="PicWise finds the product you want', self.page)
         # The home page may be indexed; it shows no empty search state.
         self.assertNotIn('<meta name="robots" content="noindex">', self.page)
         self.assertNotIn("pw-empty-state\">", self.page)
         self.assertNotIn('<section class="pw-grid"', self.page)
+
+    def test_the_first_fact_names_what_a_search_holds_and_never_more(self) -> None:
+        page = render_picwise_reference_surface("", catalogue=(251235, 80))
+        self.assertIn("<span><b>250,000+</b> products from <b>80</b> UK shops</span>", page)
+        one = render_picwise_reference_surface("", catalogue=(1, 1))
+        self.assertIn("<span><b>1</b> product from <b>1</b> UK shop</span>", one)
+        # Before this process has loaded the catalogue it names no number at all.
+        unknown = render_picwise_reference_surface("", catalogue=None)
+        self.assertIn('<ul class="pw-facts">', unknown)
+        self.assertNotIn(" products from ", unknown)
+        # A search page has no facts: it goes straight to its products.
+        self.assertNotIn('class="pw-facts"', render_picwise_reference_surface("kettle", catalogue=(251235, 80)))
+
+    def test_a_count_reads_its_first_two_figures_and_never_more_than_it_is(self) -> None:
+        for count, text in (
+            (0, "0"), (3, "3"), (99, "99"), (100, "100"), (735, "730+"), (3412, "3,400+"),
+            (39815, "39,000+"), (251235, "250,000+"), (250000, "250,000"), (735204, "730,000+"),
+        ):
+            self.assertEqual(_at_least(count), text, count)
+            self.assertLessEqual(int(text.rstrip("+").replace(",", "")), count)
+
+    def test_the_header_has_no_tagline_and_one_blue_button(self) -> None:
+        self.assertNotIn("pw-brand-tagline", self.page)
+        self.assertIn(".pw-info-link{background:#fff;color:var(--ink-2);border-color:var(--line);}", self.page)
+        self.assertIn(".pw-search-shell:focus-within{border-color:var(--blue-2);", self.page)
 
     def test_no_trends_panel_without_a_real_source(self) -> None:
         self.assertIsNone(load_trends_panel())
