@@ -33,7 +33,7 @@ from picwise_integrations import (  # noqa: E402
     UrllibSubbyBridgeEventSender,
     send_subby_live_proof_event,
 )
-from picwise_search.live_search_resolver import parse_shown_count  # noqa: E402
+from picwise_search.live_search_resolver import parse_min_price, parse_shown_count  # noqa: E402
 from picwise_surface.seo import SITEMAP_PATH, declares_to_google, robots_txt, sitemap_xml  # noqa: E402
 from picwise_surface import (  # noqa: E402
     render_about_page,
@@ -128,6 +128,7 @@ def answer(environ: dict[str, object], start_response: StartResponse, local_app:
             query,
             shown=parse_shown_count(params.get("shown", [""])[0]),
             assist_refresh=params.get("assist", [""])[0] == "1",
+            min_price=parse_min_price(params.get("min", [""])[0]),
         )
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
@@ -221,6 +222,7 @@ def answer(environ: dict[str, object], start_response: StartResponse, local_app:
             source_page=source_page,
             shown=parse_shown_count(params.get("shown", [""])[0]),
             assist_refresh=params.get("assist", [""])[0] == "1",
+            min_price=parse_min_price(params.get("min", [""])[0]),
         )
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)

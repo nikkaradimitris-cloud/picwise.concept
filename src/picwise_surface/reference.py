@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import re
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
@@ -26,6 +27,7 @@ from .browser_lists import (
 from .assist import ASSIST_SCRIPT, ASSIST_STYLES, AssistView, assist_block_html, fit_line_html
 from .fonts import FONT_PRELOAD_HTML
 from .page_styles import _PAGE_STYLES
+from .price_bar import PRICE_BAR_SCRIPT, PRICE_BAR_STYLES
 from .search_script import _SEARCH_SCRIPT
 from .legal import render_public_footer
 from .seo import (
@@ -152,6 +154,18 @@ _OFFER_LABEL = "Offer"
 # chosen for its offer is not "mid-priced for this category", and says what it is.
 _PRICE_FIRST_RECOMMENDED_OFFER_LABEL = "On offer"
 _RECOMMENDED_MID_PRICED = "The Recommended is mid-priced for this category."
+# The price bar (owner, 2026-11-12: «Να μπει ένα φίλτρο με τη μορφή μπάρας που να διαλέγει
+# με την τιμή ... να τερματίζει στην υψηλοτερή και να ξεκινάει από την χαμηλότερη κουνώντας
+# μία μπίλια θα μπορεί αμέσως να φιλτράρει»): with a price chosen, the page says so in its
+# heading, and the Recommended, chosen among the products from that price by the same
+# rule, says it is mid-priced of those, not of the category.
+_PRICE_BAR_ANY = "Any price"
+# An answer of one page has nothing to filter: the bar shows from five products.
+_PRICE_BAR_MIN_ANSWER = 4
+_PRICE_BAR_FROM = "From {price}"
+_PRICE_BAR_SHOW = "Show"
+_PRICE_FIRST_RECOMMENDED_FROM_LABEL = "Mid-priced from {price}"
+_RECOMMENDED_MID_PRICED_FROM = "The Recommended is mid-priced of the products from {price}."
 _RECOMMENDED_ON_OFFER = (
     "The Recommended is on offer: of the products on offer, the one nearest the middle of their prices."
 )
@@ -648,6 +662,8 @@ def _build_price_first_cards(
     search, by product id, which the search put first (owner, 2026-11-06): each gets a ✓
     and its words, and every card of the page the line for them.
     """
+    # The price the buyer chose on the price bar, if any (owner, 2026-11-12).
+    price_from = _price_from(resolution)
     if not _price_first_display_allowed(resolution):
         return []
     first_page = list(resolution.provider_feed_selected_products)
@@ -684,6 +700,8 @@ def _build_price_first_cards(
                 if offer
                 else _PRICE_FIRST_RECOMMENDED_FITTING_LABEL
                 if fit_words and getattr(resolution, "provider_feed_recommended_among_fitting", False)
+                else _PRICE_FIRST_RECOMMENDED_FROM_LABEL.format(price=_pounds(price_from))
+                if price_from is not None
                 else _PRICE_FIRST_RECOMMENDED_LABEL
             )
         elif offer:
@@ -740,6 +758,70 @@ def _build_price_first_cards(
     return cards
 
 
+def _pounds(amount: float) -> str:
+    """A price the bar names: "£150", or "£149.99" with pence."""
+    value = float(amount)
+    return f"£{value:,.0f}" if value.is_integer() else f"£{value:,.2f}"
+
+
+def _price_from(resolution: LiveSearchResolution) -> float | None:
+    """The price the buyer chose on the price bar for this answer, or None."""
+    chosen = getattr(resolution, "provider_feed_price_from", None)
+    return float(chosen) if chosen is not None else None
+
+
+def _price_bar_html(resolution: LiveSearchResolution, display_query: str, *, source_page: str) -> str:
+    """The price bar above the cards of a price-first answer (owner, 2026-11-12), or "".
+
+    A bar from the answer's lowest price to its highest, with how many of its products
+    fall at each price drawn above it, and a knob that raises the price the answer starts
+    from: past the £2 straps of "smartwatch" or the £9 cases of "tablet". Shown only when
+    the answer holds more than one page of products at more than one price. Without
+    JavaScript it is a plain form, the knob in whole pounds and a button to show; with it
+    (`PRICE_BAR_SCRIPT`) the bar follows the answer's prices on a scale of ratios, as its
+    steps do (`search_selection._price_bar`), and the page follows the knob when it is let
+    go.
+    """
+    low = float(getattr(resolution, "provider_feed_price_low", 0.0) or 0.0)
+    high = float(getattr(resolution, "provider_feed_price_high", 0.0) or 0.0)
+    steps = tuple(int(count) for count in (getattr(resolution, "provider_feed_price_bins", ()) or ()))
+    answer = int(getattr(resolution, "provider_feed_answer_count", 0) or 0)
+    if not steps or high <= low or answer <= _PRICE_BAR_MIN_ANSWER:
+        return ""
+    chosen = _price_from(resolution)
+    base = max(low, 0.01)
+    place = 0.0
+    if chosen is not None and chosen > base:
+        place = min(max(math.log(chosen / base) / math.log(high / base), 0.0), 1.0)
+    tallest = max(steps) or 1
+    # Each step's height grows with the root of its count, so a step of two products
+    # still shows beside one of two hundred; the steps below the chosen price are pale.
+    bars = "".join(
+        '<i{out} style="height:{height}%"></i>'.format(
+            out=' class="out"' if (index + 1) / len(steps) <= place else "",
+            height=0 if not count else round(18 + 82 * math.sqrt(count / tallest)),
+        )
+        for index, count in enumerate(steps)
+    )
+    words = _PRICE_BAR_FROM.format(price=_pounds(chosen)) if chosen is not None else _PRICE_BAR_ANY
+    path = "/results" if source_page == "results" else "/search"
+    value = math.floor(chosen) if chosen is not None else math.floor(low)
+    return (
+        f'<form class="pw-pricebar" action="{path}" method="get" aria-label="Price">'
+        f'<input type="hidden" name="q" value="{escape(display_query, quote=True)}">'
+        '<div class="pw-pricebar-track">'
+        f'<span class="pw-pricebar-bars" aria-hidden="true">{bars}</span>'
+        f'<input class="pw-pricebar-range" id="pw-pricebar-range" type="range" name="min" '
+        f'min="{math.floor(low)}" max="{math.ceil(high)}" step="1" value="{value}" '
+        f'data-low="{low:.2f}" data-high="{high:.2f}" style="--pos:{place * 100:.1f}%" '
+        f'aria-label="Lowest price" aria-valuetext="{escape(words, quote=True)}">'
+        "</div>"
+        f'<output class="pw-pricebar-value" id="pw-pricebar-value" for="pw-pricebar-range">{escape(words)}</output>'
+        f'<button class="pw-pricebar-go" type="submit">{_PRICE_BAR_SHOW}</button>'
+        "</form>"
+    )
+
+
 def _fitting_disclosure(
     disclosure: str, cards: list[dict[str, object]], resolution: LiveSearchResolution
 ) -> str:
@@ -778,8 +860,10 @@ def _price_first_more_html(
     button = ""
     if requested < total and requested < MAX_SHOWN_PRODUCTS:
         path = "/results" if source_page == "results" else "/search"
+        chosen = _price_from(resolution)
+        price_param = "" if chosen is None else "&min=" + _pounds(chosen).lstrip("£").replace(",", "")
         href = (
-            f"{path}?q={quote(display_query, safe='')}"
+            f"{path}?q={quote(display_query, safe='')}{price_param}"
             f"&shown={min(requested + 4, MAX_SHOWN_PRODUCTS)}#pw-choice-{shown_cards + 1}"
         )
         button = (
@@ -1050,6 +1134,11 @@ def render_picwise_reference_surface(
                     disclosure = _fitting_disclosure(disclosure, price_first_cards, resolution)
                 if any(card.get("offer") and card.get("recommended") for card in price_first_cards):
                     disclosure = disclosure.replace(_RECOMMENDED_MID_PRICED, _RECOMMENDED_ON_OFFER)
+                if _price_from(resolution) is not None:
+                    disclosure = disclosure.replace(
+                        _RECOMMENDED_MID_PRICED,
+                        _RECOMMENDED_MID_PRICED_FROM.format(price=_pounds(_price_from(resolution))),
+                    )
         else:
             feed_cards, feed_live, feed_disclosure, feed_safe_note = (
                 _build_provider_feed_result_cards(
@@ -1088,6 +1177,12 @@ def render_picwise_reference_surface(
                         f"Results for: {display_query}, those that fit first, then offers, then cheapest first"
                         if with_offers
                         else f"Results for: {display_query}, those that fit first, then cheapest first"
+                    )
+                if _price_from(resolution) is not None:
+                    query_line = query_line.replace(
+                        f"Results for: {display_query},",
+                        f"Results for: {display_query}, from {_pounds(_price_from(resolution))},",
+                        1,
                     )
                 understood_name = str(getattr(resolution, "understood_concept_name", "") or "")
                 if understood_name and getattr(resolution, "understood_by_correction", False):
@@ -1235,6 +1330,12 @@ def render_picwise_reference_surface(
         if price_first_page and card_specs
         else ""
     )
+    # The price bar above the cards of a price-first answer (owner, 2026-11-12).
+    price_bar_html = (
+        _price_bar_html(resolution, display_query, source_page=source_page)
+        if price_first_page and card_specs and resolution is not None
+        else ""
+    )
     hero_html = (
         '<section class="pw-hero-home">'
         f'<h1 class="pw-hero-title">{escape(_HOME_HEADING)}</h1>'
@@ -1271,6 +1372,7 @@ def render_picwise_reference_surface(
             )
             + f"{results_count_html}"
             "</div>"
+            f"{price_bar_html}"
             f"{kind_choices_html}"
             f'<p class="pw-reference-disclaimer">{escape(disclaimer_line)}</p>'
             f"{safe_note_html}"
@@ -1310,6 +1412,7 @@ def render_picwise_reference_surface(
         )
         + f"<script>{HEAD_SCRIPT}</script>"
         f"<style>{_PAGE_STYLES}{BROWSER_LISTS_STYLES}{TRENDS_STYLES if home_after_search_html else ''}"
+        f"{PRICE_BAR_STYLES if price_bar_html else ''}"
         f"{ASSIST_STYLES if assist is not None else ''}</style>"
         "</head><body>"
         '<main class="pw-reference-viewport">'
@@ -1374,6 +1477,7 @@ def render_picwise_reference_surface(
         f"<script>{_SEARCH_SCRIPT}</script>"
         f"<script>{BROWSER_LISTS_SCRIPT}</script>"
         f"{'<script>' + TRENDS_SCRIPT + '</script>' if home_after_search_html else ''}"
+        f"{'<script>' + PRICE_BAR_SCRIPT + '</script>' if price_bar_html else ''}"
         f"{'<script>' + ASSIST_SCRIPT + '</script>' if assist is not None and assist.pending_key else ''}"
         "</main>"
         "</body></html>"

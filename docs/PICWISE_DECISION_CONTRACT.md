@@ -696,3 +696,26 @@ Then, to the order, the time and the mark proposed: «Ναι, συμφωνώ μ�
 6. **Not commission.** Fitting a need the buyer typed is the buyer's own criterion; no one
    pays for it, and commission still never decides the order.
 7. **Google.** Only the site's own search does this; its pages carry `noindex`.
+
+## The price bar, decided by the owner, 2026-11-12
+
+«Να μπει ένα φίλτρο με τη μορφή μπάρας που να διαλέγει με την τιμή για να γλιτώσουμε το πρόβλημα που βγάζει τα φθηνότερα και μπορεί να είναι smartwatch και να δείχνει λουράκια μπορεί να είναι tablet και να βγάζει πρώτα θήκες ... βάζοντας ένα φίλτρο τιμής το οποίο να τερματίζει στην υψηλοτερή και να ξεκινάει από την χαμηλότερη κουνώντας μία μπίλια θα μπορεί αμέσως να φιλτράρει».
+
+- Above the cards of a price-first answer of more than one page, a bar from the answer's
+  lowest price to its highest, with how many of its products stand at each price drawn
+  above it, on a scale of ratios (£2, £4, £8 ...), so cheap accessories and the products
+  themselves both have room (`search_selection._price_bar`).
+- The knob raises the price the answer starts from. The products below it leave the answer
+  before anything is worked out; the order (offers first, then cheapest), the Recommended
+  (on offer, or the middle of the prices, by the rules above), "More" and the counter are
+  those of the products from that price. A price above the dearest product is taken as the
+  dearest's: the answer never empties.
+- The page says so: the heading "Results for: tablet, from £150, cheapest first"; the
+  Recommended "Mid-priced from £150"; the line above the cards "The Recommended is
+  mid-priced of the products from £150."; the bar "From £150", or "Any price" at its left
+  end. "More" keeps the price (`?min=150`).
+- Let go, the page is drawn again from that price, behind the loading screen. Without
+  JavaScript the bar is a form in whole pounds with a button, "Show".
+- A page whose price was chosen is read without the AI layer, which would otherwise be asked
+  again for every price; its words are not logged as a new search.
+- Pinned by `tests/test_picwise_price_bar.py`.

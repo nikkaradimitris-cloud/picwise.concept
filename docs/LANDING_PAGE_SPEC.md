@@ -100,6 +100,15 @@ Made shorter by the owner on 2026-11-12: the site «μοιάζει πιο πολ
   site itself (`picwise_surface.fonts`: 48 KB, every weight, its licence beside it);
   the words show at once in the device's font and turn to Inter when it arrives.
 
+## The Price Bar (2026-11-12)
+
+Above the cards of a price-first answer of more than one page, under its heading and
+counter: a bar from the answer's lowest price to its highest, the products at each price
+drawn above it, and a knob that starts the answer from a higher price (owner: «κουνώντας
+μία μπίλια θα μπορεί αμέσως να φιλτράρει»). "Any price" at its left end, "From £150" as
+it moves; let go, the page is drawn again from that price. The rules it follows:
+`docs/PICWISE_DECISION_CONTRACT.md`, "The price bar".
+
 ## Card Structure Requirements
 
 Each choice card must show:

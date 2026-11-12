@@ -141,6 +141,16 @@ class LiveSearchResolution:
     # (owner, 2026-11-06), in the order shown, and whether the Recommended is one of them.
     provider_feed_fitting_product_ids: tuple[str, ...] = field(default_factory=tuple)
     provider_feed_recommended_among_fitting: bool = False
+    # The price bar of a price-first answer (owner, 2026-11-12;
+    # `search_selection.ProviderProductSelectionResult`): the whole answer's lowest and
+    # highest price, how many of its products fall in each step between them, the price
+    # the buyer chose ("from £150") or None, and how many products the whole answer holds
+    # before that price (`provider_feed_total_count` counts those from it).
+    provider_feed_price_low: float = 0.0
+    provider_feed_price_high: float = 0.0
+    provider_feed_price_bins: tuple[int, ...] = field(default_factory=tuple)
+    provider_feed_price_from: float | None = None
+    provider_feed_answer_count: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -241,6 +251,29 @@ def parse_shown_count(value: Any) -> int:
     if len(digits) > len(str(MAX_SHOWN_PRODUCTS)):
         return MAX_SHOWN_PRODUCTS
     return min(int(digits or "0"), MAX_SHOWN_PRODUCTS)
+
+
+# The price bar's price, from the `min` URL parameter (owner, 2026-11-12), at most this.
+MAX_MIN_PRICE = 1_000_000
+
+
+def parse_min_price(value: Any) -> float | None:
+    """The price the buyer chose on the price bar, from the `min` URL parameter, or None.
+
+    Whole pounds or pounds and pence in the digits 0-9 ("150", "149.99"); anything else,
+    nothing above zero, or more than `MAX_MIN_PRICE` means no price chosen. The value
+    comes from a typed address, like `shown`.
+    """
+    text = str(value or "").strip()
+    if not text or len(text) > 12 or not text.isascii():
+        return None
+    whole, _point, pence = text.partition(".")
+    if not whole.isdigit() or (pence and not (pence.isdigit() and len(pence) <= 2)) or (_point and not pence):
+        return None
+    amount = float(text)
+    if amount <= 0 or amount > MAX_MIN_PRICE:
+        return None
+    return amount
 
 
 def _normalized_text(value: Any) -> str:
@@ -377,13 +410,16 @@ def resolve_live_search(
     query: str,
     *,
     shown: int = 0,
+    min_price: float | None = None,
     fitting_for: Callable[[str], Iterable[str] | None] | None = None,
 ) -> LiveSearchResolution:
     """Resolve one search. `shown` is how many products of a price-first answer the
     page holds: 4, then 8, 12 and so on as "More" is pressed. 0 means the first page.
     `fitting_for` gives, for the signature of the products the AI layer reads, the ids of
     those its stored answer read as fitting a complex search, which then come first
-    (owner, 2026-11-06; `search_selection._price_first_result`)."""
+    (owner, 2026-11-06; `search_selection._price_first_result`). `min_price` is the
+    price the buyer chose on the price bar: the answer starts from it (owner,
+    2026-11-12)."""
     raw_query = str(query or "")
     if searches_in_greek_letters(raw_query):
         return search_in_english_resolution(raw_query)
@@ -578,6 +614,11 @@ def resolve_live_search(
     provider_feed_cheapest_product_ids: tuple[str, ...] = ()
     provider_feed_shop_counts: tuple[tuple[str, int], ...] = ()
     provider_feed_price_ranks: tuple[tuple[str, int], ...] = ()
+    provider_feed_price_low = 0.0
+    provider_feed_price_high = 0.0
+    provider_feed_price_bins: tuple[int, ...] = ()
+    provider_feed_price_from: float | None = None
+    provider_feed_answer_count = 0
     provider_feed_offers: tuple[tuple[str, dict[str, Any]], ...] = ()
     provider_feed_candidates_signature = ""
     provider_feed_fitting_product_ids: tuple[str, ...] = ()
@@ -634,6 +675,7 @@ def resolve_live_search(
                     query=selection_query,
                     reading=concept_reading,
                     shown=shown,
+                    min_price=min_price,
                     fitting_for=fitting_for,
                 )
                 expose_selection = recognized_product_search or is_strong_feed_opportunity_selection(
@@ -691,6 +733,11 @@ def resolve_live_search(
                         provider_feed_cheapest_product_ids = selection.cheapest_product_ids
                         provider_feed_shop_counts = selection.shop_counts
                         provider_feed_price_ranks = selection.price_ranks
+                        provider_feed_price_low = selection.price_low
+                        provider_feed_price_high = selection.price_high
+                        provider_feed_price_bins = selection.price_bins
+                        provider_feed_price_from = selection.price_from
+                        provider_feed_answer_count = selection.answer_count
                         provider_feed_candidates_signature = selection.candidates_signature
                         provider_feed_fitting_product_ids = selection.fitting_product_ids
                         provider_feed_recommended_among_fitting = selection.recommended_among_fitting
@@ -849,6 +896,11 @@ def resolve_live_search(
         provider_feed_cheapest_product_ids=provider_feed_cheapest_product_ids,
         provider_feed_shop_counts=provider_feed_shop_counts,
         provider_feed_price_ranks=provider_feed_price_ranks,
+        provider_feed_price_low=provider_feed_price_low,
+        provider_feed_price_high=provider_feed_price_high,
+        provider_feed_price_bins=provider_feed_price_bins,
+        provider_feed_price_from=provider_feed_price_from,
+        provider_feed_answer_count=provider_feed_answer_count,
         provider_feed_offers=provider_feed_offers,
         kind_choices=kind_choices,
         kind_choices_name=kind_choices_name,

@@ -887,6 +887,7 @@ def resolve_search_provider_feed_product_selection(
     max_products: int = 4,
     reading: ConceptReading | None = None,
     shown: int = 0,
+    min_price: float | None = None,
     fitting_for: Callable[[str], Iterable[str] | None] | None = None,
 ) -> ProviderProductSelectionResult:
     prepared = _active_prepared_catalogue() if feed_config is None else None
@@ -898,6 +899,7 @@ def resolve_search_provider_feed_product_selection(
             reading=reading,
             feed_ctx=prepared.availability_context,
             shown=shown,
+            min_price=min_price,
             catalogue=_prepared_search_catalogue(prepared),
             fitting_for=fitting_for,
         )
@@ -924,6 +926,7 @@ def resolve_search_provider_feed_product_selection(
         reading=reading,
         feed_ctx=availability_context,
         shown=shown,
+        min_price=min_price,
         catalogue=catalogue,
         fitting_for=fitting_for,
     )
