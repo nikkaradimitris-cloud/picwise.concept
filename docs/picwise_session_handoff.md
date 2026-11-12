@@ -29,9 +29,11 @@ a decision came about.
   "Detected category: ...") and leading nowhere (proposed to the owner: "No products
   found for "…"" and "Try the name or the kind of the product, for example …", no answer
   yet); the product card (the owner's next subject); the shop's name as Awin writes it
-  on the button ("View at Geepas Partner Program"); the line "Price and stock as the
-  shop lists them, not verified by PicWise" on every card (the owner's design of 31/10);
-  the phone layout of 12/11 (one product a row) seen on no real phone yet. The design of
+  on the button ("View at Geepas Partner Program"); the phone layout of 12/11 (one
+  product a row) seen on no real phone yet. Done the same day, on the owner's word («Όχι
+  not verified by ... είναι σαν να τον διώχνεις ... βγάλ' το εντελώς»): "Price and stock
+  as the shop lists them, not verified by PicWise" is on no card, the page saying it
+  once above the cards and once under them. The design of
   31/10 and its labels are the owner's (`docs/PICWISE_DECISION_CONTRACT.md`): every
   wording a visitor reads changes on the owner's word only; show the owner a picture
   first (render the page offline, never a script on the live site). The page's markup:

@@ -272,11 +272,12 @@ class DeployedSurfaceStockTruthTests(unittest.TestCase):
         self.assertNotIn("k4", shown)
         self.assertEqual(sum(1 for card in cards if card["recommended"]), 1)
         for card in cards:
-            # Whose word it is, and that PicWise did not check it (the design of
-            # 2026-10-31 words the labels' "Listed as available by the provider feed,
-            # not verified" for a shopper).
+            # Whose word it is (the design of 2026-10-31 words the labels' "Listed as
+            # available by the provider feed, not verified" for a shopper); "not verified
+            # by PicWise" on no card since 2026-11-12 (owner: «είναι σαν να τον διώχνεις»),
+            # the page saying once that prices and stock are as the shops list them.
             self.assertIn("Listed as available by the shop", card["text"])
-            self.assertIn("not verified by PicWise", card["text"])
+            self.assertNotIn("not verified", card["text"])
             self.assertTrue(str(card["price"]).startswith("\u00a3"), card["price"])
             # The CTA says where it goes (CTA_AND_REDIRECT_SPEC: do not mask destination):
             # the shop itself.

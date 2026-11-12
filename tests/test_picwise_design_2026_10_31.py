@@ -166,6 +166,19 @@ class SymmetricCardsTests(_FeedMixin, unittest.TestCase):
         self.page = _call("/search", {"q": "kettle"})
         self.cards = _cards(self.page)
 
+    def test_no_card_says_not_verified_and_the_page_says_once_whose_prices_they_are(self) -> None:
+        # Owner, 2026-11-12: «Όχι not verified by ... είναι σαν να τον διώχνεις ... βγάλ' το
+        # εντελώς». Each card says whose word its stock is; the page, above and under the
+        # cards, that prices and stock are as the shops list them.
+        for card in self.cards:
+            self.assertNotIn("not verified", card)
+            self.assertNotIn('class="pw-card-note"', card)
+            self.assertIn("Listed as available by the shop", card)
+        self.assertNotIn("not verified by PicWise", self.page)
+        above = self.page.index('<p class="pw-reference-disclaimer">')
+        self.assertIn("Prices and stock are as the shops list them.", self.page[above:above + 400])
+        self.assertIn("Prices and stock are as the shops list them, read again every night", self.page)
+
     def test_four_cards_each_with_a_square_photo_shown_whole_and_sized_before_it_loads(self) -> None:
         self.assertEqual(len(self.cards), 4)
         for card in self.cards:
@@ -198,7 +211,9 @@ class SymmetricCardsTests(_FeedMixin, unittest.TestCase):
             # The button says where it goes: the shop.
             self.assertIn("View at " + _text(shop.group(1)).split(" via ")[0], text)
             self.assertIn('rel="nofollow sponsored noopener"', card)
-            self.assertIn('class="pw-card-note"', card)
+            # A new product with a description has no limitation of its own to state; the
+            # card's "not verified" line went on 2026-11-12 (owner).
+            self.assertNotIn('class="pw-card-note"', card)
 
     def test_the_stock_line_claims_only_what_the_feed_says(self) -> None:
         # A stock flag that is "1" on every row says nothing a shop could be held to:
@@ -277,15 +292,15 @@ class CardWordingTests(unittest.TestCase):
             [{"provider_product_id": "r", "price_text": "24.00", "currency": "GBP", "condition": "Refurbished"}]
         )[0]
         self.assertTrue(refurbished.risk_or_limitation.endswith(UNVERIFIED_RISK))
-        self.assertEqual(
-            _card_note(refurbished),
-            "Listed by the feed as Refurbished, not new. Price and stock as the shop lists them, "
-            "not verified by PicWise.",
-        )
+        # Owner, 2026-11-12: «Όχι not verified by ... είναι σαν να τον διώχνεις ... βγάλ' το
+        # εντελώς». The product's own limitation stays; "not verified" is on no card.
+        self.assertEqual(_card_note(refurbished), "Listed by the feed as Refurbished, not new.")
         plain = build_fact_based_choice_labels(
             [{"provider_product_id": "p", "price_text": "24.00", "currency": "GBP"}]
         )[0]
-        self.assertEqual(_card_note(plain), "Price and stock as the shop lists them, not verified by PicWise.")
+        self.assertEqual(_card_note(plain), "")
+        # The choice object keeps its limitation whole (the Decision Contract).
+        self.assertTrue(plain.risk_or_limitation.endswith(UNVERIFIED_RISK))
 
         class _Other:
             risk_or_limitation = "A limitation PicWise has no shorter words for."

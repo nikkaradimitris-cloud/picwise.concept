@@ -276,10 +276,14 @@ _STOCK_LINES = (
     ("Listed as available by the provider feed, not verified", "Listed as available by the shop", "listed"),
 )
 _STOCK_NOT_CONFIRMED = ("Stock not confirmed by the shop's feed", "unconfirmed")
-# Every card states its limitation (docs/LANDING_PAGE_SPEC.md, "Card Structure"; the
-# Decision Contract's choice object): what the feed says is not new, or gives no
-# description, in its own words, then whether PicWise checked the purchase.
-_CARD_LIMITATION_NOTE = "Price and stock as the shop lists them, not verified by PicWise."
+# A card states a limitation of its own (docs/LANDING_PAGE_SPEC.md, "Card Structure"; the
+# Decision Contract's choice object keeps `risk_or_limitation` whole): what the feed says
+# is not new, or gives no description, in its own words; a product checked on the shop's
+# page says so. "Price and stock as the shop lists them, not verified by PicWise." is on
+# no card since 2026-11-12 (owner: «Όχι not verified by ... είναι σαν να τον διώχνεις ...
+# βγάλ' το εντελώς»): the page says once, above the cards, that prices and stock are as
+# the shops list them (`_PRICE_FIRST_FEED_NOTE`), and each card's stock line whose word
+# its stock is ("Listed as available by the shop").
 _CARD_VERIFIED_NOTE = "Checked on the shop's page; the shop can still change price or stock."
 _SINGLE_PRODUCT_LINE = "This is the only product PicWise found for this search in its shops."
 _SINGLE_PRODUCT_DELIVERY = "See the shop's site"
@@ -629,17 +633,20 @@ def _stock_line(label: object | None) -> tuple[str, str]:
 
 
 def _card_note(label: object | None) -> str:
-    """The card's limitation, shorter than `decision_labels` words it but saying the same.
+    """The card's own limitation, or "" when it has none.
 
-    What is particular to the product (not new, no description) comes first in the
-    labels' own words; the general sentence they end with, whether PicWise checked the
-    purchase, is said in fewer words. A limitation in other words is shown whole.
+    What is particular to the product (not new, no description) in the labels' own
+    words. Of the general sentence they end with, only a product checked on the shop's
+    page keeps a line, in fewer words; that a product was not checked is said on no card
+    (owner, 2026-11-12), the page saying once that prices and stock are the shops'. A
+    limitation in other words is shown whole.
     """
     risk = " ".join(str(getattr(label, "risk_or_limitation", "") or "").split())
-    for general, short in ((VERIFIED_RISK, _CARD_VERIFIED_NOTE), (UNVERIFIED_RISK, _CARD_LIMITATION_NOTE)):
-        if risk.endswith(general):
-            return " ".join(part for part in (risk[: -len(general)].strip(), short) if part)
-    return risk or _CARD_LIMITATION_NOTE
+    if risk.endswith(VERIFIED_RISK):
+        return " ".join(part for part in (risk[: -len(VERIFIED_RISK)].strip(), _CARD_VERIFIED_NOTE) if part)
+    if risk.endswith(UNVERIFIED_RISK):
+        return risk[: -len(UNVERIFIED_RISK)].strip()
+    return risk
 
 
 def _build_price_first_cards(

@@ -107,7 +107,13 @@ Each choice card must show:
 - decision label (decision-focused, not raw spec dump)
 - subtitle (cost + key benefit + reassurance)
 - 2-3 key reasons
-- risk/limitation note
+- risk/limitation note, where the product has one of its own: the feed says it is not
+  new, or the shop gives no description of it. Changed on 2026-11-12 by the owner («Όχι
+  not verified by ... είναι σαν να τον διώχνεις ... βγάλ' το εντελώς»): "Price and stock
+  as the shop lists them, not verified by PicWise." is on no card; the page says once,
+  above the cards and again under them, that prices and stock are as the shops list
+  them, and each card's stock line says whose word its stock is ("Listed as available
+  by the shop"). The choice object keeps its `risk_or_limitation` whole.
 - CTA
 
 Recommended card must additionally show:
