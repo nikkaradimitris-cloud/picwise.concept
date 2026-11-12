@@ -11,6 +11,10 @@ from typing import TYPE_CHECKING
 
 import json
 import mimetypes
+
+# The site's font (`picwise_surface.fonts`): its type named here, not left to the table
+# of the Python the server runs.
+mimetypes.add_type("font/woff2", ".woff2")
 from pathlib import Path
 from typing import Callable
 from html import escape

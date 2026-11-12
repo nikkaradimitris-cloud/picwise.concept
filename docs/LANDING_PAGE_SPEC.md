@@ -96,6 +96,9 @@ Made shorter by the owner on 2026-11-12: the site «μοιάζει πιο πολ
 - Calmer colours: one blue for what is tapped, neutral greys; "What is PicWise?" white
   like History and Favourites; the box's line grey, blue while typing; the footer's
   links as plain words.
+- The font Inter, which the pages had named since May but never loaded, served by the
+  site itself (`picwise_surface.fonts`: 48 KB, every weight, its licence beside it);
+  the words show at once in the device's font and turn to Inter when it arrives.
 
 ## Card Structure Requirements
 

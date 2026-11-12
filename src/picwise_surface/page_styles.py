@@ -2,11 +2,14 @@
 moved here word for word from `reference.py` in the clean-up of 2026-11-12."""
 from __future__ import annotations
 
+from .fonts import FONT_FACE_CSS
+
 # The page's styles, after the design of 2026-10-31. Every card of a row is as tall as
 # the others; the photo is square and shown whole (`object-fit:contain`) at a size fixed
 # before it loads, and the role, title and shop lines have fixed heights, so the prices
 # and the buttons of a row line up and nothing moves while the page loads.
 _PAGE_STYLES = (
+    FONT_FACE_CSS +
     # Colours of 2026-11-12 (owner: «κράτα το απλό σοβαρό και αξιόπιστο»): one blue for
     # what is tapped, neutral greys for words and lines instead of bluish ones.
     ":root{--blue:#1a4fb7;--blue-2:#1f5fd6;--ink:#0f2442;--ink-2:#3d4f66;--muted:#66768c;--line:#e1e7ef;--bg:#f6f8fb;--card:#fff;--green:#1d8a4e;}"

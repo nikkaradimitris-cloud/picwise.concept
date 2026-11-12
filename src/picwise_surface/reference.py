@@ -24,6 +24,7 @@ from .browser_lists import (
     panels_html,
 )
 from .assist import ASSIST_SCRIPT, ASSIST_STYLES, AssistView, assist_block_html, fit_line_html
+from .fonts import FONT_PRELOAD_HTML
 from .page_styles import _PAGE_STYLES
 from .search_script import _SEARCH_SCRIPT
 from .legal import render_public_footer
@@ -1315,6 +1316,7 @@ def render_picwise_reference_surface(
         # for Google to show under the home page (owner, 2026-10-31: the pages true).
         f'<meta name="description" content="{escape(_WHAT_IS_PICWISE)}">'
         f"{icon_links_html()}"
+        f"{FONT_PRELOAD_HTML}"
         # Only the page Google may index says where it lives; who publishes it, only once
         # the site declares itself to Google (`seo.DECLARE_TO_GOOGLE`, off: owner, 12/11).
         + (

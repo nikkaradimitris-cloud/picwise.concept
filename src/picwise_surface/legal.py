@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from html import unescape
 
+from .fonts import FONT_FACE_CSS
 from .seo import SITE_LANGUAGE, icon_links_html, indexable_head_html
 
 
@@ -57,6 +58,7 @@ _WHAT_PICWISE_DOES_HTML = (
 def _base_styles() -> str:
     return (
         "*{box-sizing:border-box;}"
+        f"{FONT_FACE_CSS}"
         "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:#102744;background:linear-gradient(180deg,#f8fbff 0%,#f3f8ff 100%);}"
         ".pw-wrap{max-width:980px;margin:0 auto;padding:32px 20px 20px;}"
         ".pw-brand{display:inline-block;font-size:30px;font-weight:800;letter-spacing:-.03em;color:#1a4fb7;text-decoration:none;}"
