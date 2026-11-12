@@ -178,6 +178,9 @@ class SymmetricCardsTests(_FeedMixin, unittest.TestCase):
         # Owner, 2026-11-12: «Αυτό εννοείται και είναι περιττό παίρνει χώρο και κατεβάζει
         # τις κάρτες χαμηλά».
         self.assertNotIn("connected to PicWise", self.page)
+        # And the order is said by the heading alone, not again under it («Β»).
+        self.assertIn("Results for: kettle, cheapest first", self.page)
+        self.assertNotIn("Sorted by price", self.page)
         above = self.page.index('<p class="pw-reference-disclaimer">')
         self.assertIn("Prices and stock are as the shops list them.", self.page[above:above + 400])
         self.assertIn("Prices and stock are as the shops list them, read again every night", self.page)

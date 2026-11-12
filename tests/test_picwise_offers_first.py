@@ -322,7 +322,8 @@ class OffersFirstPageTests(unittest.TestCase):
         self.assertEqual([card["id"] for card in more], ["k6", "k3", "k9", "k1", "k2", "k4", "k5", "k7"])
         self.assertEqual([card["role"] for card in more[4:]], ["", "", "", ""])
         self.assertIn("Results for: kettle, offers first, then cheapest first", page)
-        self.assertIn("Products a current shop offer covers come first, then the rest by price, lowest first", page)
+        # The order is said by the heading alone (owner, 2026-11-12, «Β»).
+        self.assertNotIn("Products a current shop offer covers come first", page)
         self.assertIn("Offers are the shops&#x27; own, as they state them through Awin", page)
         # The place by price stays true: k9 is the dearest of nine.
         self.assertIn("9th cheapest of 9", page)

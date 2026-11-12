@@ -182,7 +182,8 @@ class ShownAnswerTests(_AssistMixin, unittest.TestCase):
         self.assertIn(f'<p class="pw-assist-note">{html.escape(ASSIST_NOTE)}</p>', page)
         self.assertNotIn("AI", re.search(r'<section class="pw-assist".*?</section>', page, flags=re.S).group(0))
         self.assertIn("Results for: quiet kettle, those that fit first, then cheapest first", page)
-        self.assertIn("Products whose own words show they fit your search come first", page)
+        # The order is said by the heading alone (owner, 2026-11-12, «Β»).
+        self.assertNotIn("Products whose own words show they fit your search come first", page)
         self.assertIn("The Recommended is mid-priced of those that fit.", page)
         self.assertNotIn("data-assist-key", page)
         self.assertNotIn(ASSIST_SCRIPT, page)

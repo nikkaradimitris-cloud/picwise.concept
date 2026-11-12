@@ -140,14 +140,13 @@ _PRICE_FIRST_RECOMMENDED_BADGE = "&#9733; Recommended"
 _PRICE_FIRST_RECOMMENDED_LABEL = "Mid-priced for this category"
 _PRICE_FIRST_LOWEST_LABEL = "Lowest price"
 _PRICE_FIRST_SHOPS_LABEL = "Lowest price of {shops} shops"
-# "From the shops connected to PicWise" said by none of them since 2026-11-12 (owner:
-# «Αυτό εννοείται και είναι περιττό παίρνει χώρο και κατεβάζει τις κάρτες χαμηλά»).
-_PRICE_FIRST_SORTED = "Sorted by price, lowest first."
-# Owner, 2026-11-01: «Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο». A page
-# whose answer has products on offer says so where it says how it is sorted.
-_PRICE_FIRST_SORTED_WITH_OFFERS = (
-    "Products a current shop offer covers come first, then the rest by price, lowest first."
-)
+# How an answer is sorted is said by its heading alone ("Results for: kettle, offers
+# first, then cheapest first"): the line under it no longer opens with a sentence of the
+# order (owner, 2026-11-12: "from the shops connected to PicWise" «εννοείται και είναι
+# περιττό παίρνει χώρο και κατεβάζει τις κάρτες χαμηλά»; then, shown that "Sorted by
+# price, lowest first" says what the heading says, «Β»). A page whose answer has products
+# on offer says so in its heading (owner, 2026-11-01: «Ένα προϊόν με προσφορά θα μπαίνει
+# πρώτα από το φθηνότερο»).
 _OFFER_LABEL = "Offer"
 # Owner, 2026-11-01: «Εάν υπάρχει προσφορά να προτείνει την προσφορά». A Recommended
 # chosen for its offer is not "mid-priced for this category", and says what it is.
@@ -162,14 +161,6 @@ _PRICE_FIRST_FEED_NOTE = "Prices and stock are as the shops list them."
 # "The products that fit a complex search first"). A Recommended chosen among them is the
 # middle of those, not of the category.
 _PRICE_FIRST_RECOMMENDED_FITTING_LABEL = "Mid-priced of those that fit"
-_PRICE_FIRST_SORTED_WITH_FITTING = (
-    "Products whose own words show they fit your search come first, then the rest, each by price, "
-    "lowest first."
-)
-_PRICE_FIRST_SORTED_WITH_FITTING_AND_OFFERS = (
-    "Products whose own words show they fit your search come first, then the rest; in each, products "
-    "a current shop offer covers come first, then by price, lowest first."
-)
 _RECOMMENDED_AMONG_FITTING = "The Recommended is mid-priced of those that fit."
 _RECOMMENDED_AMONG_FITTING_ON_OFFER = (
     "The Recommended is on offer: of the products that fit and are on offer, the one nearest the middle "
@@ -186,21 +177,11 @@ _NO_RECOMMENDED_NO_CODE_FITTING = (
     "which PicWise needs to check that it is not cheaper in another shop."
 )
 _PRICE_FIRST_DISCLOSURES = {
-    "recommended": (
-        f"{_PRICE_FIRST_SORTED} The Recommended is mid-priced for this category. "
-        f"{_PRICE_FIRST_FEED_NOTE}"
-    ),
+    "recommended": f"{_RECOMMENDED_MID_PRICED} {_PRICE_FIRST_FEED_NOTE}",
     # Owner, 2026-10-16: without an EAN/GTIN PicWise cannot know that the same
     # product is not cheaper elsewhere, so it recommends none.
-    "no_recommendation_without_product_code": (
-        f"{_PRICE_FIRST_SORTED} No Recommended here: no mid-priced product carries a "
-        "barcode number (EAN), which PicWise needs to check that it is not cheaper in "
-        f"another shop. {_PRICE_FIRST_FEED_NOTE}"
-    ),
-    "no_recommendation_too_few_products": (
-        f"{_PRICE_FIRST_SORTED} No Recommended here: these products have no middle "
-        f"price to pick. {_PRICE_FIRST_FEED_NOTE}"
-    ),
+    "no_recommendation_without_product_code": f"{_NO_RECOMMENDED_NO_CODE} {_PRICE_FIRST_FEED_NOTE}",
+    "no_recommendation_too_few_products": f"{_NO_RECOMMENDED_TOO_FEW} {_PRICE_FIRST_FEED_NOTE}",
 }
 _PRICE_FIRST_PAGE_NOTE = (
     "Real products from the shops' feeds, cheapest first. Prices and stock are as the shops "
@@ -762,13 +743,9 @@ def _build_price_first_cards(
 def _fitting_disclosure(
     disclosure: str, cards: list[dict[str, object]], resolution: LiveSearchResolution
 ) -> str:
-    """How the page is sorted and how its Recommended was chosen, when the products that
-    fit a complex search were put first (owner, 2026-11-06): said of those, truly."""
-    with_offers = any(card.get("offer") for card in cards)
-    text = disclosure.replace(
-        _PRICE_FIRST_SORTED,
-        _PRICE_FIRST_SORTED_WITH_FITTING_AND_OFFERS if with_offers else _PRICE_FIRST_SORTED_WITH_FITTING,
-    )
+    """How the Recommended was chosen, when the products that fit a complex search were
+    put first (owner, 2026-11-06): said of those, truly. The order is the heading's."""
+    text = disclosure
     recommended = next((card for card in cards if card.get("recommended")), None)
     if recommended is not None and getattr(resolution, "provider_feed_recommended_among_fitting", False):
         text = text.replace(
@@ -1071,8 +1048,6 @@ def render_picwise_reference_surface(
                 ]
                 if fit_words:
                     disclosure = _fitting_disclosure(disclosure, price_first_cards, resolution)
-                if any(card.get("offer") for card in price_first_cards):
-                    disclosure = disclosure.replace(_PRICE_FIRST_SORTED, _PRICE_FIRST_SORTED_WITH_OFFERS)
                 if any(card.get("offer") and card.get("recommended") for card in price_first_cards):
                     disclosure = disclosure.replace(_RECOMMENDED_MID_PRICED, _RECOMMENDED_ON_OFFER)
         else:
