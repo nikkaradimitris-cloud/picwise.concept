@@ -269,6 +269,7 @@ class RenderedCardContractTests(unittest.TestCase):
             "wsgi.url_scheme": "https",
         }
         body = b"".join(wsgi_app(environ, start_response)).decode("utf-8")
+        self.last_page = body
 
         def text(pattern: str, chunk: str) -> str:
             found = re.search(pattern, chunk, re.S)
@@ -321,7 +322,10 @@ class RenderedCardContractTests(unittest.TestCase):
         for card in cards:
             self.assertTrue(card["decision_label"], card)
             self.assertTrue(card["key_reasons"], card)
-            self.assertTrue(card["risk"], card)
+            # The limitation of a new product with a description is the page's, said once
+            # (owner, 2026-11-12; `test_unverified_cards_...` below); the card says whose
+            # word its stock is.
+            self.assertIn("Listed as available by the shop", card["key_reasons"], card)
         # Price first (owner, 2026-10-16): the Recommended says it is mid-priced, and a
         # card cheaper than it says "Lowest price". The fixture holds six laptops, so
         # the first page also shows one dearer than the Recommended, and that one
@@ -349,9 +353,20 @@ class RenderedCardContractTests(unittest.TestCase):
         cards = self._cards()
         self.assertEqual(sum(1 for card in cards if card["recommended"]), 1)
 
-    def test_unverified_cards_state_the_limitation_on_every_card(self) -> None:
+    def test_unverified_cards_say_whose_word_and_the_page_states_the_limitation(self) -> None:
+        # Until 2026-11-12 every card said "Price and stock as the shop lists them, not
+        # verified by PicWise". The owner: «Όχι not verified by ... είναι σαν να τον
+        # διώχνεις ... βγάλ' το εντελώς». The limitation is still stated, where a buyer
+        # reads it: each card says whose word its stock is, and the page, above the cards
+        # and under them, that prices and stock are as the shops list them.
         for card in self._cards():
-            self.assertIn("not verified", card["risk"].lower())
+            self.assertIn("Listed as available by the shop", card["key_reasons"], card)
+            self.assertNotIn("not verified", str(card["risk"]).lower())
+        page = self.last_page
+        above = page.index('<p class="pw-reference-disclaimer">')
+        self.assertLess(above, page.index('<article class="pw-card'))
+        self.assertIn("Prices and stock are as the shops list them.", page[above:above + 400])
+        self.assertIn("Prices and stock are as the shops list them, read again every night", page)
 
 
 if __name__ == "__main__":
