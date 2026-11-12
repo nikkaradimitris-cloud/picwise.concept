@@ -8,7 +8,9 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **12/11, the design: its first part built on `ccr-9953c583-wz6sfv`, not deployed**
+- **12/11, the design: its first part live since 15:45 UTC** (owner: «Ανέβασε»; release
+  `20261112T153132Z-79f106b`, run `43248689369`; the work branch fast-forwarded to
+  `79f106b` with it). Built on `ccr-9953c583-wz6sfv`
   (the owner, in the conversation on the design: the site «μοιάζει πιο πολύ με εφημερίδα
   και όχι με search αγορών πρέπει να γράψουμε λιγότερα»; to the design proposed «Έχεις
   δίκιο για αυτά»; the heading kept, «3», since a heading of price comparison «θα κλείσουν
@@ -22,8 +24,13 @@ a decision came about.
   colours, "What is PicWise?" white, the box's line grey and blue while typing, plain
   footer links; the month's most searched panel made simpler and folded to four rows
   ("Show all 10", "Show fewer"; still hidden, no source); the font Inter served by the
-  site itself (48 KB). Pictures were shown to the owner before each step; the owner has
-  not said «ανέβασε». `docs/LANDING_PAGE_SPEC.md`, "The Home Page (2026-11-12)".
+  site itself (48 KB); then, on the owner's word, "not verified by PicWise" off every
+  card, "from the shops connected to PicWise" off the results pages, and the sentence of
+  the order under the heading left to the heading («Β»). Pictures were shown to the
+  owner before each step. The home page reads "250,000+ products from 75 UK shops": 75
+  are the shops whose products the search holds (the morning's note said 80, the feed's
+  shops before the selection, five of them with nothing in the search).
+  `docs/LANDING_PAGE_SPEC.md`, "The Home Page (2026-11-12)".
   **What waits, one at a time, a picture first:** the empty pages, written for a
   developer ("PicWise safely shows no product cards until intent confidence ...",
   "Detected category: ...") and leading nowhere (proposed to the owner: "No products
