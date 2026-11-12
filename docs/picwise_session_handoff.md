@@ -36,7 +36,12 @@ a decision came about.
   `43262330800`): above the cards of an answer of more than four products, from its lowest
   price to its highest; `?min=150` starts the answer from that price by the same rules
   (`docs/PICWISE_DECISION_CONTRACT.md`, "The price bar"). On the site: "tablet" shows iPad
-  cases at £7.99 after its Recommended; from £100, Lenovo tablets.
+  cases at £7.99 after its Recommended; from £100, Lenovo tablets. Since 23:51 UTC (owner:
+  «Ανέβασε τα»; release of `7e3faf5`, run `43330121662`): with a price chosen there is no
+  Recommended (owner: «Το recommendit πρέπει να ακιρονετε όταν χρησιμοποιεί φίλτρο»), and
+  no empty place stays between the cards on a phone (a card whose photo failed had kept
+  its place, unseen, under the phone's grid; a slow photo's card now gives its place up
+  after 1.2 s).
   **What waits, one at a time, a picture first:** the empty pages, written for a
   developer ("PicWise safely shows no product cards until intent confidence ...",
   "Detected category: ...") and leading nowhere (proposed to the owner: "No products
