@@ -43,12 +43,15 @@ def _ean13(base12: str) -> str:
     return base12 + str((10 - total % 10) % 10)
 
 
-def _product(pid: str, shop: str, *, ean: str = "", shelf: str = KITCHEN, column: str = "ean") -> ProviderProduct:
+def _product(pid: str, shop: str, *, ean: str = "", shelf: str = KITCHEN, column: str = "ean",
+             mpn: str = "", brand: str = "Fixturon") -> ProviderProduct:
     raw = {"merchant_name": shop}
     if ean:
         raw[column] = ean
+    if mpn:
+        raw["mpn"] = mpn
     return ProviderProduct(
-        provider_key="awin", provider_product_id=pid, title=f"Fixturon Item {pid}", brand="Fixturon",
+        provider_key="awin", provider_product_id=pid, title=f"Fixturon Item {pid}", brand=brand,
         category_text=shelf, product_url=f"https://fixture.example.invalid/out/{pid}",
         image_url=f"https://fixture.example.invalid/img/{pid}.jpg", price_text="10.00",
         availability_text="in stock", currency="GBP", raw=raw,
@@ -135,14 +138,91 @@ class SharedProductsTests(unittest.TestCase):
         self.assertNotIn("http", text)
 
 
+class SharedByBrandAndPartTests(unittest.TestCase):
+    """The mechanism's step 15 (docs/PICWISE_AUDIT_FIXES.md, 4.E): the overlap a barcode
+    alone does not show."""
+
+    def _parts(self, products: list[ProviderProduct]) -> dict:
+        return measure_catalogue_balance(products, [frozenset()] * len(products))["shared_by_brand_and_part"]
+
+    def test_two_shops_with_one_brand_and_part_number_and_no_barcode(self) -> None:
+        parts = self._parts([
+            _product("g1", "Shop One", mpn="FX-100"),
+            _product("g2", "Shop Two", mpn="fx-100"),
+            _product("g3", "Shop Two", mpn="FX-200"),
+        ])
+        self.assertEqual(parts, {"products": 2, "two_or_more_shops": 1, "not_joined_by_barcode": 1})
+
+    def test_a_pair_a_barcode_already_joins_is_not_new(self) -> None:
+        code = _ean13("501234500030")
+        parts = self._parts([
+            _product("h1", "Shop One", mpn="FX-300", ean=code),
+            _product("h2", "Shop Two", mpn="FX-300", ean=code),
+        ])
+        self.assertEqual(parts, {"products": 1, "two_or_more_shops": 1, "not_joined_by_barcode": 0})
+
+    def test_one_shop_with_a_barcode_and_one_without_are_joined_by_the_part_number_only(self) -> None:
+        parts = self._parts([
+            _product("i1", "Shop One", mpn="FX-400", ean=_ean13("501234500031")),
+            _product("i2", "Shop Two", mpn="FX-400"),
+        ])
+        self.assertEqual(parts, {"products": 1, "two_or_more_shops": 1, "not_joined_by_barcode": 1})
+
+    def test_another_brand_a_plain_word_or_one_shop_twice_never_joins(self) -> None:
+        parts = self._parts([
+            _product("j1", "Shop One", mpn="FX-500"),
+            _product("j2", "Shop Two", mpn="FX-500", brand="Otheron"),
+            _product("j3", "Shop One", mpn="Black"),
+            _product("j4", "Shop Two", mpn="Black"),
+            _product("j5", "Shop One", mpn="FX-600"),
+            _product("j6", "Shop One", mpn="FX-600"),
+            _product("j7", "Shop Two", mpn="FX-700", brand=""),
+        ])
+        self.assertEqual(parts, {"products": 3, "two_or_more_shops": 0, "not_joined_by_barcode": 0})
+
+
+class ByShopTests(unittest.TestCase):
+    """The mechanism's step 12: how each shop was taken in."""
+
+    def test_per_shop_its_products_with_a_kind_a_barcode_and_another_shop_too(self) -> None:
+        both, alone, twice = _ean13("501234500040"), _ean13("501234500041"), _ean13("501234500042")
+        products = [
+            _product("k1", "Shop Big", ean=both),
+            _product("k2", "Shop Big", ean=alone),
+            _product("k3", "Shop Big", ean=twice),
+            _product("k4", "Shop Big", ean=twice),
+            _product("k5", "Shop Big"),
+            _product("k6", "Shop Small", ean=both),
+            _product("k7", "Shop Small"),
+            _product("k8", "Shop Bare"),
+        ]
+        kinds = [frozenset({"kettle"}), frozenset(), frozenset({"kettle"}), frozenset({"__uncertain_kind__"}),
+                 frozenset(), frozenset({"toaster"}), frozenset(), frozenset()]
+        note = measure_catalogue_balance(products, kinds)
+        self.assertEqual(
+            note["by_shop"],
+            [
+                {"shop": "Shop Big", "products": 5, "with_kind": 2, "with_barcode": 4, "another_shop_too": 1},
+                {"shop": "Shop Small", "products": 2, "with_kind": 1, "with_barcode": 1, "another_shop_too": 1},
+                {"shop": "Shop Bare", "products": 1, "with_kind": 0, "with_barcode": 0, "another_shop_too": 0},
+            ],
+        )
+        # Every shop is listed, and the shops add up to the whole.
+        self.assertEqual(sum(entry["products"] for entry in note["by_shop"]), note["products"])
+        self.assertEqual(sum(entry["with_kind"] for entry in note["by_shop"]), note["products"] - note["no_kind"])
+        text = json.dumps([note["by_shop"], note["shared_by_brand_and_part"]])
+        self.assertNotIn(both, text)
+        self.assertNotIn("http", text)
+
+
 class SharedProductsReportTests(unittest.TestCase):
     _VIEW = {"groups": 1, "products": 1, "largest": [{"name": "x", "products": 1, "share": 1.0}], "over": 0,
              "cap": None, "kept": None, "cut": None, "cut_by_group": []}
 
-    def _report(self, balance_extra: dict) -> str:
+    def _report(self, balance_extra: dict, shops: list | None = None) -> str:
         note = {
             "prepared": True,
-            "intake": {"rows": 1, "shown": 1, "not_new": 0, "held": 0, "shops": []},
+            "intake": {"rows": 1, "shown": 1, "not_new": 0, "held": 0, "shops": shops or []},
             "balance": {
                 "share": 0.15, "products": 1, "department": self._VIEW, "aisle": self._VIEW, "shop": self._VIEW,
                 "kind": self._VIEW, "no_kind": 0,
@@ -173,7 +253,40 @@ class SharedProductsReportTests(unittest.TestCase):
         )
 
     def test_a_note_written_before_it_prints_nothing_about_it(self) -> None:
-        self.assertNotIn("two or more shops sell", self._report({}))
+        report = self._report({})
+        self.assertNotIn("two or more shops sell", report)
+        self.assertNotIn("how each shop was taken in", report)
+
+    def test_the_report_prints_the_overlap_by_brand_and_part_number(self) -> None:
+        report = self._report({
+            "shared_by_brand_and_part": {"products": 54321, "two_or_more_shops": 2345, "not_joined_by_barcode": 1900},
+        })
+        self.assertIn(
+            "  products two or more shops sell, by brand and part number: 2,345 of the 54,321 with both; "
+            "1,900 of them no barcode joins",
+            report,
+        )
+
+    def test_the_report_prints_how_each_shop_was_taken_in_beside_its_feed(self) -> None:
+        feed = {"not_new": 0, "held": 0, "held_reasons": {}}
+        report = self._report(
+            {
+                "by_shop": [
+                    {"shop": "Shop Big", "products": 14869, "with_kind": 5000, "with_barcode": 12000,
+                     "another_shop_too": 150},
+                    {"shop": "Shop Unfed", "products": 3, "with_kind": 0, "with_barcode": 0, "another_shop_too": 0},
+                ],
+            },
+            shops=[{"shop": "Shop Big", "rows": 1033769, "shown": 154853, **feed}],
+        )
+        lines = report.splitlines()
+        start = lines.index(
+            "how each shop was taken in (the site answers from 'kept'; the rest are counts of the kept):"
+        )
+        self.assertEqual(lines[start + 2].split(), ["1,033,769", "154,853", "14,869", "5,000", "12,000", "150",
+                                                    "Shop", "Big"])
+        # A shop the feed's list does not name is still printed, its feed unknown.
+        self.assertEqual(lines[start + 3].split(), ["?", "?", "3", "0", "0", "0", "Shop", "Unfed"])
 
 
 if __name__ == "__main__":

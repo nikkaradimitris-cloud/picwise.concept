@@ -31,6 +31,16 @@ it twice does not make it so, and a row with no barcode never counts. Per catego
 category being the first two levels of the shop's Google shelf as the cap reads it
 (`catalogue_cap`; "aisle" above), each barcode counted once, under the category most of
 its rows name (ties by name), so the categories add up to the whole.
+
+Also, per shop, how it was taken in (`by_shop`; 2026-11-12, the mechanism's step 12,
+`docs/PICWISE_AUDIT_FIXES.md` 4.E): of its products the site answers from, how many
+have a kind, how many a barcode, and how many another shop sells too, by barcode; so
+the morning after a shop is added says how much of it a visitor can find. And how many
+products two or more shops sell by brand and manufacturer's part number
+(`shared_by_brand_and_part`; step 15), read from every product whether or not it has a
+barcode, as `product_identity.same_product_key` reads them (the MPN columns only, a
+value that looks like a code, with a brand), and how many of those no barcode already
+joins: the overlap a barcode alone does not show.
 Counts and names only; the note never holds a link.
 """
 from __future__ import annotations
@@ -45,7 +55,7 @@ from picwise_nlu.product_concepts import broader_concepts
 
 from .contracts import ProviderProduct
 from .normalization import extract_merchant_name
-from .product_identity import valid_gtin
+from .product_identity import BRAND_KEYS, MPN_KEYS, same_product_key, valid_gtin
 
 CAP_SHARE = 0.15
 # How many of the largest groups, and of the groups a cap cuts most, the note lists.
@@ -166,6 +176,43 @@ def _shared_products(barcodes: Mapping[str, tuple[set[str], Counter]]) -> dict[s
     }
 
 
+def _brand_and_part(raw: Mapping[str, Any], brand: str) -> str:
+    """The product's brand and part number key, whether or not it has a barcode: the key
+    `same_product_key` gives a row without one."""
+    return same_product_key({key: raw.get(key) for key in MPN_KEYS + BRAND_KEYS}, brand=brand)
+
+
+def _shared_by_brand_and_part(parts: Mapping[str, tuple[set[str], set[str]]],
+                              barcodes: Mapping[str, tuple[set[str], Counter]]) -> dict[str, Any]:
+    """How many products, by brand and part number, two or more shops sell, and how many
+    of those no barcode of theirs already joins across shops (module docstring). `parts`
+    maps each key to its shops and its rows' barcodes."""
+    shared = [codes for shops, codes in parts.values() if len(shops) >= 2]
+    return {
+        "products": len(parts),
+        "two_or_more_shops": len(shared),
+        "not_joined_by_barcode": sum(
+            1 for codes in shared if not any(len(barcodes[code][0]) >= 2 for code in codes)
+        ),
+    }
+
+
+def _by_shop(shops: Counter, with_kind: Counter, with_barcode: Counter,
+             sold: Sequence[tuple[str, str]], barcodes: Mapping[str, tuple[set[str], Counter]]) -> list[dict[str, Any]]:
+    """Per shop, how it was taken in (module docstring), the shop with the most first."""
+    shared: Counter = Counter(shop for shop, code in sold if len(barcodes[code][0]) >= 2)
+    return [
+        {
+            "shop": shop,
+            "products": count,
+            "with_kind": with_kind.get(shop, 0),
+            "with_barcode": with_barcode.get(shop, 0),
+            "another_shop_too": shared.get(shop, 0),
+        }
+        for shop, count in sorted(shops.items(), key=lambda item: (-item[1], item[0]))
+    ]
+
+
 def measure_catalogue_balance(
     products: Sequence[ProviderProduct],
     kinds: Sequence[Collection[str]],
@@ -181,6 +228,10 @@ def measure_catalogue_balance(
     shops_by_kind: dict[str, set[str]] = {}
     barcodes: dict[str, tuple[set[str], Counter]] = {}
     words: dict[tuple[str, str], list] = {}
+    with_kind: Counter = Counter()
+    with_barcode: Counter = Counter()
+    sold: list[tuple[str, str]] = []
+    parts: dict[str, tuple[set[str], set[str]]] = {}
     for product, product_kinds in zip(products, kinds):
         raw = product.raw if isinstance(product.raw, Mapping) else {}
         department, aisle = _shelf_groups(product.category_text)
@@ -193,6 +244,14 @@ def measure_catalogue_balance(
             sellers, shelves = barcodes.setdefault(gtin.zfill(14), (set(), Counter()))
             sellers.add(shop)
             shelves[aisle] += 1
+            with_barcode[shop] += 1
+            sold.append((shop, gtin.zfill(14)))
+        part = _brand_and_part(raw, str(product.brand or ""))
+        if part:
+            part_shops, part_codes = parts.setdefault(part, (set(), set()))
+            part_shops.add(shop)
+            if gtin:
+                part_codes.add(gtin.zfill(14))
         kind = _narrowest_kind(product_kinds)
         product_type = " ".join(str(raw.get("product_type") or "").split())
         if not kind and product_type:
@@ -202,6 +261,7 @@ def measure_catalogue_balance(
                 entry[1].append(" ".join(str(product.title or "").split())[:_WORD_TITLE_LENGTH])
         if kind:
             by_kind[kind] += 1
+            with_kind[shop] += 1
             shops_by_kind.setdefault(kind, set()).add(shop)
     spread = Counter(len(found) for found in shops_by_kind.values())
     # The kinds only one or two shops sell, the largest first: where a page of four has
@@ -232,6 +292,8 @@ def measure_catalogue_balance(
         },
         "kinds_from_few_shops": few_shops[:_FEW_SHOPS_LISTED],
         "shared_products": _shared_products(barcodes),
+        "shared_by_brand_and_part": _shared_by_brand_and_part(parts, barcodes),
+        "by_shop": _by_shop(shops, with_kind, with_barcode, sold, barcodes),
         # The shops' own types of the products kept with no kind: what to review for
         # `shop_words.LEARNED_TYPES` or for the lexicon, the most first.
         "words_to_learn": [

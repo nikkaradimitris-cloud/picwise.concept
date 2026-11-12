@@ -15,7 +15,10 @@ kind, and for the shops with the most, a few of their types and titles; and (own
 those named like a category, and the shelves their shop's address names; then what the
 shops' own catalogues and the rows' barcodes gave them (`shop_catalogues`); and how many
 products, by barcode, two or more shops sell, in all and per category
-(`balance.shared_products`; 2026-11-11). Counts, shop
+(`balance.shared_products`; 2026-11-11), and by brand and part number
+(`balance.shared_by_brand_and_part`), and how each shop was taken in: its products the
+site answers from, with a kind, with a barcode, sold by another shop too
+(`balance.by_shop`; 2026-11-12). Counts, shop
 names, types, titles and words only; the note never holds a link. Always exits 0: a
 deployment never fails because of this list.
 """
@@ -347,6 +350,40 @@ def print_balance(note: dict) -> None:
                 if shared["by_category"]
                 else ""
             )
+        )
+    parts = found.get("shared_by_brand_and_part")
+    if isinstance(parts, dict):
+        print(
+            f"  products two or more shops sell, by brand and part number: {parts['two_or_more_shops']:,} of the "
+            f"{parts['products']:,} with both; {parts['not_joined_by_barcode']:,} of them no barcode joins"
+        )
+    print_by_shop(found.get("by_shop"), note.get("intake"))
+
+
+def print_by_shop(by_shop: object, intake: object) -> None:
+    """How each shop was taken in: of the rows its feed brought, the products a card can
+    show, those the site answers from (after the cap), and of these how many have a kind,
+    a barcode, and are sold by another shop too (docs/PICWISE_AUDIT_FIXES.md, 4.E.12)."""
+    if not isinstance(by_shop, list) or not by_shop:
+        # A note written before it was measured.
+        return
+    fed = {
+        shop.get("shop"): shop
+        for shop in (intake.get("shops") if isinstance(intake, dict) else None) or []
+        if isinstance(shop, dict)
+    }
+    print()
+    print("how each shop was taken in (the site answers from 'kept'; the rest are counts of the kept):")
+    print(f"{'rows':>9} {'shown':>9} {'kept':>8} {'a kind':>8} {'barcode':>8} {'2+ shops':>8}  shop")
+    for entry in by_shop:
+        # The feed's list names a shop with no name "?", the shares "(no shop named)".
+        feed = fed.get(entry["shop"]) or (fed.get("?") if entry["shop"] == "(no shop named)" else None) or {}
+        rows, shown = feed.get("rows"), feed.get("shown")
+        print(
+            f"{(format(rows, ',') if isinstance(rows, int) else '?'):>9} "
+            f"{(format(shown, ',') if isinstance(shown, int) else '?'):>9} "
+            f"{entry['products']:>8,} {entry['with_kind']:>8,} {entry['with_barcode']:>8,} "
+            f"{entry['another_shop_too']:>8,}  {entry['shop']}"
         )
 
 
