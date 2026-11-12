@@ -67,6 +67,9 @@ _SHARED_LISTED = 200
 # How many of the shops' types that name no kind the note lists, the most first, and how
 # many titles of each (`shop_words`; 2026-11-12).
 _WORDS_LISTED = 100
+# A type written on fewer products is a product's own description, not a shop's word
+# (the first night's list, 12/11, was a camera shop's one-product paths).
+_WORDS_MIN_PRODUCTS = 2
 _WORD_TITLES = 2
 _WORD_TITLE_LENGTH = 90
 OWN_CATEGORIES = "(the shops' own categories)"
@@ -299,7 +302,8 @@ def measure_catalogue_balance(
         "words_to_learn": [
             {"shop": shop, "type": product_type, "products": count, "titles": titles}
             for (shop, product_type), (count, titles) in sorted(
-                words.items(), key=lambda item: (-item[1][0], item[0])
+                ((key, value) for key, value in words.items() if value[0] >= _WORDS_MIN_PRODUCTS),
+                key=lambda item: (-item[1][0], item[0]),
             )[:_WORDS_LISTED]
         ],
     }

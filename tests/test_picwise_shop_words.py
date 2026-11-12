@@ -78,6 +78,19 @@ class LearnedTypesTests(unittest.TestCase):
         self.assertEqual(learned_kind({"merchant_name": "Finediam"}, ""), "")
 
 
+class ShopCatalogueBotTests(unittest.TestCase):
+    """The rows the shops' catalogue bot gives a type are rows held for no category: a
+    learned type gives them their kind there too (`shop_catalogue._has_kind`)."""
+
+    def test_a_learned_type_from_the_bot_gives_the_row_its_kind(self) -> None:
+        from picwise_providers.shop_catalogue import _has_kind, _with_category
+
+        finediam = _with_category(_product("r1", "Finediam", ""), "Diamond Ring", "Diamond Ring")
+        self.assertTrue(_has_kind(finediam))
+        other = _with_category(_product("r2", "Fixture Other Shop", ""), "Diamond Ring", "Diamond Ring")
+        self.assertFalse(_has_kind(other))
+
+
 class WordsToLearnTests(unittest.TestCase):
     def _words(self) -> list[dict]:
         products = [
@@ -85,11 +98,14 @@ class WordsToLearnTests(unittest.TestCase):
             _product("p2", "Fixture Shop One", "Tablet Security Enclosures", "Fixturon Kiosk Enclosure 2"),
             _product("p3", "Fixture Shop One", "Tablet Security Enclosures", "Fixturon Kiosk Enclosure 3"),
             _product("p4", "Fixture Shop Two", "Brooches", "Fixturon Silver Brooch"),
+            _product("p4b", "Fixture Shop Two", "Brooches", "Fixturon Gold Brooch"),
+            # One product's own description, not a shop's word: not listed.
+            _product("p7", "Fixture Shop Three", "Lenses > Fixturon 50mm f/1.8 Lens", "Fixturon 50mm Lens"),
             _product("p5", "Fixture Shop Two", "Laptops", "Fixturon Laptop 15"),
             _product("p6", "Fixture Shop Two", "", "Fixturon Mystery Thing"),
         ]
         kinds = [frozenset(), frozenset({"__accessory__"}), frozenset(), frozenset({"__uncertain_kind__"}),
-                 frozenset({"laptop"}), frozenset()]
+                 frozenset(), frozenset(), frozenset({"laptop"}), frozenset()]
         return measure_catalogue_balance(products, kinds)["words_to_learn"]
 
     def test_the_night_lists_the_types_of_the_products_kept_with_no_kind(self) -> None:
@@ -98,7 +114,8 @@ class WordsToLearnTests(unittest.TestCase):
             [
                 {"shop": "Fixture Shop One", "type": "Tablet Security Enclosures", "products": 3,
                  "titles": ["Fixturon Kiosk Enclosure 1", "Fixturon Kiosk Enclosure 2"]},
-                {"shop": "Fixture Shop Two", "type": "Brooches", "products": 1, "titles": ["Fixturon Silver Brooch"]},
+                {"shop": "Fixture Shop Two", "type": "Brooches", "products": 2,
+                 "titles": ["Fixturon Silver Brooch", "Fixturon Gold Brooch"]},
             ],
         )
 
@@ -118,7 +135,7 @@ class WordsToLearnTests(unittest.TestCase):
         ).stdout
         self.assertIn(
             "  the shops' own types of the products kept with no kind, to review (shop_words.py), the most first: "
-            "Tablet Security Enclosures (Fixture Shop One) 3; Brooches (Fixture Shop Two) 1",
+            "Tablet Security Enclosures (Fixture Shop One) 3; Brooches (Fixture Shop Two) 2",
             report,
         )
 

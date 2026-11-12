@@ -120,12 +120,18 @@ def _has_kind(product: ProviderProduct) -> bool:
     from picwise_nlu.concept_understanding import annotate_product_concepts
 
     from .search_selection import _product_concepts, _product_search_fields, product_kind_key
+    from .shop_words import learned_kind
 
     fields = _product_search_fields(product)
     read = {kind for kind in _product_concepts(product, fields) if not kind.startswith("__")}
     if not read:
         return False
     product_type, category, _title = product_kind_key(product, fields)
+    # A shop's own type learned by review names its kind here too (`shop_words`): the
+    # rows the bot gives such a type are rows held for no category (2026-11-12).
+    learned = learned_kind(product.raw if isinstance(product.raw, Mapping) else {}, product_type)
+    if learned:
+        return learned in read
     return bool(read & {kind for kind in annotate_product_concepts(product_type, category, "") if not kind.startswith("__")})
 
 
