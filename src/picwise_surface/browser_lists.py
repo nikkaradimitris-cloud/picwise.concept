@@ -54,6 +54,13 @@ HEART_ICON = (
 # (`deployment/server/check_photos.py`). The listeners are set before any photo exists,
 # so none loads or fails unheard. Only where the browser can find a photo's card
 # (`closest`) are cards held back at all: an older one shows them as before.
+# A card waiting for its photo keeps its place for a moment only (`PHOTO_WAIT_MS`): one
+# whose photo has not come by then gives its place up, so no empty place stays between the
+# cards while a shop's server is slow, and takes it again the moment its photo comes
+# (owner, 2026-11-12, of the gaps a slow photo left: «κάποιες φορές συμβενει κενό ανάμεσα
+# στις κάρτες κακή στοίχιση»). Its photo is asked for at once then, so a card further
+# down whose photo waited to be scrolled to is not left out for good.
+PHOTO_WAIT_MS = 1200
 HEAD_SCRIPT = (
     "(function(){var c=document.documentElement.classList;c.add('pw-js');"
     f"try{{if(window.localStorage){{window.localStorage.getItem('{FAVOURITES_STORAGE_KEY}');c.add('pw-store');}}}}"
@@ -63,9 +70,13 @@ HEAD_SCRIPT = (
     "function card(t){return t&&t.tagName==='IMG'&&(' '+t.className+' ').indexOf(' pw-product-image ')>-1"
     "?t.closest('.pw-card'):null;}"
     "document.addEventListener('load',function(e){var a=card(e.target);"
-    "if(a){a.classList.add(e.target.naturalWidth>0?'pw-photo-ok':'pw-no-photo');}},true);"
+    "if(a){a.classList.add(e.target.naturalWidth>0?'pw-photo-ok':'pw-no-photo');a.classList.remove('pw-photo-late');}},true);"
     "document.addEventListener('error',function(e){var a=card(e.target);"
     "if(a){a.classList.add('pw-no-photo');}},true);"
+    "document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){"
+    "var w=document.querySelectorAll('.pw-card');for(var i=0;i<w.length;i++){var k=w[i].classList;"
+    "if(!k.contains('pw-photo-ok')&&!k.contains('pw-no-photo')){var m=w[i].querySelector('.pw-product-image');"
+    f"if(m){{m.loading='eager';}}k.add('pw-photo-late');}}}}}},{PHOTO_WAIT_MS});}});"
     "})();"
 )
 

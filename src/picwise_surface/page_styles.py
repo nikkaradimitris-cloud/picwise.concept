@@ -83,7 +83,14 @@ _PAGE_STYLES = (
     # loads, so nothing moves when it appears.
     ".pw-photo-guard .pw-card{visibility:hidden;opacity:0;}"
     ".pw-photo-guard .pw-card.pw-photo-ok{visibility:visible;opacity:1;transition:opacity .15s ease-out;}"
-    ".pw-card.pw-no-photo{display:none;}"
+    # Out of the page, whatever layout a card has: the phone's one product a row
+    # (`display:grid`, below) had outweighed these, so on a phone a card whose photo failed
+    # stayed in its place, unseen, an empty place between the cards (owner, 2026-11-12:
+    # «κάποιες φορές συμβενει κενό ανάμεσα στις κάρτες κακή στοίχιση»).
+    ".pw-card.pw-no-photo{display:none!important;}"
+    # A card whose photo has not come within a moment gives its place up until it comes
+    # (`browser_lists.PHOTO_WAIT_MS`; owner, 2026-11-12): no empty place between cards.
+    ".pw-photo-guard .pw-card.pw-photo-late{display:none!important;}"
     ".pw-card-body{display:flex;flex-direction:column;flex:1;min-width:0;}"
     ".pw-role{display:flex;flex-direction:column;align-items:flex-start;gap:4px;height:46px;margin:10px 0 4px;overflow:hidden;}"
     ".pw-rec-badge{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:var(--blue-2);color:#fff;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}"
