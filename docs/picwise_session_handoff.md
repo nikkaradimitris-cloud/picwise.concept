@@ -8,6 +8,21 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **12/11, the owner: next, the design, in a new conversation** («Πάμε να ασχοληθούμε με
+  κάτι πιο εύκολο σε νέα συζήτηση με θέμα design»). What waits for it, found in the
+  audit or left for it by the owner: the scanning screen's count (it names about 735,000
+  products while the search holds about 251,000; the owner, 08/11: «Να περιμένεις το
+  design»); the empty pages, written for a developer ("PicWise safely shows no product
+  cards until intent confidence ...", "Detected category: ...") and leading nowhere; the
+  shop's name as Awin writes it on the button ("View at Geepas Partner Program"); the
+  line "Price and stock as the shop lists them, not verified by PicWise" on every card
+  (the owner's design of 31/10); the font "Inter" named but never loaded; the phone
+  layout of 12/11 (one product a row) seen on no real phone yet. The design of 31/10
+  and its labels are the owner's (`docs/PICWISE_DECISION_CONTRACT.md`): every wording a
+  visitor reads changes on the owner's word only; show the owner a picture first
+  (render the page offline, never a script on the live site). The page's markup:
+  `src/picwise_surface/reference.py`, its style sheet `page_styles.py`, its script
+  `search_script.py`; the cards' classes are pinned by tests (the gotchas below).
 - **12/11, the owner: the search's accuracy later.** Asked whether to measure the cards
   again on the server (about $0.25) and go on fixing by cause toward the bar of 98%
   right: «Όχι ακόμα με έχει κουράσει αυτή η απασφαλμάτωση αργότερα». So no measure, no
