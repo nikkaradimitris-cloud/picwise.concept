@@ -59,7 +59,7 @@ every proposal). The owner then asked for the fixes: «Ζητώ διόρθωση
 | `25dc479` | a kind index per catalogue: a search for a kind reads only the products that may be of it | `picwise_providers/search_selection.py` (`_KindIndex`, `_kind_index`, `members_for`) | `test_picwise_kind_index` |
 | `ed07a1a` | each worker keeps the prepared catalogue loaded: loads it at start, brings the night's new one in beside the old, one process at a time | `picwise_providers/state.py` (`keep_prepared_catalogue_loaded`, `refresh_prepared_catalogue`), `deployment/server/wsgi_server.py` | `test_picwise_catalogue_keeper` |
 | `2ef37c0` | phones (under 700 px): one product a row, photo beside the words, price and button in one row; nothing to tap under 44 px, no text under 12 px | `picwise_surface/reference.py`, `browser_lists.py`, `legal.py` | `test_picwise_phone_layout` |
-| `565e8a6` | the seven indexable pages say their one address (`canonical`), `/sitemap.xml`, icons and manifest, `Organization` and `WebSite` on the home page, a search's own `<title>` and `<h1>`, `en-GB` | `picwise_surface/seo.py`, `assets/picwise/` | `test_picwise_google_basics` |
+| `565e8a6` | the seven indexable pages say their one address (`canonical`), `/sitemap.xml`, icons and manifest, `Organization` and `WebSite` on the home page, a search's own `<title>` and `<h1>`, `en-GB` (the sitemap, its line in `robots.txt` and the home page's data off again since 12/11, on the owner's word: section 5, row 15) | `picwise_surface/seo.py`, `assets/picwise/` | `test_picwise_google_basics` |
 | `e04ba8b` | five security headers on every answer (a content security policy among them), what may be cached, the server's note kept out of Google | `picwise_app/app.py` (`SECURITY_HEADERS`), `api/index.py`, `wsgi_server.py` | `test_picwise_security_headers` |
 | `249cc06` | the night's note says which shops' feeds came with fewer than half the rows, and which kinds one or two shops sell | `tools/prepare_catalogue.py` (`_intake_change`), `picwise_providers/catalogue_balance.py`, `deployment/server/print_shops.py` | `test_picwise_feed_shrink_note` |
 | `d412b28` | the tests run on each push of code: every module in its own process | `tools/run_test_modules.py`, `.github/workflows/tests.yml` | `test_picwise_run_test_modules` |
@@ -251,7 +251,10 @@ reason section 7 now gives. The steps as they were asked for:
    exist); a sitemap per kind of page. Every batch on the owner's word, measured two to
    four weeks in Search Console before the next. This is where the project earns: it
    lives on search engines alone, and today Google may index seven pages. It waits for
-   the owner's decisions 6 and 7 of section 5.
+   the owner's decisions 6 and 7 of section 5. **Nothing is declared to Google meanwhile**
+   (owner, 12/11: «Δεν θέλω να δηλωθεί τίποτα στην google ακόμα»; section 5, row 15):
+   the pages are built and checked with `noindex`, named in no sitemap and linked from
+   no page Google may index, until the owner's word.
 
 Also open from before the audit, in the handoff's first section: the ring gap, "pen
 dries", "work pans" (wrong cards): they need the server's catalogue, a read-only
@@ -277,6 +280,7 @@ Asked or to be asked, in Greek, one short question each; build only on the answe
 | 12 | A limit of requests per visitor; closing `/subby-proof` and `/private-beta-readiness` | The first counts by address for a moment (privacy); the second touches May's proof pages and their tests |
 | 13 | The scanning screen's count | The owner: with the design work |
 | 14 | An email from the server itself when the night's preparation fails (4.A.3) | To be asked: which address it goes to and who sends it; until then the daily session reports it first (`docs/PICWISE_DAILY_WORK.md`, step 2) |
+| 15 | Whether anything is declared to Google | Decided 12/11: «Δεν θέλω να δηλωθεί τίποτα στην google ακόμα». The sitemap, its `robots.txt` line and the home page's structured data, put on the site by the deployment of that morning, are off again in code (`seo.DECLARE_TO_GOOGLE`); off on the site once that commit is deployed. Nothing given to Search Console (row 6) before the owner's word |
 
 ## 6. How the work is checked
 

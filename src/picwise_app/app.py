@@ -57,7 +57,7 @@ from picwise_surface import (
     render_review_safe_landing_page,
     render_terms_page,
 )
-from picwise_surface.seo import SITEMAP_PATH, robots_txt, sitemap_xml
+from picwise_surface.seo import SITEMAP_PATH, declares_to_google, robots_txt, sitemap_xml
 from picwise_ai.store import assist_directory
 
 from .assist_wiring import assist_status, resolve_with_assist
@@ -911,7 +911,7 @@ class PicwiseRequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             return
-        if parsed.path == SITEMAP_PATH:
+        if parsed.path == SITEMAP_PATH and declares_to_google():
             self._send_xml(HTTPStatus.OK, sitemap_xml())
             return
         if parsed.path == "/":

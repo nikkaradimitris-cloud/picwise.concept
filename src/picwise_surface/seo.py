@@ -39,10 +39,25 @@ SITEMAP_PATH = "/sitemap.xml"
 # who runs PicWise and how (`legal.FOOTER_LINKS`). The pages meant for Google's results
 # (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`) join their own sitemaps when the owner opens them.
 INDEXABLE_PATHS = ("/", "/about", "/terms", "/privacy", "/cookies", "/affiliate-disclosure", "/contact")
+# Whether the site declares anything of itself to Google: the sitemap of the pages Google
+# may index (`/sitemap.xml`), its line in `robots.txt`, and the home page's structured
+# data. Off, on the owner's word of 2026-11-12, given after the deployment that had put
+# all three on the site: «Δεν θέλω να δηλωθεί τίποτα στην google ακόμα»; turned on only
+# by the owner's word. Off, `/sitemap.xml` answers as a page not found. What stays on is
+# no declaration: each of the seven pages Google could already index (owner, 23/10)
+# names its own address (`indexable_head_html`), so the backup's copy is not taken for
+# another site; the icons; and how a link is shown where it is shared.
+DECLARE_TO_GOOGLE = False
 # Crawlers stay off the redirect to the shops, which records a click, and off the two
 # routes that act when called. The search is not blocked: its pages carry `noindex`,
 # which Google reads only on a page it may fetch (the spec, section 2).
 _ROBOTS_RULES = ("User-agent: *", "Disallow: /out/", "Disallow: /subby-proof", "Disallow: /cron/")
+
+
+def declares_to_google() -> bool:
+    """Whether the site declares its sitemap and its structured data to Google now
+    (`DECLARE_TO_GOOGLE`); read at each answer, so a test can turn it on."""
+    return bool(DECLARE_TO_GOOGLE)
 
 
 def canonical_origin() -> str:
@@ -117,12 +132,17 @@ def home_structured_data_html() -> str:
 
 
 def robots_txt() -> str:
-    """`/robots.txt`: what crawlers stay off, and where the sitemap is."""
-    return "\n".join(_ROBOTS_RULES) + f"\nSitemap: {canonical_url(SITEMAP_PATH)}\n"
+    """`/robots.txt`: what crawlers stay off, and, once the site declares itself to
+    Google (`DECLARE_TO_GOOGLE`), where the sitemap is."""
+    text = "\n".join(_ROBOTS_RULES) + "\n"
+    if declares_to_google():
+        text += f"Sitemap: {canonical_url(SITEMAP_PATH)}\n"
+    return text
 
 
 def sitemap_xml() -> str:
-    """`/sitemap.xml`: the canonical address of each page Google may index, and nothing
+    """`/sitemap.xml`, served only once the site declares itself to Google
+    (`DECLARE_TO_GOOGLE`): the canonical address of each page Google may index, and nothing
     else (the spec, section 2: only canonical, indexable addresses; no `lastmod` where
     the day a page's content changed is not known)."""
     rows = "".join(f"<url><loc>{escape(canonical_url(path))}</loc></url>" for path in INDEXABLE_PATHS)

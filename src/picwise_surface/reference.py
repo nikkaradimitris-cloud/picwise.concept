@@ -28,6 +28,7 @@ from .legal import render_public_footer
 from .seo import (
     NOINDEX_META,
     SITE_LANGUAGE,
+    declares_to_google,
     home_structured_data_html,
     icon_links_html,
     indexable_head_html,
@@ -1694,10 +1695,11 @@ def render_picwise_reference_surface(
         # for Google to show under the home page (owner, 2026-10-31: the pages true).
         f'<meta name="description" content="{escape(_WHAT_IS_PICWISE)}">'
         f"{icon_links_html()}"
-        # Only the page Google may index says where it lives and who publishes it.
+        # Only the page Google may index says where it lives; who publishes it, only once
+        # the site declares itself to Google (`seo.DECLARE_TO_GOOGLE`, off: owner, 12/11).
         + (
             indexable_head_html("/", title=_HOME_TITLE, description=_WHAT_IS_PICWISE)
-            + home_structured_data_html()
+            + (home_structured_data_html() if declares_to_google() else "")
             if indexable and is_home
             else ""
         )

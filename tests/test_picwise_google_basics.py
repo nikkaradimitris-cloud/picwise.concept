@@ -9,10 +9,13 @@ route tables (`picwise_surface.seo`, `docs/PICWISE_GOOGLE_PAGES_SPEC.md` section
 
 - the seven pages Google may index each say their one address, on the site's primary
   domain whatever host answered; a search's page says none and still carries `noindex`;
-- `/sitemap.xml` lists those seven addresses and nothing else, and `robots.txt` names it;
+- nothing is declared to Google while the owner says so (2026-11-12: «Δεν θέλω να
+  δηλωθεί τίποτα στην google ακόμα»; `seo.DECLARE_TO_GOOGLE`): `/sitemap.xml` answers as
+  a page not found, `robots.txt` names no sitemap, the home page carries no structured
+  data; once declared, the sitemap lists those seven addresses and nothing else,
+  `robots.txt` names it, and the home page says who publishes the site, as schema.org
+  data, claiming no rating, no review and no search box;
 - every page carries the site's icon; the icon's files are the site's own and are served;
-- the home page says who publishes the site, as schema.org data, and claims no rating,
-  no review and no search box;
 - a search's page is titled and headed by the search; the home page keeps its own title;
 - the pages are English as written for the United Kingdom.
 
@@ -26,6 +29,8 @@ import re
 import sys
 import unittest
 from html import unescape
+from unittest import mock
+from urllib.error import HTTPError
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -89,7 +94,30 @@ class OneAddressTests(_NoFeedMixin, unittest.TestCase):
             self.assertEqual(seo.canonical_url("/about"), _ORIGIN + "/about")
 
 
+class NothingDeclaredTests(_NoFeedMixin, unittest.TestCase):
+    def test_nothing_is_declared_to_google_while_the_owner_says_so(self) -> None:
+        self.assertIs(seo.DECLARE_TO_GOOGLE, False)
+        status, _headers, body = _call_wsgi("/sitemap.xml")
+        self.assertEqual(status, "404 Not Found")
+        self.assertNotIn("<urlset", body)
+        _status, _headers, robots = _call_wsgi("/robots.txt")
+        self.assertNotIn("Sitemap", robots)
+        _status, _headers, home = _call_wsgi("/")
+        self.assertNotIn("application/ld+json", home)
+        # What declares nothing stays: the home page's own address and the icon.
+        self.assertEqual(_canonical(home), [_ORIGIN + "/"])
+        self.assertIn('<link rel="icon" href="/assets/picwise/favicon.svg" type="image/svg+xml">', home)
+
+
 class SitemapTests(_NoFeedMixin, unittest.TestCase):
+    """Once the owner has the site declare itself to Google."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        declared = mock.patch.object(seo, "DECLARE_TO_GOOGLE", True)
+        declared.start()
+        self.addCleanup(declared.stop)
+
     def test_the_sitemap_lists_the_pages_google_may_index_and_nothing_else(self) -> None:
         status, headers, body = _call_wsgi("/sitemap.xml")
         self.assertEqual(status, "200 OK")
@@ -154,6 +182,14 @@ def _call_wsgi_bytes(path: str) -> tuple[str, dict[str, str], bytes]:
 
 
 class WhoPublishesTests(_NoFeedMixin, unittest.TestCase):
+    """Once the owner has the site declare itself to Google."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        declared = mock.patch.object(seo, "DECLARE_TO_GOOGLE", True)
+        declared.start()
+        self.addCleanup(declared.stop)
+
     def test_the_home_page_says_who_publishes_the_site_and_claims_nothing_else(self) -> None:
         _status, _headers, body = _call_wsgi("/")
         blocks = re.findall(r'<script type="application/ld\+json">(.*?)</script>', body, flags=re.S)
@@ -230,10 +266,19 @@ class LocalServerBasicsTests(protection.LocalServerTests):
     test_json_routes_are_kept_out_of_the_index = None
 
     def test_the_sitemap_and_robots_are_the_deployments(self) -> None:
-        for path in ("/sitemap.xml", "/robots.txt"):
-            status, _headers, body = self._get(path)
-            self.assertEqual(status, 200)
-            self.assertEqual(body, _call_wsgi(path)[2])
+        status, _headers, body = self._get("/robots.txt")
+        self.assertEqual(status, 200)
+        self.assertEqual(body, _call_wsgi("/robots.txt")[2])
+        self.assertNotIn("Sitemap", body)
+        # No sitemap while nothing is declared to Google (owner, 2026-11-12).
+        with self.assertRaises(HTTPError) as missing:
+            self._get("/sitemap.xml")
+        self.assertEqual(missing.exception.code, 404)
+        with mock.patch.object(seo, "DECLARE_TO_GOOGLE", True):
+            for path in ("/sitemap.xml", "/robots.txt"):
+                status, _headers, body = self._get(path)
+                self.assertEqual(status, 200)
+                self.assertEqual(body, _call_wsgi(path)[2])
 
     def test_the_home_page_says_its_address(self) -> None:
         _status, _headers, home = self._get("/")

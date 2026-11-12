@@ -308,7 +308,12 @@ Console, which is why section 9 exists.
      (`picwise_surface.seo`, `tests/test_picwise_google_basics.py`). The home page's
      data and the icon were checked against this file's rules only, not against
      Google's pages (they cannot be opened from a session): to be read at the source,
-     and tried in Search Console's own tools, before the first batch;
+     and tried in Search Console's own tools, before the first batch.
+     **The sitemap, its line in `robots.txt` and the home page's data taken off again
+     on the owner's word of 12/11** («Δεν θέλω να δηλωθεί τίποτα στην google ακόμα»;
+     `PROJECT_RULES.md` section 13; `seo.DECLARE_TO_GOOGLE`, off): written and tested,
+     served only once the owner turns them on. The canonical addresses, the icon, the
+     titles and the language stay: they declare nothing;
   2. the catalogue on the server;
   3. the pages.
 - The AI system and its cost, measured on a sample.

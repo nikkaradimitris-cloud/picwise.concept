@@ -34,6 +34,16 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-06): pick up here -- start here
 
+- **12/11: nothing is declared to Google (the owner's word).** After the deployment of
+  that morning, the owner: «Δεν θέλω να δηλωθεί τίποτα στην google ακόμα». That
+  deployment had put on the site `/sitemap.xml`, its line in `robots.txt` and the home
+  page's structured data, which Google reads of itself. They are off again in code
+  (`picwise_surface.seo.DECLARE_TO_GOOGLE`, off; `/sitemap.xml` answers 404; tests in
+  `tests/test_picwise_google_basics.py`), written into `PROJECT_RULES.md` section 13;
+  **not deployed: the live site names the sitemap until the owner's «ανέβασε»**. The
+  canonical addresses, the icons, the titles and the language stay: they declare
+  nothing. The pages for Google, when built, stay hidden from it (`noindex`, in no
+  sitemap, linked from no page Google may index) until the owner's word.
 - **START HERE (12/11, 04:07 UTC): the audit's fixes are live.** The owner, asked to
   say «ανέβασε» for everything with the new phone layout or «ανέβασε χωρίς το κινητό»
   without it: **«Ανεβασε»**. `70baa78` (the line of `ccr-4f47068a-99ikwe` and

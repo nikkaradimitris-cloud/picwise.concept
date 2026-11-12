@@ -107,7 +107,8 @@ class EveryAnswerTests(_NoFeedMixin, unittest.TestCase):
             ("/health", "", "GET", "200 OK"),
             ("/suggest.json", "", "GET", "200 OK"),
             ("/robots.txt", "", "GET", "200 OK"),
-            ("/sitemap.xml", "", "GET", "200 OK"),
+            # No sitemap while nothing is declared to Google (owner, 2026-11-12).
+            ("/sitemap.xml", "", "GET", "404 Not Found"),
             ("/assets/picwise/favicon.svg", "", "GET", "200 OK"),
             ("/no-such-page", "", "GET", "404 Not Found"),
             ("/out/feed", "pid=no-such-product&q=kettle", "GET", "200 OK"),
