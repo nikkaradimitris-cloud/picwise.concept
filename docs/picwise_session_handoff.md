@@ -8,6 +8,12 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **12/11, the owner: the search's accuracy later.** Asked whether to measure the cards
+  again on the server (about $0.25) and go on fixing by cause toward the bar of 98%
+  right: «Όχι ακόμα με έχει κουράσει αυτή η απασφαλμάτωση αργότερα». So no measure, no
+  fix and no question about the search's accuracy until the owner brings it up; the
+  daily session reports and does the rest. Where it stands: last measured on 08/11, 78%
+  of the first cards right, 153 absurd (run `42474826414`).
 - **12/11: the owner's plan and approval.** The plan: more shops, added by the owner,
   and the mechanism that brings their products in made the best it can be («Το πλάνο
   είναι να προστεθούν καταστήματα φούτευοποιηθεί ο μηχανισμός»); nothing declared to
