@@ -35,6 +35,7 @@ from picwise_nlu.concept_understanding import (
 from picwise_nlu.product_concepts import broader_concepts, get_product_concepts_by_id, get_qualifiers
 from picwise_taxonomy.comparison_rules import comparison_rule
 
+from .shop_words import learned_kind
 from .contracts import FeedAvailabilityContext, OfferHealth, ProviderProduct
 from .normalization import extract_merchant_name
 from .decision_labels import parse_price_amount
@@ -1210,10 +1211,20 @@ def is_strong_feed_opportunity_selection(
 _PREPARED_KINDS: dict[tuple[str, str, str], frozenset[str]] = {}
 
 
-def remember_product_kinds(kinds: dict[tuple[str, str, str], frozenset[str]]) -> None:
-    """Take the kinds a prepared feed was read as, in place of any taken before."""
-    _PREPARED_KINDS.clear()
-    _PREPARED_KINDS.update(kinds)
+def remember_product_kinds(
+    kinds: dict[tuple[str, str, str], frozenset[str]], *, keep_indexes: bool = False
+) -> None:
+    """Take the kinds a prepared feed was read as, in place of any taken before.
+
+    In one step: a search running meanwhile reads the kinds taken before or these, never
+    part of each. The kind indexes built until now are dropped with the kinds they were
+    built from, unless `keep_indexes`: for the server's own change of catalogue
+    (`state.refresh_prepared_catalogue`), where a product's kinds are the same in both
+    (the same code read them) and the catalogue being left still answers."""
+    global _PREPARED_KINDS
+    _PREPARED_KINDS = dict(kinds)
+    if not keep_indexes:
+        _KIND_INDEXES.clear()
 
 
 def product_kind_key(product: ProviderProduct, fields: dict[str, str]) -> tuple[str, str, str]:
@@ -1224,7 +1235,11 @@ def product_kind_key(product: ProviderProduct, fields: dict[str, str]) -> tuple[
 def _product_concepts(product: ProviderProduct, fields: dict[str, str]) -> frozenset[str]:
     key = product_kind_key(product, fields)
     known = _PREPARED_KINDS.get(key)
-    return known if known is not None else annotate_product_concepts(*key)
+    if known is not None:
+        return known
+    # A shop's own type learned by review (`shop_words`, 2026-11-12) names the kind.
+    learned = learned_kind(product.raw if isinstance(product.raw, dict) else {}, key[0])
+    return frozenset({learned}) if learned else annotate_product_concepts(*key)
 
 
 def _unannotated_product_names_concept(
@@ -1242,6 +1257,161 @@ def _unannotated_product_names_concept(
     if not all(_word_in_text(term, text) for term in feed_terms):
         return False
     return product_text_names_concept(text, concept_id)
+
+
+@dataclass(frozen=True)
+class _KindIndex:
+    """Where the products of each kind are in a catalogue a search reads (`_kind_index`)."""
+
+    # How many products the catalogue holds: every place is below it.
+    size: int
+    # Per kind (and marker) a product was read as, the places of those products.
+    by_kind: dict[str, array]
+    # The places of the products no kind was read for, and, per whole word of their
+    # title and type, the places of those of them carrying it.
+    no_kind: array
+    no_kind_words: dict[str, array]
+
+
+# Per catalogue a search reads (its tuple of search fields), its kind index. Two for a
+# catalogue: the new products, and all of them for a condition; and as many again while
+# the server changes catalogue (`_keep_at_most`).
+_KIND_INDEXES: dict[int, tuple[tuple[dict[str, str], ...], _KindIndex]] = {}
+_KIND_INDEXES_LOCK = threading.Lock()
+_INDEXES_KEPT = 4
+
+
+def _keep_at_most(registry: dict[int, Any], kept: int = _INDEXES_KEPT) -> None:
+    """Make room for one more entry of a per-catalogue registry: the oldest go first."""
+    while len(registry) >= kept:
+        registry.pop(next(iter(registry)), None)
+# "İ" and "ı" match "i" in a pattern read without regard to case, and case folding keeps
+# them apart: folded here, so that the index never misses a word such a pattern finds.
+_DOTLESS_I = str.maketrans({"İ": "i", "ı": "i"})
+
+
+def _index_words(text: str) -> set[str]:
+    """The whole words of a text as the kind index keeps and looks them up."""
+    return set(re.findall(r"\w+", text.translate(_DOTLESS_I).casefold()))
+
+
+def _kind_index_word(word: str) -> bool:
+    """Is the word kept for the products with no kind? Not a number alone, nor a single
+    letter: a name made only of those is read in every such product, as before."""
+    return len(word) >= 2 and not word.isdigit()
+
+
+def _kind_index(
+    eligible: tuple[ProviderProduct, ...],
+    eligible_fields: tuple[dict[str, str], ...],
+    kinds: tuple[frozenset[str], ...] | None = None,
+) -> _KindIndex:
+    """The kind index of a catalogue a search reads, built once for it and kept with it.
+    `kinds`, when given, are the products' kinds, in order (a prepared feed carries
+    them); without them each is read (`_product_concepts`).
+
+    The audit of 2026-11-10 measured a search for a kind reading every product of the
+    catalogue to find the kind's own (`members_for`): 0.85 to 1.2 s on the live site's
+    242,817 products, 0.07 s on 108. With the index a search reads the kind's products
+    and, of those with no kind, only the ones whose title or type carries every word of
+    the kind's name; each is then judged exactly as before, so the answer is the same.
+    """
+    entry = _KIND_INDEXES.get(id(eligible_fields))
+    if entry is not None and entry[0] is eligible_fields:
+        return entry[1]
+    with _KIND_INDEXES_LOCK:
+        entry = _KIND_INDEXES.get(id(eligible_fields))
+        if entry is not None and entry[0] is eligible_fields:
+            return entry[1]
+        by_kind: dict[str, array] = {}
+        no_kind = array("I")
+        no_kind_words: dict[str, array] = {}
+        for place, (product, fields) in enumerate(zip(eligible, eligible_fields)):
+            concepts = kinds[place] if kinds is not None else _product_concepts(product, fields)
+            if concepts:
+                for concept in concepts:
+                    row = by_kind.get(concept)
+                    if row is None:
+                        row = by_kind[concept] = array("I")
+                    row.append(place)
+                continue
+            no_kind.append(place)
+            # The text `_unannotated_product_names_concept` reads.
+            text = " ".join(part for part in (fields["title"], fields["product_type"]) if part)
+            for word in _index_words(text):
+                if not _kind_index_word(word):
+                    continue
+                row = no_kind_words.get(word)
+                if row is None:
+                    row = no_kind_words[word] = array("I")
+                row.append(place)
+        index = _KindIndex(
+            size=len(eligible_fields), by_kind=by_kind, no_kind=no_kind, no_kind_words=no_kind_words
+        )
+        _keep_at_most(_KIND_INDEXES)
+        _KIND_INDEXES[id(eligible_fields)] = (eligible_fields, index)
+        return index
+
+
+def forget_search_indexes(*catalogue_fields: tuple[dict[str, str], ...]) -> None:
+    """Drop what was built for catalogues no search reads any more: their word lookups,
+    kind indexes and brand names, each of which holds its catalogue's texts."""
+    for fields in catalogue_fields:
+        for registry in (_WORD_LOOKUPS, _KIND_INDEXES):
+            entry = registry.get(id(fields))
+            if entry is not None and entry[0] is fields:
+                registry.pop(id(fields), None)
+        if _BRAND_NAMES[0] is fields:
+            _BRAND_NAMES[0], _BRAND_NAMES[1] = None, frozenset()
+
+
+def warm_kind_index(
+    eligible: tuple[ProviderProduct, ...],
+    eligible_fields: tuple[dict[str, str], ...],
+    kinds: tuple[frozenset[str], ...] | None = None,
+) -> None:
+    """Build a catalogue's kind index in the background, so that no search waits for it."""
+    threading.Thread(
+        target=_kind_index, args=(eligible, eligible_fields, kinds), name="picwise-kind-index", daemon=True
+    ).start()
+
+
+def _no_kind_places_naming(index: _KindIndex, feed_terms: tuple[str, ...]) -> Iterable[int]:
+    """The places of the products with no kind whose title or type may carry every name
+    of `feed_terms` as `_word_in_text` reads it: each word of a name it finds is a whole
+    word of that text, so a product carrying none of some word cannot match. Every such
+    product when no word can be looked up."""
+    rows: list[array] = []
+    for term in feed_terms:
+        for word in _index_words(term):
+            if not _kind_index_word(word):
+                continue
+            row = index.no_kind_words.get(word)
+            if row is None:
+                return ()
+            rows.append(row)
+    if not rows:
+        return index.no_kind
+    rows.sort(key=len)
+    places = set(rows[0])
+    for row in rows[1:]:
+        places.intersection_update(row)
+        if not places:
+            return ()
+    return sorted(places)
+
+
+def _kind_member_places(index: _KindIndex, concept_id: str, feed_terms: tuple[str, ...]) -> Iterable[int]:
+    """The places, in feed order, of the products that may answer a search for a kind:
+    those read as it, and those with no kind that may name it by their own words."""
+    of_kind = index.by_kind.get(concept_id) or ()
+    named = _no_kind_places_naming(index, feed_terms) if feed_terms else ()
+    if not named:
+        return of_kind
+    if not of_kind:
+        return named
+    # No product is in both: one has a kind, the other none.
+    return sorted([*of_kind, *named])
 
 
 _FURNITURE_MEGA_CATEGORY = "furniture_living_storage_smart_home"
@@ -1518,7 +1688,8 @@ def _looked_up(word: str) -> bool:
 
 # Per catalogue a search reads (its tuple of search fields), each whole word of the
 # products' titles, types and brands with the places of the products carrying it
-# (`_word_lookup`). Two at most: the new products, and all of them for a condition.
+# (`_word_lookup`). Two for a catalogue: the new products, and all of them for a
+# condition; and as many again while the server changes catalogue (`_keep_at_most`).
 _WORD_LOOKUPS: dict[int, tuple[tuple[dict[str, str], ...], dict[str, array]]] = {}
 _WORD_LOOKUPS_LOCK = threading.Lock()
 
@@ -1552,8 +1723,7 @@ def _word_lookup(eligible_fields: tuple[dict[str, str], ...]) -> dict[str, array
                 if row is None:
                     row = lookup[word] = array("I")
                 row.append(place)
-        if len(_WORD_LOOKUPS) >= 2:
-            _WORD_LOOKUPS.clear()
+        _keep_at_most(_WORD_LOOKUPS)
         _WORD_LOOKUPS[id(eligible_fields)] = (eligible_fields, lookup)
         return lookup
 
@@ -1934,7 +2104,11 @@ def _select_products_for_concept(
 
     def members_for(concept_id: str) -> list[tuple[ProviderProduct, dict[str, str]]]:
         rows = []
-        for product, fields in zip(eligible, eligible_fields):
+        # Only the products that may be members are read (`_kind_index`), each judged
+        # as when every product was.
+        index = _kind_index(eligible, eligible_fields)
+        for place in _kind_member_places(index, concept_id, reading.feed_terms):
+            product, fields = eligible[place], eligible_fields[place]
             concepts = _product_concepts(product, fields)
             if concept_id in concepts:
                 if _context_allows_member(concepts, concept_id, reading.tokens):

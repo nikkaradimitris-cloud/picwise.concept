@@ -102,7 +102,10 @@ def _accounts(*accounts: tuple[int, str, str], status: int = 200):
 
 
 def _run(awin: _Awin, note: object = NOTE, env: dict | None = None, get=None) -> tuple[int, str]:
-    saved = {key: os.environ.get(key) for key in ("AWIN_API_TOKEN", "AWIN_PUBLISHER_ID")}
+    saved = {key: os.environ.get(key) for key in ("AWIN_API_TOKEN", "AWIN_PUBLISHER_ID", "GITHUB_ACTIONS")}
+    # The same run on a session's machine and on GitHub's runner: the runner sets
+    # GITHUB_ACTIONS, and the tool then prints a line for it to mask the account's id.
+    os.environ.pop("GITHUB_ACTIONS", None)
     os.environ.update(env if env is not None else {"AWIN_API_TOKEN": TOKEN, "AWIN_PUBLISHER_ID": PUBLISHER})
     for key in ("AWIN_API_TOKEN", "AWIN_PUBLISHER_ID"):
         if env is not None and key not in env:
@@ -234,6 +237,15 @@ class AwinOffersCheckTests(unittest.TestCase):
         self.assertIn("the account: found from the token (one publisher account)", out)
         self.assertIn("== 1 live offers for the United Kingdom", out)
         self.assertNotIn("555777", out)
+        self.assertNotIn(TOKEN, out)
+
+    def test_on_githubs_runner_the_accounts_id_is_given_to_be_masked_and_said_nowhere_else(self) -> None:
+        awin = _Awin([[_offer(1, FIXTURON)]])
+        get = _accounts((555777, "PicWise", "publisher"))
+        code, out = _run(awin, env={"AWIN_API_TOKEN": TOKEN, "GITHUB_ACTIONS": "true"}, get=get)
+        self.assertEqual(code, 0)
+        self.assertEqual(out.splitlines()[0], "::add-mask::555777")
+        self.assertNotIn("555777", "\n".join(out.splitlines()[1:]))
         self.assertNotIn(TOKEN, out)
 
     def test_several_publisher_accounts_ask_for_the_id(self) -> None:

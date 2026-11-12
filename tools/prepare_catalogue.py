@@ -30,8 +30,9 @@ kind the products shown as it whose title does not name it (`picwise_providers.k
 how often a title alone gives the kind its shelf gives (`title_alone`), what the shops'
 own catalogues and the rows' barcodes gave (`shop_catalogues`,
 `picwise_providers.shop_catalogue`), how the shown products spread and what a cap on a
-share would cut (`balance`, `picwise_providers.catalogue_balance`), and how many the
-pool Google may be given from holds (`google_pool`), never the feed's link nor a row's
+share would cut (`balance`, `picwise_providers.catalogue_balance`), how many the
+pool Google may be given from holds (`google_pool`), and which shops' feeds shrank or
+vanished since the build before (`intake_change`), never the feed's link nor a row's
 id.
 """
 from __future__ import annotations
@@ -53,6 +54,10 @@ for path in (str(ROOT), str(SRC)):
         sys.path.insert(0, path)
 
 STATIC_NOTE_NAME = "prepared.json"
+# A shop whose feed comes with fewer than half the rows of the night before, having had
+# at least this many, is named in the note and in the tool's output.
+SHRUNK_SHARE = 0.5
+SHRUNK_FROM_ROWS = 50
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -63,6 +68,10 @@ def main(argv: list[str] | None = None) -> int:
         "--keep-going", action="store_true", help="exit 0 when the feed cannot be read or preparing it fails"
     )
     parser.add_argument("--static-dir", type=Path, help=f"write {STATIC_NOTE_NAME}, what this build prepared, here")
+    parser.add_argument(
+        "--memory", type=Path,
+        help="keep the catalogue's memory in this SQLite file (picwise_providers.catalogue_memory)",
+    )
     args = parser.parse_args(argv)
     if args.feed_file is not None:
         if not args.feed_file.is_file():
@@ -109,7 +118,34 @@ def main(argv: list[str] | None = None) -> int:
             f" {pool['kept_from_before']:,} of them kept the night before; the search and the pool Google may be"
             " given from hold the same"
         )
+    intake = _intake() if args.static_dir is not None else None
+    memory = _memory(args.memory, prepared, intake)
+    if memory is not None:
+        if "error" in memory:
+            print(f"prepare_catalogue: the catalogue's memory was not written ({memory['error']})")
+        else:
+            print(
+                f"prepare_catalogue: the catalogue's memory: {memory['products_known']:,} products over "
+                f"{memory['nights']} nights; tonight {memory['seen_tonight']:,} seen, {memory['new_tonight']:,} new, "
+                f"{memory['price_changed_tonight']:,} with a new price"
+                + (
+                    f", {memory['gone_since']:,} of {memory['compared_with']} not seen"
+                    if memory["compared_with"] is not None
+                    else ""
+                )
+            )
     if args.static_dir is not None:
+        change = _intake_change(_previous_note(args.static_dir), intake)
+        if change.get("shrunk") or change.get("gone"):
+            # Said where the server's journal and a deployment's run show it: nothing
+            # else tells that a shop's feed came broken (the audit, 2026-11-10).
+            print(
+                "prepare_catalogue: fewer than half of the night before's rows from "
+                + "; ".join(
+                    f"{entry['shop']} ({entry['rows_before']:,} -> {entry['rows']:,})"
+                    for entry in (change.get("gone") or []) + (change.get("shrunk") or [])
+                )
+            )
         _write_static_note(
             args.static_dir,
             {
@@ -118,12 +154,14 @@ def main(argv: list[str] | None = None) -> int:
                 "products": len(prepared.products),
                 "shops": prepared.shop_count,
                 "freshness": _freshness(prepared),
-                "intake": _intake(),
+                "intake": intake,
+                "intake_change": change,
                 "kinds": _kinds(prepared),
                 "title_alone": _title_alone(prepared),
                 "shop_catalogues": _shop_catalogues(),
                 "balance": _balance(prepared),
                 "google_pool": pool,
+                **({"memory": memory} if memory is not None else {}),
             },
         )
     return 0
@@ -194,6 +232,58 @@ def _intake() -> dict[str, object] | None:
         return {"error": _where(error)}
 
 
+def _previous_note(folder: Path | None) -> dict[str, object] | None:
+    """The public note of the preparation before this one, still in its place; None when
+    there is none or it cannot be read."""
+    if folder is None:
+        return None
+    try:
+        note = json.loads((folder / STATIC_NOTE_NAME).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return note if isinstance(note, dict) else None
+
+
+def _shop_rows(note: object) -> dict[str, int] | None:
+    """Per shop, the rows its feed brought, as a note's `intake` gives them."""
+    shops = note.get("shops") if isinstance(note, dict) else None
+    if not isinstance(shops, list):
+        return None
+    rows: dict[str, int] = {}
+    for shop in shops:
+        if isinstance(shop, dict) and isinstance(shop.get("rows"), int):
+            rows[str(shop.get("shop") or "")] = shop["rows"]
+    return rows
+
+
+def _intake_change(previous: dict[str, object] | None, intake: object) -> dict[str, object]:
+    """What changed in each shop's feed since the preparation before: the shops that
+    brought fewer than half its rows (`shrunk`), none at all (`gone`), and the shops it
+    did not have (`new`); names and counts only. Measured, and said: the catalogue is
+    still built from tonight's feed alone, so a shop whose feed came broken is short
+    tonight (the audit, 2026-11-10: one shop held 61% of the site's products, and nothing
+    told when a shop's feed shrank). Keeping the night before's rows for such a shop
+    needs the catalogue to remember them (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`, section 7)."""
+    before = _shop_rows(previous.get("intake")) if previous and previous.get("prepared") else None
+    now = _shop_rows(intake)
+    if before is None or now is None:
+        return {"compared_with": None}
+
+    def listed(names: list[str]) -> list[dict[str, object]]:
+        return [
+            {"shop": name, "rows_before": before[name], "rows": now.get(name, 0)}
+            for name in sorted(names, key=lambda name: (-before[name], name))
+        ]
+
+    large = [name for name, rows in before.items() if rows >= SHRUNK_FROM_ROWS]
+    return {
+        "compared_with": previous.get("prepared_at"),
+        "shrunk": listed([name for name in large if 0 < now.get(name, 0) < before[name] * SHRUNK_SHARE]),
+        "gone": listed([name for name in large if now.get(name, 0) == 0]),
+        "new": sorted(name for name in now if name not in before),
+    }
+
+
 def _kinds(prepared) -> dict[str, object]:
     """Per kind, the products shown as it whose title does not name it; a failure is only
     noted."""
@@ -223,6 +313,24 @@ def _shop_catalogues() -> dict[str, object] | None:
         from picwise_providers.shop_catalogue import last_shop_catalogue_note
 
         return last_shop_catalogue_note()
+    except Exception as error:
+        return {"error": _where(error)}
+
+
+def _memory(path: Path | None, prepared, intake: object) -> dict[str, object] | None:
+    """The night written into the catalogue's memory, when one is named (`--memory`, else
+    `PICWISE_CATALOGUE_MEMORY_FILE`); what it now says, or the error, which never fails
+    the preparation (picwise_providers.catalogue_memory)."""
+    try:
+        from picwise_providers.catalogue_memory import configured_memory_path, remember_night
+
+        path = path or configured_memory_path()
+        if path is None:
+            return None
+        return remember_night(
+            path, prepared.products, prepared_at=prepared.prepared_at,
+            intake=intake if isinstance(intake, dict) else None,
+        )
     except Exception as error:
         return {"error": _where(error)}
 

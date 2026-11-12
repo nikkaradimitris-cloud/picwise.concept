@@ -4,7 +4,7 @@ from html import escape
 
 from picwise_contracts import ContractValidationError, DecisionOutput
 from .legal import render_public_footer
-from .seo import NOINDEX_META
+from .seo import NOINDEX_META, icon_links_html
 
 
 def render_review_safe_landing_page() -> str:
@@ -82,6 +82,7 @@ def render_demo_info_page() -> str:
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         f"{NOINDEX_META}"
         "<title>PicWise Demo — Buying Decision Preview</title>"
+        f"{icon_links_html()}"
         '<meta name="description" content="Preview how PicWise supports product comparison and buying decisions while provider integrations are being configured.">'
         "<style>"
         "*{box-sizing:border-box;}"

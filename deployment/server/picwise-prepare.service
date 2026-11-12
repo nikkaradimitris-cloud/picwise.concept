@@ -25,7 +25,8 @@ Environment=PYTHONDONTWRITEBYTECODE=1
 # GNU time adds one line with the run's peak memory and length, for sizing the server.
 ExecStart=/usr/bin/time -f "prepare_catalogue: peak memory %%M KB, %%e s" /usr/bin/python3 \
     tools/prepare_catalogue.py --keep-going \
-    --static-dir /srv/picwise/shared/public --out /srv/picwise/shared/prepared/catalogue.json.gz
+    --static-dir /srv/picwise/shared/public --out /srv/picwise/shared/prepared/catalogue.json.gz \
+    --memory /srv/picwise/shared/prepared/catalogue_memory.sqlite
 TimeoutStartSec=60min
 Nice=10
 # A ceiling, so that reading a large feed can never take the memory the site needs.

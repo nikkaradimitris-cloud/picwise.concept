@@ -62,6 +62,10 @@ FILE_VERSION = 1
 # The column a row's shop-said stock is written in; `offer_health` reads it.
 SHOP_STOCK_COLUMN = "shop_stock"
 SOLD_OUT = "sold out"
+# The shop's own site says the product can be bought now: it stands before the feed's
+# "out of stock" (owner, 2026-11-12: «να διαβάζει το bot το απόθεμα από τα sites τους και
+# γενικά να επαληθεύει»).
+IN_STOCK = "in stock"
 # How old what the bot saw of a product's stock may be for it to count.
 STOCK_DAYS = 3
 MAX_BARCODE_ROWS = 50
@@ -120,12 +124,18 @@ def _has_kind(product: ProviderProduct) -> bool:
     from picwise_nlu.concept_understanding import annotate_product_concepts
 
     from .search_selection import _product_concepts, _product_search_fields, product_kind_key
+    from .shop_words import learned_kind
 
     fields = _product_search_fields(product)
     read = {kind for kind in _product_concepts(product, fields) if not kind.startswith("__")}
     if not read:
         return False
     product_type, category, _title = product_kind_key(product, fields)
+    # A shop's own type learned by review names its kind here too (`shop_words`): the
+    # rows the bot gives such a type are rows held for no category (2026-11-12).
+    learned = learned_kind(product.raw if isinstance(product.raw, Mapping) else {}, product_type)
+    if learned:
+        return learned in read
     return bool(read & {kind for kind in annotate_product_concepts(product_type, category, "") if not kind.startswith("__")})
 
 
@@ -148,12 +158,14 @@ def _shop_note(entry: Mapping[str, Any]) -> dict[str, Any]:
         "status": str(entry.get("status") or ""),
         "read_at": str(entry.get("read_at") or ""),
         "products": len(entry.get("products") or {}),
-        "rows": 0, "matched": 0, "sold_out": 0, "sold_out_feed_in_stock": 0, "stock_too_old": 0,
+        "rows": 0, "matched": 0, "sold_out": 0, "sold_out_feed_in_stock": 0, "in_stock": 0,
+        "in_stock_feed_out_of_stock": 0, "stock_too_old": 0,
         "without_category": 0, "by_type": 0, "type_no_kind": 0, "no_type": 0, "not_found": 0,
     }
 
 
 _FEED_IN_STOCK = frozenset({"in stock", "instock", "in_stock", "1", "yes", "true", "available"})
+_FEED_OUT_OF_STOCK = frozenset({"out of stock", "outofstock", "out_of_stock", "sold out", "0", "no", "false"})
 
 
 def apply_shop_catalogues(
@@ -201,6 +213,13 @@ def apply_shop_catalogues(
                     note["sold_out_feed_in_stock"] += 1
                 product = replace(product, raw={**dict(raw), SHOP_STOCK_COLUMN: SOLD_OUT})
                 result[index] = product
+            else:
+                note["in_stock"] += 1
+                availability = " ".join(str(product.availability_text or "").lower().split())
+                if availability in _FEED_OUT_OF_STOCK:
+                    note["in_stock_feed_out_of_stock"] += 1
+                product = replace(product, raw={**dict(raw), SHOP_STOCK_COLUMN: IN_STOCK})
+                result[index] = product
         else:
             note["stock_too_old"] += 1
         if not without_category:
@@ -222,7 +241,8 @@ def apply_shop_catalogues(
         "shops_known": len(notes),
         **{
             key: sum(note[key] for note in notes.values())
-            for key in ("rows", "matched", "sold_out", "sold_out_feed_in_stock", "stock_too_old",
+            for key in ("rows", "matched", "sold_out", "sold_out_feed_in_stock", "in_stock",
+                        "in_stock_feed_out_of_stock", "stock_too_old",
                         "without_category", "by_type", "type_no_kind", "no_type", "not_found")
         },
         "types_no_kind": [

@@ -1,8 +1,8 @@
 # Picwise Production
 
-Current status (2026-11-09): **live on PicWise's own server with the real Awin feed; the
-search is in its big general debugging (owner, 2026-11-07); nothing is given to Google
-yet.**
+Current status (2026-11-12): **live on PicWise's own server with the real Awin feed; the
+audit's fixes live since 2026-11-12 (speed, phones, security, what Google may read of
+the seven pages it may index); nothing new is given to Google yet.**
 
 Where the work is now: the first section of `docs/picwise_session_handoff.md` ("START
 HERE"). `PROGRESS.md` is the chronological log.
@@ -14,21 +14,24 @@ HERE"). `PROGRESS.md` is the chronological log.
 3. `docs/` (implementation contracts/specs)
 4. `docs/picwise_session_handoff.md`, its first section, and the last entries of `PROGRESS.md`
 
-## What Is Live (2026-11-09)
+## What Is Live (2026-11-12)
 
 - `https://picwise.subby.cloud` is served by PicWise's own server since 2026-10-31
   (OVHcloud VPS-4, London; HTTPS by Caddy; `docs/PICWISE_SERVER_ARCHITECTURE.md`).
   Vercel is kept as the backup: deleting the domain's A record puts the site back there.
 - The catalogue: Awin's Create-a-Feed link with the Google-format shops (`AWIN_FEED_URL`),
-  prepared each night on the server. On 2026-11-09: 597,876 products a card can show,
-  242,869 of them kept by the cap of 15% a category (`PROJECT_RULES.md` section 13).
+  prepared each night on the server. On 2026-11-12: 602,572 products a card can show,
+  245,894 of them kept by the cap of 15% a category (`PROJECT_RULES.md` section 13).
+  Each worker of the site keeps it loaded and brings the night's in beside it.
 - A search: 4 choices with exactly 1 Recommended, only products in stock, those on a
   current shop offer first and then the cheapest first, commission never a criterion
   (`PROJECT_RULES.md` section 2, `docs/PICWISE_DECISION_CONTRACT.md`). The search reads
   English only. An AI layer marks the products that fit a complex search, since
   2026-11-06, at most one euro a day (`docs/PICWISE_AI_LAYER_SPEC.md`).
-- The site's own search pages carry `noindex`. No page is given to Google yet: its pages
-  are specified, not built (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`).
+- The site's own search pages carry `noindex`. The seven pages Google may index say
+  their one address (`canonical`) and are listed in `/sitemap.xml`; every answer
+  carries five security headers. No new page is given to Google yet: its pages are
+  specified, not built (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`).
 - The work goes on every day: a scheduled session at about 12:00 Greek time, a report in
   Greek by email, the site changed only after the owner's «ναι»
   (`docs/PICWISE_DAILY_WORK.md`).
@@ -47,7 +50,9 @@ HERE"). `PROGRESS.md` is the chronological log.
 - **Read-only checks:** each workflow in `.github/workflows` runs on a push to the branch
   its file names, never on `main`; some name an older session branch (`server-setup.yml`
   on `ccr-baaad713-r3uvvs`, `live-check.yml` on `ccr-fd5dc1bc-4vgsgl`), which is why
-  those branches are kept.
+  those branches are kept. One runs on every session's branch: `tests.yml` (2026-11-11),
+  every test module on each push that changes code; it reads the repository only and does
+  not stand in front of a deployment, so whoever deploys looks at its run of the commit.
 - WSGI entrypoints: `wsgi.py` (`app`) and `api/index.py` (`app`); the server runs them
   through `deployment/server/wsgi_server.py`.
 
@@ -79,10 +84,17 @@ HERE"). `PROGRESS.md` is the chronological log.
 
 ## Tests
 
-- Command: `python -m unittest discover -s tests`
+- Command: `python tools/run_test_modules.py` runs every module in a process of its own,
+  as many at a time as the machine has processors, and exits 0 only when nothing fails
+  that is not known to fail (`--skip-slow` leaves out the two modules that take many
+  minutes each, `test_picwise_learning_stage7b` and
+  `test_picwise_search_index_blind_evaluation_stage6a`; `--only-slow` runs those). The
+  whole suite in one process, `python -m unittest discover -s tests`, takes more than 25
+  minutes.
 - Two modules are known to fail, the same test each since before 2026-10-23:
   `test_picwise_canonical_vocabulary_registry_stage2` and
-  `test_picwise_search_index_generated_blind_stage4`.
+  `test_picwise_search_index_generated_blind_stage4`. The tool runs and reports them
+  every time (`KNOWN_FAILING`), never skips them.
 
 ### Search runtime artifact
 

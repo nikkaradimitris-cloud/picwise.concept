@@ -103,8 +103,20 @@ def _safe_text(value: Any) -> str:
     return ""
 
 
+@lru_cache(maxsize=8192)
+def _term_pattern(term: str) -> re.Pattern[str]:
+    """The pattern that finds `term` as a whole word or phrase, made once for each term.
+
+    A search asks about 1,700 of the vocabulary's terms, and `re` keeps only 512
+    patterns: made on the fly, about 1,400 of them were made again on every search,
+    some 60 ms of each one (measured 2026-11-10). The terms come from the vocabulary,
+    never from the search's own words, so the cache stays the vocabulary's size.
+    """
+    return re.compile(rf"(?<!\w){re.escape(term)}(?!\w)")
+
+
 def _contains_term(text: str, term: str) -> bool:
-    return bool(re.search(rf"(?<!\w){re.escape(term)}(?!\w)", text))
+    return bool(_term_pattern(term).search(text))
 
 
 def _is_ascii_term(value: str) -> bool:

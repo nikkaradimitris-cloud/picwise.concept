@@ -381,5 +381,13 @@ BROWSER_LISTS_STYLES = (
     ".pw-fav svg{width:18px;height:18px;}"
     ".pw-fav.is-on{color:#e5484d;border-color:#f3c3c5;}"
     ".pw-fav.is-on svg{fill:#e5484d;}"
-    "@media (max-width:699px){.pw-head-txt{display:none;}.pw-head-btn{padding:0 10px;}.pw-panel{left:12px;right:12px;width:auto;}}"
+    # On a phone whatever is tapped is at least 44 px (the audit, 2026-11-10): the header's
+    # buttons were 39 by 36, the heart 36; the heart keeps its look and takes the taps
+    # around it.
+    "@media (max-width:699px){.pw-head-txt{display:none;}.pw-head-btn{position:relative;width:44px;height:44px;padding:0;justify-content:center;}"
+    ".pw-count{position:absolute;top:-3px;right:-3px;}"
+    ".pw-panel{left:12px;right:12px;width:auto;}.pw-panel-close{width:44px;height:44px;}"
+    ".pw-panel-action{min-height:44px;padding:0 14px;font-size:14px;}.pw-panel-row .pw-panel-action{min-height:44px;padding:0 12px;font-size:13px;}"
+    ".pw-panel-when,.pw-panel-note{font-size:13px;}"
+    ".pw-fav{top:4px;right:4px;width:34px;height:34px;}.pw-fav::after{content:'';position:absolute;top:-5px;right:-5px;bottom:-5px;left:-5px;}}"
 )

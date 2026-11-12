@@ -13,7 +13,12 @@ many could be shown by the shop's own product type or by the title alone, read a
 kind, and for the shops with the most, a few of their types and titles; and (owner,
 2026-10-26) where else their category may hide: their filled columns, the values of
 those named like a category, and the shelves their shop's address names; then what the
-shops' own catalogues and the rows' barcodes gave them (`shop_catalogues`). Counts, shop
+shops' own catalogues and the rows' barcodes gave them (`shop_catalogues`); and how many
+products, by barcode, two or more shops sell, in all and per category
+(`balance.shared_products`; 2026-11-11), and by brand and part number
+(`balance.shared_by_brand_and_part`), and how each shop was taken in: its products the
+site answers from, with a kind, with a barcode, sold by another shop too
+(`balance.by_shop`; 2026-11-12). Counts, shop
 names, types, titles and words only; the note never holds a link. Always exits 0: a
 deployment never fails because of this list.
 """
@@ -26,6 +31,12 @@ import sys
 REASONS = 3
 # How many shops, those with the most rows without a category, show their types and titles.
 DETAILED = 15
+# How many of the largest kinds only one or two shops sell are printed.
+FEW_SHOPS_LISTED = 25
+# How many categories are printed with the products two or more shops sell, the most first.
+SHARED_LISTED = 10
+# How many of the shops' types that name no kind are printed, the most first.
+WORDS_LISTED = 30
 
 
 def main() -> int:
@@ -58,11 +69,78 @@ def main() -> int:
             f"{shop['rows']:>9,} {shop['shown']:>9,} {shop['not_new']:>7,} {shop['held']:>9,}  "
             f"{shop['shop']}{': ' + reasons if reasons else ''}"
         )
+    print_silent_shops(shops)
     print()
+    print_memory(note)
+    print_intake_change(note)
     print_without_category(intake)
     print_shop_catalogues(note)
     print_balance(note)
     return 0
+
+
+def print_silent_shops(shops: list[dict]) -> None:
+    """The shops in the feed that give no product, each with every reason its rows are
+    held: the feed's, and behind a missing category the card's own
+    (`feed_intake._held_behind_category`; the audit's fixes, 2026-11-12: five shops the
+    owner had joined gave none, and the note said only "no category"). Nothing when
+    every shop gives a product."""
+    silent = [shop for shop in shops if shop["rows"] and not shop["shown"] and not shop["not_new"]]
+    if not silent:
+        return
+    print(f"shops that give no product: {len(silent)}")
+    for shop in sorted(silent, key=lambda shop: (-shop["rows"], shop["shop"])):
+        held = ", ".join(f"{reason} {count:,}" for reason, count in shop["held_reasons"].items())
+        behind = (shop.get("without_category") or {}).get("also_held_for") or {}
+        said = (shop.get("without_category") or {}).get("out_of_stock_by") or {}
+        line = f"  {shop['rows']:>7,} rows  {shop['shop']}: {held or 'none held'}"
+        if behind:
+            line += "; behind the missing category: " + ", ".join(f"{reason} {count:,}" for reason, count in behind.items())
+        if said:
+            line += "; out of stock by " + ", ".join(f"{value} ({count:,})" for value, count in said.items())
+        print(line)
+
+
+def print_memory(note: dict) -> None:
+    """What the catalogue's memory says after the night (`catalogue_memory`, 2026-11-12);
+    nothing for a note without it."""
+    memory = note.get("memory")
+    if not isinstance(memory, dict):
+        return
+    if "error" in memory:
+        print(f"the catalogue's memory: not written ({memory['error']})")
+        print()
+        return
+    line = (
+        f"the catalogue's memory: {memory['products_known']:,} products over {memory['nights']} nights; "
+        f"the night of {memory['night']}: {memory['seen_tonight']:,} seen, {memory['new_tonight']:,} new, "
+        f"{memory['price_changed_tonight']:,} with a new price"
+    )
+    if memory.get("compared_with"):
+        line += f", {memory['gone_since']:,} seen on {memory['compared_with']} and not since"
+    print(line)
+    print()
+
+
+def print_intake_change(note: dict) -> None:
+    """The shops whose feed shrank or vanished since the preparation before, and the new
+    ones (`tools/prepare_catalogue.py`, `_intake_change`); nothing for a note without it."""
+    change = note.get("intake_change")
+    if not isinstance(change, dict) or not change.get("compared_with"):
+        return
+    print(f"since the preparation of {change['compared_with']}:")
+    for label, key in (("no rows now", "gone"), ("fewer than half the rows", "shrunk")):
+        entries = change.get(key) or []
+        if entries:
+            print(
+                f"  {label}: "
+                + "; ".join(f"{entry['shop']} ({entry['rows_before']:,} -> {entry['rows']:,})" for entry in entries)
+            )
+    if change.get("new"):
+        print("  new shops: " + ", ".join(change["new"]))
+    if not (change.get("gone") or change.get("shrunk") or change.get("new")):
+        print("  every shop's feed came as large as before or larger; no new shop")
+    print()
 
 
 def _kinds(buckets: dict | None) -> str:
@@ -89,6 +167,11 @@ def print_without_category(intake: dict) -> None:
         f"  could be shown by their title alone: {total['shown_by_title']:,} "
         f"({_kinds(total['kinds_by_title'])})"
     )
+    if total.get("also_held_for"):
+        print(
+            "  held for something else too, behind the missing category: "
+            + ", ".join(f"{reason} {count:,}" for reason, count in total["also_held_for"].items())
+        )
     if "address" in total:
         print("  of those, " + _address(total["address"]))
     if "barcode" in total:
@@ -111,6 +194,8 @@ def print_without_category(intake: dict) -> None:
         )
         if index >= DETAILED:
             continue
+        if rows.get("also_held_for"):
+            print("      also held for: " + ", ".join(f"{reason} {count:,}" for reason, count in rows["also_held_for"].items()))
         if rows["types"]:
             print("      types: " + "; ".join(f"{entry['value']} ({entry['rows']:,})" for entry in rows["types"]))
         if rows["titles"]:
@@ -234,6 +319,72 @@ def print_balance(note: dict) -> None:
         f"(from one shop {spread['one_shop']:,}, from two {spread['two_shops']:,}); shown with no kind "
         f"{found['no_kind']:,}"
     )
+    few = found.get("kinds_from_few_shops") or []
+    if few:
+        # Where a shop added counts most: the largest kinds only one or two shops sell.
+        print(
+            "  the largest kinds from one or two shops: "
+            + "; ".join(
+                f"{entry['kind']} {entry['products']:,} ({', '.join(entry['shops'])})"
+                for entry in few[:FEW_SHOPS_LISTED]
+            )
+        )
+    words = found.get("words_to_learn")
+    if words:
+        print(
+            "  the shops' own types of the products kept with no kind, to review (shop_words.py), the most first: "
+            + "; ".join(f"{entry['type']} ({entry['shop']}) {entry['products']:,}" for entry in words[:WORDS_LISTED])
+        )
+    shared = found.get("shared_products")
+    if isinstance(shared, dict):
+        # The products the pages for Google start from (docs/PICWISE_AUDIT_FIXES.md, 4.A.2).
+        print(
+            f"  products two or more shops sell, by barcode: {shared['two_or_more_shops']:,} of the "
+            f"{shared['barcodes']:,} with a barcode"
+            + (
+                "; by category: "
+                + "; ".join(
+                    f"{entry['category']} {entry['two_or_more_shops']:,} of {entry['barcodes']:,}"
+                    for entry in shared["by_category"][:SHARED_LISTED]
+                )
+                if shared["by_category"]
+                else ""
+            )
+        )
+    parts = found.get("shared_by_brand_and_part")
+    if isinstance(parts, dict):
+        print(
+            f"  products two or more shops sell, by brand and part number: {parts['two_or_more_shops']:,} of the "
+            f"{parts['products']:,} with both; {parts['not_joined_by_barcode']:,} of them no barcode joins"
+        )
+    print_by_shop(found.get("by_shop"), note.get("intake"))
+
+
+def print_by_shop(by_shop: object, intake: object) -> None:
+    """How each shop was taken in: of the rows its feed brought, the products a card can
+    show, those the site answers from (after the cap), and of these how many have a kind,
+    a barcode, and are sold by another shop too (docs/PICWISE_AUDIT_FIXES.md, 4.E.12)."""
+    if not isinstance(by_shop, list) or not by_shop:
+        # A note written before it was measured.
+        return
+    fed = {
+        shop.get("shop"): shop
+        for shop in (intake.get("shops") if isinstance(intake, dict) else None) or []
+        if isinstance(shop, dict)
+    }
+    print()
+    print("how each shop was taken in (the site answers from 'kept'; the rest are counts of the kept):")
+    print(f"{'rows':>9} {'shown':>9} {'kept':>8} {'a kind':>8} {'barcode':>8} {'2+ shops':>8}  shop")
+    for entry in by_shop:
+        # The feed's list names a shop with no name "?", the shares "(no shop named)".
+        feed = fed.get(entry["shop"]) or (fed.get("?") if entry["shop"] == "(no shop named)" else None) or {}
+        rows, shown = feed.get("rows"), feed.get("shown")
+        print(
+            f"{(format(rows, ',') if isinstance(rows, int) else '?'):>9} "
+            f"{(format(shown, ',') if isinstance(shown, int) else '?'):>9} "
+            f"{entry['products']:>8,} {entry['with_kind']:>8,} {entry['with_barcode']:>8,} "
+            f"{entry['another_shop_too']:>8,}  {entry['shop']}"
+        )
 
 
 def print_hints(hints: dict | None) -> None:

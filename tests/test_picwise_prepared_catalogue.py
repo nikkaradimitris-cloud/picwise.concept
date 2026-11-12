@@ -517,9 +517,12 @@ class PrepareToolTests(_PreparedMixin, unittest.TestCase):
         self.assertLess(abs((datetime.fromisoformat(note["prepared_at"]) - prepared_at).total_seconds()), 1)
         self.assertEqual(
             set(note),
-            {"prepared", "prepared_at", "products", "shops", "freshness", "intake", "kinds", "title_alone",
-             "shop_catalogues", "balance", "google_pool", "written_at"},
+            {"prepared", "prepared_at", "products", "shops", "freshness", "intake", "intake_change", "kinds",
+             "title_alone", "shop_catalogues", "balance", "google_pool", "written_at"},
         )
+        # No build before this one to compare each shop's feed with (2026-11-10;
+        # `tests/test_picwise_feed_shrink_note.py`).
+        self.assertEqual(note["intake_change"], {"compared_with": None})
         # The pool Google may be given from (owner, 2026-10-30): counts only, never a row's id.
         self.assertEqual(
             note["google_pool"],

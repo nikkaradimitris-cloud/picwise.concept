@@ -307,7 +307,7 @@ class SurfaceStatesWhatItCouldNotMatchTests(_FeedTestCase):
 
         return (
             len(re.findall(r'<article class="pw-card', body)),
-            text(r'<p class="pw-query-line">(.*?)</p>'),
+            text(r'<h1 class="pw-query-line">(.*?)</h1>'),
             text(r'<p class="pw-reference-disclaimer">(.*?)</p>'),
         )
 

@@ -24,8 +24,18 @@ from .browser_lists import (
     panels_html,
 )
 from .assist import ASSIST_SCRIPT, ASSIST_STYLES, AssistView, assist_block_html, fit_line_html
+from .page_styles import _PAGE_STYLES
+from .search_script import _SEARCH_SCRIPT
 from .legal import render_public_footer
-from .seo import NOINDEX_META
+from .seo import (
+    NOINDEX_META,
+    SITE_LANGUAGE,
+    declares_to_google,
+    home_structured_data_html,
+    icon_links_html,
+    indexable_head_html,
+    search_page_title,
+)
 from .trends import TRENDS_SCRIPT, TRENDS_STYLES, load_trends_panel, render_trends_panel
 
 
@@ -199,6 +209,7 @@ _PRICE_FIRST_PAGE_NOTE = (
 # approved by the owner: «Υλοποίησε τα όλα»). The home page says what PicWise is above
 # the box, and how it chooses below it; a search page goes straight to its products.
 _HOME_HEADING = "Find the product you want in UK shops"
+_HOME_TITLE = f"PicWise — {_HOME_HEADING}"
 _HOW_PICWISE_CHOOSES = (
     ("Only what you asked for", "A search for a coffee machine shows coffee machines, not their filters."),
     (
@@ -251,193 +262,6 @@ _MIC_ICON = (
     "</svg>"
 )
 
-# Step 4 (owner, 2026-10-16): the scanning screen, suggestions as the buyer types, and
-# the microphone. Plain JavaScript, no library, and only additions: without it the box
-# is a plain form and the search works as before (docs/LANDING_PAGE_SPEC.md).
-# - The scanning screen shows on a search or on "More", with the counts the server
-#   wrote into the page, and says nothing the browser cannot see happening.
-# - The suggestions are fetched once, on the first focus, and matched in the browser.
-# - The microphone shows only where the browser can listen; the search starts when
-#   the buyer stops speaking (owner, 2026-10-17).
-_SEARCH_SCRIPT = r"""
-(function(){
-"use strict";
-var form=document.querySelector(".pw-search-shell");
-if(!form){return;}
-var input=form.querySelector(".pw-search-input");
-var list=document.getElementById("pw-suggest-list");
-var ghostTyped=document.getElementById("pw-ghost-typed");
-var ghostRest=document.getElementById("pw-ghost-rest");
-var scan=document.getElementById("pw-scan");
-var scanText=document.getElementById("pw-scan-text");
-var mic=document.getElementById("pw-mic");
-if(!input||!list||!ghostTyped||!ghostRest){return;}
-function scanFor(q){
-  if(!scan||!scanText||!q){return;}
-  var products=scan.getAttribute("data-products");
-  var shops=scan.getAttribute("data-shops");
-  var quoted="\u201c"+q+"\u201d";
-  scanText.textContent=(products&&shops)
-    ?"Searching "+products+(products==="1"?" product":" products")+" from "+shops+(shops==="1"?" shop":" shops")+" for "+quoted+"\u2026"
-    :"Searching the shops connected to PicWise for "+quoted+"\u2026";
-  scan.hidden=false;
-}
-window.addEventListener("pageshow",function(){if(scan){scan.hidden=true;}});
-form.addEventListener("submit",function(){
-  var q=input.value.trim();
-  closeList();
-  if(q){scanFor(q);}
-});
-var more=document.querySelector(".pw-more-button");
-if(more){more.addEventListener("click",function(){scanFor(input.defaultValue.trim());});}
-(function(){
-  // The words of a search, kept on the server to measure the search (owner, 2026-11-07;
-  // picwise_app.search_log): only from a browser, only a search's first page.
-  var q=input.defaultValue.trim();
-  var path=location.pathname;
-  if(!q||!window.fetch||(path!=="/search"&&path!=="/results")||/[?&](shown|assist)=/.test(location.search)){return;}
-  try{fetch("/searched?q="+encodeURIComponent(q),{cache:"no-store",credentials:"omit",keepalive:true}).catch(function(){});}catch(e){}
-})();
-function norm(s){
-  return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()
-    .replace(/\u03c2/g,"\u03c3").replace(/\s+/g," ");
-}
-var words=null,keys=null,loading=false,shown=[],active=-1;
-function load(){
-  if(words||loading||!window.fetch){return;}
-  loading=true;
-  fetch("/suggest.json").then(function(r){return r.ok?r.json():{};}).then(function(d){
-    words=(d&&d.suggestions)||[];
-    keys=words.map(norm);
-    if(document.activeElement===input){update();}
-  }).catch(function(){words=[];keys=[];});
-}
-function setGhost(typed,rest){
-  ghostTyped.textContent=typed;
-  ghostRest.textContent=rest;
-}
-function closeList(){
-  list.hidden=true;
-  list.textContent="";
-  shown=[];
-  active=-1;
-  input.setAttribute("aria-expanded","false");
-  input.removeAttribute("aria-activedescendant");
-}
-function update(){
-  var raw=input.value;
-  var q=norm(raw).replace(/^ /,"");
-  setGhost("","");
-  if(!words||!q.trim()){closeList();return;}
-  var starts=[],inner=[];
-  for(var i=0;i<words.length&&starts.length<8;i++){
-    if(keys[i].indexOf(q)===0){starts.push(i);}
-    else if(inner.length<8&&keys[i].indexOf(" "+q)>=0){inner.push(i);}
-  }
-  shown=starts.concat(inner).slice(0,8);
-  if(!shown.length){closeList();return;}
-  list.textContent="";
-  shown.forEach(function(index,pos){
-    var item=document.createElement("li");
-    item.id="pw-suggest-"+pos;
-    item.className="pw-suggest-item";
-    item.setAttribute("role","option");
-    item.setAttribute("aria-selected","false");
-    item.textContent=words[index];
-    item.addEventListener("mousedown",function(e){e.preventDefault();});
-    item.addEventListener("click",function(){choose(words[index]);});
-    list.appendChild(item);
-  });
-  active=-1;
-  list.hidden=false;
-  input.setAttribute("aria-expanded","true");
-  if(starts.length&&raw.charAt(0)!==" "&&input.selectionStart===raw.length){
-    setGhost(raw,words[starts[0]].slice(raw.length));
-  }
-}
-function accept(){
-  var rest=ghostRest.textContent;
-  if(!rest){return false;}
-  input.value=input.value+rest;
-  update();
-  return true;
-}
-function choose(text){
-  input.value=text;
-  closeList();
-  setGhost("","");
-  if(form.requestSubmit){form.requestSubmit();}else{scanFor(text);form.submit();}
-}
-input.addEventListener("focus",load);
-input.addEventListener("input",update);
-input.addEventListener("blur",function(){setTimeout(closeList,150);setGhost("","");});
-input.addEventListener("keydown",function(e){
-  if(e.key==="ArrowDown"||e.key==="ArrowUp"){
-    if(!shown.length){return;}
-    e.preventDefault();
-    active=e.key==="ArrowDown"?(active+1)%shown.length:(active<=0?shown.length-1:active-1);
-    Array.prototype.forEach.call(list.children,function(item,pos){
-      item.classList.toggle("is-active",pos===active);
-      item.setAttribute("aria-selected",pos===active?"true":"false");
-    });
-    input.setAttribute("aria-activedescendant","pw-suggest-"+active);
-  }else if(e.key==="Enter"&&active>=0){
-    e.preventDefault();
-    choose(words[shown[active]]);
-  }else if(e.key==="Escape"){
-    closeList();
-    setGhost("","");
-  }else if((e.key==="Tab"&&!e.shiftKey)||e.key==="ArrowRight"){
-    if(input.selectionStart===input.value.length&&ghostRest.textContent){
-      e.preventDefault();
-      accept();
-    }
-  }
-});
-ghostRest.addEventListener("mousedown",function(e){e.preventDefault();accept();});
-var Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-if(mic&&Recognition){
-  mic.hidden=false;
-  var recognition=null;
-  var resting=input.getAttribute("placeholder");
-  var stopListening=function(){
-    recognition=null;
-    mic.classList.remove("is-listening");
-    mic.setAttribute("aria-pressed","false");
-    input.setAttribute("placeholder",resting);
-  };
-  mic.addEventListener("click",function(){
-    if(recognition){recognition.stop();return;}
-    var heard="";
-    recognition=new Recognition();
-    recognition.lang=navigator.language||"en-GB";
-    recognition.interimResults=true;
-    recognition.maxAlternatives=1;
-    recognition.onresult=function(e){
-      var spoken="";
-      heard="";
-      for(var i=0;i<e.results.length;i++){
-        if(e.results[i].isFinal){heard+=e.results[i][0].transcript;}
-        else{spoken+=e.results[i][0].transcript;}
-      }
-      input.value=(heard+spoken).trim();
-    };
-    recognition.onerror=function(){heard="";};
-    recognition.onend=function(){
-      stopListening();
-      var q=heard.trim();
-      if(q){choose(q);}
-    };
-    closeList();
-    setGhost("","");
-    mic.classList.add("is-listening");
-    mic.setAttribute("aria-pressed","true");
-    input.setAttribute("placeholder","Listening\u2026");
-    try{recognition.start();}catch(err){stopListening();}
-  });
-}
-})();
-"""
 
 
 def _is_http_url(value: str) -> bool:
@@ -1085,13 +909,17 @@ def _render_choice_card(
     )
     # The first row's photos load at once; the rest as the page is scrolled to them.
     loading = "eager" if idx <= 4 else "lazy"
+    # The first card's photo is asked for before the page's other photos: the browser
+    # shows a card only once its photo has loaded, so the first card waits on it
+    # (docs/PICWISE_AUDIT_FIXES.md, section 4, A.1). One photo a page, never more.
+    priority = ' fetchpriority="high"' if idx == 1 else ""
     single_line = f'<p class="pw-single-only">{escape(_SINGLE_PRODUCT_LINE)}</p>' if single else ""
     return (
         f'<article class="pw-card{rec_class}" data-choice-id="{escape(choice_id, quote=True)}">'
         f"{anchor}"
         '<div class="pw-product-image-wrap">'
         f'<img class="pw-product-image" src="{escape(str(card["image"]), quote=True)}" '
-        f'alt="{escape(name)} product image" width="400" height="400" loading="{loading}" decoding="async">'
+        f'alt="{escape(name)} product image" width="400" height="400" loading="{loading}"{priority} decoding="async">'
         f"{heart}</div>"
         '<div class="pw-card-body">'
         f"{single_line}"
@@ -1124,196 +952,6 @@ def _kind_choices_html(resolution: LiveSearchResolution) -> str:
     )
 
 
-# The page's styles, after the design of 2026-10-31. Every card of a row is as tall as
-# the others; the photo is square and shown whole (`object-fit:contain`) at a size fixed
-# before it loads, and the role, title and shop lines have fixed heights, so the prices
-# and the buttons of a row line up and nothing moves while the page loads.
-_PAGE_STYLES = (
-    ":root{--blue:#1a4fb7;--blue-2:#2f6fe4;--ink:#0f2442;--ink-2:#355174;--muted:#6b7f9e;--line:#dbe6f6;--bg:#f5f8fd;--card:#fff;--green:#1d8a4e;}"
-    "*{box-sizing:border-box;}html,body{min-height:100%;}"
-    "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--ink);background:var(--bg);-webkit-text-size-adjust:100%;}"
-    ".pw-reference-viewport{min-height:100vh;display:flex;flex-direction:column;}"
-    ".pw-topbar{position:relative;background:#fff;border-bottom:1px solid var(--line);z-index:20;}"
-    ".pw-topbar-inner{max-width:1190px;margin:0 auto;padding:12px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;}"
-    ".pw-brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--ink);min-width:0;}"
-    ".pw-logo{width:34px;height:34px;border-radius:11px;background:linear-gradient(160deg,#30a0ff 0%,#1f6cff 70%);position:relative;flex:0 0 auto;}"
-    ".pw-logo::before{content:'';position:absolute;left:7px;top:7px;width:13px;height:13px;border:3px solid #fff;border-right-color:transparent;border-radius:999px;}"
-    ".pw-logo::after{content:'';position:absolute;right:7px;bottom:7px;width:6px;height:6px;background:#fff;border-radius:999px;}"
-    ".pw-brand-text{display:flex;flex-direction:column;line-height:1;}"
-    ".pw-brand-name{font-size:26px;font-weight:800;letter-spacing:-.04em;text-transform:lowercase;}"
-    ".pw-brand-tagline{margin-top:3px;font-size:11px;letter-spacing:.02em;color:#3c5f8a;}"
-    ".pw-actions{display:flex;align-items:center;gap:8px;}"
-    ".pw-topbar-control{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 13px;border-radius:999px;font:inherit;font-size:14px;font-weight:600;line-height:1;border:1px solid transparent;white-space:nowrap;cursor:pointer;}"
-    ".pw-info-link{background:var(--blue-2);color:#fff;border-color:var(--blue-2);}"
-    ".pw-info-link:focus-visible{outline:2px solid var(--blue);outline-offset:3px;}"
-    ".pw-info-icon{display:none;font-weight:800;}"
-    ".pw-info-wrap{position:relative;display:inline-flex;}"
-    ".pw-tooltip{position:absolute;top:calc(100% + 10px);right:0;width:min(400px,calc(100vw - 24px));background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px rgba(16,40,80,.16);padding:12px 14px;font-size:14px;line-height:1.5;color:var(--ink);text-align:left;display:none;z-index:40;}"
-    ".pw-info-wrap.is-open .pw-tooltip{display:block;}"
-    ".pw-reference-frame{width:100%;max-width:1190px;margin:0 auto;padding:22px 22px 10px;flex:1;}"
-    ".pw-home{padding-top:46px;}"
-    ".pw-hero-home{text-align:center;margin:0 auto 22px;max-width:760px;}"
-    ".pw-hero-title{margin:0 0 10px;font-size:34px;line-height:1.15;letter-spacing:-.02em;color:var(--ink);}"
-    ".pw-hero-sub{margin:0 auto;max-width:620px;font-size:16px;line-height:1.55;color:var(--ink-2);}"
-    ".pw-search-wrap{position:relative;width:100%;max-width:700px;margin:0 auto 18px;}"
-    ".pw-search-shell{display:flex;align-items:center;gap:10px;width:100%;height:56px;background:#fff;border:2px solid var(--blue-2);border-radius:999px;padding:0 6px 0 18px;box-shadow:0 8px 24px rgba(47,111,228,.12);}"
-    ".pw-search-icon,.pw-search-button-icon{position:relative;width:16px;height:16px;display:inline-block;color:#7c93b7;flex:0 0 auto;}"
-    ".pw-search-icon::before,.pw-search-button-icon::before{content:'';position:absolute;left:0;top:0;width:10px;height:10px;border:2px solid currentColor;border-radius:999px;}"
-    ".pw-search-icon::after,.pw-search-button-icon::after{content:'';position:absolute;right:1px;bottom:2px;width:7px;height:2px;background:currentColor;border-radius:2px;transform:rotate(45deg);transform-origin:right center;}"
-    ".pw-input-wrap{position:relative;flex:1;display:flex;align-items:center;min-width:0;height:100%;}"
-    ".pw-search-input{flex:1;width:100%;height:52px;padding:0;border:0;background:transparent;outline:none;font-family:inherit;font-size:18px;color:var(--ink);font-weight:500;letter-spacing:normal;}"
-    ".pw-search-input::placeholder{color:#8ea2c0;}"
-    ".pw-ghost{position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;font-family:inherit;font-size:18px;font-weight:500;letter-spacing:normal;white-space:pre;overflow:hidden;pointer-events:none;max-width:100%;}"
-    ".pw-ghost-typed{visibility:hidden;}"
-    ".pw-ghost-rest{color:#bccbe0;pointer-events:auto;cursor:pointer;}"
-    ".pw-search-button{width:44px;height:44px;border-radius:999px;border:0;background:var(--blue-2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;}"
-    ".pw-search-button .pw-search-button-icon{color:#fff;}"
-    ".pw-mic-button{width:42px;height:42px;border-radius:999px;border:1px solid var(--line);background:#fff;color:#4f6f9c;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;padding:0;}"
-    ".pw-mic-button[hidden]{display:none;}"
-    ".pw-mic-button.is-listening{background:#ffecec;border-color:#f0b3b3;color:#c43c3c;}"
-    ".pw-mic-button:focus-visible,.pw-search-button:focus-visible{outline:2px solid var(--blue);outline-offset:3px;}"
-    ".pw-suggest{position:absolute;left:0;right:0;top:calc(100% + 6px);margin:0;padding:6px 0;list-style:none;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 40px rgba(16,40,80,.12);z-index:25;text-align:left;}"
-    ".pw-suggest[hidden]{display:none;}"
-    ".pw-suggest-item{padding:9px 18px;font-size:16px;color:var(--ink);cursor:pointer;}"
-    ".pw-suggest-item.is-active,.pw-suggest-item:hover{background:#eef4ff;}"
-    ".pw-results-head{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap;margin:8px 0 2px;}"
-    ".pw-query-line{margin:0;font-size:15px;color:#1a3d6b;font-weight:600;line-height:1.4;}"
-    ".pw-results-count{margin:0;font-size:13px;font-weight:700;color:var(--ink-2);background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 12px;white-space:nowrap;}"
-    ".pw-reference-disclaimer{margin:4px 0 14px;font-size:13px;line-height:1.5;color:var(--muted);}"
-    ".pw-reference-disclaimer a{color:var(--blue);font-weight:600;}"
-    # A search with nothing to show: its message is the page's answer, so it reads as one.
-    '.pw-reference-frame:has(.pw-grid[data-card-count="0"]) .pw-reference-disclaimer{max-width:760px;margin:10px auto 0;font-size:16px;line-height:1.55;color:var(--ink);text-align:center;}'
-    ".pw-kind-choices{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0 4px;}"
-    ".pw-kind-choices-ask{font-size:14px;font-weight:700;color:var(--ink);margin-right:4px;}"
-    ".pw-kind-choice{display:inline-flex;align-items:center;height:32px;padding:0 13px;border-radius:999px;background:#eaf1ff;color:var(--blue);font-size:13px;font-weight:600;text-decoration:none;}"
-    ".pw-kind-choice:hover{background:#dce8ff;}"
-    ".pw-kind-choice:focus-visible{outline:2px solid var(--blue-2);outline-offset:3px;}"
-    ".pw-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;align-items:stretch;width:100%;margin:0 auto;}"
-    '.pw-grid[data-card-count="2"],.pw-grid[data-card-count="3"]{grid-template-columns:repeat(auto-fit,minmax(0,280px));justify-content:center;}'
-    ".pw-card{position:relative;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;min-width:0;}"
-    ".pw-card-recommended{border:2px solid var(--blue-2);box-shadow:0 10px 26px rgba(47,111,228,.14);padding:11px;}"
-    ".pw-anchor{position:absolute;top:-80px;}"
-    ".pw-product-image-wrap{position:relative;aspect-ratio:1/1;width:100%;border-radius:12px;background:#fff;border:1px solid #edf2fa;display:flex;align-items:center;justify-content:center;overflow:hidden;}"
-    ".pw-product-image{display:block;width:100%;height:100%;object-fit:contain;color:transparent;}"
-    # A card is seen only once its photo has loaded, and one whose photo fails never
-    # (HEAD_SCRIPT marks them; owner, 2026-11-01). Its place is kept while the photo
-    # loads, so nothing moves when it appears.
-    ".pw-photo-guard .pw-card{visibility:hidden;opacity:0;}"
-    ".pw-photo-guard .pw-card.pw-photo-ok{visibility:visible;opacity:1;transition:opacity .15s ease-out;}"
-    ".pw-card.pw-no-photo{display:none;}"
-    ".pw-card-body{display:flex;flex-direction:column;flex:1;min-width:0;}"
-    ".pw-role{display:flex;flex-direction:column;align-items:flex-start;gap:4px;height:46px;margin:10px 0 4px;overflow:hidden;}"
-    ".pw-rec-badge{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:var(--blue-2);color:#fff;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}"
-    ".pw-role-label{margin:0;display:inline-flex;align-items:center;max-width:100%;height:22px;padding:0 9px;border-radius:999px;background:#eef3fb;color:var(--ink-2);font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}"
-    ".pw-card-recommended .pw-role-label{height:auto;padding:0;background:none;color:var(--blue);font-size:12px;letter-spacing:0;text-transform:none;}"
-    ".pw-card-title{margin:0;font-size:15px;line-height:1.35;font-weight:650;color:var(--ink);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;height:4.05em;}"
-    ".pw-card-shop{margin:6px 0 0;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}"
-    ".pw-price{margin:8px 0 2px;font-size:24px;line-height:1.15;font-weight:800;letter-spacing:-.02em;color:var(--ink);}"
-    ".pw-card-stock{margin:0;font-size:13px;font-weight:650;line-height:1.35;}"
-    ".pw-stock-listed,.pw-stock-verified{color:var(--green);}"
-    ".pw-stock-unconfirmed{color:var(--muted);}"
-    ".pw-card-description{margin:2px 0 0;font-size:12px;line-height:1.35;color:var(--muted);min-height:16px;}"
-    ".pw-card-extra{margin:2px 0 0;font-size:12px;font-weight:650;color:var(--blue);}"
-    ".pw-meta{margin:4px 0 0;font-size:12px;line-height:1.4;color:var(--muted);}"
-    ".pw-feature-list{margin:6px 0 0;padding:0;list-style:none;display:grid;gap:4px;}"
-    ".pw-feature-item{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--ink-2);line-height:1.35;}"
-    ".pw-feature-dot{width:7px;height:7px;border-radius:999px;background:#5b8ce5;flex:0 0 auto;margin-top:4px;}"
-    ".pw-warning{margin:6px 0 0;font-size:11px;color:#5a7498;line-height:1.35;display:flex;gap:6px;}"
-    ".pw-warning-icon{font-size:10px;color:#6f86ad;line-height:1.2;margin-top:1px;}"
-    ".pw-rec-note{margin:6px 0 0;font-size:11px;line-height:1.35;color:#2e4c7d;background:#eef4ff;border-radius:8px;padding:6px 8px;}"
-    ".pw-card-note{margin:8px 0 0;font-size:11.5px;line-height:1.4;color:#7b8ba3;}"
-    ".pw-role-label[data-offer]{background:#fff1e6;color:#b4471f;}"
-    ".pw-card-offer{margin:6px 0 0;padding:7px 9px;border-radius:10px;background:#fff7f0;border:1px solid #f6d9c2;}"
-    ".pw-offer-title{margin:0;font-size:12.5px;font-weight:700;line-height:1.35;color:#9a3b12;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}"
-    ".pw-offer-meta{margin:2px 0 0;font-size:11.5px;color:#8a5a3c;}"
-    ".pw-offer-code{font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:.04em;color:#9a3b12;}"
-    ".pw-offer-terms{margin:4px 0 0;font-size:11px;color:#8a5a3c;}"
-    ".pw-offer-terms summary{cursor:pointer;}"
-    ".pw-offer-terms p{margin:4px 0 0;line-height:1.4;}"
-    ".pw-card-body>:nth-last-child(2){margin-bottom:12px;}"
-    ".pw-card-cta{margin-top:auto;display:block;width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--blue-2);color:var(--blue-2);background:#fff;font:inherit;font-size:14px;font-weight:700;text-align:center;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;}"
-    ".pw-card-cta:hover{background:#eef4ff;}"
-    ".pw-card-recommended .pw-card-cta{background:var(--blue-2);color:#fff;}"
-    ".pw-card-recommended .pw-card-cta:hover{background:var(--blue);}"
-    ".pw-card-cta:focus-visible{outline:2px solid var(--blue);outline-offset:2px;}"
-    '.pw-grid[data-layout="single"]{display:block;max-width:980px;}'
-    '.pw-grid[data-layout="single"] .pw-card{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:26px;padding:20px;border-radius:18px;}'
-    '.pw-grid[data-layout="single"] .pw-role{height:auto;margin:0 0 6px;}'
-    '.pw-grid[data-layout="single"] .pw-role:empty{display:none;}'
-    '.pw-grid[data-layout="single"] .pw-card-title{font-size:22px;line-height:1.3;height:auto;-webkit-line-clamp:4;}'
-    '.pw-grid[data-layout="single"] .pw-price{font-size:32px;margin-top:12px;}'
-    '.pw-grid[data-layout="single"] .pw-card-cta{display:inline-block;width:auto;max-width:100%;align-self:flex-start;padding:12px 28px;background:var(--blue-2);color:#fff;}'
-    '.pw-grid[data-layout="single"] .pw-card-cta:hover{background:var(--blue);}'
-    ".pw-single-only{margin:0 0 12px;padding:10px 12px;background:#f0f5ff;border:1px solid #d6e3fb;border-radius:10px;color:var(--ink-2);font-size:14px;line-height:1.45;}"
-    ".pw-single-facts{list-style:none;margin:14px 0 0;padding:0;font-size:14px;color:var(--ink-2);}"
-    ".pw-single-facts li{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #eef2f8;}"
-    ".pw-fact-name{color:var(--muted);min-width:120px;}"
-    ".pw-more{display:flex;flex-direction:column;align-items:center;gap:10px;margin:24px auto 0;}"
-    ".pw-counter{margin:0;font-size:14px;font-weight:600;color:var(--ink-2);}"
-    ".pw-more-button{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 34px;border-radius:999px;background:#fff;border:1px solid var(--blue-2);color:var(--blue-2);font-size:15px;font-weight:700;text-decoration:none;}"
-    ".pw-more-button:hover{background:#eef4ff;}"
-    ".pw-more-button:focus-visible{outline:2px solid var(--blue);outline-offset:3px;}"
-    ".pw-demo-note{text-align:center;font-size:12px;line-height:1.5;color:var(--muted);margin:18px auto 0;max-width:760px;}"
-    ".pw-empty-state{max-width:760px;margin:12px auto 0;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;color:var(--ink-2);font-size:14px;line-height:1.6;text-align:left;}"
-    ".pw-how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:860px;margin:30px auto 0;}"
-    ".pw-how-item{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;}"
-    ".pw-how-title{margin:0 0 4px;font-size:15px;color:var(--ink);}"
-    ".pw-how-text{margin:0;font-size:14px;line-height:1.5;color:var(--ink-2);}"
-    ".pw-footer{margin-top:34px;padding:18px max(22px,calc((100% - 1146px) / 2));background:#fff;border-top:1px solid var(--line);}"
-    ".pw-footer-links{display:flex;flex-wrap:wrap;gap:8px;}"
-    ".pw-footer-link{display:inline-flex;align-items:center;padding:6px 11px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:13px;color:var(--ink-2);text-decoration:none;white-space:nowrap;}"
-    ".pw-footer-link:hover{background:#eef4ff;}"
-    ".pw-footer-disclosure{margin:10px 0 0;font-size:12px;line-height:1.5;color:var(--muted);max-width:820px;}"
-    ".pw-footer-meta{margin:6px 0 0;font-size:12px;color:var(--muted);}"
-    ".pw-scan{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(245,248,253,.94);display:flex;align-items:flex-start;justify-content:center;padding:22vh 16px 0;z-index:50;}"
-    ".pw-scan[hidden]{display:none;}"
-    ".pw-scan-card{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px;max-width:560px;box-shadow:0 16px 40px rgba(16,40,80,.12);}"
-    ".pw-scan-dot{width:12px;height:12px;border-radius:999px;background:var(--blue-2);flex:0 0 auto;animation:pw-pulse 1s ease-in-out infinite alternate;}"
-    "@keyframes pw-pulse{from{opacity:.35;}to{opacity:1;}}"
-    ".pw-scan-text{margin:0;font-size:16px;color:var(--ink);line-height:1.45;}"
-    "@media (prefers-reduced-motion:reduce){.pw-scan-dot{animation:none;}}"
-    "@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}"
-    "@media (max-width:760px){"
-    '.pw-grid[data-layout="single"] .pw-card{grid-template-columns:1fr;gap:14px;padding:14px;}'
-    ".pw-how{grid-template-columns:1fr;}"
-    "}"
-    "@media (max-width:699px){"
-    ".pw-topbar-inner{padding:10px 14px;}"
-    ".pw-brand-name{font-size:22px;}"
-    ".pw-brand-tagline{display:none;}"
-    ".pw-logo{width:30px;height:30px;border-radius:10px;}"
-    ".pw-logo::before{left:6px;top:6px;width:11px;height:11px;}"
-    ".pw-logo::after{right:6px;bottom:6px;width:5px;height:5px;}"
-    ".pw-actions{gap:6px;}"
-    ".pw-info-txt{display:none;}"
-    ".pw-info-icon{display:inline;}"
-    ".pw-info-link{width:36px;padding:0;}"
-    ".pw-reference-frame{padding:14px 12px 8px;}"
-    ".pw-home{padding-top:26px;}"
-    ".pw-hero-title{font-size:26px;}"
-    ".pw-hero-sub{font-size:15px;}"
-    ".pw-search-shell{height:52px;padding:0 5px 0 14px;}"
-    ".pw-search-input{height:48px;font-size:16px;}"
-    ".pw-ghost{font-size:16px;}"
-    ".pw-mic-button{width:38px;height:38px;}"
-    ".pw-search-button{width:40px;height:40px;}"
-    ".pw-query-line{font-size:14px;}"
-    ".pw-grid,.pw-grid[data-card-count]{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}"
-    ".pw-card{padding:9px;border-radius:14px;}"
-    ".pw-card-recommended{padding:8px;}"
-    ".pw-role{height:42px;margin:8px 0 4px;}"
-    ".pw-rec-badge,.pw-role-label{height:20px;padding:0 7px;font-size:10px;}"
-    ".pw-card-recommended .pw-role-label{height:auto;padding:0;font-size:11px;}"
-    ".pw-card-title{font-size:13px;}"
-    ".pw-card-shop{font-size:12px;}"
-    ".pw-price{font-size:19px;}"
-    ".pw-card-stock{font-size:12px;}"
-    ".pw-card-note{font-size:11px;}"
-    ".pw-cta-at{display:none;}"
-    ".pw-card-cta{padding:9px 8px;}"
-    ".pw-footer{padding:16px 14px;}"
-    "}"
-)
 
 
 def render_picwise_reference_surface(
@@ -1610,8 +1248,14 @@ def render_picwise_reference_surface(
         if is_home
         else (
             '<div class="pw-results-head">'
-            f'<p class="pw-query-line">{escape(query_line)}</p>'
-            f"{results_count_html}"
+            # The page's heading when the search has an answer: what was searched and how
+            # the answer is ordered. With none, the message under it is the page's answer.
+            + (
+                f'<h1 class="pw-query-line">{escape(query_line)}</h1>'
+                if query_line
+                else '<p class="pw-query-line"></p>'
+            )
+            + f"{results_count_html}"
             "</div>"
             f"{kind_choices_html}"
             f'<p class="pw-reference-disclaimer">{escape(disclaimer_line)}</p>'
@@ -1628,17 +1272,28 @@ def render_picwise_reference_surface(
     if assist is not None and results_html:
         # One place the page's script can put the answer's results in, drawing no box.
         results_html = f'<div class="pw-results" id="pw-results">{results_html}</div>'
+    # A search's page is named after the search; the home page keeps the site's title.
+    page_title = (not is_home and search_page_title(display_query)) or _HOME_TITLE
     html = (
         "<!doctype html>"
-        '<html lang="en"><head>'
+        f'<html lang="{SITE_LANGUAGE}"><head>'
         '<meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         f"{'' if indexable else NOINDEX_META}"
-        "<title>PicWise — Find the product you want in UK shops</title>"
+        f"<title>{escape(page_title)}</title>"
         # What PicWise does, in the owner's own words of 2026-10-17 ("What is PicWise?"),
         # for Google to show under the home page (owner, 2026-10-31: the pages true).
         f'<meta name="description" content="{escape(_WHAT_IS_PICWISE)}">'
-        f"<script>{HEAD_SCRIPT}</script>"
+        f"{icon_links_html()}"
+        # Only the page Google may index says where it lives; who publishes it, only once
+        # the site declares itself to Google (`seo.DECLARE_TO_GOOGLE`, off: owner, 12/11).
+        + (
+            indexable_head_html("/", title=_HOME_TITLE, description=_WHAT_IS_PICWISE)
+            + (home_structured_data_html() if declares_to_google() else "")
+            if indexable and is_home
+            else ""
+        )
+        + f"<script>{HEAD_SCRIPT}</script>"
         f"<style>{_PAGE_STYLES}{BROWSER_LISTS_STYLES}{TRENDS_STYLES if home_after_search_html else ''}"
         f"{ASSIST_STYLES if assist is not None else ''}</style>"
         "</head><body>"

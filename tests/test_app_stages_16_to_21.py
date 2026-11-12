@@ -224,7 +224,8 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertIn('class="pw-grid"', body)
         self.assertIn("grid-template-columns:repeat(4,minmax(0,1fr));", body)
         self.assertIn("@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));", body)
-        # The phone layout of the design of 2026-10-31: two cards a row, smaller.
+        # The phone layout: two cards a row from 2026-10-31, one product a row since
+        # 2026-11-12 (owner: «Ανεβασε»; tests/test_picwise_phone_layout.py).
         self.assertIn("@media (max-width:699px){", body)
         self.assertEqual(body.count('<article class="pw-card'), 0)
         self.assertIn("pw-empty-state", body)
