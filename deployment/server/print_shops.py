@@ -89,9 +89,12 @@ def print_silent_shops(shops: list[dict]) -> None:
     for shop in sorted(silent, key=lambda shop: (-shop["rows"], shop["shop"])):
         held = ", ".join(f"{reason} {count:,}" for reason, count in shop["held_reasons"].items())
         behind = (shop.get("without_category") or {}).get("also_held_for") or {}
+        said = (shop.get("without_category") or {}).get("out_of_stock_by") or {}
         line = f"  {shop['rows']:>7,} rows  {shop['shop']}: {held or 'none held'}"
         if behind:
             line += "; behind the missing category: " + ", ".join(f"{reason} {count:,}" for reason, count in behind.items())
+        if said:
+            line += "; out of stock by " + ", ".join(f"{value} ({count:,})" for value, count in said.items())
         print(line)
 
 

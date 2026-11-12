@@ -174,6 +174,26 @@ def _held_behind_category(row: ProviderEligibilityResult) -> tuple[str, ...]:
     return others or ("card_holds_for_the_category_only",)
 
 
+# Of a shop's rows held behind a missing category for being out of stock, how many of
+# the columns and values that said so the note lists, and how long a value may be.
+_OUT_OF_STOCK_BY_LISTED = 5
+_STOCK_VALUE_LENGTH = 40
+
+
+def _out_of_stock_by(row: ProviderEligibilityResult) -> str:
+    """For a row the card holds as out of stock, the column and value that said so
+    ("in_stock: 0"), or "". Six shops gave no product on 12/11, every row out of stock
+    by its feed; a whole shop out of stock is unlikely, so the note says which column
+    and value decided (`offer_health.interpret_availability_state`)."""
+    card = row.product_eligibility
+    health = card.offer_health if card is not None else None
+    if health is None or health.availability_state != "out_of_stock":
+        return ""
+    field_name = str(health.availability_source_field or "?")
+    value = " ".join(str(health.feed_availability_signal or "?").split())[:_STOCK_VALUE_LENGTH]
+    return f"{field_name}: {value}"
+
+
 def _shop_address(url: str) -> str:
     """The shop's own address of a product: the link itself, or the address an Awin link
     carries in its query ("ued", "p"), read as text; "" when it carries none ("pclick.php")."""
@@ -360,7 +380,7 @@ def measure_feed_intake(
                 "product_types": Counter(), "product_type_without_category": 0,
                 "without_category": {key: 0 for key in without_totals},
                 "kinds": {"type": Counter(), "title": Counter()}, "types_shown": Counter(), "titles": [],
-                "also_held_for": Counter(),
+                "also_held_for": Counter(), "out_of_stock_by": Counter(),
                 "hints": {"columns": Counter(), "values": {}, "paths": Counter(), **_empty_hint_counts()},
             },
         )
@@ -385,6 +405,9 @@ def measure_feed_intake(
                     behind = _held_behind_category(row)
                     shop["also_held_for"].update(behind)
                     also_held_totals.update(behind)
+                    said = _out_of_stock_by(row)
+                    if said:
+                        shop["out_of_stock_by"][said] += 1
                 if way:
                     for bucket in (without, without_totals):
                         bucket[f"shown_by_{way}"] += 1
@@ -443,6 +466,7 @@ def measure_feed_intake(
                     "kinds_by_type": _buckets(shop["kinds"]["type"] if read else None),
                     "kinds_by_title": _buckets(shop["kinds"]["title"] if read else None),
                     "also_held_for": dict(shop["also_held_for"].most_common()),
+                    "out_of_stock_by": dict(shop["out_of_stock_by"].most_common(_OUT_OF_STOCK_BY_LISTED)),
                     "types": _top_values(shop["types_shown"], _WITHOUT_CATEGORY_TYPES, _PRODUCT_TYPE_EXAMPLE_LENGTH),
                     "titles": shop["titles"],
                     "hints": _hint_note(shop["hints"]),

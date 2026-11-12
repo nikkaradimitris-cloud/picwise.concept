@@ -31,8 +31,11 @@ a decision came about.
     row of NORVEXA ADVISORY LTD (13,227), Frenzy Clothings (5,398), Beauti Outlet
     (4,421), myCord | Bracelet Lab (1,816), Handbags Infinity Fashion (1,186) and Wilna
     Kitchen (206) is out of stock by the feed, as well as without a category. A whole
-    shop out of stock is unlikely: find which column and value say so (a flag a shop
-    never fills?), then fix by cause or have the shops' catalogue bot read their stock.
+    shop out of stock is unlikely. Built: the note names the column and reading that said
+    so (`without_category.out_of_stock_by`, printed beside each shop that gives nothing);
+    read it the night after the deployment, then fix by cause (a flag constant across
+    one shop's rows read as unknown, as the feed's constant flags are; or the bot reading
+    their stock), a rule of stock, said to the owner first.
   The steps of the mechanism in full, with the night's numbers of 12/11:
   `docs/PICWISE_AUDIT_FIXES.md`, section 4, group E.
 - **Live since 12/11** (owner: «Ανεβασε», then «ανέβασε»): the audit's fixes (`70baa78`,

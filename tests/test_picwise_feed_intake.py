@@ -215,6 +215,8 @@ class RowsWithoutCategoryTests(unittest.TestCase):
                 "kinds_by_title": {"kind": 2, "accessory": 1, "doubtful": 1, "none": 1},
                 # c2 and c5: out of stock as well, so neither its type nor its title shows it.
                 "also_held_for": {"availability_out_of_stock": 2, "purchasability_out_of_stock": 2},
+                # And which column said so: the stock word of `stock_status`.
+                "out_of_stock_by": {"stock_status: explicit_out_of_stock": 2},
                 "types": [{"value": "Gift Ideas", "rows": 1}, {"value": "Kitchen > Kettles", "rows": 1}],
                 # A title read as a kind by itself is the search's risk: chocolate mice.
                 "titles": ["Fixturon Electric Kettle c3 -> kettle", "Fixturon Chocolate Mice 225g -> mouse"],
@@ -383,6 +385,8 @@ class SilentShopTests(unittest.TestCase):
         # ... and behind it, the card's own reason, which no title or type would lift.
         self.assertEqual(without["also_held_for"], {"price_zero_or_negative": 3})
         self.assertEqual(intake["without_category"]["also_held_for"], {"price_zero_or_negative": 3})
+        # Not out of stock: no column named for it.
+        self.assertEqual(without["out_of_stock_by"], {})
         # A shop that gives a product holds nothing behind a category.
         five = next(shop for shop in intake["shops"] if shop["shop"] == "Fixture Store Five")
         self.assertEqual(five["without_category"]["also_held_for"], {})
@@ -407,6 +411,36 @@ class SilentShopTests(unittest.TestCase):
             "  held for something else too, behind the missing category: price_zero_or_negative 3\n", report
         )
         self.assertNotIn("Fixture Store Five:", report.split("shops that give no product")[1].split("\n\n")[0])
+
+
+class OutOfStockShopTests(unittest.TestCase):
+    """A shop whose every row has no category and is out of stock by its feed: the note
+    and the report say which column and what it said (six such shops on 12/11)."""
+
+    def setUp(self) -> None:
+        _use_feed(
+            self,
+            [_row(f"o{number}", "Fixture Stock Shop", category="", stock="Out of stock") for number in range(1, 4)]
+            + [_row("e1", "Fixture Store Five")],
+        )
+
+    def test_the_column_and_what_it_said(self) -> None:
+        import json
+        import subprocess
+
+        intake = measure_configured_feed_intake()
+        shop = next(shop for shop in intake["shops"] if shop["shop"] == "Fixture Stock Shop")
+        self.assertEqual(shop["without_category"]["out_of_stock_by"], {"stock_status: explicit_out_of_stock": 3})
+        report = subprocess.run(
+            [sys.executable, str(ROOT / "deployment" / "server" / "print_shops.py")],
+            input=json.dumps({"prepared": True, "intake": intake}), capture_output=True, text=True, check=True,
+        ).stdout
+        self.assertIn(
+            "        3 rows  Fixture Stock Shop: missing_category_text 3; behind the missing category: "
+            "availability_out_of_stock 3, purchasability_out_of_stock 3; "
+            "out of stock by stock_status: explicit_out_of_stock (3)\n",
+            report,
+        )
 
 
 if __name__ == "__main__":
