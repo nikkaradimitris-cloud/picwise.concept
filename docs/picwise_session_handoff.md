@@ -38,6 +38,21 @@ a decision came about.
     their stock), a rule of stock, said to the owner first.
   The steps of the mechanism in full, with the night's numbers of 12/11:
   `docs/PICWISE_AUDIT_FIXES.md`, section 4, group E.
+- **Built and not deployed, waiting for the owner's «ναι»** (asked in the daily report of
+  12/11, 12:00 Greek time; no answer yet): `db200ca` and the records after it, which
+  carry B (the catalogue's memory), C (the shops' words; Finediam's "Diamond Ring" read
+  as a ring, the one change a visitor sees), D's measure (the column that says a silent
+  shop is out of stock) and, built by the daily session of 12/11, steps 12 and 15 of the
+  mechanism: how each shop was taken in (`balance.by_shop`) and the products two or
+  more shops sell by brand and part number (`balance.shared_by_brand_and_part`), both
+  measured only. Tests on `db200ca`: 307 modules, 305 pass, 2 fail as known.
+  **Everything next waits for that deployment's note**: D's fix (the column's name), step
+  11 (the shops' types with their titles, `balance.words_to_learn`: without the titles
+  no type can be reviewed at the owner's bar; "PCs/Workstations", "Photo Paper" and
+  "Brooches" are the first to look at), and the numbers of steps 12 and 15. The morning
+  after the deployment: read `prepared.json` (`memory`, `balance.by_shop`,
+  `balance.shared_by_brand_and_part`, `balance.words_to_learn`,
+  `intake.shops[].without_category.out_of_stock_by`) and the deployment's run.
 - **Live since 12/11** (owner: «Ανεβασε», then «ανέβασε»): the audit's fixes (`70baa78`,
   04:07 UTC): a search about five times faster on the server's side, each worker
   keeping the catalogue loaded (proven at the night's change), phones one product a

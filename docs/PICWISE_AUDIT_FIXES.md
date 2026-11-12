@@ -262,9 +262,11 @@ are sold by two shops or more; no product carries a date of update or a stock qu
     Map only the types that plainly name a kind PicWise has, never one that is no
     product ("Warranty & Support Extensions", "Sold Out"); measured before and after on
     the server's note (products with a kind, the kinds' cards right at the audit's bar).
-12. **How each shop was taken in** (small): per shop, kept by the cap, with a kind,
-    with a barcode, sold by another shop too; so the morning after a shop is added
-    says how much of it a visitor can find.
+12. **How each shop was taken in** (small; built on 12/11, `db200ca`, not deployed): per
+    shop, kept by the cap, with a kind, with a barcode, sold by another shop too
+    (`balance.by_shop`; the server's report prints it beside the rows and the shown
+    products of the shop's feed); so the morning after a shop is added says how much of
+    it a visitor can find. Read the night after the deployment.
 13. **The catalogue's memory** (medium): per product, first seen, last seen, the price
     and its changes; per shop, its rows each night. The feed carries no date of update
     and no stock quantity for any product, so this is the only way to know how fresh a
@@ -273,7 +275,10 @@ are sold by two shops or more; no product carries a date of update or a stock qu
     for a night that shop's cards would be the night before's).
 15. **The same product across shops by brand and part number too**, not only by
     barcode (414 by barcode): the real overlap, which says whether comparing prices can
-    carry a page.
+    carry a page. Built on 12/11 (`db200ca`, not deployed), measured only:
+    `balance.shared_by_brand_and_part`, the products two or more shops sell by brand
+    and MPN as the search's own `same_product_key` reads them, and how many of those no
+    barcode already joins. Read the night after the deployment.
 
 ### D. Larger, each on the owner's word
 
