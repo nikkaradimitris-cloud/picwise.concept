@@ -64,12 +64,32 @@ def main() -> int:
             f"{shop['rows']:>9,} {shop['shown']:>9,} {shop['not_new']:>7,} {shop['held']:>9,}  "
             f"{shop['shop']}{': ' + reasons if reasons else ''}"
         )
+    print_silent_shops(shops)
     print()
     print_intake_change(note)
     print_without_category(intake)
     print_shop_catalogues(note)
     print_balance(note)
     return 0
+
+
+def print_silent_shops(shops: list[dict]) -> None:
+    """The shops in the feed that give no product, each with every reason its rows are
+    held: the feed's, and behind a missing category the card's own
+    (`feed_intake._held_behind_category`; the audit's fixes, 2026-11-12: five shops the
+    owner had joined gave none, and the note said only "no category"). Nothing when
+    every shop gives a product."""
+    silent = [shop for shop in shops if shop["rows"] and not shop["shown"] and not shop["not_new"]]
+    if not silent:
+        return
+    print(f"shops that give no product: {len(silent)}")
+    for shop in sorted(silent, key=lambda shop: (-shop["rows"], shop["shop"])):
+        held = ", ".join(f"{reason} {count:,}" for reason, count in shop["held_reasons"].items())
+        behind = (shop.get("without_category") or {}).get("also_held_for") or {}
+        line = f"  {shop['rows']:>7,} rows  {shop['shop']}: {held or 'none held'}"
+        if behind:
+            line += "; behind the missing category: " + ", ".join(f"{reason} {count:,}" for reason, count in behind.items())
+        print(line)
 
 
 def print_intake_change(note: dict) -> None:
@@ -117,6 +137,11 @@ def print_without_category(intake: dict) -> None:
         f"  could be shown by their title alone: {total['shown_by_title']:,} "
         f"({_kinds(total['kinds_by_title'])})"
     )
+    if total.get("also_held_for"):
+        print(
+            "  held for something else too, behind the missing category: "
+            + ", ".join(f"{reason} {count:,}" for reason, count in total["also_held_for"].items())
+        )
     if "address" in total:
         print("  of those, " + _address(total["address"]))
     if "barcode" in total:
@@ -139,6 +164,8 @@ def print_without_category(intake: dict) -> None:
         )
         if index >= DETAILED:
             continue
+        if rows.get("also_held_for"):
+            print("      also held for: " + ", ".join(f"{reason} {count:,}" for reason, count in rows["also_held_for"].items()))
         if rows["types"]:
             print("      types: " + "; ".join(f"{entry['value']} ({entry['rows']:,})" for entry in rows["types"]))
         if rows["titles"]:

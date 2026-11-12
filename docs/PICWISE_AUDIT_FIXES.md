@@ -231,6 +231,50 @@ reason section 7 now gives. The steps as they were asked for:
   on the first new card (`#pw-choice-N`), and the page now takes about a tenth of a
   second to make. With the design work, if the owner wants it.
 
+### E. The mechanism, for the shops the owner adds: first (owner, 12/11)
+
+The owner, 12/11, after the plan for the pages for Google and «Δεν θέλω να δηλωθεί τίποτα
+στην google ακόμα»: «Το πλάνο είναι να προστεθούν καταστήματα φούτευοποιηθεί ο
+μηχανισμός», read as: shops are added, and the mechanism that brings their products in
+is made the best it can be. So this group comes before D. What the night's note of 12/11
+04:23 UTC says of the mechanism (read with `curl`): 84 shops in the feed, 75 give a
+product; 1,673,901 rows, 923,904 held for having no category (55%); of the 245,894
+products the cap keeps, 143,789 have no kind (58%); 414 of the 104,786 with a barcode
+are sold by two shops or more; no product carries a date of update or a stock quantity.
+
+9. **Why a shop gives nothing** (small; built on 12/11, not deployed). Nine shops give
+   no product. Five of them (NORVEXA ADVISORY LTD 13,227 rows, Frenzy Clothings 5,398,
+   Beauti Outlet 4,425, myCord | Bracelet Lab 1,820, Handbags Infinity Fashion 1,206)
+   are held "for no category" by the note, and yet neither their type nor their title
+   could show them: the card holds them for something more, written nowhere, so the
+   shops' catalogue bot, which asks only shops some of whose rows could be shown but for
+   a category, never asks them. The note now says, per shop, what else holds such rows
+   (`feed_intake._held_behind_category`, `without_category.also_held_for`), and the
+   server's report lists the shops that give nothing with every reason
+   (`print_shops.print_silent_shops`). Read the night after the deployment.
+10. **Fix by cause what step 9 finds** for the silent shops (a reading of their rows
+    that is ours to fix, or a fact of their feed to tell the owner).
+11. **Shop types that name no kind** (small to medium). 40,192 rows have a type from
+    the shop's own catalogue (the bot's) that names no kind PicWise has; the most:
+    Back to the Office's "Tablet Security Enclosures" 2,661, "Display Privacy Filters"
+    1,980, "Power Adapters & Inverters" 1,438, "Monitor Mounts & Stands" 835, "Tablet
+    Cases" 758, "TV Mounts & Stands" 685, "Diamond Ring" 672 (Finediam), "Brooches" 434.
+    Map only the types that plainly name a kind PicWise has, never one that is no
+    product ("Warranty & Support Extensions", "Sold Out"); measured before and after on
+    the server's note (products with a kind, the kinds' cards right at the audit's bar).
+12. **How each shop was taken in** (small): per shop, kept by the cap, with a kind,
+    with a barcode, sold by another shop too; so the morning after a shop is added
+    says how much of it a visitor can find.
+13. **The catalogue's memory** (medium): per product, first seen, last seen, the price
+    and its changes; per shop, its rows each night. The feed carries no date of update
+    and no stock quantity for any product, so this is the only way to know how fresh a
+    listing is; and the base for 14.
+14. **A shop's broken feed keeps last night's rows** (medium; the owner's yes first:
+    for a night that shop's cards would be the night before's).
+15. **The same product across shops by brand and part number too**, not only by
+    barcode (414 by barcode): the real overlap, which says whether comparing prices can
+    carry a page.
+
 ### D. Larger, each on the owner's word
 
 6. **A shop's feed that came broken keeps last night's rows** (medium; the owner's yes

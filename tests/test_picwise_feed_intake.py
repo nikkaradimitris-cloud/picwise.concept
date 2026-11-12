@@ -13,6 +13,12 @@ Owner, 2026-10-25, with every Google-format shop on the server (about 532,000 of
 shown by their own product type, or by their title alone, and read as what kind; pinned
 too.
 
+The audit's fixes, 2026-11-12: five shops the owner had joined gave no product, every row
+held "for no category" by the note, and what else held them was written nowhere; so the
+shops' catalogue bot never asked them. Of the rows held for no category alone that could
+be shown neither by their type nor by their title, what else holds them (the card's own
+reasons): pinned, and a shop that gives nothing says why in the server's report.
+
 Every row is local test data: fictional brands, `.invalid` URLs.
 """
 from __future__ import annotations
@@ -207,6 +213,8 @@ class RowsWithoutCategoryTests(unittest.TestCase):
                 "shown_by_title": 5,
                 "kinds_by_type": {"kind": 1, "accessory": 0, "doubtful": 1, "none": 0},
                 "kinds_by_title": {"kind": 2, "accessory": 1, "doubtful": 1, "none": 1},
+                # c2 and c5: out of stock as well, so neither its type nor its title shows it.
+                "also_held_for": {"availability_out_of_stock": 2, "purchasability_out_of_stock": 2},
                 "types": [{"value": "Gift Ideas", "rows": 1}, {"value": "Kitchen > Kettles", "rows": 1}],
                 # A title read as a kind by itself is the search's risk: chocolate mice.
                 "titles": ["Fixturon Electric Kettle c3 -> kettle", "Fixturon Chocolate Mice 225g -> mouse"],
@@ -237,6 +245,7 @@ class RowsWithoutCategoryTests(unittest.TestCase):
                 "shown_by_title": 5,
                 "kinds_by_type": {"kind": 1, "accessory": 0, "doubtful": 1, "none": 0},
                 "kinds_by_title": {"kind": 2, "accessory": 1, "doubtful": 1, "none": 1},
+                "also_held_for": {"availability_out_of_stock": 2, "purchasability_out_of_stock": 2},
             },
         )
         self.assertNotIn("fixture.example.invalid", repr(intake))
@@ -349,6 +358,55 @@ class HintsTests(unittest.TestCase):
         # Words only: no address, no Awin link, in the note.
         self.assertNotIn("example.invalid", repr(intake))
         self.assertNotIn("awin1", repr(intake))
+
+
+
+class SilentShopTests(unittest.TestCase):
+    """A shop whose every row has no category and a price of 0.00: it gives nothing."""
+
+    def setUp(self) -> None:
+        shop = "Fixture Silent Shop"
+        _use_feed(
+            self,
+            [_row(f"s{number}", shop, category="", price="0.00") for number in range(1, 4)]
+            + [_row("e1", "Fixture Store Five")],
+        )
+
+    def test_it_says_what_else_holds_its_rows(self) -> None:
+        intake = measure_configured_feed_intake()
+        silent = next(shop for shop in intake["shops"] if shop["shop"] == "Fixture Silent Shop")
+        self.assertEqual((silent["rows"], silent["shown"]), (3, 0))
+        # The feed's gate says only "no category"...
+        self.assertEqual(silent["held_reasons"], {"missing_category_text": 3})
+        without = silent["without_category"]
+        self.assertEqual((without["only_this"], without["shown_by_type"], without["shown_by_title"]), (3, 0, 0))
+        # ... and behind it, the card's own reason, which no title or type would lift.
+        self.assertEqual(without["also_held_for"], {"price_zero_or_negative": 3})
+        self.assertEqual(intake["without_category"]["also_held_for"], {"price_zero_or_negative": 3})
+        # A shop that gives a product holds nothing behind a category.
+        five = next(shop for shop in intake["shops"] if shop["shop"] == "Fixture Store Five")
+        self.assertEqual(five["without_category"]["also_held_for"], {})
+
+    def test_the_servers_report_names_it_with_every_reason(self) -> None:
+        import json
+        import subprocess
+
+        intake = measure_configured_feed_intake()
+        note = {"prepared": True, "intake": intake}
+        report = subprocess.run(
+            [sys.executable, str(ROOT / "deployment" / "server" / "print_shops.py")],
+            input=json.dumps(note), capture_output=True, text=True, check=True,
+        ).stdout
+        self.assertIn("shops that give no product: 1\n", report)
+        self.assertIn(
+            "        3 rows  Fixture Silent Shop: missing_category_text 3; "
+            "behind the missing category: price_zero_or_negative 3\n",
+            report,
+        )
+        self.assertIn(
+            "  held for something else too, behind the missing category: price_zero_or_negative 3\n", report
+        )
+        self.assertNotIn("Fixture Store Five:", report.split("shops that give no product")[1].split("\n\n")[0])
 
 
 if __name__ == "__main__":

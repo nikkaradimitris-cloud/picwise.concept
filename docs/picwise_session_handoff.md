@@ -34,6 +34,18 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-06): pick up here -- start here
 
+- **12/11: the owner's plan: more shops, and the mechanism made the best it can be;
+  nothing to Google yet.** The owner: «Το πλάνο είναι να προστεθούν καταστήματα
+  φούτευοποιηθεί ο μηχανισμός» (read as: shops are added and the mechanism that brings
+  their products in is made the best it can be). The steps, in order, with the numbers
+  of the night's note of 12/11: `docs/PICWISE_AUDIT_FIXES.md`, section 4, group E; they
+  come before the pages for Google (D). **Step 9 built, not deployed:** five shops the
+  owner had joined (26,048 rows) give no product, held "for no category" while
+  something more holds them that the note never named, so the shops' catalogue bot never
+  asked them; the note now names it per shop and the server's report lists every shop
+  that gives nothing with every reason (`tests/test_picwise_feed_intake.py`). It is read
+  the night after the deployment, with the removal of the sitemap below; both wait for
+  the owner's «ανέβασε».
 - **12/11: nothing is declared to Google (the owner's word).** After the deployment of
   that morning, the owner: «Δεν θέλω να δηλωθεί τίποτα στην google ακόμα». That
   deployment had put on the site `/sitemap.xml`, its line in `robots.txt` and the home
