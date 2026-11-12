@@ -8,21 +8,36 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **12/11, the owner: next, the design, in a new conversation** («Πάμε να ασχοληθούμε με
-  κάτι πιο εύκολο σε νέα συζήτηση με θέμα design»). What waits for it, found in the
-  audit or left for it by the owner: the scanning screen's count (it names about 735,000
-  products while the search holds about 251,000; the owner, 08/11: «Να περιμένεις το
-  design»); the empty pages, written for a developer ("PicWise safely shows no product
-  cards until intent confidence ...", "Detected category: ...") and leading nowhere; the
-  shop's name as Awin writes it on the button ("View at Geepas Partner Program"); the
-  line "Price and stock as the shop lists them, not verified by PicWise" on every card
-  (the owner's design of 31/10); the font "Inter" named but never loaded; the phone
-  layout of 12/11 (one product a row) seen on no real phone yet. The design of 31/10
-  and its labels are the owner's (`docs/PICWISE_DECISION_CONTRACT.md`): every wording a
-  visitor reads changes on the owner's word only; show the owner a picture first
-  (render the page offline, never a script on the live site). The page's markup:
+- **12/11, the design: its first part built on `ccr-9953c583-wz6sfv`, not deployed**
+  (the owner, in the conversation on the design: the site «μοιάζει πιο πολύ με εφημερίδα
+  και όχι με search αγορών πρέπει να γράψουμε λιγότερα»; to the design proposed «Έχεις
+  δίκιο για αυτά»; the heading kept, «3», since a heading of price comparison «θα κλείσουν
+  πολλές πόρτες» and PicWise «στηρίζεται στην αξιοπιστία της πληροφορίας»; the loading
+  screen «φτιάξε απλά ένα όμορφο φόρτωμα»). Commits `33c7165` to `0418f4a`, on top of the
+  work branch's `db66ab7` (a fast-forward for it): a plain loading screen, the PicWise
+  mark turning, no number (the scanning screen's wrong count gone with it); the home
+  page with its heading, the box and three facts ("250,000+ products from 80 UK shops",
+  counted from what the search keeps after the cap; "In stock only, updated every
+  night"; "Never ranked by commission"), no paragraph, no boxes, no tagline; calmer
+  colours, "What is PicWise?" white, the box's line grey and blue while typing, plain
+  footer links; the month's most searched panel made simpler and folded to four rows
+  ("Show all 10", "Show fewer"; still hidden, no source); the font Inter served by the
+  site itself (48 KB). Pictures were shown to the owner before each step; the owner has
+  not said «ανέβασε». `docs/LANDING_PAGE_SPEC.md`, "The Home Page (2026-11-12)".
+  **What waits, one at a time, a picture first:** the empty pages, written for a
+  developer ("PicWise safely shows no product cards until intent confidence ...",
+  "Detected category: ...") and leading nowhere (proposed to the owner: "No products
+  found for "…"" and "Try the name or the kind of the product, for example …", no answer
+  yet); the product card (the owner's next subject); the shop's name as Awin writes it
+  on the button ("View at Geepas Partner Program"); the line "Price and stock as the
+  shop lists them, not verified by PicWise" on every card (the owner's design of 31/10);
+  the phone layout of 12/11 (one product a row) seen on no real phone yet. The design of
+  31/10 and its labels are the owner's (`docs/PICWISE_DECISION_CONTRACT.md`): every
+  wording a visitor reads changes on the owner's word only; show the owner a picture
+  first (render the page offline, never a script on the live site). The page's markup:
   `src/picwise_surface/reference.py`, its style sheet `page_styles.py`, its script
-  `search_script.py`; the cards' classes are pinned by tests (the gotchas below).
+  `search_script.py`, the font `fonts.py`, the month's panel `trends.py`; the
+  cards' classes are pinned by tests (the gotchas below).
 - **12/11, the owner: the search's accuracy later.** Asked whether to measure the cards
   again on the server (about $0.25) and go on fixing by cause toward the bar of 98%
   right: «Όχι ακόμα με έχει κουράσει αυτή η απασφαλμάτωση αργότερα». So no measure, no
