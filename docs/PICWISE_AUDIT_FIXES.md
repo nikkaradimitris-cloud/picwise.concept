@@ -15,21 +15,22 @@ A later session reviews what is done from here on against section 6.
 
 1. Read, in this order: `PROJECT_RULES.md`, `README.md`, the first section of
    `docs/picwise_session_handoff.md`, this file. `PROJECT_RULES.md` wins over everything.
-2. The work is on the branch **`ccr-99b47f03-l8t4dj`**: the audit's fixes, group A of
-   section 4 (built by another session on `audit-group-a-2026-11-11`, reviewed, and
-   brought here by a fast-forward on 12/11) and the review's own fix. The branches
-   `audit-group-a-2026-11-11` and `audit-group-a-2026-11-12` hold nothing this one does
-   not: start from here, not from them. Behind it: the work's branch
-   `ccr-4f47068a-99ikwe`, at `214f4b9`, and `main`, at `8c093ca` (one commit earlier).
-   Start your own branch from it:
-   `git fetch origin ccr-99b47f03-l8t4dj && git checkout -B <your branch> origin/ccr-99b47f03-l8t4dj`.
-   The daily session (`docs/PICWISE_DAILY_WORK.md`) starts from `ccr-4f47068a-99ikwe`
-   and pushes there: it does not know this branch. The owner was asked to pause it
-   while this work is in hand. If `ccr-4f47068a-99ikwe` is past `214f4b9` when you
-   start, stop and tell the owner: the two lines must be joined before anything else.
-   A pull request from it to `main` is open (#23, opened from the owner's account on
-   11/11). Do not merge it, close it or open another: `main` moves only on the owner's
-   yes, by a fast-forward.
+2. The work is on one line, held since 12/11 by two branches at the same commit: the
+   work's branch **`ccr-4f47068a-99ikwe`**, from which every session starts, as before
+   (`docs/PICWISE_DAILY_WORK.md`), and `ccr-99b47f03-l8t4dj`, on which the audit's
+   fixes were built and reviewed. The owner, asked on 12/11 whether to bring the work's
+   branch onto this line before the daily session, which did not know this work: «Ναι
+   ολοκλήρωσε» (a fast-forward from `214f4b9`). The line holds the audit's fixes, group
+   A of section 4 (built by another session on `audit-group-a-2026-11-11`, reviewed)
+   and the review's own fix. The branches `audit-group-a-2026-11-11` and
+   `audit-group-a-2026-11-12` hold nothing more: do not start from them. `main` is
+   behind, at `8c093ca`. Start your own branch from the work's branch:
+   `git fetch origin ccr-4f47068a-99ikwe && git checkout -B <your branch> origin/ccr-4f47068a-99ikwe`.
+   If the two branches are no longer at the same commit, the work's branch is the line
+   (sessions push there); if neither holds the other, stop and tell the owner.
+   A pull request from `ccr-99b47f03-l8t4dj` to `main` is open (#23, opened from the
+   owner's account on 11/11). Do not merge it, close it or open another: `main` moves
+   only on the owner's yes, by a fast-forward.
 3. **Nothing of this is deployed.** The live site is still `ace8468`
    (`ccr-1361f1a7-dcpo60`). A push to that branch deploys: never without the owner's
    «ανέβασε» for that commit.
@@ -87,29 +88,28 @@ untouched.
 
 Tests on `52a9f20`, each module in its own process: 307 modules, 2,693 tests; 305
 pass, 2 fail as known (`README.md` names them), 0 fail otherwise, here and on GitHub's
-runner (run `43116890274`, the first job). The two slow modules (`SLOW` in the tool)
-pass here in full on that commit; GitHub's second job: section 3, point 1.
+runner (run `43116890274`). The two slow modules (`SLOW` in the tool) pass in full on
+that commit, here and there: both jobs of that run are green.
 
 ## 3. Not yet proven: check before anyone relies on it
 
-1. **The slow modules' job on GitHub, on the review's commit (`52a9f20`).** Until 11/11 the two
-   slow modules had finished nowhere. That day `test_picwise_learning_stage7b` passed,
-   and `test_picwise_search_index_blind_evaluation_stage6a` finished for the first time
+1. **The slow modules: closed on 11/11, nothing left to read.** Until that day the two
+   slow modules had finished nowhere. `test_picwise_learning_stage7b` passed, and
+   `test_picwise_search_index_blind_evaluation_stage6a` finished for the first time
    (3,256 to 4,020 s) and failed one test of 13,
    `test_negative_broad_terms_are_included`, alike on `619f963`, `56aefb3` and `925f211`
-   (runs `43068207518`, `43071701101`, `43081356387`). The cause, found in the review
-   (12/11): since 2026-05-21 (`6944f94`) that test expects eleven broad terms among the
+   (runs `43068207518`, `43071701101`, `43081356387`). The cause, found in the review:
+   since 2026-05-21 (`6944f94`) that test expects eleven broad terms among the
    generated cases and the generator's list held nine ("amazon" and "galaxy" were put
    into the test and into the unsafe broad queries, not into the list). It could never
    pass; nobody saw it, the module never having been run to its end. Neither the
-   audit's fixes nor group A touch those files. Fixed in the review's commit: the two
-   terms in the list, and `tests/test_picwise_blind_negative_terms.py`, which says the
-   same in 20 seconds on every push. Checked here on `52a9f20`, with the fix: both slow
-   modules in full, the 13 tests of stage 6a and the 10 of stage 7b all pass. On GitHub
-   (run `43116890274`, the same commit) every other module is green; its slow job was
-   still running at 23:22 UTC of 11/11: **read it**. If it is red, change nothing by
-   yourself: say which test and what it printed, in `PROGRESS.md` and to the owner.
-   Never skip it.
+   audit's fixes nor group A touch those files. Fixed in `52a9f20`: the two terms in
+   the list, and `tests/test_picwise_blind_negative_terms.py`, which says the same in
+   20 seconds on every push. On that commit both slow modules pass in full, here and on
+   GitHub: run `43116890274`, both jobs green at 23:53 UTC of 11/11, the first green
+   "Tests" run there has been. From here on a red job is a new fault: say which test
+   and what it printed, in `PROGRESS.md` and to the owner, and change nothing for it
+   until its cause is known. Never skip a module.
 2. **The keeper has never run on the server**, with gunicorn and the real catalogue.
    At the night's change each worker builds the new catalogue beside the old one, one
    worker at a time: the service's memory (3,816 MB on 09/11; ceiling 11 GB) rises by
