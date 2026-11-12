@@ -231,7 +231,11 @@ class PicwiseLocalApp:
             # A server without the AI layer searches exactly as before it. So does a page
             # whose buyer chose a price on the price bar: the AI layer is not asked again
             # for every price (its daily spend is capped), and the order is the usual one.
-            resolution = resolve_live_search(query, shown=shown, min_price=min_price)
+            resolution = (
+                resolve_live_search(query, shown=shown)
+                if min_price is None
+                else resolve_live_search(query, shown=shown, min_price=min_price)
+            )
         else:
             resolution, assist = resolve_with_assist(query, shown=shown, write_jobs=not assist_refresh)
         html = render_picwise_reference_surface(

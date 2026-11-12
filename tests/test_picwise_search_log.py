@@ -197,9 +197,10 @@ class PageScriptTests(unittest.TestCase):
 
         self.assertIn('fetch("/searched?q="+encodeURIComponent(q)', _SEARCH_SCRIPT)
         self.assertIn('credentials:"omit"', _SEARCH_SCRIPT)
-        # Only on a search page, and not for "More" or the AI layer's refresh.
+        # Only on a search page, and not for "More", the AI layer's refresh or a price
+        # chosen on the price bar (owner, 2026-11-12): each is the same search again.
         self.assertIn('path!=="/search"&&path!=="/results"', _SEARCH_SCRIPT)
-        self.assertIn("/[?&](shown|assist)=/.test(location.search)", _SEARCH_SCRIPT)
+        self.assertIn("/[?&](shown|assist|min)=/.test(location.search)", _SEARCH_SCRIPT)
 
 
 class PrivacyAndServerTests(unittest.TestCase):
