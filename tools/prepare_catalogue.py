@@ -68,6 +68,10 @@ def main(argv: list[str] | None = None) -> int:
         "--keep-going", action="store_true", help="exit 0 when the feed cannot be read or preparing it fails"
     )
     parser.add_argument("--static-dir", type=Path, help=f"write {STATIC_NOTE_NAME}, what this build prepared, here")
+    parser.add_argument(
+        "--memory", type=Path,
+        help="keep the catalogue's memory in this SQLite file (picwise_providers.catalogue_memory)",
+    )
     args = parser.parse_args(argv)
     if args.feed_file is not None:
         if not args.feed_file.is_file():
@@ -114,8 +118,23 @@ def main(argv: list[str] | None = None) -> int:
             f" {pool['kept_from_before']:,} of them kept the night before; the search and the pool Google may be"
             " given from hold the same"
         )
+    intake = _intake() if args.static_dir is not None else None
+    memory = _memory(args.memory, prepared, intake)
+    if memory is not None:
+        if "error" in memory:
+            print(f"prepare_catalogue: the catalogue's memory was not written ({memory['error']})")
+        else:
+            print(
+                f"prepare_catalogue: the catalogue's memory: {memory['products_known']:,} products over "
+                f"{memory['nights']} nights; tonight {memory['seen_tonight']:,} seen, {memory['new_tonight']:,} new, "
+                f"{memory['price_changed_tonight']:,} with a new price"
+                + (
+                    f", {memory['gone_since']:,} of {memory['compared_with']} not seen"
+                    if memory["compared_with"] is not None
+                    else ""
+                )
+            )
     if args.static_dir is not None:
-        intake = _intake()
         change = _intake_change(_previous_note(args.static_dir), intake)
         if change.get("shrunk") or change.get("gone"):
             # Said where the server's journal and a deployment's run show it: nothing
@@ -142,6 +161,7 @@ def main(argv: list[str] | None = None) -> int:
                 "shop_catalogues": _shop_catalogues(),
                 "balance": _balance(prepared),
                 "google_pool": pool,
+                **({"memory": memory} if memory is not None else {}),
             },
         )
     return 0
@@ -293,6 +313,24 @@ def _shop_catalogues() -> dict[str, object] | None:
         from picwise_providers.shop_catalogue import last_shop_catalogue_note
 
         return last_shop_catalogue_note()
+    except Exception as error:
+        return {"error": _where(error)}
+
+
+def _memory(path: Path | None, prepared, intake: object) -> dict[str, object] | None:
+    """The night written into the catalogue's memory, when one is named (`--memory`, else
+    `PICWISE_CATALOGUE_MEMORY_FILE`); what it now says, or the error, which never fails
+    the preparation (picwise_providers.catalogue_memory)."""
+    try:
+        from picwise_providers.catalogue_memory import configured_memory_path, remember_night
+
+        path = path or configured_memory_path()
+        if path is None:
+            return None
+        return remember_night(
+            path, prepared.products, prepared_at=prepared.prepared_at,
+            intake=intake if isinstance(intake, dict) else None,
+        )
     except Exception as error:
         return {"error": _where(error)}
 

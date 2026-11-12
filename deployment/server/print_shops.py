@@ -66,6 +66,7 @@ def main() -> int:
         )
     print_silent_shops(shops)
     print()
+    print_memory(note)
     print_intake_change(note)
     print_without_category(intake)
     print_shop_catalogues(note)
@@ -90,6 +91,27 @@ def print_silent_shops(shops: list[dict]) -> None:
         if behind:
             line += "; behind the missing category: " + ", ".join(f"{reason} {count:,}" for reason, count in behind.items())
         print(line)
+
+
+def print_memory(note: dict) -> None:
+    """What the catalogue's memory says after the night (`catalogue_memory`, 2026-11-12);
+    nothing for a note without it."""
+    memory = note.get("memory")
+    if not isinstance(memory, dict):
+        return
+    if "error" in memory:
+        print(f"the catalogue's memory: not written ({memory['error']})")
+        print()
+        return
+    line = (
+        f"the catalogue's memory: {memory['products_known']:,} products over {memory['nights']} nights; "
+        f"the night of {memory['night']}: {memory['seen_tonight']:,} seen, {memory['new_tonight']:,} new, "
+        f"{memory['price_changed_tonight']:,} with a new price"
+    )
+    if memory.get("compared_with"):
+        line += f", {memory['gone_since']:,} seen on {memory['compared_with']} and not since"
+    print(line)
+    print()
 
 
 def print_intake_change(note: dict) -> None:
