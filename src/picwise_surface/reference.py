@@ -140,12 +140,13 @@ _PRICE_FIRST_RECOMMENDED_BADGE = "&#9733; Recommended"
 _PRICE_FIRST_RECOMMENDED_LABEL = "Mid-priced for this category"
 _PRICE_FIRST_LOWEST_LABEL = "Lowest price"
 _PRICE_FIRST_SHOPS_LABEL = "Lowest price of {shops} shops"
-_PRICE_FIRST_SORTED = "Sorted by price, lowest first, from the shops connected to PicWise."
+# "From the shops connected to PicWise" said by none of them since 2026-11-12 (owner:
+# «Αυτό εννοείται και είναι περιττό παίρνει χώρο και κατεβάζει τις κάρτες χαμηλά»).
+_PRICE_FIRST_SORTED = "Sorted by price, lowest first."
 # Owner, 2026-11-01: «Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο». A page
 # whose answer has products on offer says so where it says how it is sorted.
 _PRICE_FIRST_SORTED_WITH_OFFERS = (
-    "Products a current shop offer covers come first, then the rest by price, lowest first, "
-    "from the shops connected to PicWise."
+    "Products a current shop offer covers come first, then the rest by price, lowest first."
 )
 _OFFER_LABEL = "Offer"
 # Owner, 2026-11-01: «Εάν υπάρχει προσφορά να προτείνει την προσφορά». A Recommended
@@ -163,11 +164,11 @@ _PRICE_FIRST_FEED_NOTE = "Prices and stock are as the shops list them."
 _PRICE_FIRST_RECOMMENDED_FITTING_LABEL = "Mid-priced of those that fit"
 _PRICE_FIRST_SORTED_WITH_FITTING = (
     "Products whose own words show they fit your search come first, then the rest, each by price, "
-    "lowest first, from the shops connected to PicWise."
+    "lowest first."
 )
 _PRICE_FIRST_SORTED_WITH_FITTING_AND_OFFERS = (
     "Products whose own words show they fit your search come first, then the rest; in each, products "
-    "a current shop offer covers come first, then by price, lowest first, from the shops connected to PicWise."
+    "a current shop offer covers come first, then by price, lowest first."
 )
 _RECOMMENDED_AMONG_FITTING = "The Recommended is mid-priced of those that fit."
 _RECOMMENDED_AMONG_FITTING_ON_OFFER = (
