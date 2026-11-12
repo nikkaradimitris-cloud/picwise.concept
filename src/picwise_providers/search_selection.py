@@ -35,6 +35,7 @@ from picwise_nlu.concept_understanding import (
 from picwise_nlu.product_concepts import broader_concepts, get_product_concepts_by_id, get_qualifiers
 from picwise_taxonomy.comparison_rules import comparison_rule
 
+from .shop_words import learned_kind
 from .contracts import FeedAvailabilityContext, OfferHealth, ProviderProduct
 from .normalization import extract_merchant_name
 from .decision_labels import parse_price_amount
@@ -1234,7 +1235,11 @@ def product_kind_key(product: ProviderProduct, fields: dict[str, str]) -> tuple[
 def _product_concepts(product: ProviderProduct, fields: dict[str, str]) -> frozenset[str]:
     key = product_kind_key(product, fields)
     known = _PREPARED_KINDS.get(key)
-    return known if known is not None else annotate_product_concepts(*key)
+    if known is not None:
+        return known
+    # A shop's own type learned by review (`shop_words`, 2026-11-12) names the kind.
+    learned = learned_kind(product.raw if isinstance(product.raw, dict) else {}, key[0])
+    return frozenset({learned}) if learned else annotate_product_concepts(*key)
 
 
 def _unannotated_product_names_concept(

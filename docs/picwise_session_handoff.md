@@ -110,6 +110,7 @@ A conflict between them: stop and say it (`PROJECT_RULES.md` 1.4).
 | The catalogue in memory, its keeper, the prepared file | `src/picwise_providers/state.py`, `prepared_catalogue.py` |
 | The night's preparation and its public note | `tools/prepare_catalogue.py`, `src/picwise_providers/feed_intake.py`, `catalogue_balance.py`, `catalogue_cap.py` |
 | The catalogue's memory (SQLite on the server: first and last night seen, prices, shops' rows per night) | `src/picwise_providers/catalogue_memory.py` |
+| The shops' own words learned as kinds (reviewed table); the night's list to review (`balance.words_to_learn`) | `src/picwise_providers/shop_words.py` |
 | The feed gate and the card gate | `src/picwise_providers/eligibility.py`, `offer_health.py` |
 | The shops' catalogue bot (03:40 UTC) | `deployment/bot/shop_catalogue_bot.py` |
 | The pages: search, home, info pages, phones | `src/picwise_surface/reference.py` (its style sheet `page_styles.py`, its script `search_script.py`), `legal.py`, `seo.py` |

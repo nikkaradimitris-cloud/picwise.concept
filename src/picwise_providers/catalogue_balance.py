@@ -54,6 +54,11 @@ _LISTED = 10
 _FEW_SHOPS_LISTED = 200
 # How many categories the count of products two or more shops sell lists, the most first.
 _SHARED_LISTED = 200
+# How many of the shops' types that name no kind the note lists, the most first, and how
+# many titles of each (`shop_words`; 2026-11-12).
+_WORDS_LISTED = 100
+_WORD_TITLES = 2
+_WORD_TITLE_LENGTH = 90
 OWN_CATEGORIES = "(the shops' own categories)"
 NO_SHOP = "(no shop named)"
 
@@ -175,6 +180,7 @@ def measure_catalogue_balance(
     by_kind: Counter = Counter()
     shops_by_kind: dict[str, set[str]] = {}
     barcodes: dict[str, tuple[set[str], Counter]] = {}
+    words: dict[tuple[str, str], list] = {}
     for product, product_kinds in zip(products, kinds):
         raw = product.raw if isinstance(product.raw, Mapping) else {}
         department, aisle = _shelf_groups(product.category_text)
@@ -188,6 +194,12 @@ def measure_catalogue_balance(
             sellers.add(shop)
             shelves[aisle] += 1
         kind = _narrowest_kind(product_kinds)
+        product_type = " ".join(str(raw.get("product_type") or "").split())
+        if not kind and product_type:
+            entry = words.setdefault((shop, product_type), [0, []])
+            entry[0] += 1
+            if len(entry[1]) < _WORD_TITLES:
+                entry[1].append(" ".join(str(product.title or "").split())[:_WORD_TITLE_LENGTH])
         if kind:
             by_kind[kind] += 1
             shops_by_kind.setdefault(kind, set()).add(shop)
@@ -220,4 +232,12 @@ def measure_catalogue_balance(
         },
         "kinds_from_few_shops": few_shops[:_FEW_SHOPS_LISTED],
         "shared_products": _shared_products(barcodes),
+        # The shops' own types of the products kept with no kind: what to review for
+        # `shop_words.LEARNED_TYPES` or for the lexicon, the most first.
+        "words_to_learn": [
+            {"shop": shop, "type": product_type, "products": count, "titles": titles}
+            for (shop, product_type), (count, titles) in sorted(
+                words.items(), key=lambda item: (-item[1][0], item[0])
+            )[:_WORDS_LISTED]
+        ],
     }

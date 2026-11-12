@@ -32,6 +32,8 @@ DETAILED = 15
 FEW_SHOPS_LISTED = 25
 # How many categories are printed with the products two or more shops sell, the most first.
 SHARED_LISTED = 10
+# How many of the shops' types that name no kind are printed, the most first.
+WORDS_LISTED = 30
 
 
 def main() -> int:
@@ -320,6 +322,12 @@ def print_balance(note: dict) -> None:
                 f"{entry['kind']} {entry['products']:,} ({', '.join(entry['shops'])})"
                 for entry in few[:FEW_SHOPS_LISTED]
             )
+        )
+    words = found.get("words_to_learn")
+    if words:
+        print(
+            "  the shops' own types of the products kept with no kind, to review (shop_words.py), the most first: "
+            + "; ".join(f"{entry['type']} ({entry['shop']}) {entry['products']:,}" for entry in words[:WORDS_LISTED])
         )
     shared = found.get("shared_products")
     if isinstance(shared, dict):
