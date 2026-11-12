@@ -31,6 +31,12 @@ a decision came about.
   are the shops whose products the search holds (the morning's note said 80, the feed's
   shops before the selection, five of them with nothing in the search).
   `docs/LANDING_PAGE_SPEC.md`, "The Home Page (2026-11-12)".
+  **The price bar, live since 17:00 UTC the same day** (owner: «Να μπει ένα φίλτρο με τη
+  μορφή μπάρας ...», then «Ανέβασε»; release `20261112T164645Z-a43aa96`, run
+  `43262330800`): above the cards of an answer of more than four products, from its lowest
+  price to its highest; `?min=150` starts the answer from that price by the same rules
+  (`docs/PICWISE_DECISION_CONTRACT.md`, "The price bar"). On the site: "tablet" shows iPad
+  cases at £7.99 after its Recommended; from £100, Lenovo tablets.
   **What waits, one at a time, a picture first:** the empty pages, written for a
   developer ("PicWise safely shows no product cards until intent confidence ...",
   "Detected category: ...") and leading nowhere (proposed to the owner: "No products
