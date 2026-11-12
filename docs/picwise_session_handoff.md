@@ -111,7 +111,7 @@ A conflict between them: stop and say it (`PROJECT_RULES.md` 1.4).
 | The night's preparation and its public note | `tools/prepare_catalogue.py`, `src/picwise_providers/feed_intake.py`, `catalogue_balance.py`, `catalogue_cap.py` |
 | The feed gate and the card gate | `src/picwise_providers/eligibility.py`, `offer_health.py` |
 | The shops' catalogue bot (03:40 UTC) | `deployment/bot/shop_catalogue_bot.py` |
-| The pages: search, home, info pages, phones | `src/picwise_surface/reference.py`, `legal.py`, `seo.py` |
+| The pages: search, home, info pages, phones | `src/picwise_surface/reference.py` (its style sheet `page_styles.py`, its script `search_script.py`), `legal.py`, `seo.py` |
 | Security headers | `src/picwise_app/app.py` (`SECURITY_HEADERS`) |
 | The AI layer (complex searches, at most $1 a day) | `src/picwise_ai/`, `docs/PICWISE_AI_LAYER_SPEC.md` |
 | The server's units and deployment | `deployment/server/` |
