@@ -1,8 +1,8 @@
 # PicWise — session handoff
 
-Current state for whoever picks the project up next. Updated 2026-11-11 (**the audit of
-10/11 and its fixes: built on `ccr-99b47f03-l8t4dj`, not deployed, waiting for the owner's
-«ανέβασε»; what is left and how it is checked in `docs/PICWISE_AUDIT_FIXES.md`**; **before that: a big
+Current state for whoever picks the project up next. Updated 2026-11-12 (**the audit of
+10/11 and its fixes: live since 2026-11-12 04:07 UTC, run `43150726554`, `70baa78` (owner:
+«Ανεβασε»); what is left and how it is checked in `docs/PICWISE_AUDIT_FIXES.md`**; **before that: a big
 general debugging of the search, category by category, asked by the owner on 07/11
 («ζητάω μία μεγάλη γενική απασφαλμάτωση»: the site not yet trusted as a production page;
 «μπαταρία» read as boots); its method, its bar and about $3 of AI audit approved («Ναι σε
@@ -34,28 +34,39 @@ nightly offers fetch, run `41289100060`; picwise.subby.cloud answers from the se
 
 ## Next conversation (from 2026-11-06): pick up here -- start here
 
-- **START HERE (12/11): the audit's fixes are built, reviewed and green; the work's
-  branch holds them; nothing is deployed.** The owner, asked whether to bring the work's
-  branch onto the audit's line before the daily session: «Ναι ολοκλήρωσε» (12/11). So
-  `ccr-4f47068a-99ikwe` was fast-forwarded from `214f4b9` to the line of
-  `ccr-99b47f03-l8t4dj`, and sessions start from it as before. **That yes was to the
-  branch, not an «ανέβασε»: the site is still `ace8468`.** On the line: the audit's
-  fixes (the item "START HERE (11/11)" below and `docs/PICWISE_AUDIT_FIXES.md`); group A
-  of that file, built by another session on 11/11 (the next item) and reviewed: correct
-  (the file's section 4.A); and the review's fix: the slow module's red test was six
-  months old, not this work's (the blind evaluation's list of broad negative terms
-  lacked "amazon" and "galaxy" since 21/05, and the module had never been run to its
-  end), fixed in `52a9f20` with a 20-second test of the same
-  (`tests/test_picwise_blind_negative_terms.py`). GitHub's "Tests" is green in both
-  jobs for the first time (run `43116890274`). **Nothing is left to build before the
-  owner's word.** The owner is asked: (1) to look at the phone layout (`2ef37c0`
-  changes "Phones: two cards a row" of 31/10; on a no, that commit is reverted alone),
-  then «ανέβασε», which opens the file's group B (the deployment's checks, the speed
-  timed on the site); (2) for the pages for Google (group D): Search Console, and
-  whether the first batch holds only the kinds three or more shops sell (the file's
-  section 5, rows 6 and 7); (3) a new Awin token. A daily session with nothing to
-  build looks (step 2 of `docs/PICWISE_DAILY_WORK.md`, with the night's check) and
-  reports; it builds nothing of the file's group C.
+- **START HERE (12/11, 04:07 UTC): the audit's fixes are live.** The owner, asked to
+  say «ανέβασε» for everything with the new phone layout or «ανέβασε χωρίς το κινητό»
+  without it: **«Ανεβασε»**. `70baa78` (the line of `ccr-4f47068a-99ikwe` and
+  `ccr-99b47f03-l8t4dj`) pushed to `ccr-1361f1a7-dcpo60` by a fast-forward from
+  `ace8468`; run `43150726554`, release `20261112T034929Z-70baa78`, the site on it since
+  04:07:06 UTC. What is live: a search about five times faster on the server's side,
+  each worker keeping the catalogue loaded (no visitor waits for it: proven at the
+  night's change, an hour later), phones one product a row ("Phones: two cards a row"
+  of 31/10 replaced by the owner's word), `canonical`, `/sitemap.xml`, icons and
+  structured data for the seven indexable pages, five security headers, the night's
+  note on shrunk feeds, kinds few shops sell and products several shops sell. Measured
+  and checked: `PROGRESS.md` (12/11) and `docs/PICWISE_AUDIT_FIXES.md`, sections 3 and
+  4.B. **Found: only 414 of the 104,786 products with a barcode are sold by two or more
+  shops**: the product pages for Google (group D) start from few, and the owner's
+  choice of shops matters more than any code. Still open: the service's memory during
+  a night's change, not read yet; the phone layout and the security policy on a real
+  phone (the owner's). Waiting for the owner: Search Console, and whether the first
+  batch for Google holds only the kinds three or more shops sell (rows 6 and 7 of that
+  file's section 5); a new Awin token. `main` (`8c093ca`) and pull request #23
+  untouched. A daily session with nothing to build looks and reports; it builds
+  nothing of group C.
+- **The audit's fixes, built, reviewed and green (12/11, before the deployment).** The
+  owner, asked whether to bring the work's branch onto the audit's line before the
+  daily session: «Ναι ολοκλήρωσε» (12/11), so `ccr-4f47068a-99ikwe` was fast-forwarded
+  from `214f4b9` to the line of `ccr-99b47f03-l8t4dj`, and sessions start from it as
+  before. On the line: the audit's fixes (the item "START HERE (11/11)" below and
+  `docs/PICWISE_AUDIT_FIXES.md`); group A of that file, built by another session on
+  11/11 (the next item) and reviewed: correct (the file's section 4.A); and the
+  review's fix: the slow module's red test was six months old, not this work's (the
+  blind evaluation's list of broad negative terms lacked "amazon" and "galaxy" since
+  21/05; a session had found that on 05/11 and left it), fixed in `52a9f20` with a
+  20-second test of the same (`tests/test_picwise_blind_negative_terms.py`). GitHub's
+  "Tests" green in both jobs for the first time (run `43116890274`).
 - **Group A of the audit's fixes (11/11, evening), on `audit-group-a-2026-11-11`, from
   `56aefb3` of `ccr-99b47f03-l8t4dj`; not deployed.** Step 1 done: `fetchpriority="high"`
   on the first card's photo only (`tests/test_picwise_first_photo_priority.py`). Step 2
@@ -1338,9 +1349,9 @@ The design of 31/10 is built and deployed with the pages (owner, 31/10: «Υλο
     ("... not verified by PicWise", after a not-new or no-description note in the
     labels' words). The owner's labels stay ("Recommended", "Mid-priced for this
     category", "Lowest price"). "4 of 45" also above the cards. Phones: two cards a row
-    (changed on a branch on 2026-11-11, not deployed: one product a row, its photo beside
-    its words, the price with the button beside it; `tests/test_picwise_phone_layout.py`;
-    the first section of this file).
+    until 2026-11-12; since then, by the owner's «Ανεβασε» (the choice of everything
+    with the new layout), one product a row, its photo beside its words, the price with
+    the button beside it (`2ef37c0`; `tests/test_picwise_phone_layout.py`).
   - **One product alone** (owner, 31/10): the same card laid out on its own, "This is
     the only product PicWise found for this search in its shops.", with Shop, Brand,
     Product code (barcode, else the maker's part number, read from the shop's row by

@@ -5,10 +5,12 @@ among the generated cases (`test_negative_broad_terms_are_included`). The genera
 list, `blind_evaluation._NEGATIVE_BROAD_TERMS`, held nine of them from 2026-05-21: that
 day's commit (`6944f94`) put "amazon" and "galaxy" into the test and into the unsafe
 broad queries of `broad_query_suggestions`, and not into the list, so the test could
-never pass. Nobody saw it for six months: the module builds the registry, the index and
-some 15,000 cases again before each of its 13 tests, about an hour in all, and was first
-run to its end by GitHub's "Tests" on 2026-11-11 (the review of the audit's fixes found
-the cause the same night). Pinned here, where every push runs it:
+never pass. A session ran the module to its end on 2026-11-05 and recorded this very
+cause (`PROGRESS.md`), and nothing was changed for it: the module builds the registry,
+the index and some 15,000 cases again before each of its 13 tests, half an hour to an
+hour in all, and runs before no deployment. GitHub's "Tests" ran it on 2026-11-11 and
+the review of the audit's fixes fixed it on 2026-11-12. Pinned here, where every push
+runs it:
 
 - the generator's list is the terms the slow test expects, read from that test's source;
 - each of them is an unsafe broad query, by the rule the search itself uses;

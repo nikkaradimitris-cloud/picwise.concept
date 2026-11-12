@@ -31,9 +31,10 @@ A later session reviews what is done from here on against section 6.
    A pull request from `ccr-99b47f03-l8t4dj` to `main` is open (#23, opened from the
    owner's account on 11/11). Do not merge it, close it or open another: `main` moves
    only on the owner's yes, by a fast-forward.
-3. **Nothing of this is deployed.** The live site is still `ace8468`
-   (`ccr-1361f1a7-dcpo60`). A push to that branch deploys: never without the owner's
-   «ανέβασε» for that commit.
+3. **Deployed on 2026-11-12** (owner: «Ανεβασε»): `70baa78`, release
+   `20261112T034929Z-70baa78`, the site on it since 04:07:06 UTC (run `43150726554`;
+   `PROGRESS.md`, 12/11). A push to `ccr-1361f1a7-dcpo60` deploys: never without the
+   owner's «ανέβασε» for that commit.
 4. The rules that bite most often:
    - the repository is public: no key, no token, no feed file, no feed link;
    - never fetch or click a shop's Awin link; the live site is read with `curl` only;
@@ -91,18 +92,20 @@ pass, 2 fail as known (`README.md` names them), 0 fail otherwise, here and on Gi
 runner (run `43116890274`). The two slow modules (`SLOW` in the tool) pass in full on
 that commit, here and there: both jobs of that run are green.
 
-## 3. Not yet proven: check before anyone relies on it
+## 3. What was not proven before the deployment, and what is now
 
-1. **The slow modules: closed on 11/11, nothing left to read.** Until that day the two
-   slow modules had finished nowhere. `test_picwise_learning_stage7b` passed, and
-   `test_picwise_search_index_blind_evaluation_stage6a` finished for the first time
-   (3,256 to 4,020 s) and failed one test of 13,
+1. **The slow modules: closed on 11/11, nothing left to read.** On GitHub, until that
+   day, the two slow modules had finished nowhere. `test_picwise_learning_stage7b`
+   passed, and `test_picwise_search_index_blind_evaluation_stage6a` finished there for
+   the first time (3,256 to 4,020 s) and failed one test of 13,
    `test_negative_broad_terms_are_included`, alike on `619f963`, `56aefb3` and `925f211`
    (runs `43068207518`, `43071701101`, `43081356387`). The cause, found in the review:
    since 2026-05-21 (`6944f94`) that test expects eleven broad terms among the
    generated cases and the generator's list held nine ("amazon" and "galaxy" were put
    into the test and into the unsafe broad queries, not into the list). It could never
-   pass; nobody saw it, the module never having been run to its end. Neither the
+   pass. A session had run the module to its end on 2026-11-05 and recorded this very
+   cause in `PROGRESS.md`, and nothing was changed for it (corrected on 12/11: this
+   point first said nobody had seen it). Neither the
    audit's fixes nor group A touch those files. Fixed in `52a9f20`: the two terms in
    the list, and `tests/test_picwise_blind_negative_terms.py`, which says the same in
    20 seconds on every push. On that commit both slow modules pass in full, here and on
@@ -110,29 +113,40 @@ that commit, here and there: both jobs of that run are green.
    "Tests" run there has been. From here on a red job is a new fault: say which test
    and what it printed, in `PROGRESS.md` and to the owner, and change nothing for it
    until its cause is known. Never skip a module.
-2. **The keeper has never run on the server**, with gunicorn and the real catalogue.
-   At the night's change each worker builds the new catalogue beside the old one, one
-   worker at a time: the service's memory (3,816 MB on 09/11; ceiling 11 GB) rises by
-   about one catalogue for that time. To be read after the first night.
-   `PICWISE_CATALOGUE_KEEPER=off` puts loading back as it was.
-3. **The phone layout changes a decision of the owner** (31/10: "Phones: two cards a
-   row"). It was seen in offline renders only, on no real phone. The owner must see it
-   and say yes before it is deployed; if no, `2ef37c0` is reverted alone.
+2. **The keeper on the server: proven on 12/11.** The night's file (prepared at
+   04:23:10 UTC, an hour after the deployment) was taken by all four workers by 04:34:
+   16 of 16 answers of `/private-beta-readiness`, spread over the workers, name it in
+   use. Through the change, one search every six seconds with `curl`: none failed, none
+   over 0.81 s to the first byte (before it, 5.4 to 5.7 s for each worker's first
+   request after the night's file). **Not read yet: the service's memory during a
+   change** (3,914 MB just after the start; ceiling 11 GB): the next deployment's "What
+   runs on the server" or the daily session's reading. `PICWISE_CATALOGUE_KEEPER=off`
+   puts loading back as it was.
+3. **The phone layout: the owner's decision, 12/11.** Asked to say «ανέβασε» for
+   everything with it or «ανέβασε χωρίς το κινητό» without it, the owner said
+   «Ανεβασε»: it is the site's layout now ("Phones: two cards a row" of 31/10 replaced).
+   Seen by sessions in offline renders only; the owner's phone is the first real one.
 4. **The home page's structured data and the icons** were written from this
-   repository's spec, not checked in Google's own tools (a session cannot open them).
-5. **The content security policy** was tried in a browser offline, the shops' photos
-   replaced by local ones. On the site: photos show, the microphone works, favourites
-   and recently viewed work, the AI layer's sentence arrives.
-6. A deployment prepares the catalogue again (the code's fingerprint changed): as usual.
+   repository's spec, not checked in Google's own tools (a session cannot open them):
+   live since 12/11, to be tried in Search Console before the first batch.
+5. **The content security policy in a real browser.** Live since 12/11; checked with
+   `curl` only (the header on every answer; the pages ask for nothing from another
+   site). Tried in a browser offline, the shops' photos replaced by local ones. Still
+   to be seen on a real phone: the photos show, the microphone works, favourites and
+   recently viewed work, the AI layer's sentence arrives.
+6. A deployment prepares the catalogue again when the code's fingerprint changes: the
+   one of 12/11 did, in 850 s, peak 9.3 GB.
 
-When the owner says «ανέβασε» for a commit: push it to `ccr-1361f1a7-dcpo60` by a
-fast-forward, read the deployment's run, then with `curl` only: `curl -sI` on `/`,
-`/search?q=kettle`, `/prepared.json` (the five headers; `X-Robots-Tag: noindex` on the
-search and the JSON); `/robots.txt` (its `Sitemap:` line) and `/sitemap.xml` (seven
-addresses); the first search after the deployment and the first after the next night's
-file (both under a second); the memory, from the deployment's and the read-only
-workflows' output; `prepared.json` the morning after (`intake_change`,
-`kinds_from_few_shops`).
+**The deployment's checks, done on 12/11** (with `curl` only, after run `43150726554`):
+the five headers on every answer, with Caddy's `Strict-Transport-Security`;
+`X-Robots-Tag: noindex` on the JSON answers, and `noindex` in a search page's head (the
+search pages carry it in the page, as since 23/10, not as a header: this paragraph said
+"on the search" before); `/robots.txt` with its `Sitemap:` line; `/sitemap.xml` with
+the seven addresses; the home page `en-GB`, its canonical, icons, manifest,
+`Organization` and `WebSite`; a search's own title and `<h1>`, the phone rules, one
+photo asked for first; the info pages kept an hour, the site's files a week; the
+night's note with `intake_change`, `kinds_from_few_shops` and `shared_products`. The
+numbers are in `PROGRESS.md` (12/11).
 
 ## 4. What is left, in order
 
@@ -185,15 +199,19 @@ reason section 7 now gives. The steps as they were asked for:
    (`docs/PICWISE_DAILY_WORK.md`). An email from the server itself needs the owner's
    choice of address and sender: ask, do not build.
 
-### B. After the deployment (only on the owner's «ανέβασε»; nothing of B before it)
+### B. After the deployment: done on 12/11
 
-4. **The deployment and its checks**: the end of section 3.
-5. **The real speed, on the site.** With `curl` (it leaves no line in the searches'
-   log), about 30 searches: kinds, typing slips, searches read as no kind, and the
-   first search after the next night's file; the time to the first byte and in all,
-   each written in `PROGRESS.md` beside 10/11's (a search 0.85 to 1.22 s; 2.9 to 3.2 s
-   the first of a worker's day; 5.4 to 5.7 s the first after the night's file). Never
-   a shop's link. The next speed step, if any, is chosen from these numbers.
+4. **The deployment and its checks**: done (the end of section 3).
+5. **The real speed, on the site**, measured with `curl` (31 searches: kinds, typing
+   slips, searches read as no kind), the time to the first byte from a session, whose
+   floor is 0.33 s (`robots.txt`): right after the restart, median 0.55 s, max 1.04 s;
+   warm, median 0.56 s; through the night's change, 206 searches, median 0.45 s, max
+   1.15 s ("ring", 2,623 products), none failed; after it, median 0.44 s, max 0.79 s.
+   On 10/11, with a floor of 0.11 s: 0.85 to 1.22 s warm, 2.9 to 3.2 s the first of a
+   worker's day, 5.4 to 5.7 s the first after the night's file. So the server's own
+   part of a search is about 0.1 to 0.7 s now, against 0.7 to 1.1 s; no visitor waits
+   for a catalogue. **No speed step is asked for by these numbers**: group C stays
+   unbuilt.
 
 ### C. Not to build unless B's numbers ask for it
 
@@ -247,8 +265,8 @@ Asked or to be asked, in Greek, one short question each; build only on the answe
 | --- | --- | --- |
 | 1 | The domain | Answered 11/11: «Το πλάνο είναι το site να βγει σε υπό τομέα subby.Cloud». So `picwise.subby.cloud` stays the one address (`seo.DEFAULT_CANONICAL_ORIGIN`; `PICWISE_CANONICAL_ORIGIN` changes it without code). Told to the owner: Google indexes a subdomain like any site; the cost comes only if it moves later |
 | 2 | More shops | Answered 11/11: «Θα προσθέσουμε καταστήματα με ετίματα στις κατηγορίες που λείπουν». The night's note lists the kinds one or two shops sell (`kinds_from_few_shops`): give the owner that list, largest first, when asked which shops to apply to |
-| 3 | The phone layout of `2ef37c0` | To be seen by the owner (section 3, point 3) |
-| 4 | «ανέβασε» for this branch | Waiting |
+| 3 | The phone layout of `2ef37c0` | Answered 12/11: «Ανεβασε», the choice of everything with it; live (section 3, point 3) |
+| 4 | «ανέβασε» for this branch | Answered 12/11; `70baa78` live since 04:07:06 UTC |
 | 5 | A new Awin token | The offers are not fetched since 03/11 (401); "offers first" has nothing to work on |
 | 6 | Search Console (and Bing) for `picwise.subby.cloud`, the sitemap given there | The owner's account; nothing is measured without it |
 | 7 | The first batch for Google: only kinds three or more shops sell? | 90 of 265 kinds on 10/11 |

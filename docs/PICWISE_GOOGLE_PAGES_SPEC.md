@@ -297,7 +297,8 @@ Console, which is why section 9 exists.
      (`tests/test_picwise_google_protection.py`). **On `main` and live since 23/10
      18:15 UTC** (merge `47cd76b`, owner: «Ναι, να μπει στο main και κάνε τον
      έλεγχο»), seen by the live check at 18:16.
-     **Added on a branch on 2026-11-11, not deployed** (the audit of 10/11; owner:
+     **Added on 2026-11-11, live since 2026-11-12 04:07 UTC** (run `43150726554`,
+     `70baa78`, owner: «Ανεβασε»; the audit of 10/11; owner:
      «Ζητώ διόρθωση και βελτίωση ... τις προδιαγραφές google»): what each of the seven
      pages Google may already index says of itself, adding no page to Google: its one
      address on the primary domain (`rel="canonical"`, whatever host answered, the

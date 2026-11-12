@@ -1,8 +1,8 @@
 # Picwise Production
 
-Current status (2026-11-09): **live on PicWise's own server with the real Awin feed; the
-search is in its big general debugging (owner, 2026-11-07); nothing is given to Google
-yet.**
+Current status (2026-11-12): **live on PicWise's own server with the real Awin feed; the
+audit's fixes live since 2026-11-12 (speed, phones, security, what Google may read of
+the seven pages it may index); nothing new is given to Google yet.**
 
 Where the work is now: the first section of `docs/picwise_session_handoff.md` ("START
 HERE"). `PROGRESS.md` is the chronological log.
@@ -14,21 +14,24 @@ HERE"). `PROGRESS.md` is the chronological log.
 3. `docs/` (implementation contracts/specs)
 4. `docs/picwise_session_handoff.md`, its first section, and the last entries of `PROGRESS.md`
 
-## What Is Live (2026-11-09)
+## What Is Live (2026-11-12)
 
 - `https://picwise.subby.cloud` is served by PicWise's own server since 2026-10-31
   (OVHcloud VPS-4, London; HTTPS by Caddy; `docs/PICWISE_SERVER_ARCHITECTURE.md`).
   Vercel is kept as the backup: deleting the domain's A record puts the site back there.
 - The catalogue: Awin's Create-a-Feed link with the Google-format shops (`AWIN_FEED_URL`),
-  prepared each night on the server. On 2026-11-09: 597,876 products a card can show,
-  242,869 of them kept by the cap of 15% a category (`PROJECT_RULES.md` section 13).
+  prepared each night on the server. On 2026-11-12: 602,572 products a card can show,
+  245,894 of them kept by the cap of 15% a category (`PROJECT_RULES.md` section 13).
+  Each worker of the site keeps it loaded and brings the night's in beside it.
 - A search: 4 choices with exactly 1 Recommended, only products in stock, those on a
   current shop offer first and then the cheapest first, commission never a criterion
   (`PROJECT_RULES.md` section 2, `docs/PICWISE_DECISION_CONTRACT.md`). The search reads
   English only. An AI layer marks the products that fit a complex search, since
   2026-11-06, at most one euro a day (`docs/PICWISE_AI_LAYER_SPEC.md`).
-- The site's own search pages carry `noindex`. No page is given to Google yet: its pages
-  are specified, not built (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`).
+- The site's own search pages carry `noindex`. The seven pages Google may index say
+  their one address (`canonical`) and are listed in `/sitemap.xml`; every answer
+  carries five security headers. No new page is given to Google yet: its pages are
+  specified, not built (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`).
 - The work goes on every day: a scheduled session at about 12:00 Greek time, a report in
   Greek by email, the site changed only after the owner's «ναι»
   (`docs/PICWISE_DAILY_WORK.md`).
