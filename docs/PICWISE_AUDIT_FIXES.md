@@ -327,7 +327,7 @@ Asked or to be asked, in Greek, one short question each; build only on the answe
 | 10 | The words of the empty pages; the shop's name as a buyer knows it ("View at Geepas", not "Geepas Partner Program"); the price-and-stock line once a page instead of on every card | Wording and the Decision Contract: propose the exact text, wait |
 | 11 | A lasting record of clicks to shops, and `clickref` on the link | Changes the privacy page's text |
 | 12 | A limit of requests per visitor; closing `/subby-proof` and `/private-beta-readiness` | The first counts by address for a moment (privacy); the second touches May's proof pages and their tests |
-| 13 | The scanning screen's count | The owner: with the design work |
+| 13 | The scanning screen's count | Decided 12/11 with the design work: no number at all, a plain loading screen (owner: «φτιάξε απλά ένα όμορφο φόρτωμα»; `reference._scanning_screen_html`) |
 | 14 | An email from the server itself when the night's preparation fails (4.A.3) | To be asked: which address it goes to and who sends it; until then the daily session reports it first (`docs/PICWISE_DAILY_WORK.md`, step 2) |
 | 15 | Whether anything is declared to Google | Decided 12/11: «Δεν θέλω να δηλωθεί τίποτα στην google ακόμα». The sitemap, its `robots.txt` line and the home page's structured data, put on the site by the deployment of that morning, are off again in code (`seo.DECLARE_TO_GOOGLE`); off on the site once that commit is deployed. Nothing given to Search Console (row 6) before the owner's word |
 

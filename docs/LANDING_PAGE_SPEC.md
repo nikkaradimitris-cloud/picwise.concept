@@ -30,9 +30,10 @@ Added on 2026-10-16 by the owner.
 - Trends state only what is known (ANTI_FAKE): seasonal picks labelled as such at first,
   then the most frequent searches on PicWise. "What people buy" only once real
   purchase data exists.
-- While a search runs, a scanning screen shows what is happening: searching N shops
-  and M products, found these, cross-checking, sending. It appears within 1.5 s, and
-  the results may follow within about 4 s. Only true facts; never a deliberate delay.
+- While a search runs, a loading screen shows, and the results may follow within about
+  4 s; never a deliberate delay. Changed on 2026-11-12 by the owner («δεν μου αρέσει να λέει ψάχνω από τόσα προϊόντα φτιάξε απλά ένα όμορφο φόρτωμα»): it names
+  no number and narrates no step, only the PicWise mark in a turning ring. Until then it
+  said "searching N shops and M products".
 - PicWise will also install on phones as an app, and later go to the Play Store. Links
   to shops open in the phone's browser, so the shop's cookie is set where the buyer
   buys.
@@ -50,14 +51,15 @@ Wording, chosen by the owner on 2026-10-17:
 Everything below needs JavaScript and adds to the page; without it the box is a plain
 form and the search works as before.
 
-- **Scanning screen.** On a search (the box, a suggestion, the microphone) or on
-  "More", the page shows at once: "Searching 39,815 products from 2 shops for
-  "laptop"…". The numbers are the products PicWise can show and the shops they come
-  from, as the server last loaded them; a page that has not loaded the feed yet says
-  "Searching the shops connected to PicWise for "laptop"…". It names no step the
-  browser cannot see: finding, checking and sending happen on the server within the one
-  request, so the screen does not narrate them. It goes as soon as the results page
-  arrives; nothing waits for it.
+- **Loading screen** (owner, 2026-11-12: «δεν μου αρέσει να λέει ψάχνω από τόσα προϊόντα φτιάξε απλά ένα όμορφο φόρτωμα»). On a search (the box, a
+  suggestion, the microphone) or on "More", a calm veil comes over the page with the
+  PicWise mark in a turning ring, fading in after a moment so that an answer that comes
+  at once shows no flash; for a visitor who asks for less motion the ring only glows.
+  No words and no number on the screen; a screen reader is told "Searching for
+  "laptop"…". It goes as soon as the results page arrives; nothing waits for it. Until
+  2026-11-12 it read "Searching 39,815 products from 2 shops for "laptop"…", and on the
+  site named the feed's products before the cap (about 735,000) while the search held
+  about 251,000.
 - **Suggestions.** From the first letter, up to 8 suggestions under the box, and the
   first one completed in faint letters inside it: Tab or the right arrow, or a tap on
   the faint letters, fills it in; a tap on a suggestion searches it. They are the

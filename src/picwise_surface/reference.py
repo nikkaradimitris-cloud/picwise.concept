@@ -311,20 +311,18 @@ def _provider_feed_card_meta(product: dict[str, object], *, store_label: str) ->
     return "  ·  ".join(meta_parts)
 
 
-def _scanning_screen_html(catalogue: tuple[int, int] | None) -> str:
-    """The scanning screen, hidden until a search starts (`_SEARCH_SCRIPT`).
+def _scanning_screen_html() -> str:
+    """The loading screen, hidden until a search starts (`_SEARCH_SCRIPT`).
 
-    It carries the counts as the server last loaded them: the products a search looks
-    through and the shops they come from. Without them it names no number.
+    The PicWise mark in a turning ring, and no words on the screen (owner, 2026-11-12:
+    «δεν μου αρέσει να λέει ψάχνω από τόσα προϊόντα φτιάξε απλά ένα όμορφο φόρτωμα»).
+    It names no number; only a screen reader is told what is searched for.
     """
-    counts = ""
-    if catalogue and catalogue[0] > 0 and catalogue[1] > 0:
-        products, shops = catalogue
-        counts = f' data-products="{products:,}" data-shops="{shops:,}"'
     return (
-        f'<div class="pw-scan" id="pw-scan" role="status" aria-live="polite"{counts} hidden>'
-        '<div class="pw-scan-card"><span class="pw-scan-dot" aria-hidden="true"></span>'
-        '<p class="pw-scan-text" id="pw-scan-text"></p></div></div>'
+        '<div class="pw-scan" id="pw-scan" role="status" aria-live="polite" hidden>'
+        '<div class="pw-loader" aria-hidden="true"><span class="pw-loader-ring"></span>'
+        '<span class="pw-logo"></span></div>'
+        '<p class="pw-scan-text" id="pw-scan-text"></p></div>'
     )
 
 
@@ -1355,7 +1353,7 @@ def render_picwise_reference_surface(
         '});'
         '})();'
         "</script>"
-        f"{_scanning_screen_html(catalogue)}"
+        f"{_scanning_screen_html()}"
         f"<script>{_SEARCH_SCRIPT}</script>"
         f"<script>{BROWSER_LISTS_SCRIPT}</script>"
         f"{'<script>' + TRENDS_SCRIPT + '</script>' if home_after_search_html else ''}"

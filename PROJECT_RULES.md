@@ -89,9 +89,9 @@ Mandatory targets:
 - First render < 1.5 sec
 - Full interactive < 2 sec
 - Click to redirect < 300 ms
-- Results behind the scanning screen within about 4 sec (owner, 2026-10-16). The
-  screen states only true facts, the real number of shops and products and the steps
-  actually taken, and results are never held back on purpose.
+- Results behind the loading screen within about 4 sec (owner, 2026-10-16), and never
+  held back on purpose. The screen states nothing untrue: since 2026-11-12 it names no
+  number and no step, only the PicWise mark turning (owner: «δεν μου αρέσει να λέει ψάχνω από τόσα προϊόντα φτιάξε απλά ένα όμορφο φόρτωμα»).
 
 Do not ship changes that knowingly violate these targets without explicit approval.
 

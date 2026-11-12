@@ -108,14 +108,40 @@ class WordingTests(unittest.TestCase):
 
 
 class ScanningScreenTests(unittest.TestCase):
-    def test_it_carries_the_real_counts_when_the_feed_is_loaded(self) -> None:
-        page = render_picwise_reference_surface("", catalogue=(39815, 2))
-        self.assertIn('id="pw-scan"', page)
-        self.assertIn('data-products="39,815" data-shops="2" hidden', page)
+    """The loading screen (owner, 2026-11-12: «δεν μου αρέσει να λέει ψάχνω από τόσα
+    προϊόντα φτιάξε απλά ένα όμορφο φόρτωμα»): the PicWise mark in a turning ring."""
 
-    def test_it_names_no_number_without_them(self) -> None:
-        page = render_picwise_reference_surface("", catalogue=None)
-        self.assertIn('<div class="pw-scan" id="pw-scan" role="status" aria-live="polite" hidden>', page)
+    _SCREEN = (
+        '<div class="pw-scan" id="pw-scan" role="status" aria-live="polite" hidden>'
+        '<div class="pw-loader" aria-hidden="true"><span class="pw-loader-ring"></span>'
+        '<span class="pw-logo"></span></div>'
+        '<p class="pw-scan-text" id="pw-scan-text"></p></div>'
+    )
+
+    def test_it_is_the_mark_in_a_ring_and_names_no_number(self) -> None:
+        for catalogue in ((39815, 2), None):
+            for query in ("", "kettle"):
+                page = render_picwise_reference_surface(query, catalogue=catalogue)
+                self.assertIn(self._SCREEN, page)
+                self.assertNotIn("data-products", page)
+                self.assertNotIn("data-shops", page)
+
+    def test_the_script_names_no_count(self) -> None:
+        self.assertNotIn("data-products", _SEARCH_SCRIPT)
+        self.assertNotIn("data-shops", _SEARCH_SCRIPT)
+        self.assertNotIn(" products from ", _SEARCH_SCRIPT)
+
+    def test_its_words_are_for_a_screen_reader_only(self) -> None:
+        page = render_picwise_reference_surface("kettle")
+        self.assertIn("Searching for \\u201c", _SEARCH_SCRIPT)
+        rule = page.split(".pw-scan-text{", 1)[1].split("}", 1)[0]
+        self.assertIn("position:absolute;width:1px;height:1px;", rule)
+        self.assertIn("clip:rect(0 0 0 0);", rule)
+
+    def test_it_comes_after_a_moment_and_keeps_still_for_those_who_ask(self) -> None:
+        page = render_picwise_reference_surface("kettle")
+        self.assertIn("animation:pw-scan-in .2s ease-out .12s both;", page)
+        self.assertIn("@media (prefers-reduced-motion:reduce){.pw-scan{animation:none;}", page)
 
     def test_it_says_only_what_the_browser_sees(self) -> None:
         # "Found these, cross-checking, sending" happen on the server within the one

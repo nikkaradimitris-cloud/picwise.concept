@@ -5,8 +5,9 @@ from __future__ import annotations
 # Step 4 (owner, 2026-10-16): the scanning screen, suggestions as the buyer types, and
 # the microphone. Plain JavaScript, no library, and only additions: without it the box
 # is a plain form and the search works as before (docs/LANDING_PAGE_SPEC.md).
-# - The scanning screen shows on a search or on "More", with the counts the server
-#   wrote into the page, and says nothing the browser cannot see happening.
+# - The loading screen shows on a search or on "More": the PicWise mark in a turning
+#   ring, no number and no words on the screen (owner, 2026-11-12); a screen reader is
+#   told what is searched for, and nothing the browser cannot see happening.
 # - The suggestions are fetched once, on the first focus, and matched in the browser.
 # - The microphone shows only where the browser can listen; the search starts when
 #   the buyer stops speaking (owner, 2026-10-17).
@@ -24,13 +25,8 @@ var scanText=document.getElementById("pw-scan-text");
 var mic=document.getElementById("pw-mic");
 if(!input||!list||!ghostTyped||!ghostRest){return;}
 function scanFor(q){
-  if(!scan||!scanText||!q){return;}
-  var products=scan.getAttribute("data-products");
-  var shops=scan.getAttribute("data-shops");
-  var quoted="\u201c"+q+"\u201d";
-  scanText.textContent=(products&&shops)
-    ?"Searching "+products+(products==="1"?" product":" products")+" from "+shops+(shops==="1"?" shop":" shops")+" for "+quoted+"\u2026"
-    :"Searching the shops connected to PicWise for "+quoted+"\u2026";
+  if(!scan||!q){return;}
+  if(scanText){scanText.textContent="Searching for \u201c"+q+"\u201d\u2026";}
   scan.hidden=false;
 }
 window.addEventListener("pageshow",function(){if(scan){scan.hidden=true;}});

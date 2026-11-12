@@ -143,13 +143,18 @@ _PAGE_STYLES = (
     ".pw-footer-link:hover{background:#eef4ff;}"
     ".pw-footer-disclosure{margin:10px 0 0;font-size:12px;line-height:1.5;color:var(--muted);max-width:820px;}"
     ".pw-footer-meta{margin:6px 0 0;font-size:12px;color:var(--muted);}"
-    ".pw-scan{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(245,248,253,.94);display:flex;align-items:flex-start;justify-content:center;padding:22vh 16px 0;z-index:50;}"
+    # The loading screen (owner, 2026-11-12: «φτιάξε απλά ένα όμορφο φόρτωμα»): a calm
+    # veil over the page and the PicWise mark in a turning ring. It fades in after a
+    # moment, so an answer that comes at once shows no flash.
+    ".pw-scan{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(246,248,251,.86);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50;animation:pw-scan-in .2s ease-out .12s both;}"
     ".pw-scan[hidden]{display:none;}"
-    ".pw-scan-card{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 20px;max-width:560px;box-shadow:0 16px 40px rgba(16,40,80,.12);}"
-    ".pw-scan-dot{width:12px;height:12px;border-radius:999px;background:var(--blue-2);flex:0 0 auto;animation:pw-pulse 1s ease-in-out infinite alternate;}"
-    "@keyframes pw-pulse{from{opacity:.35;}to{opacity:1;}}"
-    ".pw-scan-text{margin:0;font-size:16px;color:var(--ink);line-height:1.45;}"
-    "@media (prefers-reduced-motion:reduce){.pw-scan-dot{animation:none;}}"
+    "@keyframes pw-scan-in{from{opacity:0;}to{opacity:1;}}"
+    ".pw-loader{position:relative;width:68px;height:68px;display:flex;align-items:center;justify-content:center;}"
+    ".pw-loader-ring{position:absolute;top:0;right:0;bottom:0;left:0;border-radius:999px;border:3px solid #dfe6f0;border-top-color:var(--blue-2);animation:pw-spin .8s linear infinite;}"
+    "@keyframes pw-spin{to{transform:rotate(360deg);}}"
+    ".pw-scan-text{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}"
+    "@keyframes pw-breathe{from{opacity:.35;}to{opacity:1;}}"
+    "@media (prefers-reduced-motion:reduce){.pw-scan{animation:none;}.pw-loader-ring{animation:pw-breathe 1.2s ease-in-out infinite alternate;}}"
     "@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}"
     "@media (max-width:760px){"
     '.pw-grid[data-layout="single"] .pw-card{grid-template-columns:1fr;gap:14px;padding:14px;}'
