@@ -978,6 +978,8 @@ def resolve_search_provider_feed_recommendation_decision(
 _PRICE_FIRST_NO_RECOMMENDATION = {
     "no_product_code": "no_recommendation_without_product_code",
     "too_few_products": "no_recommendation_too_few_products",
+    # A price chosen on the price bar (owner, 2026-11-12).
+    "price_chosen": "no_recommendation_price_chosen",
 }
 
 

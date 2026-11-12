@@ -706,14 +706,16 @@ Then, to the order, the time and the mark proposed: «Ναι, συμφωνώ μ�
   above it, on a scale of ratios (£2, £4, £8 ...), so cheap accessories and the products
   themselves both have room (`search_selection._price_bar`).
 - The knob raises the price the answer starts from. The products below it leave the answer
-  before anything is worked out; the order (offers first, then cheapest), the Recommended
-  (on offer, or the middle of the prices, by the rules above), "More" and the counter are
-  those of the products from that price. A price above the dearest product is taken as the
-  dearest's: the answer never empties.
-- The page says so: the heading "Results for: tablet, from £150, cheapest first"; the
-  Recommended "Mid-priced from £150"; the line above the cards "The Recommended is
-  mid-priced of the products from £150."; the bar "From £150", or "Any price" at its left
-  end. "More" keeps the price (`?min=150`).
+  before anything is worked out; the order (offers first, then cheapest), "More" and the
+  counter are those of the products from that price. A price above the dearest product is
+  taken as the dearest's: the answer never empties.
+- With a price chosen there is no Recommended, on offer or not (owner, the same day:
+  «Το recommendit πρέπει να ακιρονετε όταν χρησιμοποιεί φίλτρο...σε άλλη περίπτωση δείχνει την μέση τιμή παράδειγμα ο Χρίστης επιλέγει από 90 ευρώ και αυτό προτείνει 890»). Deployed for an hour with a Recommended chosen among the products from the price
+  by the rules above ("Mid-priced from £150"), which the owner found could stand far above
+  the price chosen.
+- The page says so: the heading "Results for: tablet, from £150, cheapest first"; the line
+  above the cards "Prices and stock are as the shops list them."; the bar "From £150", or
+  "Any price" at its left end. "More" keeps the price (`?min=150`).
 - Let go, the page is drawn again from that price, behind the loading screen. Without
   JavaScript the bar is a form in whole pounds with a button, "Show".
 - A page whose price was chosen is read without the AI layer, which would otherwise be asked

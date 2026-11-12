@@ -7,8 +7,10 @@
 αμέσως να φιλτράρει και να ανεβαίνει πιο πάνω στην τιμή».
 
 The bar runs from the answer's lowest price to its highest; the price chosen on it starts
-the answer from that price, and the same rules (the Recommended, offers first, cheapest
-first, "More", the counter) hold for the products from it.
+the answer from that price: offers first, then cheapest first, "More" and the counter hold
+for the products from it, and there is no Recommended (owner, the same day: «Το recommendit
+πρέπει να ακιρονετε όταν χρησιμοποιεί φίλτρο...σε άλλη περίπτωση δείχνει την μέση τιμή
+παράδειγμα ο Χρίστης επιλέγει από 90 ευρώ και αυτό προτείνει 890»).
 """
 from __future__ import annotations
 
@@ -89,24 +91,31 @@ class PriceBarTests(_FeedMixin, unittest.TestCase):
         prices = _prices(page)
         self.assertEqual(len(prices), 4)
         self.assertTrue(all(price >= 30 for price in prices), prices)
-        # Eight kettles from £30; the counter, the heading and the words say so.
+        # Eight kettles from £30, the cheapest first; the counter and the heading say so.
+        self.assertEqual(prices, [34.0, 39.0, 45.0, 52.0])
         self.assertIn('<p class="pw-results-count">4 of 8</p>', page)
         self.assertEqual(_heading(page), "Results for: kettle, from £30, cheapest first")
-        self.assertIn("The Recommended is mid-priced of the products from £30.", page)
-        self.assertNotIn("mid-priced for this category", page)
-        self.assertEqual(_recommended_label(page), "Mid-priced from £30")
         self.assertIn(">From £30</output>", _bar(page))
         # The bar is still the whole answer's: the buyer can move back down.
         self.assertIn('data-low="8.00" data-high="120.00"', _bar(page))
         # The steps below the price chosen are pale.
         self.assertIn('class="out"', _bar(page))
 
-    def test_the_recommended_is_the_middle_of_the_products_from_that_price(self) -> None:
-        # From £34: seven kettles, £34 to £120; the middle one is £52.
-        page = _call("/search", {"q": "kettle", "min": "34"})
-        self.assertEqual(_prices(page)[0], 52.0)
-        # Then the cheapest from that price, the cheap end of those (owner, 2026-10-16).
-        self.assertEqual(_prices(page)[1:], [34.0, 39.0, 45.0])
+    def test_a_chosen_price_has_no_recommended(self) -> None:
+        # Owner, 2026-11-12: from £90 the middle of the prices had been a product of £890.
+        page = _call("/search", {"q": "kettle", "min": "30"})
+        grid = re.search(r'<section class="pw-grid".*?</section>', page, re.S).group(0)
+        self.assertNotIn("pw-card-recommended", grid)
+        self.assertNotIn("Recommended", _text(grid))
+        # The line above the cards says only whose prices they are.
+        disclaimer = re.search(r'<p class="pw-reference-disclaimer">(.*?)</p>', page, re.S).group(1)
+        self.assertEqual(_text(disclaimer), "Prices and stock are as the shops list them.")
+        # Every click to a shop is counted as no Recommended's.
+        self.assertNotIn("rec=1", grid)
+        self.assertEqual(grid.count("rec=0"), 4)
+        # Without a price the Recommended is as it was.
+        plain = _call("/search", {"q": "kettle"})
+        self.assertIn("pw-card-recommended", re.search(r'<section class="pw-grid".*?</section>', plain, re.S).group(0))
 
     def test_more_keeps_the_chosen_price(self) -> None:
         page = _call("/search", {"q": "kettle", "min": "30"})

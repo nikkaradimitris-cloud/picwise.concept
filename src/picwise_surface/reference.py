@@ -157,15 +157,12 @@ _RECOMMENDED_MID_PRICED = "The Recommended is mid-priced for this category."
 # The price bar (owner, 2026-11-12: «Να μπει ένα φίλτρο με τη μορφή μπάρας που να διαλέγει
 # με την τιμή ... να τερματίζει στην υψηλοτερή και να ξεκινάει από την χαμηλότερη κουνώντας
 # μία μπίλια θα μπορεί αμέσως να φιλτράρει»): with a price chosen, the page says so in its
-# heading, and the Recommended, chosen among the products from that price by the same
-# rule, says it is mid-priced of those, not of the category.
+# heading, and there is no Recommended (`search_selection._price_first_result`).
 _PRICE_BAR_ANY = "Any price"
 # An answer of one page has nothing to filter: the bar shows from five products.
 _PRICE_BAR_MIN_ANSWER = 4
 _PRICE_BAR_FROM = "From {price}"
 _PRICE_BAR_SHOW = "Show"
-_PRICE_FIRST_RECOMMENDED_FROM_LABEL = "Mid-priced from {price}"
-_RECOMMENDED_MID_PRICED_FROM = "The Recommended is mid-priced of the products from {price}."
 _RECOMMENDED_ON_OFFER = (
     "The Recommended is on offer: of the products on offer, the one nearest the middle of their prices."
 )
@@ -196,6 +193,9 @@ _PRICE_FIRST_DISCLOSURES = {
     # product is not cheaper elsewhere, so it recommends none.
     "no_recommendation_without_product_code": f"{_NO_RECOMMENDED_NO_CODE} {_PRICE_FIRST_FEED_NOTE}",
     "no_recommendation_too_few_products": f"{_NO_RECOMMENDED_TOO_FEW} {_PRICE_FIRST_FEED_NOTE}",
+    # A price chosen on the price bar: no Recommended, and nothing to say of one (owner,
+    # 2026-11-12); the heading says the price ("from £90").
+    "no_recommendation_price_chosen": _PRICE_FIRST_FEED_NOTE,
 }
 _PRICE_FIRST_PAGE_NOTE = (
     "Real products from the shops' feeds, cheapest first. Prices and stock are as the shops "
@@ -662,8 +662,6 @@ def _build_price_first_cards(
     search, by product id, which the search put first (owner, 2026-11-06): each gets a ✓
     and its words, and every card of the page the line for them.
     """
-    # The price the buyer chose on the price bar, if any (owner, 2026-11-12).
-    price_from = _price_from(resolution)
     if not _price_first_display_allowed(resolution):
         return []
     first_page = list(resolution.provider_feed_selected_products)
@@ -700,8 +698,6 @@ def _build_price_first_cards(
                 if offer
                 else _PRICE_FIRST_RECOMMENDED_FITTING_LABEL
                 if fit_words and getattr(resolution, "provider_feed_recommended_among_fitting", False)
-                else _PRICE_FIRST_RECOMMENDED_FROM_LABEL.format(price=_pounds(price_from))
-                if price_from is not None
                 else _PRICE_FIRST_RECOMMENDED_LABEL
             )
         elif offer:
@@ -1134,11 +1130,6 @@ def render_picwise_reference_surface(
                     disclosure = _fitting_disclosure(disclosure, price_first_cards, resolution)
                 if any(card.get("offer") and card.get("recommended") for card in price_first_cards):
                     disclosure = disclosure.replace(_RECOMMENDED_MID_PRICED, _RECOMMENDED_ON_OFFER)
-                if _price_from(resolution) is not None:
-                    disclosure = disclosure.replace(
-                        _RECOMMENDED_MID_PRICED,
-                        _RECOMMENDED_MID_PRICED_FROM.format(price=_pounds(_price_from(resolution))),
-                    )
         else:
             feed_cards, feed_live, feed_disclosure, feed_safe_note = (
                 _build_provider_feed_result_cards(

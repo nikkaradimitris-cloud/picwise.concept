@@ -289,6 +289,27 @@ class OffersFirstPageTests(unittest.TestCase):
             })
         return cards
 
+    def test_a_chosen_price_puts_the_offers_first_and_recommends_none(self) -> None:
+        # Owner, 2026-11-12: with a price chosen on the price bar there is no Recommended,
+        # on offer or not («Το recommendit πρέπει να ακιρονετε όταν χρησιμοποιεί φίλτρο»).
+        set_offers_document({"shops": {"1003": _shop("Fixture Store Three", [
+            _offer(7, "10% off kettles", code="KETTLE10", terms="One per order."),
+        ], joined=True)}})
+        page = b"".join(wsgi_app(
+            {"REQUEST_METHOD": "GET", "PATH_INFO": "/search",
+             "QUERY_STRING": urlencode({"q": "kettle", "min": "20"}),
+             "wsgi.input": io.BytesIO(b""), "wsgi.url_scheme": "https"},
+            lambda _status, _headers: None,
+        )).decode("utf-8")
+        cards = self._cards(page)
+        # From £20, Store Three's k6 £28 and k9 £37 are on offer: they come first, the
+        # cheaper first, then the cheapest of the rest, k4 £22 and k5 £25.
+        self.assertEqual([card["id"] for card in cards], ["k6", "k9", "k4", "k5"])
+        self.assertFalse(any(card["recommended"] for card in cards))
+        self.assertEqual([card["role"] for card in cards[:2]], ["Offer", "Offer"])
+        self.assertIn("Results for: kettle, from £20, offers first, then cheapest first", page)
+        self.assertNotIn("The Recommended is", page)
+
     def test_without_offers_the_order_is_the_price(self) -> None:
         cards = self._cards(self._page())
         self.assertEqual([card["id"] for card in cards], ["k5", "k1", "k2", "k3"])

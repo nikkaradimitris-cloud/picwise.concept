@@ -457,7 +457,8 @@ class ProviderProductSelectionResult:
     # The Recommended, chosen over the whole answer, or "" when there is none.
     recommended_product_id: str = ""
     # Why there is a Recommended or not: "recommended", "no_product_code" (no product
-    # of the answer carries an EAN/GTIN) or "too_few_products" (no middle to take).
+    # of the answer carries an EAN/GTIN), "too_few_products" (no middle to take) or
+    # "price_chosen" (a price chosen on the price bar: none, owner, 2026-11-12).
     recommendation_status: str = ""
     # First-page products that are the cheap end of the answer: priced at or below the
     # Recommended or, when there is none, at or below the middle price.
@@ -2565,10 +2566,11 @@ def _price_first_result(
 
     `min_price` is the price the buyer chose on the price bar (owner, 2026-11-12): the
     products below it leave the answer before anything else is worked out, so the
-    Recommended, the products on offer, the order, "More" and the counter are those of
-    the products from that price, by the same rules. A price above the dearest product
-    is taken as the dearest's, so an answer never empties. The bar itself is the whole
-    answer's, worked out before (`_price_bar`).
+    products on offer, the order, "More" and the counter are those of the products from
+    that price, and there is no Recommended (owner, the same day: from £90 it had
+    recommended a product of £890, the middle of the prices). A price above the dearest
+    product is taken as the dearest's, so an answer never empties. The bar itself is the
+    whole answer's, worked out before (`_price_bar`).
     """
     answer_count = len(ordered)
     price_low, price_high, price_bins = _price_bar([entry.price for entry in ordered])
@@ -2585,14 +2587,18 @@ def _price_first_result(
     covered_entries = [entry for entry in ordered if id(entry.product) in covered]
     # An answer of fewer than three products has no Recommended, on offer or not
     # (`_RECOMMENDED_MIN_PRODUCTS`): its products on offer still come first.
+    # With a price chosen on the price bar there is no Recommended, on offer or not (owner,
+    # 2026-11-12: «Το recommendit πρέπει να ακιρονετε όταν χρησιμοποιεί φίλτρο...σε άλλη περίπτωση δείχνει την μέση τιμή παράδειγμα ο Χρίστης επιλέγει από 90 ευρώ και αυτό προτείνει 890»): the products on offer, then the rest, cheapest first.
     offer_index = (
         _offer_recommendation(covered_entries)
-        if _counted_products(ordered) >= _RECOMMENDED_MIN_PRODUCTS
+        if price_from is None and _counted_products(ordered) >= _RECOMMENDED_MIN_PRODUCTS
         else None
     )
     if offer_index is not None:
         recommended = covered_entries[offer_index]
         recommendation_status = "recommended"
+    elif price_from is not None:
+        recommended, recommendation_status = None, "price_chosen"
     else:
         recommended_index, recommendation_status = _median_recommendation(ordered)
         recommended = ordered[recommended_index] if recommended_index is not None else None
