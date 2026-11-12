@@ -223,6 +223,15 @@ def interpret_availability_state(
     flag decides only where its column varies across the feed. Returns
     (state, source field, signal).
     """
+    # The shop's own site, read by the shops' catalogue bot within the last days, decides
+    # before the feed, either way (owner, 2026-11-12: «να διαβάζει το bot το απόθεμα από
+    # τα sites τους και γενικά να επαληθεύει»; `shop_catalogue.apply_shop_catalogues`).
+    raw = product.raw if isinstance(product.raw, Mapping) else {}
+    shop_says = " ".join(str(raw.get("shop_stock") or "").lower().split())
+    if shop_says == "sold out":
+        return "out_of_stock", "shop_stock", "shop_site_sold_out"
+    if shop_says == "in stock":
+        return "trusted", "shop_stock", "shop_site_in_stock"
     fields = _raw_field_tokens(product, _AVAILABILITY_RAW_KEYS)
     if not fields:
         fallback = _normalize_availability_token(product.availability_text)

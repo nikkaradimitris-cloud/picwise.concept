@@ -234,13 +234,19 @@ class ShopStockTests(unittest.TestCase):
         self.assertIn("s3", shown)
         # Seen too long ago: the feed's word stands.
         self.assertIn("s4", shown)
-        # The shop's "in stock" never shows a row the feed calls out of stock.
-        self.assertNotIn("s5", shown)
+        # The shop's own site decides either way, read within the last days: its "in stock"
+        # shows a row the feed calls out of stock (owner, 2026-11-12: «να διαβάζει το bot το
+        # απόθεμα από τα sites τους και γενικά να επαληθεύει»; until then the feed's word
+        # held it).
+        self.assertIn("s5", shown)
+        self.assertEqual(shown["s5"].raw["shop_stock"], "in stock")
         self.assertIn("s6", shown)
         shop = shop_catalogue.last_shop_catalogue_note()["shops"][0]
         self.assertEqual((shop["sold_out"], shop["sold_out_feed_in_stock"], shop["stock_too_old"]), (2, 2, 1))
+        self.assertEqual((shop["in_stock"], shop["in_stock_feed_out_of_stock"]), (3, 1))
         intake = measure_configured_feed_intake()
-        self.assertEqual(intake["held_reasons"].get("availability_out_of_stock"), 3)
+        # s1 and s2, sold out by the shop; s5 no longer, the shop's site saying it is in stock.
+        self.assertEqual(intake["held_reasons"].get("availability_out_of_stock"), 2)
 
 
 class BarcodeTests(unittest.TestCase):

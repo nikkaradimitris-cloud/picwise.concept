@@ -88,17 +88,31 @@ class FeedShop:
 
 
 def shops_to_ask(note_path: str, known: Mapping[str, Any]) -> list[str]:
-    """The shops with rows a search could show but for a category, by the public note,
-    and the shops the file already knows; without InStock UK and the left-out shops."""
+    """Every shop of the feed by the public note, and the shops the file already knows;
+    without InStock UK and the left-out shops. Until 2026-11-12 only the shops with rows
+    a search could show but for a category: the owner, that day, «να διαβάζει το bot το
+    απόθεμα από τα sites τους και γενικά να επαληθεύει», so every shop's own site checks
+    its feed's stock, the shops never read first (`run_round`)."""
     from picwise_providers.eligibility import LEFT_OUT_SHOPS
 
     names = set(known)
     try:
         names.update(look.shops_from_note(note_path))
+        names.update(_every_shop_in_note(note_path))
     except (OSError, ValueError, KeyError):
         pass
     left = LEFT_ALONE | LEFT_OUT_SHOPS
     return sorted(name for name in names if " ".join(name.split()).casefold() not in left)
+
+
+def _every_shop_in_note(note_path: str) -> set[str]:
+    """Every shop the public note names in its intake."""
+    with open(note_path, encoding="utf-8") as handle:
+        note = json.load(handle)
+    return {
+        str(entry["shop"]) for entry in ((note.get("intake") or {}).get("shops") or [])
+        if isinstance(entry, Mapping) and entry.get("shop") and entry.get("rows")
+    }
 
 
 def read_feed(path: str, wanted: set[str]) -> tuple[dict[str, FeedShop], int]:
