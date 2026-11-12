@@ -74,6 +74,29 @@ form and the search works as before.
   the same understanding as typed words. The browser's own speech service does the
   listening: in Chrome the audio goes to Google. The privacy page says so.
 
+## The Home Page (2026-11-12)
+
+Made shorter by the owner on 2026-11-12: the site «μοιάζει πιο πολύ με εφημερίδα και
+όχι με search αγορών πρέπει να γράψουμε λιγότερα»; to the design proposed «Έχεις δίκιο
+για αυτά»; the heading kept as it was («3»), because a heading of price comparison
+«θα κλείσουν πολλές πόρτες» and PicWise «στηρίζεται στην αξιοπιστία της πληροφορίας».
+
+- The heading "Find the product you want in UK shops", then the box.
+- Under the box, three facts and nothing more: "250,000+ products from 80 UK shops"
+  (the products and shops a search holds after the cap, their first two figures and a
+  "+", never more than there are; left out while the server does not know them), "In
+  stock only, updated every night", "Never ranked by commission". What PicWise does,
+  in the owner's words of 2026-10-17, stays in "What is PicWise?" and in the page's
+  description.
+- Then the month's most searched products, once a real source gives them
+  (`picwise_surface.trends`): per row its rank, its name, rising, falling or new, its
+  searches a month and "N products from £X", a tap opening the search; folded to the
+  first four rows with "Show all 10" and "Show fewer" (owner: «Θα είναι καλύτερο να
+  αναδιπλώνει»); every row without JavaScript.
+- Calmer colours: one blue for what is tapped, neutral greys; "What is PicWise?" white
+  like History and Favourites; the box's line grey, blue while typing; the footer's
+  links as plain words.
+
 ## Card Structure Requirements
 
 Each choice card must show:

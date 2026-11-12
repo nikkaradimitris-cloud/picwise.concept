@@ -73,7 +73,9 @@ from picwise_surface.reference import (  # noqa: E402
     render_picwise_reference_surface,
 )
 from picwise_surface.trends import (  # noqa: E402
+    TRENDS_SCRIPT,
     TRENDS_SOURCE_STATUS,
+    TRENDS_STYLES,
     TrendRow,
     TrendsPanel,
     load_trends_panel,
@@ -441,7 +443,7 @@ class HomePageTests(unittest.TestCase):
         self.assertIsNone(load_trends_panel())
         self.assertEqual(TRENDS_SOURCE_STATUS, "not_connected")
         self.assertNotIn('id="pw-trends"', self.page)
-        self.assertNotIn("Trending searches in the UK this month", self.page)
+        self.assertNotIn("Most searched in the UK", self.page)
 
 
 def _panel(rows: tuple[TrendRow, ...], **overrides: str) -> TrendsPanel:
@@ -458,7 +460,8 @@ def _panel(rows: tuple[TrendRow, ...], **overrides: str) -> TrendsPanel:
 
 
 class TrendsPanelTests(unittest.TestCase):
-    """Fictional rows: the panel's renderer, ready for the day a source gives real ones."""
+    """Fictional rows: the panel's renderer, ready for the day a source gives real ones.
+    The design of 2026-11-12: simpler than 31/10, folded to four rows."""
 
     def _rows(self) -> tuple[TrendRow, ...]:
         return (
@@ -479,29 +482,59 @@ class TrendsPanelTests(unittest.TestCase):
         panel = render_trends_panel(_panel(self._rows()))
         names = re.findall(r'<span class="pw-tp-name">(.*?)</span>', panel)
         self.assertEqual(names, ["Testline Phone 12", "Fixturon Air Fryer 5L", "Sampleware Vacuum &lt;Pro&gt;"])
-        self.assertIn("Trending searches in the UK this month", panel)
-        self.assertIn("The products people search for most on Google this month", panel)
+        self.assertIn('<h2 class="pw-tp-title" id="pw-tp-title">Most searched in the UK</h2>', panel)
+        self.assertIn('<span class="pw-tp-period">October 2026</span>', panel)
         # Searches, not sales (owner, 2026-10-31).
         for word in ("bought", "sold", "best sellers", "sales"):
             self.assertNotIn(word, panel.lower())
-        self.assertIn("October 2026 · United Kingdom", panel)
-        self.assertIn("~550K searches a month", panel)
-        self.assertIn('aria-label="Search interest: Very high"', panel)
+        self.assertIn("~550K searches · ", panel)
         self.assertIn("Up 1 place on last month", panel)
         self.assertIn("New in the top 10 this month", panel)
         self.assertIn("Down 2 places on last month", panel)
         self.assertIn('href="/search?q=Testline%20Phone%2012"', panel)
-        self.assertIn("27 offers · from £699", panel)
-        self.assertIn("Ranking and interest: Google Ads Keyword Planner (monthly searches, UK).", panel)
+        # "Products", not "offers": on PicWise an offer is a shop's discount.
+        self.assertIn("27 products from <b>£699</b>", panel)
+        self.assertNotIn(" offers", panel)
+        self.assertIn("Ranking: Google Ads Keyword Planner (monthly searches, UK).", panel)
         self.assertIn("Searches: Google Ads Keyword Planner, approximate.", panel)
+        self.assertIn("Products and prices: PicWise&#x27;s shops, last night.", panel)
+
+    def test_simpler_than_the_panel_of_31_10(self) -> None:
+        # Owner, 2026-11-12: «κράτα το απλό σοβαρό και αξιόπιστο»; «Έχεις δίκιο για αυτά».
+        panel = render_trends_panel(_panel(self._rows()))
+        for gone in ("pw-tp-icon", "pw-tp-tab", "pw-tp-scale", "Search interest", "pw-tp-legend",
+                     "pw-tp-kicker", "pw-tp-intro", "linear-gradient"):
+            self.assertNotIn(gone, panel + TRENDS_STYLES)
+
+    def test_it_folds_to_four_rows_and_opens_to_all(self) -> None:
+        # Owner, 2026-11-12: «Το πάνελ αναδιπλώνει? Θα είναι καλύτερο να αναδιπλώνει».
+        rows = tuple(
+            TrendRow(rank=index, name=f"Fixturon Item {index}", category="Home", offers=index, from_price="£9")
+            for index in range(1, 11)
+        )
+        panel = render_trends_panel(_panel(rows))
+        self.assertIn(
+            '<button class="pw-tp-more pw-needs-js" id="pw-tp-more" type="button" aria-expanded="false" '
+            'aria-controls="pw-tp-list" data-more="Show all 10" data-less="Show fewer"><span>Show all 10</span>',
+            panel,
+        )
+        self.assertIn('<ol class="pw-tp-list" id="pw-tp-list">', panel)
+        # Folded where JavaScript runs, from the first paint; every row without it.
+        self.assertIn(".pw-js .pw-tp:not(.is-open) .pw-tp-item:nth-child(n+5){display:none;}", TRENDS_STYLES)
+        for words in ('classList.toggle("is-open",open)', 'getAttribute(open?"data-less":"data-more")',
+                      'setAttribute("aria-expanded",open?"true":"false")'):
+            self.assertIn(words, TRENDS_SCRIPT)
+        # Four rows or fewer have nothing to fold.
+        self.assertNotIn("pw-tp-more", render_trends_panel(_panel(rows[:4])))
 
     def test_a_product_not_in_the_shops_never_links_to_an_empty_search(self) -> None:
         panel = render_trends_panel(_panel(self._rows()))
-        row = re.search(r'<li class="pw-tp-row" data-category="Home">.*?</li>', panel, re.S).group(0)
+        row = re.search(r'<li class="pw-tp-item"><div class="pw-tp-row pw-tp-row-off">.*?</li>', panel, re.S).group(0)
+        self.assertIn("Sampleware Vacuum", row)
         self.assertIn("Not in our shops yet", row)
         self.assertNotIn("href=", row)
         # A column the source did not give is left out, never filled.
-        self.assertNotIn("searches a month", row)
+        self.assertNotIn(" searches", row)
 
     def test_a_source_not_used_is_not_named(self) -> None:
         rows = (TrendRow(rank=1, name="Testline Phone 12", category="Phones", offers=3, from_price="£699"),)
@@ -513,7 +546,7 @@ class TrendsPanelTests(unittest.TestCase):
     def test_ten_rows_at_most(self) -> None:
         rows = tuple(TrendRow(rank=index, name=f"Fixturon Item {index}", category="Home") for index in range(1, 14))
         panel = render_trends_panel(_panel(rows))
-        self.assertEqual(panel.count('<li class="pw-tp-row"'), 10)
+        self.assertEqual(panel.count('<li class="pw-tp-item">'), 10)
         self.assertNotIn("Fixturon Item 11", panel)
 
 
