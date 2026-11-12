@@ -822,7 +822,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "PICWISE_SUBBY_API_KEY": "secret-live-key-value",
         }
         with patch.dict(os.environ, env, clear=True):
-            with patch("api.index.UrllibSubbyBridgeEventSender", return_value=sender):
+            with patch("picwise_app.routes.UrllibSubbyBridgeEventSender", return_value=sender):
                 status, _headers, body = _call_wsgi("/subby-proof")
         payload = json.loads(body)
         self.assertEqual(status, "200 OK")
@@ -852,7 +852,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "PICWISE_SUBBY_API_KEY": "secret-live-key-value",
         }
         with patch.dict(os.environ, env, clear=True):
-            with patch("api.index.UrllibSubbyBridgeEventSender", return_value=FailingSender()):
+            with patch("picwise_app.routes.UrllibSubbyBridgeEventSender", return_value=FailingSender()):
                 status, _headers, body = _call_wsgi("/subby-proof")
         response_payload = json.loads(body)
         self.assertEqual(status, "200 OK")
@@ -881,7 +881,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "PICWISE_SUBBY_API_KEY": "secret-live-key-value",
         }
         with patch.dict(os.environ, env, clear=True):
-            with patch("api.index.UrllibSubbyBridgeEventSender", return_value=TimeoutSender()):
+            with patch("picwise_app.routes.UrllibSubbyBridgeEventSender", return_value=TimeoutSender()):
                 status, _headers, body = _call_wsgi("/subby-proof")
         response_payload = json.loads(body)
         self.assertEqual(status, "200 OK")
@@ -920,7 +920,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "PICWISE_SUBBY_API_KEY": "secret-live-key-value",
         }
         with patch.dict(os.environ, env, clear=True):
-            with patch("api.index.UrllibSubbyBridgeEventSender", return_value=FailingSender()):
+            with patch("picwise_app.routes.UrllibSubbyBridgeEventSender", return_value=FailingSender()):
                 status, _headers, body = _call_wsgi("/subby-proof")
         response_payload = json.loads(body)
         self.assertEqual(status, "200 OK")
@@ -950,7 +950,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "PICWISE_SUBBY_API_KEY": "secret-live-key-value",
         }
         with patch.dict(os.environ, env, clear=True):
-            with patch("api.index.UrllibSubbyBridgeEventSender", return_value=RejectedSender()):
+            with patch("picwise_app.routes.UrllibSubbyBridgeEventSender", return_value=RejectedSender()):
                 status, _headers, body = _call_wsgi("/subby-proof")
         response_payload = json.loads(body)
         self.assertEqual(status, "200 OK")
@@ -982,7 +982,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "PICWISE_SUBBY_API_KEY": "secret-live-key-value",
         }
         with patch.dict(os.environ, env, clear=True):
-            with patch("api.index.UrllibSubbyBridgeEventSender", return_value=FailingSender()):
+            with patch("picwise_app.routes.UrllibSubbyBridgeEventSender", return_value=FailingSender()):
                 status, _headers, body = _call_wsgi("/subby-proof")
         response_payload = json.loads(body)
         self.assertEqual(status, "200 OK")
@@ -1022,7 +1022,7 @@ class DeploymentEntrypointTests(unittest.TestCase):
             "PICWISE_SUBBY_API_KEY": "super-secret-key",
         }
         with patch.dict(os.environ, env, clear=True):
-            with patch("api.index.UrllibSubbyBridgeEventSender", return_value=sender):
+            with patch("picwise_app.routes.UrllibSubbyBridgeEventSender", return_value=sender):
                 _status, _headers, body = _call_wsgi("/subby-proof")
         response_payload = json.loads(body)
         self.assertEqual(sender.calls, 1)

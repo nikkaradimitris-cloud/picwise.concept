@@ -3,14 +3,12 @@ from __future__ import annotations
 from html import escape
 import json
 import re
-import mimetypes
 from datetime import datetime, timezone
-from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import socket
 from typing import Any
-from urllib.parse import parse_qs, quote, urlparse
+from urllib.parse import quote, urlparse, unquote
 
 from picwise_contracts import DecisionDepth, DecisionOutput, MissingDataState, ProductBrain
 from picwise_engine import PicwiseDecisionEngine
@@ -24,7 +22,6 @@ from picwise_search.live_search_resolver import (
     SEARCH_IN_ENGLISH_REASON,
     empty_landing_search_resolution,
     is_empty_search_query,
-    parse_shown_count,
 )
 from picwise_search.search_warmup import schedule_search_warmup_if_needed
 from picwise_search.offer_resolver import resolve_specific_product_offers_from_candidates
@@ -54,16 +51,13 @@ from picwise_surface import (
     render_demo_info_page,
     render_picwise_reference_surface,
     render_privacy_page,
-    render_review_safe_landing_page,
     render_terms_page,
 )
-from picwise_surface.seo import SITEMAP_PATH, declares_to_google, robots_txt, sitemap_xml
+from picwise_surface.seo import robots_txt
 from picwise_ai.store import assist_directory
 
 from .assist_wiring import assist_status, resolve_with_assist
-from .buying_routes import render_best_slug_html, render_buying_sitemap_xml
 from .query_log_sink import QUERY_LOG_SINK
-from .search_log import SEARCH_LOG_PATH, record_search
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 LOCAL_AVAILABLE_ROUTES = (
@@ -861,257 +855,54 @@ def _inject_broad_query_suggestions(html: str, resolution: Any) -> str:
 
 
 class PicwiseRequestHandler(BaseHTTPRequestHandler):
+    """The local server: every request answered by the site's one table of routes
+    (`routes.answer`) with this handler's `app`, as the server answers it with its own
+    (the clean-up of 2026-11-12; until then this class held a second copy of every
+    route). A method other than GET is answered by the routes too (405), as on the
+    server."""
+
     app = PicwiseLocalApp()
 
     def do_GET(self) -> None:  # noqa: N802
+        self._answer("GET")
+
+    def do_POST(self) -> None:  # noqa: N802
+        self._answer("POST")
+
+    def do_HEAD(self) -> None:  # noqa: N802
+        self._answer("HEAD")
+
+    def _answer(self, method: str) -> None:
+        # Here, not at the top: `routes` imports this module.
+        from .routes import answer
+
         parsed = urlparse(self.path)
         host = self.headers.get("Host", "127.0.0.1:8016")
-        if parsed.path.startswith("/assets/"):
-            if self._send_static_asset(parsed.path):
-                return
-        if parsed.path == "/health":
-            self._send_json(HTTPStatus.OK, self.app.health_payload())
-            return
-        if parsed.path == "/assist-status":
-            # The search page's script asking whether a complex search's answer is there.
-            key = parse_qs(parsed.query).get("k", [""])[0]
-            body = self.app.assist_status_json(key).encode("utf-8")
-            self.send_response(HTTPStatus.OK)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.send_header("Cache-Control", "no-store")
-            self.send_header(*NOINDEX_HEADER)
-            self.end_headers()
-            self.wfile.write(body)
-            return
-        if parsed.path == SEARCH_LOG_PATH:
-            # The search page's script reporting a search (`picwise_app.search_log`).
-            record_search(parse_qs(parsed.query).get("q", [""])[0])
-            self.send_response(HTTPStatus.NO_CONTENT)
-            self.send_header("Content-Length", "0")
-            self.send_header("Cache-Control", "no-store")
-            self.send_header(*NOINDEX_HEADER)
-            self.end_headers()
-            return
-        if parsed.path == "/suggest.json":
-            body = self.app.search_suggestions_json().encode("utf-8")
-            self.send_response(HTTPStatus.OK)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.send_header("Cache-Control", "public, max-age=3600")
-            self.send_header(*NOINDEX_HEADER)
-            self.end_headers()
-            self.wfile.write(body)
-            return
-        if parsed.path == "/robots.txt":
-            body = robots_txt().encode("utf-8")
-            self.send_response(HTTPStatus.OK)
-            self.send_header("Content-Type", "text/plain; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-            return
-        if parsed.path == SITEMAP_PATH and declares_to_google():
-            self._send_xml(HTTPStatus.OK, sitemap_xml())
-            return
-        if parsed.path == "/":
-            params = parse_qs(parsed.query)
-            query = params.get("q", [""])[0]
-            html = self.app.root_landing_html(
-                query,
-                shown=parse_shown_count(params.get("shown", [""])[0]),
-                assist_refresh=params.get("assist", [""])[0] == "1",
-            )
-            self._send_html(HTTPStatus.OK, html)
-            return
-        if parsed.path == "/demo":
-            query = parse_qs(parsed.query).get("q", ["best products to buy"])[0]
-            html = self.app.demo_html(query)
-            self._send_html(HTTPStatus.OK, html)
-            return
-        if parsed.path == "/terms":
-            html = self.app.terms_html()
-            self._send_html(HTTPStatus.OK, html)
-            return
-        if parsed.path == "/privacy":
-            html = self.app.privacy_html()
-            self._send_html(HTTPStatus.OK, html)
-            return
-        if parsed.path == "/cookies":
-            html = self.app.cookies_html()
-            self._send_html(HTTPStatus.OK, html)
-            return
-        if parsed.path == "/affiliate-disclosure":
-            html = self.app.affiliate_disclosure_html()
-            self._send_html(HTTPStatus.OK, html)
-            return
-        if parsed.path == "/contact":
-            html = self.app.contact_html()
-            self._send_html(HTTPStatus.OK, html)
-            return
-        if parsed.path == "/about":
-            html = self.app.about_html()
-            self._send_html(HTTPStatus.OK, html)
-            return
-        if parsed.path in {"/search", "/results"}:
-            params = parse_qs(parsed.query)
-            query = params.get("q", [""])[0]
-            source_page = "results" if parsed.path == "/results" else "search"
-            html = self.app.mvp_search_html(
-                query,
-                source_page=source_page,
-                shown=parse_shown_count(params.get("shown", [""])[0]),
-                assist_refresh=params.get("assist", [""])[0] == "1",
-            )
-            self._send_html(HTTPStatus.OK, html)
-            return
-        if parsed.path == "/picwise-reference":
-            params = parse_qs(parsed.query)
-            query = params.get("q", [""])[0]
-            html = self.app.picwise_reference_html(
-                query,
-                source_page="search",
-                shown=parse_shown_count(params.get("shown", [""])[0]),
-            )
-            self._send_html(HTTPStatus.OK, html)
-            return
-        if parsed.path == "/out/feed":
-            params = parse_qs(parsed.query or "")
-            product_id = (params.get("pid") or [""])[0]
-            query = (params.get("q") or [""])[0]
-            source_page = (params.get("src") or ["unknown"])[0]
-            rec_param = (params.get("rec") or [""])[0].strip().lower()
-            is_recommended = (
-                True if rec_param == "1" else False if rec_param == "0" else None
-            )
-            resolved = self.app.resolve_outbound_feed_redirect(product_id)
-            if resolved is None:
-                self.app.record_feed_outbound_click(
-                    product_id=product_id,
-                    query=query,
-                    source_page=source_page,
-                    is_recommended=is_recommended,
-                    provider_key="unknown",
-                    merchant_name="unknown",
-                    redirect_url="",
-                    event_name="redirect_failure",
-                )
-                safe_query = quote(str(query or "").strip(), safe="")
-                back_href = f"/search?q={safe_query}" if safe_query else "/"
-                html = (
-                    "<!doctype html>"
-                    '<html lang="en"><head><meta charset="utf-8">'
-                    '<meta name="viewport" content="width=device-width, initial-scale=1">'
-                    "<title>PicWise Option Unavailable</title>"
-                    "<style>"
-                    "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f9ff;color:#102744;}"
-                    ".pw-wrap{max-width:860px;margin:0 auto;padding:30px 20px;}"
-                    ".pw-card{background:#fff;border:1px solid #dbe8fb;border-radius:14px;padding:18px 20px;box-shadow:0 8px 24px rgba(17,44,91,.08);}"
-                    ".pw-note{margin:10px 0 0;line-height:1.6;color:#355174;}"
-                    ".pw-btn{display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 18px;border-radius:999px;background:#1f6dff;border:1px solid #1f6dff;color:#fff;font-size:14px;font-weight:700;text-decoration:none;margin-top:16px;}"
-                    "</style></head><body><main class=\"pw-wrap\"><section class=\"pw-card\">"
-                    "<h1>This option is no longer available</h1>"
-                    "<p class=\"pw-note\">PicWise could not confirm this offer is still "
-                    "showable, so it will not send you to it. This happens when an offer "
-                    "leaves the provider feed or is no longer in stock.</p>"
-                    f"<a class=\"pw-btn\" href=\"{escape(back_href, quote=True)}\">Back to results</a>"
-                    "</section></main></body></html>"
-                )
-                self._send_html(HTTPStatus.OK, html)
-                return
-            self.app.record_feed_outbound_click(
-                product_id=product_id,
-                query=query,
-                source_page=source_page,
-                is_recommended=is_recommended,
-                provider_key=resolved["provider_key"],
-                merchant_name=resolved["merchant_name"],
-                redirect_url=resolved["redirect_url"],
-                event_name="recommended_click" if is_recommended else "non_recommended_click",
-            )
-            self.app.record_feed_outbound_click(
-                product_id=product_id,
-                query=query,
-                source_page=source_page,
-                is_recommended=is_recommended,
-                provider_key=resolved["provider_key"],
-                merchant_name=resolved["merchant_name"],
-                redirect_url=resolved["redirect_url"],
-                event_name="redirect_success",
-            )
-            self.send_response(HTTPStatus.FOUND)
-            self.send_header("Location", resolved["redirect_url"])
-            self.send_header("Content-Length", "0")
-            self.end_headers()
-            return
-        if parsed.path == "/private-beta-readiness":
-            self._send_json(HTTPStatus.OK, self.app.private_beta_readiness_payload())
-            return
-        if parsed.path.startswith("/best/"):
-            slug = parsed.path.removeprefix("/best/")
-            status_code, html = render_best_slug_html(slug)
-            self._send_html(HTTPStatus(status_code), html)
-            return
-        if parsed.path == "/sitemap-buying-pages.xml":
-            xml = render_buying_sitemap_xml(base_url=f"http://{host}")
-            self._send_xml(HTTPStatus.OK, xml)
-            return
-        self._send_html(HTTPStatus.NOT_FOUND, self.app.not_found_html())
+        environ: dict[str, object] = {
+            "REQUEST_METHOD": method,
+            "PATH_INFO": unquote(parsed.path or "/"),
+            "QUERY_STRING": parsed.query,
+            "HTTP_HOST": host,
+            "SERVER_NAME": host.split(":")[0],
+            "SERVER_PORT": str(self.server.server_address[1]),
+            "wsgi.url_scheme": "http",
+        }
+        for name, value in self.headers.items():
+            key = "HTTP_" + name.upper().replace("-", "_")
+            environ.setdefault(key, value)
+        held: dict[str, object] = {}
 
-    def log_message(self, _format: str, *_args: Any) -> None:
-        return
+        def start_response(status: str, headers: list[tuple[str, str]]) -> None:
+            held["status"], held["headers"] = status, headers
 
-    def end_headers(self) -> None:
-        # Every answer of the local server, as every answer of the deployment's.
-        for name, value in SECURITY_HEADERS:
+        body = b"".join(answer(environ, start_response, self.app))
+        code, _space, reason = str(held["status"]).partition(" ")
+        self.send_response(int(code), reason)
+        for name, value in held["headers"]:  # type: ignore[union-attr]
             self.send_header(name, value)
-        super().end_headers()
-
-    def _send_json(self, status: HTTPStatus, payload: dict[str, Any]) -> None:
-        body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header(*NOINDEX_HEADER)
         self.end_headers()
-        self.wfile.write(body)
-
-    def _send_html(self, status: HTTPStatus, html: str) -> None:
-        body = html.encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-
-    def _send_xml(self, status: HTTPStatus, xml: str) -> None:
-        body = xml.encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/xml; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-
-    def _send_static_asset(self, raw_path: str) -> bool:
-        relative_path = raw_path.removeprefix("/")
-        asset_path = (ROOT_DIR / relative_path).resolve()
-        assets_root = (ROOT_DIR / "assets").resolve()
-        if not str(asset_path).startswith(str(assets_root)):
-            self._send_json(HTTPStatus.NOT_FOUND, {"error": "asset_not_found"})
-            return True
-        if not asset_path.exists() or not asset_path.is_file():
-            self._send_json(HTTPStatus.NOT_FOUND, {"error": "asset_not_found"})
-            return True
-        mime_type, _ = mimetypes.guess_type(str(asset_path))
-        content_type = f"{mime_type}; charset=utf-8" if mime_type == "text/css" else (mime_type or "application/octet-stream")
-        body = asset_path.read_bytes()
-        self.send_response(HTTPStatus.OK)
-        self.send_header("Content-Type", content_type)
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", ASSET_CACHE_CONTROL)
-        self.end_headers()
-        self.wfile.write(body)
-        return True
+        if method != "HEAD":
+            self.wfile.write(body)
 
 
 class PicwiseThreadingHTTPServer(ThreadingHTTPServer):
@@ -1129,3 +920,4 @@ class PicwiseThreadingHTTPServer(ThreadingHTTPServer):
 def run_local_server(host: str = "127.0.0.1", port: int = 8016) -> ThreadingHTTPServer:
     server = PicwiseThreadingHTTPServer((host, port), PicwiseRequestHandler)
     return server
+

@@ -103,7 +103,7 @@ A conflict between them: stop and say it (`PROJECT_RULES.md` 1.4).
 | What | Where |
 |---|---|
 | The server's entry point; static files; the keeper started per worker | `deployment/server/wsgi_server.py` |
-| The routes (the deployment; the local server has its own table until A3) | `api/index.py`, `src/picwise_app/app.py` |
+| The routes, one table for the server and the local server | `src/picwise_app/routes.py` (`api/index.py` is the entry point) |
 | A search, end to end | `src/picwise_search/live_search_resolver.py` |
 | What a search means: kinds, typing slips, "Did you mean" | `src/picwise_nlu/concept_understanding.py`, `product_concepts.py`, `category_detector.py` |
 | Which products, in what order, the Recommended; the kind index | `src/picwise_providers/search_selection.py` |
