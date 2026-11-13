@@ -8,25 +8,48 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **Next (owner, 13/11): «Πάμε σε άλλη συζήτηση για να με κατευθύνεις για τα google
-  ads».** Guide the owner, step by step and in plain Greek, to a Google Ads account whose
-  only use is Keyword Planner's data: the month's ten ("Most popular in the UK",
-  `picwise_surface.trends`) and the keywords of the first pages for Google
-  (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`, "Keywords"). What is known (31/10 and 13/11; read
-  Google's own help again before each step, it changes): no subscription and no ads, the
-  owner's wish («δεν θέλω να πληρώσω ... συνδρομητικά»): create the account in Expert
-  mode, without a campaign ("create an account without a campaign"), never start a
-  campaign; the business is the owner's (seat in Greece), the market measured is the
-  United Kingdom, English; without spending on ads Keyword Planner gives ranges
-  ("100–1K") rather than exact numbers, enough for the keywords of few searches, coarse
-  for ranking the ten (Google Trends, free, can order products within a range). The data
-  comes as a file the owner downloads from Keyword Planner ("Discover new keywords" from
-  a few seed words, or "Get search volume and forecasts" for a list) and sends in the
-  chat: a file of keyword figures holds no secret; a login, password or key never goes
-  into the chat (an API's key, if ever, into GitHub's secrets). The seed words: the kinds
-  of the keywords' step 1 (three shops or more, products of £80 or more), drawn from the
-  catalogue once the owner says yes; for the ten, broad shopping words of the UK. Nothing
-  of Google's numbers is shown on the site: the ten show no number of searches.
+- **Next (owner, 13/11 evening): «ΘΕΛΩ ΔΙΑΣΙΝΔΣΗ . Claude in Chrome, στον υπολογιστή
+  ΜΟΥ».** The owner wants Claude to reach the Google Ads account and check it
+  regularly. A login or password is never shared; this cloud session cannot reach the
+  owner's computer (no computer folder offered), so **the next conversation runs from
+  the Claude desktop app on the owner's computer, with Claude in Chrome**, in the owner's
+  own signed-in Chrome, the owner watching. Its first work, in order: (1) the campaigns
+  list empty, spend 0, billing showing no charge; (2) Keyword Planner opens (Tools →
+  Planning → Keyword Planner, or `ads.google.com/aw/keywordplanner/home`); (3) the first
+  file: United Kingdom, English, Google, the last 12 months, "Discover new keywords",
+  downloaded as CSV and brought to a cloud conversation on this repository; (4) a monthly
+  check, its day and hour asked of the owner. Never "New campaign", never "Apply" on
+  Google's Recommendations, no Google tag on the site.
+  - **The account, made 13/11** (the conversation "Google Ads", branch
+    `claude/picwise-google-ads-setup-d6qm2i`, guided screen by screen from the owner's
+    screenshots): no Expert-mode link appeared in Google's new sign-up; the linked
+    accounts skipped (a phone number Google filled in itself removed); at the goal's
+    screen «Δεν είστε έτοιμοι για μια καμπάνια; Μόνο ρύθμιση λογαριασμού», so **no
+    campaign**; billing country Greece, time zone (GMT+02:00) Greece (neither changes
+    later), payments profile individual, use "Business". Google opened nothing without a
+    payment method (Keyword Planner's address sent back to the payment page), so on the
+    owner's choice a card was added: a hold of €10 released within a week, nothing
+    charged while there is no campaign, a prepaid or virtual card advised; told it is no
+    subscription. The Google tag (GTM) Google offered at the end is **not** put on the
+    site: no ads to measure, and UK visitors would need a cookies notice. Not seen yet:
+    the campaigns list and Keyword Planner's page.
+  - **What holds from before** (31/10 and 13/11; read Google's own help again before each
+    step, it changes): without spending on ads Keyword Planner gives ranges ("100–1K"),
+    enough for the keywords of few searches, coarse for ranking the ten (Google Trends,
+    free, orders products within a range). A file of keyword figures holds no secret; a
+    login, password or key never goes into a chat (an API's key into GitHub's secrets).
+    The seed words: the kinds of the keywords' step 1 (three shops or more, products of
+    £80 or more, `docs/PICWISE_GOOGLE_PAGES_SPEC.md`, "Keywords"), drawn from the
+    catalogue once the owner says yes; for the ten ("Most popular in the UK",
+    `picwise_surface.trends`), broad UK shopping words. Nothing of Google's numbers is
+    shown on the site.
+  - **The API, set aside for later** (an automatic monthly pull through GitHub Actions
+    would make the checks need no one): since 9-10/09/2026 the developer tokens are
+    retired and access levels belong to a Google Cloud project; the first level,
+    Explorer, restricts keyword planning; Basic needs an application and brand
+    verification and is often refused. From search results only: developers.google.com
+    and support.google.com are outside this cloud session's network; read them again
+    before any step.
 - **13/11, the conversation "Top 10 commercial products" (session branch
   `ccr-f213d01e-zos3xz`, from the work branch's `5eb1bbb`): the price chips live since
   10:40 UTC** (owner: «Ανέβασε για τα σήματα..»; `ed2f6ac`, run `43409019580`, release
