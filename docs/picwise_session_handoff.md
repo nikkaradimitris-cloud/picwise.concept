@@ -115,8 +115,22 @@ a decision came about.
   Clothings, Beauti Outlet, myCord and Handbags Infinity at all (`robots.txt 423`).
   **Done the same day:** step 11's list, which was empty for the second night, written
   where the rows are counted (`shop_catalogue`, `words_to_learn`; the cause: it was drawn
-  from the kept products, and such a row is held, so it was never among them). Built, not
-  deployed. The search's reading byte for byte the same before and after.
+  from the kept products, and such a row is held, so it was never among them). `c93be3c`,
+  built, **not deployed, waiting for the owner's «ναι»** (asked in the report of 13/11,
+  12:00 Greek time). The search's reading byte for byte the same before and after
+  (`print_search_reading.py`, the whole lexicon, identical file); tests, the local run of
+  every fast module, 311 modules, 309 pass, 2 fail as known; GitHub's "Tests" on
+  `c93be3c` started 09:56 UTC (run `43405250793`), to be read before any deployment.
+  **D (step 10), the silent shops' causes, from the same note:** Wilna Kitchen is no
+  longer silent, 15 products shown (the bot's "in stock" over the feed, live since
+  13/11); NORVEXA ADVISORY LTD's 13,227 rows are all held for `missing_category_text`,
+  and the bot read its catalogue (1,319 products) but its store writes no type for any of
+  them, so nothing can give those rows a kind (their titles name one for 4,906 rows, and
+  a title alone never decides, the owner's rule of 2026-10-26); Frenzy Clothings, Beauti
+  Outlet, myCord | Bracelet Lab and Handbags Infinity Fashion answer the bot's robots.txt
+  with 423, so their catalogues cannot be read at all, and their feeds call every row out
+  of stock. The first two are for the owner to answer (the report of 13/11). So Divine's
+  81 rows are held as `shop_left_out`, by rule, not a fault.
   **Next, in this order:** deploy that list (it needs the owner's «ναι», it only writes
   the note) and read it the night after, then map by review the types it names
   ("Tablet Security Enclosures" 2,661, "Display Privacy Filters" 1,981, "Power Adapters
