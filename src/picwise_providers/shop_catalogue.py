@@ -72,6 +72,13 @@ MAX_BARCODE_ROWS = 50
 # How many of the types that gave no kind the note lists, the most frequent first.
 _TYPES_LISTED = 30
 _TYPE_LENGTH = 60
+# The types to review for `shop_words.LEARNED_TYPES`: each with its shop and two titles,
+# the most first, those of at least two rows. They come from here, since a row whose
+# type names no kind is held, never among the kept products (`catalogue_balance`).
+_WORDS_LISTED = 100
+_WORDS_MIN_ROWS = 2
+_WORD_TITLES = 2
+_WORD_TITLE_LENGTH = 90
 
 _LAST_NOTE: dict[str, Any] | None = None
 
@@ -146,6 +153,10 @@ def _with_category(product: ProviderProduct, category: str, product_type: str) -
     return replace(product, category_text=category, raw=raw)
 
 
+def _short(value: str) -> str:
+    return value if len(value) <= _TYPE_LENGTH else value[: _TYPE_LENGTH - 3] + "..."
+
+
 def _seen(value: Any) -> date | None:
     try:
         return date.fromisoformat(str(value))
@@ -184,6 +195,7 @@ def apply_shop_catalogues(
     shops = (catalogues or {}).get("shops") or {}
     notes = {name: _shop_note(entry) for name, entry in shops.items() if isinstance(entry, Mapping)}
     types_no_kind: Counter = Counter()
+    words: dict[tuple[str, str], list] = {}
     result = list(products)
     for index, product in enumerate(result):
         raw = product.raw if isinstance(product.raw, Mapping) else {}
@@ -234,6 +246,10 @@ def apply_shop_catalogues(
         else:
             note["type_no_kind"] += 1
             types_no_kind[product_type] += 1
+            entry = words.setdefault((name, product_type), [0, []])
+            entry[0] += 1
+            if len(entry[1]) < _WORD_TITLES:
+                entry[1].append(" ".join(str(product.title or "").split())[:_WORD_TITLE_LENGTH])
     barcode_note, barcode_shops = _apply_barcodes(result)
     _LAST_NOTE = {
         "file": file_status or ("read" if catalogues is not None else "none"),
@@ -246,8 +262,16 @@ def apply_shop_catalogues(
                         "without_category", "by_type", "type_no_kind", "no_type", "not_found")
         },
         "types_no_kind": [
-            {"value": value if len(value) <= _TYPE_LENGTH else value[: _TYPE_LENGTH - 3] + "...", "rows": rows}
+            {"value": _short(value), "rows": rows}
             for value, rows in heapq.nsmallest(_TYPES_LISTED, types_no_kind.items(), key=lambda item: (-item[1], item[0]))
+        ],
+        "words_to_learn": [
+            {"shop": shop, "type": _short(product_type), "rows": count, "titles": titles}
+            for (shop, product_type), (count, titles) in heapq.nsmallest(
+                _WORDS_LISTED,
+                ((key, value) for key, value in words.items() if value[0] >= _WORDS_MIN_ROWS),
+                key=lambda item: (-item[1][0], item[0]),
+            )
         ],
         "barcode": barcode_note,
         "barcode_shops": barcode_shops,

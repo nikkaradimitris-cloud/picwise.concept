@@ -99,21 +99,31 @@ a decision came about.
     their stock), a rule of stock, said to the owner first.
   The steps of the mechanism in full, with the night's numbers of 12/11:
   `docs/PICWISE_AUDIT_FIXES.md`, section 4, group E.
-- **Built and not deployed, waiting for the owner's «ναι»** (asked in the daily report of
-  12/11, 12:00 Greek time; no answer yet): `db200ca` and the records after it, which
-  carry B (the catalogue's memory), C (the shops' words; Finediam's "Diamond Ring" read
-  as a ring, the one change a visitor sees), D's measure (the column that says a silent
-  shop is out of stock) and, built by the daily session of 12/11, steps 12 and 15 of the
-  mechanism: how each shop was taken in (`balance.by_shop`) and the products two or
-  more shops sell by brand and part number (`balance.shared_by_brand_and_part`), both
-  measured only. Tests on `db200ca`: 307 modules, 305 pass, 2 fail as known.
-  **Everything next waits for that deployment's note**: D's fix (the column's name), step
-  11 (the shops' types with their titles, `balance.words_to_learn`: without the titles
-  no type can be reviewed at the owner's bar; "PCs/Workstations", "Photo Paper" and
-  "Brooches" are the first to look at), and the numbers of steps 12 and 15. The morning
-  after the deployment: read `prepared.json` (`memory`, `balance.by_shop`,
-  `balance.shared_by_brand_and_part`, `balance.words_to_learn`,
-  `intake.shops[].without_category.out_of_stock_by`) and the deployment's run.
+- **13/11, the night's note read, the mechanism's numbers in hand.** `db200ca` and what
+  followed went live on 13/11 with `0da3a9e` (08:25 UTC), so the night of 13/11
+  (prepared 08:16 UTC, written 08:23) carries B, C, D's measure and steps 12 and 15.
+  Read from `https://picwise.subby.cloud/prepared.json` at 09:44 UTC on 13/11:
+  `prepared: true`, 254,800 products, 78 shops; `intake_change` nothing shrunk, gone or
+  new; the memory's second night, 255,408 products known, 254,841 seen, 2,690 new, 311
+  prices changed, 567 gone since 12/11; `balance.by_shop` (InStock UK 147,331 products,
+  39,924 with a kind, 68,460 with a barcode, 249 sold by another shop too; Finediam
+  27,911 with 2 barcodes; Lets Buy Books 4,549 with no kind at all);
+  `shared_by_brand_and_part` 798 products of 228,090 sold by two shops or more, 505 of
+  them not joined by a barcode; D's column: every silent shop's rows are out of stock by
+  `availability: explicit_out_of_stock` (NORVEXA 0 — its rows are held for no category,
+  13,227 of them with no type from the bot either), and the bot could not read Frenzy
+  Clothings, Beauti Outlet, myCord and Handbags Infinity at all (`robots.txt 423`).
+  **Done the same day:** step 11's list, which was empty for the second night, written
+  where the rows are counted (`shop_catalogue`, `words_to_learn`; the cause: it was drawn
+  from the kept products, and such a row is held, so it was never among them). Built, not
+  deployed. The search's reading byte for byte the same before and after.
+  **Next, in this order:** deploy that list (it needs the owner's «ναι», it only writes
+  the note) and read it the night after, then map by review the types it names
+  ("Tablet Security Enclosures" 2,661, "Display Privacy Filters" 1,981, "Power Adapters
+  & Inverters" 1,438, "PCs/Workstations" 490, "Brooches" 433, "Photo Paper" 375 —
+  "Sold Out" 2,209 and "Warranty & Support Extensions" 842 are no product and are never
+  mapped); then D's fix (four shops the bot is refused by `robots.txt 423` — a fact of
+  their sites, for the owner; and NORVEXA's 13,227 rows with neither category nor type).
 - **Live since 12/11** (owner: «Ανεβασε», then «ανέβασε»): the audit's fixes (`70baa78`,
   04:07 UTC): a search about five times faster on the server's side, each worker
   keeping the catalogue loaded (proven at the night's change), phones one product a
