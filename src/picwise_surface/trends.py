@@ -1,4 +1,4 @@
-"""The month's most searched products, under the home page's search box (owner,
+"""The month's most popular products, under the home page's search box (owner,
 2026-10-31: «φτιάξε ένα ωραίο πάνελ ... δημοφιλείς αγορές για αυτό το μήνα ... αν μπορείς
 να αντλείς και αριθμό αναζητήσεων»). It speaks of searches, not sales (owner, 2026-10-31:
 «μπορούμε να λέμε trend αναζητήσεις και όχι πωλήσεις»).
@@ -6,19 +6,27 @@
 The design of 2026-11-12, simpler than the panel of 31/10 in
 `docs/design/picwise_design_proposal_2026-10-31.html` (owner: «κράτα το απλό σοβαρό και
 αξιόπιστο», then «Έχεις δίκιο για αυτά»): per row its rank, its name, rising, falling or
-new against last month, its searches a month, and how many of PicWise's products it has
-and from what price, a tap away. No coloured icon or category tabs, no scale of
+new against last month, and how many of PicWise's products it has and from what price,
+a tap away (its searches a month too, until 13/11, below). No coloured icon or category tabs, no scale of
 interest, no coloured heading. "Products", not "offers": on PicWise an offer is a shop's
 discount ("Offers first"). The panel folds to its first four rows, with "Show all 10"
 to open it and "Show fewer" to close it again (owner, 2026-11-12: «Το πάνελ αναδιπλώνει?
 Θα είναι καλύτερο να αναδιπλώνει»); without JavaScript every row shows.
+
+The owner, 2026-11-13: «Τα 10 πιο διαδεδομένα προϊόντα», under the heading "Most popular
+in the UK"; «Δεν θέλουμε να δείξουμε τον αριθμό των αναζητήσεων», so a row shows no
+number of searches (the ranking still comes from them, and its source is named under the
+rows); «Δεν μας ενδιαφέρει να τα έχουμε όλα», so a product PicWise's shops do not sell
+keeps its row ("Not in our shops yet"). The same Google file serves a second purpose,
+the owner's: the keywords of the pages given to Google, those of few searches and little
+competition first (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`).
 
 Every figure must come from a real source, named on the panel (`docs/LANDING_PAGE_SPEC.md`,
 "Trends state only what is known"; `docs/ANTI_FAKE_TRUST_RULES.md`):
 
 - the ranking and the change: Google's search data (Google Ads Keyword Planner's monthly
   searches, or the Google Trends API's interest);
-- the searches a month: Google Ads Keyword Planner, approximate;
+- the searches a month, kept and not shown: Google Ads Keyword Planner, approximate;
 - the products and the lowest price: PicWise's own catalogue, counted when the panel's
   data is written, never when a page is drawn.
 
@@ -57,7 +65,9 @@ class TrendRow:
     # Against last month: "up", "down", "new", "flat", or "" when the source says nothing.
     change: str = ""
     change_by: int = 0
-    # As the source gives it ("~550K", "10K–100K"); "" when there is no figure.
+    # As the source gives it ("~550K", "10K–100K"); "" when there is no figure. Kept with
+    # the row, never shown (owner, 2026-11-13: «Δεν θέλουμε να δείξουμε τον αριθμό των
+    # αναζητήσεων»).
     monthly_searches: str = ""
     # PicWise's products for it and the lowest of their prices, from its own catalogue.
     offers: int = 0
@@ -74,6 +84,7 @@ class TrendsPanel:
     country: str
     rows: tuple[TrendRow, ...]
     ranking_source: str
+    # The source of the searches a month, which the panel no longer shows (13/11).
     searches_source: str = ""
     offers_source: str = ""
 
@@ -111,9 +122,6 @@ def _row_html(row: TrendRow) -> str:
     alone when they do not. A column a source did not give is left out, never filled."""
     products = max(int(row.offers or 0), 0)
     parts = []
-    searches = str(row.monthly_searches or "").strip()
-    if searches:
-        parts.append(f"{escape(searches)} searches")
     if products:
         words = f"{products:,} {'product' if products == 1 else 'products'}"
         price = str(row.from_price or "").strip()
@@ -156,17 +164,15 @@ def render_trends_panel(panel: TrendsPanel | None) -> str:
     if not rows:
         return ""
     sources = [f"Ranking: {escape(panel.ranking_source.strip())}."]
-    if any(str(row.monthly_searches or "").strip() for row in rows) and panel.searches_source.strip():
-        sources.append(f"Searches: {escape(panel.searches_source.strip())}.")
     if any(int(row.offers or 0) > 0 for row in rows) and panel.offers_source.strip():
         sources.append(f"Products and prices: {escape(panel.offers_source.strip())}.")
     country = panel.country.strip()
     if country == "United Kingdom":
-        heading = "Most searched in the UK"
+        heading = "Most popular in the UK"
     elif country:
-        heading = f"Most searched in {escape(country)}"
+        heading = f"Most popular in {escape(country)}"
     else:
-        heading = "Most searched this month"
+        heading = "Most popular this month"
     period = panel.period.strip()
     period_html = f'<span class="pw-tp-period">{escape(period)}</span>' if period else ""
     more_html = (

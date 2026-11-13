@@ -464,7 +464,7 @@ class HomePageTests(unittest.TestCase):
         self.assertIsNone(load_trends_panel())
         self.assertEqual(TRENDS_SOURCE_STATUS, "not_connected")
         self.assertNotIn('id="pw-trends"', self.page)
-        self.assertNotIn("Most searched in the UK", self.page)
+        self.assertNotIn("Most popular in the UK", self.page)
 
 
 def _panel(rows: tuple[TrendRow, ...], **overrides: str) -> TrendsPanel:
@@ -503,12 +503,15 @@ class TrendsPanelTests(unittest.TestCase):
         panel = render_trends_panel(_panel(self._rows()))
         names = re.findall(r'<span class="pw-tp-name">(.*?)</span>', panel)
         self.assertEqual(names, ["Testline Phone 12", "Fixturon Air Fryer 5L", "Sampleware Vacuum &lt;Pro&gt;"])
-        self.assertIn('<h2 class="pw-tp-title" id="pw-tp-title">Most searched in the UK</h2>', panel)
+        # Owner, 2026-11-13: «Τα 10 πιο διαδεδομένα προϊόντα».
+        self.assertIn('<h2 class="pw-tp-title" id="pw-tp-title">Most popular in the UK</h2>', panel)
         self.assertIn('<span class="pw-tp-period">October 2026</span>', panel)
         # Searches, not sales (owner, 2026-10-31).
         for word in ("bought", "sold", "best sellers", "sales"):
             self.assertNotIn(word, panel.lower())
-        self.assertIn("~550K searches · ", panel)
+        # No number of searches (owner, 2026-11-13), though the source gives one.
+        self.assertNotIn("550K", panel)
+        self.assertNotIn("74K", panel)
         self.assertIn("Up 1 place on last month", panel)
         self.assertIn("New in the top 10 this month", panel)
         self.assertIn("Down 2 places on last month", panel)
@@ -517,7 +520,7 @@ class TrendsPanelTests(unittest.TestCase):
         self.assertIn("27 products from <b>£699</b>", panel)
         self.assertNotIn(" offers", panel)
         self.assertIn("Ranking: Google Ads Keyword Planner (monthly searches, UK).", panel)
-        self.assertIn("Searches: Google Ads Keyword Planner, approximate.", panel)
+        self.assertNotIn("Searches:", panel)
         self.assertIn("Products and prices: PicWise&#x27;s shops, last night.", panel)
 
     def test_simpler_than_the_panel_of_31_10(self) -> None:
