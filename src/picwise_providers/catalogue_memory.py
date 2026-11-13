@@ -15,7 +15,10 @@ the products the site answers from (those the cap keeps),
 
 - `products`: per product (a shop and its product id), the first and the last night
   seen, how many nights, its price and currency, the night its price last changed, its
-  barcode, its title;
+  barcode, its title, and which of the last 62 prepared nights it was seen on
+  (`seen_nights`: bit 0 its last night seen, bit 1 the prepared night before, and so
+  on; a night with no preparation is not one), so that how long a price held counts
+  only the nights it was seen at it (`price_history`, owner, 2026-11-13);
 - `prices`: a product's price on the night it was first seen and on each night it
   changed (not every night);
 - `shop_nights`: per shop and night, its rows in the feed, shown, kept;
@@ -43,6 +46,10 @@ from .product_identity import valid_gtin
 MEMORY_FILE_ENV = "PICWISE_CATALOGUE_MEMORY_FILE"
 NO_SHOP = "(no shop named)"
 _TITLE_LENGTH = 300
+# `seen_nights` keeps this many prepared nights, one bit each: SQLite's integers have 64
+# bits, and the sign's is left alone.
+SEEN_NIGHTS_KEPT = 62
+_SEEN_MASK = (1 << SEEN_NIGHTS_KEPT) - 1
 
 _SCHEMA = (
     """CREATE TABLE IF NOT EXISTS products (
@@ -56,7 +63,8 @@ _SCHEMA = (
         nights_seen INTEGER NOT NULL,
         price_pence INTEGER,
         currency TEXT NOT NULL,
-        price_changed_on TEXT
+        price_changed_on TEXT,
+        seen_nights INTEGER
     )""",
     "CREATE INDEX IF NOT EXISTS products_last_seen ON products (last_seen)",
     "CREATE INDEX IF NOT EXISTS products_gtin ON products (gtin)",
@@ -92,7 +100,13 @@ def configured_memory_path() -> Path | None:
 
 def product_key(product: ProviderProduct) -> str:
     """A product in the memory: its shop and its id in the feed."""
-    return f"{_shop(product)}\x1f{product.provider_product_id}"
+    return history_key(_shop(product), product.provider_product_id)
+
+
+def history_key(shop: object, product_id: object) -> str:
+    """The memory's key of the product a shop (as the feed's row names it) lists under
+    `product_id`: what a card looks a product's price history up by."""
+    return f"{' '.join(str(shop or '').split()) or NO_SHOP}\x1f{str(product_id or '').strip()}"
 
 
 def _shop(product: ProviderProduct) -> str:
@@ -120,6 +134,25 @@ def _row(product: ProviderProduct) -> tuple[str, str, str, str, str, int | None,
     )
 
 
+def _add_seen_nights(db: sqlite3.Connection) -> None:
+    """Give a memory written before `seen_nights` existed (12-13/11) its column, each
+    product's from what the memory knew: seen on every prepared night from its first to
+    its last when its count of nights says so, else only on its last (nothing more is
+    claimed than the memory can show)."""
+    columns = {row[1] for row in db.execute("PRAGMA table_info(products)")}
+    if "seen_nights" in columns:
+        return
+    db.execute("ALTER TABLE products ADD COLUMN seen_nights INTEGER")
+    db.execute(
+        """UPDATE products SET seen_nights = CASE
+               WHEN nights_seen = (SELECT COUNT(*) FROM nights
+                                   WHERE nights.night >= products.first_seen AND nights.night <= products.last_seen)
+               THEN (1 << MIN(nights_seen, ?)) - 1
+               ELSE 1 END""",
+        (SEEN_NIGHTS_KEPT,),
+    )
+
+
 def remember_night(
     path: Path,
     products: Sequence[ProviderProduct],
@@ -137,6 +170,7 @@ def remember_night(
         with db:
             for statement in _SCHEMA:
                 db.execute(statement)
+            _add_seen_nights(db)
             before = db.execute("SELECT MAX(night) FROM nights WHERE night < ?", (night,)).fetchone()[0]
             db.execute("CREATE TEMP TABLE tonight (key TEXT PRIMARY KEY, shop TEXT, product_id TEXT, gtin TEXT, title TEXT, price_pence INTEGER, currency TEXT)")
             db.executemany("INSERT INTO tonight VALUES (?, ?, ?, ?, ?, ?, ?)", tonight.values())
@@ -149,11 +183,22 @@ def remember_night(
                    WHERE p.key IS NULL OR p.price_pence IS NOT t.price_pence OR p.currency != t.currency""",
                 (night,),
             )
+            # Seen tonight: the nights seen move on by the prepared nights since the last
+            # one seen (those between it and tonight were not seen), and tonight's is set.
+            # Every expression reads the row as it was before this night.
             db.execute(
                 """INSERT INTO products (key, shop, product_id, gtin, title, first_seen, last_seen, nights_seen,
-                                         price_pence, currency, price_changed_on)
-                   SELECT key, shop, product_id, gtin, title, ?, ?, 1, price_pence, currency, NULL FROM tonight WHERE true
+                                         price_pence, currency, price_changed_on, seen_nights)
+                   SELECT key, shop, product_id, gtin, title, ?, ?, 1, price_pence, currency, NULL, 1 FROM tonight
+                   WHERE true
                    ON CONFLICT (key) DO UPDATE SET
+                       seen_nights = CASE
+                           WHEN products.last_seen < excluded.last_seen
+                           THEN ((COALESCE(products.seen_nights, 1)
+                                  << (1 + (SELECT COUNT(*) FROM nights
+                                           WHERE nights.night > products.last_seen AND nights.night < excluded.last_seen)))
+                                 | 1) & ?
+                           ELSE COALESCE(products.seen_nights, 1) | 1 END,
                        nights_seen = products.nights_seen + (products.last_seen < excluded.last_seen),
                        price_changed_on = CASE
                            WHEN products.price_pence IS NOT excluded.price_pence OR products.currency != excluded.currency
@@ -161,7 +206,7 @@ def remember_night(
                        last_seen = excluded.last_seen,
                        shop = excluded.shop, gtin = excluded.gtin, title = excluded.title,
                        price_pence = excluded.price_pence, currency = excluded.currency""",
-                (night, night),
+                (night, night, _SEEN_MASK),
             )
             db.execute(
                 "INSERT OR REPLACE INTO nights (night, prepared_at, kept) VALUES (?, ?, ?)",

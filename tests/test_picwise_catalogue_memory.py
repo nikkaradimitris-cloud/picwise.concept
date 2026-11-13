@@ -12,7 +12,11 @@ from nothing. Pinned here:
 - per shop and night, its rows, shown and kept;
 - no link is kept, and the public note holds counts only;
 - the night's preparation writes it when a file is named, says what it holds in its
-  note and in the server's report, and keeps none when none is named.
+  note and in the server's report, and keeps none when none is named;
+- which prepared nights each product was seen on (`seen_nights`, owner, 2026-11-13: the
+  price chips' 7 nights count only nights a price was seen): a night not seen leaves its
+  bit unset, a night with no preparation is no night, a second preparation sets none
+  twice, and a memory of 12-13/11 gets the column from what it knew.
 
 Every product is local test data: fictional brands and shops, `.invalid` addresses.
 """
@@ -39,6 +43,8 @@ from picwise_providers.contracts import ProviderProduct  # noqa: E402
 
 NIGHT_1 = datetime(2026, 11, 12, 4, 23, tzinfo=timezone.utc)
 NIGHT_2 = datetime(2026, 11, 13, 4, 21, tzinfo=timezone.utc)
+NIGHT_3 = datetime(2026, 11, 14, 4, 20, tzinfo=timezone.utc)
+NIGHT_4 = datetime(2026, 11, 15, 4, 22, tzinfo=timezone.utc)
 
 
 def _product(pid: str, shop: str = "Fixture Shop One", price: str = "20.00", ean: str = "") -> ProviderProduct:
@@ -136,6 +142,72 @@ class MemoryTests(unittest.TestCase):
         self.assertIn(code.zfill(14), dump)
         self.assertNotIn("http", json.dumps(summary))
         self.assertNotIn(str(self.path.parent), json.dumps(summary))
+
+
+class SeenNightsTests(unittest.TestCase):
+    """Which prepared nights a product was seen on: bit 0 its last, bit 1 the one before."""
+
+    def setUp(self) -> None:
+        self.path = Path(tempfile.mkdtemp()) / "memory.sqlite"
+
+    def _bits(self) -> dict[str, int]:
+        with sqlite3.connect(str(self.path)) as db:
+            return dict(db.execute("SELECT product_id, seen_nights FROM products").fetchall())
+
+    def test_each_night_seen_sets_its_bit_and_a_night_away_leaves_it_unset(self) -> None:
+        remember_night(self.path, [_product("a"), _product("b")], prepared_at=NIGHT_1)
+        self.assertEqual(self._bits(), {"a": 0b1, "b": 0b1})
+        remember_night(self.path, [_product("a")], prepared_at=NIGHT_2)
+        remember_night(self.path, [_product("a"), _product("b")], prepared_at=NIGHT_3)
+        # a: 12, 13, 14; b: 12 and 14, not 13.
+        self.assertEqual(self._bits(), {"a": 0b111, "b": 0b101})
+        remember_night(self.path, [_product("b")], prepared_at=NIGHT_4)
+        # a not seen on 15: its record stays as of its last night (14).
+        self.assertEqual(self._bits(), {"a": 0b111, "b": 0b1011})
+
+    def test_a_night_with_no_preparation_is_no_night(self) -> None:
+        remember_night(self.path, [_product("a")], prepared_at=NIGHT_1)
+        # 13/11 not prepared at all (the server down): seen on every night there was.
+        remember_night(self.path, [_product("a")], prepared_at=NIGHT_3)
+        self.assertEqual(self._bits(), {"a": 0b11})
+
+    def test_a_second_preparation_in_the_night_sets_nothing_twice(self) -> None:
+        remember_night(self.path, [_product("a")], prepared_at=NIGHT_1)
+        remember_night(self.path, [_product("a")], prepared_at=NIGHT_2)
+        remember_night(self.path, [_product("a")], prepared_at=NIGHT_2.replace(hour=9))
+        self.assertEqual(self._bits(), {"a": 0b11})
+
+    def test_only_the_last_62_prepared_nights_are_kept(self) -> None:
+        from datetime import timedelta
+
+        for day in range(70):
+            remember_night(self.path, [_product("a")], prepared_at=NIGHT_1 + timedelta(days=day))
+        self.assertEqual(self._bits(), {"a": (1 << 62) - 1})
+
+    def test_a_memory_of_before_the_column_gets_it_from_what_it_knew(self) -> None:
+        with sqlite3.connect(str(self.path)) as db:
+            db.executescript(
+                """
+                CREATE TABLE products (key TEXT PRIMARY KEY, shop TEXT NOT NULL, product_id TEXT NOT NULL,
+                    gtin TEXT NOT NULL, title TEXT NOT NULL, first_seen TEXT NOT NULL, last_seen TEXT NOT NULL,
+                    nights_seen INTEGER NOT NULL, price_pence INTEGER, currency TEXT NOT NULL, price_changed_on TEXT);
+                CREATE TABLE prices (key TEXT NOT NULL, night TEXT NOT NULL, price_pence INTEGER,
+                    currency TEXT NOT NULL, PRIMARY KEY (key, night));
+                CREATE TABLE nights (night TEXT PRIMARY KEY, prepared_at TEXT NOT NULL, kept INTEGER NOT NULL);
+                INSERT INTO nights VALUES ('2026-11-12', '2026-11-12T04:23:00+00:00', 3),
+                                          ('2026-11-13', '2026-11-13T04:21:00+00:00', 2);
+                INSERT INTO products VALUES
+                    ('Fixture Shop One' || char(31) || 'both', 'Fixture Shop One', 'both', '', 't',
+                     '2026-11-12', '2026-11-13', 2, 2000, 'GBP', NULL),
+                    ('Fixture Shop One' || char(31) || 'new', 'Fixture Shop One', 'new', '', 't',
+                     '2026-11-13', '2026-11-13', 1, 2000, 'GBP', NULL),
+                    ('Fixture Shop One' || char(31) || 'gone', 'Fixture Shop One', 'gone', '', 't',
+                     '2026-11-12', '2026-11-12', 1, 2000, 'GBP', NULL);
+                """
+            )
+        remember_night(self.path, [_product("both"), _product("gone")], prepared_at=NIGHT_3)
+        # both: 12, 13 (from the count), then 14; gone: 12, not 13, then 14; new: 13 only.
+        self.assertEqual(self._bits(), {"both": 0b111, "gone": 0b101, "new": 0b1})
 
 
 class PreparationTests(unittest.TestCase):
