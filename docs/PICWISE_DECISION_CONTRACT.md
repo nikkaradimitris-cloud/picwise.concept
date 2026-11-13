@@ -721,3 +721,35 @@ Then, to the order, the time and the mark proposed: «Ναι, συμφωνώ μ�
 - A page whose price was chosen is read without the AI layer, which would otherwise be asked
   again for every price; its words are not logged as a new search.
 - Pinned by `tests/test_picwise_price_bar.py`.
+
+## The price's history on the cards, decided by the owner, 2026-11-13
+
+«η διακύμανση τιμής θα μπει με κάποιον έξυπνο τρόπο ... δεν ξέρω αν πρέπει να μπει σε κάθε κάρτα προϊόντος με ένα βελάκι κόκκινο προς τα κάτω ή πράσινο προς τα πάνω ... δεν ξέρω εάν το αγγίζει και κρεμάει κάτω του ένα μικρό drop down ... δεν ξέρω αν αυτό πρέπει να γίνει μόνο στο προτεινόμενο ή σε όλα». To the pictures proposed the same day: «Συμφωνώ με το σχεδιασμό».
+
+- **On every card**, not only the Recommended's: a product's price history is a fact
+  about it, and on the Recommended alone it would read as pushing it.
+- Under the price, a chip: a **green ▼** "£40 since 6 Dec" when the price fell (for a
+  buyer a fall is good news: the stock market's colours the other way round), a **red ▲**
+  when it rose, a **grey** "Same price for 12 nights" when it was kept 7 nights or more
+  with no change to tell; **nothing** when nothing true can be told yet. A tap opens,
+  under it, the price as the shop listed it each night of the last 30 (a chart, now,
+  lowest and highest with their nights), a night not listed shown as a gap.
+- **The rule** (put to the owner the same day, who asked what the 7 nights meant):
+  today's price is compared with **the last price the shop kept for at least 7 nights
+  seen**. A change shows from its first night; a price brought back to where it was kept
+  shows nothing; a price raised for a night or two and brought back never reads as a
+  discount, nor a price shown one night, hidden and brought back lower (a night the
+  product was not listed is no night at its price). A change is told only when it is at
+  least £1 and at least 1% of the price compared with, and only within the last 30
+  nights. No fake savings (`PROJECT_RULES.md` §4); UK law forbids misleading price
+  comparisons too.
+- From the catalogue's memory (`picwise_providers.catalogue_memory`, since 12/11: the
+  first chips around 19/11, the 30 nights full in mid-December), worked out each night
+  after it (`picwise_providers.price_history`, `price_notes.json.gz` beside the prepared
+  catalogue), and shown by a worker only beside the catalogue of the same preparation.
+- On the site's own search pages the chips serve the buyer and whoever reviews PicWise;
+  they do nothing for Google, which does not index those pages. On the pages given to
+  Google the history is to be written into the page (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`,
+  section 3).
+- Pinned by `tests/test_picwise_price_history.py` and
+  `tests/test_picwise_price_notes_on_cards.py`.

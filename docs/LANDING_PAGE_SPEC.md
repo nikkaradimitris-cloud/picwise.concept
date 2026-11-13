@@ -111,6 +111,25 @@ shows no product cards until intent confidence and provider availability are bot
 verified.". A page that offers its own searches ("Did you mean: ...?", "This search is too
 broad. Try: ...") or asks which product is meant does not add the two general ones.
 
+## The Month's Ten (2026-11-13)
+
+Owner, 2026-11-13: «Τα 10 πιο διαδεδομένα προϊόντα»; «Δεν θέλουμε να δείξουμε τον αριθμό
+των αναζητήσεων»; «Δεν μας ενδιαφέρει να τα έχουμε όλα». The panel under the box is
+headed "Most popular in the UK" and the month; a row shows its rank, its name, rising,
+falling or new, and how many of PicWise's products it has from what price, never a
+number of searches (its ranking comes from Google's searches, named under the rows). A
+product PicWise's shops do not sell keeps its row, "Not in our shops yet", and links
+nowhere. Still not shown: no source is connected (`picwise_surface.trends`). Its two
+roles, the owner's: on the home page, to show a visitor and a shop reviewing PicWise
+that it is a search for buying; and the same Google file gives the keywords of the pages
+given to Google (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`, "Keywords").
+
+## The Price's History on Each Card (2026-11-13)
+
+Under each card's price, a chip: green ▼ when it fell, red ▲ when it rose, grey "Same
+price for N nights"; a tap opens its last 30 nights. The rules:
+`docs/PICWISE_DECISION_CONTRACT.md`, "The price's history on the cards".
+
 ## The Shop's Name (2026-11-13)
 
 The card's shop line and its button name the shop as a buyer knows it, not as its

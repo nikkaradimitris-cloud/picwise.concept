@@ -268,6 +268,42 @@ the plan's limit, with an alert at 70%.
   (also required by the advertising rules of the UK and the US), contact, privacy.
 - **Adult products** never appear on these pages.
 
+## Keywords, the owner's plan of 2026-11-13
+
+«Μας ενδιαφέρει η άντληση πληροφορίας για να κάνουμε σωστό ... κατανομή keywords στις
+σελίδες μας.. εστιάζουμε σε λέξεις κλειδιά χαμηλής επισκεψιμότητας μικρού ανταγωνισμού η
+κάθε σελίδα θα έχει πολλές το seo θα χτιστεί γύρω από αυτό για αρχή θα βγάλουμε 10
+σελίδες από κατηγορίες που έχουν αξίες από 80€ και πάνω»; and «δεν θα πάμε να χτυπήσουμε
+υψηλού ανταγωνισμού λέξεις κλειδιά». Agreed with the owner the same day:
+
+- A page answers a cluster of keywords of the same intent, those whose products are its
+  products (section 1): one main keyword and its variants; a keyword asking for other
+  products belongs to another page; no keyword is aimed at by two pages.
+- Few searches and little competition first. Google Ads Keyword Planner's "competition"
+  is the advertisers', not the free results': a hint, not proof. Who holds Google's first
+  page for a keyword says how hard it is (all large shops: hard; forums and small sites: a
+  chance). Without spending on ads, Keyword Planner gives ranges ("100–1K"), enough to
+  find the keywords of few searches.
+- The first batch: about 10 pages, from kinds whose products cost £80 or more (the site's
+  prices are in pounds), chosen where PicWise's catalogue compares several shops: on
+  13/11, 254,800 products from 78 shops, 58% of them from one shop, 421 products sold
+  by two shops or more; furniture strongest ("sofa" 713 products, "bed frame" 978,
+  "office chair" 341), while monitors, memory, saunas and rings come from one shop each.
+  Choosing which pages go to Google by their prices is the owner's choice of parts
+  (`PROJECT_RULES.md` §13); commission still never orders a page's products.
+- What a page has that no shop has is what Google values: several shops compared, the
+  price range, in stock only, and the price's history written into the page from the
+  catalogue's memory ("14 of 45 corner sofas are cheaper than a month ago").
+- The order of the work, proposed and waiting for the owner's yes: kinds with three shops
+  or more and enough products of £80 or more drawn from the catalogue; the owner's free
+  Google Ads account (no ads) and its Keyword Planner file for them; keywords grouped per
+  page; Google's first page checked for the best groups; a map (page → main keyword →
+  variants) for the owner's yes; the products of those kinds checked; Search Console set
+  up before the batch goes out, and read after it.
+- Before the first batch, two decisions of the owner's: the domain the site keeps
+  (moving it after Google has ranked its pages costs months); and that a new site
+  usually needs three to six months before Google sends it visitors.
+
 ## 9. Release in batches
 
 Pages reach Google in batches, each one the owner chooses (`PROJECT_RULES.md`, section
