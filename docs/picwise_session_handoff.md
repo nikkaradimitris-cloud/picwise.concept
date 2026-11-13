@@ -9,8 +9,12 @@ a decision came about.
 ## Next conversation: start here
 
 - **13/11, the conversation "Top 10 commercial products" (session branch
-  `ccr-f213d01e-zos3xz`, from the work branch's `5eb1bbb`): the price chips built and
-  tested, not deployed, waiting for the owner's «ανέβασε».** The owner's plan: apply to
+  `ccr-f213d01e-zos3xz`, from the work branch's `5eb1bbb`): the price chips live since
+  10:40 UTC** (owner: «Ανέβασε για τα σήματα..»; `ed2f6ac`, run `43409019580`, release
+  `20261113T102609Z-ed2f6ac`; deployed without the daily session's `c93be3c`, which waits
+  for the owner; the work branch holds both since the merge `d10c53f`). On the site: 0
+  notes tonight, as expected; **check about 19/11 that the first chips show** (the night's
+  note, `price_notes`; a search with `curl`). The owner's plan: apply to
   more shops once the site shows it does more than a search: the month's ten and the
   price's movement («πριν από αυτό πρέπει η σελίδα να είναι έτοιμη»).
   - **The price chips** (owner, to the pictures: «Συμφωνώ με το σχεδιασμό»; the 7 nights
@@ -38,7 +42,7 @@ a decision came about.
     more and enough products of £80 or more, from the catalogue) proposed, no yes yet.
     Furniture is where the catalogue compares shops; monitors, memory, saunas and rings
     come from one shop each.
-  - **Waiting for the owner:** «ανέβασε» for the chips; the Google Ads account; the new
+  - **Waiting for the owner:** the Google Ads account; the new
     Awin token (offers not fetched since 03/11; «προσφορά εάν υπάρχει» means never until
     then); the domain to keep before Google; the yes to the keywords' step 1.
 - **12/11, the design: its first part live since 15:45 UTC** (owner: «Ανέβασε»; release
