@@ -28,6 +28,7 @@ from .assist import ASSIST_SCRIPT, ASSIST_STYLES, AssistView, assist_block_html,
 from .fonts import FONT_PRELOAD_HTML
 from .page_styles import _PAGE_STYLES
 from .price_bar import PRICE_BAR_SCRIPT, PRICE_BAR_STYLES
+from .price_notes import PRICE_NOTE_STYLES, price_note_html
 from .search_script import _SEARCH_SCRIPT
 from .shop_names import shop_display_name
 from .legal import render_public_footer
@@ -683,6 +684,7 @@ def _build_price_first_cards(
     products = first_page + opened
     labels = build_fact_based_choice_labels(products)
     offers = dict(getattr(resolution, "provider_feed_offers", ()) or ())
+    notes = _price_notes()
     cards: list[dict[str, object]] = []
     for index, product in enumerate(products):
         label = labels[index] if index < len(labels) else None
@@ -742,6 +744,12 @@ def _build_price_first_cards(
                 "cta": f"View at {shop}" if shop else "View in Store",
                 "image": str(product.get("image_url") or "").strip(),
                 "recommended": is_recommended,
+                # The price's history under the price (owner, 2026-11-13), on every card.
+                "price_note": (
+                    notes.note(product.get("merchant_name"), product_id, currency=str(product.get("currency") or ""))
+                    if notes is not None
+                    else None
+                ),
                 "fit_slot": bool(fit_words),
                 "fit": (fit_words or {}).get(product_id, ""),
                 "rec_note": "",
@@ -754,7 +762,23 @@ def _build_price_first_cards(
                 ),
             }
         )
+    # Where a card of the page has a note, every card keeps its line (`price_notes`).
+    slot = any(card["price_note"] is not None for card in cards)
+    for card in cards:
+        card["price_slot"] = slot
     return cards
+
+
+def _price_notes():
+    """The night's price notes, when this process answers from the catalogue the same
+    preparation wrote (`price_history.notes_for_catalogue`), else None."""
+    try:
+        from picwise_providers.price_history import notes_for_catalogue
+        from picwise_providers.state import loaded_prepared_at
+
+        return notes_for_catalogue(loaded_prepared_at())
+    except Exception:  # a card without its note is still the card
+        return None
 
 
 def _pounds(amount: float) -> str:
@@ -963,6 +987,14 @@ def _render_choice_card(
     if str(card.get("shop_line") or ""):
         lines.append(f'<p class="pw-card-shop">{escape(str(card["shop_line"]))}</p>')
     lines.append(f'<p class="pw-price">{escape(str(card["price"]))}</p>')
+    price_note = price_note_html(
+        card.get("price_note"),  # type: ignore[arg-type]
+        shop=str(card.get("shop") or ""),
+        price=str(card["price"]),
+        slot=bool(card.get("price_slot")) and not single,
+    )
+    if price_note:
+        lines.append(price_note)
     if str(card.get("stock_line") or ""):
         lines.append(
             f'<p class="pw-card-stock pw-stock-{escape(str(card.get("stock_state") or "unconfirmed"), quote=True)}">'
@@ -1392,6 +1424,7 @@ def render_picwise_reference_surface(
         + f"<script>{HEAD_SCRIPT}</script>"
         f"<style>{_PAGE_STYLES}{BROWSER_LISTS_STYLES}{TRENDS_STYLES if home_after_search_html else ''}"
         f"{PRICE_BAR_STYLES if price_bar_html else ''}"
+        f"{'' if is_home else PRICE_NOTE_STYLES}"
         f"{ASSIST_STYLES if assist is not None else ''}</style>"
         "</head><body>"
         '<main class="pw-reference-viewport">'
