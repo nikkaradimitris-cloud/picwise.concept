@@ -44,7 +44,8 @@ a decision came about.
   after 1.2 s).
   On 13/11 (owner: «Τι περιμένεις?»), built on `ccr-9953c583-wz6sfv`: the empty pages
   for buyers ("No products found for “…”." and two searches to try) and the shop's name
-  as a buyer knows it ("View at Geepas"); waiting for «ανέβασε». "Shopping Ads: Google &
+  as a buyer knows it ("View at Geepas"); live since 08:25 UTC on 13/11 (owner:
+  «Ανέβασε»; `0da3a9e`, run `43390882800`). "Shopping Ads: Google &
   Bing", a shop of the feed whose name names no shop, is for the owner to ask Awin about.
   **What waited before 13/11, one at a time, a picture first:** the empty pages, written for a
   developer ("PicWise safely shows no product cards until intent confidence ...",
