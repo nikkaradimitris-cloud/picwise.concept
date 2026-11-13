@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-12.
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-13.
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,6 +8,39 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **13/11, the conversation "Top 10 commercial products" (session branch
+  `ccr-f213d01e-zos3xz`, from the work branch's `5eb1bbb`): the price chips built and
+  tested, not deployed, waiting for the owner's «ανέβασε».** The owner's plan: apply to
+  more shops once the site shows it does more than a search: the month's ten and the
+  price's movement («πριν από αυτό πρέπει η σελίδα να είναι έτοιμη»).
+  - **The price chips** (owner, to the pictures: «Συμφωνώ με το σχεδιασμό»; the 7 nights
+    explained to the owner, who asked): on every card a green ▼ "£40 since 6 Dec", a red
+    ▲, a grey "Same price for N nights", a tap opening the last 30 nights. Today's price
+    against the last price the shop kept 7 nights seen; at least £1 and 1%; within 30
+    nights. The memory now keeps which nights each product was seen on (`seen_nights`;
+    the server's memory of 12-13/11 gets the column at the first preparation of the new
+    code); `price_notes.json.gz` beside the prepared catalogue each night; a worker shows
+    a note only beside the catalogue of the same preparation. The first chips about
+    19/11. `docs/PICWISE_DECISION_CONTRACT.md`, "The price's history on the cards".
+    Commits `f876c31` to `9a3045d`. After the deployment: read the preparation's line
+    "the price notes: …" and `prepared.json`'s `price_notes`, then a search with `curl`
+    (no chip until a price was kept 7 nights: none expected before about 19/11).
+  - **The month's ten** (still hidden, no source): "Most popular in the UK", no number of
+    searches, rows PicWise's shops lack kept (owner: «Τα 10 πιο διαδεδομένα προϊόντα»,
+    «Δεν θέλουμε να δείξουμε τον αριθμό των αναζητήσεων», «Δεν μας ενδιαφέρει να τα έχουμε
+    όλα»). Its source and the keywords' are one Google Ads Keyword Planner file: the
+    owner's free account (no ads) is the first step; Search Console only measures the
+    pages after they reach Google. Told honestly: the UK's ten (iPhone, PlayStation,
+    AirPods) are mostly not in the shops ("iphone 17" answers 31 cases).
+  - **Keywords** (owner: few searches, little competition, many keywords a page, a first
+    batch of about 10 pages of kinds of £80 or more): agreed and written as a plan,
+    `docs/PICWISE_GOOGLE_PAGES_SPEC.md`, "Keywords"; its step 1 (kinds with three shops or
+    more and enough products of £80 or more, from the catalogue) proposed, no yes yet.
+    Furniture is where the catalogue compares shops; monitors, memory, saunas and rings
+    come from one shop each.
+  - **Waiting for the owner:** «ανέβασε» for the chips; the Google Ads account; the new
+    Awin token (offers not fetched since 03/11; «προσφορά εάν υπάρχει» means never until
+    then); the domain to keep before Google; the yes to the keywords' step 1.
 - **12/11, the design: its first part live since 15:45 UTC** (owner: «Ανέβασε»; release
   `20261112T153132Z-79f106b`, run `43248689369`; the work branch fast-forwarded to
   `79f106b` with it). Built on `ccr-9953c583-wz6sfv`
@@ -190,6 +223,8 @@ A conflict between them: stop and say it (`PROJECT_RULES.md` 1.4).
 | The night's preparation and its public note | `tools/prepare_catalogue.py`, `src/picwise_providers/feed_intake.py`, `catalogue_balance.py`, `catalogue_cap.py` |
 | The catalogue's memory (SQLite on the server: first and last night seen, prices, shops' rows per night) | `src/picwise_providers/catalogue_memory.py` |
 | The shops' own words learned as kinds (reviewed table); the night's list to review (`balance.words_to_learn`) | `src/picwise_providers/shop_words.py` |
+| A card's price note: the 7-night rule, the night's `price_notes.json.gz`, its loading per worker | `src/picwise_providers/price_history.py` |
+| The price chip under a card's price and its 30 nights | `src/picwise_surface/price_notes.py` |
 | The feed gate and the card gate | `src/picwise_providers/eligibility.py`, `offer_health.py` |
 | The shops' catalogue bot (03:40 UTC) | `deployment/bot/shop_catalogue_bot.py` |
 | The pages: search, home, info pages, phones | `src/picwise_surface/reference.py` (its style sheet `page_styles.py`, its script `search_script.py`), `legal.py`, `seo.py` |
