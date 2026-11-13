@@ -262,6 +262,13 @@ are sold by two shops or more; no product carries a date of update or a stock qu
     Map only the types that plainly name a kind PicWise has, never one that is no
     product ("Warranty & Support Extensions", "Sold Out"); measured before and after on
     the server's note (products with a kind, the kinds' cards right at the audit's bar).
+    The night's list to review them by was empty every night until 13/11: it was drawn
+    from the kept products (`balance.words_to_learn`), and a row whose type names no kind
+    is held, so it is never among them. Since 13/11 the list is written where those rows
+    are counted (`shop_catalogue.last_shop_catalogue_note`, `words_to_learn`): per shop
+    and type, its rows and two of their titles, the most first, those of two rows or
+    more; the server's report prints a line each ("to review: ..."). Read the night after
+    the deployment, then map by review.
 12. **How each shop was taken in** (small; built on 12/11, `db200ca`, not deployed): per
     shop, kept by the cap, with a kind, with a barcode, sold by another shop too
     (`balance.by_shop`; the server's report prints it beside the rows and the shown

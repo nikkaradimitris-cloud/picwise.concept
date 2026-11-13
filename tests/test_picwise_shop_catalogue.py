@@ -17,7 +17,10 @@ stock) and «Στα θέματα αντιστοίχισης ... barcode ... shop
   the same rule, and not from a barcode on too many rows;
 - the product's name read from the shop's address, also inside an Awin link, which is
   never opened;
-- the note counts it all, and without the bot's file only the barcode applies.
+- the note counts it all, and without the bot's file only the barcode applies;
+- the note lists the types naming no kind of two rows or more, with their shop and two
+  titles, the most first: those rows are held, so no list of the kept products can
+  hold them (`catalogue_balance`, `words_to_learn`, empty every night until 13/11).
 
 Every row is local test data: fictional brands, `.invalid` hosts.
 """
@@ -27,6 +30,7 @@ import csv
 import gzip
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -119,6 +123,56 @@ def _catalogues(products: dict[str, list], *, shop: str = SHOP) -> dict:
         "written_at": "2026-10-26T03:55:00+00:00",
         "shops": {shop: {"status": "read", "read_at": "2026-10-26T03:50:00+00:00", "products": products}},
     }
+
+
+class WordsToLearnTests(unittest.TestCase):
+    def test_the_types_naming_no_kind_are_listed_with_their_titles(self) -> None:
+        today = _today()
+        _Feed(
+            self,
+            [
+                _row("b1", "Fixturon Silver Brooch"),
+                _row("b2", "Fixturon Gold Brooch"),
+                _row("b3", "Fixturon Pearl Brooch"),
+                _row("d1", "Fixturon Designer Thing"),
+                _row("d2", "Fixturon Designer Other"),
+                _row("o1", "Fixturon One Off"),
+                _row("k1", "Fixturon Glass Kettle"),
+                _row("k2", "Fixturon Steel Kettle"),
+            ],
+            _catalogues(
+                {
+                    "b1": ["Brooches", 1, today, []],
+                    "b2": ["Brooches", 1, today, []],
+                    "b3": ["Brooches", 1, today, []],
+                    "d1": ["Designer", 1, today, []],
+                    "d2": ["Designer", 1, today, []],
+                    "o1": ["Odd Type", 1, today, []],
+                    "k1": ["Kettles", 1, today, []],
+                    "k2": ["Kettles", 1, today, []],
+                }
+            ),
+        )
+        shown = _Feed.shown()
+        # Held as before: the list changes nothing a search shows.
+        self.assertEqual(set(shown), {"k1", "k2"})
+        note = shop_catalogue.last_shop_catalogue_note()
+        self.assertEqual(
+            note["words_to_learn"],
+            [
+                {"shop": SHOP, "type": "Brooches", "rows": 3,
+                 "titles": ["Fixturon Silver Brooch", "Fixturon Gold Brooch"]},
+                {"shop": SHOP, "type": "Designer", "rows": 2,
+                 "titles": ["Fixturon Designer Thing", "Fixturon Designer Other"]},
+            ],
+        )
+        report = subprocess.run(
+            [sys.executable, str(ROOT / "deployment" / "server" / "print_shops.py")],
+            input=json.dumps({"prepared": True, "shop_catalogues": note,
+                              "intake": {"rows": 0, "shown": 0, "not_new": 0, "held": 0, "shops": []}}), capture_output=True, text=True,
+            check=True,
+        ).stdout
+        self.assertIn(f"  to review: Brooches ({SHOP}) 3: Fixturon Silver Brooch | Fixturon Gold Brooch", report)
 
 
 class AddressNameTests(unittest.TestCase):
