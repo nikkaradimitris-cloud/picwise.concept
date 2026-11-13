@@ -758,12 +758,27 @@ def keep_prepared_catalogue_loaded(
                     call()
             except Exception:  # the next look tries again; requests load as without a keeper
                 logger.exception("the prepared catalogue's keeper could not refresh it")
+            try:
+                # The night's price notes, written beside the catalogue (`price_history`).
+                from .price_history import refresh_price_notes
+
+                refresh_price_notes()
+            except Exception:  # the cards show no price note until the next look
+                logger.exception("the prepared catalogue's keeper could not load the price notes")
             stop.wait(every_seconds)
 
     thread = threading.Thread(target=look, name="picwise-prepared-keeper", daemon=True)
     _KEEPER.update(thread=thread, pid=os.getpid())
     thread.start()
     return stop
+
+
+def loaded_prepared_at() -> datetime | None:
+    """When the prepared catalogue this process answers from was prepared, or None when
+    it answers from none (the cards' price notes are told only beside the catalogue the
+    same preparation wrote, `price_history.notes_for_catalogue`). It never loads one."""
+    prepared = _PREPARED_STATE.get("prepared")
+    return prepared.prepared_at if prepared is not None and _is_fresh(prepared) else None
 
 
 def peek_search_catalogue_counts() -> tuple[int, int] | None:

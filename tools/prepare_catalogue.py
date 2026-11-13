@@ -134,6 +134,15 @@ def main(argv: list[str] | None = None) -> int:
                     else ""
                 )
             )
+    notes = _price_notes(args.memory, args.out, prepared, memory)
+    if notes is not None:
+        if "error" in notes:
+            print(f"prepare_catalogue: the price notes were not written ({notes['error']}); the cards show none")
+        else:
+            print(
+                f"prepare_catalogue: the price notes: {notes['notes']:,} products, {notes['down']:,} down, "
+                f"{notes['up']:,} up, {notes['same']:,} at the same price for 7 nights or more"
+            )
     if args.static_dir is not None:
         change = _intake_change(_previous_note(args.static_dir), intake)
         if change.get("shrunk") or change.get("gone"):
@@ -162,6 +171,7 @@ def main(argv: list[str] | None = None) -> int:
                 "balance": _balance(prepared),
                 "google_pool": pool,
                 **({"memory": memory} if memory is not None else {}),
+                **({"price_notes": notes} if notes is not None else {}),
             },
         )
     return 0
@@ -331,6 +341,25 @@ def _memory(path: Path | None, prepared, intake: object) -> dict[str, object] | 
             path, prepared.products, prepared_at=prepared.prepared_at,
             intake=intake if isinstance(intake, dict) else None,
         )
+    except Exception as error:
+        return {"error": _where(error)}
+
+
+def _price_notes(path: Path | None, out: Path, prepared, memory: dict[str, object] | None) -> dict[str, object] | None:
+    """Tonight's price notes, beside the prepared catalogue, from the memory just written
+    (`picwise_providers.price_history`); none without a memory written tonight. A
+    failure is only noted: the site shows a card's price note only beside the catalogue
+    of the same preparation, so it then shows none."""
+    if memory is None or "error" in memory:
+        return None
+    try:
+        from picwise_providers.catalogue_memory import configured_memory_path
+        from picwise_providers.price_history import PRICE_NOTES_NAME, write_price_notes
+
+        path = path or configured_memory_path()
+        if path is None:
+            return None
+        return write_price_notes(path, Path(out).parent / PRICE_NOTES_NAME, prepared_at=prepared.prepared_at)
     except Exception as error:
         return {"error": _where(error)}
 
