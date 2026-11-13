@@ -29,6 +29,7 @@ from .fonts import FONT_PRELOAD_HTML
 from .page_styles import _PAGE_STYLES
 from .price_bar import PRICE_BAR_SCRIPT, PRICE_BAR_STYLES
 from .search_script import _SEARCH_SCRIPT
+from .shop_names import shop_display_name
 from .legal import render_public_footer
 from .seo import (
     NOINDEX_META,
@@ -42,22 +43,22 @@ from .seo import (
 from .trends import TRENDS_SCRIPT, TRENDS_STYLES, load_trends_panel, render_trends_panel
 
 
-_SAFE_DISCLAIMER_BY_STATE = {
-    "understood_provider_not_connected": "PicWise understood this search, but no safe provider is connected yet.",
-    "not_understood": "PicWise could not understand this search safely.",
-    "low_confidence_manual_review": "PicWise found weak product signals, but confidence is too low.",
-    "blocked_or_unsafe": "PicWise cannot safely process this search.",
-}
+# A search with nothing to show, whatever the reason (owner, 2026-11-13, to the words
+# proposed on 2026-11-12: «Τι περιμένεις?»). The page had been written for a developer:
+# "PicWise could not understand this search safely.", "PicWise understood this search,
+# but no safe provider is connected yet. Detected category: ...", "PicWise safely shows
+# no product cards until intent confidence and provider availability are both verified."
+# Now it says what a buyer needs, and gives two searches to try.
+_NO_PRODUCTS_FOUND = "No products found for \u201c{query}\u201d."
+_NO_PRODUCTS_EXAMPLES = ("washing machine", "laptop")
 
-_FEED_CONNECTED_NO_FOUR_MESSAGE = (
-    "PicWise understood this search, but the connected product feed has no four "
-    "products it can show for it."
-)
-# Price first shows fewer than four as they are, so only an empty answer has nothing.
-_FEED_CONNECTED_NO_PRODUCTS_MESSAGE = (
-    "PicWise understood this search, but the connected product feed has no products "
-    "it can show for it."
-)
+
+def _no_products_try_html() -> str:
+    """The line under "No products found": two searches PicWise answers, as links."""
+    first, second = (
+        f'<a href="/search?q={quote(word, safe="")}">{escape(word)}</a>' for word in _NO_PRODUCTS_EXAMPLES
+    )
+    return f"Try the name or the kind of the product, for example {first} or {second}."
 
 _REAL_FEED_PROVIDER_KEYS = frozenset({"awin"})
 _FAKE_FEED_PROVIDER_KEYS = frozenset({"demo", "fake", "sample", "test"})
@@ -712,7 +713,9 @@ def _build_price_first_cards(
         # says of its stock and where the price stands in the answer, each on its own
         # line, and the button names the shop it goes to.
         provider_key = str(product.get("provider_key") or "").strip()
-        shop = " ".join(str(product.get("merchant_name") or "").split()).strip()
+        # The shop's name as a buyer knows it, not its affiliate programme's (owner,
+        # 2026-11-13: "View at Geepas Partner Program" reads "View at Geepas").
+        shop = shop_display_name(str(product.get("merchant_name") or ""))
         stock_line, stock_state = _stock_line(label)
         cards.append(
             {
@@ -1100,6 +1103,8 @@ def render_picwise_reference_surface(
     )
     safe_note_line = ""
     show_demo_note = False
+    # Under "No products found", two searches to try (`_no_products_try_html`).
+    offer_examples = False
 
     feed_results = False
     price_first_page = False
@@ -1227,27 +1232,9 @@ def render_picwise_reference_surface(
                 + ". Add a word that names the product you want."
             )
         elif display_query.strip():
-            base_message = _SAFE_DISCLAIMER_BY_STATE.get(
-                resolution.resolver_state,
-                "PicWise could not understand this search safely.",
-            )
-            if (
-                resolution.resolver_state == "understood_provider_not_connected"
-                and getattr(resolution, "provider_feed_status", None) == "provider_feed_ready"
-            ):
-                # The state name predates the feed: a feed is connected here, it just has
-                # no products to show. "No provider is connected" would be false.
-                base_message = (
-                    _FEED_CONNECTED_NO_PRODUCTS_MESSAGE
-                    if getattr(resolution, "provider_feed_price_first", False)
-                    else _FEED_CONNECTED_NO_FOUR_MESSAGE
-                )
-            detected_category = resolution.display_name or resolution.mega_category_id or resolution.canonical_category
-            if resolution.resolver_state == "understood_provider_not_connected" and detected_category:
-                human_category = str(detected_category).replace("_", " ")
-                disclaimer_line = f"{base_message} Detected category: {human_category}"
-            else:
-                disclaimer_line = base_message
+            # Whatever the reason, the buyer reads that nothing was found, and what to try.
+            disclaimer_line = _NO_PRODUCTS_FOUND.format(query=display_query)
+            offer_examples = True
         show_demo_note = has_live_results
         if has_live_results and not feed_results:
             query_line = f"Showing {len(card_specs)} options for: {display_query}"
@@ -1306,9 +1293,10 @@ def render_picwise_reference_surface(
     elif is_home:
         note_or_empty_html = ""
     else:
+        # The page's own question ("which product do you mean?") stands alone; after
+        # "No products found", two searches to try.
         note_or_empty_html = (
-            '<section class="pw-empty-state">PicWise safely shows no product cards until intent confidence '
-            "and provider availability are both verified.</section>"
+            f'<section class="pw-empty-state">{_no_products_try_html() if offer_examples else ""}</section>'
         )
     safe_note_html = f'<p class="pw-reference-disclaimer">{escape(safe_note_line)}</p>' if safe_note_line else ""
     kind_choices_html = (

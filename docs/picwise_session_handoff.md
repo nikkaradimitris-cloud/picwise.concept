@@ -42,7 +42,11 @@ a decision came about.
   no empty place stays between the cards on a phone (a card whose photo failed had kept
   its place, unseen, under the phone's grid; a slow photo's card now gives its place up
   after 1.2 s).
-  **What waits, one at a time, a picture first:** the empty pages, written for a
+  On 13/11 (owner: «Τι περιμένεις?»), built on `ccr-9953c583-wz6sfv`: the empty pages
+  for buyers ("No products found for “…”." and two searches to try) and the shop's name
+  as a buyer knows it ("View at Geepas"); waiting for «ανέβασε». "Shopping Ads: Google &
+  Bing", a shop of the feed whose name names no shop, is for the owner to ask Awin about.
+  **What waited before 13/11, one at a time, a picture first:** the empty pages, written for a
   developer ("PicWise safely shows no product cards until intent confidence ...",
   "Detected category: ...") and leading nowhere (proposed to the owner: "No products
   found for "…"" and "Try the name or the kind of the product, for example …", no answer

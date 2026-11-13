@@ -18,7 +18,6 @@ if str(SRC) not in sys.path:
 from api.index import app as deployment_app  # noqa: E402
 from picwise_search.live_search_resolver import resolve_live_search  # noqa: E402
 from picwise_surface.reference import (  # noqa: E402
-    _SAFE_DISCLAIMER_BY_STATE,
     _provider_feed_ui_display_allowed,
     render_picwise_reference_surface,
 )
@@ -249,13 +248,7 @@ class ProviderRealFeedUiExposureStage8ETests(unittest.TestCase):
         blocked_html = render_picwise_reference_surface(query="bank", resolution=blocked)
         self.assertEqual(_card_count(blocked_html), 0)
         self.assertIn("pw-empty-state", blocked_html)
-        self.assertIn(
-            _SAFE_DISCLAIMER_BY_STATE.get(
-                blocked.resolver_state,
-                "PicWise could not understand this search safely.",
-            ),
-            blocked_html,
-        )
+        self.assertIn("No products found for \u201cbank\u201d.", blocked_html)
 
         broad = resolve_live_search("charger")
         broad_html = render_picwise_reference_surface(query="charger", resolution=broad)

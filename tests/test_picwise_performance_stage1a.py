@@ -76,7 +76,7 @@ class PicwisePerformanceStage1ATests(unittest.TestCase):
         # short-circuited. It used to assert the Amazon CTA as a proxy for that;
         # Amazon has been removed from the decision path, so assert the resolved
         # surface instead.
-        self.assertIn("Detected category:", html)
+        self.assertIn("No products found for \u201cpower bank\u201d.", html)
         self.assertNotIn("View on Amazon", html)
 
     def test_shared_registry_cache_returns_equivalent_data(self) -> None:

@@ -94,9 +94,12 @@ class WithoutFeedTests(_FeedEnv):
         self.assertEqual(source["status"], "needs_data")
         self.assertIn("provider_feed_not_configured", source["details"])
 
-    def test_page_says_no_provider_is_connected(self) -> None:
+    def test_page_says_nothing_was_found_and_claims_nothing_of_a_source(self) -> None:
+        # Owner, 2026-11-13: an empty page says what a buyer needs, nothing of providers.
         _status, body = _get("/search", {"q": "laptop"})
-        self.assertIn(_NOT_CONNECTED, body)
+        self.assertIn("No products found for \u201claptop\u201d.", body)
+        self.assertNotIn("provider is connected", body)
+        self.assertNotIn("connected product feed", body)
 
 
 class WithConnectedFeedTests(_FeedEnv):
@@ -117,7 +120,8 @@ class WithConnectedFeedTests(_FeedEnv):
         # it has nothing.)
         _status, body = _get("/search", {"q": "office chair"})
         self.assertNotIn(_NOT_CONNECTED, body)
-        self.assertIn(_CONNECTED_NO_PRODUCTS, body)
+        self.assertNotIn(_CONNECTED_NO_PRODUCTS, body)
+        self.assertIn("No products found for \u201coffice chair\u201d.", body)
 
 
 if __name__ == "__main__":

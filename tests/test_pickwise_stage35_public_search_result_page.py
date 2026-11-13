@@ -52,7 +52,7 @@ class PickWiseStage35PublicSearchResultPageTests(unittest.TestCase):
         self.assertNotIn("Safe connected provider mode", body)
         self.assertNotIn("manual_amazon_affiliate", body)
         self.assertNotIn("View on Amazon", body)
-        self.assertIn("PicWise safely shows no product cards", body)
+        self.assertIn("No products found for \u201cpower bank for iphone\u201d.", body)
         self.assertIn('data-card-count="0"', body)
         self.assertNotIn("fake product", body.lower())
         self.assertNotIn("checkout", body.lower())
@@ -80,7 +80,7 @@ class PickWiseStage35PublicSearchResultPageTests(unittest.TestCase):
         self.assertEqual(status, "200 OK")
         self.assertEqual(headers["Content-Type"], "text/html; charset=utf-8")
         self.assertIn('data-card-count="0"', body)
-        self.assertIn("PicWise safely shows no product cards", body)
+        self.assertIn("No products found for \u201cwireless earbuds\u201d.", body)
         self.assertNotIn("power bank", body.lower())
         self.assertNotIn("manual_amazon_affiliate", body)
 

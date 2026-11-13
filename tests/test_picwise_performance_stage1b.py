@@ -108,7 +108,7 @@ class PicwisePerformanceStage1BTests(unittest.TestCase):
         resolve_mock.assert_called_once_with("power bank", shown=0)
         # Amazon has been removed from the decision path; assert the query was
         # resolved rather than the CTA that used to prove it.
-        self.assertIn("Detected category:", html)
+        self.assertIn("No products found for \u201cpower bank\u201d.", html)
         self.assertNotIn("View on Amazon", html)
 
     def test_warmup_failure_does_not_break_search_path(self) -> None:
@@ -128,7 +128,7 @@ class PicwisePerformanceStage1BTests(unittest.TestCase):
         resolve_mock.assert_called_once_with("power bank", shown=0)
         # Amazon has been removed from the decision path; assert the query was
         # resolved rather than the CTA that used to prove it.
-        self.assertIn("Detected category:", html)
+        self.assertIn("No products found for \u201cpower bank\u201d.", html)
         self.assertNotIn("View on Amazon", html)
 
 

@@ -100,6 +100,23 @@ Made shorter by the owner on 2026-11-12: the site «μοιάζει πιο πολ
   site itself (`picwise_surface.fonts`: 48 KB, every weight, its licence beside it);
   the words show at once in the device's font and turn to Inter when it arrives.
 
+## A Search With Nothing to Show (2026-11-13)
+
+Owner, 2026-11-13, to the words proposed the day before: «Τι περιμένεις?». Whatever the
+reason, the page says "No products found for “qwzxv blorp”." and, under it, "Try the name
+or the kind of the product, for example washing machine or laptop.", both links to a
+search. Nothing written for a developer: not "PicWise could not understand this search
+safely.", "no safe provider is connected", "Detected category: ...", nor "PicWise safely
+shows no product cards until intent confidence and provider availability are both
+verified.". A page that offers its own searches ("Did you mean: ...?", "This search is too
+broad. Try: ...") or asks which product is meant does not add the two general ones.
+
+## The Shop's Name (2026-11-13)
+
+The card's shop line and its button name the shop as a buyer knows it, not as its
+affiliate programme is called: "View at Geepas", not "View at Geepas Partner Program"
+(`picwise_surface.shop_names`: only a programme's words come off, nothing is added).
+
 ## The Price Bar (2026-11-12)
 
 Above the cards of a price-first answer of more than one page, under its heading and

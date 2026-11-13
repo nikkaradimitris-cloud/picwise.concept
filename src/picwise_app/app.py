@@ -841,7 +841,17 @@ def _inject_did_you_mean(html: str, resolution: Any) -> str:
     if not links:
         return html
     text = "PicWise did not recognise this search. Did you mean: " + ", ".join(links) + "?"
-    return _replace_disclaimer(html, f'<p class="pw-reference-disclaimer">{text}</p>')
+    return _without_examples(_replace_disclaimer(html, f'<p class="pw-reference-disclaimer">{text}</p>'))
+
+
+def _without_examples(html: str) -> str:
+    """A page that offers its own searches ("Did you mean", "Try") does not add the two
+    general ones under "No products found" (`reference._no_products_try_html`)."""
+    start = html.find('<section class="pw-empty-state">')
+    end = html.find("</section>", start) if start != -1 else -1
+    if start == -1 or end == -1:
+        return html
+    return html[:start] + '<section class="pw-empty-state"></section>' + html[end + len("</section>") :]
 
 
 def _inject_search_in_english(html: str) -> str:
@@ -862,18 +872,7 @@ def _inject_broad_query_suggestions(html: str, resolution: Any) -> str:
         links.append(f'<a href="{href}">{term}</a>')
     suggestion_text = "This search is too broad. Try: " + ", ".join(links)
     replacement = f'<p class="pw-reference-disclaimer">{suggestion_text}</p>'
-    marker = '<p class="pw-reference-disclaimer">'
-    start = html.find(marker)
-    if start == -1:
-        return html.replace(
-            '<section class="pw-empty-state">',
-            f'{replacement}<section class="pw-empty-state">',
-            1,
-        )
-    end = html.find("</p>", start)
-    if end == -1:
-        return html
-    return html[:start] + replacement + html[end + 4 :]
+    return _without_examples(_replace_disclaimer(html, replacement))
 
 
 class PicwiseRequestHandler(BaseHTTPRequestHandler):
