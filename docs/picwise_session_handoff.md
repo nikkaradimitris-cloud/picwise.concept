@@ -8,6 +8,25 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **Next (owner, 13/11): «Πάμε σε άλλη συζήτηση για να με κατευθύνεις για τα google
+  ads».** Guide the owner, step by step and in plain Greek, to a Google Ads account whose
+  only use is Keyword Planner's data: the month's ten ("Most popular in the UK",
+  `picwise_surface.trends`) and the keywords of the first pages for Google
+  (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`, "Keywords"). What is known (31/10 and 13/11; read
+  Google's own help again before each step, it changes): no subscription and no ads, the
+  owner's wish («δεν θέλω να πληρώσω ... συνδρομητικά»): create the account in Expert
+  mode, without a campaign ("create an account without a campaign"), never start a
+  campaign; the business is the owner's (seat in Greece), the market measured is the
+  United Kingdom, English; without spending on ads Keyword Planner gives ranges
+  ("100–1K") rather than exact numbers, enough for the keywords of few searches, coarse
+  for ranking the ten (Google Trends, free, can order products within a range). The data
+  comes as a file the owner downloads from Keyword Planner ("Discover new keywords" from
+  a few seed words, or "Get search volume and forecasts" for a list) and sends in the
+  chat: a file of keyword figures holds no secret; a login, password or key never goes
+  into the chat (an API's key, if ever, into GitHub's secrets). The seed words: the kinds
+  of the keywords' step 1 (three shops or more, products of £80 or more), drawn from the
+  catalogue once the owner says yes; for the ten, broad shopping words of the UK. Nothing
+  of Google's numbers is shown on the site: the ten show no number of searches.
 - **13/11, the conversation "Top 10 commercial products" (session branch
   `ccr-f213d01e-zos3xz`, from the work branch's `5eb1bbb`): the price chips live since
   10:40 UTC** (owner: «Ανέβασε για τα σήματα..»; `ed2f6ac`, run `43409019580`, release
