@@ -8,6 +8,7 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **14/11, the daily session:** the night's note read at 09:44 UTC: `prepared: true`, prepared 04:25 UTC, 254,787 products, 78 shops, nothing shrunk, gone or new; the memory's third night (256,038 known, 630 new, 1,988 prices changed, 703 gone since 13/11); `price_notes` 0, as expected; `balance.words_to_learn` still empty, as expected (`c93be3c` not deployed). `/health` 200; `kettle`, `sofa`, `office chair`, `tablet` 4 cards each, 0.41 to 0.73 s. GitHub's "Tests" green on `d10c53f` (run `43409039192`; the head adds records only). No code changed: step 11's mapping needs the list `c93be3c` writes, and the reading of kinds is the search's accuracy, which the owner put off (12/11). Asked again: deploy the work branch's head (`c93be3c` with it).
 - **Next (owner, 13/11): «Πάμε σε άλλη συζήτηση για να με κατευθύνεις για τα google
   ads».** Guide the owner, step by step and in plain Greek, to a Google Ads account whose
   only use is Keyword Planner's data: the month's ten ("Most popular in the UK",
