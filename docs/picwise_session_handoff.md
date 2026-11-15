@@ -244,8 +244,17 @@ a decision came about.
 ## Branches and deployment
 
 - **Work:** `ccr-4f47068a-99ikwe`. Every session starts from it and pushes there
-  (`docs/PICWISE_DAILY_WORK.md`). `ccr-99b47f03-l8t4dj` carried the audit's fixes and
-  is at the same commit.
+  (`docs/PICWISE_DAILY_WORK.md`; the daily task's prompt names it). Brought on 15/11 to
+  the day's work (`ccr-d4dcbe0e-4y2sjf`), by a fast-forward. `ccr-99b47f03-l8t4dj` carried
+  the audit's fixes; it is the head of pull request #23, so it stays.
+- **Kept on GitHub (15/11, owner: «Ναι θέλω να τα κάνεις», to a tidy-up proposed):**
+  `main`, `ccr-1361f1a7-dcpo60` (the site), `ccr-4f47068a-99ikwe` (work),
+  `ccr-99b47f03-l8t4dj` (#23) and the session's branch of the day. The 15 branches whose
+  every commit was in that day's work were deleted (nothing lost: their commits are in
+  `main`); the 15 of older lines of work were kept as tags `archive/<branch name>`
+  (`git fetch origin 'refs/tags/archive/*:refs/tags/archive/*'`) and their branches
+  deleted. A session's own branch, once its work is in the work branch, can go the same
+  way.
 - **The server:** a push to `ccr-1361f1a7-dcpo60` deploys that commit
   (`.github/workflows/server-deploy.yml`, `deployment/server/deploy.sh`): only on the
   owner's «ανέβασε» for it, by a fast-forward. The deployment prepares the catalogue
@@ -253,8 +262,8 @@ a decision came about.
   catalogue in the background (`state.keep_prepared_catalogue_loaded`). A rollback is
   a push of a revert commit, never a force push.
 - **`main`:** what is live plus its records, moved only on the owner's yes, by a
-  fast-forward; behind the site since 12/11. A push to `main` makes Vercel build the
-  backup. Pull request #23 (from `ccr-99b47f03-l8t4dj`) is the owner's; leave it.
+  fast-forward; brought level with the site and its records on 15/11 (it had been 88
+  commits behind since 09/11). A push to `main` makes Vercel build the backup. Pull request #23 (from `ccr-99b47f03-l8t4dj`) is the owner's; leave it.
 - **Tests:** `python tools/run_test_modules.py --skip-slow` (every module in its own
   process, about 6 minutes on 4 cores); `.github/workflows/tests.yml` runs it on each
   push of code, the two slow modules in a job of their own. Two modules fail as known
