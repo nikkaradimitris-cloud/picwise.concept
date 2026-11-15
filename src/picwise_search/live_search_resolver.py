@@ -150,6 +150,7 @@ class LiveSearchResolution:
     provider_feed_price_high: float = 0.0
     provider_feed_price_bins: tuple[int, ...] = field(default_factory=tuple)
     provider_feed_price_from: float | None = None
+    provider_feed_price_to: float | None = None
     provider_feed_answer_count: int = 0
 
     def to_dict(self) -> dict[str, Any]:
@@ -411,6 +412,7 @@ def resolve_live_search(
     *,
     shown: int = 0,
     min_price: float | None = None,
+    max_price: float | None = None,
     fitting_for: Callable[[str], Iterable[str] | None] | None = None,
 ) -> LiveSearchResolution:
     """Resolve one search. `shown` is how many products of a price-first answer the
@@ -419,7 +421,7 @@ def resolve_live_search(
     those its stored answer read as fitting a complex search, which then come first
     (owner, 2026-11-06; `search_selection._price_first_result`). `min_price` is the
     price the buyer chose on the price bar: the answer starts from it (owner,
-    2026-11-12)."""
+    2026-11-12); `max_price` the price it ends at (owner, 2026-11-15)."""
     raw_query = str(query or "")
     if searches_in_greek_letters(raw_query):
         return search_in_english_resolution(raw_query)
@@ -618,6 +620,7 @@ def resolve_live_search(
     provider_feed_price_high = 0.0
     provider_feed_price_bins: tuple[int, ...] = ()
     provider_feed_price_from: float | None = None
+    provider_feed_price_to: float | None = None
     provider_feed_answer_count = 0
     provider_feed_offers: tuple[tuple[str, dict[str, Any]], ...] = ()
     provider_feed_candidates_signature = ""
@@ -676,6 +679,7 @@ def resolve_live_search(
                     reading=concept_reading,
                     shown=shown,
                     min_price=min_price,
+                    max_price=max_price,
                     fitting_for=fitting_for,
                 )
                 expose_selection = recognized_product_search or is_strong_feed_opportunity_selection(
@@ -737,6 +741,7 @@ def resolve_live_search(
                         provider_feed_price_high = selection.price_high
                         provider_feed_price_bins = selection.price_bins
                         provider_feed_price_from = selection.price_from
+                        provider_feed_price_to = selection.price_to
                         provider_feed_answer_count = selection.answer_count
                         provider_feed_candidates_signature = selection.candidates_signature
                         provider_feed_fitting_product_ids = selection.fitting_product_ids
@@ -900,6 +905,7 @@ def resolve_live_search(
         provider_feed_price_high=provider_feed_price_high,
         provider_feed_price_bins=provider_feed_price_bins,
         provider_feed_price_from=provider_feed_price_from,
+        provider_feed_price_to=provider_feed_price_to,
         provider_feed_answer_count=provider_feed_answer_count,
         provider_feed_offers=provider_feed_offers,
         kind_choices=kind_choices,

@@ -164,6 +164,8 @@ _PRICE_BAR_ANY = "Any price"
 # An answer of one page has nothing to filter: the bar shows from five products.
 _PRICE_BAR_MIN_ANSWER = 4
 _PRICE_BAR_FROM = "From {price}"
+_PRICE_BAR_UP_TO = "Up to {price}"
+_PRICE_BAR_FROM_TO = "{low} – {high}"
 _PRICE_BAR_SHOW = "Show"
 _RECOMMENDED_ON_OFFER = (
     "The Recommended is on offer: of the products on offer, the one nearest the middle of their prices."
@@ -793,17 +795,51 @@ def _price_from(resolution: LiveSearchResolution) -> float | None:
     return float(chosen) if chosen is not None else None
 
 
+def _price_to(resolution: LiveSearchResolution) -> float | None:
+    """The price the buyer chose the answer to end at (owner, 2026-11-15), or None."""
+    chosen = getattr(resolution, "provider_feed_price_to", None)
+    return float(chosen) if chosen is not None else None
+
+
+def _price_words(price_from: float | None, price_to: float | None) -> str:
+    """"Any price", "From £30", "Up to £80", "£30 – £80"."""
+    if price_from is not None and price_to is not None:
+        return _PRICE_BAR_FROM_TO.format(low=_pounds(price_from), high=_pounds(price_to))
+    if price_from is not None:
+        return _PRICE_BAR_FROM.format(price=_pounds(price_from))
+    if price_to is not None:
+        return _PRICE_BAR_UP_TO.format(price=_pounds(price_to))
+    return _PRICE_BAR_ANY
+
+
+def _price_params(resolution: LiveSearchResolution) -> str:
+    """The chosen prices as the page's address carries them: "&min=30&max=80"."""
+    params = ""
+    for name, chosen in (("min", _price_from(resolution)), ("max", _price_to(resolution))):
+        if chosen is not None:
+            params += f"&{name}=" + _pounds(chosen).lstrip("£").replace(",", "")
+    return params
+
+
+def _bar_place(price: float, base: float, high: float) -> float:
+    """Where a price stands on the bar, 0 to 1, on its scale of ratios."""
+    if price <= base:
+        return 0.0
+    return min(max(math.log(price / base) / math.log(high / base), 0.0), 1.0)
+
+
 def _price_bar_html(resolution: LiveSearchResolution, display_query: str, *, source_page: str) -> str:
     """The price bar above the cards of a price-first answer (owner, 2026-11-12), or "".
 
     A bar from the answer's lowest price to its highest, with how many of its products
-    fall at each price drawn above it, and a knob that raises the price the answer starts
-    from: past the £2 straps of "smartwatch" or the £9 cases of "tablet". Shown only when
-    the answer holds more than one page of products at more than one price. Without
-    JavaScript it is a plain form, the knob in whole pounds and a button to show; with it
-    (`PRICE_BAR_SCRIPT`) the bar follows the answer's prices on a scale of ratios, as its
-    steps do (`search_selection._price_bar`), and the page follows the knob when it is let
-    go.
+    fall at each price drawn above it, and two knobs: the left one raises the price the
+    answer starts from, past the £2 straps of "smartwatch" or the £9 cases of "tablet";
+    the right one lowers the price it ends at (owner, 2026-11-15: «Ο χρήστης μπορεί να
+    διαλέξει στο φίλτρο τιμής από έως»). Shown only when the answer holds more than one
+    page of products at more than one price. Without JavaScript it is a plain form, the
+    knobs in whole pounds and a button to show; with it (`PRICE_BAR_SCRIPT`) the bar
+    follows the answer's prices on a scale of ratios, as its steps do
+    (`search_selection._price_bar`), and the page follows a knob when it is let go.
     """
     low = float(getattr(resolution, "provider_feed_price_low", 0.0) or 0.0)
     high = float(getattr(resolution, "provider_feed_price_high", 0.0) or 0.0)
@@ -811,35 +847,39 @@ def _price_bar_html(resolution: LiveSearchResolution, display_query: str, *, sou
     answer = int(getattr(resolution, "provider_feed_answer_count", 0) or 0)
     if not steps or high <= low or answer <= _PRICE_BAR_MIN_ANSWER:
         return ""
-    chosen = _price_from(resolution)
+    chosen, chosen_to = _price_from(resolution), _price_to(resolution)
     base = max(low, 0.01)
-    place = 0.0
-    if chosen is not None and chosen > base:
-        place = min(max(math.log(chosen / base) / math.log(high / base), 0.0), 1.0)
+    place = _bar_place(chosen, base, high) if chosen is not None else 0.0
+    end = _bar_place(chosen_to, base, high) if chosen_to is not None else 1.0
     tallest = max(steps) or 1
     # Each step's height grows with the root of its count, so a step of two products
-    # still shows beside one of two hundred; the steps below the chosen price are pale.
+    # still shows beside one of two hundred; the steps outside the chosen prices are pale.
     bars = "".join(
         '<i{out} style="height:{height}%"></i>'.format(
-            out=' class="out"' if (index + 1) / len(steps) <= place else "",
+            out=' class="out"' if (index + 1) / len(steps) <= place or index / len(steps) >= end else "",
             height=0 if not count else round(18 + 82 * math.sqrt(count / tallest)),
         )
         for index, count in enumerate(steps)
     )
-    words = _PRICE_BAR_FROM.format(price=_pounds(chosen)) if chosen is not None else _PRICE_BAR_ANY
+    words = _price_words(chosen, chosen_to)
     path = "/results" if source_page == "results" else "/search"
     value = math.floor(chosen) if chosen is not None else math.floor(low)
+    value_to = math.ceil(chosen_to) if chosen_to is not None else math.ceil(high)
     return (
         f'<form class="pw-pricebar" action="{path}" method="get" aria-label="Price">'
         f'<input type="hidden" name="q" value="{escape(display_query, quote=True)}">'
-        '<div class="pw-pricebar-track">'
+        f'<div class="pw-pricebar-track" style="--pos:{place * 100:.1f}%;--end:{end * 100:.1f}%">'
         f'<span class="pw-pricebar-bars" aria-hidden="true">{bars}</span>'
+        '<span class="pw-pricebar-line" aria-hidden="true"></span>'
         f'<input class="pw-pricebar-range" id="pw-pricebar-range" type="range" name="min" '
         f'min="{math.floor(low)}" max="{math.ceil(high)}" step="1" value="{value}" '
-        f'data-low="{low:.2f}" data-high="{high:.2f}" style="--pos:{place * 100:.1f}%" '
+        f'data-low="{low:.2f}" data-high="{high:.2f}" '
         f'aria-label="Lowest price" aria-valuetext="{escape(words, quote=True)}">'
+        f'<input class="pw-pricebar-range pw-pricebar-range-max" id="pw-pricebar-range-max" type="range" name="max" '
+        f'min="{math.floor(low)}" max="{math.ceil(high)}" step="1" value="{value_to}" '
+        f'aria-label="Highest price" aria-valuetext="{escape(words, quote=True)}">'
         "</div>"
-        f'<output class="pw-pricebar-value" id="pw-pricebar-value" for="pw-pricebar-range">{escape(words)}</output>'
+        f'<output class="pw-pricebar-value" id="pw-pricebar-value" for="pw-pricebar-range pw-pricebar-range-max">{escape(words)}</output>'
         f'<button class="pw-pricebar-go" type="submit">{_PRICE_BAR_SHOW}</button>'
         "</form>"
     )
@@ -883,8 +923,7 @@ def _price_first_more_html(
     button = ""
     if requested < total and requested < MAX_SHOWN_PRODUCTS:
         path = "/results" if source_page == "results" else "/search"
-        chosen = _price_from(resolution)
-        price_param = "" if chosen is None else "&min=" + _pounds(chosen).lstrip("£").replace(",", "")
+        price_param = _price_params(resolution)
         href = (
             f"{path}?q={quote(display_query, safe='')}{price_param}"
             f"&shown={min(requested + 4, MAX_SHOWN_PRODUCTS)}#pw-choice-{shown_cards + 1}"
@@ -1206,10 +1245,11 @@ def render_picwise_reference_surface(
                         if with_offers
                         else f"Results for: {display_query}, those that fit first, then cheapest first"
                     )
-                if _price_from(resolution) is not None:
+                if _price_from(resolution) is not None or _price_to(resolution) is not None:
+                    chosen_words = _price_words(_price_from(resolution), _price_to(resolution))
                     query_line = query_line.replace(
                         f"Results for: {display_query},",
-                        f"Results for: {display_query}, from {_pounds(_price_from(resolution))},",
+                        f"Results for: {display_query}, {chosen_words[0].lower() + chosen_words[1:]},",
                         1,
                     )
                 understood_name = str(getattr(resolution, "understood_concept_name", "") or "")

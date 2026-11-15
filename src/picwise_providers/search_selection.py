@@ -487,6 +487,8 @@ class ProviderProductSelectionResult:
     price_high: float = 0.0
     price_bins: tuple[int, ...] = field(default_factory=tuple)
     price_from: float | None = None
+    # The price the bar ends at, when the buyer chose one (owner, 2026-11-15), or None.
+    price_to: float | None = None
     answer_count: int = 0
 
     def to_dict(self) -> dict[str, Any]:
@@ -496,6 +498,7 @@ class ProviderProductSelectionResult:
             "price_high": self.price_high,
             "price_bins": list(self.price_bins),
             "price_from": self.price_from,
+            "price_to": self.price_to,
             "answer_count": self.answer_count,
             "candidates_signature": self.candidates_signature,
             "fitting_product_ids": list(self.fitting_product_ids),
@@ -2106,6 +2109,7 @@ def _select_products_for_concept(
     condition_request: tuple[str, ...] = (),
     shown: int = 0,
     min_price: float | None = None,
+    max_price: float | None = None,
     fitting_for: Callable[[str], Iterable[str] | None] | None = None,
 ) -> ProviderProductSelectionResult:
     """Every instance of the concept the buyer means that carries their filters, cheapest first.
@@ -2196,6 +2200,7 @@ def _select_products_for_concept(
             safe_max=safe_max,
             shown=shown,
             min_price=min_price,
+            max_price=max_price,
             condition_request=condition_request,
         )
         if by_words is not None:
@@ -2208,6 +2213,7 @@ def _select_products_for_concept(
             safe_max=safe_max,
             shown=shown,
             min_price=min_price,
+            max_price=max_price,
             condition_request=condition_request,
         )
     kept, dropped, ordered = _price_first_answer(members, haystacks, units, page_size=safe_max)
@@ -2224,6 +2230,7 @@ def _select_products_for_concept(
             safe_max=safe_max,
             shown=shown,
             min_price=min_price,
+            max_price=max_price,
             condition_request=condition_request,
         )
         if by_words is not None:
@@ -2237,6 +2244,7 @@ def _select_products_for_concept(
         safe_max=safe_max,
         shown=shown,
         min_price=min_price,
+        max_price=max_price,
         understood_concept=concept_id,
         effective_query=effective_query,
         name_terms=feed_terms,
@@ -2345,6 +2353,7 @@ def _unsure_reading_selection(
     safe_max: int,
     shown: int,
     min_price: float | None = None,
+    max_price: float | None = None,
     condition_request: tuple[str, ...],
 ) -> ProviderProductSelectionResult:
     """What a search is answered with when its reading of a kind left words it cannot
@@ -2374,6 +2383,7 @@ def _unsure_reading_selection(
         condition_request=condition_request,
         shown=shown,
         min_price=min_price,
+        max_price=max_price,
     )
     # Every word, or no answer: a words answer that had to drop one of them is a guess.
     # The debugging's server measure (2026-11-07) found "fire pots" answered with pen
@@ -2406,6 +2416,7 @@ def _doubtful_products_by_words(
     safe_max: int,
     shown: int,
     min_price: float | None = None,
+    max_price: float | None = None,
     condition_request: tuple[str, ...],
 ) -> ProviderProductSelectionResult | None:
     """The products whose kind is doubtful that carry every word of a search for a kind,
@@ -2481,6 +2492,7 @@ def _doubtful_products_by_words(
         safe_max=safe_max,
         shown=shown,
         min_price=min_price,
+        max_price=max_price,
         understood_concept="",
         effective_query=" ".join(dict.fromkeys(tuple(reading.feed_terms) + filters)),
         name_terms=tuple(),
@@ -2541,6 +2553,7 @@ def _price_first_result(
     safe_max: int,
     shown: int,
     min_price: float | None = None,
+    max_price: float | None = None,
     understood_concept: str,
     effective_query: str,
     name_terms: tuple[str, ...],
@@ -2570,7 +2583,8 @@ def _price_first_result(
     that price, and there is no Recommended (owner, the same day: from £90 it had
     recommended a product of £890, the middle of the prices). A price above the dearest
     product is taken as the dearest's, so an answer never empties. The bar itself is the
-    whole answer's, worked out before (`_price_bar`).
+    whole answer's, worked out before (`_price_bar`). `max_price`, the price the bar ends
+    at, takes the products above it out the same way (owner, 2026-11-15).
     """
     answer_count = len(ordered)
     price_low, price_high, price_bins = _price_bar([entry.price for entry in ordered])
@@ -2578,6 +2592,13 @@ def _price_first_result(
     if min_price is not None and ordered and float(min_price) > price_low:
         price_from = min(float(min_price), price_high)
         ordered = [entry for entry in ordered if entry.price >= price_from]
+    # The price the bar ends at (owner, 2026-11-15: «Ο χρήστης μπορεί να διαλέξει στο
+    # φίλτρο τιμής από έως»): the products above it leave the answer too. A price under
+    # the cheapest product left is taken as that one's, so an answer never empties.
+    price_to: float | None = None
+    if max_price is not None and ordered and float(max_price) < price_high:
+        price_to = max(float(max_price), min(entry.price for entry in ordered))
+        ordered = [entry for entry in ordered if entry.price <= price_to]
     # Owner, 2026-11-01: «Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο» and
     # «Εάν υπάρχει προσφορά να προτείνει την προσφορά». The Recommended is a product a
     # current shop offer covers whenever there is one (`_offer_recommendation`); after it
@@ -2591,13 +2612,13 @@ def _price_first_result(
     # 2026-11-12: «Το recommendit πρέπει να ακιρονετε όταν χρησιμοποιεί φίλτρο...σε άλλη περίπτωση δείχνει την μέση τιμή παράδειγμα ο Χρίστης επιλέγει από 90 ευρώ και αυτό προτείνει 890»): the products on offer, then the rest, cheapest first.
     offer_index = (
         _offer_recommendation(covered_entries)
-        if price_from is None and _counted_products(ordered) >= _RECOMMENDED_MIN_PRODUCTS
+        if price_from is None and price_to is None and _counted_products(ordered) >= _RECOMMENDED_MIN_PRODUCTS
         else None
     )
     if offer_index is not None:
         recommended = covered_entries[offer_index]
         recommendation_status = "recommended"
-    elif price_from is not None:
+    elif price_from is not None or price_to is not None:
         recommended, recommendation_status = None, "price_chosen"
     else:
         recommended_index, recommendation_status = _median_recommendation(ordered)
@@ -2701,6 +2722,7 @@ def _price_first_result(
         price_high=price_high,
         price_bins=price_bins,
         price_from=price_from,
+        price_to=price_to,
         answer_count=answer_count,
     )
     if not ordered:
@@ -2917,6 +2939,7 @@ def _select_products_by_words(
     condition_request: tuple[str, ...] = (),
     shown: int = 0,
     min_price: float | None = None,
+    max_price: float | None = None,
 ) -> ProviderProductSelectionResult:
     """Price first for a search whose product PicWise did not understand (part 3b).
 
@@ -3036,6 +3059,7 @@ def _select_products_by_words(
         safe_max=safe_max,
         shown=shown,
         min_price=min_price,
+        max_price=max_price,
         understood_concept=understood_concept,
         effective_query=" ".join(dict.fromkeys(filters)),
         name_terms=tuple(),
@@ -3118,6 +3142,7 @@ def select_provider_products_for_query(
     feed_ctx: FeedAvailabilityContext | None = None,
     shown: int = 0,
     min_price: float | None = None,
+    max_price: float | None = None,
     catalogue: SearchCatalogue | None = None,
     fitting_for: Callable[[str], Iterable[str] | None] | None = None,
 ) -> ProviderProductSelectionResult:
@@ -3181,6 +3206,7 @@ def select_provider_products_for_query(
             condition_request=condition_request,
             shown=shown,
             min_price=min_price,
+            max_price=max_price,
             fitting_for=fitting_for,
         )
     return _select_products_by_words(
@@ -3192,6 +3218,7 @@ def select_provider_products_for_query(
         condition_request=condition_request,
         shown=shown,
         min_price=min_price,
+        max_price=max_price,
     )
 
 

@@ -78,7 +78,9 @@ class PriceBarTests(_FeedMixin, unittest.TestCase):
         self.assertIn('data-low="8.00" data-high="120.00"', bar)
         self.assertIn('min="8" max="120" step="1" value="8"', bar)
         self.assertEqual(len(re.findall(r"<i[ >]", bar)), PRICE_BAR_STEPS)
-        self.assertIn('<output class="pw-pricebar-value" id="pw-pricebar-value" for="pw-pricebar-range">Any price</output>', bar)
+        self.assertIn('<output class="pw-pricebar-value" id="pw-pricebar-value" for="pw-pricebar-range pw-pricebar-range-max">Any price</output>', bar)
+        # The second knob stands at the dearest price: nothing chosen.
+        self.assertIn('name="max" min="8" max="120" step="1" value="120"', bar)
         # Above the cards, under the heading and its counter.
         self.assertLess(page.index('<div class="pw-results-head">'), page.index('<form class="pw-pricebar"'))
         self.assertLess(page.index('<form class="pw-pricebar"'), page.index('<article class="pw-card'))
@@ -145,12 +147,14 @@ class PriceBarTests(_FeedMixin, unittest.TestCase):
         self.assertIn('<button class="pw-pricebar-go" type="submit">Show</button>', bar)
         # With JavaScript the button goes and letting the knob go shows the answer.
         self.assertIn(".pw-js .pw-pricebar-go{display:none;}", PRICE_BAR_STYLES)
-        for words in ('range.addEventListener("change"', "form.submit()", 'scan.hidden=false',
-                      'range.removeAttribute("name")', 'price.name="min"'):
+        self.assertIn('type="range" name="max"', bar)
+        for words in ('range.addEventListener("change"', 'top.addEventListener("change"', "form.submit()",
+                      'scan.hidden=false', 'range.removeAttribute("name")', 'top.removeAttribute("name")',
+                      'hidden("min")', 'hidden("max")'):
             self.assertIn(words, PRICE_BAR_SCRIPT)
 
     def test_a_page_whose_price_was_chosen_is_not_logged_as_a_new_search(self) -> None:
-        self.assertIn("/[?&](shown|assist|min)=/.test(location.search)", _SEARCH_SCRIPT)
+        self.assertIn("/[?&](shown|assist|min|max)=/.test(location.search)", _SEARCH_SCRIPT)
 
     def test_the_ai_layer_is_not_asked_again_for_a_price(self) -> None:
         # Its daily spend is capped: a page whose price was chosen reads the answer alone.
@@ -158,6 +162,54 @@ class PriceBarTests(_FeedMixin, unittest.TestCase):
                 patch("picwise_app.app.resolve_with_assist", side_effect=AssertionError("asked")):
             page = _call("/search", {"q": "kettle", "min": "30"})
         self.assertEqual(len(_prices(page)), 4)
+
+
+class PriceToTests(_FeedMixin, unittest.TestCase):
+    """The second knob: the answer ends at a price (owner, 2026-11-15: «Ο χρήστης μπορεί να
+    διαλέξει στο φίλτρο τιμής από έως»)."""
+
+    def setUp(self) -> None:
+        self._serve(_kettles())
+
+    def test_a_chosen_end_leaves_out_what_costs_more(self) -> None:
+        page = _call("/search", {"q": "kettle", "max": "40"})
+        self.assertEqual(_prices(page), [8.0, 9.0, 11.0, 12.0])
+        self.assertIn('<p class="pw-results-count">4 of 6</p>', page)
+        self.assertEqual(_heading(page), "Results for: kettle, up to £40, cheapest first")
+        self.assertIn(">Up to £40</output>", _bar(page))
+        opened = _call("/search", {"q": "kettle", "max": "40", "shown": "8"})
+        self.assertEqual(_prices(opened), [8.0, 9.0, 11.0, 12.0, 34.0, 39.0])
+        # The bar is still the whole answer's, and the steps above the price are pale.
+        self.assertIn('data-low="8.00" data-high="120.00"', _bar(page))
+        self.assertIn('name="max" min="8" max="120" step="1" value="40"', _bar(page))
+        self.assertIn('class="out"', _bar(page))
+
+    def test_from_and_to_together(self) -> None:
+        page = _call("/search", {"q": "kettle", "min": "30", "max": "60"})
+        self.assertEqual(_prices(page), [34.0, 39.0, 45.0, 52.0])
+        self.assertIn('<p class="pw-results-count">4 of 5</p>', page)
+        self.assertEqual(_heading(page), "Results for: kettle, £30 – £60, cheapest first")
+        more = html.unescape(re.search(r'<a class="pw-more-button" href="([^"]+)"', page).group(1))
+        self.assertEqual(more, "/search?q=kettle&min=30&max=60&shown=8#pw-choice-5")
+        self.assertEqual(_prices(_call("/search", {"q": "kettle", "min": "30", "max": "60", "shown": "8"})),
+                         [34.0, 39.0, 45.0, 52.0, 60.0])
+
+    def test_a_chosen_end_has_no_recommended(self) -> None:
+        page = _call("/search", {"q": "kettle", "max": "60"})
+        grid = re.search(r'<section class="pw-grid".*?</section>', page, re.S).group(0)
+        self.assertNotIn("pw-card-recommended", grid)
+        self.assertNotIn("rec=1", grid)
+
+    def test_an_end_under_the_start_never_empties_the_answer(self) -> None:
+        self.assertEqual(_prices(_call("/search", {"q": "kettle", "min": "50", "max": "20"})), [52.0])
+        self.assertEqual(_prices(_call("/search", {"q": "kettle", "max": "2"})), [8.0])
+
+    def test_an_end_at_or_above_the_dearest_chooses_nothing(self) -> None:
+        plain = _prices(_call("/search", {"q": "kettle"}))
+        for value in ("120", "500", "abc", "0"):
+            page = _call("/search", {"q": "kettle", "max": value})
+            self.assertEqual(_prices(page), plain, value)
+            self.assertIn(">Any price</output>", _bar(page), value)
 
 
 class ShortAnswerTests(_FeedMixin, unittest.TestCase):

@@ -185,6 +185,7 @@ class PicwiseLocalApp:
         shown: int = 0,
         assist_refresh: bool = False,
         min_price: float | None = None,
+        max_price: float | None = None,
     ) -> str:
         """Render the landing surface, honouring an inbound purchase-intent query.
 
@@ -201,6 +202,7 @@ class PicwiseLocalApp:
             indexable=is_empty_search_query(query),
             assist_refresh=assist_refresh,
             min_price=min_price,
+            max_price=max_price,
         )
 
     def picwise_reference_html(
@@ -212,9 +214,11 @@ class PicwiseLocalApp:
         indexable: bool = False,
         assist_refresh: bool = False,
         min_price: float | None = None,
+        max_price: float | None = None,
     ) -> str:
         """The search page. `shown` is how many products "More" has opened the page to;
-        `min_price` the price the buyer chose on the price bar (owner, 2026-11-12).
+        `min_price` the price the buyer chose on the price bar (owner, 2026-11-12), and
+        `max_price` the price the bar ends at (owner, 2026-11-15: «από έως»).
 
         Not `indexable` unless it is the home page without a search: Google is told not
         to index the site's own search (owner, 2026-10-23).
@@ -227,14 +231,14 @@ class PicwiseLocalApp:
         assist = None
         if is_empty_search_query(query):
             resolution = empty_landing_search_resolution(query)
-        elif assist_directory() is None or min_price is not None:
+        elif assist_directory() is None or min_price is not None or max_price is not None:
             # A server without the AI layer searches exactly as before it. So does a page
             # whose buyer chose a price on the price bar: the AI layer is not asked again
             # for every price (its daily spend is capped), and the order is the usual one.
             resolution = (
                 resolve_live_search(query, shown=shown)
-                if min_price is None
-                else resolve_live_search(query, shown=shown, min_price=min_price)
+                if min_price is None and max_price is None
+                else resolve_live_search(query, shown=shown, min_price=min_price, max_price=max_price)
             )
         else:
             resolution, assist = resolve_with_assist(query, shown=shown, write_jobs=not assist_refresh)
@@ -307,9 +311,11 @@ class PicwiseLocalApp:
         shown: int = 0,
         assist_refresh: bool = False,
         min_price: float | None = None,
+        max_price: float | None = None,
     ) -> str:
         return self.picwise_reference_html(
-            query, source_page=source_page, shown=shown, assist_refresh=assist_refresh, min_price=min_price
+            query, source_page=source_page, shown=shown, assist_refresh=assist_refresh, min_price=min_price,
+            max_price=max_price,
         )
 
     def assist_status_json(self, key: str) -> str:

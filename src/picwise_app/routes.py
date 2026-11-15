@@ -129,6 +129,7 @@ def answer(environ: dict[str, object], start_response: StartResponse, local_app:
             shown=parse_shown_count(params.get("shown", [""])[0]),
             assist_refresh=params.get("assist", [""])[0] == "1",
             min_price=parse_min_price(params.get("min", [""])[0]),
+            max_price=parse_min_price(params.get("max", [""])[0]),
         )
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
@@ -223,6 +224,7 @@ def answer(environ: dict[str, object], start_response: StartResponse, local_app:
             shown=parse_shown_count(params.get("shown", [""])[0]),
             assist_refresh=params.get("assist", [""])[0] == "1",
             min_price=parse_min_price(params.get("min", [""])[0]),
+            max_price=parse_min_price(params.get("max", [""])[0]),
         )
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
