@@ -6,11 +6,11 @@
 the mark proposed (the Decision Contract, "The products that fit a complex search first").
 Pinned here:
 
-- the order: the products that fit first, in the usual order among them (on offer first,
-  then cheapest), then the rest in the usual order; "More" goes on in that order;
-- the Recommended chosen among those that fit by its own rules (on offer when an offer
-  covers one of them, else the middle one in price with a code), none with fewer than
-  three that fit;
+- the order: the products that fit first, in the usual order among them (cheapest first,
+  each at its price after its offer, from 2026-11-15), then the rest in the usual order;
+  "More" goes on in that order;
+- the Recommended chosen among those that fit by its own rules (the middle one in price
+  with a code, on offer or not, from 2026-11-15), none with fewer than three that fit;
 - the products the AI reads are named by a signature of their ids and prices in the usual
   order, the same with or without an answer applied, and another when a price changes;
 - nothing changes without an answer, with an empty one, with ids the AI never read, or
@@ -59,26 +59,16 @@ class FittingFirstOrderTests(unittest.TestCase):
         return [entry.product.provider_product_id for entry in order]
 
     def test_the_fitting_first_the_recommended_their_middle_then_the_rest(self) -> None:
-        order, recommended, status, for_offer = _fitting_first(self._answer(), {}, frozenset({"k2", "k7", "k9"}))
+        order, recommended, status = _fitting_first(self._answer(), frozenset({"k2", "k7", "k9"}))
         # The three that fit, £30, £80 and £100: their middle is £80.
-        self.assertEqual((recommended.product.provider_product_id, status, for_offer), ("k7", "recommended", False))
+        self.assertEqual((recommended.product.provider_product_id, status), ("k7", "recommended"))
         self.assertEqual(self._order_ids(order), ["k7", "k2", "k9", "k1", "k3", "k4", "k5", "k6", "k8"])
 
     def test_fewer_than_three_that_fit_have_no_recommended(self) -> None:
-        order, recommended, status, _for_offer = _fitting_first(self._answer(), {}, frozenset({"k3", "k8"}))
+        order, recommended, status = _fitting_first(self._answer(), frozenset({"k3", "k8"}))
         self.assertIsNone(recommended)
         self.assertEqual(status, "too_few_products")
         self.assertEqual(self._order_ids(order), ["k3", "k8", "k1", "k2", "k4", "k5", "k6", "k7", "k9"])
-
-    def test_an_offer_among_the_fitting_is_their_recommended_and_offers_lead_each_part(self) -> None:
-        answer = self._answer()
-        by_id = {entry.product.provider_product_id: entry for entry in answer}
-        # An offer covers k9 (fits) and k1 (does not fit).
-        covered = {id(by_id["k9"].product): object(), id(by_id["k1"].product): object()}
-        order, recommended, status, for_offer = _fitting_first(answer, covered, frozenset({"k2", "k7", "k9"}))
-        self.assertEqual((recommended.product.provider_product_id, status, for_offer), ("k9", "recommended", True))
-        # Then the others that fit, cheapest first; then the rest: on offer first.
-        self.assertEqual(self._order_ids(order), ["k9", "k2", "k7", "k1", "k3", "k4", "k5", "k6", "k8"])
 
     def test_the_signature_is_the_ids_and_prices_in_order(self) -> None:
         first = candidates_signature([("k1", 20.0), ("k2", 30.0)])

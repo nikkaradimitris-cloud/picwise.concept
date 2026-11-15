@@ -610,9 +610,10 @@ supplement tablets among their first twelve, of 131; the server's kind report co
 
 ## Offers first, decided by the owner, 2026-11-01
 
-**Rule 1 changed on 2026-11-15** ("The price after offers" below): the products on offer
-no longer come first; every product is ordered cheapest first at its price after its
-offer where that is certain. Rules 2 (the Recommended), 3 (what an offer is) and 5 stand.
+**Rules 1 and 2 changed on 2026-11-15** ("The price after offers" below): the products on
+offer no longer come first, every product being ordered cheapest first at its price after
+its offer where that is certain; and the Recommended is no longer a product on offer, but
+the middle price, on offer or not. Rules 3 (what an offer is) and 5 stand.
 
 The owner: «Ανά προϊόν... Όταν ψάχνει ένας πελάτης ένα προϊόν ή μία κατηγορία υπάρχει
 προσφορά σε αυτό το προϊόν ψάχνει παράδειγμα καφετιέρα θα το δείξει τις προσφορές προϊόντα
@@ -685,12 +686,11 @@ Then, to the order, the time and the mark proposed: «Ναι, συμφωνώ μ�
    first); then the other products, in that same order. "More" opens the next four in
    that order.
 3. **The Recommended** is chosen among the products that fit, by the rules of "Price
-   first" (7) and "Offers first" (2) applied to them: on offer when an offer covers one of
-   them, else the middle one in price with an EAN/GTIN; with fewer than three that fit,
-   none, as for any answer of fewer than three. Its line reads "On offer" when it was
-   chosen for its offer, else "Mid-priced of those that fit": "Mid-priced for this
-   category" would not be true of the middle of a part of the answer (a reading needed to
-   build the rule).
+   first" (7) applied to them: the middle one in price with an EAN/GTIN, on offer or not
+   (from 2026-11-15; before, one on offer when an offer covered one of them); with fewer
+   than three that fit, none, as for any answer of fewer than three. Its line reads
+   "Mid-priced of those that fit": "Mid-priced for this category" would not be true of
+   the middle of a part of the answer (a reading needed to build the rule).
 4. **The mark.** Each product that fits carries a ✓ and, under its title, its own words
    that show it, in quotes ("Quiet Mark Approved"): the shop's words, never the AI's.
    Above the products stand the AI's sentence ("3 of these 30 washing machines say they
@@ -725,10 +725,14 @@ first: «Οι προσφορές δεν πρέπει να βγαίνουν πά�
    cheaper product. "More", the counter, "Lowest price", the place by price ("3rd
    cheapest of 6") and the price bar (its steps, its ends and the prices chosen on it)
    read the same prices.
-3. **The Recommended** stays as "Offers first" (2) has it: a product on offer when an
-   offer covers one, of those the one nearest the middle of their prices at their prices
-   after the offers. Whether it should rather be the middle of the whole answer was put
-   to the owner on 2026-11-15 and is open (TODO).
+3. **The Recommended** is the middle product in price of the whole answer, each product
+   at its price after its offer, on offer or not, by the rules of "Price first" (7); its
+   card reads "Mid-priced for this category" (owner, 2026-11-15, asked: «Το προτεινόμενο
+   πρέπει να εξακολουθεί να δείχνει τι μέση τιμή και η ένδειξη πρέπει να λέει με μία
+   κουβέντα ότι πρόκειται για τη μέση τιμή της κατηγορίας»). "Mid-priced", not "average":
+   the rule takes the product in the middle of the prices, not their average. In a
+   complex search, the middle of those that fit, as before. "Offers first" (2) no longer
+   applies.
 4. **The card** shows the price after the offer as its price, and with the offer "£24.00
    at the shop, £19.20 with this offer". The heading says "cheapest first after offers"
    when an offer moved a price, else "cheapest first". The About, terms and affiliate

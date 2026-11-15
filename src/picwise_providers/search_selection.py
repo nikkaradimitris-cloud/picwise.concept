@@ -1983,35 +1983,26 @@ def candidates_signature(products: Iterable[tuple[str, float]]) -> str:
 
 
 def _fitting_first(
-    ordered: list[_PricedProduct], covered: dict[int, Any], fitting: frozenset[str]
-) -> tuple[list[_PricedProduct], _PricedProduct | None, str, bool]:
+    ordered: list[_PricedProduct], fitting: frozenset[str]
+) -> tuple[list[_PricedProduct], _PricedProduct | None, str]:
     """The answer with the products that fit the buyer's need first (owner, 2026-11-06:
     «...πρέπει να κατατάσσονται και πρώτα»; the Decision Contract, "The products that fit
-    a complex search first"): the Recommended chosen among them by its own rules (on offer
-    when an offer covers one of them, else the middle one in price with an EAN/GTIN; none
-    with fewer than three), then the others that fit, then the rest, each part in the
-    usual order (cheapest first). Returns the order, the Recommended, its
-    status and whether it was chosen for its offer. "The usual order" is the price, each
-    product at its price after its offer (owner, 2026-11-15)."""
+    a complex search first"): the Recommended chosen among them by its own rules (the
+    middle one in price with an EAN/GTIN, on offer or not, from 2026-11-15; none with fewer
+    than three), then the others that fit, then the rest, each part in the usual order
+    (cheapest first, each product at its price after its offer: owner, 2026-11-15).
+    Returns the order, the Recommended and its status."""
     fits = [entry for entry in ordered if _entry_id(entry) in fitting]
     others = [entry for entry in ordered if _entry_id(entry) not in fitting]
-    covered_fits = [entry for entry in fits if id(entry.product) in covered]
-    offer_index = (
-        _offer_recommendation(covered_fits) if _counted_products(fits) >= _RECOMMENDED_MIN_PRODUCTS else None
-    )
-    if offer_index is not None:
-        recommended: _PricedProduct | None = covered_fits[offer_index]
-        status = "recommended"
-    else:
-        index, status = _median_recommendation(fits)
-        recommended = fits[index] if index is not None else None
+    index, status = _median_recommendation(fits)
+    recommended: _PricedProduct | None = fits[index] if index is not None else None
 
     def cheapest_first(entries: list[_PricedProduct]) -> list[_PricedProduct]:
         # Price order, each at its price after its offer (owner, 2026-11-15).
         return [entry for entry in entries if entry is not recommended]
 
     order = ([recommended] if recommended is not None else []) + cheapest_first(fits) + cheapest_first(others)
-    return order, recommended, status, offer_index is not None
+    return order, recommended, status
 
 
 def _entry_id(entry: _PricedProduct) -> str:
@@ -2075,33 +2066,6 @@ def _median_recommendation(ordered: list[_PricedProduct]) -> tuple[int | None, s
     if best is None:
         return None, "no_product_code"
     return best[1], "recommended"
-
-
-def _offer_recommendation(on_offer: list[_PricedProduct]) -> int | None:
-    """Which product on offer is the Recommended (owner, 2026-11-01: «Εάν υπάρχει
-    προσφορά να προτείνει την προσφορά», and, seeing a search with an offer and a
-    Recommended not on offer: «το recommended όταν υπάρχει προσφορά πρέπει να δείχνει
-    την προσφορά»), as its index in `on_offer`, cheapest first.
-
-    The products a current shop offer covers stand for the whole answer in the rules of
-    `_median_recommendation`: their middle price (a dearest costing at least twice the
-    next not counted), and the one nearest to it, the cheaper of two equally near; one
-    with an EAN/GTIN first, so that "not cheaper elsewhere" can still be known, and,
-    when none on offer carries one, the nearest of them all: an offer is recommended
-    whenever there is one. One product on offer is its own middle; of two, the cheaper
-    is. None only when nothing is on offer. Asked only of an answer that may have a
-    Recommended at all (three products or more).
-    """
-    if not on_offer:
-        return None
-    counted = max(1, _counted_products(on_offer))
-    middle_price = on_offer[(counted - 1) // 2].price
-    best: tuple[tuple[bool, float, float, int], int] | None = None
-    for index, candidate in enumerate(on_offer):
-        rank = (not candidate.key.startswith("gtin:"), abs(candidate.price - middle_price), candidate.price, index)
-        if best is None or rank < best[0]:
-            best = (rank, index)
-    return best[1] if best is not None else None
 
 
 def _select_products_for_concept(
@@ -2619,31 +2583,19 @@ def _price_first_result(
     if max_price is not None and ordered and float(max_price) < price_high:
         price_to = max(float(max_price), min(entry.price for entry in ordered))
         ordered = [entry for entry in ordered if entry.price <= price_to]
-    # Owner, 2026-11-01: «Εάν υπάρχει προσφορά να προτείνει την προσφορά». The Recommended
-    # is a product a current shop offer covers whenever there is one
-    # (`_offer_recommendation`). After it, every product cheapest first, each at its price
-    # after its offer where that is certain: a product on offer no longer comes before a
-    # cheaper one (owner, 2026-11-15: «Οι προσφορές δεν πρέπει να βγαίνουν πάνω από το
-    # φθηνότερο προϊόν»; before, from 2026-11-01, the products on offer came first).
-    covered_entries = [entry for entry in ordered if id(entry.product) in covered]
-    # An answer of fewer than three products has no Recommended, on offer or not
-    # (`_RECOMMENDED_MIN_PRODUCTS`): its products on offer still come first.
-    # With a price chosen on the price bar there is no Recommended, on offer or not (owner,
-    # 2026-11-12: «Το recommendit πρέπει να ακιρονετε όταν χρησιμοποιεί φίλτρο...σε άλλη περίπτωση δείχνει την μέση τιμή παράδειγμα ο Χρίστης επιλέγει από 90 ευρώ και αυτό προτείνει 890»): the products on offer, then the rest, cheapest first.
-    offer_index = (
-        _offer_recommendation(covered_entries)
-        if price_from is None and price_to is None and _counted_products(ordered) >= _RECOMMENDED_MIN_PRODUCTS
-        else None
-    )
-    if offer_index is not None:
-        recommended = covered_entries[offer_index]
-        recommendation_status = "recommended"
-    elif price_from is not None or price_to is not None:
+    # The Recommended is the middle product in price, each product at its price after its
+    # offer, on offer or not (owner, 2026-11-15: «Το προτεινόμενο πρέπει να εξακολουθεί να
+    # δείχνει τι μέση τιμή»; from 2026-11-01 it had been a product on offer whenever there
+    # was one). After it, every product cheapest first: a product on offer never comes
+    # before a cheaper one (owner, 2026-11-15: «Οι προσφορές δεν πρέπει να βγαίνουν πάνω
+    # από το φθηνότερο προϊόν»).
+    # With a price chosen on the price bar there is no Recommended (owner, 2026-11-12:
+    # «Το recommendit πρέπει να ακιρονετε όταν χρησιμοποιεί φίλτρο...σε άλλη περίπτωση δείχνει την μέση τιμή παράδειγμα ο Χρίστης επιλέγει από 90 ευρώ και αυτό προτείνει 890»).
+    if price_from is not None or price_to is not None:
         recommended, recommendation_status = None, "price_chosen"
     else:
         recommended_index, recommendation_status = _median_recommendation(ordered)
         recommended = ordered[recommended_index] if recommended_index is not None else None
-    chosen_for_offer = offer_index is not None
     rest = [entry for entry in ordered if entry is not recommended]
     on_offer = {id(entry) for entry in rest if id(entry.product) in covered}
     display_order = ([recommended] if recommended is not None else []) + rest
@@ -2661,9 +2613,7 @@ def _price_first_result(
         fitting = frozenset(str(product_id).strip() for product_id in given) & read
     recommended_among_fitting = False
     if fitting:
-        display_order, recommended, recommendation_status, chosen_for_offer = _fitting_first(
-            ordered, covered, fitting
-        )
+        display_order, recommended, recommendation_status = _fitting_first(ordered, fitting)
         recommended_among_fitting = recommended is not None
         rest = [entry for entry in ordered if entry is not recommended]
         on_offer = {id(entry) for entry in rest if id(entry.product) in covered}
@@ -2675,14 +2625,10 @@ def _price_first_result(
     # or below the Recommended or, with none, at or below the middle price (owner,
     # 2026-10-16 and 2026-10-17). Of three standing desks, the £630.99 one is not the
     # lowest price, though it is on the page.
-    # A Recommended chosen for its offer may be priced anywhere: the cheap end is then
-    # measured against the middle price of the whole answer.
     # Products put first because they fit are priced anywhere: the cheap end is then the
     # whole answer's, measured against its middle price.
     lowest_price_ceiling = (
-        recommended.price
-        if recommended is not None and not chosen_for_offer and not fitting
-        else _middle_price(ordered)
+        recommended.price if recommended is not None and not fitting else _middle_price(ordered)
     )
     # A product on offer is labelled with its offer, not "Lowest price".
     cheapest_ids = tuple(

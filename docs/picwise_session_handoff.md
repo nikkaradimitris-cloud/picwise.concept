@@ -18,10 +18,13 @@ a decision came about.
   7 nights); `5bc3a4f` the price bar from and to (`max`); `50eba46` the order at the price
   after each offer where it surely applies (`product_offers.price_after_offer`), no
   offers-first block; `407483b` the photo opened large, with up to three further photos
-  from `additional_image_link`. **Open, put to the owner:** whether the Recommended stays
-  a product on offer when there is one (kept for now) or becomes the middle of the whole
-  answer at the prices after offers; the earlier-proposed grouping of a product's sizes
-  (S/M/L) into one card was not asked for and not built.
+  from `additional_image_link`. Then, on the owner's private preview link: the history
+  telling the shop's price, an offer naming a kind for new customers kept to that kind,
+  48 px taps on a phone, a title never cut through when a phone sets text larger, and the
+  Recommended the middle price, on offer or not (owner: «Το προτεινόμενο πρέπει να
+  εξακολουθεί να δείχνει τι μέση τιμή»). Waiting for the owner's «ανέβασε». The
+  grouping of a product's sizes (S/M/L) into one card, proposed, was not asked for and
+  not built.
 - **15/11, the daily session:** the night's note read at 09:44 UTC: `prepared: true`, prepared 04:25 UTC, 254,711 products, 78 shops, nothing shrunk, gone or new; the memory's fourth night (256,368 known, 330 new, 383 prices changed, 521 gone since 14/11); `price_notes` 0, as expected (first chips about 19/11); `balance.words_to_learn` still empty, as expected (`c93be3c` not deployed). `/health` 200; `kettle`, `sofa`, `office chair`, `tablet` 4 cards each, 0.41 to 0.73 s. No new run since 13/11; "Tests" green on `d10c53f` and `c93be3c`. No code changed, for the same reasons as 14/11. Asked again: deploy the work branch's head (`c93be3c` with it); no answer from the owner on 14/11.
 - **14/11, the daily session:** the night's note read at 09:44 UTC: `prepared: true`, prepared 04:25 UTC, 254,787 products, 78 shops, nothing shrunk, gone or new; the memory's third night (256,038 known, 630 new, 1,988 prices changed, 703 gone since 13/11); `price_notes` 0, as expected; `balance.words_to_learn` still empty, as expected (`c93be3c` not deployed). `/health` 200; `kettle`, `sofa`, `office chair`, `tablet` 4 cards each, 0.41 to 0.73 s. GitHub's "Tests" green on `d10c53f` (run `43409039192`; the head adds records only). No code changed: step 11's mapping needs the list `c93be3c` writes, and the reading of kinds is the search's accuracy, which the owner put off (12/11). Asked again: deploy the work branch's head (`c93be3c` with it).
 - **Next (owner, 13/11): «Πάμε σε άλλη συζήτηση για να με κατευθύνεις για τα google

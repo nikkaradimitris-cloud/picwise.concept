@@ -153,9 +153,6 @@ _PRICE_FIRST_SHOPS_LABEL = "Lowest price of {shops} shops"
 # on offer says so in its heading (owner, 2026-11-01: «Ένα προϊόν με προσφορά θα μπαίνει
 # πρώτα από το φθηνότερο»).
 _OFFER_LABEL = "Offer"
-# Owner, 2026-11-01: «Εάν υπάρχει προσφορά να προτείνει την προσφορά». A Recommended
-# chosen for its offer is not "mid-priced for this category", and says what it is.
-_PRICE_FIRST_RECOMMENDED_OFFER_LABEL = "On offer"
 _RECOMMENDED_MID_PRICED = "The Recommended is mid-priced for this category."
 # The price bar (owner, 2026-11-12: «Να μπει ένα φίλτρο με τη μορφή μπάρας που να διαλέγει
 # με την τιμή ... να τερματίζει στην υψηλοτερή και να ξεκινάει από την χαμηλότερη κουνώντας
@@ -168,9 +165,6 @@ _PRICE_BAR_FROM = "From {price}"
 _PRICE_BAR_UP_TO = "Up to {price}"
 _PRICE_BAR_FROM_TO = "{low} – {high}"
 _PRICE_BAR_SHOW = "Show"
-_RECOMMENDED_ON_OFFER = (
-    "The Recommended is on offer: of the products on offer, the one nearest the middle of their prices."
-)
 _OFFERS_NOTE = "Offers are the shops' own, as they state them through Awin: check them on the shop's site."
 _PRICE_FIRST_FEED_NOTE = "Prices and stock are as the shops list them."
 # The products that fit a complex search first (owner, 2026-11-06; the Decision Contract,
@@ -178,10 +172,6 @@ _PRICE_FIRST_FEED_NOTE = "Prices and stock are as the shops list them."
 # middle of those, not of the category.
 _PRICE_FIRST_RECOMMENDED_FITTING_LABEL = "Mid-priced of those that fit"
 _RECOMMENDED_AMONG_FITTING = "The Recommended is mid-priced of those that fit."
-_RECOMMENDED_AMONG_FITTING_ON_OFFER = (
-    "The Recommended is on offer: of the products that fit and are on offer, the one nearest the middle "
-    "of their prices."
-)
 _NO_RECOMMENDED_TOO_FEW = "No Recommended here: these products have no middle price to pick."
 _NO_RECOMMENDED_NO_CODE = (
     "No Recommended here: no mid-priced product carries a barcode number (EAN), which PicWise needs "
@@ -299,7 +289,7 @@ _SEARCH_PLACEHOLDER = "What are you looking for?"
 _WHAT_IS_PICWISE = (
     "PicWise finds the product you want in the shops it is connected to, shows what the "
     "shops list as in stock, cheapest first, each at its price after a shop offer where it surely applies, and marks one "
-    "Recommended: a product on offer where there is one, else a mid-priced one."
+    "Recommended: the mid-priced one."
 )
 _MIC_TITLE = (
     "Search by voice. Your browser turns your words into text; in Chrome the audio is "
@@ -714,10 +704,10 @@ def _build_price_first_cards(
         )
         offer = offers.get(product_id)
         if is_recommended:
+            # The middle price, on offer or not (owner, 2026-11-15: «η ένδειξη πρέπει να λέει
+            # με μία κουβέντα ότι πρόκειται για τη μέση τιμή της κατηγορίας»).
             role_label = (
-                _PRICE_FIRST_RECOMMENDED_OFFER_LABEL
-                if offer
-                else _PRICE_FIRST_RECOMMENDED_FITTING_LABEL
+                _PRICE_FIRST_RECOMMENDED_FITTING_LABEL
                 if fit_words and getattr(resolution, "provider_feed_recommended_among_fitting", False)
                 else _PRICE_FIRST_RECOMMENDED_LABEL
             )
@@ -916,7 +906,7 @@ def _fitting_disclosure(
     if recommended is not None and getattr(resolution, "provider_feed_recommended_among_fitting", False):
         text = text.replace(
             _RECOMMENDED_MID_PRICED,
-            _RECOMMENDED_AMONG_FITTING_ON_OFFER if recommended.get("offer") else _RECOMMENDED_AMONG_FITTING,
+            _RECOMMENDED_AMONG_FITTING,
         )
     text = text.replace(_NO_RECOMMENDED_TOO_FEW, _NO_RECOMMENDED_TOO_FEW_FITTING)
     return text.replace(_NO_RECOMMENDED_NO_CODE, _NO_RECOMMENDED_NO_CODE_FITTING)
@@ -1237,8 +1227,6 @@ def render_picwise_reference_surface(
                 ]
                 if fit_words:
                     disclosure = _fitting_disclosure(disclosure, price_first_cards, resolution)
-                if any(card.get("offer") and card.get("recommended") for card in price_first_cards):
-                    disclosure = disclosure.replace(_RECOMMENDED_MID_PRICED, _RECOMMENDED_ON_OFFER)
         else:
             feed_cards, feed_live, feed_disclosure, feed_safe_note = (
                 _build_provider_feed_result_cards(
