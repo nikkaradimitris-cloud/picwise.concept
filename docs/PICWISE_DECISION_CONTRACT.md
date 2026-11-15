@@ -610,6 +610,10 @@ supplement tablets among their first twelve, of 131; the server's kind report co
 
 ## Offers first, decided by the owner, 2026-11-01
 
+**Rule 1 changed on 2026-11-15** ("The price after offers" below): the products on offer
+no longer come first; every product is ordered cheapest first at its price after its
+offer where that is certain. Rules 2 (the Recommended), 3 (what an offer is) and 5 stand.
+
 The owner: «Ανά προϊόν... Όταν ψάχνει ένας πελάτης ένα προϊόν ή μία κατηγορία υπάρχει
 προσφορά σε αυτό το προϊόν ψάχνει παράδειγμα καφετιέρα θα το δείξει τις προσφορές προϊόντα
 με προσφορές πρώτα». Asked, with the choices put to them (a label with the order kept, a row
@@ -654,8 +658,8 @@ of offers above the results, or products with an offer first), whether that chan
    offer.
 4. **The card.** An offer card is labelled "Offer" instead of "Lowest price", and shows
    the offer in the shop's words, its end date, its code where Awin gives one (to joined
-   programmes only), and its terms. The page says the order ("offers first, then
-   cheapest first").
+   programmes only), and its terms. The page says the order (from 2026-11-15, "cheapest
+   first after offers").
 5. **No one pays for a place.** PicWise is paid nothing to show an offer or to put it
    first; commission still never decides the order.
 
@@ -697,7 +701,47 @@ Then, to the order, the time and the mark proposed: «Ναι, συμφωνώ μ�
    pays for it, and commission still never decides the order.
 7. **Google.** Only the site's own search does this; its pages carry `noindex`.
 
+## The price after offers, decided by the owner, 2026-11-15
+
+The owner, of a buyer choosing a t-shirt from £15 and finding t-shirts on offer at £45
+first: «Οι προσφορές δεν πρέπει να βγαίνουν πάνω από το φθηνότερο προϊόν», and «η έκπτωση
+πρέπει να υπολογίζει την τελική τιμή και να γίνεται κατάταξη με βάση την πραγματική αξία».
+
+1. **The price after an offer** (`product_offers.price_after_offer`) is worked out only
+   where the offer's words leave no doubt that a buyer of this one product gets it: one
+   percentage off, one amount off, or half price; a least spend ("over £50", "minimum
+   spend £30", in the title or the terms) only when the product's own price reaches it.
+   Never for an offer needing two products (a second one free, "3 for £20"), one for new
+   customers, a first order, students, members or an app, one with exclusions, "up to", or
+   numbers PicWise cannot read ("10 OFF" with no sign). There the product stands at the
+   shop's own price, its offer still shown. The question of which offers to count was put
+   to the owner and left to the engineer; the cautious reading was taken, as the owner
+   had been advised, so that no price is shown that the buyer might not get.
+2. **The order.** The Recommended first; then every product cheapest first, each at its
+   price after its offer where that is certain. A product on offer never comes before a
+   cheaper product. "More", the counter, "Lowest price", the place by price ("3rd
+   cheapest of 6") and the price bar (its steps, its ends and the prices chosen on it)
+   read the same prices.
+3. **The Recommended** stays as "Offers first" (2) has it: a product on offer when an
+   offer covers one, of those the one nearest the middle of their prices at their prices
+   after the offers. Whether it should rather be the middle of the whole answer was put
+   to the owner on 2026-11-15 and is open (TODO).
+4. **The card** shows the price after the offer as its price, and with the offer "£24.00
+   at the shop, £19.20 with this offer". The heading says "cheapest first after offers"
+   when an offer moved a price, else "cheapest first". The About, terms and affiliate
+   pages say the order.
+5. Pinned by `tests/test_picwise_offers_first.py`.
+
 ## The price bar, decided by the owner, 2026-11-12
+
+**From and to, decided by the owner, 2026-11-15:** «Ο χρήστης μπορεί να διαλέξει στο
+φίλτρο τιμής από έως». A second knob, on the bar's right, ends the answer at a price
+(`?max=80`): the products above it leave the answer as those below the first knob do, and
+with either chosen there is no Recommended. The page says "up to £80" or "£30 – £80" in
+its heading and on the bar; "More" keeps both. An end under the cheapest product left is
+taken as that one's, so the answer never empties; an end at or above the dearest chooses
+nothing. The two knobs never cross. The prices are read after offers ("The price after
+offers"). Pinned by `tests/test_picwise_price_bar.py` (`PriceToTests`).
 
 «Να μπει ένα φίλτρο με τη μορφή μπάρας που να διαλέγει με την τιμή για να γλιτώσουμε το πρόβλημα που βγάζει τα φθηνότερα και μπορεί να είναι smartwatch και να δείχνει λουράκια μπορεί να είναι tablet και να βγάζει πρώτα θήκες ... βάζοντας ένα φίλτρο τιμής το οποίο να τερματίζει στην υψηλοτερή και να ξεκινάει από την χαμηλότερη κουνώντας μία μπίλια θα μπορεί αμέσως να φιλτράρει».
 
@@ -723,6 +767,17 @@ Then, to the order, the time and the mark proposed: «Ναι, συμφωνώ μ�
 - Pinned by `tests/test_picwise_price_bar.py`.
 
 ## The price's history on the cards, decided by the owner, 2026-11-13
+
+**From the first night, decided by the owner, 2026-11-15:** «Ο μηχανισμός διακύμανσης
+τιμής θέλω να φανεί στις κάρτες και να ξεκινήσει να μαζεύει δεδομένα ... Μπορεί να
+ξεκινήσει να μαζεύει δεδομένα από σήμερα εμφανίζει την τωρινή τιμή και κάθε μέρα να
+προσθέτει την καινούργια πληροφορία έως τις 30 μέρες» (the owner adding that the truth
+of it matters less while the site is not open to the public). Every card shows its
+price's nights from the first one: one price reads "Same price for N nights" from N = 1
+(`price_history.MIN_SHOWN_NIGHTS`); a price that moved with no price kept 7 nights to
+compare with reads a grey "Price history N nights", no arrow, its nights in the chart. The
+▼ and ▲ keep the 7-night rule below, so that no fake saving is told even now and nothing
+needs undoing when the site opens. The memory has kept every night since 12/11.
 
 «η διακύμανση τιμής θα μπει με κάποιον έξυπνο τρόπο ... δεν ξέρω αν πρέπει να μπει σε κάθε κάρτα προϊόντος με ένα βελάκι κόκκινο προς τα κάτω ή πράσινο προς τα πάνω ... δεν ξέρω εάν το αγγίζει και κρεμάει κάτω του ένα μικρό drop down ... δεν ξέρω αν αυτό πρέπει να γίνει μόνο στο προτεινόμενο ή σε όλα». To the pictures proposed the same day: «Συμφωνώ με το σχεδιασμό».
 

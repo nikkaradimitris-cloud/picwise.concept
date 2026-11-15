@@ -127,8 +127,31 @@ given to Google (`docs/PICWISE_GOOGLE_PAGES_SPEC.md`, "Keywords").
 ## The Price's History on Each Card (2026-11-13)
 
 Under each card's price, a chip: green ▼ when it fell, red ▲ when it rose, grey "Same
-price for N nights"; a tap opens its last 30 nights. The rules:
+price for N nights"; a tap opens its last 30 nights. From 2026-11-15 on every card from
+the first night: one price "Same price for N nights" from N = 1, a price that moved with
+none kept 7 nights a grey "Price history N nights" with no arrow. The rules:
 `docs/PICWISE_DECISION_CONTRACT.md`, "The price's history on the cards".
+
+## The Photo, Opened Large (2026-11-15)
+
+Every card's photo opens at a tap over the page, the page dimmed behind it: nearly a
+phone's whole width, most of a wide screen (owner: «με ένα πάτημα η εικόνα να μεγαλώνει
+πολύ ... και μέ ενα δεύτερο πάτημα να επιστρέψει τη θέση της»; then «Ο χρήστης μπορεί να
+έχει τη δυνατότητα η εικόνα του προϊόντος να μεγαλώνει»), on every search. It closes with
+a second tap, the ✕, a tap beside it, Esc, a swipe down or the phone's back button. A
+magnifier in the photo's lower corner says it opens, with the number of photos when
+there are more. The shop's further photos (Google's `additional_image_link`, at most
+three: «όποιος στέλνει επιπλέον φωτογραφίες ... εμφανίζουμε έως 4») are moved between
+with arrows, a swipe or the arrow keys, and load only when opened. The heart on the
+photo stays the heart's; the cards do not move (`picwise_surface.photo_viewer`; pinned by
+`tests/test_picwise_photo_viewer.py`).
+
+## The Price After an Offer (2026-11-15)
+
+A card whose offer surely applies shows the price after it as its price and, with the
+offer, "£24.00 at the shop, £19.20 with this offer"; it stands in the order at that price,
+never before a cheaper product. The rules: `docs/PICWISE_DECISION_CONTRACT.md`, "The
+price after offers".
 
 ## The Shop's Name (2026-11-13)
 
@@ -142,7 +165,9 @@ Above the cards of a price-first answer of more than one page, under its heading
 counter: a bar from the answer's lowest price to its highest, the products at each price
 drawn above it, and a knob that starts the answer from a higher price (owner: «κουνώντας
 μία μπίλια θα μπορεί αμέσως να φιλτράρει»). "Any price" at its left end, "From £150" as
-it moves; let go, the page is drawn again from that price. The rules it follows:
+it moves; let go, the page is drawn again from that price. From 2026-11-15 a second knob
+on the right ends the answer at a price ("Up to £80", "£30 – £80"; owner: «από έως»).
+The rules it follows:
 `docs/PICWISE_DECISION_CONTRACT.md`, "The price bar".
 
 ## Card Structure Requirements

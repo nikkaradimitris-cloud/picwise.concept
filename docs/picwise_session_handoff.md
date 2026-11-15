@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-13.
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-15.
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,6 +8,20 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **15/11, the conversation on photos, offers and the price bar (session branch
+  `ccr-d4dcbe0e-4y2sjf`, from the work line's `7e297d1`): four changes built, tested,
+  pushed, not deployed** (no «ανέβασε» yet). The owner's words, 15/11: «1. Η προσφορές δεν
+  πρέπει να βγαίνουν πάνω από το φθηνότερο προϊόν. 2. Ο χρήστης μπορεί να διαλέξει στο
+  φίλτρο τιμής από έως. 3. Ο χρήστης μπορεί να έχει τη δυνατότητα η εικόνα του προϊόντος
+  να μεγαλώνει. 4. Ο μηχανισμός διακύμανσης τιμής θέλω να φανεί στις κάρτες». `ad00848`
+  the price's history on every card from the first night (no arrow until a price is kept
+  7 nights); `5bc3a4f` the price bar from and to (`max`); `50eba46` the order at the price
+  after each offer where it surely applies (`product_offers.price_after_offer`), no
+  offers-first block; `407483b` the photo opened large, with up to three further photos
+  from `additional_image_link`. **Open, put to the owner:** whether the Recommended stays
+  a product on offer when there is one (kept for now) or becomes the middle of the whole
+  answer at the prices after offers; the earlier-proposed grouping of a product's sizes
+  (S/M/L) into one card was not asked for and not built.
 - **15/11, the daily session:** the night's note read at 09:44 UTC: `prepared: true`, prepared 04:25 UTC, 254,711 products, 78 shops, nothing shrunk, gone or new; the memory's fourth night (256,368 known, 330 new, 383 prices changed, 521 gone since 14/11); `price_notes` 0, as expected (first chips about 19/11); `balance.words_to_learn` still empty, as expected (`c93be3c` not deployed). `/health` 200; `kettle`, `sofa`, `office chair`, `tablet` 4 cards each, 0.41 to 0.73 s. No new run since 13/11; "Tests" green on `d10c53f` and `c93be3c`. No code changed, for the same reasons as 14/11. Asked again: deploy the work branch's head (`c93be3c` with it); no answer from the owner on 14/11.
 - **14/11, the daily session:** the night's note read at 09:44 UTC: `prepared: true`, prepared 04:25 UTC, 254,787 products, 78 shops, nothing shrunk, gone or new; the memory's third night (256,038 known, 630 new, 1,988 prices changed, 703 gone since 13/11); `price_notes` 0, as expected; `balance.words_to_learn` still empty, as expected (`c93be3c` not deployed). `/health` 200; `kettle`, `sofa`, `office chair`, `tablet` 4 cards each, 0.41 to 0.73 s. GitHub's "Tests" green on `d10c53f` (run `43409039192`; the head adds records only). No code changed: step 11's mapping needs the list `c93be3c` writes, and the reading of kinds is the search's accuracy, which the owner put off (12/11). Asked again: deploy the work branch's head (`c93be3c` with it).
 - **Next (owner, 13/11): «Πάμε σε άλλη συζήτηση για να με κατευθύνεις για τα google
