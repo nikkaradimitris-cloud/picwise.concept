@@ -75,12 +75,13 @@ class LivePageCardsTests(unittest.TestCase):
         self.assertEqual(len(cards), 4)
         first = cards[0]
         self.assertTrue(first.recommended)
-        self.assertEqual((first.role, first.price, first.shop), ("On offer", "£28.00", "Fixture Store Three"))
+        # £28.00 at the shop, £25.20 after its offer: the card's price (owner, 2026-11-15).
+        self.assertEqual((first.role, first.price, first.shop), ("On offer", "£25.20", "Fixture Store Three"))
         self.assertIn("10% off kettles", first.offer)
         self.assertEqual(first.image, "https://fixture.example.invalid/img/k6.jpg")
         self.assertEqual([card.recommended for card in cards[1:]], [False, False, False])
-        self.assertEqual(cards[3].role, "Lowest price")
-        self.assertEqual(cards[3].offer, "")
+        self.assertEqual(cards[1].role, "Lowest price")
+        self.assertEqual(cards[1].offer, "")
 
 
 class PhotoRulesTests(unittest.TestCase):

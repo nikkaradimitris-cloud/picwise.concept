@@ -200,7 +200,7 @@ class PageScriptTests(unittest.TestCase):
         # Only on a search page, and not for "More", the AI layer's refresh or a price
         # chosen on the price bar (owner, 2026-11-12): each is the same search again.
         self.assertIn('path!=="/search"&&path!=="/results"', _SEARCH_SCRIPT)
-        self.assertIn("/[?&](shown|assist|min)=/.test(location.search)", _SEARCH_SCRIPT)
+        self.assertIn("/[?&](shown|assist|min|max)=/.test(location.search)", _SEARCH_SCRIPT)
 
 
 class PrivacyAndServerTests(unittest.TestCase):
