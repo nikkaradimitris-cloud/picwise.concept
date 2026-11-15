@@ -1,21 +1,27 @@
-"""Offers per product, and the products they cover first (owner, 2026-11-01).
+"""Offers per product (owner, 2026-11-01), and the order at the price after them (2026-11-15).
 
-«Ανά προϊόν... προϊόντα με προσφορές πρώτα»; asked whether that changes "cheapest first":
-«Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο». Pinned here:
+From 2026-11-01 to 2026-11-15 the products an offer covered came first («Ένα προϊόν με
+προσφορά θα μπαίνει πρώτα από το φθηνότερο»). The owner, 2026-11-15: «Οι προσφορές δεν
+πρέπει να βγαίνουν πάνω από το φθηνότερο προϊόν» and «η έκπτωση πρέπει να υπολογίζει την
+τελική τιμή και να γίνεται κατάταξη με βάση την πραγματική αξία». Pinned here:
 
 - which offer covers which product (`picwise_providers.product_offers`), on offer titles
   written as Awin's real ones were (31/10): a stated discount, for shoppers, live now,
   on the whole shop or on a kind every word of which is in the title; "up to" and
   "selected" cover nothing; a voucher only with its code, which Awin gives for the
   programmes PicWise is joined to (most real vouchers of 01/11 came without one);
-- the order: the Recommended, then the products an offer covers, cheapest first, then
-  the rest, cheapest first; "More" goes on in that order; without offers, the price alone;
+- the price after an offer, worked out only where its words leave no doubt that the
+  buyer of this one product gets it (`price_after_offer`);
+- the order: the Recommended, then every product cheapest first, each at its price
+  after its offer where that is certain; "More" goes on in that order; the price bar
+  reads the same prices;
 - the Recommended: a product on offer whenever there is one («Εάν υπάρχει προσφορά να
   προτείνει την προσφορά»; «το recommended όταν υπάρχει προσφορά πρέπει να δείχνει την
   προσφορά»), the one nearest the middle of their prices, one with a code first, reading
   "On offer"; else as before;
-- the card: "Offer" instead of "Lowest price", the offer in the shop's words, its end,
-  its code only where given, its terms; the page saying the order;
+- the card: "Offer" instead of "Lowest price", the price after the offer with the shop's
+  own price beside the offer, the offer in the shop's words, its end, its code only where
+  given, its terms; the page saying the order;
 - the pages that say how PicWise orders and earns, saying it truly.
 
 Every shop, product and offer is fictional; URLs are `.invalid`.
@@ -48,7 +54,9 @@ from picwise_providers import product_offers  # noqa: E402
 from picwise_providers.awin_adapter import clear_awin_feed_parse_cache  # noqa: E402
 from picwise_providers.contracts import ProviderProduct  # noqa: E402
 from picwise_providers.product_offers import (  # noqa: E402
+    ProductOffer,
     offer_for_product,
+    price_after_offer,
     offer_scope,
     offers_covering,
     set_offers_document,
@@ -289,7 +297,7 @@ class OffersFirstPageTests(unittest.TestCase):
             })
         return cards
 
-    def test_a_chosen_price_puts_the_offers_first_and_recommends_none(self) -> None:
+    def test_a_chosen_price_reads_the_prices_after_offers_and_recommends_none(self) -> None:
         # Owner, 2026-11-12: with a price chosen on the price bar there is no Recommended,
         # on offer or not («Το recommendit πρέπει να ακιρονετε όταν χρησιμοποιεί φίλτρο»).
         set_offers_document({"shops": {"1003": _shop("Fixture Store Three", [
@@ -302,59 +310,65 @@ class OffersFirstPageTests(unittest.TestCase):
             lambda _status, _headers: None,
         )).decode("utf-8")
         cards = self._cards(page)
-        # From £20, Store Three's k6 £28 and k9 £37 are on offer: they come first, the
-        # cheaper first, then the cheapest of the rest, k4 £22 and k5 £25.
-        self.assertEqual([card["id"] for card in cards], ["k6", "k9", "k4", "k5"])
+        # 10% off Store Three's kettles: k3 £17.10, k6 £25.20, k9 £33.30. From £20, at
+        # those prices: k4 £22, k5 £25, k6 £25.20, k7 £31; k3 is under £20 after its offer.
+        self.assertEqual([card["id"] for card in cards], ["k4", "k5", "k6", "k7"])
         self.assertFalse(any(card["recommended"] for card in cards))
-        self.assertEqual([card["role"] for card in cards[:2]], ["Offer", "Offer"])
-        self.assertIn("Results for: kettle, from £20, offers first, then cheapest first", page)
+        self.assertEqual(cards[2]["role"], "Offer")
+        self.assertIn("Results for: kettle, from £20, cheapest first after offers", page)
         self.assertNotIn("The Recommended is", page)
 
     def test_without_offers_the_order_is_the_price(self) -> None:
         cards = self._cards(self._page())
         self.assertEqual([card["id"] for card in cards], ["k5", "k1", "k2", "k3"])
         self.assertEqual([card["role"] for card in cards[1:]], ["Lowest price"] * 3)
-        self.assertNotIn("offers first", self._page())
+        self.assertNotIn("after offers", self._page())
 
-    def test_the_offer_is_recommended_and_the_other_offers_follow_then_the_rest(self) -> None:
+    def test_the_offer_is_recommended_and_the_rest_follow_at_their_prices_after_offers(self) -> None:
         set_offers_document({"shops": {"1003": _shop("Fixture Store Three", [
             _offer(7, "10% off kettles", code="KETTLE10", terms="One per order."),
         ], joined=True)}})
         page = self._page()
         cards = self._cards(page)
-        # Store Three's kettles k3 £19, k6 £28, k9 £37 are on offer: the Recommended is the
-        # middle of them, k6; then k3 and k9; then the cheapest of the rest, k1.
-        self.assertEqual([card["id"] for card in cards], ["k6", "k3", "k9", "k1"])
+        # Store Three's kettles are on offer, 10% off: k3 £17.10, k6 £25.20, k9 £33.30. The
+        # Recommended is the middle of them, k6; then every kettle cheapest first at its
+        # price after its offer: k1 £13, k2 £16, k3 £17.10. No product on offer comes
+        # before a cheaper one.
+        self.assertEqual([card["id"] for card in cards], ["k6", "k1", "k2", "k3"])
         self.assertTrue(cards[0]["recommended"])
         self.assertEqual(cards[0]["role"], "On offer")
-        for card in cards[:3]:
+        for card in (cards[0], cards[3]):
             self.assertIn("10% off kettles", card["offer"])
             self.assertIn("until 31 Dec", card["offer"])
             self.assertIn("Code: KETTLE10", card["offer"])
             self.assertIn("Offer terms One per order.", card["offer"])
-        for card in cards[1:3]:
-            self.assertEqual(card["role"], "Offer")
-            self.assertTrue(card["marked"])
-        self.assertEqual(cards[3]["role"], "Lowest price")
-        self.assertEqual(cards[3]["offer"], "")
+        self.assertIn("£28.00 at the shop, £25.20 with this offer", cards[0]["offer"])
+        self.assertIn("£19.00 at the shop, £17.10 with this offer", cards[3]["offer"])
+        self.assertEqual(cards[3]["role"], "Offer")
+        self.assertTrue(cards[3]["marked"])
+        self.assertEqual([card["role"] for card in cards[1:3]], ["Lowest price"] * 2)
+        self.assertEqual([card["offer"] for card in cards[1:3]], ["", ""])
+        prices = re.findall(r'<p class="pw-price">(.*?)</p>', page)
+        self.assertEqual([html.unescape(price) for price in prices], ["£25.20", "£13.00", "£16.00", "£17.10"])
         self.assertIn("The Recommended is on offer: of the products on offer, the one nearest the middle", page)
         self.assertNotIn("The Recommended is mid-priced for this category", page)
         more = self._cards(self._page(shown=8))
-        self.assertEqual([card["id"] for card in more], ["k6", "k3", "k9", "k1", "k2", "k4", "k5", "k7"])
-        self.assertEqual([card["role"] for card in more[4:]], ["", "", "", ""])
-        self.assertIn("Results for: kettle, offers first, then cheapest first", page)
+        self.assertEqual([card["id"] for card in more], ["k6", "k1", "k2", "k3", "k4", "k5", "k7", "k9"])
+        self.assertEqual([card["role"] for card in more[4:]], ["", "", "", "Offer"])
+        self.assertIn("Results for: kettle, cheapest first after offers", page)
         # The order is said by the heading alone (owner, 2026-11-12, «Β»).
         self.assertNotIn("Products a current shop offer covers come first", page)
         self.assertIn("Offers are the shops&#x27; own, as they state them through Awin", page)
-        # The place by price stays true: k9 is the dearest of nine.
-        self.assertIn("9th cheapest of 9", page)
+        # The place by price is at the prices after offers: k6 is the 6th of nine.
+        self.assertIn("6th cheapest of 9", page)
 
     def test_an_offer_without_a_code_shows_none(self) -> None:
         set_offers_document({"shops": {"1001": _shop("Fixture Store One", [_offer(8, "15% off everything")])}})
         cards = self._cards(self._page())
-        # k1 £13, k4 £22, k7 £31 on offer: k4 the middle, the Recommended.
-        self.assertEqual([card["id"] for card in cards], ["k4", "k1", "k7", "k2"])
-        for card in cards[:3]:
+        # k1 £11.05, k4 £18.70, k7 £26.35 after 15% off: k4 the middle, the Recommended;
+        # then k1 £11.05, k2 £16, k3 £19.
+        self.assertEqual([card["id"] for card in cards], ["k4", "k1", "k2", "k3"])
+        for card in cards[:2]:
             self.assertNotIn("Code:", card["offer"])
             self.assertIn("15% off everything", card["offer"])
 
@@ -376,7 +390,7 @@ class OffersFirstPageTests(unittest.TestCase):
         set_offers_document({"shops": {"1003": _shop("Fixture Store Three", [_offer(13, "10% off kettles")])}})
         page = self._page()
         cards = self._cards(page)
-        self.assertEqual([card["id"] for card in cards], ["k6", "k3", "k9", "k1"])
+        self.assertEqual([card["id"] for card in cards], ["k6", "k1", "k2", "k3"])
         self.assertTrue(cards[0]["recommended"])
         self.assertEqual(cards[0]["role"], "On offer")
         self.assertIn("10% off kettles", cards[0]["offer"])
@@ -388,20 +402,20 @@ class OffersFirstPageTests(unittest.TestCase):
         self._write_feed(no_code=frozenset({"k6"}))
         set_offers_document({"shops": {"1003": _shop("Fixture Store Three", [_offer(16, "10% off kettles")])}})
         cards = self._cards(self._page())
-        self.assertEqual([card["id"] for card in cards], ["k3", "k6", "k9", "k1"])
+        self.assertEqual([card["id"] for card in cards], ["k3", "k1", "k2", "k4"])
         self.assertEqual(cards[0]["role"], "On offer")
 
     def test_fewer_than_three_products_have_no_recommended_even_on_offer(self) -> None:
         # Fewer than three products have no Recommended (2026-10-16), on offer or not:
-        # the product on offer comes first, labelled with its offer.
+        # the product on offer stands at its price after the offer, labelled with it.
         self._write_feed(only=frozenset({"k2", "k6"}))
         set_offers_document({"shops": {"1003": _shop("Fixture Store Three", [_offer(14, "10% off kettles")])}})
         page = self._page()
         cards = self._cards(page)
-        self.assertEqual([card["id"] for card in cards], ["k6", "k2"])
+        self.assertEqual([card["id"] for card in cards], ["k2", "k6"])
         self.assertFalse(any(card["recommended"] for card in cards))
-        self.assertEqual(cards[0]["role"], "Offer")
-        self.assertIn("10% off kettles", cards[0]["offer"])
+        self.assertEqual(cards[1]["role"], "Offer")
+        self.assertIn("10% off kettles", cards[1]["offer"])
         self.assertIn("No Recommended here: these products have no middle price to pick.", page)
         self.assertNotIn("The Recommended is on offer", page)
 
@@ -420,16 +434,71 @@ class OffersFirstPageTests(unittest.TestCase):
         cards = self._cards(page)
         self.assertEqual([card["id"] for card in cards], ["k5", "k1", "k2", "k3"])
         self.assertEqual([card["offer"] for card in cards], ["", "", "", ""])
-        self.assertNotIn("offers first", page)
+        self.assertNotIn("after offers", page)
+
+    def test_an_offer_that_makes_a_product_cheapest_puts_it_first_after_the_recommended(self) -> None:
+        set_offers_document({"shops": {"1003": _shop("Fixture Store Three", [_offer(17, "£30 off Kettle Nine")])}})
+        cards = self._cards(self._page())
+        # k9 £37 is £7 after its offer: the Recommended, being the only one on offer.
+        self.assertEqual([card["id"] for card in cards], ["k9", "k1", "k2", "k3"])
+        self.assertIn("£37.00 at the shop, £7.00 with this offer", cards[0]["offer"])
+
+    def test_an_offer_whose_price_after_it_is_not_certain_leaves_the_shop_s_price(self) -> None:
+        # New customers only: whether the buyer is one, PicWise cannot know.
+        self._write_feed(only=frozenset({"k1", "k2", "k6"}))
+        set_offers_document({"shops": {"1003": _shop("Fixture Store Three", [
+            _offer(18, "50% off kettles for new customers"),
+        ])}})
+        page = self._page()
+        cards = self._cards(page)
+        # k6 stays at £28, the dearest: the Recommended is the one on offer, then the rest.
+        self.assertEqual([card["id"] for card in cards], ["k6", "k1", "k2"])
+        self.assertNotIn("with this offer", cards[0]["offer"])
+        self.assertIn("50% off kettles for new customers", cards[0]["offer"])
+        self.assertIn("Results for: kettle, cheapest first", page)
+        self.assertNotIn("after offers", page)
+
+
+class PriceAfterOfferTests(unittest.TestCase):
+    """The price after an offer only where its words leave no doubt (owner, 2026-11-15)."""
+
+    @staticmethod
+    def _after(title: str, price: float, terms: str = "") -> float | None:
+        offer = ProductOffer(shop="1", joined=True, offer_id="1", kind="promotion", title=title, terms=terms,
+                             end=NOW, code="", scope="shop")
+        return price_after_offer(offer, price)
+
+    def test_one_percentage_one_amount_or_half_price(self) -> None:
+        self.assertEqual(self._after("10% off everything", 45.0), 40.5)
+        self.assertEqual(self._after("£15 off kettles", 45.0), 30.0)
+        self.assertEqual(self._after("Half price kettles", 19.99), 10.0)
+        self.assertEqual(self._after("12.5% off sitewide", 80.0), 70.0)
+
+    def test_a_least_spend_the_product_s_price_reaches(self) -> None:
+        self.assertEqual(self._after("£15 off orders over £50", 60.0), 45.0)
+        self.assertIsNone(self._after("£15 off orders over £50", 45.0))
+        self.assertIsNone(self._after("15% off sitewide", 20.0, terms="Minimum spend £30."))
+        self.assertEqual(self._after("15% off sitewide", 40.0, terms="Minimum spend £30."), 34.0)
+
+    def test_offers_not_every_buyer_of_one_product_gets(self) -> None:
+        for title, terms in (
+            ("20% off for new customers", ""), ("10% off your first order", ""), ("BOGOF on kettles", ""),
+            ("Buy one get one free", ""), ("Second one free", ""), ("15% off in the app", ""),
+            ("10% off everything", "Excludes sale items."), ("Up to 50% off", ""),
+            ("10 OFF", ""), ("10% off and £5 off", ""), ("£5 off", ""), ("20% off, 3 for £20", ""),
+        ):
+            self.assertIsNone(self._after(title, 4.0 if title == "£5 off" else 40.0, terms), title)
 
 
 class PagesSayTheOrderTests(unittest.TestCase):
-    def test_about_and_the_affiliate_disclosure_say_offers_first_and_whom_picwise_earns_from(self) -> None:
+    def test_about_and_the_affiliate_disclosure_say_the_order_and_whom_picwise_earns_from(self) -> None:
         about = render_about_page()
-        self.assertIn("Products a current shop offer covers first, then cheapest first", about)
+        self.assertIn("Cheapest first, in one currency, each product at its price after a current shop offer", about)
+        self.assertNotIn("offers first", about)
         disclosure = render_affiliate_disclosure_page()
-        self.assertIn("those a current shop offer covers first and then cheapest first", disclosure)
-        self.assertIn("PicWise is paid nothing to show an offer or to put it first", disclosure)
+        self.assertIn("cheapest first, each at its price after a current shop offer where the offer surely applies", disclosure)
+        self.assertIn("PicWise is paid nothing to show an offer", disclosure)
+        self.assertIn("an offer for new customers, a first order or a second product", disclosure)
         # Awin calls the account joined to some of the shops only (31/10): no page says all.
         self.assertIn("PicWise earns a commission only from the shops that have accepted it", disclosure)
         self.assertNotIn("have accepted PicWise into it", disclosure)

@@ -116,6 +116,8 @@ _PAGE_STYLES = (
     ".pw-card-offer{margin:6px 0 0;padding:7px 9px;border-radius:10px;background:#fff7f0;border:1px solid #f6d9c2;}"
     ".pw-offer-title{margin:0;font-size:12.5px;font-weight:700;line-height:1.35;color:#9a3b12;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}"
     ".pw-offer-meta{margin:2px 0 0;font-size:11.5px;color:#8a5a3c;}"
+    ".pw-offer-after{margin:2px 0 0;font-size:11.5px;color:#8a5a3c;}"
+    ".pw-offer-after strong{color:#9a3b12;}"
     ".pw-offer-code{font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:.04em;color:#9a3b12;}"
     ".pw-offer-terms{margin:4px 0 0;font-size:11px;color:#8a5a3c;}"
     ".pw-offer-terms summary{cursor:pointer;}"

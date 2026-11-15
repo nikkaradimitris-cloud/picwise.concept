@@ -42,7 +42,7 @@ from .normalization import extract_merchant_name
 from .decision_labels import parse_price_amount
 from .product_description import has_sufficient_description
 from .product_specs import read_product_specs
-from .product_offers import offers_covering
+from .product_offers import offers_covering, price_after_offer
 from .product_identity import same_product_key
 from .product_condition import (
     non_new_condition,
@@ -490,6 +490,9 @@ class ProviderProductSelectionResult:
     # The price the bar ends at, when the buyer chose one (owner, 2026-11-15), or None.
     price_to: float | None = None
     answer_count: int = 0
+    # Each shown product's price after its offer, where that is certain (owner,
+    # 2026-11-15), as (product id, price).
+    offer_prices: tuple[tuple[str, float], ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -1985,8 +1988,9 @@ def _fitting_first(
     a complex search first"): the Recommended chosen among them by its own rules (on offer
     when an offer covers one of them, else the middle one in price with an EAN/GTIN; none
     with fewer than three), then the others that fit, then the rest, each part in the
-    usual order (on offer first, then cheapest). Returns the order, the Recommended, its
-    status and whether it was chosen for its offer."""
+    usual order (cheapest first). Returns the order, the Recommended, its
+    status and whether it was chosen for its offer. "The usual order" is the price, each
+    product at its price after its offer (owner, 2026-11-15)."""
     fits = [entry for entry in ordered if _entry_id(entry) in fitting]
     others = [entry for entry in ordered if _entry_id(entry) not in fitting]
     covered_fits = [entry for entry in fits if id(entry.product) in covered]
@@ -2000,13 +2004,11 @@ def _fitting_first(
         index, status = _median_recommendation(fits)
         recommended = fits[index] if index is not None else None
 
-    def offers_first(entries: list[_PricedProduct]) -> list[_PricedProduct]:
-        entries = [entry for entry in entries if entry is not recommended]
-        return [entry for entry in entries if id(entry.product) in covered] + [
-            entry for entry in entries if id(entry.product) not in covered
-        ]
+    def cheapest_first(entries: list[_PricedProduct]) -> list[_PricedProduct]:
+        # Price order, each at its price after its offer (owner, 2026-11-15).
+        return [entry for entry in entries if entry is not recommended]
 
-    order = ([recommended] if recommended is not None else []) + offers_first(fits) + offers_first(others)
+    order = ([recommended] if recommended is not None else []) + cheapest_first(fits) + cheapest_first(others)
     return order, recommended, status, offer_index is not None
 
 
@@ -2587,6 +2589,22 @@ def _price_first_result(
     at, takes the products above it out the same way (owner, 2026-11-15).
     """
     answer_count = len(ordered)
+    # The price after a current shop offer, where its words leave no doubt
+    # (`product_offers.price_after_offer`; owner, 2026-11-15: «η έκπτωση πρέπει να
+    # υπολογίζει την τελική τιμή και να γίνεται κατάταξη με βάση την πραγματική αξία»):
+    # the product stands in the answer, on the bar and in its order at that price.
+    covered = offers_covering(entry.product for entry in ordered)
+    offer_prices: dict[int, float] = {}
+    if covered:
+        ordered = list(ordered)
+        for index, entry in enumerate(ordered):
+            offer = covered.get(id(entry.product))
+            final = price_after_offer(offer, entry.price) if offer is not None else None
+            if final is not None and final < entry.price:
+                offer_prices[id(entry.product)] = final
+                ordered[index] = replace(entry, price=final)
+        if offer_prices:
+            ordered = sorted(ordered, key=lambda entry: entry.price)
     price_low, price_high, price_bins = _price_bar([entry.price for entry in ordered])
     price_from: float | None = None
     if min_price is not None and ordered and float(min_price) > price_low:
@@ -2599,12 +2617,12 @@ def _price_first_result(
     if max_price is not None and ordered and float(max_price) < price_high:
         price_to = max(float(max_price), min(entry.price for entry in ordered))
         ordered = [entry for entry in ordered if entry.price <= price_to]
-    # Owner, 2026-11-01: «Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο» and
-    # «Εάν υπάρχει προσφορά να προτείνει την προσφορά». The Recommended is a product a
-    # current shop offer covers whenever there is one (`_offer_recommendation`); after it
-    # come the other products on offer, cheapest first, then the rest, cheapest first
-    # (`product_offers`). With no offer, the Recommended and the order are as before.
-    covered = offers_covering(entry.product for entry in ordered)
+    # Owner, 2026-11-01: «Εάν υπάρχει προσφορά να προτείνει την προσφορά». The Recommended
+    # is a product a current shop offer covers whenever there is one
+    # (`_offer_recommendation`). After it, every product cheapest first, each at its price
+    # after its offer where that is certain: a product on offer no longer comes before a
+    # cheaper one (owner, 2026-11-15: «Οι προσφορές δεν πρέπει να βγαίνουν πάνω από το
+    # φθηνότερο προϊόν»; before, from 2026-11-01, the products on offer came first).
     covered_entries = [entry for entry in ordered if id(entry.product) in covered]
     # An answer of fewer than three products has no Recommended, on offer or not
     # (`_RECOMMENDED_MIN_PRODUCTS`): its products on offer still come first.
@@ -2626,11 +2644,7 @@ def _price_first_result(
     chosen_for_offer = offer_index is not None
     rest = [entry for entry in ordered if entry is not recommended]
     on_offer = {id(entry) for entry in rest if id(entry.product) in covered}
-    display_order = (
-        ([recommended] if recommended is not None else [])
-        + [entry for entry in rest if id(entry) in on_offer]
-        + [entry for entry in rest if id(entry) not in on_offer]
-    )
+    display_order = ([recommended] if recommended is not None else []) + rest
     # The products the AI layer reads, in this usual order, and its stored answer for them.
     signature = candidates_signature(
         (_entry_id(entry), entry.price) for entry in display_order[:AI_CANDIDATES]
@@ -2724,6 +2738,11 @@ def _price_first_result(
         price_from=price_from,
         price_to=price_to,
         answer_count=answer_count,
+        offer_prices=tuple(
+            (str(entry.product.provider_product_id or "").strip(), offer_prices[id(entry.product)])
+            for entry in first_page + opened
+            if id(entry.product) in offer_prices
+        ),
     )
     if not ordered:
         return ProviderProductSelectionResult(

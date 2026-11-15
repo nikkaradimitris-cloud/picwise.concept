@@ -43,7 +43,7 @@ _OPERATOR_HTML = (
 _WHAT_PICWISE_DOES_HTML = (
     "<p>PicWise is a product search for shoppers in the United Kingdom who already know what "
     "they want to buy. Type a product, and PicWise shows only that kind of product, only what "
-    "the shops list as in stock, those a current shop offer covers first and then cheapest first: "
+    "the shops list as in stock, cheapest first, each at its price after a current shop offer where the offer surely applies: "
     "four choices, usually with one marked as the recommended pick: a product on offer where "
     "there is one, else the one in the middle of the prices rather than simply the cheapest, "
     "and \u201cMore\u201d for the next four.</p>"
@@ -188,7 +188,7 @@ def render_terms_page() -> str:
         title="Terms of Use — PicWise",
         meta_description=(
             "The terms of use of PicWise, a product search that shows UK shops' products in stock, "
-            "offers first, then cheapest first: who runs it, links to shops, commission, and limits."
+            "cheapest first after offers: who runs it, links to shops, commission, and limits."
         ),
         heading="Terms of Use",
         intro="Please read these terms before using PicWise.",
@@ -314,9 +314,9 @@ def render_affiliate_disclosure_page() -> str:
         "<h2>How PicWise earns</h2>"
         "<p>PicWise works with the Awin affiliate network. Links from PicWise to shops go through Awin, and when you buy after following one, the shop may pay PicWise a commission through Awin.</p>"
         "<h2>What it does not change</h2>"
-        "<p>The price you pay is the same. The commission never decides what PicWise shows or in which order: results are the kind you asked for, in stock, those a current shop offer covers first and then cheapest first, and the recommended pick is a product on offer where there is one, else the one in the middle of the prices. Shops that pay no commission are ranked by the same rule.</p>"
+        "<p>The price you pay is the same. The commission never decides what PicWise shows or in which order: results are the kind you asked for, in stock, cheapest first, each at its price after a current shop offer where the offer surely applies, and the recommended pick is a product on offer where there is one, else the one in the middle of the prices. Shops that pay no commission are ranked by the same rule.</p>"
         "<h2>Offers</h2>"
-        "<p>An offer on a product is the shop's own, as it states it through Awin, shown with its end date and, where the shop gives one, its code. PicWise is paid nothing to show an offer or to put it first, and shows it only where its words cover the product. A voucher is shown only with its code: without it, you could not have the discount.</p>"
+        "<p>An offer on a product is the shop's own, as it states it through Awin, shown with its end date and, where the shop gives one, its code. PicWise is paid nothing to show an offer, and shows it only where its words cover the product. A product on offer is ordered at its price after the offer only where the offer's words leave no doubt that you get it: one percentage or amount off, or half price, with any least spend reached by the product's own price; an offer for new customers, a first order or a second product, for example, leaves the product at the shop's own price. A voucher is shown only with its code: without it, you could not have the discount.</p>"
         "<h2>Which shops</h2>"
         "<p>The shops on PicWise run a programme with Awin. PicWise earns a commission only from the shops that have accepted it into their programme; the others are shown by the same rule, and PicWise earns nothing from them. PicWise works with no other affiliate network at present; any other will be named here first.</p>"
         "<h2>What PicWise compares</h2>"
@@ -376,7 +376,7 @@ def render_about_page() -> str:
         "<ul>"
         "<li>Only the kind of product you asked for: a search for a coffee machine shows coffee machines, not filters for coffee machines.</li>"
         "<li>Only what the shop lists as in stock.</li>"
-        "<li>Products a current shop offer covers first, then cheapest first, in one currency. The offer is the shop's own, shown in its words with its end date.</li>"
+        "<li>Cheapest first, in one currency, each product at its price after a current shop offer where the offer surely applies. The offer is the shop's own, shown in its words with its end date.</li>"
         "<li>A recommended pick: a product on offer where there is one (of those on offer, the one nearest the middle of their prices), else the product in the middle of the prices, so neither the cheapest nor the dearest decides it.</li>"
         "<li>When there are fewer products, PicWise shows just those, and says so.</li>"
         "</ul>"
@@ -390,10 +390,10 @@ def render_about_page() -> str:
         path="/about",
         title="About PicWise — PicWise",
         meta_description=(
-            "PicWise is a product search for UK shoppers: only the kind you asked for, in stock, offers first, then cheapest first, "
+            "PicWise is a product search for UK shoppers: only the kind you asked for, in stock, cheapest first after offers, "
             "with one recommended pick, on offer where there is one, else from the middle of the prices."
         ),
         heading="About PicWise",
-        intro="A product search that shows only what you asked for, in stock, offers first, then cheapest first.",
+        intro="A product search that shows only what you asked for, in stock, cheapest first after offers.",
         sections=sections,
     )

@@ -296,6 +296,73 @@ def _covering(offers: tuple[_Offer, ...], product: Any, moment: datetime) -> Pro
     return covering[0].offer
 
 
+# The price after an offer (owner, 2026-11-15: «η έκπτωση πρέπει να υπολογίζει την τελική
+# τιμή και να γίνεται κατάταξη με βάση την πραγματική αξία», and «Οι προσφορές δεν πρέπει
+# να βγαίνουν πάνω από το φθηνότερο προϊόν»). Worked out only where the offer's words
+# leave no doubt that the buyer of this one product gets it: one percentage or one amount
+# off, or half price; a least spend the product's own price reaches. Not for an offer
+# needing two products (a second one free), one for new customers or a first order only
+# (who the buyer is, PicWise cannot know), one in an app, or one whose numbers say more
+# than PicWise can read: there the product is ordered at the shop's own price.
+_PERCENT_OFF = re.compile(r"(\d+(?:\.\d+)?)\s?%")
+_AMOUNT = re.compile(r"£\s?(\d+(?:,\d{3})*(?:\.\d+)?)")
+_AMOUNT_OFF = re.compile(r"£\s?(\d+(?:,\d{3})*(?:\.\d+)?)\s?off\b", re.IGNORECASE)
+_HALF_PRICE = re.compile(r"\bhalf[\s-]price\b", re.IGNORECASE)
+_TWO_NEEDED = re.compile(
+    r"\bbogof\b|\bbuy one,? get one\b|\b2 for 1\b|\bsecond (?:one )?free\b|\b\d+ for £|\bbuy \d+\b|\bmulti-?buy\b",
+    re.IGNORECASE,
+)
+_NOT_EVERY_BUYER = re.compile(
+    r"\bnew customers?\b|\bfirst (?:order|purchase|time)\b|\bnew account\b|\bsign[\s-]?up\b|\bnewsletter\b"
+    r"|\bstudents?\b|\bnhs\b|\bmembers?\b|\bloyalty\b|\bapp\b|\bin[\s-]store\b|\bclearance\b|\bsale items?\b"
+    r"|\bexcludes?\b|\bexcluding\b|\bexclusions?\b|\bnot valid\b",
+    re.IGNORECASE,
+)
+_LEAST_SPEND = re.compile(
+    r"(?:over|above|spend(?:ing)?|min(?:imum)?(?: spend| order| basket)?(?: of)?|orders? of|baskets? of|when you spend)"
+    r"\s?£\s?(\d+(?:,\d{3})*(?:\.\d+)?)",
+    re.IGNORECASE,
+)
+
+
+def _pounds_in(text: str) -> float:
+    return float(text.replace(",", ""))
+
+
+def price_after_offer(offer: ProductOffer, price: float) -> float | None:
+    """The product's price after `offer`, in pounds and pence, or None when the offer's
+    words leave any doubt that a buyer of this one product at `price` gets it."""
+    title = str(offer.title or "")
+    terms = str(offer.terms or "")
+    words = f"{title} {terms}"
+    if price <= 0 or _TWO_NEEDED.search(words) or _NOT_EVERY_BUYER.search(words) or _SOME_ONLY.search(title):
+        return None
+    least = [_pounds_in(found) for found in _LEAST_SPEND.findall(words)]
+    if least and price < max(least):
+        return None
+    percents = {float(found) for found in _PERCENT_OFF.findall(title)}
+    amounts_off = {_pounds_in(found) for found in _AMOUNT_OFF.findall(title)}
+    # Any other sum of money in the title than a least spend or the amount off: unread.
+    other_sums = {_pounds_in(found) for found in _AMOUNT.findall(title)} - amounts_off - set(least)
+    if other_sums:
+        return None
+    if len(percents) == 1 and not amounts_off:
+        percent = next(iter(percents))
+        if not 0 < percent < 100:
+            return None
+        final = price * (100 - percent) / 100
+    elif len(amounts_off) == 1 and not percents:
+        amount = next(iter(amounts_off))
+        if amount <= 0 or amount >= price:
+            return None
+        final = price - amount
+    elif not percents and not amounts_off and _HALF_PRICE.search(title):
+        final = price / 2
+    else:
+        return None
+    return round(final + 1e-9, 2)
+
+
 def _current() -> dict[str, tuple[_Offer, ...]]:
     if not _SET_BY_HAND:
         _OFFERS.refresh()

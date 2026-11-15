@@ -297,7 +297,7 @@ _NUMBER_AND_CODE = re.compile(r"^(\d[\d,]*(?:\.\d+)?) ([A-Z]{3})$")
 _SEARCH_PLACEHOLDER = "What are you looking for?"
 _WHAT_IS_PICWISE = (
     "PicWise finds the product you want in the shops it is connected to, shows what the "
-    "shops list as in stock, products on offer first and then cheapest first, and marks one "
+    "shops list as in stock, cheapest first, each at its price after a shop offer where it surely applies, and marks one "
     "Recommended: a product on offer where there is one, else a mid-priced one."
 )
 _MIC_TITLE = (
@@ -623,6 +623,19 @@ def _display_price(product: dict[str, object]) -> str:
     return f"{_CURRENCY_SIGNS[match.group(2)]}{number}"
 
 
+def _price_after_display(product: dict[str, object], offer: dict[str, object] | None) -> str:
+    """The product's price after its offer, "£40.50", in the card's own currency sign,
+    or "" when there is no offer or its price after it is not certain."""
+    after = (offer or {}).get("price_after")
+    if after is None:
+        return ""
+    shown = _display_price(product)
+    sign = shown[:1] if shown[:1] in _CURRENCY_SIGNS.values() else ""
+    if not sign:
+        return ""
+    return f"{sign}{float(after):,.2f}"
+
+
 def _stock_line(label: object | None) -> tuple[str, str]:
     """The card's stock line and its state: "verified", "listed" or "unconfirmed"."""
     reasons = tuple(getattr(label, "key_reasons", ()) or ())
@@ -730,7 +743,10 @@ def _build_price_first_cards(
                 "description": _price_place_line(
                     places.get(product_id), total, condition=non_new_condition(product)
                 ),
-                "price": _display_price(product),
+                # With an offer whose price after it is certain, that price (owner,
+                # 2026-11-15); the shop's own price is said with the offer.
+                "price": _price_after_display(product, offer) or _display_price(product),
+                "shop_price": _display_price(product) if _price_after_display(product, offer) else "",
                 "shop": shop,
                 # The merchant from the feed row, never invented (`_provider_store_label`).
                 "shop_line": _provider_store_label(provider_key, shop),
@@ -945,10 +961,15 @@ def _offer_until(end: object) -> str:
     return f"until {moment.day} {moment:%b}{year}"
 
 
-def _offer_html(offer: dict[str, object]) -> str:
+def _offer_html(offer: dict[str, object], *, shop_price: str = "", price: str = "") -> str:
     """The shop's offer on a card, in the shop's own words, its end, its code where the
-    shop gives one, and its terms."""
+    shop gives one, and its terms; with the price after it, the shop's own price before."""
     title = escape(str(offer.get("title") or ""))
+    after_html = (
+        f'<p class="pw-offer-after">{escape(shop_price)} at the shop, <strong>{escape(price)}</strong> with this offer</p>'
+        if shop_price and price
+        else ""
+    )
     facts = [_offer_until(offer.get("end"))]
     code = str(offer.get("code") or "").strip()
     meta = escape(" · ".join(part for part in facts if part))
@@ -965,6 +986,7 @@ def _offer_html(offer: dict[str, object]) -> str:
         '<div class="pw-card-offer">'
         f'<p class="pw-offer-title">{title}</p>'
         f'<p class="pw-offer-meta">{meta}{code_html}</p>'
+        f"{after_html}"
         f"{terms_html}"
         "</div>"
     )
@@ -1040,7 +1062,9 @@ def _render_choice_card(
             f'{escape(str(card["stock_line"]))}</p>'
         )
     if offer:
-        lines.append(_offer_html(offer))
+        lines.append(
+            _offer_html(offer, shop_price=str(card.get("shop_price") or ""), price=str(card.get("price") or ""))
+        )
     lines.append(f'<p class="pw-card-description">{escape(str(card["description"]))}</p>')
     if str(card.get("extra_line") or ""):
         lines.append(f'<p class="pw-card-extra">{escape(str(card["extra_line"]))}</p>')
@@ -1233,18 +1257,17 @@ def render_picwise_reference_surface(
         )
         if display_query.strip():
             if has_live_results and price_first_page:
-                with_offers = any(card.get("offer") for card in card_specs)
-                query_line = (
-                    f"Results for: {display_query}, offers first, then cheapest first"
-                    if with_offers
-                    else f"Results for: {display_query}, cheapest first"
+                # Cheapest first, each at its price after its offer where that is certain
+                # (owner, 2026-11-15: «Οι προσφορές δεν πρέπει να βγαίνουν πάνω από το
+                # φθηνότερο προϊόν»); the heading says so when an offer moved a price.
+                order_words = (
+                    "cheapest first after offers"
+                    if any(card.get("shop_price") for card in card_specs)
+                    else "cheapest first"
                 )
+                query_line = f"Results for: {display_query}, {order_words}"
                 if fit_words:
-                    query_line = (
-                        f"Results for: {display_query}, those that fit first, then offers, then cheapest first"
-                        if with_offers
-                        else f"Results for: {display_query}, those that fit first, then cheapest first"
-                    )
+                    query_line = f"Results for: {display_query}, those that fit first, then {order_words}"
                 if _price_from(resolution) is not None or _price_to(resolution) is not None:
                     chosen_words = _price_words(_price_from(resolution), _price_to(resolution))
                     query_line = query_line.replace(
@@ -1357,9 +1380,6 @@ def render_picwise_reference_surface(
                 "cheapest first.", "those that say they fit your search first, then cheapest first.", 1
             )
         if price_first_page and any(card.get("offer") for card in card_specs):
-            page_note = page_note.replace(
-                "cheapest first.", "products on offer first, then cheapest first.", 1
-            )
             page_note = f"{page_note} {_OFFERS_NOTE}"
         note_or_empty_html = f'<p class="pw-demo-note">&#9432; {escape(page_note)}</p>'
     elif is_home:
