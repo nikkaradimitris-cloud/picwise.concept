@@ -459,6 +459,26 @@ class OffersFirstPageTests(unittest.TestCase):
         self.assertNotIn("after offers", page)
 
 
+class PriceHistoryBesideAnOfferTests(unittest.TestCase):
+    def test_the_history_tells_the_shop_s_own_price_not_the_price_after_the_offer(self) -> None:
+        from datetime import date
+
+        from picwise_providers.price_history import SAME, PriceNote, PriceRun
+        from picwise_surface import reference
+
+        note = PriceNote(kind=SAME, night=date(2026, 11, 15), currency="GBP", nights=13,
+                         runs=(PriceRun(date(2026, 11, 3), date(2026, 11, 15), 13, 0, "GBP"),))
+        card = {
+            "name": "Fixturon Running Trainers", "choice_id": "s7", "image": "https://fixture.example.invalid/s7.png",
+            "price": "£60.00", "shop_price": "£70.00", "shop": "Fixture Store Two", "price_note": note,
+            "role_label": "", "description": "", "stock_line": "", "cta": "View", "recommended": False,
+            "offer": {"title": "£10 off trainers over £50", "end": "2026-12-31T23:59:59+00:00", "price_after": 60.0},
+        }
+        html_text = " ".join(html.unescape(re.sub(r"<[^>]+>", " ", reference._render_choice_card(card, 1))).split())
+        self.assertIn("£70.00 on each of the last 13 nights it was listed.", html_text)
+        self.assertNotIn("£60.00 on each", html_text)
+
+
 class PriceAfterOfferTests(unittest.TestCase):
     """The price after an offer only where its words leave no doubt (owner, 2026-11-15)."""
 

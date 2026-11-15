@@ -1056,7 +1056,8 @@ def _render_choice_card(
     price_note = price_note_html(
         card.get("price_note"),  # type: ignore[arg-type]
         shop=str(card.get("shop") or ""),
-        price=str(card["price"]),
+        # The history is of the shop's own price, never of the price after an offer.
+        price=str(card.get("shop_price") or card["price"]),
         slot=bool(card.get("price_slot")) and not single,
     )
     if price_note:
