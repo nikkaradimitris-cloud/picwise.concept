@@ -28,6 +28,7 @@ from .assist import ASSIST_SCRIPT, ASSIST_STYLES, AssistView, assist_block_html,
 from .fonts import FONT_PRELOAD_HTML
 from .page_styles import _PAGE_STYLES
 from .price_bar import PRICE_BAR_SCRIPT, PRICE_BAR_STYLES
+from .photo_viewer import PHOTO_VIEWER_SCRIPT, PHOTO_VIEWER_STYLES, photo_extras_html, photo_wrap_attributes
 from .price_notes import PRICE_NOTE_STYLES, price_note_html
 from .search_script import _SEARCH_SCRIPT
 from .shop_names import shop_display_name
@@ -543,6 +544,8 @@ def _build_provider_feed_result_cards(
                 "warning": labels.risk_or_limitation if labels else "",
                 "cta": "View in Store",
                 "image": str(product.get("image_url") or "").strip(),
+                # The shop's further photos, opened with the photo (owner, 2026-11-15).
+                "extra_images": [str(url) for url in (product.get("extra_image_urls") or ()) if str(url).strip()],
                 "recommended": is_recommended,
                 "rec_note": (
                     _RECOMMENDATION_CONFIDENCE_REC_NOTE[recommendation_confidence]
@@ -761,6 +764,8 @@ def _build_price_first_cards(
                 "warning": "",
                 "cta": f"View at {shop}" if shop else "View in Store",
                 "image": str(product.get("image_url") or "").strip(),
+                # The shop's further photos, opened with the photo (owner, 2026-11-15).
+                "extra_images": [str(url) for url in (product.get("extra_image_urls") or ()) if str(url).strip()],
                 "recommended": is_recommended,
                 # The price's history under the price (owner, 2026-11-13), on every card.
                 "price_note": (
@@ -1119,12 +1124,15 @@ def _render_choice_card(
     # (docs/PICWISE_AUDIT_FIXES.md, section 4, A.1). One photo a page, never more.
     priority = ' fetchpriority="high"' if idx == 1 else ""
     single_line = f'<p class="pw-single-only">{escape(_SINGLE_PRODUCT_LINE)}</p>' if single else ""
+    extra_images = [str(url) for url in (card.get("extra_images") or ())]  # type: ignore[union-attr]
     return (
         f'<article class="pw-card{rec_class}" data-choice-id="{escape(choice_id, quote=True)}">'
         f"{anchor}"
-        '<div class="pw-product-image-wrap">'
+        # The photo opens large at a tap, with the shop's further photos (owner, 2026-11-15).
+        f'<div class="pw-product-image-wrap pw-zoomable"{photo_wrap_attributes(name, extra_images)}>'
         f'<img class="pw-product-image" src="{escape(str(card["image"]), quote=True)}" '
         f'alt="{escape(name)} product image" width="400" height="400" loading="{loading}"{priority} decoding="async">'
+        f"{photo_extras_html(name, extra_images)}"
         f"{heart}</div>"
         '<div class="pw-card-body">'
         f"{single_line}"
@@ -1485,6 +1493,7 @@ def render_picwise_reference_surface(
         f"<style>{_PAGE_STYLES}{BROWSER_LISTS_STYLES}{TRENDS_STYLES if home_after_search_html else ''}"
         f"{PRICE_BAR_STYLES if price_bar_html else ''}"
         f"{'' if is_home else PRICE_NOTE_STYLES}"
+        f"{'' if is_home else PHOTO_VIEWER_STYLES}"
         f"{ASSIST_STYLES if assist is not None else ''}</style>"
         "</head><body>"
         '<main class="pw-reference-viewport">'
@@ -1550,6 +1559,7 @@ def render_picwise_reference_surface(
         f"<script>{BROWSER_LISTS_SCRIPT}</script>"
         f"{'<script>' + TRENDS_SCRIPT + '</script>' if home_after_search_html else ''}"
         f"{'<script>' + PRICE_BAR_SCRIPT + '</script>' if price_bar_html else ''}"
+        f"{'<script>' + PHOTO_VIEWER_SCRIPT + '</script>' if card_specs else ''}"
         f"{'<script>' + ASSIST_SCRIPT + '</script>' if assist is not None and assist.pending_key else ''}"
         "</main>"
         "</body></html>"

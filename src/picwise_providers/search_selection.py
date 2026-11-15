@@ -38,7 +38,7 @@ from picwise_taxonomy.comparison_rules import comparison_rule
 
 from .shop_words import learned_kind
 from .contracts import FeedAvailabilityContext, OfferHealth, ProviderProduct
-from .normalization import extract_merchant_name
+from .normalization import extract_merchant_name, extra_image_urls
 from .decision_labels import parse_price_amount
 from .product_description import has_sufficient_description
 from .product_specs import read_product_specs
@@ -624,6 +624,8 @@ def provider_product_to_backend_dict(
         "price_text": str(product.price_text or "").strip(),
         "availability_text": str(product.availability_text or "").strip(),
         "image_url": str(product.image_url or "").strip(),
+        # The shop's further photos, shown when the photo is opened (owner, 2026-11-15).
+        "extra_image_urls": list(extra_image_urls(raw, str(product.image_url or ""))),
         "product_url": str(product.product_url or "").strip(),
         "product_url_masked": mask_provider_product_url(product.product_url),
         "card_eligible": product_eligibility.card_eligible,

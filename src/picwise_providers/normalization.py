@@ -110,6 +110,40 @@ def is_valid_http_url(value: str) -> bool:
     return bool(_HTTP_URL_RE.match(safe))
 
 
+# A shop's further photos of a product (owner, 2026-11-15: the photo grows at a tap, and
+# «όποιος στέλνει επιπλέον φωτογραφίες ... εμφανίζουμε έως 4»): Google's format, the feed
+# the server reads, lists them in `additional_image_link`, commas between them. (Awin's own
+# format's `alternate_image` columns stay left out of the prepared catalogue,
+# `prepared_catalogue.LEFT_OUT_COLUMNS`.) At most `MAX_EXTRA_IMAGES` beside the main
+# photo, none twice.
+_EXTRA_IMAGE_KEYS = ("additional_image_link",)
+MAX_EXTRA_IMAGES = 3
+
+
+def extra_image_urls(raw: Mapping[str, Any] | None, main_url: str = "") -> tuple[str, ...]:
+    """The product's further photos the shop sends, at most `MAX_EXTRA_IMAGES`, each a
+    web address and none the main photo's."""
+    if not isinstance(raw, Mapping):
+        return ()
+    seen = {str(main_url or "").strip()}
+    found: list[str] = []
+    for key in _EXTRA_IMAGE_KEYS:
+        value = raw.get(key)
+        if isinstance(value, (list, tuple)):
+            candidates = [str(item) for item in value]
+        else:
+            candidates = re.split(r",\s*(?=https?://)", str(value or ""))
+        for candidate in candidates:
+            url = candidate.strip()
+            if not url or url in seen or any(char.isspace() for char in url) or not is_valid_http_url(url):
+                continue
+            seen.add(url)
+            found.append(url)
+            if len(found) >= MAX_EXTRA_IMAGES:
+                return tuple(found)
+    return tuple(found)
+
+
 def normalize_feed_row_to_provider_product(
     row: Mapping[str, Any],
     *,
