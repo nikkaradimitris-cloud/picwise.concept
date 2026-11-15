@@ -28,7 +28,13 @@ a decision came about.
   link's columns and put the new link in `AWIN_FEED_URL_NEW` (then `feed-compare.yml`).
   The ▼/▲ chips from about 19/11, as before. Then, deployed 14:44 UTC (`9a5cf3f`): a
   card in its place at once, a grey frame with a turning sign while its photo loads
-  (Google's layout shift 0 with photos slowed to 2 s, from 0.87 on a phone). The
+  (Google's layout shift 0 with photos slowed to 2 s, from 0.87 on a phone). **Left for
+  later (owner, 15/11: «Το αφήνουμε για αργότερα»):** keep only the first 3 links of
+  `additional_image_link` in the prepared catalogue, to be done with the new column. The
+  server's room, from the deployment of 15/11: the site 4.1 GB, the catalogue's
+  preparation 9.4 GB at its peak and 800 s, of 24 GB; the column estimated at about
+  +0.5 GB for the site and +1 GB for the preparation (not measured: `feed-compare.yml`
+  will). The
   grouping of a product's sizes (S/M/L) into one card, proposed, was not asked for and
   not built.
 - **15/11, the daily session:** the night's note read at 09:44 UTC: `prepared: true`, prepared 04:25 UTC, 254,711 products, 78 shops, nothing shrunk, gone or new; the memory's fourth night (256,368 known, 330 new, 383 prices changed, 521 gone since 14/11); `price_notes` 0, as expected (first chips about 19/11); `balance.words_to_learn` still empty, as expected (`c93be3c` not deployed). `/health` 200; `kettle`, `sofa`, `office chair`, `tablet` 4 cards each, 0.41 to 0.73 s. No new run since 13/11; "Tests" green on `d10c53f` and `c93be3c`. No code changed, for the same reasons as 14/11. Asked again: deploy the work branch's head (`c93be3c` with it); no answer from the owner on 14/11.
