@@ -121,6 +121,17 @@ class OfferScopeTests(unittest.TestCase):
         self.assertEqual(offer_scope("10% off your Christmas gifts", "Harfix"),
                          ("kind", frozenset({"christmas", "gift"})))
 
+    def test_an_offer_naming_a_kind_for_new_customers_covers_that_kind_only(self) -> None:
+        # 2026-11-15: "15% off earrings for new customers" had been read as the whole
+        # shop's, and the preview showed it on t-shirts.
+        self.assertEqual(offer_scope("15% off earrings for new customers", "Fixture Store One"),
+                         ("kind", frozenset({"earring"})))
+        self.assertEqual(offer_scope("£5 off your order of kettles", "Fixture Store One"),
+                         ("kind", frozenset({"kettle"})))
+        for title in ("20% off your first order", "15% off for new customers", "10% off the full range",
+                      "Save 15% storewide", "10% off everything"):
+            self.assertEqual(offer_scope(title, "Fixture Store One"), ("shop", frozenset()), title)
+
     def test_offers_that_cover_no_product(self) -> None:
         for title, shop in (
             ("Free delivery on orders above £20", "Testline Pro"),       # delivery, not the product

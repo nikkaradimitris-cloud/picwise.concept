@@ -55,9 +55,13 @@ _NOT_FOR_SHOPPERS = re.compile(r"\bcommission\b|\bcpa\b|\baffiliates?\b|\bpublis
 _WHOLE_SHOP = re.compile(
     r"\bsite\s?-?wide\b|\bstore\s?-?wide\b|\beverything\b|\ball orders\b|\ball products\b"
     r"|\ball items\b|\ball purchases\b|\bentire (?:site|store|range|order)\b|\bany order\b"
-    r"|\byour (?:first |next )?order\b|\bfirst order\b|\bnew customers?\b|\bfull range\b",
+    r"|\bfull range\b",
     re.IGNORECASE,
 )
+# Words that say who gets an offer or on which order, not on which products: an offer
+# with them and no kind named is the whole shop's ("20% off your first order"); one that
+# names a kind is on that kind ("15% off earrings for new customers", 2026-11-15).
+_WHOLE_ORDER = re.compile(r"\byour (?:first |next )?order\b|\bfirst order\b|\bnew customers?\b", re.IGNORECASE)
 _SOME_ONLY = re.compile(r"\bup to\b|\bselected\b|\bselect lines\b|\bselected lines\b", re.IGNORECASE)
 _DISCOUNT_WORDS = re.compile(
     r"\d+(?:\.\d+)?\s?%|£\s?\d+(?:\.\d+)?|\b\d+\b|\bhalf[\s-]price\b|\bbogof\b|\bbuy one,? get one\b",
@@ -74,7 +78,7 @@ _FILLER = frozenset(
     collections first next welcome back customers customer whole entire any every store
     shop site sitewide storewide wide everything special exclusive limited time when use
     using apply applied applies included including inc incl over above under spend min
-    minimum orders up selected select lines its it is are this that these those per pc pcs
+    minimum orders up selected select lines its it is are this that these those per pc pcs full
     """.split()
 )
 
@@ -159,6 +163,7 @@ def offer_scope(title: str, shop_name: str) -> tuple[str, frozenset[str]] | None
         return None
     if _WHOLE_SHOP.search(text):
         return "shop", frozenset()
+    text = _WHOLE_ORDER.sub(" ", text)
     shop_words = set(_words(shop_name))
     shop_joined = "".join(_words(shop_name))
     named = [

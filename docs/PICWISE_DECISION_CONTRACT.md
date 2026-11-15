@@ -647,7 +647,10 @@ of offers above the results, or products with an offer first), whether that chan
    (not a commission offer to publishers); it is live now by its own dates; and it covers
    the whole shop ("sitewide", "everything", "your order", "your first order", "new
    customers", or a discount naming nothing but the shop) or names the product's kind,
-   every word of it in the product's title. "Up to" and "selected" cover no product: which
+   every word of it in the product's title. From 2026-11-15 "your order", "your first
+   order" and "new customers" say who gets the offer, not on what: with a kind named the
+   offer is on that kind only ("15% off earrings for new customers"; the preview of that
+   day had shown it on t-shirts). "Up to" and "selected" cover no product: which
    ones the offer does not say. A voucher covers a product only with its code: a voucher
    is a code typed at the shop's checkout, and Awin gives it only for the programmes
    PicWise is joined to; without it the shopper cannot have the discount (2026-11-01: the
