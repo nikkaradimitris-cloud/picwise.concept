@@ -97,23 +97,35 @@ class PhoneLayoutTests(unittest.TestCase):
         self.assertIn("overflow:visible;", role)
         self.assertIn("white-space:normal;", _rule(self.page, ".pw-card-shop"))
 
-    def test_whatever_is_tapped_is_at_least_44_px(self) -> None:
+    def test_whatever_is_tapped_is_at_least_48_px_and_8_px_apart(self) -> None:
+        # 44 px from the audit of 2026-11-10; 48 px, 8 px apart, from 2026-11-15, as Google
+        # asks of a page on a phone (owner: «με βάση την google»).
         for selector in (".pw-mic-button", ".pw-search-button", ".pw-info-link"):
             rule = _rule(self.page, selector)
-            self.assertIn("width:44px;", rule, selector)
-            self.assertIn("height:44px;", rule, selector)
-        self.assertIn("min-height:44px;", _rule(self.page, ".pw-card-cta"))
-        self.assertIn("min-height:44px;", _rule(self.page, ".pw-footer-link"))
-        self.assertIn("height:44px;", _rule(self.page, ".pw-kind-choice"))
+            self.assertIn("width:48px;", rule, selector)
+            self.assertIn("height:48px;", rule, selector)
+        self.assertIn("min-height:48px;", _rule(self.page, ".pw-card-cta"))
+        self.assertIn("min-height:48px;", _rule(self.page, ".pw-footer-link"))
+        self.assertIn("gap:8px 20px;", _rule(self.page, ".pw-footer-links"))
+        self.assertIn("height:48px;", _rule(self.page, ".pw-kind-choice"))
         self.assertIn("height:48px;", _rule(self.page, ".pw-more-button"))
+        self.assertIn("min-height:48px;", _rule(self.page, ".pw-offer-terms summary"))
+        self.assertIn("gap:8px;", _rule(self.page, ".pw-actions"))
         head = _rule(self.lists, ".pw-head-btn")
-        self.assertIn("width:44px;", head)
-        self.assertIn("height:44px;", head)
-        # The heart keeps its look and takes the taps around it; so does "Did you mean".
-        self.assertIn("top:-5px;", _rule(self.lists, ".pw-fav::after"))
+        self.assertIn("width:48px;", head)
+        self.assertIn("height:48px;", head)
+        # The heart keeps its look (36 px) and takes the taps around it (48 px); so does
+        # "Did you mean", and so do the price's chip and the price bar's knobs.
+        self.assertIn("top:-6px;", _rule(self.lists, ".pw-fav::after"))
+        self.assertIn("width:36px;height:36px;", _rule(self.lists, ".pw-fav"))
         self.assertIn("top:-13px;", _rule(self.page, ".pw-reference-disclaimer a::after"))
+        from picwise_surface.price_bar import PRICE_BAR_STYLES
+        from picwise_surface.price_notes import PRICE_NOTE_STYLES
+        self.assertIn(".pw-ph-chip{position:relative;height:36px;", PRICE_NOTE_STYLES)
+        self.assertIn(".pw-ph-chip::after{content:'';position:absolute;top:-6px;right:0;bottom:-6px;left:0;}", PRICE_NOTE_STYLES)
+        self.assertIn(".pw-pricebar-range::-webkit-slider-thumb{width:48px;height:48px;margin-top:-22px;}", PRICE_BAR_STYLES)
         legal = _phone(_base_styles(), "@media (max-width:760px){")
-        self.assertIn("min-height:44px;", _rule(legal, ".pw-footer-link"))
+        self.assertIn("min-height:48px;", _rule(legal, ".pw-footer-link"))
 
     def test_the_computers_layout_is_as_it_was(self) -> None:
         wide = _PAGE_STYLES.split(_PHONE, 1)[0]

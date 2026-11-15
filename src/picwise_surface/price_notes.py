@@ -188,9 +188,11 @@ PRICE_NOTE_STYLES = (
     ".pw-ph-n{margin:2px 0 0;font-size:11.5px;line-height:1.4;}"
     "@media (prefers-reduced-motion:reduce){.pw-ph-v{transition:none;}}"
     "@media (max-width:699px){"
-    ".pw-grid:not([data-layout=\"single\"]) .pw-card-body>.pw-ph{grid-column:1 / -1;grid-row:21;margin-top:8px;}"
+    ".pw-grid:not([data-layout=\"single\"]) .pw-card-body>.pw-ph{grid-column:1 / -1;grid-row:21;margin-top:14px;}"
     ".pw-ph-empty{display:none;}"
     ".pw-ph-pop{position:static;margin-top:8px;box-shadow:none;}"
-    ".pw-ph-chip{height:32px;font-size:13px;}"
+    # The chip keeps its look and takes the taps around it: 48 px, 8 px from the button.
+    ".pw-ph-chip{position:relative;height:36px;font-size:13px;}"
+    ".pw-ph-chip::after{content:'';position:absolute;top:-6px;right:0;bottom:-6px;left:0;}"
     "}"
 )

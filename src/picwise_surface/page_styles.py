@@ -182,7 +182,7 @@ _PAGE_STYLES = (
     ".pw-logo{width:30px;height:30px;border-radius:10px;}"
     ".pw-logo::before{left:6px;top:6px;width:11px;height:11px;}"
     ".pw-logo::after{right:6px;bottom:6px;width:5px;height:5px;}"
-    ".pw-actions{gap:6px;}"
+    ".pw-actions{gap:8px;}"
     ".pw-info-txt{display:none;}"
     ".pw-info-icon{display:inline;}"
     # A phone (the audit, 2026-11-10; owner, the same day: «Ζητώ διόρθωση και βελτίωση ...
@@ -191,19 +191,21 @@ _PAGE_STYLES = (
     # at 10 to 13 px, "Mid-priced for this catego" cut, buttons 36 to 40 px. Now one
     # product a row, its photo beside its words, so the Recommended and its button are
     # on the first screen; no word under 12 px; whatever is tapped at least 44 px.
-    ".pw-info-link{width:44px;height:44px;padding:0;}"
-    ".pw-brand{min-height:44px;}"
+    # From 2026-11-15 at least 48 px, 8 px apart, as Google asks of a page on a phone
+    # (owner: «έλεγξε αν η αποστάσεις των επιλογών είναι σωστές ... με βάση την google»).
+    ".pw-info-link{width:48px;height:48px;padding:0;}"
+    ".pw-brand{min-height:48px;}"
     ".pw-reference-frame{padding:12px 12px 8px;}"
     ".pw-home{padding-top:28px;}"
     ".pw-hero-home{margin-bottom:18px;}"
     ".pw-hero-title{font-size:28px;line-height:1.2;}"
     ".pw-facts{flex-direction:column;align-items:flex-start;gap:9px;margin:18px 6px 0;}"
     ".pw-search-wrap{margin-bottom:12px;}"
-    ".pw-search-shell{height:56px;padding:0 6px 0 14px;}"
+    ".pw-search-shell{height:60px;padding:0 6px 0 14px;gap:8px;}"
     ".pw-search-input{height:52px;font-size:16px;}"
     ".pw-ghost{font-size:16px;}"
-    ".pw-mic-button{width:44px;height:44px;}"
-    ".pw-search-button{width:44px;height:44px;}"
+    ".pw-mic-button{width:48px;height:48px;}"
+    ".pw-search-button{width:48px;height:48px;}"
     ".pw-suggest-item{padding:12px 18px;}"
     ".pw-results-head{margin:4px 0 2px;}"
     ".pw-query-line{font-size:14px;}"
@@ -211,7 +213,7 @@ _PAGE_STYLES = (
     # "Did you mean: bath mat?": the link takes the taps around it, the sentence unmoved.
     ".pw-reference-disclaimer a{position:relative;}"
     ".pw-reference-disclaimer a::after{content:'';position:absolute;top:-13px;right:-8px;bottom:-13px;left:-8px;}"
-    ".pw-kind-choice{height:44px;padding:0 15px;font-size:14px;}"
+    ".pw-kind-choice{height:48px;padding:0 15px;font-size:14px;}"
     ".pw-grid,.pw-grid[data-card-count]{grid-template-columns:minmax(0,1fr);gap:10px;}"
     # The photo beside the words that say what the product is; under them, across the
     # card, its limitation, then the price with the button beside it. The card's words
@@ -239,12 +241,14 @@ _PAGE_STYLES = (
     ".pw-warning,.pw-rec-note,.pw-offer-meta,.pw-offer-terms{font-size:12px;}"
     ".pw-card-note{font-size:12px;}"
     ".pw-cta-at{display:none;}"
-    ".pw-card-cta{display:flex;align-items:center;justify-content:center;min-height:44px;padding:0 12px;font-size:15px;}"
+    ".pw-card-cta{display:flex;align-items:center;justify-content:center;min-height:48px;padding:0 12px;font-size:15px;}"
+    ".pw-offer-terms summary{display:flex;align-items:center;min-height:48px;}"
     '.pw-grid[data-layout="single"] .pw-card-cta{display:flex;width:100%;}'
     ".pw-more-button{height:48px;}"
     ".pw-demo-note{font-size:13px;}"
     ".pw-footer{padding:16px 14px;}"
-    ".pw-footer-link{min-height:44px;padding:0;font-size:14px;}"
+    ".pw-footer-links{gap:8px 20px;}"
+    ".pw-footer-link{min-height:48px;padding:0;font-size:14px;}"
     ".pw-footer-disclosure,.pw-footer-meta{font-size:13px;}"
     "}"
 )

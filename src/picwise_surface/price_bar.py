@@ -108,11 +108,11 @@ PRICE_BAR_STYLES = (
     ".pw-pricebar{display:flex;align-items:center;gap:14px;max-width:560px;margin:8px 0 2px;}"
     ".pw-pricebar-track{position:relative;flex:1;min-width:0;height:48px;}"
     # How many products stand at each price, drawn just above the bar's line.
-    ".pw-pricebar-bars{position:absolute;left:11px;right:11px;bottom:26px;height:22px;display:flex;align-items:flex-end;gap:2px;pointer-events:none;}"
+    ".pw-pricebar-bars{position:absolute;left:22px;right:22px;bottom:26px;height:22px;display:flex;align-items:flex-end;gap:2px;pointer-events:none;}"
     ".pw-pricebar-bars i{flex:1;min-width:0;background:#b9cdf2;border-radius:2px 2px 0 0;}"
     ".pw-pricebar-bars i.out{background:#e2e7ee;}"
     # The bar's line, blue between the two knobs, drawn under the two ranges.
-    ".pw-pricebar-line{position:absolute;left:11px;right:11px;bottom:22px;height:4px;border-radius:999px;pointer-events:none;"
+    ".pw-pricebar-line{position:absolute;left:22px;right:22px;bottom:22px;height:4px;border-radius:999px;pointer-events:none;"
     "background:linear-gradient(to right,#dfe5ee 0,#dfe5ee var(--pos,0%),var(--blue-2) var(--pos,0%),var(--blue-2) var(--end,100%),#dfe5ee var(--end,100%),#dfe5ee 100%);}"
     # Two ranges, one over the other: only their knobs take a finger or a mouse.
     ".pw-pricebar-range{position:absolute;left:0;right:0;bottom:2px;width:100%;height:44px;margin:0;padding:0;background:transparent;-webkit-appearance:none;appearance:none;pointer-events:none;touch-action:pan-y;z-index:2;}"
@@ -120,13 +120,21 @@ PRICE_BAR_STYLES = (
     ".pw-pricebar-range:focus{outline:none;}"
     ".pw-pricebar-range::-webkit-slider-runnable-track{height:4px;background:transparent;}"
     ".pw-pricebar-range::-moz-range-track{height:4px;background:transparent;}"
-    ".pw-pricebar-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;margin-top:-9px;border-radius:999px;background:#fff;border:2px solid var(--blue-2);box-shadow:0 2px 6px rgba(15,36,66,.25);pointer-events:auto;cursor:pointer;}"
-    ".pw-pricebar-range::-moz-range-thumb{width:18px;height:18px;border-radius:999px;background:#fff;border:2px solid var(--blue-2);box-shadow:0 2px 6px rgba(15,36,66,.25);pointer-events:auto;cursor:pointer;}"
-    ".pw-pricebar-range:focus-visible::-webkit-slider-thumb{outline:2px solid var(--blue);outline-offset:2px;}"
-    ".pw-pricebar-range:focus-visible::-moz-range-thumb{outline:2px solid var(--blue);outline-offset:2px;}"
+    # A knob looks 22 px across and takes a finger 44 px across (48 on a phone): the
+    # circle is drawn inside a larger, clear knob (owner, 2026-11-15: the spacing Google asks).
+    ".pw-pricebar-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:44px;height:44px;margin-top:-20px;border:0;border-radius:999px;"
+    "background:radial-gradient(circle,#fff 0 9px,var(--blue-2) 9px 11px,rgba(15,36,66,.16) 11px 12.5px,transparent 13px);pointer-events:auto;cursor:pointer;}"
+    ".pw-pricebar-range::-moz-range-thumb{width:44px;height:44px;border:0;border-radius:999px;"
+    "background:radial-gradient(circle,#fff 0 9px,var(--blue-2) 9px 11px,rgba(15,36,66,.16) 11px 12.5px,transparent 13px);pointer-events:auto;cursor:pointer;}"
+    ".pw-pricebar-range:focus-visible::-webkit-slider-thumb{outline:2px solid var(--blue);outline-offset:-8px;}"
+    ".pw-pricebar-range:focus-visible::-moz-range-thumb{outline:2px solid var(--blue);outline-offset:-8px;}"
     ".pw-pricebar-value{flex:0 0 auto;min-width:92px;font-size:14px;font-weight:700;color:var(--ink);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}"
     # Without JavaScript the knobs are in pounds and a button shows the answer from them.
     ".pw-pricebar-go{flex:0 0 auto;height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--blue-2);background:#fff;color:var(--blue-2);font:inherit;font-size:14px;font-weight:700;cursor:pointer;}"
     ".pw-js .pw-pricebar-go{display:none;}"
-    "@media (max-width:699px){.pw-pricebar{gap:10px;margin:6px 0 2px;}.pw-pricebar-value{min-width:84px;}.pw-pricebar-go{height:44px;}}"
+    "@media (max-width:699px){.pw-pricebar{gap:10px;margin:6px 0 2px;}.pw-pricebar-value{min-width:84px;}.pw-pricebar-go{height:48px;}"
+    ".pw-pricebar-track{height:52px;}.pw-pricebar-range{height:48px;}"
+    ".pw-pricebar-bars{left:24px;right:24px;bottom:28px;}.pw-pricebar-line{left:24px;right:24px;bottom:24px;}"
+    ".pw-pricebar-range::-webkit-slider-thumb{width:48px;height:48px;margin-top:-22px;}"
+    ".pw-pricebar-range::-moz-range-thumb{width:48px;height:48px;}}"
 )

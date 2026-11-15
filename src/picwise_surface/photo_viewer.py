@@ -161,7 +161,7 @@ PHOTO_VIEWER_STYLES = (
     ".pw-viewer-img{display:block;width:min(100%,85vh,960px);height:auto;max-height:100%;aspect-ratio:1/1;object-fit:contain;"
     "background:#fff;border-radius:14px;}"
     ".pw-viewer-close,.pw-viewer-prev,.pw-viewer-next{position:absolute;display:flex;align-items:center;justify-content:center;"
-    "width:44px;height:44px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.95);color:var(--ink);"
+    "width:48px;height:48px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.95);color:var(--ink);"
     "font:inherit;font-size:22px;line-height:1;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);}"
     ".pw-viewer-close{top:10px;right:12px;}"
     ".pw-viewer-prev{left:12px;top:50%;transform:translateY(-50%);font-size:30px;}"
