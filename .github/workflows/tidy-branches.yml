@@ -1,0 +1,87 @@
+# Tidies GitHub's list of branches, approved by the owner on 2026-11-15 («Βρες άλλο τρόπο
+# μάζεψε τους όλους μαζί σε έναν για να μην υπάρχει όχληση», then, asked whether to make
+# this workflow, a trial run first and every Sunday after: «Ναι, το εγκρίνω»). Run once by
+# hand, a trial first, then every Sunday, so the branches every conversation and every
+# daily session leave behind do not pile up. The owner did not want to delete branches by
+# hand, for fear of a mistake; sessions here may push branches but not delete them.
+#
+# A branch is deleted only when every commit of it is already in `main`, in the work
+# branch (`ccr-4f47068a-99ikwe`, named by the daily task) or in an `archive-*` branch, so
+# nothing is ever lost; and never one of those, the site's branch (`ccr-1361f1a7-dcpo60`),
+# the head of an open pull request, or a branch changed within the last `min_age_hours`
+# (a conversation or a daily session may still be working on it). A branch with a commit
+# found nowhere else is kept and named in the log. `dry_run` lists without deleting.
+name: Tidy branches
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "List what would go, delete nothing"
+        type: boolean
+        default: true
+      min_age_hours:
+        description: "Keep any branch changed within this many hours"
+        type: string
+        default: "72"
+  schedule:
+    - cron: '17 3 * * 0'
+permissions:
+  contents: write
+  pull-requests: read
+concurrency:
+  group: tidy-branches
+  cancel-in-progress: false
+jobs:
+  tidy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Delete the branches whose every commit is kept elsewhere
+        env:
+          # A run by hand is a trial unless told otherwise; the Sunday run deletes.
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
+          MIN_AGE_HOURS: ${{ inputs.min_age_hours || '72' }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          case "$MIN_AGE_HOURS" in ''|*[!0-9]*) echo "min_age_hours must be a whole number"; exit 1;; esac
+          git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          keep="main ccr-1361f1a7-dcpo60 ccr-4f47068a-99ikwe"
+          # The heads of open pull requests stay.
+          keep="$keep $(gh pr list --state open --json headRefName --jq '.[].headRefName' | tr '\n' ' ')"
+          keepers=$(git for-each-ref --format='%(refname:short)' refs/remotes/origin \
+            | grep -E '^origin/(main|ccr-4f47068a-99ikwe|archive-[0-9-]+)$' || true)
+          now=$(date +%s)
+          deleted=0; kept=0
+          for ref in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin); do
+            b=${ref#origin/}
+            if [ "$ref" = "origin" ] || [ "$b" = "HEAD" ]; then continue; fi
+            case " $keep " in *" $b "*) echo "kept: $b"; kept=$((kept+1)); continue;; esac
+            case "$b" in archive-*) echo "kept: $b"; kept=$((kept+1)); continue;; esac
+            age=$(( (now - $(git log -1 --format=%ct "$ref")) / 3600 ))
+            if [ "$age" -lt "$MIN_AGE_HOURS" ]; then
+              echo "kept, changed ${age} h ago: $b"; kept=$((kept+1)); continue
+            fi
+            inside=""
+            for k in $keepers; do
+              if git merge-base --is-ancestor "$ref" "$k"; then inside=${k#origin/}; break; fi
+            done
+            if [ -z "$inside" ]; then
+              echo "kept, a commit found nowhere else: $b"; kept=$((kept+1)); continue
+            fi
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "would delete: $b (every commit in $inside)"
+            else
+              git push origin --delete "$b"
+              echo "deleted: $b (every commit in $inside)"
+            fi
+            deleted=$((deleted+1))
+          done
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "== trial: ${deleted} would go, ${kept} kept; nothing deleted"
+          else
+            echo "== ${deleted} deleted, ${kept} kept"
+          fi
