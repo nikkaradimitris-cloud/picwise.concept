@@ -249,12 +249,13 @@ a decision came about.
   the audit's fixes; it is the head of pull request #23, so it stays.
 - **Kept on GitHub (15/11, owner: «Ναι θέλω να τα κάνεις», to a tidy-up proposed):**
   `main`, `ccr-1361f1a7-dcpo60` (the site), `ccr-4f47068a-99ikwe` (work),
-  `ccr-99b47f03-l8t4dj` (#23) and the session's branch of the day. The 15 branches whose
-  every commit was in that day's work were deleted (nothing lost: their commits are in
-  `main`); the 15 of older lines of work were kept as tags `archive/<branch name>`
-  (`git fetch origin 'refs/tags/archive/*:refs/tags/archive/*'`) and their branches
-  deleted. A session's own branch, once its work is in the work branch, can go the same
-  way.
+  `ccr-99b47f03-l8t4dj` (#23), `archive-2026-11-15` and the session's branch of the day.
+  The other 30 to be deleted by the owner on GitHub's Branches page: a session here may
+  push branches but neither delete one nor push a tag (HTTP 403). Nothing of them is lost:
+  15 have every commit in `main`, and `archive-2026-11-15` (main's files; a merge whose
+  parents reach the other 15, older lines of work, some from a history begun again)
+  keeps every commit of all 30 reachable. A session's own branch, once its work is in the
+  work branch, can go the same way.
 - **The server:** a push to `ccr-1361f1a7-dcpo60` deploys that commit
   (`.github/workflows/server-deploy.yml`, `deployment/server/deploy.sh`): only on the
   owner's «ανέβασε» for it, by a fast-forward. The deployment prepares the catalogue
