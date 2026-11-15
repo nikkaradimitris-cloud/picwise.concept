@@ -199,8 +199,11 @@ class SymmetricCardsTests(_FeedMixin, unittest.TestCase):
 
     def test_the_lines_above_the_price_have_fixed_heights_and_the_button_sits_at_the_foot(self) -> None:
         self.assertIn("-webkit-line-clamp:3;", _PAGE_STYLES)
-        self.assertIn("height:4.05em;", _PAGE_STYLES)
-        self.assertIn(".pw-role{display:flex;flex-direction:column;align-items:flex-start;gap:4px;height:46px;", _PAGE_STYLES)
+        # Floors, not ceilings, from 2026-11-15: text set larger on a phone or tablet grows
+        # the lines instead of being cut through (the owner's phone showed a title cut).
+        self.assertIn("min-height:4.05em;", _PAGE_STYLES)
+        self.assertIn(".pw-role{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:46px;", _PAGE_STYLES)
+        self.assertNotIn("max-height:2.6em", _PAGE_STYLES)
         self.assertIn(".pw-card-shop{margin:6px 0 0;font-size:13px;color:var(--muted);white-space:nowrap;", _PAGE_STYLES)
         self.assertIn(".pw-card-cta{margin-top:auto;", _PAGE_STYLES)
         self.assertIn("align-items:stretch;", _PAGE_STYLES)

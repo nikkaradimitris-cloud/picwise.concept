@@ -92,11 +92,14 @@ _PAGE_STYLES = (
     # (`browser_lists.PHOTO_WAIT_MS`; owner, 2026-11-12): no empty place between cards.
     ".pw-photo-guard .pw-card.pw-photo-late{display:none!important;}"
     ".pw-card-body{display:flex;flex-direction:column;flex:1;min-width:0;}"
-    ".pw-role{display:flex;flex-direction:column;align-items:flex-start;gap:4px;height:46px;margin:10px 0 4px;overflow:hidden;}"
-    ".pw-rec-badge{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:var(--blue-2);color:#fff;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}"
-    ".pw-role-label{margin:0;display:inline-flex;align-items:center;max-width:100%;height:22px;padding:0 9px;border-radius:999px;background:#eef3fb;color:var(--ink-2);font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}"
-    ".pw-card-recommended .pw-role-label{height:auto;padding:0;background:none;color:var(--blue);font-size:12px;letter-spacing:0;text-transform:none;}"
-    ".pw-card-title{margin:0;font-size:15px;line-height:1.35;font-weight:650;color:var(--ink);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;height:4.05em;}"
+    # Heights a line of words sets are floors, not ceilings: a phone or tablet set to larger
+    # text grows them instead of cutting the words (2026-11-15: the owner's phone showed a
+    # card's title cut through its second line).
+    ".pw-role{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:46px;margin:10px 0 4px;}"
+    ".pw-rec-badge{display:inline-flex;align-items:center;min-height:24px;padding:0 10px;border-radius:999px;background:var(--blue-2);color:#fff;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}"
+    ".pw-role-label{margin:0;display:inline-flex;align-items:center;max-width:100%;min-height:22px;padding:0 9px;border-radius:999px;background:#eef3fb;color:var(--ink-2);font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}"
+    ".pw-card-recommended .pw-role-label{height:auto;min-height:0;padding:0;background:none;color:var(--blue);font-size:12px;letter-spacing:0;text-transform:none;}"
+    ".pw-card-title{margin:0;font-size:15px;line-height:1.35;font-weight:650;color:var(--ink);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:4.05em;}"
     ".pw-card-shop{margin:6px 0 0;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}"
     ".pw-price{margin:8px 0 2px;font-size:24px;line-height:1.15;font-weight:800;letter-spacing:-.02em;color:var(--ink);}"
     ".pw-card-stock{margin:0;font-size:13px;font-weight:650;line-height:1.35;}"
@@ -130,9 +133,9 @@ _PAGE_STYLES = (
     ".pw-card-cta:focus-visible{outline:2px solid var(--blue);outline-offset:2px;}"
     '.pw-grid[data-layout="single"]{display:block;max-width:980px;}'
     '.pw-grid[data-layout="single"] .pw-card{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:26px;padding:20px;border-radius:18px;}'
-    '.pw-grid[data-layout="single"] .pw-role{height:auto;margin:0 0 6px;}'
+    '.pw-grid[data-layout="single"] .pw-role{height:auto;min-height:0;margin:0 0 6px;}'
     '.pw-grid[data-layout="single"] .pw-role:empty{display:none;}'
-    '.pw-grid[data-layout="single"] .pw-card-title{font-size:22px;line-height:1.3;height:auto;-webkit-line-clamp:4;}'
+    '.pw-grid[data-layout="single"] .pw-card-title{font-size:22px;line-height:1.3;height:auto;min-height:0;-webkit-line-clamp:4;}'
     '.pw-grid[data-layout="single"] .pw-price{font-size:32px;margin-top:12px;}'
     '.pw-grid[data-layout="single"] .pw-card-cta{display:inline-block;width:auto;max-width:100%;align-self:flex-start;padding:12px 28px;background:var(--blue-2);color:#fff;}'
     '.pw-grid[data-layout="single"] .pw-card-cta:hover{background:var(--blue);}'
@@ -230,11 +233,11 @@ _PAGE_STYLES = (
     '.pw-grid:not([data-layout="single"]) .pw-card-body>.pw-price{grid-column:1 / -1;grid-row:20;align-self:center;margin:10px 0 0;font-size:24px;}'
     '.pw-grid:not([data-layout="single"]) .pw-card-body>.pw-card-cta{grid-column:1 / -1;grid-row:20;justify-self:end;width:52%;min-width:140px;margin:10px 0 0;}'
     '.pw-grid:not([data-layout="single"]) .pw-card-body>:nth-last-child(2){margin-bottom:0;}'
-    ".pw-role{flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px 8px;height:auto;margin:0 0 5px;overflow:visible;}"
-    ".pw-rec-badge,.pw-role-label{height:22px;padding:0 8px;font-size:12px;letter-spacing:.02em;}"
+    ".pw-role{flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px 8px;height:auto;min-height:0;margin:0 0 5px;overflow:visible;}"
+    ".pw-rec-badge,.pw-role-label{min-height:22px;padding:0 8px;font-size:12px;letter-spacing:.02em;}"
     ".pw-role-label{white-space:normal;}"
-    ".pw-card-recommended .pw-role-label{height:auto;padding:0;font-size:13px;}"
-    ".pw-card-title{font-size:15px;line-height:1.3;-webkit-line-clamp:2;height:auto;max-height:2.6em;}"
+    ".pw-card-recommended .pw-role-label{height:auto;min-height:0;padding:0;font-size:13px;}"
+    ".pw-card-title{font-size:15px;line-height:1.3;-webkit-line-clamp:2;min-height:0;}"
     ".pw-card-shop{margin-top:4px;font-size:13px;white-space:normal;}"
     ".pw-card-stock{margin-top:4px;font-size:13px;}"
     ".pw-card-description,.pw-card-extra,.pw-meta,.pw-feature-item{font-size:13px;}"
@@ -242,7 +245,8 @@ _PAGE_STYLES = (
     ".pw-card-note{font-size:12px;}"
     ".pw-cta-at{display:none;}"
     ".pw-card-cta{display:flex;align-items:center;justify-content:center;min-height:48px;padding:0 12px;font-size:15px;}"
-    ".pw-offer-terms summary{display:flex;align-items:center;min-height:48px;}"
+    # "Offer terms" keeps its arrow and its place, and takes a 48 px finger.
+    ".pw-offer-terms summary{padding:14px 0;margin:-12px 0;line-height:20px;}"
     '.pw-grid[data-layout="single"] .pw-card-cta{display:flex;width:100%;}'
     ".pw-more-button{height:48px;}"
     ".pw-demo-note{font-size:13px;}"
