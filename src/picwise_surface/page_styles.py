@@ -175,7 +175,7 @@ _PAGE_STYLES = (
     "@keyframes pw-spin{to{transform:rotate(360deg);}}"
     ".pw-scan-text{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}"
     "@keyframes pw-breathe{from{opacity:.35;}to{opacity:1;}}"
-    "@media (prefers-reduced-motion:reduce){.pw-photo-guard .pw-card:not(.pw-photo-ok) .pw-product-image-wrap::before{animation:pw-breathe 1.2s ease-in-out infinite alternate;}.pw-scan{animation:none;}.pw-loader-ring{animation:pw-breathe 1.2s ease-in-out infinite alternate;}}"
+    "@media (prefers-reduced-motion:reduce){.pw-scan{animation:none;}.pw-photo-guard .pw-card:not(.pw-photo-ok) .pw-product-image-wrap::before{animation:pw-breathe 1.2s ease-in-out infinite alternate;}.pw-loader-ring{animation:pw-breathe 1.2s ease-in-out infinite alternate;}}"
     "@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}"
     "@media (max-width:760px){"
     '.pw-grid[data-layout="single"] .pw-card{grid-template-columns:1fr;gap:14px;padding:14px;}'
