@@ -4,7 +4,9 @@ The design the owner agreed to on 2026-11-13 («Συμφωνώ με το σχε�
 of that day), on every card, not only the Recommended's: a green ▼ when the price fell
 ("£40 since 6 Dec"), a red ▲ when it rose (for a buyer a fall is good news, so green,
 the stock market's colours the other way round), a grey "Same price for 12 nights";
-nothing when there is nothing true to tell yet. A tap on the chip opens, under it, the
+from 2026-11-15 from the first night (owner: «κάθε μέρα να προσθέτει την καινούργια
+πληροφορία έως τις 30 μέρες»), and a grey "Price history N nights", no arrow, when the
+price moved with no price kept 7 nights to compare with. A tap on the chip opens, under it, the
 price as the shop listed it each night of the last 30, now, lowest and highest. The
 rule behind each chip is `picwise_providers.price_history`'s.
 
@@ -18,7 +20,7 @@ from __future__ import annotations
 from datetime import date
 from html import escape
 
-from picwise_providers.price_history import DOWN, SAME, UP, PriceNote, PriceRun
+from picwise_providers.price_history import DOWN, SAME, UP, WATCH, PriceNote, PriceRun
 
 _SIGNS = {"GBP": "£", "EUR": "€", "USD": "$"}
 
@@ -124,6 +126,14 @@ def price_note_html(note: PriceNote | None, *, shop: str, price: str, slot: bool
             f' <span class="pw-ph-w">{escape(when)}</span>'
         )
         span = (note.night - note.runs[0].start).days + 1 if note.runs else 0
+    elif note.kind == WATCH:
+        # The price moved, with no price kept long enough to compare with (owner,
+        # 2026-11-15): its nights, no arrow.
+        chip = (
+            '<span class="pw-ph-a" aria-hidden="true">~</span>Price history '
+            f'<span class="pw-ph-w">{note.nights} {"night" if note.nights == 1 else "nights"}</span>'
+        )
+        span = note.nights
     elif note.kind == SAME:
         chip = (
             '<span class="pw-ph-a" aria-hidden="true">=</span>Same price '
@@ -166,10 +176,10 @@ PRICE_NOTE_STYLES = (
     ".pw-ph[open] .pw-ph-v{transform:rotate(180deg);}"
     ".pw-ph-down .pw-ph-chip{color:#15803d;background:#e8f6ed;}"
     ".pw-ph-up .pw-ph-chip{color:#b42318;background:#fdecea;}"
-    ".pw-ph-same .pw-ph-chip{color:#5b6b82;background:#eef2f7;}"
+    ".pw-ph-same .pw-ph-chip,.pw-ph-watch .pw-ph-chip{color:#5b6b82;background:#eef2f7;}"
     ".pw-ph-pop{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:6;background:#fff;"
     "border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 30px rgba(16,40,80,.18);padding:10px 12px;}"
-    ".pw-ph-down .pw-ph-pop{color:#15803d;}.pw-ph-up .pw-ph-pop{color:#b42318;}.pw-ph-same .pw-ph-pop{color:#7b8ba3;}"
+    ".pw-ph-down .pw-ph-pop{color:#15803d;}.pw-ph-up .pw-ph-pop{color:#b42318;}.pw-ph-same .pw-ph-pop,.pw-ph-watch .pw-ph-pop{color:#7b8ba3;}"
     ".pw-ph-h{margin:0 0 6px;font-size:12px;font-weight:700;color:var(--ink);}"
     ".pw-ph-chart{display:block;width:100%;height:auto;background:#f6f8fb;border-radius:6px;}"
     ".pw-ph-f{margin:6px 0 0;font-size:12px;line-height:1.45;color:var(--ink-2);}"

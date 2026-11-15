@@ -6,9 +6,13 @@ a grey "Same price for N nights", a tap opening the last 30 nights), «Συμφ�
 σχεδιασμό», on every card. The rule, as put to the owner the same day: today's price is
 compared with **the last price the shop kept for at least 7 nights** (`MIN_HOLD_NIGHTS`),
 so that a price raised for a night or two and brought back down never reads as a
-discount (`PROJECT_RULES.md` §4: no fake savings). A change shows from its first night;
-a price back where it was shows nothing; a price kept 7 nights or more, with no change
-to tell, reads "Same price for N nights".
+discount (`PROJECT_RULES.md` §4: no fake savings). A change shows from its first night.
+
+The owner, 2026-11-15: the history on the cards from the first night, «εμφανίζει την
+τωρινή τιμή και κάθε μέρα να προσθέτει την καινούργια πληροφορία έως τις 30 μέρες»: one
+price on each night it was listed reads "Same price for N nights" from N = 1
+(`MIN_SHOWN_NIGHTS`); a price that moved within the window with no price kept 7 nights
+to compare with reads its nights, with no arrow (`WATCH`), the nights in its chart.
 
 Every figure comes from the catalogue's memory (`catalogue_memory`): the nights each
 product was seen and its price on each. A night the product was not listed is no night
@@ -46,12 +50,21 @@ _VERSION = 1
 
 # The rule (owner, 2026-11-13).
 MIN_HOLD_NIGHTS = 7
+# The owner, 2026-11-15: the price's history on the cards from now, «εμφανίζει την τωρινή
+# τιμή και κάθε μέρα να προσθέτει την καινούργια πληροφορία έως τις 30 μέρες». A card
+# shows its price's nights from the first one; a ▼ or ▲ still waits for a price kept
+# `MIN_HOLD_NIGHTS`, so a price raised for a night and brought back never reads as a
+# discount.
+MIN_SHOWN_NIGHTS = 1
 WINDOW_NIGHTS = 30
 MIN_CHANGE_PENCE = 100
 MIN_CHANGE_PERCENT = 1
 
 DOWN, UP, SAME = "down", "up", "same"
-_CODES = {"d": DOWN, "u": UP}
+# The price moved within the window, but no price was kept long enough to compare with:
+# the card shows the nights, with no arrow (owner, 2026-11-15).
+WATCH = "watch"
+_CODES = {"d": DOWN, "u": UP, "w": WATCH}
 
 
 @dataclass(frozen=True)
@@ -150,7 +163,16 @@ def note_from_runs(runs: list[PriceRun], night: date) -> PriceNote | None:
                 runs=tuple(reversed(_within(runs, window_start))),
             )
         break
-    if current.nights >= MIN_HOLD_NIGHTS:
+    window = _within(runs, window_start)
+    if current.nights < MIN_HOLD_NIGHTS and len(window) > 1:
+        return PriceNote(
+            kind=WATCH,
+            night=night,
+            currency=current.currency,
+            nights=(night - window[-1].start).days + 1,
+            runs=tuple(reversed(window)),
+        )
+    if current.nights >= MIN_SHOWN_NIGHTS:
         return PriceNote(
             kind=SAME,
             night=night,
@@ -195,7 +217,7 @@ def write_price_notes(memory_path: Path, out_path: Path, *, prepared_at: datetim
     night = prepared_at.date().isoformat()
     tonight = date.fromisoformat(night)
     notes: dict[str, Any] = {}
-    counts = {DOWN: 0, UP: 0, SAME: 0}
+    counts = {DOWN: 0, UP: 0, SAME: 0, WATCH: 0}
     with closing(sqlite3.connect(f"file:{Path(memory_path)}?mode=ro", uri=True, timeout=60)) as db:
         nights = [
             row[0]
@@ -238,7 +260,7 @@ def write_price_notes(memory_path: Path, out_path: Path, *, prepared_at: datetim
                     note = (
                         PriceNote(kind=SAME, night=tonight, currency=str(currency or ""),
                                   nights=min(in_a_row, WINDOW_NIGHTS))
-                        if in_a_row >= MIN_HOLD_NIGHTS
+                        if in_a_row >= MIN_SHOWN_NIGHTS
                         else None
                     )
                 if note is None:
@@ -253,6 +275,7 @@ def write_price_notes(memory_path: Path, out_path: Path, *, prepared_at: datetim
         "prepared_at": prepared_at.isoformat(),
         "night": night,
         "min_hold_nights": MIN_HOLD_NIGHTS,
+        "min_shown_nights": MIN_SHOWN_NIGHTS,
         "window_nights": WINDOW_NIGHTS,
         "notes": notes,
     }
@@ -271,7 +294,7 @@ def _encode(note: PriceNote) -> Any:
     if note.kind == SAME:
         return int(note.nights)
     return [
-        "d" if note.kind == DOWN else "u",
+        {DOWN: "d", UP: "u", WATCH: "w"}[note.kind],
         note.change_pence,
         (note.night - note.since).days if note.since else 0,
         note.currency,
@@ -308,12 +331,15 @@ class PriceNotes:
             )
         try:
             code, change, since_days, note_currency, runs = value
+            # A note with no arrow tells its nights: from its oldest night to tonight.
+            span = int(max(int(run[0]) for run in runs)) + 1 if code == "w" and runs else 0
             return PriceNote(
                 kind=_CODES[code],
+                nights=span,
                 night=self.night,
                 currency=str(note_currency),
                 change_pence=int(change),
-                since=self.night - timedelta(days=int(since_days)),
+                since=None if code == "w" else self.night - timedelta(days=int(since_days)),
                 runs=tuple(
                     PriceRun(
                         self.night - timedelta(days=int(start)),

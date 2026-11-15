@@ -141,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(
                 f"prepare_catalogue: the price notes: {notes['notes']:,} products, {notes['down']:,} down, "
-                f"{notes['up']:,} up, {notes['same']:,} at the same price for 7 nights or more"
+                f"{notes['up']:,} up, {notes['same']:,} at the same price, {notes['watch']:,} moved with no arrow yet"
             )
     if args.static_dir is not None:
         change = _intake_change(_previous_note(args.static_dir), intake)

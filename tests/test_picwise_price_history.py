@@ -5,11 +5,14 @@ The rule, as put to the owner that day: today's price is compared with the last 
 the shop kept for at least 7 nights seen. Pinned here with the owner's own examples:
 
 - a drop after 3 weeks at one price shows from its first night ("▼ £40 since 6 Dec");
-- a short sale shows at once, and its chip goes when the price comes back;
+- a short sale shows at once, and its arrow goes when the price comes back;
 - a price raised for 2 nights and brought back never reads as a discount;
 - a price shown one night, hidden 10 nights and brought back lower is no kept price;
 - a change under £1 or under 1% is not told, nor one older than 30 nights;
-- 7 nights or more at one price read "the same for N nights", 6 do not;
+- from 2026-11-15 (owner: «κάθε μέρα να προσθέτει την καινούργια πληροφορία έως τις 30
+  μέρες») one price reads "the same for N nights" from the first night, and a price that
+  moved with no price kept 7 nights to compare with shows its nights with no arrow
+  (`WATCH`): never a ▼ or a ▲ the 7-night rule does not give;
 - the file is written beside the prepared catalogue, holds no link, and a worker shows
   its notes only beside the catalogue of the same preparation.
 
@@ -41,6 +44,7 @@ from picwise_providers.price_history import (  # noqa: E402
     PRICE_NOTES_ENV,
     SAME,
     UP,
+    WATCH,
     PriceRun,
     notes_for_catalogue,
     read_price_notes,
@@ -108,7 +112,8 @@ class RuleTests(unittest.TestCase):
         nights.run({"a": "80.00"})
         self.assertEqual(nights.note("a").kind, DOWN)
         nights.run({"a": "100.00"})
-        self.assertIsNone(nights.note("a"))
+        # No arrow: its nights, the sale among them, with no ▼ or ▲.
+        self.assertEqual(nights.note("a").kind, WATCH)
 
     def test_a_price_raised_two_nights_and_brought_back_is_no_discount(self) -> None:
         nights = _Nights()
@@ -118,8 +123,10 @@ class RuleTests(unittest.TestCase):
         self.assertEqual((nights.note("a").kind, nights.note("a").change_pence), (UP, 5000))
         nights.run({"a": "150.00"})
         nights.run({"a": "100.00"})
-        # Back to the price kept a month: nothing to tell, never "▼ £50".
-        self.assertIsNone(nights.note("a"))
+        # Back to the price kept a month: no arrow, never "▼ £50".
+        note = nights.note("a")
+        self.assertEqual((note.kind, note.nights), (WATCH, 30))
+        self.assertEqual([run.pence for run in note.runs], [10000, 15000, 10000])
         nights.run({"a": "100.00"}, 6)
         note = nights.note("a")
         self.assertEqual((note.kind, note.nights), (SAME, 7))
@@ -131,7 +138,7 @@ class RuleTests(unittest.TestCase):
         nights.run({"a": None}, 10)
         nights.run({"a": "100.00"})
         # £150 was seen one night: counted by the calendar it would have "held" 11.
-        self.assertIsNone(nights.note("a"))
+        self.assertEqual(nights.note("a").kind, WATCH)
 
     def test_a_kept_price_before_a_gap_is_still_the_one_compared_with(self) -> None:
         nights = _Nights()
@@ -149,8 +156,9 @@ class RuleTests(unittest.TestCase):
         nights.run({"cheap": "100.00", "dear": "500.00", "six": "20.00"}, 10)
         nights.run({"cheap": "99.50", "dear": "496.00", "six": "26.00"})
         notes = nights.notes()
-        self.assertIsNone(notes.note(SHOP, "cheap"))
-        self.assertIsNone(notes.note(SHOP, "dear"))
+        # Moved, too little to tell: no arrow.
+        self.assertEqual(notes.note(SHOP, "cheap").kind, WATCH)
+        self.assertEqual(notes.note(SHOP, "dear").kind, WATCH)
         self.assertEqual(notes.note(SHOP, "six").kind, UP)
         self.assertEqual(notes.note(SHOP, "six").change_pence, 600)
 
@@ -163,19 +171,27 @@ class RuleTests(unittest.TestCase):
         note = nights.note("a")
         self.assertEqual((note.kind, note.nights), (SAME, 30))
 
-    def test_seven_nights_at_one_price_read_the_same_and_six_do_not(self) -> None:
+    def test_one_price_reads_the_same_from_its_first_night(self) -> None:
         nights = _Nights()
-        nights.run({"seven": "50.00", "six": None}, 1)
-        nights.run({"seven": "50.00", "six": "50.00"}, 6)
+        nights.run({"seven": "50.00", "one": None}, 6)
+        nights.run({"seven": "50.00", "one": "50.00"}, 1)
         notes = nights.notes()
         self.assertEqual((notes.note(SHOP, "seven").kind, notes.note(SHOP, "seven").nights), (SAME, 7))
-        self.assertIsNone(notes.note(SHOP, "six"))
+        self.assertEqual((notes.note(SHOP, "one").kind, notes.note(SHOP, "one").nights), (SAME, 1))
+
+    def test_a_price_moved_before_any_was_kept_seven_nights_has_no_arrow(self) -> None:
+        nights = _Nights()
+        nights.run({"a": "100.00"}, 3)
+        nights.run({"a": "60.00"}, 2)
+        note = nights.note("a")
+        self.assertEqual((note.kind, note.nights, note.change_pence), (WATCH, 5, 0))
+        self.assertEqual([(run.nights, run.pence) for run in note.runs], [(3, 10000), (2, 6000)])
 
     def test_a_new_currency_is_no_change_in_price(self) -> None:
         nights = _Nights()
         nights.run({"a": "100.00"}, 10)
         nights.run({"a": "80.00"}, currency="EUR")
-        self.assertIsNone(nights.note("a"))
+        self.assertNotIn(nights.note("a").kind, (DOWN, UP))
 
     def test_a_product_not_listed_tonight_has_no_note(self) -> None:
         nights = _Nights()
@@ -207,7 +223,7 @@ class FileTests(unittest.TestCase):
         self.assertEqual(
             summary,
             {"file": "price_notes.json.gz", "night": nights.night.date().isoformat(), "notes": 2,
-             "down": 1, "up": 0, "same": 1},
+             "down": 1, "up": 0, "same": 1, "watch": 0},
         )
         with gzip.open(nights.out, "rt", encoding="utf-8") as handle:
             payload = json.load(handle)
@@ -282,9 +298,13 @@ class PreparationTests(unittest.TestCase):
     def test_with_a_memory_the_notes_are_written_beside_the_catalogue(self) -> None:
         folder = Path(tempfile.mkdtemp())
         out, note = self._prepare(folder, "--memory", str(folder / "catalogue_memory.sqlite"))
-        # The first night: no price has been kept 7 nights yet.
-        self.assertEqual(note["price_notes"]["notes"], 0)
-        self.assertIn("prepare_catalogue: the price notes: 0 products, 0 down, 0 up", out)
+        # The first night: every product listed reads its one night (owner, 2026-11-15),
+        # none with an arrow.
+        summary = note["price_notes"]
+        self.assertGreater(summary["notes"], 0)
+        self.assertEqual((summary["down"], summary["up"], summary["watch"]), (0, 0, 0))
+        self.assertEqual(summary["same"], summary["notes"])
+        self.assertIn(f"prepare_catalogue: the price notes: {summary['notes']:,} products, 0 down, 0 up", out)
         notes = read_price_notes(folder / "price_notes.json.gz")
         self.assertIsNotNone(notes)
         self.assertEqual(notes.prepared_at, datetime.fromisoformat(note["prepared_at"]).replace(

@@ -3,8 +3,10 @@
 
 Pinned here:
 
-- a fall is a green ▼ with its amount and since when, a rise a red ▲, a price kept 7
-  nights or more a grey "Same price for N nights"; a screen reader hears "Price down";
+- a fall is a green ▼ with its amount and since when, a rise a red ▲, one price a grey
+  "Same price for N nights" from its first night, a price that moved with none kept 7
+  nights a grey "Price history N nights" with no arrow (owner, 2026-11-15); a screen
+  reader hears "Price down";
 - the chip opens (plain `<details>`, no script) the last nights as the shop listed
   them: a chart, now, lowest and highest with their nights, a gap said when there is one;
 - every card of an answer is looked up, not only the Recommended's, by the shop as its
@@ -31,7 +33,7 @@ for path in (HERE, ROOT, ROOT / "src"):
         sys.path.insert(0, str(path))
 
 import test_picwise_design_2026_10_31 as design  # noqa: E402
-from picwise_providers.price_history import DOWN, SAME, UP, PriceNote, PriceNotes, PriceRun  # noqa: E402
+from picwise_providers.price_history import DOWN, SAME, UP, WATCH, PriceNote, PriceNotes, PriceRun  # noqa: E402
 from picwise_surface import reference  # noqa: E402
 from picwise_surface.price_notes import PRICE_NOTE_STYLES, price_note_html  # noqa: E402
 
@@ -98,6 +100,20 @@ class ChipTests(unittest.TestCase):
         self.assertEqual(_text(re.search(r"<summary.*?</summary>", html, re.S).group(0)), "= Same price for 12 nights")
         self.assertIn("£54.99 on each of the last 12 nights it was listed.", _text(html))
         self.assertIn("Price at Fixture Store One, last 12 nights", _text(html))
+
+    def test_a_price_that_moved_with_none_kept_seven_nights_is_grey_with_no_arrow(self) -> None:
+        note = PriceNote(kind=WATCH, night=NIGHT, currency="GBP", nights=5,
+                         runs=(PriceRun(date(2026, 12, 9), date(2026, 12, 11), 3, 10000, "GBP"),
+                               PriceRun(date(2026, 12, 12), NIGHT, 2, 6000, "GBP")))
+        html = price_note_html(note, shop="Fixture Store One", price="£60.00")
+        self.assertIn('class="pw-ph pw-ph-watch"', html)
+        summary = _text(re.search(r"<summary.*?</summary>", html, re.S).group(0))
+        self.assertEqual(summary, "~ Price history 5 nights")
+        self.assertNotIn("▼", html + summary)
+        self.assertNotIn("▲", html + summary)
+        self.assertIn("Price at Fixture Store One, last 5 nights", _text(html))
+        self.assertIn("Now £60.00 · Lowest £60.00 · Highest £100.00 (9–11 Dec)", _text(html))
+        self.assertIn(".pw-ph-watch .pw-ph-chip{color:#5b6b82;", PRICE_NOTE_STYLES)
 
     def test_a_gap_is_said_and_breaks_the_line(self) -> None:
         note = PriceNote(
