@@ -46,21 +46,19 @@ HEART_ICON = (
 # Run in the page's <head>, before anything is drawn: the buttons that need JavaScript
 # and local storage appear with the page, never a moment after it (no layout shift).
 # It only reads: finding out whether storage is allowed stores nothing.
-# It also keeps every card out of sight until its photo has loaded, and a card whose photo
-# fails out of the page (owner, 2026-11-01: «Όταν το προϊόν δεν φέρνει φωτογραφία δεν πρέπει
-# να εμφανίζεται... Στις περισσότερες περιπτώσεις είναι not found», and «να μην μπορεί να
-# εμφανιστεί ένα προϊόν αν δεν έχει φωτογραφία στο ui»): a product is never seen without
-# its photo, whatever changed at the shop since the nightly check
-# (`deployment/server/check_photos.py`). The listeners are set before any photo exists,
-# so none loads or fails unheard. Only where the browser can find a photo's card
-# (`closest`) are cards held back at all: an older one shows them as before.
-# A card waiting for its photo keeps its place for a moment only (`PHOTO_WAIT_MS`): one
-# whose photo has not come by then gives its place up, so no empty place stays between the
-# cards while a shop's server is slow, and takes it again the moment its photo comes
-# (owner, 2026-11-12, of the gaps a slow photo left: «κάποιες φορές συμβενει κενό ανάμεσα
-# στις κάρτες κακή στοίχιση»). Its photo is asked for at once then, so a card further
-# down whose photo waited to be scrolled to is not left out for good.
-PHOTO_WAIT_MS = 1200
+# It also marks each card's photo as it loads or fails: a card whose photo fails leaves the
+# page (owner, 2026-11-01: «Όταν το προϊόν δεν φέρνει φωτογραφία δεν πρέπει να
+# εμφανίζεται... Στις περισσότερες περιπτώσεις είναι not found»), whatever changed at the
+# shop since the nightly check (`deployment/server/check_photos.py`). While a photo loads
+# its card is in its place, a grey frame with a turning sign where the photo comes, so a
+# buyer sees a photo on its way, not a product without one, and nothing moves when it
+# comes (owner, 2026-11-15: «Φτιάξε το γκρι πλαίσιο στη φωτογραφία ... με μία ένδειξη ότι
+# φορτώνει ... δεν πρόκειται για προϊόν χωρίς φωτογραφία αλλά για προϊόν που η φωτογραφία
+# του αργεί να έρθει»; until then a card was hidden until its photo came and, after 1.2 s,
+# taken out of the page, which on a phone moved the page when a shop's photos were slow:
+# Google's layout shift 0.87, against 0.1 for "good"). The listeners are set before any
+# photo exists, so none loads or fails unheard. Only where the browser can find a photo's
+# card (`closest`) is anything marked: an older one shows the cards as before.
 HEAD_SCRIPT = (
     "(function(){var c=document.documentElement.classList;c.add('pw-js');"
     f"try{{if(window.localStorage){{window.localStorage.getItem('{FAVOURITES_STORAGE_KEY}');c.add('pw-store');}}}}"
@@ -70,13 +68,9 @@ HEAD_SCRIPT = (
     "function card(t){return t&&t.tagName==='IMG'&&(' '+t.className+' ').indexOf(' pw-product-image ')>-1"
     "?t.closest('.pw-card'):null;}"
     "document.addEventListener('load',function(e){var a=card(e.target);"
-    "if(a){a.classList.add(e.target.naturalWidth>0?'pw-photo-ok':'pw-no-photo');a.classList.remove('pw-photo-late');}},true);"
+    "if(a){a.classList.add(e.target.naturalWidth>0?'pw-photo-ok':'pw-no-photo');}},true);"
     "document.addEventListener('error',function(e){var a=card(e.target);"
     "if(a){a.classList.add('pw-no-photo');}},true);"
-    "document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){"
-    "var w=document.querySelectorAll('.pw-card');for(var i=0;i<w.length;i++){var k=w[i].classList;"
-    "if(!k.contains('pw-photo-ok')&&!k.contains('pw-no-photo')){var m=w[i].querySelector('.pw-product-image');"
-    f"if(m){{m.loading='eager';}}k.add('pw-photo-late');}}}}}},{PHOTO_WAIT_MS});}});"
     "})();"
 )
 

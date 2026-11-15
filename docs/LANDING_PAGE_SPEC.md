@@ -146,6 +146,16 @@ with arrows, a swipe or the arrow keys, and load only when opened. The heart on 
 photo stays the heart's; the cards do not move (`picwise_surface.photo_viewer`; pinned by
 `tests/test_picwise_photo_viewer.py`).
 
+## A Photo on Its Way (2026-11-15)
+
+Every card is in its place from the first moment. While its photo loads, a light grey
+frame with a turning sign stands where the photo comes, and the photo shows in it when
+it has loaded (owner: «Φτιάξε το γκρι πλαίσιο στη φωτογραφία ... με μία ένδειξη ότι
+φορτώνει»). A card whose photo fails leaves the page, as before. Until then a card was
+hidden until its photo came and, after 1.2 s, taken out of the page: measured with photos
+slowed to 2 s, Google's layout shift was 0.87 on a phone and 0.19 on a computer (0.1 or
+less is "good"); now 0 on both.
+
 ## The Price After an Offer (2026-11-15)
 
 A card whose offer surely applies shows the price after it as its price and, with the

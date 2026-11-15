@@ -78,19 +78,20 @@ _PAGE_STYLES = (
     ".pw-anchor{position:absolute;top:-80px;}"
     ".pw-product-image-wrap{position:relative;aspect-ratio:1/1;width:100%;border-radius:12px;background:#fff;border:1px solid #edf2fa;display:flex;align-items:center;justify-content:center;overflow:hidden;}"
     ".pw-product-image{display:block;width:100%;height:100%;object-fit:contain;color:transparent;}"
-    # A card is seen only once its photo has loaded, and one whose photo fails never
-    # (HEAD_SCRIPT marks them; owner, 2026-11-01). Its place is kept while the photo
-    # loads, so nothing moves when it appears.
-    ".pw-photo-guard .pw-card{visibility:hidden;opacity:0;}"
-    ".pw-photo-guard .pw-card.pw-photo-ok{visibility:visible;opacity:1;transition:opacity .15s ease-out;}"
+    # While a card's photo loads, a grey frame with a turning sign where it comes; the photo
+    # shows in it when it has loaded (HEAD_SCRIPT marks it; owner, 2026-11-15: «με μία
+    # ένδειξη ότι φορτώνει»). The card is in its place throughout, so nothing moves.
+    ".pw-photo-guard .pw-card:not(.pw-photo-ok) .pw-product-image-wrap{background:#eef1f6;}"
+    ".pw-photo-guard .pw-card:not(.pw-photo-ok) .pw-product-image{opacity:0;}"
+    ".pw-photo-guard .pw-card.pw-photo-ok .pw-product-image{opacity:1;transition:opacity .2s ease-out;}"
+    ".pw-photo-guard .pw-card:not(.pw-photo-ok) .pw-product-image-wrap::before{content:'';position:absolute;top:50%;left:50%;"
+    "width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:999px;border:3px solid #d3dbe7;border-top-color:var(--blue-2);"
+    "animation:pw-spin .8s linear infinite;}"
     # Out of the page, whatever layout a card has: the phone's one product a row
     # (`display:grid`, below) had outweighed these, so on a phone a card whose photo failed
     # stayed in its place, unseen, an empty place between the cards (owner, 2026-11-12:
     # «κάποιες φορές συμβενει κενό ανάμεσα στις κάρτες κακή στοίχιση»).
     ".pw-card.pw-no-photo{display:none!important;}"
-    # A card whose photo has not come within a moment gives its place up until it comes
-    # (`browser_lists.PHOTO_WAIT_MS`; owner, 2026-11-12): no empty place between cards.
-    ".pw-photo-guard .pw-card.pw-photo-late{display:none!important;}"
     ".pw-card-body{display:flex;flex-direction:column;flex:1;min-width:0;}"
     # Heights a line of words sets are floors, not ceilings: a phone or tablet set to larger
     # text grows them instead of cutting the words (2026-11-15: the owner's phone showed a
@@ -174,7 +175,7 @@ _PAGE_STYLES = (
     "@keyframes pw-spin{to{transform:rotate(360deg);}}"
     ".pw-scan-text{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}"
     "@keyframes pw-breathe{from{opacity:.35;}to{opacity:1;}}"
-    "@media (prefers-reduced-motion:reduce){.pw-scan{animation:none;}.pw-loader-ring{animation:pw-breathe 1.2s ease-in-out infinite alternate;}}"
+    "@media (prefers-reduced-motion:reduce){.pw-photo-guard .pw-card:not(.pw-photo-ok) .pw-product-image-wrap::before{animation:pw-breathe 1.2s ease-in-out infinite alternate;}.pw-scan{animation:none;}.pw-loader-ring{animation:pw-breathe 1.2s ease-in-out infinite alternate;}}"
     "@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}"
     "@media (max-width:760px){"
     '.pw-grid[data-layout="single"] .pw-card{grid-template-columns:1fr;gap:14px;padding:14px;}'

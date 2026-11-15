@@ -12,7 +12,8 @@
   410) is gone; what it asks each night, within its time; what it keeps and writes; how
   it asks a real server (HEAD, one byte where HEAD is refused, redirects, kept-open
   connections);
-- the browser's last guard: a card whose photo fails is hidden whole.
+- the browser's last guard: a card whose photo fails is hidden whole; while a photo
+  loads, its card shows a grey frame with a turning sign (owner, 2026-11-15).
 
 Every shop, product and address is fictional.
 """
@@ -44,7 +45,7 @@ from picwise_providers import product_photos  # noqa: E402
 from picwise_providers.prepared_catalogue import write_prepared_catalogue  # noqa: E402
 from picwise_providers.product_photos import gone_photos, photo_is_gone, set_gone_photos  # noqa: E402
 from picwise_providers.state import prepare_feed_catalogue  # noqa: E402
-from picwise_surface.browser_lists import HEAD_SCRIPT, PHOTO_WAIT_MS  # noqa: E402
+from picwise_surface.browser_lists import HEAD_SCRIPT  # noqa: E402
 from picwise_surface.reference import _PAGE_STYLES  # noqa: E402
 from test_picwise_prepared_catalogue import _PreparedMixin, _feed_rows  # noqa: E402
 
@@ -156,7 +157,7 @@ class BrowserGuardTests(unittest.TestCase):
     2026-11-01). The behaviour itself was seen in Chromium on the local preview: the
     cards appear as their photos load, and one whose photo answers 404 never does."""
 
-    def test_a_card_is_seen_only_once_its_photo_has_loaded(self) -> None:
+    def test_a_card_whose_photo_fails_leaves_the_page(self) -> None:
         self.assertIn("addEventListener('load'", HEAD_SCRIPT)
         self.assertIn("naturalWidth>0?'pw-photo-ok':'pw-no-photo'", HEAD_SCRIPT)
         self.assertIn("addEventListener('error'", HEAD_SCRIPT)
@@ -165,28 +166,26 @@ class BrowserGuardTests(unittest.TestCase):
         # The listeners are caught on their way down, before the photo itself.
         self.assertEqual(HEAD_SCRIPT.count("},true);"), 2)
         self.assertNotIn("setItem", HEAD_SCRIPT)
-        self.assertIn(".pw-photo-guard .pw-card{visibility:hidden;opacity:0;}", _PAGE_STYLES)
-        self.assertIn(".pw-photo-guard .pw-card.pw-photo-ok{visibility:visible;opacity:1;", _PAGE_STYLES)
         # Out of the page whatever the layout: the phone's one product a row
         # (`display:grid`) had outweighed it, and a card whose photo failed stayed in its
         # place, unseen, on a phone (owner, 2026-11-12).
         self.assertIn(".pw-card.pw-no-photo{display:none!important;}", _PAGE_STYLES)
 
-    def test_a_card_whose_photo_is_slow_gives_its_place_up_for_a_moment(self) -> None:
-        # Owner, 2026-11-12, of the empty places a slow photo left between the cards:
-        # «κάποιες φορές συμβενει κενό ανάμεσα στις κάρτες κακή στοίχιση». A card still
-        # waiting after `PHOTO_WAIT_MS` leaves the page's flow, its photo asked for at once,
-        # and comes back the moment its photo loads; one whose photo fails stays out.
-        self.assertEqual(PHOTO_WAIT_MS, 1200)
-        self.assertIn("document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){", HEAD_SCRIPT)
-        self.assertIn("if(!k.contains('pw-photo-ok')&&!k.contains('pw-no-photo'))", HEAD_SCRIPT)
-        self.assertIn("m.loading='eager';", HEAD_SCRIPT)
-        self.assertIn("k.add('pw-photo-late');", HEAD_SCRIPT)
-        self.assertIn(f"}},{PHOTO_WAIT_MS});}});", HEAD_SCRIPT)
-        self.assertIn("a.classList.remove('pw-photo-late');", HEAD_SCRIPT)
-        self.assertIn(".pw-photo-guard .pw-card.pw-photo-late{display:none!important;}", _PAGE_STYLES)
-        # A card is still never seen before its photo: only its empty place goes.
-        self.assertIn(".pw-photo-guard .pw-card{visibility:hidden;opacity:0;}", _PAGE_STYLES)
+    def test_while_a_photo_loads_its_card_shows_a_grey_frame_with_a_turning_sign(self) -> None:
+        # Owner, 2026-11-15: «Φτιάξε το γκρι πλαίσιο στη φωτογραφία ... με μία ένδειξη ότι
+        # φορτώνει». The card is in its place at once, so nothing moves when the photo
+        # comes; until 15/11 a card was hidden until then and, after 1.2 s, taken out of
+        # the page, which moved the page on a phone when a shop's photos were slow.
+        self.assertIn(".pw-photo-guard .pw-card:not(.pw-photo-ok) .pw-product-image-wrap{background:#eef1f6;}", _PAGE_STYLES)
+        self.assertIn(".pw-photo-guard .pw-card:not(.pw-photo-ok) .pw-product-image{opacity:0;}", _PAGE_STYLES)
+        self.assertIn(".pw-photo-guard .pw-card.pw-photo-ok .pw-product-image{opacity:1;", _PAGE_STYLES)
+        self.assertIn(".pw-photo-guard .pw-card:not(.pw-photo-ok) .pw-product-image-wrap::before{content:'';", _PAGE_STYLES)
+        self.assertIn("animation:pw-spin .8s linear infinite;", _PAGE_STYLES)
+        self.assertIn("@keyframes pw-spin", _PAGE_STYLES)
+        # No card is hidden or taken out while it waits.
+        self.assertNotIn("visibility:hidden;opacity:0;", _PAGE_STYLES)
+        self.assertNotIn("pw-photo-late", _PAGE_STYLES + HEAD_SCRIPT)
+        self.assertNotIn("setTimeout", HEAD_SCRIPT)
 
     def test_a_browser_that_cannot_find_a_photo_s_card_shows_the_cards_as_before(self) -> None:
         guard = HEAD_SCRIPT.index("c.add('pw-photo-guard')")
