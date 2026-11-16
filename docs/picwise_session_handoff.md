@@ -250,7 +250,8 @@ a decision came about.
 - **Kept on GitHub (15/11, owner: «Ναι θέλω να τα κάνεις», to a tidy-up proposed):**
   `main`, `ccr-1361f1a7-dcpo60` (the site), `ccr-4f47068a-99ikwe` (work),
   `ccr-99b47f03-l8t4dj` (#23, merged that day when `main` was brought level, its branch
-  kept on the owner's word: «Ναι, αλλά κράτα τον #23»), `archive-2026-11-15` and the
+  kept on the owner's word: «Ναι, αλλά κράτα τον #23»; on 16/11 the owner let it go with
+  the Sunday run of 22/11: «Να τον βάλεις στη λίστα της κυριακής»), `archive-2026-11-15` and the
   session's branch of the day. The other 30 were deleted at 22:55 UTC by the workflow
   `.github/workflows/tidy-branches.yml` (run `43771874892`), after two trials the owner
   saw: a session here may push branches but neither delete one nor push a tag (HTTP 403),
@@ -260,8 +261,8 @@ a decision came about.
 - **The tidy-up from now on** (owner: «Ναι, το εγκρίνω»): `tidy-branches.yml` runs every
   Sunday at 03:17 UTC and deletes a branch only when every commit of it is in `main`, the
   work branch or an `archive-*` branch, and it was not changed within 72 hours; `main`,
-  the site's branch, the work branch, #23's branch, open pull requests' heads and
-  `archive-*` always stay; a branch with a commit found nowhere else is kept and named.
+  the site's branch, the work branch, open pull requests' heads and `archive-*` always
+  stay (#23's branch no longer, from 16/11: it should go on 22/11; check it did); a branch with a commit found nowhere else is kept and named.
   Run by hand (Actions, "Tidy branches") it is a trial unless `dry_run` is turned off.
   A session's own branch therefore goes the Sunday after its work reached the work
   branch.

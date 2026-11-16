@@ -49,9 +49,10 @@ jobs:
           set -euo pipefail
           case "$MIN_AGE_HOURS" in ''|*[!0-9]*) echo "min_age_hours must be a whole number"; exit 1;; esac
           git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'
-          # ccr-99b47f03-l8t4dj: the head of pull request #23, kept on the owner's word
-          # (2026-11-15: «Ναι, αλλά κράτα τον #23»), though the request is merged.
-          keep="main ccr-1361f1a7-dcpo60 ccr-4f47068a-99ikwe ccr-99b47f03-l8t4dj"
+          # ccr-99b47f03-l8t4dj, the head of pull request #23 (merged), was kept here on
+          # 2026-11-15 («Ναι, αλλά κράτα τον #23»); on 2026-11-16 the owner let it go with
+          # the next Sunday run: «Να τον βάλεις στη λίστα της κυριακής».
+          keep="main ccr-1361f1a7-dcpo60 ccr-4f47068a-99ikwe"
           # The heads of open pull requests stay.
           keep="$keep $(gh pr list --state open --json headRefName --jq '.[].headRefName' | tr '\n' ' ')"
           keepers=$(git for-each-ref --format='%(refname:short)' refs/remotes/origin \
