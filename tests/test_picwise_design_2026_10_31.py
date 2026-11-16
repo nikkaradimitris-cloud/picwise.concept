@@ -478,6 +478,8 @@ class HomePageTests(unittest.TestCase):
         self.assertIn('id="pw-trends"', self.page)
         self.assertIn("Most popular in the UK", self.page)
         self.assertIn('href="/search?q=air%20fryer"', self.page)
+        self.assertEqual(self.page.count('<span class="pw-tp-ico" aria-hidden="true"><svg'), 10)
+        self.assertIn('<span class="pw-tp-kicker">November 2026 · United Kingdom</span>', self.page)
         self.assertNotIn("Not in our shops yet", self.page)
         self.assertNotIn("Products and prices:", self.page)
         for row in panel.rows:
@@ -527,7 +529,11 @@ class TrendsPanelTests(unittest.TestCase):
         self.assertEqual(names, ["Testline Phone 12", "Fixturon Air Fryer 5L", "Sampleware Vacuum &lt;Pro&gt;"])
         # Owner, 2026-11-13: «Τα 10 πιο διαδεδομένα προϊόντα».
         self.assertIn('<h2 class="pw-tp-title" id="pw-tp-title">Most popular in the UK</h2>', panel)
-        self.assertIn('<span class="pw-tp-period">October 2026</span>', panel)
+        # 2026-11-16: a blue heading with the month and the country over the title, and an
+        # icon a row where its words have one (owner: «μπλε κεφαλίδα και εικονίδια, χωρίς
+        # καρτέλες»); no category tabs.
+        self.assertIn('<span class="pw-tp-kicker">October 2026 · United Kingdom</span>', panel)
+        self.assertNotIn("pw-tp-tab", panel)
         # Searches, not sales (owner, 2026-10-31).
         for word in ("bought", "sold", "best sellers", "sales"):
             self.assertNotIn(word, panel.lower())
@@ -547,9 +553,10 @@ class TrendsPanelTests(unittest.TestCase):
 
     def test_simpler_than_the_panel_of_31_10(self) -> None:
         # Owner, 2026-11-12: «κράτα το απλό σοβαρό και αξιόπιστο»; «Έχεις δίκιο για αυτά».
+        # 2026-11-16, the owner's middle way: the blue heading and a row's icon came back
+        # (`pw-tp-kicker`, `pw-tp-ico`); the tabs, the scale, the legend and the intro did not.
         panel = render_trends_panel(_panel(self._rows()))
-        for gone in ("pw-tp-icon", "pw-tp-tab", "pw-tp-scale", "Search interest", "pw-tp-legend",
-                     "pw-tp-kicker", "pw-tp-intro", "linear-gradient"):
+        for gone in ("pw-tp-tab", "pw-tp-scale", "Search interest", "pw-tp-legend", "pw-tp-intro"):
             self.assertNotIn(gone, panel + TRENDS_STYLES)
 
     def test_it_folds_to_four_rows_and_opens_to_all(self) -> None:

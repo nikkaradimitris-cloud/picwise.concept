@@ -171,6 +171,36 @@ def _change_html(row: TrendRow) -> str:
         return ""
     return f'<span class="pw-tp-chg pw-tp-chg-{change}" title="{label}" aria-label="{label}">{text}</span>'
 
+# The design of 2026-11-16 (owner: «Κάτι ενδιάμεσο ... το απλό με μπλε κεφαλίδα και
+# εικονίδια, χωρίς καρτέλες»): a blue heading and one small line icon a row, keyed by the
+# row's search words; a row whose words have no icon shows none. No category tabs.
+_ROW_ICONS = {
+    "boots": '<path d="M7 3h6v9l5 3v4H4v-3l3-2z"/><path d="M7 12h6"/>',
+    "dress": '<path d="M9 3l3 3 3-3 2 6-2 2 3 10H6l3-10-2-2z"/>',
+    "trainers": '<path d="M3 15l4-6 4 2 3-1 4 3 3 1v4H3z"/><path d="M3 15h18"/>',
+    "perfume": '<rect x="7" y="9" width="10" height="12" rx="3"/><path d="M10 9V6h4v3M9 4h6"/>',
+    "laptop": '<rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20"/>',
+    "sofa": '<path d="M4 11V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3"/><path d="M3 12a1 1 0 0 1 1-1h0a2 2 0 0 1 2 2v2h12v-2a2 2 0 0 1 2-2h0a1 1 0 0 1 1 1v6H3z"/>',
+    "air fryer": '<rect x="6" y="4" width="12" height="17" rx="3"/><path d="M9 8h6M9 12h6"/>',
+    "mattress": '<rect x="3" y="8" width="18" height="9" rx="2"/><path d="M3 12h18"/>',
+    "hoodie": '<path d="M8 4a4 4 0 0 1 8 0l4 3-2 3-1-1v11H7V9L6 10 4 7z"/><path d="M10 4a2 2 0 0 0 4 0"/>',
+    "microwave": '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M15 6v13M6 10h6M6 14h6"/>',
+    "headphones": '<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/>',
+    "kettle": '<path d="M7 9h10l-1 11H8z"/><path d="M9 9a3 3 0 0 1 6 0"/><path d="M17 11h2a2 2 0 0 1 0 4h-1"/>',
+}
+
+
+def _icon_html(row: TrendRow) -> str:
+    query = str(row.search_query or row.name).strip().lower()
+    paths = _ROW_ICONS.get(query)
+    if not paths:
+        return '<span class="pw-tp-ico pw-tp-ico-none" aria-hidden="true"></span>'
+    return (
+        '<span class="pw-tp-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" '
+        'stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'
+        f"{paths}</svg></span>"
+    )
+
 
 def _row_html(row: TrendRow) -> str:
     """One row: a link to the search when PicWise's shops have the product, its words
@@ -191,6 +221,7 @@ def _row_html(row: TrendRow) -> str:
     meta_html = f'<span class="pw-tp-meta">{" · ".join(parts)}</span>' if parts else ""
     inner = (
         f'<span class="pw-tp-rank">{int(row.rank)}</span>'
+        f"{_icon_html(row)}"
         '<span class="pw-tp-main">'
         f'<span class="pw-tp-name-line"><span class="pw-tp-name">{escape(row.name)}</span>'
         f"{_change_html(row)}</span>"
@@ -232,8 +263,8 @@ def render_trends_panel(panel: TrendsPanel | None) -> str:
         heading = f"Most popular in {escape(country)}"
     else:
         heading = "Most popular this month"
-    period = panel.period.strip()
-    period_html = f'<span class="pw-tp-period">{escape(period)}</span>' if period else ""
+    kicker = " · ".join(part for part in (panel.period.strip(), country) if part)
+    kicker_html = f'<span class="pw-tp-kicker">{escape(kicker)}</span>' if kicker else ""
     more_html = (
         '<button class="pw-tp-more pw-needs-js" id="pw-tp-more" type="button" aria-expanded="false" '
         f'aria-controls="pw-tp-list" data-more="Show all {len(rows)}" data-less="Show fewer">'
@@ -246,7 +277,7 @@ def render_trends_panel(panel: TrendsPanel | None) -> str:
     )
     return (
         '<section class="pw-tp" id="pw-trends" aria-labelledby="pw-tp-title">'
-        f'<div class="pw-tp-head"><h2 class="pw-tp-title" id="pw-tp-title">{heading}</h2>{period_html}</div>'
+        f'<div class="pw-tp-head">{kicker_html}<h2 class="pw-tp-title" id="pw-tp-title">{heading}</h2></div>'
         f'<ol class="pw-tp-list" id="pw-tp-list">{"".join(_row_html(row) for row in rows)}</ol>'
         f"{more_html}"
         f'<p class="pw-tp-source">{" ".join(sources)}</p>'
@@ -276,14 +307,17 @@ more.addEventListener("click",function(){
 
 TRENDS_STYLES = (
     ".pw-tp{max-width:860px;margin:44px auto 0;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;}"
-    ".pw-tp-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:18px 22px 12px;border-bottom:1px solid var(--line);}"
-    ".pw-tp-title{margin:0;font-size:18px;letter-spacing:-.01em;color:var(--ink);}"
-    ".pw-tp-period{font-size:13px;color:var(--muted);white-space:nowrap;}"
+    ".pw-tp-head{display:block;padding:16px 22px 14px;background:linear-gradient(135deg,#1f5fd6,#30a0ff);}"
+    ".pw-tp-kicker{display:block;margin-bottom:4px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.82);}"
+    ".pw-tp-title{margin:0;font-size:19px;letter-spacing:-.01em;color:#fff;}"
+    ".pw-tp-ico{width:36px;height:36px;border-radius:10px;background:#e8f0fd;color:var(--blue);display:flex;align-items:center;justify-content:center;}"
+    ".pw-tp-ico svg{width:20px;height:20px;}"
+    ".pw-tp-ico-none{background:transparent;}"
     # Two columns read row by row, so opening the panel only adds rows under the four.
     ".pw-tp-list{list-style:none;margin:0;padding:4px 10px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:20px;}"
     ".pw-tp-item{min-width:0;}"
     f".pw-js .pw-tp:not(.is-open) .pw-tp-item:nth-child(n+{FOLDED_ROWS + 1}){{display:none;}}"
-    ".pw-tp-row{display:grid;grid-template-columns:30px minmax(0,1fr) 14px;align-items:center;gap:10px;padding:12px 8px;border-top:1px solid #eef1f5;border-radius:8px;color:inherit;text-decoration:none;}"
+    ".pw-tp-row{display:grid;grid-template-columns:30px 36px minmax(0,1fr) 14px;align-items:center;gap:10px;padding:12px 8px;border-top:1px solid #eef1f5;border-radius:8px;color:inherit;text-decoration:none;}"
     ".pw-tp-item:nth-child(-n+2) .pw-tp-row{border-top:0;}"
     "a.pw-tp-row:hover{background:#f4f7fc;}"
     "a.pw-tp-row:focus-visible{outline:2px solid var(--blue-2);outline-offset:-2px;}"
@@ -313,7 +347,7 @@ TRENDS_STYLES = (
     ".pw-tp-title{font-size:17px;}"
     ".pw-tp-list{grid-template-columns:minmax(0,1fr);padding:2px 6px;}"
     ".pw-tp-item:nth-child(2) .pw-tp-row{border-top:1px solid #eef1f5;}"
-    ".pw-tp-row{grid-template-columns:24px minmax(0,1fr) 12px;gap:8px;padding:11px 6px;min-height:56px;}"
+    ".pw-tp-row{grid-template-columns:24px 36px minmax(0,1fr) 12px;gap:8px;padding:11px 6px;min-height:56px;}"
     ".pw-tp-more{min-height:48px;}"
     ".pw-tp-source{padding:10px 14px 14px;}"
     "}"
