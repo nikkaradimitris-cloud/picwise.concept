@@ -32,6 +32,10 @@ THEME_COLOUR = "#2f6fe4"
 ICON_SVG_PATH = "/assets/picwise/favicon.svg"
 ICON_PNG_PATH = "/assets/picwise/favicon-48.png"
 TOUCH_ICON_PATH = "/assets/picwise/apple-touch-icon.png"
+# Google Search Console's proof that the owner (mysubby.cloud@gmail.com) holds the site,
+# added 2026-11-16; a public token, not a secret. Never remove it: the property's
+# verification lapses without it.
+GOOGLE_SITE_VERIFICATION = "-9-yi5lKHdUcuUtN1VYlBhHg-FNmCBvhoICNkwrs23E"
 LARGE_ICON_PATH = "/assets/picwise/icon-512.png"
 MANIFEST_PATH = "/assets/picwise/site.webmanifest"
 SITEMAP_PATH = "/sitemap.xml"
@@ -81,6 +85,7 @@ def icon_links_html() -> str:
         f'<link rel="apple-touch-icon" href="{TOUCH_ICON_PATH}">'
         f'<link rel="manifest" href="{MANIFEST_PATH}">'
         f'<meta name="theme-color" content="{THEME_COLOUR}">'
+        f'<meta name="google-site-verification" content="{GOOGLE_SITE_VERIFICATION}">'
     )
 
 
