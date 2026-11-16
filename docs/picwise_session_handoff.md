@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-15.
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-16.
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,6 +8,16 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **16/11, the daily work's checks (session branch `ccr-d4dcbe0e-4y2sjf`, `c67fd5c`): built and tested, not yet on
+  `main` or the work branch.** The owner chose «Εβδομαδιαία σύνοψη Κυριακής», «Έλεγχος προσφορών, ταχύτητας και
+  πόρων», «Ήσυχες μέρες: μία γραμμή»: `.github/workflows/server-health.yml` (read-only, 08:07 UTC daily;
+  `deployment/server/print_health.py`, its limits; `count_searches.py`, numbers only) and
+  `docs/PICWISE_DAILY_WORK.md` steps 2 and 4. It waits for the owner's «ναι» to go on `main` (a scheduled
+  workflow runs only from there) and on the work branch. Then: run `server-health.yml` once by hand (`weekly`
+  on), read and record it, and make the daily task's prompt (step 5) follow `docs/PICWISE_DAILY_WORK.md` step 4.
+  The owner's open items: a new Awin token (no offers fetched since 03/11, 401); `additional_image_link` in
+  Create-a-Feed and the secret `AWIN_FEED_URL_NEW`; a private way to show the searches' words, if wanted
+  (to propose on 22/11).
 - **15/11, the conversation on photos, offers and the price bar (session branch
   `ccr-d4dcbe0e-4y2sjf`, from the work line's `7e297d1`): four changes built, tested,
   pushed, not deployed** (no «ανέβασε» yet). The owner's words, 15/11: «1. Η προσφορές δεν
