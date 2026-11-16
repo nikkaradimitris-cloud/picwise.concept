@@ -79,6 +79,11 @@ _WORDS_LISTED = 100
 _WORDS_MIN_ROWS = 2
 _WORD_TITLES = 2
 _WORD_TITLE_LENGTH = 90
+# With each type, what the lexicon reads from each of its rows' titles alone, the most
+# first: a type learned by review names the kind of every row of it in its shop, whatever
+# its title says (`search_selection._product_concepts`), so two titles cannot show
+# whether all its rows are of one kind ("Made-to-Measure": curtains, or blinds too).
+_WORD_READS = 4
 
 _LAST_NOTE: dict[str, Any] | None = None
 
@@ -144,6 +149,14 @@ def _has_kind(product: ProviderProduct) -> bool:
     if learned:
         return learned in read
     return bool(read & {kind for kind in annotate_product_concepts(product_type, category, "") if not kind.startswith("__")})
+
+
+def _title_read(product: ProviderProduct) -> str:
+    """The kinds the lexicon reads from the row's title alone, joined, or "none"."""
+    from picwise_nlu.concept_understanding import annotate_product_concepts
+
+    kinds = sorted(kind for kind in annotate_product_concepts("", "", str(product.title or "")) if not kind.startswith("__"))
+    return "+".join(kinds) or "none"
 
 
 def _with_category(product: ProviderProduct, category: str, product_type: str) -> ProviderProduct:
@@ -246,10 +259,11 @@ def apply_shop_catalogues(
         else:
             note["type_no_kind"] += 1
             types_no_kind[product_type] += 1
-            entry = words.setdefault((name, product_type), [0, []])
+            entry = words.setdefault((name, product_type), [0, [], Counter()])
             entry[0] += 1
             if len(entry[1]) < _WORD_TITLES:
                 entry[1].append(" ".join(str(product.title or "").split())[:_WORD_TITLE_LENGTH])
+            entry[2][_title_read(product)] += 1
     barcode_note, barcode_shops = _apply_barcodes(result)
     _LAST_NOTE = {
         "file": file_status or ("read" if catalogues is not None else "none"),
@@ -266,8 +280,12 @@ def apply_shop_catalogues(
             for value, rows in heapq.nsmallest(_TYPES_LISTED, types_no_kind.items(), key=lambda item: (-item[1], item[0]))
         ],
         "words_to_learn": [
-            {"shop": shop, "type": _short(product_type), "rows": count, "titles": titles}
-            for (shop, product_type), (count, titles) in heapq.nsmallest(
+            {"shop": shop, "type": _short(product_type), "rows": count, "titles": titles,
+             "title_reads": [
+                 {"kind": kind, "rows": rows}
+                 for kind, rows in heapq.nsmallest(_WORD_READS, reads.items(), key=lambda item: (-item[1], item[0]))
+             ]}
+            for (shop, product_type), (count, titles, reads) in heapq.nsmallest(
                 _WORDS_LISTED,
                 ((key, value) for key, value in words.items() if value[0] >= _WORDS_MIN_ROWS),
                 key=lambda item: (-item[1][0], item[0]),

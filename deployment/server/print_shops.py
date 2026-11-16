@@ -254,8 +254,11 @@ def print_shop_catalogues(note: dict) -> None:
     if found.get("types_no_kind"):
         print("  types naming no kind: " + "; ".join(f"{entry['value']} ({entry['rows']:,})" for entry in found["types_no_kind"]))
     for entry in (found.get("words_to_learn") or [])[:WORDS_LISTED]:
-        # To review for shop_words.py: the shop's type, its rows held, two of their titles.
-        print(f"  to review: {entry['type']} ({entry['shop']}) {entry['rows']:,}: " + " | ".join(entry["titles"]))
+        # To review for shop_words.py: the shop's type, its rows held, two of their titles,
+        # and what their titles alone read as, the most first (a note before 16/11 has none).
+        reads = entry.get("title_reads") or []
+        read = ("; titles read: " + ", ".join(f"{item['kind']} {item['rows']:,}" for item in reads)) if reads else ""
+        print(f"  to review: {entry['type']} ({entry['shop']}) {entry['rows']:,}: " + " | ".join(entry["titles"]) + read)
     barcode = found.get("barcode") or {}
     if barcode:
         print(

@@ -161,9 +161,11 @@ class WordsToLearnTests(unittest.TestCase):
             note["words_to_learn"],
             [
                 {"shop": SHOP, "type": "Brooches", "rows": 3,
-                 "titles": ["Fixturon Silver Brooch", "Fixturon Gold Brooch"]},
+                 "titles": ["Fixturon Silver Brooch", "Fixturon Gold Brooch"],
+                 "title_reads": [{"kind": "none", "rows": 3}]},
                 {"shop": SHOP, "type": "Designer", "rows": 2,
-                 "titles": ["Fixturon Designer Thing", "Fixturon Designer Other"]},
+                 "titles": ["Fixturon Designer Thing", "Fixturon Designer Other"],
+                 "title_reads": [{"kind": "none", "rows": 2}]},
             ],
         )
         report = subprocess.run(
@@ -172,7 +174,52 @@ class WordsToLearnTests(unittest.TestCase):
                               "intake": {"rows": 0, "shown": 0, "not_new": 0, "held": 0, "shops": []}}), capture_output=True, text=True,
             check=True,
         ).stdout
-        self.assertIn(f"  to review: Brooches ({SHOP}) 3: Fixturon Silver Brooch | Fixturon Gold Brooch", report)
+        self.assertIn(
+            f"  to review: Brooches ({SHOP}) 3: Fixturon Silver Brooch | Fixturon Gold Brooch; titles read: none 3", report
+        )
+
+    def test_each_type_to_review_says_what_its_titles_read_as(self) -> None:
+        # A type learned by review names the kind of every row of it, whatever the
+        # title says: two titles cannot show whether all its rows are one kind.
+        today = _today()
+        _Feed(
+            self,
+            [
+                _row("m1", "Fixturon Made-to-Measure Curtains - Blush"),
+                _row("m2", "Fixturon Made-to-Measure Curtains - Navy"),
+                _row("m3", "Fixturon Made-to-Measure Curtains - Grey"),
+                _row("m4", "Fixturon Made-to-Measure Electric Kettle"),
+                _row("m5", "Fixturon Made-to-Measure Thing"),
+                _row("k1", "Fixturon Glass Kettle"),
+            ],
+            _catalogues(
+                {**{pid: ["Made-to-Measure", 1, today, []] for pid in ("m1", "m2", "m3", "m4", "m5")},
+                 "k1": ["Kettles", 1, today, []]}
+            ),
+        )
+        _Feed.shown()
+        note = shop_catalogue.last_shop_catalogue_note()
+        self.assertEqual(
+            note["words_to_learn"][0]["title_reads"],
+            [{"kind": "curtains", "rows": 3}, {"kind": "kettle", "rows": 1}, {"kind": "none", "rows": 1}],
+        )
+        report = subprocess.run(
+            [sys.executable, str(ROOT / "deployment" / "server" / "print_shops.py")],
+            input=json.dumps({"prepared": True, "shop_catalogues": note,
+                              "intake": {"rows": 0, "shown": 0, "not_new": 0, "held": 0, "shops": []}}), capture_output=True, text=True,
+            check=True,
+        ).stdout
+        self.assertIn("; titles read: curtains 3, kettle 1, none 1", report)
+        # A note written before the reads were counted still prints.
+        old = {**note, "words_to_learn": [{key: value for key, value in entry.items() if key != "title_reads"}
+                                          for entry in note["words_to_learn"]]}
+        report = subprocess.run(
+            [sys.executable, str(ROOT / "deployment" / "server" / "print_shops.py")],
+            input=json.dumps({"prepared": True, "shop_catalogues": old,
+                              "intake": {"rows": 0, "shown": 0, "not_new": 0, "held": 0, "shops": []}}), capture_output=True, text=True,
+            check=True,
+        ).stdout
+        self.assertIn("Fixturon Made-to-Measure Curtains - Navy\n", report)
 
 
 class AddressNameTests(unittest.TestCase):

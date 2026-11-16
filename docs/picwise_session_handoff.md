@@ -8,6 +8,27 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **16/11, the daily session (12:00 Greek time).** Read at 09:44 UTC: the night's note `prepared: true`,
+  prepared 04:25 UTC, 254,756 products, 78 shops, nothing shrunk, gone or new; `price_notes` 0 ▼, 0 ▲ (first
+  chips about 19/11). `server-health.yml`: today's run is the one by hand at 07:33 UTC (`43824703638`); the
+  schedule of 08:07 UTC did not run, the workflow having reached `main` at 07:32 (look again tomorrow); only the
+  offers over the limit (Awin 401, the owner's token). The Sunday tidy-up: its first scheduled run is 22/11.
+  **Step 11's list read for the first time** (`c93be3c` live since 15/11): it is in `prepared.json` under
+  `shop_catalogues.words_to_learn` (not `balance`, which stays empty by design), 100 types, 41,109 rows held
+  whose type names no kind. Reviewed: **no type learned.** Most rows are Back to the Office's office and IT
+  accessories, kinds PicWise does not have (tablet enclosures 2,936, privacy filters 1,983, mounts, UPS
+  batteries): a lexicon proposal, which is the search's accuracy (the owner, 12/11: later). Where the type
+  names a kind PicWise has, the row's title contradicts it, by the rule a doubtful row held ("Laptops" 200,
+  "PCs/Workstations" 493: their titles read "Mobile Workstation" as `desktop_pc`, "256 GB SSD" as
+  `storage_drive`; accuracy, not touched). Only Homespace Direct's "Made-to-Measure" 487 (curtains) and
+  Finediam's "Sidestone" 126 (rings) could be learned, but a learned type names the kind of every row of it
+  whatever its title says (`search_selection._product_concepts`), and two titles cannot show that all its rows
+  are one kind (blinds among the curtains). **Built (measured only, nothing a search shows changes):** with each
+  type to review, what each of its rows' titles reads as alone, the most first (`title_reads`, at most 4; the
+  server's report: "titles read: curtains 470, none 17"); about 2.5 s more at night for 41,000 rows. The search's
+  reading byte for byte the same (`print_search_reading.py`, only its time line differs); 315 modules, 313
+  pass, 2 fail as known. To go on the site with the next deployment; then learn by review the types whose
+  titles read one kind.
 - **16/11, the daily work's checks (session branch `ccr-d4dcbe0e-4y2sjf`, `c67fd5c`): on `main` and the work
   branch on the owner's «Ναι, ανέβασέ το».** The owner chose «Εβδομαδιαία σύνοψη Κυριακής», «Έλεγχος προσφορών,
   ταχύτητας και πόρων», «Ήσυχες μέρες: μία γραμμή»: `.github/workflows/server-health.yml` (read-only, 08:07 UTC
