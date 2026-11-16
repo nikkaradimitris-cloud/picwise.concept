@@ -8,13 +8,12 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **16/11, the daily work's checks (session branch `ccr-d4dcbe0e-4y2sjf`, `c67fd5c`): built and tested, not yet on
-  `main` or the work branch.** The owner chose «Εβδομαδιαία σύνοψη Κυριακής», «Έλεγχος προσφορών, ταχύτητας και
-  πόρων», «Ήσυχες μέρες: μία γραμμή»: `.github/workflows/server-health.yml` (read-only, 08:07 UTC daily;
-  `deployment/server/print_health.py`, its limits; `count_searches.py`, numbers only) and
-  `docs/PICWISE_DAILY_WORK.md` steps 2 and 4. It waits for the owner's «ναι» to go on `main` (a scheduled
-  workflow runs only from there) and on the work branch. Then: run `server-health.yml` once by hand (`weekly`
-  on), read and record it, and make the daily task's prompt (step 5) follow `docs/PICWISE_DAILY_WORK.md` step 4.
+- **16/11, the daily work's checks (session branch `ccr-d4dcbe0e-4y2sjf`, `c67fd5c`): on `main` and the work
+  branch on the owner's «Ναι, ανέβασέ το».** The owner chose «Εβδομαδιαία σύνοψη Κυριακής», «Έλεγχος προσφορών,
+  ταχύτητας και πόρων», «Ήσυχες μέρες: μία γραμμή»: `.github/workflows/server-health.yml` (read-only, 08:07 UTC
+  daily; `deployment/server/print_health.py`, its limits; `count_searches.py`, numbers only) and
+  `docs/PICWISE_DAILY_WORK.md` steps 2 and 4 (a scheduled workflow runs only from `main`). Its first run by
+  hand and the daily task's prompt (step 5 follows `docs/PICWISE_DAILY_WORK.md` step 4): `PROGRESS.md`.
   The owner's open items: a new Awin token (no offers fetched since 03/11, 401); `additional_image_link` in
   Create-a-Feed and the secret `AWIN_FEED_URL_NEW`; a private way to show the searches' words, if wanted
   (to propose on 22/11).
