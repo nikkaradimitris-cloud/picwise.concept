@@ -12,8 +12,12 @@ a decision came about.
   branch on the owner's «Ναι, ανέβασέ το».** The owner chose «Εβδομαδιαία σύνοψη Κυριακής», «Έλεγχος προσφορών,
   ταχύτητας και πόρων», «Ήσυχες μέρες: μία γραμμή»: `.github/workflows/server-health.yml` (read-only, 08:07 UTC
   daily; `deployment/server/print_health.py`, its limits; `count_searches.py`, numbers only) and
-  `docs/PICWISE_DAILY_WORK.md` steps 2 and 4 (a scheduled workflow runs only from `main`). Its first run by
-  hand and the daily task's prompt (step 5 follows `docs/PICWISE_DAILY_WORK.md` step 4): `PROGRESS.md`.
+  `docs/PICWISE_DAILY_WORK.md` steps 2 and 4 (a scheduled workflow runs only from `main`). First run by hand,
+  `43824703638`: only the offers over the limit (not fetched since 03/11, Awin answers 401: a new token, the
+  owner's). **The server's room, measured now:** the site 6.8 GB once its workers have the catalogue (the
+  deployment's 4.1 GB was read while they still loaded it), the preparation 9.0 GB at its peak; 15.8 GB at night
+  of 22.9 GB, the limit 18 GB. The `additional_image_link` column, estimated at +0.5 GB and +1 GB, would bring
+  the night near 17.3 GB: measure it (`feed-compare.yml`) before taking it in.
   The owner's open items: a new Awin token (no offers fetched since 03/11, 401); `additional_image_link` in
   Create-a-Feed and the secret `AWIN_FEED_URL_NEW`; a private way to show the searches' words, if wanted
   (to propose on 22/11).
