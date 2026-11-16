@@ -42,6 +42,25 @@ by email and to their phone. The owner answers in that session, once a day.
    The note, never a link from it; the time it was read, in UTC. An email from the
    server itself when the night fails is not built: it needs the owner's choice of
    address and sender.
+   **The server's health** (owner, 2026-11-16, among the proposals for the daily work:
+   «Έλεγχος προσφορών, ταχύτητας και πόρων ... Ειδοποίηση μόνο αν ξεπεράσουν το όριο»):
+   read the log of the day's run of `.github/workflows/server-health.yml` (every day at
+   08:07 UTC; the GitHub tools: the workflow's runs, then its job's log). Its step "What
+   runs on the server, and which limit is passed" ends with each limit passed, "over the
+   limit: …", or with "within every limit". The limits are in
+   `deployment/server/print_health.py`: the site's service not active; the night's
+   preparation failed, or the catalogue prepared more than 30 hours before, or a shop lost
+   or shrunk to less than half; the offers fetched more than 30 hours before, or their
+   last fetch failed; the photos checked more than 30 hours before; the site's memory and
+   the preparation's peak together over 18 GB (of the server's 24), less than 4 GB
+   available, the preparation longer than 30 minutes; less than 20 GB of disk free;
+   yesterday's AI spend at its cap. Its step "How fast the site answers, from outside"
+   gives each page's first byte and the server's part of it: a page not answering 200, or
+   a search whose server's part is over 1 s also when asked again, passes the limit of
+   speed. Each limit passed goes first in the report, one line each, in plain words; the
+   rest of the log is told only on Sundays. When today's run failed or did not run, the
+   report says so first; the session may run it once by hand (it only reads) and read that
+   run.
    **Whether the Sunday tidy-up of the branches ran** (owner, 2026-11-16: «Θέλω να
    λαμβάνω ενημέρωση να συμπεριλάβεις την αυτόματη εργασία»): on a Sunday, and on the
    first day after one whose session did not report it, read the last run of
@@ -59,10 +78,39 @@ by email and to their phone. The owner answers in that session, once a day.
    `PROGRESS.md`; push each commit to the session's branch and to `ccr-4f47068a-99ikwe`
    (the owner's standing word, 2026-11-07).
 4. **Report.** The session's last message is the email: in Greek, short, plain words
-   (the owner reads it on a phone): what was done; the numbers before and after; what is
-   proposed to go on the site, ending with «Να το ανεβάσω;»; the questions that need the
-   owner, each one line; what comes next. No link to a shop, no secret, nothing invented,
-   nothing claimed that was not checked.
+   (the owner reads it on a phone). First, always, whatever failed or passed a limit (the
+   night's preparation, the server's health, the Sunday tidy-up), one line each. Then:
+   - **A quiet day** (owner, 2026-11-16: «Ήσυχες μέρες: μία γραμμή ... Όταν δεν συμβαίνει
+     τίποτα, το καθημερινό email είναι μία γραμμή «όλα εντάξει». Τα προβλήματα έρχονται
+     πάντα πρώτα»): nothing failed or passed a limit, nothing is proposed to go on the
+     site and no question waits for the owner. The email is one line: «Όλα εντάξει.»,
+     with the day's work in a few words on the same line when there was some («Όλα
+     εντάξει. Σήμερα: …»).
+   - **Any other day:** what was done; the numbers before and after; what is proposed to
+     go on the site, ending with «Να το ανεβάσω;»; the questions that need the owner, each
+     one line; what comes next.
+   - **On Sundays, the week's summary** in place of the day's report, after the day's
+     problems (owner, 2026-11-16: «Εβδομαδιαία σύνοψη Κυριακής: Τι έγινε την εβδομάδα,
+     κατάλογος, τιμές (▼/▲), αναζητήσεις επισκεπτών (συχνές και χωρίς αποτέλεσμα),
+     ταχύτητα και πόροι του διακομιστή, καθάρισμα κλάδων, εκκρεμότητες»), a line or two
+     each:
+     - the week's work: what went on the site, what waits for a «ναι» (`PROGRESS.md`);
+     - the catalogue: products and shops now and a week before (the `prepared:` line of
+       today's run of `server-health.yml` and of the run 7 days before), the shops gone,
+       shrunk or new in the week (each day's "shops since the preparation before");
+     - the prices: today's "price notes" (▼ down, ▲ up) and the prices changed in the
+       week (each day's "prices changed tonight", added up);
+     - the visitors' searches: how many in the week, how many different, how many times
+       the most searched one, how many found no product (the Sunday run's two lines).
+       Their words are not in the log, which is public like the repository, and are never
+       printed there; showing them to the owner needs a private way, which is the owner's
+       decision (proposed in the first Sunday summary, 22/11);
+     - speed and resources, from the week's runs of `server-health.yml`: the slowest
+       search (the server's part), the highest memory at night, the longest preparation,
+       the disk free, the AI's spend;
+     - the Sunday tidy-up of the branches (above);
+     - what waits for the owner: each open question, one line.
+   No link to a shop, no secret, nothing invented, nothing claimed that was not checked.
    Then, every day, even when nothing was done, the session calls `PushNotification` with
    a short Greek summary of the report: the email and the phone notification go out only
    through it (2026-11-08: a session that skipped it left the owner without the day's
