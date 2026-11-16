@@ -42,6 +42,15 @@ by email and to their phone. The owner answers in that session, once a day.
    The note, never a link from it; the time it was read, in UTC. An email from the
    server itself when the night fails is not built: it needs the owner's choice of
    address and sender.
+   **Whether the Sunday tidy-up of the branches ran** (owner, 2026-11-16: «Θέλω να
+   λαμβάνω ενημέρωση να συμπεριλάβεις την αυτόματη εργασία»): on a Sunday, and on the
+   first day after one whose session did not report it, read the last run of
+   `.github/workflows/tidy-branches.yml` (scheduled Sundays 03:17 UTC; the GitHub tools:
+   the workflow's runs, then its job's log, whose last line reads "== N deleted, M kept").
+   The report gives it one line: when it ran, how many branches it deleted and kept, the
+   name of any branch "kept, a commit found nowhere else"; or that it failed or did not
+   run, which the report puts first. The first such run, 22/11, should delete pull
+   request #23's branch `ccr-99b47f03-l8t4dj` (owner, 16/11): say whether it did.
 3. **Work.** The next step of the handoff's "START HERE", in small, closed steps: fix
    by cause, never word by word; every fix with its tests; the measures before and
    after (`deployment/server/print_search_reading.py` offline and free; the server's
@@ -86,7 +95,9 @@ by email and to their phone. The owner answers in that session, once a day.
   holds the key); never open an Awin tracked link; never propose contacting the shops.
 - The cloud environment, secrets (only in GitHub's or Vercel's secrets), Supabase, the
   server's setup; `main` (nothing on it without the owner's «ναι»); deleting anything
-  kept.
+  kept. The weekly tidy-up of the branches (`tidy-branches.yml`, owner, 2026-11-15:
+  «Ναι, το εγκρίνω») is approved as it is; changing what it deletes or keeps is asked
+  first.
 
 ## When it stops and only reports
 
