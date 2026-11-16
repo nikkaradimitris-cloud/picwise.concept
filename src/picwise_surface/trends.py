@@ -38,12 +38,15 @@ to be given them.
 """
 from __future__ import annotations
 
+import json
+import os
 from dataclasses import dataclass
 from html import escape
+from pathlib import Path
 from urllib.parse import quote
 
 # The panel's source, as the dashboard enum names missing data (PROJECT_RULES §10).
-TRENDS_SOURCE_STATUS = "not_connected"
+TRENDS_SOURCE_STATUS = "hand_written"
 
 MAX_TREND_ROWS = 10
 # The rows a folded panel shows (owner, 2026-11-12).
@@ -69,8 +72,9 @@ class TrendRow:
     # the row, never shown (owner, 2026-11-13: «Δεν θέλουμε να δείξουμε τον αριθμό των
     # αναζητήσεων»).
     monthly_searches: str = ""
-    # PicWise's products for it and the lowest of their prices, from its own catalogue.
-    offers: int = 0
+    # PicWise's products for it and the lowest of their prices, from its own catalogue;
+    # None while they are not counted, and then the row says nothing of them.
+    offers: int | None = 0
     from_price: str = ""
     # What a tap on the row searches for; the name when empty.
     search_query: str = ""
@@ -89,16 +93,67 @@ class TrendsPanel:
     offers_source: str = ""
 
 
-def load_trends_panel() -> TrendsPanel | None:
-    """The panel's data from its sources, or None while none is connected.
+# The month's ten, as written by hand from Google's data (`data/trends/uk_top10.json`,
+# first on 2026-11-16: Keyword Planner's ranges ordered by Google Trends). The file names
+# its sources and its method; `TRENDS_DATA_ENV` points elsewhere for a test.
+TRENDS_DATA_ENV = "PICWISE_TRENDS_DATA_PATH"
+_TRENDS_DATA_PATH = Path(__file__).resolve().parents[2] / "data" / "trends" / "uk_top10.json"
 
-    TODO (owner's accounts, 31/10): the month's most searched products in the UK and
-    their change from Google Ads Keyword Planner (monthly searches; its API needs a
-    developer token with Basic access) or the Google Trends API (interest 0-100; alpha,
-    by application), written once a month with the products counted in PicWise's
-    catalogue. Until then the panel is not shown.
+
+def trends_data_path() -> Path:
+    configured = str(os.environ.get(TRENDS_DATA_ENV) or "").strip()
+    return Path(configured) if configured else _TRENDS_DATA_PATH
+
+
+def load_trends_panel() -> TrendsPanel | None:
+    """The panel's data from `data/trends/uk_top10.json`, or None when the file is
+    missing or unreadable: never invented rows.
+
+    The products and the lowest price of each row (`offers`, `from_price`) stay None
+    until the night's preparation counts them in PicWise's catalogue; until then a row
+    shows its rank and its name and links to the search, and says nothing of products.
     """
-    return None
+    try:
+        payload = json.loads(trends_data_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    rows = []
+    for item in payload.get("rows") or []:
+        if not isinstance(item, dict):
+            continue
+        try:
+            rank = int(item.get("rank") or 0)
+        except (TypeError, ValueError):
+            continue
+        name = str(item.get("name") or "").strip()
+        if rank <= 0 or not name:
+            continue
+        offers = item.get("offers")
+        rows.append(
+            TrendRow(
+                rank=rank,
+                name=name,
+                category=str(item.get("category") or ""),
+                change=str(item.get("change") or ""),
+                change_by=int(item.get("change_by") or 0),
+                monthly_searches=str(item.get("monthly_searches") or ""),
+                offers=int(offers) if offers is not None else None,
+                from_price=str(item.get("from_price") or ""),
+                search_query=str(item.get("search_query") or ""),
+            )
+        )
+    if not rows:
+        return None
+    return TrendsPanel(
+        period=str(payload.get("period") or ""),
+        country=str(payload.get("country") or ""),
+        rows=tuple(rows),
+        ranking_source=str(payload.get("ranking_source") or ""),
+        searches_source=str(payload.get("searches_source") or ""),
+        offers_source=str(payload.get("offers_source") or ""),
+    )
 
 
 def _change_html(row: TrendRow) -> str:
@@ -122,7 +177,10 @@ def _row_html(row: TrendRow) -> str:
     alone when they do not. A column a source did not give is left out, never filled."""
     products = max(int(row.offers or 0), 0)
     parts = []
-    if products:
+    if row.offers is None:
+        # Not counted yet: the row says nothing of products, and still links to the search.
+        products = -1
+    elif products:
         words = f"{products:,} {'product' if products == 1 else 'products'}"
         price = str(row.from_price or "").strip()
         if price:
@@ -130,15 +188,16 @@ def _row_html(row: TrendRow) -> str:
         parts.append(f'<span class="pw-tp-deal">{words}</span>')
     else:
         parts.append('<span class="pw-tp-deal pw-tp-deal-none">Not in our shops yet</span>')
+    meta_html = f'<span class="pw-tp-meta">{" · ".join(parts)}</span>' if parts else ""
     inner = (
         f'<span class="pw-tp-rank">{int(row.rank)}</span>'
         '<span class="pw-tp-main">'
         f'<span class="pw-tp-name-line"><span class="pw-tp-name">{escape(row.name)}</span>'
         f"{_change_html(row)}</span>"
-        f'<span class="pw-tp-meta">{" · ".join(parts)}</span>'
+        f"{meta_html}"
         "</span>"
     )
-    if not products:
+    if products == 0:
         # A product PicWise has none of never links to an empty search.
         return f'<li class="pw-tp-item"><div class="pw-tp-row pw-tp-row-off">{inner}</div></li>'
     query = str(row.search_query or row.name).strip()

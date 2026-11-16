@@ -1,0 +1,20 @@
+{
+  "period": "November 2026",
+  "country": "United Kingdom",
+  "ranking_source": "Google Ads Keyword Planner (monthly searches, UK, Nov 2025 to Oct 2026) ordered by Google Trends (UK, last 12 months)",
+  "written": "2026-11-16",
+  "method": "40 broad UK shopping words asked of Keyword Planner's 'Get search volume and forecasts' (ranges only: a free account without ads). The 17 words in the top two ranges were ordered by Google Trends' average interest over the last 12 months, compared five at a time with 'trainers' in every batch as the common scale. 'watch' (100K-1M) was left out: Google cannot tell the wristwatch from watching. Products and prices are not counted yet.",
+  "rows": [
+    {"rank": 1, "name": "Boots", "search_query": "boots", "monthly_searches": "1M-10M", "trends_vs_trainers": 2.60},
+    {"rank": 2, "name": "Dress", "search_query": "dress", "monthly_searches": "100K-1M", "trends_vs_trainers": 2.27},
+    {"rank": 3, "name": "Trainers", "search_query": "trainers", "monthly_searches": "100K-1M", "trends_vs_trainers": 1.00},
+    {"rank": 4, "name": "Perfume", "search_query": "perfume", "monthly_searches": "100K-1M", "trends_vs_trainers": 0.88},
+    {"rank": 5, "name": "Laptop", "search_query": "laptop", "monthly_searches": "100K-1M", "trends_vs_trainers": 0.85},
+    {"rank": 6, "name": "Sofa", "search_query": "sofa", "monthly_searches": "100K-1M", "trends_vs_trainers": 0.74},
+    {"rank": 7, "name": "Air fryer", "search_query": "air fryer", "monthly_searches": "100K-1M", "trends_vs_trainers": 0.55},
+    {"rank": 8, "name": "Mattress", "search_query": "mattress", "monthly_searches": "100K-1M", "trends_vs_trainers": 0.48},
+    {"rank": 9, "name": "Hoodie", "search_query": "hoodie", "monthly_searches": "100K-1M", "trends_vs_trainers": 0.47},
+    {"rank": 10, "name": "Microwave", "search_query": "microwave", "monthly_searches": "100K-1M", "trends_vs_trainers": 0.34}
+  ],
+  "also_measured": {"headphones": 0.32, "sunglasses": 0.31, "rug": 0.30, "curtains": 0.28, "coffee machine": 0.19, "blender": 0.15}
+}

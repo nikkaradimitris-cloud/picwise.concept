@@ -30,6 +30,7 @@ import re
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 from urllib.parse import urlencode
 
@@ -463,11 +464,29 @@ class HomePageTests(unittest.TestCase):
         self.assertIn(".pw-info-link{background:#fff;color:var(--ink-2);border-color:var(--line);}", self.page)
         self.assertIn(".pw-search-shell:focus-within{border-color:var(--blue-2);", self.page)
 
-    def test_no_trends_panel_without_a_real_source(self) -> None:
-        self.assertIsNone(load_trends_panel())
-        self.assertEqual(TRENDS_SOURCE_STATUS, "not_connected")
-        self.assertNotIn('id="pw-trends"', self.page)
-        self.assertNotIn("Most popular in the UK", self.page)
+    def test_the_months_ten_come_from_the_hand_written_file(self) -> None:
+        """2026-11-16: `data/trends/uk_top10.json`, Google's data written by hand; the
+        home page shows the panel, ten rows, each linking to its search, no product count
+        until the catalogue counts them (then no "Not in our shops yet" either)."""
+        panel = load_trends_panel()
+        self.assertIsNotNone(panel)
+        self.assertEqual(TRENDS_SOURCE_STATUS, "hand_written")
+        self.assertEqual(panel.country, "United Kingdom")
+        self.assertEqual([row.rank for row in panel.rows], list(range(1, 11)))
+        self.assertTrue(all(row.offers is None for row in panel.rows))
+        self.assertIn("Keyword Planner", panel.ranking_source)
+        self.assertIn('id="pw-trends"', self.page)
+        self.assertIn("Most popular in the UK", self.page)
+        self.assertIn('href="/search?q=air%20fryer"', self.page)
+        self.assertNotIn("Not in our shops yet", self.page)
+        self.assertNotIn("Products and prices:", self.page)
+        for row in panel.rows:
+            self.assertNotIn(row.monthly_searches, self.page)  # never a number of searches
+
+    def test_no_trends_panel_without_the_file(self) -> None:
+        with mock.patch.dict(os.environ, {"PICWISE_TRENDS_DATA_PATH": "/nonexistent/uk_top10.json"}):
+            self.assertIsNone(load_trends_panel())
+        self.assertEqual(render_trends_panel(None), "")
 
 
 def _panel(rows: tuple[TrendRow, ...], **overrides: str) -> TrendsPanel:
