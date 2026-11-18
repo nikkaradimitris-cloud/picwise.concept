@@ -8,6 +8,9 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **In the owner's plans, not built (18/11):** a price-drop alert for a favourite («Αυτή τη στιγμή δεν στέλνουμε
+  ειδοποίηση τιμής... Το έχω στο σχέδιο μου»). It needs email from the site and a place for each visitor's favourites
+  (today they stay in the browser): to be discussed with the owner first. Until then nothing says PicWise alerts.
 - **How PicWise is described to shops and networks (owner, 18/11):** never «price comparison» («Δεν θέλω να λέμε
   ότι είμαστε σύγκριση τιμών ... δεν λέει και την αλήθεια»). PicWise is a shopping search that helps the buyer buy:
   a search's range from the lowest price (an offer counted where it surely applies), one product at the category's
