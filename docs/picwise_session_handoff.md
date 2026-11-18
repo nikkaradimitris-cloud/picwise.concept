@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-18.
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-19.
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,6 +8,12 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **19/11, the records of the order brought to the rule** (owner, 19/11: «Η προσφορές βγαίνουν πρώτα μόνο αν είναι
+  φθηνότερες», the rule of 15/11 said again): `README.md`, `docs/MISSION.md`, this file's rules,
+  `docs/PICWISE_DECISION_CONTRACT.md` (rule 4 of "Price first", the complex search's order, the price bar),
+  `docs/LANDING_PAGE_SPEC.md` ("More") and `docs/PICWISE_AI_LAYER_SPEC.md` still said "offers first". Records
+  only: the site has ordered so since 15/11; nothing deployed. The claude.ai Project "PicWise" now holds a short
+  overview of the stable facts (`claude/PicWise-overview.md`; the repository wins where they differ).
 - **In the owner's plans, not built (18/11):** a price-drop alert for a favourite («Αυτή τη στιγμή δεν στέλνουμε
   ειδοποίηση τιμής... Το έχω στο σχέδιο μου»). It needs email from the site and a place for each visitor's favourites
   (today they stay in the browser): to be discussed with the owner first. Until then nothing says PicWise alerts.
@@ -355,8 +361,10 @@ Read in this order: `PROJECT_RULES.md` (first, it wins), `docs/MISSION.md`,
 A conflict between them: stop and say it (`PROJECT_RULES.md` 1.4).
 
 - Every purchase-intent search: only the kind asked for, only in stock; 4 choices, 1
-  Recommended, "More" by four; offers first, then the cheapest; commission never a
-  criterion (`PROJECT_RULES.md` 2 and 5, `docs/PICWISE_DECISION_CONTRACT.md`).
+  Recommended (the middle price), "More" by four; cheapest first, each at its price after
+  an offer that surely applies, so an offer comes first only when it is cheaper (owner,
+  15/11 and 19/11); commission never a criterion (`PROJECT_RULES.md` 2 and 5,
+  `docs/PICWISE_DECISION_CONTRACT.md`).
 - No invented data anywhere; a synthetic catalogue is for measuring speed only.
 - Small closed steps, each with its tests and measures, each a commit; look before
   changing; never skip, weaken or delete a test to get green; a module taken out with

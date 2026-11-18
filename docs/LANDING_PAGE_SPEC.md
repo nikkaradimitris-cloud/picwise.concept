@@ -207,8 +207,10 @@ Changed on 2026-10-16 by the owner: "price first" (`docs/picwise_price_first_pla
 
 - "More" is below the first 4 choices, on every search.
 - Each press opens the next 4 in the answer's order, as often as the buyer asks, until the
-  list ends: the products a current shop offer covers first, then the cheapest (owner,
-  2026-11-01: «Ένα προϊόν με προσφορά θα μπαίνει πρώτα από το φθηνότερο»).
+  list ends: cheapest first, each product at its price after a current shop offer where
+  the offer surely applies (owner, 2026-11-15; 2026-11-19: «Η προσφορές βγαίνουν πρώτα
+  μόνο αν είναι φθηνότερες»; from 2026-11-01 to 2026-11-15 the products on offer came
+  first).
 - A counter shows how many are shown: "4 of 45", "8 of 45".
 - Nothing opened by "More" is recommended.
 - It is a button the buyer presses, not an infinite scroll that loads on its own.

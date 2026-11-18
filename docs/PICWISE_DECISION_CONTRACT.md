@@ -452,11 +452,12 @@ sales figure between them. In their place:
    feed's word is trusted; no shop page is checked (owner, 2026-10-16)
 3. the products must carry title, price, image, description, link and availability, as
    ruled on 2026-10-12; specifications and codes are shown when present, never required
-4. cheapest first, by product price alone, with no delivery cost; **after the Recommended,
-   the products a current shop offer covers come first**, cheapest first among them, then
-   the rest (owner, 2026-11-01; "Offers first" below); in a complex search, the products
-   that fit the buyer's need before all (owner, 2026-11-06; "The products that fit a
-   complex search first" below)
+4. cheapest first, by product price alone, with no delivery cost, each product at its
+   price after a current shop offer where the offer surely applies: a product on offer
+   comes first only when it is cheaper (owner, 2026-11-15 and 2026-11-19; "The price after
+   offers" below; from 2026-11-01 to 2026-11-15 the products on offer came first, "Offers
+   first" below); in a complex search, the products that fit the buyer's need before all
+   (owner, 2026-11-06; "The products that fit a complex search first" below)
 5. the same product (same EAN/GTIN or, without it, same brand and manufacturer code,
    MPN; owner, 2026-10-16) shown once, from the cheapest shop that has it in stock;
    neither code, no joining
@@ -681,9 +682,9 @@ Then, to the order, the time and the mark proposed: «Ναι, συμφωνώ μ�
    only where its own title or description shows it, in words code finds there letter for
    letter (4.3). Nothing else changes the order: no answer, an answer the checks withhold,
    an answer with no product that fits, or the day's cap reached leave the page as it is.
-2. **The order.** The products that fit first, in the order of "Offers first" among them
-   (the products a current shop offer covers, cheapest first, then the rest, cheapest
-   first); then the other products, in that same order. "More" opens the next four in
+2. **The order.** The products that fit first, cheapest first among them, each at its
+   price after its offer ("The price after offers", from 2026-11-15; until then the order
+   of "Offers first"); then the other products, in that same order. "More" opens the next four in
    that order.
 3. **The Recommended** is chosen among the products that fit, by the rules of "Price
    first" (7) applied to them: the middle one in price with an EAN/GTIN, on offer or not
@@ -757,8 +758,8 @@ offers"). Pinned by `tests/test_picwise_price_bar.py` (`PriceToTests`).
   above it, on a scale of ratios (£2, £4, £8 ...), so cheap accessories and the products
   themselves both have room (`search_selection._price_bar`).
 - The knob raises the price the answer starts from. The products below it leave the answer
-  before anything is worked out; the order (offers first, then cheapest), "More" and the
-  counter are those of the products from that price. A price above the dearest product is
+  before anything is worked out; the order (cheapest first, each at its price after its
+  offer, from 2026-11-15), "More" and the counter are those of the products from that price. A price above the dearest product is
   taken as the dearest's: the answer never empties.
 - With a price chosen there is no Recommended, on offer or not (owner, the same day:
   «Το recommendit πρέπει να ακιρονετε όταν χρησιμοποιεί φίλτρο...σε άλλη περίπτωση δείχνει την μέση τιμή παράδειγμα ο Χρίστης επιλέγει από 90 ευρώ και αυτό προτείνει 890»). Deployed for an hour with a Recommended chosen among the products from the price
