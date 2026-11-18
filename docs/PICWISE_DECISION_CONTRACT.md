@@ -452,11 +452,15 @@ sales figure between them. In their place:
    feed's word is trusted; no shop page is checked (owner, 2026-10-16)
 3. the products must carry title, price, image, description, link and availability, as
    ruled on 2026-10-12; specifications and codes are shown when present, never required
-4. cheapest first, by product price alone, with no delivery cost; **after the Recommended,
-   the products a current shop offer covers come first**, cheapest first among them, then
-   the rest (owner, 2026-11-01; "Offers first" below); in a complex search, the products
-   that fit the buyer's need before all (owner, 2026-11-06; "The products that fit a
-   complex search first" below)
+4. cheapest first, by product price alone, with no delivery cost, each product at the
+   shop's own price, its sale price where the shop's feed gives one, and never a price
+   PicWise works out (owner, 2026-11-19; "The shop's own price" below): a product on offer
+   comes first only when it is cheaper (owner, 2026-11-15 and 2026-11-19). From 2026-11-15
+   to 2026-11-19 each product stood at its price after an offer that surely applied ("The
+   price after offers" below); from 2026-11-01 to 2026-11-15 the products on offer came
+   first ("Offers first" below). In a complex search, the products that fit the buyer's
+   need before all (owner, 2026-11-06; "The products that fit a complex search first"
+   below)
 5. the same product (same EAN/GTIN or, without it, same brand and manufacturer code,
    MPN; owner, 2026-10-16) shown once, from the cheapest shop that has it in stock;
    neither code, no joining
@@ -613,7 +617,9 @@ supplement tablets among their first twelve, of 131; the server's kind report co
 **Rules 1 and 2 changed on 2026-11-15** ("The price after offers" below): the products on
 offer no longer come first, every product being ordered cheapest first at its price after
 its offer where that is certain; and the Recommended is no longer a product on offer, but
-the middle price, on offer or not. Rules 3 (what an offer is) and 5 stand.
+the middle price, on offer or not. **On 2026-11-19** ("The shop's own price" below) every
+product stands at the shop's own price, never a price after an offer. Rules 3 (what an
+offer is), 4 (the card, without a price after the offer) and 5 stand.
 
 The owner: «Ανά προϊόν... Όταν ψάχνει ένας πελάτης ένα προϊόν ή μία κατηγορία υπάρχει
 προσφορά σε αυτό το προϊόν ψάχνει παράδειγμα καφετιέρα θα το δείξει τις προσφορές προϊόντα
@@ -662,8 +668,8 @@ of offers above the results, or products with an offer first), whether that chan
    offer.
 4. **The card.** An offer card is labelled "Offer" instead of "Lowest price", and shows
    the offer in the shop's words, its end date, its code where Awin gives one (to joined
-   programmes only), and its terms. The page says the order (from 2026-11-15, "cheapest
-   first after offers").
+   programmes only), and its terms. The page says the order: "cheapest first" (from
+   2026-11-15 to 2026-11-19, "cheapest first after offers" when an offer moved a price).
 5. **No one pays for a place.** PicWise is paid nothing to show an offer or to put it
    first; commission still never decides the order.
 
@@ -681,9 +687,10 @@ Then, to the order, the time and the mark proposed: «Ναι, συμφωνώ μ�
    only where its own title or description shows it, in words code finds there letter for
    letter (4.3). Nothing else changes the order: no answer, an answer the checks withhold,
    an answer with no product that fits, or the day's cap reached leave the page as it is.
-2. **The order.** The products that fit first, in the order of "Offers first" among them
-   (the products a current shop offer covers, cheapest first, then the rest, cheapest
-   first); then the other products, in that same order. "More" opens the next four in
+2. **The order.** The products that fit first, cheapest first among them, each at the
+   shop's own price ("The shop's own price", from 2026-11-19; from 2026-11-15 at its price
+   after its offer, "The price after offers"; until then the order of "Offers first");
+   then the other products, in that same order. "More" opens the next four in
    that order.
 3. **The Recommended** is chosen among the products that fit, by the rules of "Price
    first" (7) applied to them: the middle one in price with an EAN/GTIN, on offer or not
@@ -705,6 +712,10 @@ Then, to the order, the time and the mark proposed: «Ναι, συμφωνώ μ�
 7. **Google.** Only the site's own search does this; its pages carry `noindex`.
 
 ## The price after offers, decided by the owner, 2026-11-15
+
+**Replaced on 2026-11-19** ("The shop's own price" below): PicWise no longer works out a
+price after an offer (`price_after_offer` is gone); rules 1 and 4 below no longer apply,
+and rules 2 and 3 read the shop's own price. Kept as the record of 15/11 to 19/11.
 
 The owner, of a buyer choosing a t-shirt from £15 and finding t-shirts on offer at £45
 first: «Οι προσφορές δεν πρέπει να βγαίνουν πάνω από το φθηνότερο προϊόν», and «η έκπτωση
@@ -739,6 +750,44 @@ first: «Οι προσφορές δεν πρέπει να βγαίνουν πά�
    pages say the order.
 5. Pinned by `tests/test_picwise_offers_first.py`.
 
+## The shop's own price, decided by the owner, 2026-11-19
+
+The owner, told that the cheapest shop of one product was chosen at the shops' own prices
+while each product then stood at its price after its offer, so that a shop whose offer
+made it the cheapest was left out: «Θα ήθελα να αποφύγουμε τους υπολογισμούς τιμής». Told
+what that means (the card's price is the shop's, the offer a note in its own words, the
+order the shops' prices, a product on offer moving no higher) and that Google's format
+gives a product on sale its shop's sale price beside its usual one, which the site did not
+read: «Στην έκπτωση τραβά στην τιμή της έκπτωσης».
+
+1. **No price is worked out.** A card's price, the order, "More", the counter, "Lowest
+   price", the place by price, the price bar, the Recommended (the middle price, "Price
+   first" 7) and the one shop shown for a product several shops sell ("Price first" 5)
+   all read the shop's own price. A shop's offer stays on the card as "Offers first" (4)
+   shows it: the shop's words, its end, its code where Awin gives one, its terms; never a
+   price after it. A product on offer never comes before a cheaper one.
+2. **The sale price.** A product on sale has, in Google's format, the shop's usual price
+   (`price`) and its price during the sale (`sale_price`), with the sale's dates in
+   `sale_price_effective_date` where the shop gives them (Awin's Enhanced feed
+   specification; Google's format, "start/end" in ISO 8601). The shop's price is the sale
+   price when it is lower than the usual one, in the same currency, and live now by its
+   dates; a sale ending within 24 hours, before the next night's reading, leaves the usual
+   price, so that no price is shown after the shop has ended it; dates PicWise cannot
+   read leave the usual price. A row with no usual price takes a sale price live by its
+   dates (`normalization.sale_price_in_force`). Nothing is said of the usual price: a
+   price struck through would be a saving told on the shop's word alone.
+3. **The price's history.** The catalogue's memory first read sale prices on the night
+   this was deployed; the price recorded before it was the usual one, whether or not the
+   sale had already begun, so on that night a product whose price the sale price changes
+   starts its history again (no ▼ for a fall nobody can date; `catalogue_memory`,
+   `sale_prices_read_from`). From then on a sale beginning or ending is a change like any
+   other, by the rule of "The price's history on the cards".
+4. **The page** says "cheapest first"; the About, terms and affiliate pages say that the
+   price is the shop's own, its sale price where it gives one, and that an offer is shown
+   in the shop's words.
+5. Pinned by `tests/test_picwise_offers_first.py`, `tests/test_picwise_sale_price.py` and
+   `tests/test_picwise_catalogue_memory.py`.
+
 ## The price bar, decided by the owner, 2026-11-12
 
 **From and to, decided by the owner, 2026-11-15:** «Ο χρήστης μπορεί να διαλέξει στο
@@ -747,8 +796,8 @@ first: «Οι προσφορές δεν πρέπει να βγαίνουν πά�
 with either chosen there is no Recommended. The page says "up to £80" or "£30 – £80" in
 its heading and on the bar; "More" keeps both. An end under the cheapest product left is
 taken as that one's, so the answer never empties; an end at or above the dearest chooses
-nothing. The two knobs never cross. The prices are read after offers ("The price after
-offers"). Pinned by `tests/test_picwise_price_bar.py` (`PriceToTests`).
+nothing. The two knobs never cross. The prices are the shops' own ("The shop's own
+price", from 2026-11-19; from 2026-11-15 to 2026-11-19 they were read after offers). Pinned by `tests/test_picwise_price_bar.py` (`PriceToTests`).
 
 «Να μπει ένα φίλτρο με τη μορφή μπάρας που να διαλέγει με την τιμή για να γλιτώσουμε το πρόβλημα που βγάζει τα φθηνότερα και μπορεί να είναι smartwatch και να δείχνει λουράκια μπορεί να είναι tablet και να βγάζει πρώτα θήκες ... βάζοντας ένα φίλτρο τιμής το οποίο να τερματίζει στην υψηλοτερή και να ξεκινάει από την χαμηλότερη κουνώντας μία μπίλια θα μπορεί αμέσως να φιλτράρει».
 
@@ -757,8 +806,8 @@ offers"). Pinned by `tests/test_picwise_price_bar.py` (`PriceToTests`).
   above it, on a scale of ratios (£2, £4, £8 ...), so cheap accessories and the products
   themselves both have room (`search_selection._price_bar`).
 - The knob raises the price the answer starts from. The products below it leave the answer
-  before anything is worked out; the order (offers first, then cheapest), "More" and the
-  counter are those of the products from that price. A price above the dearest product is
+  before anything is worked out; the order (cheapest first, each at the shop's own price,
+  from 2026-11-19), "More" and the counter are those of the products from that price. A price above the dearest product is
   taken as the dearest's: the answer never empties.
 - With a price chosen there is no Recommended, on offer or not (owner, the same day:
   «Το recommendit πρέπει να ακιρονετε όταν χρησιμοποιεί φίλτρο...σε άλλη περίπτωση δείχνει την μέση τιμή παράδειγμα ο Χρίστης επιλέγει από 90 ευρώ και αυτό προτείνει 890»). Deployed for an hour with a Recommended chosen among the products from the price

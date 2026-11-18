@@ -22,7 +22,14 @@ the products the site answers from (those the cap keeps),
 - `prices`: a product's price on the night it was first seen and on each night it
   changed (not every night);
 - `shop_nights`: per shop and night, its rows in the feed, shown, kept;
-- `nights`: per night, when it was prepared and how many products were kept.
+- `nights`: per night, when it was prepared and how many products were kept;
+- `meta`: `sale_prices_read_from`, the first night the memory was written with each
+  product at its shop's sale price where the shop gives one (owner, 2026-11-19: «Στην
+  έκπτωση τραβά στην τιμή της έκπτωσης»). Before it the price written was the shop's usual
+  one, sale or not; so on that night a product whose price the sale price changes starts
+  its price's history again (its earlier prices and nights forgotten for the history):
+  a fall nobody can date is never told as one (`PROJECT_RULES.md` §4: no fake savings).
+  From then on a sale beginning or ending is a change like any other.
 
 A product the cap leaves out one night and keeps the next is seen on the nights it was
 kept. A second preparation in one night (a deployment's, then the night's) counts the
@@ -40,7 +47,7 @@ from typing import Any, Mapping, Sequence
 
 from .contracts import ProviderProduct
 from .decision_labels import parse_price_amount
-from .normalization import extract_merchant_name
+from .normalization import extract_merchant_name, sale_price_in_force
 from .product_identity import valid_gtin
 
 MEMORY_FILE_ENV = "PICWISE_CATALOGUE_MEMORY_FILE"
@@ -49,6 +56,8 @@ _TITLE_LENGTH = 300
 # `seen_nights` keeps this many prepared nights, one bit each: SQLite's integers have 64
 # bits, and the sign's is left alone.
 SEEN_NIGHTS_KEPT = 62
+# The first night written with the shops' sale prices (owner, 2026-11-19).
+SALE_PRICES_SINCE = "sale_prices_read_from"
 _SEEN_MASK = (1 << SEEN_NIGHTS_KEPT) - 1
 
 _SCHEMA = (
@@ -88,6 +97,10 @@ _SCHEMA = (
         prepared_at TEXT NOT NULL,
         kept INTEGER NOT NULL
     )""",
+    """CREATE TABLE IF NOT EXISTS meta (
+        name TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    )""",
 )
 
 
@@ -119,7 +132,7 @@ def _pence(product: ProviderProduct) -> int | None:
     return None if amount is None else int(round(amount * 100))
 
 
-def _row(product: ProviderProduct) -> tuple[str, str, str, str, str, int | None, str]:
+def _row(product: ProviderProduct, moment: datetime) -> tuple[str, str, str, str, str, int | None, str, int]:
     raw = product.raw if isinstance(product.raw, Mapping) else {}
     gtin = valid_gtin(raw)
     title = " ".join(str(product.title or "").split())[:_TITLE_LENGTH]
@@ -131,6 +144,8 @@ def _row(product: ProviderProduct) -> tuple[str, str, str, str, str, int | None,
         title,
         _pence(product),
         str(product.currency or "").strip().upper(),
+        # At its shop's sale price tonight (`normalization.sale_price_in_force`).
+        1 if sale_price_in_force(raw, now=moment) else 0,
     )
 
 
@@ -163,7 +178,7 @@ def remember_night(
     """Write one night's catalogue into the memory at `path`; what the memory now says,
     for the night's public note (counts only)."""
     night = prepared_at.astimezone(timezone.utc).date().isoformat()
-    tonight = {row[0]: row for row in (_row(product) for product in products)}
+    tonight = {row[0]: row for row in (_row(product, prepared_at) for product in products)}
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with closing(sqlite3.connect(str(path), timeout=60)) as db:
@@ -172,8 +187,28 @@ def remember_night(
                 db.execute(statement)
             _add_seen_nights(db)
             before = db.execute("SELECT MAX(night) FROM nights WHERE night < ?", (night,)).fetchone()[0]
-            db.execute("CREATE TEMP TABLE tonight (key TEXT PRIMARY KEY, shop TEXT, product_id TEXT, gtin TEXT, title TEXT, price_pence INTEGER, currency TEXT)")
-            db.executemany("INSERT INTO tonight VALUES (?, ?, ?, ?, ?, ?, ?)", tonight.values())
+            db.execute("CREATE TEMP TABLE tonight (key TEXT PRIMARY KEY, shop TEXT, product_id TEXT, gtin TEXT, title TEXT, price_pence INTEGER, currency TEXT, on_sale INTEGER)")
+            db.executemany("INSERT INTO tonight VALUES (?, ?, ?, ?, ?, ?, ?, ?)", tonight.values())
+            # The first night of the shops' sale prices (owner, 2026-11-19), or a second
+            # preparation of that night: a product its sale price gives another price than
+            # the one remembered starts its price's history again, since the price written
+            # before was the usual one whether or not the sale had begun.
+            since = db.execute("SELECT value FROM meta WHERE name = ?", (SALE_PRICES_SINCE,)).fetchone()
+            restarted: list[str] = []
+            if since is None or since[0] == night:
+                restarted = [
+                    row[0]
+                    for row in db.execute(
+                        """SELECT t.key FROM tonight t JOIN products p ON p.key = t.key
+                           WHERE t.on_sale AND (p.price_pence IS NOT t.price_pence OR p.currency != t.currency)"""
+                    )
+                ]
+                db.executemany(
+                    "DELETE FROM prices WHERE key = ? AND night < ?", [(key, night) for key in restarted]
+                )
+                db.execute(
+                    "INSERT OR IGNORE INTO meta (name, value) VALUES (?, ?)", (SALE_PRICES_SINCE, night)
+                )
             # A price is written the night a product is first seen and each night it changes
             # (a second preparation of the night that reads another price replaces the night's).
             db.execute(
@@ -208,6 +243,11 @@ def remember_night(
                        price_pence = excluded.price_pence, currency = excluded.currency""",
                 (night, night, _SEEN_MASK),
             )
+            # Their history starts tonight: seen tonight only, no change of price told.
+            db.executemany(
+                "UPDATE products SET seen_nights = 1, price_changed_on = NULL WHERE key = ?",
+                [(key,) for key in restarted],
+            )
             db.execute(
                 "INSERT OR REPLACE INTO nights (night, prepared_at, kept) VALUES (?, ?, ?)",
                 (night, prepared_at.astimezone(timezone.utc).isoformat(timespec="seconds"), len(tonight)),
@@ -240,6 +280,10 @@ def remember_night(
                 "SELECT COUNT(*) FROM products WHERE price_changed_on = ? AND first_seen < ?", night, night
             ),
             "compared_with": before,
+            # At the shop's sale price tonight, and, on the first night of sale prices
+            # only, how many started their price's history again (owner, 2026-11-19).
+            "on_sale_tonight": sum(row[7] for row in tonight.values()),
+            "history_restarted_tonight": len(restarted),
             "gone_since": (
                 one("SELECT COUNT(*) FROM products WHERE last_seen = ?", before) if before is not None else None
             ),

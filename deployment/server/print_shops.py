@@ -118,6 +118,11 @@ def print_memory(note: dict) -> None:
     )
     if memory.get("compared_with"):
         line += f", {memory['gone_since']:,} seen on {memory['compared_with']} and not since"
+    # The shops' sale prices (owner, 2026-11-19); a note written before them has neither.
+    if memory.get("on_sale_tonight") is not None:
+        line += f"; {memory['on_sale_tonight']:,} at the shop's sale price"
+    if memory.get("history_restarted_tonight"):
+        line += f", {memory['history_restarted_tonight']:,} of them starting their price's history again"
     print(line)
     print()
 

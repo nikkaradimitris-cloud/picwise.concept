@@ -74,7 +74,8 @@ class MemoryTests(unittest.TestCase):
             {
                 "file": "memory.sqlite", "night": "2026-11-12", "nights": 1, "products_known": 2,
                 "seen_tonight": 2, "new_tonight": 2, "price_changed_tonight": 0,
-                "compared_with": None, "gone_since": None,
+                "compared_with": None, "on_sale_tonight": 0, "history_restarted_tonight": 0,
+                "gone_since": None,
             },
         )
         self.assertEqual(

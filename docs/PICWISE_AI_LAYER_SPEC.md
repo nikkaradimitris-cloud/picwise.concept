@@ -48,8 +48,9 @@ step.
 
 ## 1. Rules every part keeps
 
-1. **The answer stays the owner's.** No part changes the order (the Recommended, then the
-   products a current shop offer covers, then the rest, each cheapest first), the
+1. **The answer stays the owner's.** No part changes the order (the Recommended, then every
+   product cheapest first, each at the shop's own price, from 2026-11-19; from 2026-11-15
+   to 2026-11-19 at its price after an offer that surely applied), the
    Recommended's rule, "in stock only" or "the kind asked for only" (`PROJECT_RULES.md`
    sections 2, 3 and 5; `docs/PICWISE_DECISION_CONTRACT.md`). Part (a) can only settle
    the kind of a product the rules left doubtful, never against the aisle rule; part (b)
@@ -298,8 +299,8 @@ Proposed to the owner on 06/11, and **accepted, all of it** («Ναι, συμφ�
 first"), where the Recommended's line among the products that fit reads "Mid-priced of
 those that fit" (a reading needed to build it):
 
-- **The order:** the products read as fitting first, in today's order among them (those
-  a current offer covers first, then cheapest first), then the rest in today's order; the
+- **The order:** the products read as fitting first, in today's order among them (cheapest
+  first, each at the shop's own price, from 2026-11-19), then the rest in today's order; the
   Recommended chosen among the fitting ones by today's rule.
 - **The time:** the page comes at once, as today: an answer takes about 5 s, up to 11 s,
   and results are never held back (`PROJECT_RULES.md` section 9). When the answer comes,
@@ -335,7 +336,7 @@ jobs folder: on", "AI spend today: none"):
 
 - **The order** (`search_selection._fitting_first`, `_price_first_result`): the products a
   stored answer read as fitting first, the Recommended among them by its own rules ("Mid-
-  priced of those that fit"), then the rest, each part offers first then cheapest; "More"
+  priced of those that fit"), then the rest, each part cheapest first at the shop's own price (from 2026-11-19); "More"
   goes on in that order. The answer is found by a signature of the 30 products the AI
   reads, their ids and prices in the usual order (`candidates_signature`), passed down from
   the search as a lookup (`fitting_for`); without one nothing changes.

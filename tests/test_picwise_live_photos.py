@@ -75,13 +75,14 @@ class LivePageCardsTests(unittest.TestCase):
         self.assertEqual(len(cards), 4)
         first = cards[0]
         self.assertTrue(first.recommended)
-        # The middle of nine at the prices after the offer is k5 £25, not on offer (owner,
+        # The middle of nine at the shops' own prices is k5 £25, not on offer (owner,
         # 2026-11-15: the Recommended is the middle price, on offer or not).
         self.assertEqual((first.role, first.price, first.shop), ("Mid-priced for this category", "£25.00", "Fixture Store Two"))
         self.assertEqual(first.offer, "")
         self.assertEqual(first.image, "https://fixture.example.invalid/img/k5.jpg")
-        # k3, £19 at the shop, is £17.10 after its offer: the card's price.
-        self.assertEqual((cards[3].role, cards[3].price), ("Offer", "£17.10"))
+        # k3 is on offer at £19, the shop's own price: PicWise works out no price after an
+        # offer (owner, 2026-11-19: «Θα ήθελα να αποφύγουμε τους υπολογισμούς τιμής»).
+        self.assertEqual((cards[3].role, cards[3].price), ("Offer", "£19.00"))
         self.assertIn("10% off kettles", cards[3].offer)
         self.assertEqual([card.recommended for card in cards[1:]], [False, False, False])
         self.assertEqual(cards[1].role, "Lowest price")

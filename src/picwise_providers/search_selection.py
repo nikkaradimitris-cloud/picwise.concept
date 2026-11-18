@@ -42,7 +42,7 @@ from .normalization import extract_merchant_name, extra_image_urls
 from .decision_labels import parse_price_amount
 from .product_description import has_sufficient_description
 from .product_specs import read_product_specs
-from .product_offers import offers_covering, price_after_offer
+from .product_offers import offers_covering
 from .product_identity import same_product_key
 from .product_condition import (
     non_new_condition,
@@ -490,9 +490,6 @@ class ProviderProductSelectionResult:
     # The price the bar ends at, when the buyer chose one (owner, 2026-11-15), or None.
     price_to: float | None = None
     answer_count: int = 0
-    # Each shown product's price after its offer, where that is certain (owner,
-    # 2026-11-15), as (product id, price).
-    offer_prices: tuple[tuple[str, float], ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -2555,22 +2552,12 @@ def _price_first_result(
     at, takes the products above it out the same way (owner, 2026-11-15).
     """
     answer_count = len(ordered)
-    # The price after a current shop offer, where its words leave no doubt
-    # (`product_offers.price_after_offer`; owner, 2026-11-15: «η έκπτωση πρέπει να
-    # υπολογίζει την τελική τιμή και να γίνεται κατάταξη με βάση την πραγματική αξία»):
-    # the product stands in the answer, on the bar and in its order at that price.
+    # Every product stands at the shop's own price, its sale price where the shop gives
+    # one (`normalization.sale_price_in_force`): PicWise works out no price (owner,
+    # 2026-11-19: «Θα ήθελα να αποφύγουμε τους υπολογισμούς τιμής»; from 2026-11-15 to
+    # 2026-11-19 a product stood at its price after an offer that surely applied). A
+    # shop's offer is only labelled on its card.
     covered = offers_covering(entry.product for entry in ordered)
-    offer_prices: dict[int, float] = {}
-    if covered:
-        ordered = list(ordered)
-        for index, entry in enumerate(ordered):
-            offer = covered.get(id(entry.product))
-            final = price_after_offer(offer, entry.price) if offer is not None else None
-            if final is not None and final < entry.price:
-                offer_prices[id(entry.product)] = final
-                ordered[index] = replace(entry, price=final)
-        if offer_prices:
-            ordered = sorted(ordered, key=lambda entry: entry.price)
     price_low, price_high, price_bins = _price_bar([entry.price for entry in ordered])
     price_from: float | None = None
     if min_price is not None and ordered and float(min_price) > price_low:
@@ -2583,8 +2570,8 @@ def _price_first_result(
     if max_price is not None and ordered and float(max_price) < price_high:
         price_to = max(float(max_price), min(entry.price for entry in ordered))
         ordered = [entry for entry in ordered if entry.price <= price_to]
-    # The Recommended is the middle product in price, each product at its price after its
-    # offer, on offer or not (owner, 2026-11-15: «Το προτεινόμενο πρέπει να εξακολουθεί να
+    # The Recommended is the middle product in price, each product at the shop's own
+    # price, on offer or not (owner, 2026-11-15: «Το προτεινόμενο πρέπει να εξακολουθεί να
     # δείχνει τι μέση τιμή»; from 2026-11-01 it had been a product on offer whenever there
     # was one). After it, every product cheapest first: a product on offer never comes
     # before a cheaper one (owner, 2026-11-15: «Οι προσφορές δεν πρέπει να βγαίνουν πάνω
@@ -2686,11 +2673,6 @@ def _price_first_result(
         price_from=price_from,
         price_to=price_to,
         answer_count=answer_count,
-        offer_prices=tuple(
-            (str(entry.product.provider_product_id or "").strip(), offer_prices[id(entry.product)])
-            for entry in first_page + opened
-            if id(entry.product) in offer_prices
-        ),
     )
     if not ordered:
         return ProviderProductSelectionResult(
