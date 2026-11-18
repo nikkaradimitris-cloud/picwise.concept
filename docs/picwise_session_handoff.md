@@ -8,6 +8,12 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **How PicWise is described to shops and networks (owner, 18/11):** never «price comparison» («Δεν θέλω να λέμε
+  ότι είμαστε σύγκριση τιμών ... δεν λέει και την αλήθεια»). PicWise is a shopping search that helps the buyer buy:
+  a search's range from the lowest price (an offer counted where it surely applies), one product at the category's
+  middle price, the price's history, favourites and their price falls, the shops' offers; shops are not compared with
+  one another (for an exact model, its cheapest shop first, then the rest). Currys (Awin) refused the owner's application
+  on 18/11: «Site does not complement advertiser brand»; the big names again once the site has visitors from Google.
 - **18/11 evening: offers back, further photos measured.** New Awin token (90 days, to about 16/02/2027; renew before)
   in `AWIN_API_TOKEN`, carried to the server by re-running the last deployment: 101 offers from 32 shops, within every
   limit. `feed-compare.yml` (now by hand from `main`): the feed in use **already has** `additional_image_link`; only
