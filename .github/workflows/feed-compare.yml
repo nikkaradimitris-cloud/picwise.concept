@@ -10,8 +10,12 @@
 # names and row counts only.
 #
 # Compared: 2026-10-31, the link in use alone
+# 2026-11-18: run by hand from `main` (the push below is the site's branch, which deploys);
+# it also prints each feed's columns and size and how many rows carry further photos
+# (`additional_image_link`), for the new link the owner made with that column in mind.
 name: Feed compare (read-only)
 on:
+  workflow_dispatch:
   push:
     branches: [ccr-1361f1a7-dcpo60]
     paths:

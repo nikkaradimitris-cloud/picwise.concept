@@ -71,6 +71,27 @@ class CompareFeedsTests(unittest.TestCase):
         self.assertIn("the new feed holds every shop of the one in use, with its rows", out)
         self.assertNotIn(folder, out)
 
+    def test_the_columns_size_and_further_photos_are_counted(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            old = _feed(Path(folder) / "old.csv", OLD)
+            path = Path(folder) / "new.csv"
+            text = io.StringIO()
+            writer = csv.writer(text)
+            writer.writerow(HEADER + ["additional_image_link"])
+            extras = ["https://example.invalid/a.jpg,https://example.invalid/b.jpg", "", "https://example.invalid/c.jpg"]
+            for number, (ident, (name, rows)) in enumerate(OLD.items()):
+                for row in range(rows):
+                    writer.writerow([f"p{number}{row}", "Fictional", ident, name, "9.99", extras[(number + row) % 3]])
+            path.write_text(text.getvalue(), encoding="utf-8")
+            done = _run(old, path.resolve().as_uri())
+        out = done.stdout
+        self.assertIn("additional_image_link: not among its columns", out)
+        self.assertIn("additional_image_link: in its columns; rows with further photos: 4 (66.7%); 1 links: 3, 2 links: 1", out)
+        self.assertIn("columns the new feed adds: additional_image_link", out)
+        self.assertIn("columns the new feed lacks: none", out)
+        self.assertIn("MB as downloaded; 6 columns", out)
+        self.assertNotIn("example.invalid", out)
+
     def test_a_new_feed_lacking_an_old_shop_fails_and_names_it(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
             old = _feed(Path(folder) / "old.csv", OLD)

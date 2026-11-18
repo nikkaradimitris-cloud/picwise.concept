@@ -49,8 +49,14 @@ def download(url: str, path: Path) -> None:
         raise ValueError("empty")
 
 
-def shops_of(path: Path) -> tuple[Counter, dict[str, str]]:
-    """Rows per shop, keyed by the advertiser's id (else its name), and each key's name."""
+# The shop's further photos (owner, 2026-11-15: «εμφανίζουμε έως 4»): Google's column.
+EXTRA_PHOTOS = "additional_image_link"
+
+
+def shops_of(path: Path, seen: dict | None = None) -> tuple[Counter, dict[str, str]]:
+    """Rows per shop, keyed by the advertiser's id (else its name), and each key's name.
+    `seen`, when given, is filled with the feed's columns, its size, and how many rows
+    carry further photos and how many."""
     with open(path, "rb") as probe:
         gzipped = probe.read(2) == _GZIP_MAGIC
     binary = gzip.open(path, "rb") if gzipped else open(path, "rb")
@@ -61,6 +67,9 @@ def shops_of(path: Path) -> tuple[Counter, dict[str, str]]:
         def column(*names: str) -> int | None:
             return next((header.index(name) for name in names if name in header), None)
 
+        extra_at = column(EXTRA_PHOTOS)
+        with_extra = 0
+        extra_links = Counter()
         id_at = column("advertiser_id", "merchant_id")
         name_at = column("advertiser_name", "merchant_name")
         if id_at is None and name_at is None:
@@ -75,6 +84,17 @@ def shops_of(path: Path) -> tuple[Counter, dict[str, str]]:
             key = ident or name or "(no shop named)"
             rows[key] += 1
             names.setdefault(key, name or key)
+            if extra_at is not None and extra_at < len(row) and row[extra_at].strip():
+                with_extra += 1
+                links = [part for part in row[extra_at].replace(",", " ").split() if part.startswith("http")]
+                extra_links[min(len(links), 4)] += 1
+        if seen is not None:
+            seen.update(
+                columns=header,
+                size=path.stat().st_size,
+                with_extra=with_extra,
+                extra_links=extra_links,
+            )
         return rows, names
 
 
@@ -99,6 +119,7 @@ def main() -> int:
         ("new", os.environ.get("AWIN_FEED_URL_NEW", "").strip()),
     )
     read: dict[str, tuple[Counter, dict[str, str]]] = {}
+    seen: dict[str, dict] = {}
     with tempfile.TemporaryDirectory() as folder:
         for label, url in links:
             if not url:
@@ -109,7 +130,8 @@ def main() -> int:
             path = Path(folder) / "feed.bin"
             try:
                 download(url, path)
-                read[label] = shops_of(path)
+                seen[label] = {}
+                read[label] = shops_of(path, seen[label])
             except Exception as error:  # reported by its kind only
                 print(f"the {label} feed could not be read: {why(error)}")
                 return 1
@@ -117,6 +139,25 @@ def main() -> int:
                 path.unlink(missing_ok=True)
     for label, (rows, names) in read.items():
         print(f"the {label} feed: {len(rows):,} shops, {sum(rows.values()):,} rows")
+        info = seen[label]
+        print(f"  its file: {info['size'] / 1024**2:,.1f} MB as downloaded; {len(info['columns'])} columns")
+        if EXTRA_PHOTOS in info["columns"]:
+            total = sum(rows.values()) or 1
+            counts = ", ".join(
+                f"{number}{'+' if number == 4 else ''} links: {info['extra_links'][number]:,}"
+                for number in sorted(info["extra_links"])
+            )
+            print(
+                f"  {EXTRA_PHOTOS}: in its columns; rows with further photos: {info['with_extra']:,} "
+                f"({info['with_extra'] / total:.1%})" + (f"; {counts}" if counts else "")
+            )
+        else:
+            print(f"  {EXTRA_PHOTOS}: not among its columns")
+    if "new" in seen and "in use" in seen:
+        only_new = [name for name in seen["new"]["columns"] if name not in seen["in use"]["columns"]]
+        only_old = [name for name in seen["in use"]["columns"] if name not in seen["new"]["columns"]]
+        print(f"columns the new feed adds: {', '.join(only_new) or 'none'}")
+        print(f"columns the new feed lacks: {', '.join(only_old) or 'none'}")
     old_rows, old_names = read["in use"]
     if "new" not in read:
         print("the shops of the feed in use, the most rows first:")
