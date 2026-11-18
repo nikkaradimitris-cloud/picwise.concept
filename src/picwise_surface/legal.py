@@ -106,7 +106,7 @@ def render_branded_not_found_page() -> str:
         '<meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         "<title>Page not found — PicWise</title>"
-        '<meta name="description" content="Page not found on PicWise. Return to the home page and continue comparing options with clear informational guidance.">'
+        '<meta name="description" content="Page not found on PicWise. Return to the home page and continue your search.">'
         f"{icon_links_html()}"
         f"<style>{_base_styles()}</style></head><body>"
         '<main class="pw-wrap">'
@@ -162,8 +162,8 @@ def render_terms_page() -> str:
         "<p>Prices, stock, delivery times and offers can change after PicWise last read them. Check the details on the shop's website before you buy.</p>"
         "<h2>Links to shops and commission</h2>"
         "<p>Links from PicWise to shops go through the Awin affiliate network. When you buy after following one, the shop may pay PicWise a commission through Awin. The price you pay is the same, and the commission never changes the order of the results or the recommended pick. See the <a href=\"/affiliate-disclosure\">Affiliate Disclosure</a>.</p>"
-        "<h2>What PicWise compares</h2>"
-        "<p>PicWise compares physical products sold by shops in the United Kingdom. It does not compare software or SaaS subscriptions, nor finance or insurance products; if that changes, these terms will say so first.</p>"
+        "<h2>What PicWise shows</h2>"
+        "<p>PicWise shows physical products sold by shops in the United Kingdom. It does not show software or SaaS subscriptions, nor finance or insurance products; if that changes, these terms will say so first.</p>"
         "<h2>No guarantee</h2>"
         "<p>PicWise does not guarantee the cheapest price, the best product, availability, completeness, accuracy or suitability.</p>"
         "<h2>Disclaimer</h2>"
@@ -176,7 +176,7 @@ def render_terms_page() -> str:
         "<h2>Acceptable use</h2>"
         "<p>Do not use PicWise for unlawful, deceptive, abusive or unauthorised purposes, or in a way that harms the service or other people.</p>"
         "<h2>Intellectual property</h2>"
-        "<p>PicWise's text, layout and design belong to its operator. Shop, brand and product names, and product images, belong to their owners and appear only to identify and compare products.</p>"
+        "<p>PicWise's text, layout and design belong to its operator. Shop, brand and product names, and product images, belong to their owners and appear only to identify products.</p>"
         "<h2>Corrections and changes</h2>"
         "<p>Shoppers and shops can ask PicWise to correct inaccurate information. PicWise may update these terms and the service over time; the date below shows the latest version.</p>"
         "<h2>Contact</h2>"
@@ -208,7 +208,7 @@ def render_privacy_page() -> str:
         "<li>IP addresses, in security logs</li><li>error logs</li>"
         "</ul>"
         "<h2>What PicWise does not do</h2>"
-        "<p>PicWise has no user accounts and no sign-in. It sets no cookies of its own and uses no analytics or advertising pixels. It takes no payments, card details or orders; purchases happen on the shops' websites. It does not compare software (SaaS) or finance products, so it collects nothing for them.</p>"
+        "<p>PicWise has no user accounts and no sign-in. It sets no cookies of its own and uses no analytics or advertising pixels. It takes no payments, card details or orders; purchases happen on the shops' websites. It does not show software (SaaS) or finance products, so it collects nothing for them.</p>"
         "<h2>Favourites and search history</h2>"
         "<p>The Favourites and History buttons keep their lists in your own browser, in its local storage, on your device. "
         "A product is kept in Favourites when you tap the heart on its photo; your searches are kept in History only after "
@@ -319,7 +319,7 @@ def render_affiliate_disclosure_page() -> str:
         "<p>An offer on a product is the shop's own, as it states it through Awin, shown with its end date and, where the shop gives one, its code. PicWise is paid nothing to show an offer, and shows it only where its words cover the product. A product on offer is ordered at its price after the offer only where the offer's words leave no doubt that you get it: one percentage or amount off, or half price, with any least spend reached by the product's own price; an offer for new customers, a first order or a second product, for example, leaves the product at the shop's own price. A voucher is shown only with its code: without it, you could not have the discount.</p>"
         "<h2>Which shops</h2>"
         "<p>The shops on PicWise run a programme with Awin. PicWise earns a commission only from the shops that have accepted it into their programme; the others are shown by the same rule, and PicWise earns nothing from them. PicWise works with no other affiliate network at present; any other will be named here first.</p>"
-        "<h2>What PicWise compares</h2>"
+        "<h2>What PicWise shows</h2>"
         "<p>Physical products from UK shops. PicWise has no software (SaaS), finance or insurance referral programmes.</p>"
         "<h2>Check before you buy</h2>"
         "<p>Prices, stock, delivery, returns and warranties are set by the shop. Check them on the shop's website before you buy.</p>"

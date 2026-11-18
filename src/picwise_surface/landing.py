@@ -83,7 +83,7 @@ def render_demo_info_page() -> str:
         f"{NOINDEX_META}"
         "<title>PicWise Demo — Buying Decision Preview</title>"
         f"{icon_links_html()}"
-        '<meta name="description" content="Preview how PicWise supports product comparison and buying decisions while provider integrations are being configured.">'
+        '<meta name="description" content="Preview how PicWise helps shoppers find and choose products in UK shops.">'
         "<style>"
         "*{box-sizing:border-box;}"
         "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:#102744;background:linear-gradient(180deg,#f8fbff 0%,#f3f8ff 100%);}"
@@ -113,11 +113,11 @@ def render_demo_info_page() -> str:
         '<a class="pw-brand" href="/" aria-label="PicWise home">PicWise</a>'
         '<section class="pw-card">'
         '<h1 class="pw-title">How PicWise will help shoppers decide.</h1>'
-        '<p class="pw-body">PicWise is being prepared as a buying-decision assistant. Users will be able to search for a product category, compare a small set of relevant options, and follow external store offers once provider integrations are configured.</p>'
+        '<p class="pw-body">PicWise is being prepared as a buying-decision assistant. Users will be able to search for a product, see the matching products from the lowest price, with a mid-priced pick, the price history of each, and the shops&#39; offers.</p>'
         '<p class="pw-note" id="what-is-picwise"><strong>Important note:</strong> This demo page is informational only. It does not display live provider offers, real product availability, affiliate links, prices, or ratings.</p>'
         '<section class="pw-list-wrap" aria-label="Informational demo sections">'
         '<article class="pw-item"><h2>Search by product need</h2><p>Users will start from a category or buying need, not from a live offer feed.</p></article>'
-        '<article class="pw-item"><h2>Compare focused choices</h2><p>PicWise will present a short comparison view once integrations are fully configured.</p></article>'
+        '<article class="pw-item"><h2>Lowest price first</h2><p>The matching products are listed from the lowest price, with one mid-priced pick for the category.</p></article>'
         '<article class="pw-item"><h2>Understand trade-offs</h2><p>Guidance will help users evaluate practical pros, limits, and suitability.</p></article>'
         '<article class="pw-item"><h2>External provider integrations in progress</h2><p>Provider and affiliate integrations are being configured. No live provider offers are currently claimed.</p></article>'
         "</section>"

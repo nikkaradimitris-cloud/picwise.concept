@@ -380,7 +380,8 @@ class AppHttpEndpointTests(unittest.TestCase):
         self.assertNotIn('<article class="pw-card', body)
         self.assertNotIn("Recommended by Picwise", body)
         self.assertIn("Search by product need", body)
-        self.assertIn("Compare focused choices", body)
+        self.assertIn("Lowest price first", body)
+        self.assertNotIn("compar", body.lower())
 
     def test_demo_avoids_cart_checkout_and_fake_markers(self) -> None:
         body = self._fetch("/demo").lower()
