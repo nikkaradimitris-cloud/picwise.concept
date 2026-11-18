@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-19.
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-19 (night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,6 +8,23 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **19/11 night, the shop's own price (built, tested, pushed to the work branch; NOT deployed: waits
+  for the owner's «ανέβασε»).** The owner: «Θα ήθελα να αποφύγουμε τους υπολογισμούς τιμής», then «Στην
+  έκπτωση τραβά στην τιμή της έκπτωσης». (1) No price after an offer: `product_offers.price_after_offer`
+  removed with its tests; the order, the Recommended, the price bar and the cards read the shop's own
+  price; the offer stays on the card in the shop's words; the heading says "cheapest first". This also
+  ends a fault found that night: the cheapest shop of one product was chosen before offers, so a shop
+  whose offer made it the cheapest was dropped. (2) The shop's sale price: Google's `sale_price` was never
+  read (`_PRICE_KEYS` took `price` first), so a product on sale showed its usual price. Now
+  `normalization.sale_price_in_force`: lower than `price`, same currency, live by
+  `sale_price_effective_date`, not ending within 24 h; unreadable dates leave the usual price. (3) The
+  memory: on the first night of sale prices (`meta.sale_prices_read_from`) a product the sale price
+  changes starts its price history again (no ▼ nobody can date). How many rows carry a sale price is
+  not known (no feed here): the night's note now says `on_sale_tonight` and
+  `history_restarted_tonight`; read them after the deployment, whose own preparation (`deploy.sh`)
+  is the first night of sale prices.
+  Rules, contract ("The shop's own price"), README, MISSION, LANDING and AI specs, legal pages
+  (Last updated 19 November 2026) changed with it.
 - **19/11, the records of the order brought to the rule** (owner, 19/11: «Η προσφορές βγαίνουν πρώτα μόνο αν είναι
   φθηνότερες», the rule of 15/11 said again): `README.md`, `docs/MISSION.md`, this file's rules,
   `docs/PICWISE_DECISION_CONTRACT.md` (rule 4 of "Price first", the complex search's order, the price bar),
@@ -361,8 +378,9 @@ Read in this order: `PROJECT_RULES.md` (first, it wins), `docs/MISSION.md`,
 A conflict between them: stop and say it (`PROJECT_RULES.md` 1.4).
 
 - Every purchase-intent search: only the kind asked for, only in stock; 4 choices, 1
-  Recommended (the middle price), "More" by four; cheapest first, each at its price after
-  an offer that surely applies, so an offer comes first only when it is cheaper (owner,
+  Recommended (the middle price), "More" by four; cheapest first, each at the shop's own
+  price, its sale price where the shop's feed gives one: PicWise works out no price, an
+  offer is a note in the shop's words, and comes first only when it is cheaper (owner,
   15/11 and 19/11); commission never a criterion (`PROJECT_RULES.md` 2 and 5,
   `docs/PICWISE_DECISION_CONTRACT.md`).
 - No invented data anywhere; a synthetic catalogue is for measuring speed only.
