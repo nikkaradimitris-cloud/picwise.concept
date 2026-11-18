@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-16.
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-18.
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,6 +8,17 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **18/11, the conversation of the daily work's checks again** (owner: «Υπάρχει κάτι σε αυτή τη συζήτηση
+  που δεν έχει κλείσει ή δεν έχει ανέβει?», then «Main ίδιο με το site», «Διόρθωση ώρας ελέγχου», «Σβήσε την
+  προεπισκόπηση»). GitHub started `server-health.yml`'s schedule (08:07 UTC) 9 to 10 hours late, after the
+  daily session (16/11 18:20, 17/11 17:32, 18/11 17:09 UTC): the session now starts it by hand at its start
+  and reads that run (`docs/PICWISE_DAILY_WORK.md`, step 2); the schedule stays as the evening's second look.
+  `main` brought to the site and its records by a fast-forward (it was 6 commits behind: the first run's
+  record and the 16/11 daily session's five, live since that day). The private preview of 15/11 deleted.
+  The daily task of 18/11 did not run ("usage limit reached" at 09:43 UTC; no email that day). The last
+  health run (18/11 17:09 UTC): only the offers over the limit (15.5 days; Awin 401); the site 7.3 GB, at
+  night 16.2 GB of the 18 GB limit, so the `additional_image_link` column (about +1.5 GB) is measured first;
+  173 visitors' searches in 7 days, 84 different.
 - **16/11, the daily session (12:00 Greek time).** Read at 09:44 UTC: the night's note `prepared: true`,
   prepared 04:25 UTC, 254,756 products, 78 shops, nothing shrunk, gone or new; `price_notes` 0 ▼, 0 ▲ (first
   chips about 19/11). `server-health.yml`: today's run is the one by hand at 07:33 UTC (`43824703638`); the

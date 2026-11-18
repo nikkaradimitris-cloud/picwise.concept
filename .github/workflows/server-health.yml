@@ -5,11 +5,13 @@
 #
 # A Claude session cannot open SSH to the server, and the offers, the photos' check, the
 # night's preparation and the server's memory and disk are seen only there; GitHub's
-# runners can reach it. Runs every day at 08:07 UTC, before the daily session (11:43 in
-# Athens: 09:43 UTC in winter, 08:43 in summer), and by hand. It changes nothing on the
-# server: deployment/server/print_health.py reads the site's service, the night's
-# preparation, the offers, the photos, the AI's spend, the memory and the disk, and says
-# which limit is passed; deployment/server/count_searches.py counts the visitors'
+# runners can reach it. The daily session (11:43 in Athens) starts it by hand at its
+# start and reads it (docs/PICWISE_DAILY_WORK.md): the schedule, 08:07 UTC, was started by
+# GitHub 9 to 10 hours late on 16, 17 and 18/11, after the session; it stays as a second
+# look in the evening, and the only one on a day whose session does not run. It changes
+# nothing on the server: deployment/server/print_health.py reads the site's service, the
+# night's preparation, the offers, the photos, the AI's spend, the memory and the disk,
+# and says which limit is passed; deployment/server/count_searches.py counts the visitors'
 # searches, and on Sundays asks the site on the server itself, once each, the week's
 # different searches, to count those that found no product (no visitor's search, no
 # cost: the site keeps and sends to the AI only what a page's own script asks). From

@@ -44,8 +44,14 @@ by email and to their phone. The owner answers in that session, once a day.
    address and sender.
    **The server's health** (owner, 2026-11-16, among the proposals for the daily work:
    «Έλεγχος προσφορών, ταχύτητας και πόρων ... Ειδοποίηση μόνο αν ξεπεράσουν το όριο»):
-   read the log of the day's run of `.github/workflows/server-health.yml` (every day at
-   08:07 UTC; the GitHub tools: the workflow's runs, then its job's log). Its step "What
+   at the start of the day, start `.github/workflows/server-health.yml` by hand (the GitHub
+   tools: run the workflow, on `main`; it only reads, and takes about half a minute), then
+   read that run (the workflow's runs, then its job's log). Its own schedule, 08:07 UTC,
+   is not waited for: GitHub started it 9 to 10 hours late on 16, 17 and 18/11 (17:09 to
+   18:20 UTC), after the daily session; it stays as a second look in the evening, and as
+   the only one on a day whose session does not run. On a Sunday the run started by hand
+   counts the week's searches that found no product too (the workflow does on Sundays).
+   When starting it fails, read its last run and say how old it is. Its step "What
    runs on the server, and which limit is passed" ends with each limit passed, "over the
    limit: …", or with "within every limit". The limits are in
    `deployment/server/print_health.py`: the site's service not active; the night's
@@ -58,9 +64,7 @@ by email and to their phone. The owner answers in that session, once a day.
    gives each page's first byte and the server's part of it: a page not answering 200, or
    a search whose server's part is over 1 s also when asked again, passes the limit of
    speed. Each limit passed goes first in the report, one line each, in plain words; the
-   rest of the log is told only on Sundays. When today's run failed or did not run, the
-   report says so first; the session may run it once by hand (it only reads) and read that
-   run.
+   rest of the log is told only on Sundays. When the run failed, the report says so first.
    **Whether the Sunday tidy-up of the branches ran** (owner, 2026-11-16: «Θέλω να
    λαμβάνω ενημέρωση να συμπεριλάβεις την αυτόματη εργασία»): on a Sunday, and on the
    first day after one whose session did not report it, read the last run of
