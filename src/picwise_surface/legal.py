@@ -25,7 +25,7 @@ OPERATOR_NAME = "Nikos Karadimitris"
 OPERATOR_ADDRESS = "53 N. Notara Street, Piraeus, Greece"
 OPERATOR_VAT = "EL120948460"
 PUBLIC_CONTACT_EMAIL = "contact.picwise@subby.cloud"
-LAST_UPDATED = "1 November 2026"
+LAST_UPDATED = "19 November 2026"
 # The privacy policy changed on its own, with the complex searches (owner, 2026-11-06).
 PRIVACY_LAST_UPDATED = "7 November 2026"
 
@@ -43,9 +43,9 @@ _OPERATOR_HTML = (
 _WHAT_PICWISE_DOES_HTML = (
     "<p>PicWise is a product search for shoppers in the United Kingdom who already know what "
     "they want to buy. Type a product, and PicWise shows only that kind of product, only what "
-    "the shops list as in stock, cheapest first, each at its price after a current shop offer where the offer surely applies: "
+    "the shops list as in stock, cheapest first at the shop's own price (its sale price where the shop gives one): "
     "four choices, usually with one marked as the recommended pick: the one in the middle of the "
-    "prices, each at its price after a shop's offer, rather than simply the cheapest, "
+    "prices, rather than simply the cheapest, "
     "and \u201cMore\u201d for the next four.</p>"
     "<p>The prices and stock come from the shops' own product feeds, received through the Awin "
     "affiliate network and read again every night. Where a shop publishes its own catalogue, "
@@ -188,7 +188,7 @@ def render_terms_page() -> str:
         title="Terms of Use — PicWise",
         meta_description=(
             "The terms of use of PicWise, a product search that shows UK shops' products in stock, "
-            "cheapest first after offers: who runs it, links to shops, commission, and limits."
+            "cheapest first: who runs it, links to shops, commission, and limits."
         ),
         heading="Terms of Use",
         intro="Please read these terms before using PicWise.",
@@ -314,9 +314,9 @@ def render_affiliate_disclosure_page() -> str:
         "<h2>How PicWise earns</h2>"
         "<p>PicWise works with the Awin affiliate network. Links from PicWise to shops go through Awin, and when you buy after following one, the shop may pay PicWise a commission through Awin.</p>"
         "<h2>What it does not change</h2>"
-        "<p>The price you pay is the same. The commission never decides what PicWise shows or in which order: results are the kind you asked for, in stock, cheapest first, each at its price after a current shop offer where the offer surely applies, and the recommended pick is the one in the middle of the prices, on offer or not. Shops that pay no commission are ranked by the same rule.</p>"
+        "<p>The price you pay is the same. The commission never decides what PicWise shows or in which order: results are the kind you asked for, in stock, cheapest first at the shop's own price, and the recommended pick is the one in the middle of the prices, on offer or not. Shops that pay no commission are ranked by the same rule.</p>"
         "<h2>Offers</h2>"
-        "<p>An offer on a product is the shop's own, as it states it through Awin, shown with its end date and, where the shop gives one, its code. PicWise is paid nothing to show an offer, and shows it only where its words cover the product. A product on offer is ordered at its price after the offer only where the offer's words leave no doubt that you get it: one percentage or amount off, or half price, with any least spend reached by the product's own price; an offer for new customers, a first order or a second product, for example, leaves the product at the shop's own price. A voucher is shown only with its code: without it, you could not have the discount.</p>"
+        "<p>An offer on a product is the shop's own, as it states it through Awin, shown with its end date and, where the shop gives one, its code. PicWise is paid nothing to show an offer, and shows it only where its words cover the product. PicWise works out no price after an offer: the price shown is the shop's own, its sale price where the shop gives one, and whether an offer applies to you (an offer for new customers, a first order or a second product, for example) is for the shop's own terms to say. A voucher is shown only with its code: without it, you could not have the discount.</p>"
         "<h2>Which shops</h2>"
         "<p>The shops on PicWise run a programme with Awin. PicWise earns a commission only from the shops that have accepted it into their programme; the others are shown by the same rule, and PicWise earns nothing from them. PicWise works with no other affiliate network at present; any other will be named here first.</p>"
         "<h2>What PicWise shows</h2>"
@@ -376,8 +376,8 @@ def render_about_page() -> str:
         "<ul>"
         "<li>Only the kind of product you asked for: a search for a coffee machine shows coffee machines, not filters for coffee machines.</li>"
         "<li>Only what the shop lists as in stock.</li>"
-        "<li>Cheapest first, in one currency, each product at its price after a current shop offer where the offer surely applies. The offer is the shop's own, shown in its words with its end date.</li>"
-        "<li>A recommended pick: the product in the middle of the prices, each at its price after a shop's offer, on offer or not, so neither the cheapest nor the dearest decides it.</li>"
+        "<li>Cheapest first, in one currency, at the shop's own price: its sale price where the shop gives one. An offer is the shop's own, shown in its words with its end date; PicWise works out no price after it.</li>"
+        "<li>A recommended pick: the product in the middle of the prices, on offer or not, so neither the cheapest nor the dearest decides it.</li>"
         "<li>When there are fewer products, PicWise shows just those, and says so.</li>"
         "</ul>"
         "<h2>How PicWise earns</h2>"
@@ -390,10 +390,10 @@ def render_about_page() -> str:
         path="/about",
         title="About PicWise — PicWise",
         meta_description=(
-            "PicWise is a product search for UK shoppers: only the kind you asked for, in stock, cheapest first after offers, "
+            "PicWise is a product search for UK shoppers: only the kind you asked for, in stock, cheapest first, "
             "with one recommended pick from the middle of the prices."
         ),
         heading="About PicWise",
-        intro="A product search that shows only what you asked for, in stock, cheapest first after offers.",
+        intro="A product search that shows only what you asked for, in stock, cheapest first.",
         sections=sections,
     )

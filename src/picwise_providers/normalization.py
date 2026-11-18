@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import hashlib
 import re
+from datetime import datetime, timedelta, timezone
 from typing import Any, Mapping
 
 from .contracts import ProviderProduct
+from .decision_labels import parse_price_amount
 
 _HTTP_URL_RE = re.compile(r"^https?://[a-z0-9.-]+\.[a-z]{2,}(?:[/?#].*)?$", flags=re.IGNORECASE)
 
@@ -18,7 +20,20 @@ _CATEGORY_KEYS = (
 )
 _URL_KEYS = ("product_url", "url", "deeplink", "aw_deep_link", "merchant_deep_link", "link")
 _IMAGE_KEYS = ("image_url", "image", "aw_image_url", "merchant_image_url", "image_link")
-_PRICE_KEYS = ("price", "current_price", "search_price", "sale_price", "price_text")
+# The shop's usual price: the first of these the row fills. Its sale price is read on its
+# own (`sale_price_in_force`).
+_PRICE_KEYS = ("price", "current_price", "search_price", "price_text")
+# The shop's own sale price (owner, 2026-11-19: «Θα ήθελα να αποφύγουμε τους υπολογισμούς
+# τιμής», then «Στην έκπτωση τραβά στην τιμή της έκπτωσης»). Google's format, the feed the
+# server reads, gives a product on sale two prices: `price`, the shop's usual one, and
+# `sale_price`, its price during the sale, with the sale's dates in
+# `sale_price_effective_date` ("start/end", ISO 8601) where the shop gives them. The sale
+# price is the shop's, never one PicWise works out.
+_SALE_PRICE_KEY = "sale_price"
+_SALE_DATES_KEY = "sale_price_effective_date"
+# A sale ending within this long leaves the usual price: the catalogue is read once a
+# night, and a price must not stand on the site after the shop has ended it.
+SALE_MUST_LAST = timedelta(hours=24)
 _AVAILABILITY_KEYS = ("availability", "in_stock", "stock_status", "availability_text")
 _CURRENCY_KEYS = ("currency", "currency_code")
 # A Google-format feed has no currency column: its price carries the currency, "39.99
@@ -64,14 +79,9 @@ def _normalize_text(value: Any) -> str:
     return " ".join(str(value or "").split()).strip()
 
 
-def _price_and_currency(payload: Mapping[str, Any]) -> tuple[str, str]:
-    """The row's price and currency. Without a currency column, a code written with
-    the price is split off it, so a Google-format row reads as an Awin row does
-    ("39.99", "GBP"); a price without one stays as the feed wrote it."""
-    price_text = _first_non_empty(payload, _PRICE_KEYS)
-    currency = _first_non_empty(payload, _CURRENCY_KEYS)
-    if currency:
-        return price_text, currency
+def _split_currency(price_text: str) -> tuple[str, str]:
+    """A price and the currency code written with it: "39.99 GBP" is ("39.99", "GBP"); a
+    price without one stays as the feed wrote it, with ""."""
     match = _PRICE_WITH_CODE_RE.match(price_text)
     if match is None:
         return price_text, ""
@@ -79,6 +89,82 @@ def _price_and_currency(payload: Mapping[str, Any]) -> tuple[str, str]:
     if code_first:
         return amount_after, code_first
     return amount_first, code_after
+
+
+def _sale_moment(text: str) -> datetime | None:
+    """One end of a sale's dates as a moment ("2026-11-30T23:59-0800", "...Z", "+01:00"),
+    or None when it cannot be read. A moment with no offset is read as UTC."""
+    value = str(text or "").strip()
+    if not value:
+        return None
+    if value[-1:] in ("Z", "z"):
+        value = value[:-1] + "+00:00"
+    value = re.sub(r"(T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?[+-]\d{2})(\d{2})$", r"\1:\2", value)
+    try:
+        moment = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    return moment if moment.tzinfo is not None else moment.replace(tzinfo=timezone.utc)
+
+
+def sale_price_in_force(payload: Mapping[str, Any], *, now: datetime | None = None) -> str:
+    """The row's sale price as the feed wrote it ("29.99 GBP") when it is the shop's price
+    now, else "" (owner, 2026-11-19: «Στην έκπτωση τραβά στην τιμή της έκπτωσης»).
+
+    The sale price counts only when it is lower than the shop's usual price, in the same
+    currency, and live now by its dates (`sale_price_effective_date`), not ending within
+    `SALE_MUST_LAST`. Dates that cannot be read leave the usual price: no price is shown
+    that the shop may have ended. A row with no usual price PicWise can read takes a sale
+    price live by its dates. Nothing here is worked out: the price is the shop's.
+    """
+    if not isinstance(payload, Mapping):
+        return ""
+    sale_text = _normalize_text(payload.get(_SALE_PRICE_KEY))
+    if not sale_text:
+        return ""
+    sale_amount, sale_code = _split_currency(sale_text)
+    sale = parse_price_amount(sale_amount)
+    if sale is None or sale <= 0:
+        return ""
+    usual_amount, usual_code = _split_currency(_first_non_empty(payload, _PRICE_KEYS))
+    usual = parse_price_amount(usual_amount)
+    if usual is not None:
+        if sale >= usual:
+            return ""
+        if sale_code and usual_code and sale_code.upper() != usual_code.upper():
+            return ""
+    dates = _normalize_text(payload.get(_SALE_DATES_KEY))
+    if dates:
+        ends = [part for part in dates.split("/") if part.strip()]
+        if len(ends) != 2:
+            return ""
+        start, end = _sale_moment(ends[0]), _sale_moment(ends[1])
+        if start is None or end is None or end <= start:
+            return ""
+        moment = now if now is not None else datetime.now(timezone.utc)
+        if moment.tzinfo is None:
+            moment = moment.replace(tzinfo=timezone.utc)
+        if moment < start or moment + SALE_MUST_LAST > end:
+            return ""
+    return sale_text
+
+
+def _price_and_currency(payload: Mapping[str, Any]) -> tuple[str, str]:
+    """The row's price and currency: the shop's sale price when it is in force
+    (`sale_price_in_force`), else its usual price. Without a currency column, a code
+    written with the price is split off it, so a Google-format row reads as an Awin row
+    does ("39.99", "GBP"); a price without one stays as the feed wrote it. A sale price
+    written without a code is in the usual price's currency (the same row's)."""
+    usual_text = _first_non_empty(payload, _PRICE_KEYS)
+    sale_text = sale_price_in_force(payload)
+    currency = _first_non_empty(payload, _CURRENCY_KEYS)
+    if currency:
+        return sale_text or usual_text, currency
+    usual_amount, usual_code = _split_currency(usual_text)
+    if not sale_text:
+        return usual_amount, usual_code
+    sale_amount, sale_code = _split_currency(sale_text)
+    return sale_amount, sale_code or usual_code
 
 
 def derive_stable_provider_product_id(*, product_url: str, title: str, raw: Mapping[str, Any]) -> str:

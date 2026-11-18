@@ -749,16 +749,11 @@ def resolve_live_search(
                         if selection.price_first:
                             shown_products = tuple(selection.selected_products) + tuple(selection.more_products)
                             covered = offers_covering(shown_products)
-                            # The price after the offer, where it is certain (owner, 2026-11-15).
-                            after = dict(selection.offer_prices)
+                            # The shop's offer as the shop states it; no price after it is
+                            # worked out (owner, 2026-11-19: «Θα ήθελα να αποφύγουμε τους
+                            # υπολογισμούς τιμής»).
                             provider_feed_offers = tuple(
-                                (
-                                    str(product.provider_product_id or "").strip(),
-                                    {
-                                        **covered[id(product)].to_dict(),
-                                        "price_after": after.get(str(product.provider_product_id or "").strip()),
-                                    },
-                                )
+                                (str(product.provider_product_id or "").strip(), covered[id(product)].to_dict())
                                 for product in shown_products
                                 if id(product) in covered
                             )

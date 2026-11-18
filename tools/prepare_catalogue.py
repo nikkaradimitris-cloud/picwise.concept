@@ -133,6 +133,13 @@ def main(argv: list[str] | None = None) -> int:
                     if memory["compared_with"] is not None
                     else ""
                 )
+                # The shops' sale prices (owner, 2026-11-19).
+                + f"; {memory['on_sale_tonight']:,} at the shop's sale price"
+                + (
+                    f", {memory['history_restarted_tonight']:,} of them starting their price's history again"
+                    if memory["history_restarted_tonight"]
+                    else ""
+                )
             )
     notes = _price_notes(args.memory, args.out, prepared, memory)
     if notes is not None:
