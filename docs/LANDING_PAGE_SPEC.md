@@ -156,12 +156,15 @@ hidden until its photo came and, after 1.2 s, taken out of the page: measured wi
 slowed to 2 s, Google's layout shift was 0.87 on a phone and 0.19 on a computer (0.1 or
 less is "good"); now 0 on both.
 
-## The Price After an Offer (2026-11-15)
+## The Shop's Own Price (2026-11-19)
 
-A card whose offer surely applies shows the price after it as its price and, with the
-offer, "£24.00 at the shop, £19.20 with this offer"; it stands in the order at that price,
-never before a cheaper product. The rules: `docs/PICWISE_DECISION_CONTRACT.md`, "The
-price after offers".
+A card's price is the shop's own, its sale price where the shop's feed gives one; PicWise
+works out no price (owner, 2026-11-19: «Θα ήθελα να αποφύγουμε τους υπολογισμούς τιμής»,
+then «Στην έκπτωση τραβά στην τιμή της έκπτωσης»). A shop's offer is shown under the
+price in the shop's own words, with its end, its code and its terms, never as a price
+after it. The rules: `docs/PICWISE_DECISION_CONTRACT.md`, "The shop's own price". From
+2026-11-15 to 2026-11-19 a card whose offer surely applied showed the price after it, "£24.00 at
+the shop, £19.20 with this offer".
 
 ## The Shop's Name (2026-11-13)
 
@@ -207,10 +210,10 @@ Changed on 2026-10-16 by the owner: "price first" (`docs/picwise_price_first_pla
 
 - "More" is below the first 4 choices, on every search.
 - Each press opens the next 4 in the answer's order, as often as the buyer asks, until the
-  list ends: cheapest first, each product at its price after a current shop offer where
-  the offer surely applies (owner, 2026-11-15; 2026-11-19: «Η προσφορές βγαίνουν πρώτα
-  μόνο αν είναι φθηνότερες»; from 2026-11-01 to 2026-11-15 the products on offer came
-  first).
+  list ends: cheapest first, each product at the shop's own price, its sale price where
+  the shop gives one (owner, 2026-11-19; 2026-11-19: «Η προσφορές βγαίνουν πρώτα μόνο αν
+  είναι φθηνότερες»; from 2026-11-15 to 2026-11-19 at its price after an offer that surely
+  applied; from 2026-11-01 to 2026-11-15 the products on offer came first).
 - A counter shows how many are shown: "4 of 45", "8 of 45".
 - Nothing opened by "More" is recommended.
 - It is a button the buyer presses, not an infinite scroll that loads on its own.

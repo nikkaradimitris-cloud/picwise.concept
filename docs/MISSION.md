@@ -18,27 +18,33 @@
 > is the middle price, on offer or not («Οι προσφορές δεν πρέπει να βγαίνουν πάνω από το
 > φθηνότερο προϊόν»; said again on 2026-11-19: «Η προσφορές βγαίνουν πρώτα μόνο αν είναι
 > φθηνότερες»; `PROJECT_RULES.md` §2 and §5).
+>
+> Changed on 2026-11-19 by the owner: PicWise works out no price; each product stands at
+> the shop's own price, its sale price where the shop's feed gives one («Θα ήθελα να
+> αποφύγουμε τους υπολογισμούς τιμής», then «Στην έκπτωση τραβά στην τιμή της έκπτωσης»;
+> `PROJECT_RULES.md` §2 and §5).
 
 Picwise finds the product the buyer asked for, shows only what is in stock, cheapest
-first, each product at its price after a current shop offer where that offer surely
-applies, and makes one honest pick.
+first, each product at the shop's own price (its sale price where the shop gives one),
+and makes one honest pick.
 
 For every purchase-intent query, Picwise must:
 - show only the kind of product asked for
 - never show a product the shop's feed says is out of stock (the feed's word is
   trusted; no shop page is checked)
 - return 4 choices first: exactly 1 Recommended (the middle product of the result in
-  price order, each product at its price after its offer, on offer or not, or the
+  price order, each product at the shop's own price, on offer or not, or the
   nearest one to it that has an EAN/GTIN; a dearest product costing at least twice the
   next one does not count towards the middle; owner, 2026-11-15; from 2026-11-01 to
   2026-11-15 it was a product on offer whenever an offer covered one)
   and the 3 cheapest
 - show how many there are ("4 of 45")
-- after the Recommended, put every product cheapest first, each at its price after a
-  current shop offer where the offer surely applies: a product on offer comes first only
-  when it is cheaper (owner, 2026-11-15 and 2026-11-19; from 2026-11-01 to 2026-11-15 the
-  products on offer came first; `docs/PICWISE_DECISION_CONTRACT.md`, "The price after
-  offers")
+- after the Recommended, put every product cheapest first, each at the shop's own price,
+  its sale price where the shop gives one: a product on offer comes first only when it is
+  cheaper (owner, 2026-11-15 and 2026-11-19; from 2026-11-15 to 2026-11-19 each stood at
+  its price after an offer that surely applied, and from 2026-11-01 to 2026-11-15 the
+  products on offer came first; `docs/PICWISE_DECISION_CONTRACT.md`, "The shop's own
+  price")
 - in a complex search ("quiet washing machine"), put the products whose own words show
   they fit the need first, in that same order among them, the Recommended chosen among
   them, each marked with a ✓ and its own words (owner, 2026-11-06)
@@ -76,9 +82,9 @@ Picwise must not become:
 - No commission-first ranking or recommendation. Commission never decides the order
   or the Recommended.
 - The order, after the kind asked for and availability: the Recommended, then every
-  product cheapest first, each at its price after a current shop offer where the offer
-  surely applies, so a product on offer comes first only when it is cheaper (owner,
-  2026-11-15 and 2026-11-19). The Recommended is the middle product in price order, on
+  product cheapest first, each at the shop's own price, its sale price where the shop
+  gives one, so a product on offer comes first only when it is cheaper (owner,
+  2026-11-15 and 2026-11-19; PicWise works out no price, owner, 2026-11-19). The Recommended is the middle product in price order, on
   offer or not (owner, 2026-11-15). In a complex search, the products that fit
   the need come first in that order, and the Recommended is one of them (owner,
   2026-11-06). No ratings are used. No one pays for a place.

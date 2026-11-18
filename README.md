@@ -24,9 +24,10 @@ HERE"). `PROGRESS.md` is the chronological log.
   245,894 of them kept by the cap of 15% a category (`PROJECT_RULES.md` section 13).
   Each worker of the site keeps it loaded and brings the night's in beside it.
 - A search: 4 choices with exactly 1 Recommended (the middle price), only products in
-  stock, cheapest first, each at its price after a current shop offer where the offer
-  surely applies, so a product on offer comes first only when it is cheaper (owner,
-  2026-11-15 and 2026-11-19), commission never a criterion
+  stock, cheapest first, each at the shop's own price (its sale price where the shop's
+  feed gives one; PicWise works out no price, owner, 2026-11-19), so a product on offer
+  comes first only when it is cheaper (owner, 2026-11-15 and 2026-11-19), commission
+  never a criterion
   (`PROJECT_RULES.md` section 2, `docs/PICWISE_DECISION_CONTRACT.md`). The search reads
   English only. An AI layer marks the products that fit a complex search, since
   2026-11-06, at most one euro a day (`docs/PICWISE_AI_LAYER_SPEC.md`).
