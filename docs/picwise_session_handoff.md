@@ -8,6 +8,11 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **18/11 evening: offers back, further photos measured.** New Awin token (90 days, to about 16/02/2027; renew before)
+  in `AWIN_API_TOKEN`, carried to the server by re-running the last deployment: 101 offers from 32 shops, within every
+  limit. `feed-compare.yml` (now by hand from `main`): the feed in use **already has** `additional_image_link`; only
+  634 of 1.68 million rows fill it, so few cards can show further photos, by the shops' choice. The owner's new link
+  (`AWIN_FEED_URL_NEW`) lacks five shops and adds nothing: `AWIN_FEED_URL` stays. The memory worry for the column is gone.
 - **18/11, the conversation of the daily work's checks again** (owner: «Υπάρχει κάτι σε αυτή τη συζήτηση
   που δεν έχει κλείσει ή δεν έχει ανέβει?», then «Main ίδιο με το site», «Διόρθωση ώρας ελέγχου», «Σβήσε την
   προεπισκόπηση»). GitHub started `server-health.yml`'s schedule (08:07 UTC) 9 to 10 hours late, after the
