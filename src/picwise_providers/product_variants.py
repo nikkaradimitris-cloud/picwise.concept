@@ -251,6 +251,25 @@ def family_key(*, shop: str, brand: str, title: str) -> str:
     return f"{shop}\x1f{brand.strip().lower()}\x1f{own}"
 
 
+# Where a shop's title passes from the product's name to its variant: "Satin Sleep Mask -
+# Snake Print - Sleep Mask Only", "Mug | Personalised", "Runner, Black".
+_HEAD_END_RE = re.compile(r"\s[-\u2013\u2014|]\s|,\s")
+
+
+def head_key(*, shop: str, brand: str, title: str) -> str:
+    """The family key of a title's head, its words before the first " - ", " | " or ", ",
+    when the head has two words of its own at least; else the whole title's
+    (`family_key`). One shop's prints, designs and finishes of a product, named in words
+    no list of colours holds ("- Snake Print -", "- Cheetah Print -"), share it, so that
+    the AI is asked whether they are one product."""
+    head = _HEAD_END_RE.split(title, maxsplit=1)[0]
+    if head != title:
+        key = family_key(shop=shop, brand=brand, title=head)
+        if key:
+            return key
+    return family_key(shop=shop, brand=brand, title=title)
+
+
 def sizes_apart_key(*, shop: str, brand: str, title: str) -> str:
     """The key the products of one family key share when only sizes or amounts tell them
     apart: their colours and numbers are part of it, so two products with the same one

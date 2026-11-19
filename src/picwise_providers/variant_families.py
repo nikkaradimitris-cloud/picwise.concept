@@ -7,8 +7,8 @@ Owner, 2026-11-19: a shop that lists each variant of a product as a product of i
 
 The site never calls the AI (`docs/PICWISE_AI_LAYER_SPEC.md`, 4.5): after each preparation
 of the catalogue `deployment/server/family_jobs.py` reads it, finds the products of one
-shop and brand whose own words are the same while a colour or a number differs
-(`product_variants.family_key`, `variant_difference`), and writes them as sets to the
+shop and brand whose name is the same while a colour, a number or a print differs
+(`product_variants.head_key`, `variant_difference`), and writes them as sets to the
 folder it shares with `picwise-families`, the AI's service; each product shown by one
 card per page first (its page's variants are one product already). The service answers
 which of a set are one product (`picwise_ai.families`) and keeps, in one file, each
@@ -31,7 +31,7 @@ from typing import Any
 from .contracts import ProviderProduct
 from .decision_labels import parse_price_amount
 from .normalization import extract_merchant_name
-from .product_variants import DOUBTFUL, family_key, page_key, sizes_apart_key, variant_difference
+from .product_variants import DOUBTFUL, head_key, page_key, sizes_apart_key, variant_difference
 
 FAMILIES_FILE_ENV = "PICWISE_FAMILIES_FILE"
 FAMILIES_NAME = "families.json"
@@ -103,14 +103,16 @@ def _shop(product: ProviderProduct) -> str:
 
 
 def doubtful_sets(products: Iterable[ProviderProduct]) -> list[dict[str, Any]]:
-    """The sets the AI is asked about: per shop, brand and own words, the products, each
-    the cheapest of its page, when a colour or a number tells some of them apart. Each set
-    with its id (the same products and titles, the same id, so that it is asked once)."""
+    """The sets the AI is asked about: per shop, brand and the own words of the title's
+    head (`head_key`: the name before " - ", " | " or ", "; the whole title without one),
+    the products, each the cheapest of its page and of those only sizes apart, when a
+    colour, a number or the words after the head tell some of them apart. Each set with
+    its id (the same products and titles, the same id, so that it is asked once)."""
     by_key: dict[str, dict[str, tuple[float, ProviderProduct, list[str]]]] = defaultdict(dict)
     for product in products:
         raw = product.raw if isinstance(product.raw, Mapping) else {}
         shop = _shop(product)
-        key = family_key(shop=shop, brand=str(product.brand or ""), title=str(product.title or ""))
+        key = head_key(shop=shop, brand=str(product.brand or ""), title=str(product.title or ""))
         if not key:
             continue
         price = parse_price_amount(product.price_text)

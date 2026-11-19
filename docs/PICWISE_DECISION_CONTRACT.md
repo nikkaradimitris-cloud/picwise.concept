@@ -847,14 +847,19 @@ The owner: «ένα μαγαζί πουλάει ένα ζευγάρι παπού
      colour or a number does ("Red Wine Glass" and "White Wine Glass", "Phone 15" and
      "Phone 16"), the AI decides.
    - **Rule 2, by the AI** (`variant_families`, `picwise_ai.families`): after each
-     preparation and at each deployment `family_jobs.py` writes the sets, each page once,
-     at most 20 listings a set, those not answered yet; `picwise-families`, under the AI
-     layer's own user and key, asks Claude Haiku 5.5 25 sets a call, which listings are
-     one product in variants (a different model, a different type of item, a flavour of a
-     food: apart; unsure: apart), uses an answer only when every listing is in exactly one
-     group, and keeps each product's family in the file the site reads
+     preparation and at each deployment `family_jobs.py` writes the sets: per shop, brand
+     and the name the titles begin with (`head_key`: the words before " - ", " | " or
+     ", ", so a print no list of colours names, "Satin Sleep Mask - Snake Print", is asked
+     too; the whole title without one), each page and each size-only listing once, at most
+     20 listings a set, those not answered yet; `picwise-families`, under the AI layer's
+     own user and key, asks Claude Haiku 5.5 25 sets a call, which listings are one
+     product in variants (colour, print, finish, size, capacity, power, length, pack size;
+     a different model, a different type of item, a flavour of a food, a bundle with other
+     items: apart; unsure: apart), uses an answer only when every listing is in exactly
+     one group, and keeps each product's family in the file the site reads
      (`PICWISE_FAMILIES_FILE`). Its own cap: $5.00 a day (the searches keep their $1.00),
-     20 calls a minute. A set not answered stays apart.
+     20 calls a minute. A set not answered stays apart. The first scan, 19/11 13:21 UTC:
+     6,162 sets of 255,576 products, about $0.0013 a call of 25 sets.
    - **The check:** the AI layer's rule is to check a sample before its answers show; on
      the owner's «θα το κάνουμε τώρα» the answers show at once and the sample is read
      right after the first scan (`print_families.py`, in `server-health.yml`).

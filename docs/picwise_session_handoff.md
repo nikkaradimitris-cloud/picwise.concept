@@ -21,9 +21,11 @@ a decision came about.
   most 20 a set, those not answered; `picwise-families` (as `picwise-assist`, its key) asks Claude Haiku
   5.5, 25 sets a call, at most **$5.00 a day of its own** and 20 calls a minute; answers checked (each
   listing in exactly one group), kept in `answers/families.json` (the site reads it,
-  `PICWISE_FAMILIES_FILE`) and `answers/sets.json` (titles, for the sample). **To check the AI's work:**
-  `server-health.yml` by hand prints a sample of 60 sets joined or kept apart
-  (`print_families.py`). Next: the card listing the variants (as drawn for the owner), then rule 3, then
+  `PICWISE_FAMILIES_FILE`) and `answers/sets.json` (titles, for the sample). Sets by the name the titles
+  begin with (`head_key`), so prints are asked too. **To check the AI's work:** `server-health.yml` by
+  hand prints the last sets written, today's spend, the jobs waiting, the last calls and a sample of 60
+  sets joined or kept apart (`print_families.py`). First scan (13:21 UTC): 6,162 sets, 247 jobs, ~7
+  calls a minute, ~$0.0013 a call; live, "alienware aw420k keyboard" one card. Next: the card listing the variants (as drawn for the owner), then rule 3, then
   `catalogue_cap` counting products; then the series' steps 2-4.
 - **19/11 afternoon, the owner's series of work, step 1 of 4 deployed: one card per product** (the owner:
   «Ανέβασε προοδευτικά να τελειώσουμε τις εργασίες»; the series agreed on 19/11 at night: 1. one card per

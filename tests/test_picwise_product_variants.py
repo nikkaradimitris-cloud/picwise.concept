@@ -160,6 +160,25 @@ class OwnWordsTests(unittest.TestCase):
             sizes_apart_key(shop="s", brand="Fixturon", title="Fixturon Runner White Size 8"),
         )
 
+class HeadKeyTests(unittest.TestCase):
+    def test_the_head_is_the_name_before_the_variant(self) -> None:
+        from picwise_providers.product_variants import family_key, head_key
+
+        def key(title: str) -> str:
+            return head_key(shop="fixture shop", brand="", title=title)
+
+        self.assertEqual(key("Satin Sleep Mask - Snake Print - Sleep Mask Only"), key("Satin Sleep Mask - Black"))
+        self.assertEqual(key("Fixturon Runner | Cheetah"), key("Fixturon Runner, Leopard"))
+        self.assertNotEqual(key("Satin Sleep Mask - Black"), key("Cloud Padded Satin Sleep Mask - Black"))
+        # Without a head of two own words, the whole title's key.
+        self.assertEqual(key("Fixturon Runner Black"), family_key(shop="fixture shop", brand="", title="Fixturon Runner Black"))
+        self.assertEqual(key("Platinum - Lola's Leads Cable"),
+                         family_key(shop="fixture shop", brand="", title="Platinum - Lola's Leads Cable"))
+        # A hyphen inside a word or a range is not where a name ends.
+        self.assertEqual(key("Fixturon T-Shirt Black"), family_key(shop="fixture shop", brand="", title="Fixturon T-Shirt Black"))
+        self.assertEqual(head_key(shop="", brand="", title="Satin Sleep Mask - Black"), "")
+
+
 
 if __name__ == "__main__":
     unittest.main()

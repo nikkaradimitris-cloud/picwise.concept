@@ -92,6 +92,32 @@ class SetsTests(unittest.TestCase):
         ])
         self.assertEqual(again[0]["id"], sets[0]["id"])
 
+    def test_prints_named_after_the_name_make_a_set_another_name_does_not(self) -> None:
+        # The live search for "satin sleep mask" (2026-11-19): one shop's prints, each a
+        # card, while its black and pink were already one.
+        sets = doubtful_sets([
+            _product("snake", "Satin Sleep Mask - Snake Print - Sleep Mask Only", 10.0),
+            _product("cheetah", "Satin Sleep Mask - Cheetah Print - Sleep Mask Only", 15.0),
+            _product("black", "Satin Sleep Mask - Black - Sleep Mask Only", 15.0),
+            _product("cherry", "Satin Sleep Mask - Frosted Cherry Print", 10.0),
+            _product("caramel", "Cloud Padded Satin Sleep Mask - Caramel", 15.0),
+            _product("fern", "Cloud Padded Satin Sleep Mask - Pink Fern Print", 15.0),
+            # A head of one word of its own: the whole title is the key.
+            _product("p1", "Platinum - Lola's Leads Fabric Extension Cable - 1m / Black 2 Gang", 20.0),
+            _product("m1", "Malachite - Lola's Leads Fabric Extension Cable - 1m / Black 2 Gang", 20.0),
+        ])
+        self.assertEqual(
+            [[listing["title"] for listing in found["listings"]] for found in sets],
+            sorted(
+                [
+                    ["Satin Sleep Mask - Frosted Cherry Print", "Satin Sleep Mask - Snake Print - Sleep Mask Only",
+                     "Satin Sleep Mask - Black - Sleep Mask Only", "Satin Sleep Mask - Cheetah Print - Sleep Mask Only"],
+                    ["Cloud Padded Satin Sleep Mask - Caramel", "Cloud Padded Satin Sleep Mask - Pink Fern Print"],
+                ],
+                key=lambda titles: next(found["id"] for found in sets if found["listings"][0]["title"] == titles[0]),
+            ),
+        )
+
     def test_sizes_apart_are_one_listing_so_colours_in_sizes_make_a_small_set(self) -> None:
         products = [
             _product(f"{colour}-{size}", f"Fixturon Tee {colour.title()} {size}", 12.0 + index)
