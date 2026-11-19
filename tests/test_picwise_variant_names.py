@@ -63,6 +63,13 @@ class VariantValuesTests(unittest.TestCase):
             (("colours", ("Gray", "Pink")), ("sizes", ("3-4 Y", "12-18 M"))),
         )
 
+    def test_a_shop_s_colour_names(self) -> None:
+        self.assertEqual(
+            variant_values(["4 Bees Premium Cotton Hoodie - BLACK / UK 12-14", "4 Bees Premium Cotton Hoodie - FUCHSIA / UK 12-14",
+                            "4 Bees Premium Cotton Hoodie - DENIM BLUE / UK 16-18"]),
+            (("colours", ("Black", "Fuchsia", "Denim Blue")), ("sizes", ("UK 12-14", "UK 16-18"))),
+        )
+
     def test_prints_and_finishes_are_options_the_card_s_own_first(self) -> None:
         self.assertEqual(
             variant_values(["Satin Sleep Mask - Frosted Cherry Print", "Satin Sleep Mask - Snake Print - Sleep Mask Only",

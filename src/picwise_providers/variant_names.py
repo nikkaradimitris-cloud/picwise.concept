@@ -49,9 +49,16 @@ _AMOUNT_RE = re.compile(rf"^(\d+(?:[.,]\d+)?)({_UNITS})$", re.IGNORECASE)
 _CAPACITY_UNITS = {"mb": 0.001, "gb": 1.0, "tb": 1000.0, "mah": 1.0, "ah": 1000.0}
 _POWER_UNITS = {"w": 1.0, "kw": 1000.0, "v": 1.0}
 _PACK_UNITS = re.compile(r"^(?:pcs|pc|pk|packs?|pairs?|pieces?)$")
+# The colours a card names, beyond those that tell products apart (`product_variants`):
+# a shop's "Fuchsia", "Denim Blue", "Sage".
+_SHOWN_COLOURS = _COLOURS | frozenset(
+    "fuchsia mauve emerald cobalt ruby sapphire jade blush ochre aubergine chocolate coffee caramel honey "
+    "lemon rust berry cerise scarlet crimson amber apricot sage petrol denim wine pewter platinum "
+    "rosegold ash smoke putty mushroom latte biscuit".split()
+)
 _COLOUR_MODIFIERS = frozenset(
     "light dark pale bright deep matte matt metallic neon hot baby royal sky off jet dusty washed mid midnight "
-    "and gloss glossy".split()
+    "and gloss glossy ocean steel powder pastel ice forest marl heather".split()
 )
 _SIZE_NAMES = frozenset(
     "size sizes uk eu us y yr yrs year years month months mth mths small medium large extra regular petite tall "
@@ -91,8 +98,8 @@ def kind_of(value: str) -> str:
     words = [_key(token.group(0)) for token in _tokens(value)]
     if not words:
         return ""
-    if any(word in _COLOURS for word in words) and all(
-        word in _COLOURS or word in _COLOUR_MODIFIERS for word in words
+    if any(word in _SHOWN_COLOURS for word in words) and all(
+        word in _SHOWN_COLOURS or word in _COLOUR_MODIFIERS for word in words
     ):
         return COLOURS
     if len(words) == 1:
