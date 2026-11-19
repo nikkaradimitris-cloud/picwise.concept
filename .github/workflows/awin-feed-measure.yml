@@ -1,0 +1,25 @@
+# What the second Awin link, in Awin's own feed format, brings (owner, 2026-11-19: the
+# Awin-format feeds come back, in a second link, the secret AWIN_FEED_URL_AWIN), measured
+# before PicWise reads it: .github/scripts/measure_awin_feed.py on GitHub's runner.
+#
+# Read-only: nothing on the server or the site changes. Run by hand. The repository is
+# public and so is this log: the links are secrets, never printed; shop names, row counts
+# and column names only.
+name: Awin-format feed measure (read-only)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: The Awin-format feed's shops, rows and what PicWise could show
+        env:
+          AWIN_FEED_URL: ${{ secrets.AWIN_FEED_URL }}
+          AWIN_FEED_URL_AWIN: ${{ secrets.AWIN_FEED_URL_AWIN }}
+        run: python3 .github/scripts/measure_awin_feed.py
