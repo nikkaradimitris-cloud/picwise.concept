@@ -125,6 +125,47 @@ class CompareFeedsTests(unittest.TestCase):
             done = _run(_feed(Path(folder) / "old.csv", OLD), None)
         self.assertIn("sale_price: not among its columns", done.stdout)
 
+    def test_the_variants_are_counted_by_the_site_s_rule(self) -> None:
+        # Owner, 2026-11-19: one card per product, its sizes and colours chosen at the shop.
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "feed.csv"
+            text = io.StringIO()
+            writer = csv.writer(text)
+            writer.writerow(["id", "advertiser_id", "advertiser_name", "title", "brand", "price",
+                             "item_group_id", "color", "size"])
+            # One shoe in two colours and two sizes: one card, three rows joining it.
+            for colour in ("Black", "White"):
+                for size in ("8", "9"):
+                    writer.writerow([f"s-{colour}-{size}", "101", "Fictional Shoes",
+                                     f"Fictional Runner {colour} Size {size}", "Fictional", "40.00 GBP",
+                                     "G1", colour, size])
+            # A group holding two products: kept apart.
+            writer.writerow(["k1", "101", "Fictional Shoes", "Fictional Kettle Black", "Fictional", "20.00 GBP",
+                             "G2", "Black", ""])
+            writer.writerow(["k2", "101", "Fictional Shoes", "Fictional Toaster Black", "Fictional", "20.00 GBP",
+                             "G2", "Black", ""])
+            # No group: by brand and title, the colour taken out.
+            writer.writerow(["m1", "102", "Fictional Home", "Fictional Mug Red", "Fictional", "5.00 GBP", "", "Red", ""])
+            writer.writerow(["m2", "102", "Fictional Home", "Fictional Mug Blue", "Fictional", "5.00 GBP", "", "Blue", ""])
+            # Naming nothing: no variant.
+            writer.writerow(["p1", "102", "Fictional Home", "Fictional Plate", "Fictional", "5.00 GBP", "", "", ""])
+            path.write_text(text.getvalue(), encoding="utf-8")
+            done = _run(path.resolve().as_uri(), None)
+        out = done.stdout
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn("variants: rows naming a group: 6, a color: 8, a size: 4", out)
+        self.assertIn(
+            "rows that would join another row of their product: 4 (by group 3; with no group, by brand and title 1)", out
+        )
+        self.assertIn("groups whose rows name different products (kept apart): 1 of 2", out)
+        self.assertRegex(out, r"3 of\s+6\s+Fictional Shoes \(101\)")
+        self.assertRegex(out, r"1 of\s+3\s+Fictional Home \(102\)")
+        self.assertNotIn("Fictional Runner", out)
+        # Without the columns, it says so.
+        with tempfile.TemporaryDirectory() as folder:
+            done = _run(_feed(Path(folder) / "old.csv", OLD), None)
+        self.assertIn("variants: no item_group_id, color or size among its columns", done.stdout)
+
     def test_a_new_feed_lacking_an_old_shop_fails_and_names_it(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
             old = _feed(Path(folder) / "old.csv", OLD)

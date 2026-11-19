@@ -19,6 +19,11 @@ the site's own rule), with the shapes of the values left as unreadable (digits a
 never a row; and the rows whose number of fields is not the header's, by shop: the site
 reads such a row field by field against the header (`awin_adapter._parse_csv_stream`), so
 its fields may stand in the wrong columns (2026-11-19: sale prices reading "Union Jack").
+And the products' variants (owner, 2026-11-19: one card per product, its sizes and
+colours chosen at the shop; `product_variants.variant_key`, the site's own rule): the rows
+naming a group, a colour or a size, how many would join another row of their product,
+the groups that hold different products (kept apart), and the shops with the most; numbers
+and shop names only.
 Exits 1 when the link in use
 cannot be read, or the new one cannot, or lacks or shrinks a shop of the one in use.
 """
@@ -43,6 +48,7 @@ from picwise_providers.normalization import (  # noqa: E402
     SALE_USED,
     sale_price_reading,
 )
+from picwise_providers.product_variants import variant_key  # noqa: E402
 
 # The most a link may send: a feed of every shop is about 1-2 GB (the server takes 2 GB).
 LIMIT = 4 * 1024**3
@@ -71,6 +77,8 @@ EXTRA_PHOTOS = "additional_image_link"
 
 # The shop's sale price and its dates (Google's columns), and the usual price.
 SALE_COLUMNS = ("price", "sale_price", "sale_price_effective_date")
+# What ties a product's variants, and what tells them apart (Google's columns).
+VARIANT_COLUMNS = ("item_group_id", "color", "size", "title", "brand")
 
 
 def _shape(value: str) -> str:
@@ -99,6 +107,14 @@ def shops_of(path: Path, seen: dict | None = None) -> tuple[Counter, dict[str, s
         in_force_shops = Counter()
         shapes: dict[str, Counter] = {SALE_PRICE_UNREAD: Counter(), SALE_DATES_UNREAD: Counter()}
         extra_at = column(EXTRA_PHOTOS)
+        variant_at = {name: column(name) for name in VARIANT_COLUMNS}
+        named = Counter()
+        variant_rows = Counter()
+        variant_cards = Counter()
+        joined_by = Counter()
+        seen_keys: set[int] = set()
+        group_base: dict[int, int] = {}
+        mixed: set[int] = set()
         uneven = Counter()
         uneven_by = Counter()
         with_extra = 0
@@ -135,6 +151,27 @@ def shops_of(path: Path, seen: dict | None = None) -> tuple[Counter, dict[str, s
                     shapes[reason][_shape(fields["sale_price"])] += 1
                 elif reason == SALE_DATES_UNREAD:
                     shapes[reason][_shape(fields["sale_price_effective_date"])] += 1
+            fields = {
+                name: (row[at] if at is not None and at < len(row) else "") for name, at in variant_at.items()
+            }
+            for name in ("item_group_id", "color", "size"):
+                if fields[name].strip():
+                    named[name] += 1
+            key_text = variant_key(fields, shop=key)
+            if key_text:
+                variant_rows[key] += 1
+                _shop, tie, base = key_text.split("\x1f")
+                hashed = hash(key_text)
+                if hashed in seen_keys:
+                    joined_by["group" if tie.startswith("group:") else "brand"] += 1
+                else:
+                    seen_keys.add(hashed)
+                    variant_cards[key] += 1
+                if tie.startswith("group:"):
+                    group = hash((key, tie))
+                    first = group_base.setdefault(group, hash(base))
+                    if first != hash(base):
+                        mixed.add(group)
             if extra_at is not None and extra_at < len(row) and row[extra_at].strip():
                 with_extra += 1
                 links = [part for part in row[extra_at].replace(",", " ").split() if part.startswith("http")]
@@ -153,6 +190,13 @@ def shops_of(path: Path, seen: dict | None = None) -> tuple[Counter, dict[str, s
                 shapes=shapes,
                 uneven=uneven,
                 uneven_by=uneven_by,
+                variant_columns=[name for name in ("item_group_id", "color", "size") if variant_at[name] is not None],
+                named=named,
+                variant_rows=variant_rows,
+                variant_cards=variant_cards,
+                joined_by=joined_by,
+                groups=len(group_base),
+                mixed=len(mixed),
             )
         return rows, names
 
@@ -193,6 +237,34 @@ def print_uneven(info: dict, rows: Counter, names: dict[str, str]) -> None:
     for key, count in uneven.most_common(15):
         shown = names[key] if names[key] == key else f"{names[key]} ({key})"
         print(f"    {count:>9,} of {rows[key]:>9,}  {shown}")
+
+
+def print_variants(info: dict, rows: Counter, names: dict[str, str]) -> None:
+    """The products' variants: the rows naming a group, a colour or a size, how many would
+    join another row of their product (one card fewer each), by group or by brand and
+    title, the groups holding different products, and the shops with the most."""
+    columns = info.get("variant_columns") or []
+    if not columns:
+        print("  variants: no item_group_id, color or size among its columns")
+        return
+    named: Counter = info["named"]
+    print(
+        "  variants: rows naming "
+        + ", ".join(f"{'a group' if name == 'item_group_id' else 'a ' + name}: {named[name]:,}" for name in columns)
+    )
+    joined: Counter = info["joined_by"]
+    print(
+        f"    rows that would join another row of their product: {sum(joined.values()):,} "
+        f"(by group {joined['group']:,}; with no group, by brand and title {joined['brand']:,}), "
+        "so as many cards fewer"
+    )
+    print(f"    groups whose rows name different products (kept apart): {info['mixed']:,} of {info['groups']:,}")
+    fewer = Counter({key: info["variant_rows"][key] - info["variant_cards"][key] for key in info["variant_rows"]})
+    if +fewer:
+        print("    the shops with the most rows joining another (of the shop's rows):")
+        for key, count in (+fewer).most_common(15):
+            shown = names[key] if names[key] == key else f"{names[key]} ({key})"
+            print(f"      {count:>9,} of {rows[key]:>9,}  {shown}")
 
 
 def why(error: Exception) -> str:
@@ -252,6 +324,7 @@ def main() -> int:
             print(f"  {EXTRA_PHOTOS}: not among its columns")
         print_sales(info, names)
         print_uneven(info, rows, names)
+        print_variants(info, rows, names)
     if "new" in seen and "in use" in seen:
         only_new = [name for name in seen["new"]["columns"] if name not in seen["in use"]["columns"]]
         only_old = [name for name in seen["in use"]["columns"] if name not in seen["new"]["columns"]]
