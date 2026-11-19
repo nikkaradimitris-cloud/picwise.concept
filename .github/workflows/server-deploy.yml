@@ -103,6 +103,9 @@ jobs:
       - name: Send the release
         env:
           AWIN_FEED_URL: ${{ secrets.AWIN_FEED_URL }}
+          # The second Awin link, in Awin's own format (owner, 2026-11-19: «ανέβασε όλη την
+          # εργασία επάνω να τραβήξει τα προϊόντα»), read beside the first.
+          AWIN_FEED_URL_AWIN: ${{ secrets.AWIN_FEED_URL_AWIN }}
           AWIN_API_TOKEN: ${{ secrets.AWIN_API_TOKEN }}
           AWIN_PUBLISHER_ID: ${{ secrets.AWIN_PUBLISHER_ID }}
           # The AI layer's key, for picwise-assist alone (owner, 2026-11-06; never the site's).
@@ -116,6 +119,8 @@ jobs:
           # Single quotes keep the link as it is in systemd's environment file.
           feed=$(printf '%s' "$AWIN_FEED_URL" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
           case "$feed" in *"'"*) echo "the feed link holds a quote, which the file cannot carry"; exit 1 ;; esac
+          feed2=$(printf '%s' "$AWIN_FEED_URL_AWIN" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+          case "$feed2" in *"'"*) echo "the second feed link holds a quote, which the file cannot carry"; exit 1 ;; esac
           # The Awin token for the nightly offers (picwise-offers.service; owner, 2026-11-01),
           # and the account's number when it is set (else found from the token).
           token=$(printf '%s' "$AWIN_API_TOKEN" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
@@ -125,10 +130,12 @@ jobs:
           {
             echo "# The site's secrets, written by each deployment from GitHub's secrets; never in the repository."
             if [ -n "$feed" ]; then printf "AWIN_FEED_URL='%s'\n" "$feed"; fi
+            if [ -n "$feed2" ]; then printf "AWIN_FEED_URL_AWIN='%s'\n" "$feed2"; fi
             if [ -n "$token" ]; then printf "AWIN_API_TOKEN='%s'\n" "$token"; fi
             if [ -n "$publisher" ]; then printf "AWIN_PUBLISHER_ID='%s'\n" "$publisher"; fi
           } > "$RUNNER_TEMP/picwise.env"
           if [ -n "$feed" ]; then echo "feed link: sent"; else echo "feed link: not in GitHub's secrets"; fi
+          if [ -n "$feed2" ]; then echo "second feed link: sent"; else echo "second feed link: not in GitHub's secrets"; fi
           if [ -n "$token" ]; then echo "Awin token: sent"; else echo "Awin token: not in GitHub's secrets"; fi
           # The AI layer's key in a file of its own, which deploy.sh gives only to
           # picwise-assist (/etc/picwise/assist.env, root's, read by systemd); never printed.

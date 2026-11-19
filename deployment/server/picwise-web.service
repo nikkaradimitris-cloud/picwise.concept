@@ -36,11 +36,13 @@ Environment=PICWISE_FAMILIES_FILE=/srv/picwise/assist/families/answers/families.
 # IP, no browser, no cookie (owner, 2026-11-07: «Ναι σε όλα»; picwise_app.search_log).
 Environment=PICWISE_SEARCH_LOG_DIR=/srv/picwise/shared/searches
 Environment=PYTHONDONTWRITEBYTECODE=1
+# Three workers since 2026-11-19: each holds the catalogue, which the second Awin link
+# makes larger; the site's visitors are few, and the night's preparation needs the room.
 # The release in use is resolved once, at start: a worker gunicorn starts again later
 # loads the same code, even after a deployment has pointed `current` to a newer one.
 ExecStart=/bin/sh -c 'release=$$(readlink -f /srv/picwise/current) && exec /srv/picwise/venv/bin/gunicorn \
     --chdir "$$release" --pythonpath "$$release/deployment/server" --bind 127.0.0.1:8016 \
-    --workers 4 --timeout 300 --graceful-timeout 30 --access-logfile - --no-control-socket wsgi_server:app'
+    --workers 3 --timeout 300 --graceful-timeout 30 --access-logfile - --no-control-socket wsgi_server:app'
 Restart=always
 RestartSec=2
 # A ceiling, so that the site can never take the memory sshd and the rest need.
