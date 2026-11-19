@@ -36,7 +36,8 @@ def print_families(payload: Any, *, sample: int = 40) -> None:
 
     for key in sorted(answered, key=order)[:sample]:
         value = answered[key]
-        titles = value.get("titles") or []
+        # A shop's title may hold a line break: one line a set.
+        titles = [" ".join(str(title).split()) for title in value.get("titles") or ()]
         parts = []
         for group in value.get("groups") or ():
             names = [titles[number - 1] for number in group if 0 < number <= len(titles)]

@@ -131,6 +131,12 @@ jobs:
         # One card per product (owner, 2026-11-19): the sets answered and a sample of what was
         # joined and kept apart, titles only, to be checked (deployment/server/print_families.py).
         run: |
+          # The sets written last (counts only), today's spend and calls, the jobs still waiting.
+          ssh -n picwise 'sudo journalctl -u picwise-family-jobs.service -o cat --no-pager --since "-2 days" \
+              | grep "^family_jobs:" | tail -n 1; printf "families today: "; \
+            sudo cat "/srv/picwise/assist/families/spend/$(date -u +%F).json" 2> /dev/null || printf "nothing spent"; \
+            printf "\nfamilies: jobs waiting: "; \
+            sudo find /srv/picwise/assist/families/jobs -maxdepth 1 -name "family-*.json" 2> /dev/null | wc -l' || true
           ssh -n picwise 'sudo cat /srv/picwise/assist/families/answers/sets.json 2> /dev/null || true' \
             | python3 deployment/server/print_families.py --sample 60
       - name: Remove the key from the runner
