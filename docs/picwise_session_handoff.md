@@ -8,6 +8,22 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **NEXT, in a new conversation (owner, 19/11 23:46, step 3 of the series, chosen so as not to overlap
+  with the other conversation's Google-shelf AI): a list of brands from the feeds, their kinds counted.**
+  Seen live on 19/11 at 23:4x Athens: "dyson" and "samsung" alone show no product ("PicWise is not sure
+  which product you mean", no choice offered); "samsnug tv" could not match "samsnug" and put TV aerial
+  splitters first. What exists: `search_selection._catalogue_brand_names` (the brands of 3 products or
+  more, used only so a brand's word is not read as another kind), `picwise_nlu.brand_resolver` (9 brands
+  written by hand, an early stage's), `kind_choices` ("What kind of cable?", the model for "What kind of
+  Dyson product?"). The plan: (1) measure on GitHub's runner, never on the server (the catalogue copied as
+  `search-audit.yml` does it; a workflow run by a push of its own file, `if: true` for one run): brands,
+  products and kinds per brand, spellings of one brand, brands that are also words or kinds' names,
+  near-identical names; (2) put to the owner what it changes (a brand alone: its products, or "What kind of
+  Dyson product?" with its kinds; a brand misspelled: corrected), with the numbers; (3) build. **Safety
+  (owner, 19/11: «Είναι ασφαλές ή θα συγκρουστεί?»):** two conversations share the work branch and every
+  deployment takes all of it, so the brands' work stays on a branch of its own until finished and tested,
+  then goes into the work branch; before any push to the site branch, what else rides along is checked and
+  the owner asked; measures on GitHub's runner (the server is at 19.8 of its 20 GB at night).
 - **NEXT (owner, 19/11 night): the AI to give every product its Google shelf** («εκτός από τον bot.... Μπλέξουμε και
   το ai για να ταξινομήσουμε όλο τον κατάλογο»). In order: (1) `search-audit.yml`, right answers per feed, the
   before; (2) a trial on 1,000 products, under $1: title and the shop's own category in, a line of Google's
