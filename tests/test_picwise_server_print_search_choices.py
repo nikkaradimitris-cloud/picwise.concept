@@ -63,10 +63,12 @@ def _product(number: int, title: str, category: str, price: float) -> ProviderPr
 
 def _write(path: Path) -> None:
     products = []
+    # A model's number, not a length: one shop's "HDMI Cable 1m" and "HDMI Cable 2m" are one
+    # product in two lengths, one card (owner, 2026-11-19), and this measure needs many.
     for title, category, count, base in (
-        ("Fixturon HDMI Cable {n}m", CABLES, 30, 3.0),
-        ("Fixturon Coaxial Cable {n}m", CABLES, 25, 2.0),
-        ("Fixturon Speaker Cable {n}m", CABLES, 22, 4.0),
+        ("Fixturon HDMI Cable {n}", CABLES, 30, 3.0),
+        ("Fixturon Coaxial Cable {n}", CABLES, 25, 2.0),
+        ("Fixturon Speaker Cable {n}", CABLES, 22, 4.0),
         ("Fixturon Electric Kettle {n}", KETTLES, 55, 20.0),
         ("Fixturon Velvet Dining Chair {n}", DINING_CHAIRS, 10, 40.0),
         ("Fixturon Oak Dining Chair {n}", DINING_CHAIRS, 10, 50.0),
@@ -113,7 +115,7 @@ class PrintSearchChoicesTests(unittest.TestCase):
         out = result.stdout
         self.assertIn("187 products a card can show, 187 of them new", out)
         self.assertIn("2 general kinds ask which one is meant", out)
-        self.assertRegex(out, r"  cable: 77 products, the first card \d+\.\d\d GBP 'Fixturon [A-Za-z]+ Cable \d+m'")
+        self.assertRegex(out, r"  cable: 77 products, the first card \d+\.\d\d GBP 'Fixturon [A-Za-z]+ Cable \d+'")
         self.assertIn("      What kind of cable? hdmi cable, coaxial cable, speaker cable", out)
         self.assertIn(
             "      each found: hdmi cable 30 (yes); coaxial cable 25 (yes); speaker cable 22 (yes)", out

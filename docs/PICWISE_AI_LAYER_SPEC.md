@@ -601,6 +601,19 @@ may be used too is the owner's.
 The checks, the cap, the cache, the jobs and results, and the page's script and endpoint,
 with the API faked: no test reaches the network. The NLU's guard tests stay and pass.
 
+### 4.10 A second use: which listings of a shop are one product (2026-11-19)
+
+The owner, 2026-11-19: one card per product, «εκεί εμπλέκεται και το σύστημα ai»; «Το
+όριο του ai μπορεί να ανέβει». Not a search's answer: `picwise-families`, a service of its
+own under the same user and key as `picwise-assist`, reads the sets of listings the site
+writes after each preparation (`deployment/server/family_jobs.py`) and asks Claude Haiku
+5.5, 25 sets a call, which listings of a shop and brand, a colour or a number apart, are
+one product in variants (`picwise_ai.families`). Given: titles and prices only, never a
+link or a buyer's word. Checked by code: every listing of a set in exactly one group, or
+the set stays apart. Its own cap, $5.00 a day, and 20 calls a minute; the searches keep
+theirs. The site reads only the file of answers (`PICWISE_FAMILIES_FILE`). The Decision
+Contract, "One card per product", 4.
+
 ## 5. Order of work
 
 Each step is told to the owner, and goes live only on the owner's word naming the commit
@@ -632,6 +645,7 @@ part, measured first on about 150 searches).
 | (b) | a Greek sentence for a Greek search | no: the site is in English |
 | (c), at the account | the credit, and the account's spend limit | the owner's plan is Pro, which carries no API credit: $10 bought, reload off, which is then the ceiling; a spend limit is not needed |
 | (c), before it is built | the daily cap in code | $1 a day; **the owner (06/11): one euro a day**, $1.00 in code (4.7) |
+| families (4.10) | its own cap | **the owner (19/11): «Το όριο του ai μπορεί να ανέβει»**: $5.00 a day of its own, the searches' $1.00 kept |
 | (c), with the measure | the bar to go live | no wrong sentence among those shown; met by the fourth measure (06/11) |
 | (c), with the measure | marks on the cards, or products left out | the sentence alone; **the owner (06/11): the fitting products marked in words and to the eye, and first**; nothing left out; the order, the time and the mark proposed, accepted («Ναι, συμφωνώ με όλα, προχώρα»; 4.4) |
 | (c), with the measure | real searches from the access log for the measure | written searches only |

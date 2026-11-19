@@ -110,6 +110,50 @@ class JoinTests(unittest.TestCase):
         self.assertEqual((ordered[0].price, ordered[0].shops), (47.0, 2))
 
 
+class OwnPagesTests(unittest.TestCase):
+    """Each variant a product of its own, on a page of its own (owner, 2026-11-19, rule 2)."""
+
+    def setUp(self) -> None:
+        saved = os.environ.get("PICWISE_FAMILIES_FILE")
+        self.folder = Path(tempfile.mkdtemp())
+
+        def restore() -> None:
+            if saved is None:
+                os.environ.pop("PICWISE_FAMILIES_FILE", None)
+            else:
+                os.environ["PICWISE_FAMILIES_FILE"] = saved
+
+        self.addCleanup(restore)
+        os.environ.pop("PICWISE_FAMILIES_FILE", None)
+
+    def _offers(self) -> list[ProviderProduct]:
+        return [
+            _offer("s1", 20.0, "Fixturon Tracksuit Navy - S", "https://shoes.example.invalid/products/tracksuit-navy-s"),
+            _offer("s2", 22.0, "Fixturon Tracksuit Navy - 2XL", "https://shoes.example.invalid/products/tracksuit-navy-2xl"),
+            _offer("g1", 21.0, "Fixturon Tracksuit Grey - S", "https://shoes.example.invalid/products/tracksuit-grey-s"),
+        ]
+
+    def test_sizes_on_pages_of_their_own_are_one_card_a_colour_waits_for_the_ai(self) -> None:
+        ordered = _price_first_products(self._offers())
+        # Navy S and 2XL: one card; grey, a colour apart, stays apart until the AI says.
+        self.assertEqual(_ids(ordered), ["s1", "g1"])
+
+    def test_the_ai_s_family_joins_the_colours(self) -> None:
+        import json
+
+        path = self.folder / "families.json"
+        path.write_text(json.dumps({"sets": {"x": [[1, 2]]}, "families": {
+            "fixture shoes\x1fs1": "x-0", "fixture shoes\x1fs2": "x-0", "fixture shoes\x1fg1": "x-0",
+        }}), encoding="utf-8")
+        os.environ["PICWISE_FAMILIES_FILE"] = str(path)
+        from picwise_providers import variant_families
+
+        variant_families._FAMILIES = variant_families._Families()
+        ordered = _price_first_products(self._offers())
+        self.assertEqual(_ids(ordered), ["s1"])
+        self.assertEqual(ordered[0].price, 20.0)
+
+
 _COLUMNS = ("advertiser_id", "advertiser_name", "id", "title", "description", "link", "image_link",
             "aw_deep_link", "google_product_category", "brand", "availability", "price", "condition")
 _TRAINERS = "Apparel & Accessories > Shoes > Athletic Shoes"

@@ -8,6 +8,23 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **19/11 afternoon, one card per product, the owner's lasting rules: the AI's families built and
+  deployed (this record's push; the owner: «Ανέβασε προοδευτικά να τελειώσουμε τις εργασίες», then «Το
+  όριο του ai μπορεί να ανέβει για την ώρα δεν θα περιμένω τη νύχτα για να κάνει το σκανάρισμα θα το
+  κάνουμε τώρα»).** The owner's three rules (Decision Contract, "One card per product", 4): (1) a page with
+  the variants, one card; (2) a shop listing each variant as a product, one card, the AI deciding the
+  doubtful; (3) another shop's cheaper variant marked on the grouped card. Built for (2):
+  `product_variants.title_parts` (own words and variant words), the words' tie
+  (`sizes_apart_key`: one shop and brand, the same own words, only sizes or amounts apart: joined at
+  search time, no AI), and for a colour or a number apart the AI: `family_jobs.py` (as `picwise`, after
+  each preparation and at each deployment) writes the sets, each page and each size-only listing once, at
+  most 20 a set, those not answered; `picwise-families` (as `picwise-assist`, its key) asks Claude Haiku
+  5.5, 25 sets a call, at most **$5.00 a day of its own** and 20 calls a minute; answers checked (each
+  listing in exactly one group), kept in `answers/families.json` (the site reads it,
+  `PICWISE_FAMILIES_FILE`) and `answers/sets.json` (titles, for the sample). **To check the AI's work:**
+  `server-health.yml` by hand prints a sample of 60 sets joined or kept apart
+  (`print_families.py`). Next: the card listing the variants (as drawn for the owner), then rule 3, then
+  `catalogue_cap` counting products; then the series' steps 2-4.
 - **19/11 afternoon, the owner's series of work, step 1 of 4 deployed: one card per product** (the owner:
   «Ανέβασε προοδευτικά να τελειώσουμε τις εργασίες»; the series agreed on 19/11 at night: 1. one card per
   product, sizes and colours chosen at the shop; 2. accessory or main product, the doubtful ones judged by

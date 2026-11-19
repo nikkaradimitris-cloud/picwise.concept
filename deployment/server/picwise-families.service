@@ -1,0 +1,45 @@
+# Which listings of a shop are one product, asked of Claude Haiku 5.5 (owner, 2026-11-19:
+# one card per product, «εκεί εμπλέκεται και το σύστημα ai»; «Το όριο του ai μπορεί να
+# ανέβει»). Installed by deployment/server/deploy.sh, run only when GitHub holds the key.
+#
+# Under the AI layer's own user, with its key (/etc/picwise/assist.env, which only systemd
+# reads), never the site's: it reads the sets the site writes in
+# /srv/picwise/assist/families/jobs (deployment/server/family_jobs.py) and writes the
+# answers the site reads in /srv/picwise/assist/families/answers. At most $5.00 a day of
+# its own (the searches keep their $1.00) and 20 calls a minute (picwise_ai.families).
+[Unit]
+Description=PicWise families (which listings of a shop are one product)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=picwise-assist
+Group=picwise-assist
+EnvironmentFile=-/etc/picwise/assist.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/bin/sh -c 'release=$$(readlink -f /srv/picwise/current) && exec /srv/picwise/venv-ai/bin/python \
+    "$$release/deployment/server/family_service.py" --dir /srv/picwise/assist/families'
+Restart=on-failure
+RestartSec=30
+MemoryHigh=768M
+MemoryMax=1G
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/picwise/assist/families
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

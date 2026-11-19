@@ -30,6 +30,8 @@ Environment=PICWISE_GONE_PHOTOS_FILE=/srv/picwise/shared/photos/gone.json
 # its jobs/ folder, which the deployment makes only when the service has its key, the
 # site writes nothing there and its pages are as before.
 Environment=PICWISE_ASSIST_DIR=/srv/picwise/assist
+# Each product's family as the AI decided it (owner, 2026-11-19: one card per product).
+Environment=PICWISE_FAMILIES_FILE=/srv/picwise/assist/families/answers/families.json
 # The words of the searches visitors make, one line each, a file a day, nothing else: no
 # IP, no browser, no cookie (owner, 2026-11-07: «Ναι σε όλα»; picwise_app.search_log).
 Environment=PICWISE_SEARCH_LOG_DIR=/srv/picwise/shared/searches

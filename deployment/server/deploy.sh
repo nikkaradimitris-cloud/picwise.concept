@@ -52,6 +52,11 @@ install -d -o root -g picwise-assist -m 2750 "$ASSIST"
 install -d -o picwise-assist -g picwise-assist -m 2750 "$ASSIST/results"
 install -d -o picwise -g picwise-assist -m 2750 "$ASSIST/served"
 install -d -o picwise-assist -g picwise-assist -m 700 "$ASSIST/spend"
+# One card per product (owner, 2026-11-19): the sets the site writes for picwise-families,
+# and its answers, which the site reads.
+install -d -o root -g picwise-assist -m 2750 "$ASSIST/families"
+install -d -o picwise-assist -g picwise-assist -m 2750 "$ASSIST/families/answers"
+install -d -o picwise-assist -g picwise-assist -m 700 "$ASSIST/families/spend"
 
 echo "== release $RELEASE_ID"
 rm -rf "$RELEASE.partial"
@@ -107,11 +112,12 @@ if [ -n "$ASSIST_ENV_FILE" ] && [ -s "$ASSIST_ENV_FILE" ] && grep -q '^ANTHROPIC
   # The site's drafts become jobs only when a page's script asks: no cost for a bot.
   install -d -o picwise -g picwise-assist -m 2750 "$ASSIST/drafts"
   install -d -o picwise -g picwise-assist -m 2770 "$ASSIST/jobs"
+  install -d -o picwise -g picwise-assist -m 2770 "$ASSIST/families/jobs"
   ASSIST_ON=yes
   echo "Anthropic key: set"
 else
   rm -f /etc/picwise/assist.env
-  rm -rf -- "${ASSIST:?}/jobs" "${ASSIST:?}/drafts"
+  rm -rf -- "${ASSIST:?}/jobs" "${ASSIST:?}/drafts" "${ASSIST:?}/families/jobs"
   ASSIST_ON=no
   echo "Anthropic key: not set; the site writes no job"
 fi
@@ -122,8 +128,11 @@ for unit in picwise-web.service picwise-prepare.service picwise-prepare.timer pi
   picwise-shops.timer picwise-photos.service picwise-photos.timer picwise-offers.service picwise-offers.timer; do
   install -m 644 "$RELEASE/deployment/server/$unit" /etc/systemd/system/
 done
-# The AI layer's service, started below only with its key.
+# The AI layer's services, started below only with its key.
 install -m 644 "$RELEASE/deployment/server/picwise-assist.service" /etc/systemd/system/
+for unit in picwise-families.service picwise-family-jobs.service picwise-family-jobs.timer; do
+  install -m 644 "$RELEASE/deployment/server/$unit" /etc/systemd/system/
+done
 systemctl daemon-reload
 
 PREVIOUS=$(readlink "$APP/current" 2> /dev/null || true)
@@ -184,8 +193,17 @@ if [ "$ASSIST_ON" = yes ]; then
   sleep 3
   echo "assist: $(systemctl is-active picwise-assist.service || true)"
   journalctl -u picwise-assist.service -n 3 -o cat --no-pager --since "-1min" || true
+  # One card per product (owner, 2026-11-19: «δεν θα περιμένω τη νύχτα για να κάνει το
+  # σκανάρισμα θα το κάνουμε τώρα»): the sets written now, from the catalogue just
+  # prepared, and answered from now on; again after each night's preparation.
+  systemctl enable picwise-families.service
+  systemctl restart picwise-families.service || echo "families did not start; the site is as it was"
+  systemctl start --no-block picwise-family-jobs.service || echo "the families' sets were not written now"
+  systemctl enable --now picwise-family-jobs.timer
+  echo "families: $(systemctl is-active picwise-families.service || true)"
 else
   systemctl disable --now picwise-assist.service > /dev/null 2>&1 || true
+  systemctl disable --now picwise-families.service picwise-family-jobs.timer > /dev/null 2>&1 || true
   echo "assist: off, no key"
 fi
 

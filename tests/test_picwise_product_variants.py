@@ -20,9 +20,15 @@ if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
 from picwise_providers.product_variants import (  # noqa: E402
+    CERTAIN,
+    DOUBTFUL,
     base_title,
+    family_key,
     page_key,
+    sizes_apart_key,
+    title_parts,
     titles_close,
+    variant_difference,
     variant_key,
 )
 
@@ -106,6 +112,53 @@ class PageKeyTests(unittest.TestCase):
                                      "Fixturon Bear Tracksuit 100% Cotton - Pink / 3-4 Y"))
         self.assertTrue(titles_close("Fixturon Tracksuit - 2XL", "Fixturon Tracksuit - S"))
         self.assertFalse(titles_close("", "Fixturon Runner"))
+
+
+class OwnWordsTests(unittest.TestCase):
+    """A shop listing each variant as a product of its own (owner, 2026-11-19, rule 2)."""
+
+    def test_a_title_is_its_own_words_and_the_words_that_may_name_a_variant(self) -> None:
+        self.assertEqual(title_parts("Fixturon Runner Black Size 9"), ("fixturon runner", frozenset({"black", "size", "~9"})))
+        self.assertEqual(title_parts("Fixturon Kettle 1.7L"), ("fixturon kettle", frozenset({"17l"})))
+
+    def test_sizes_and_amounts_apart_are_certain_colours_and_numbers_doubtful(self) -> None:
+        for first, second in (
+            ("Fixturon Tracksuit - S", "Fixturon Tracksuit - 2XL"),
+            ("Fixturon 870 EVO 500GB SSD", "Fixturon 870 EVO 1TB SSD"),
+            ("Fixturon Kettle 1.7L", "Fixturon Kettle 2L"),
+            ("Fixturon Runner Size 8", "Fixturon Runner UK 9"),
+        ):
+            with self.subTest(first=first):
+                self.assertEqual(variant_difference(first, second), CERTAIN)
+        for first, second in (
+            ("Fixturon Red Wine Glass", "Fixturon White Wine Glass"),
+            ("Fixturon Phone 15 128GB", "Fixturon Phone 16 128GB"),
+            ("Fixturon 870 EVO 1TB SSD", "Fixturon 990 EVO 1TB SSD"),
+        ):
+            with self.subTest(first=first):
+                self.assertEqual(variant_difference(first, second), DOUBTFUL)
+        self.assertEqual(variant_difference("Fixturon Mug", "Fixturon Mug"), "")
+
+    def test_the_keys_of_one_shop_and_brand(self) -> None:
+        self.assertEqual(family_key(shop="s", brand="Fixturon", title="Phone 15"), "")  # one word of its own
+        self.assertTrue(family_key(shop="s", brand="Fixturon", title="Fixturon Runner Black"))
+        self.assertEqual(
+            family_key(shop="s", brand="Fixturon", title="Fixturon Runner Black"),
+            family_key(shop="s", brand="Fixturon", title="Fixturon Runner White Size 9"),
+        )
+        self.assertNotEqual(
+            family_key(shop="s", brand="Fixturon", title="Fixturon Runner Black"),
+            family_key(shop="t", brand="Fixturon", title="Fixturon Runner Black"),
+        )
+        # Sizes apart: one key; a colour apart: two.
+        self.assertEqual(
+            sizes_apart_key(shop="s", brand="Fixturon", title="Fixturon Runner Black Size 8"),
+            sizes_apart_key(shop="s", brand="Fixturon", title="Fixturon Runner Black UK 9"),
+        )
+        self.assertNotEqual(
+            sizes_apart_key(shop="s", brand="Fixturon", title="Fixturon Runner Black Size 8"),
+            sizes_apart_key(shop="s", brand="Fixturon", title="Fixturon Runner White Size 8"),
+        )
 
 
 if __name__ == "__main__":

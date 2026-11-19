@@ -16,6 +16,7 @@ title are already one card (`search_selection`).
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 from typing import Any, Mapping
 from urllib.parse import urlsplit
 
@@ -76,7 +77,7 @@ def base_title(title: str, colour: str = "", size: str = "") -> str:
 def variant_key(raw: Mapping[str, Any], *, shop: str = "", title: str = "", brand: str = "") -> str:
     """The key the rows of one product share, sizes and colours aside; "" for a row that
     names no group, colour or size. `shop`, `title` and `brand` default to the row's own."""
-    if not isinstance(raw, Mapping):
+    if not isinstance(raw, dict) and not isinstance(raw, Mapping):
         return ""
     group = _value(raw, GROUP_KEYS)
     colour = _value(raw, COLOUR_KEYS)
@@ -113,7 +114,7 @@ _NOT_THE_PAGE_RE = re.compile(
 def page_key(raw: Mapping[str, Any], *, shop: str = "") -> str:
     """The shop and its product page (host and path, lower case, no query) a row links to;
     "" when it links to none, or to a shop's front page."""
-    if not isinstance(raw, Mapping):
+    if not isinstance(raw, dict) and not isinstance(raw, Mapping):
         return ""
     link = raw.get("link")
     if not link:
@@ -178,3 +179,95 @@ def titles_close(first: str, second: str, *, most: int = 3) -> bool:
     words than either lacks ("Runner White Size 9" and "Runner Black Size 8": one each,
     three shared), while the products of a shop's list page differ by more."""
     return words_close(title_words(first), title_words(second), most=most)
+
+
+# A shop listing each variant as a product of its own, each on a page of its own
+# (owner, 2026-11-19: «Στην περίπτωση που δεν διαθέτει διαφορετικές παραλλαγές του
+# προϊόντος σε μία καταχώρηση ... φτιάχνουμε το σύστημα με τα ομαδοποιημένα προϊόντα ...
+# εκεί εμπλέκεται και το σύστημα ai»). A title is read as the product's own words and the
+# words that may name a variant: a colour, a size, a number. Two products of one shop and
+# brand whose own words are the same are one product when the words that differ are sizes
+# or amounts with their unit ("S" and "2XL", "500GB" and "1TB", "1.5L" and "1.7L"); when a
+# colour or a bare number differs ("Red Wine Glass" and "White Wine Glass", "iPhone 15"
+# and "iPhone 16") the AI decides, at once and again each night (`variant_families`).
+_COLOURS = frozenset(
+    """black white grey gray silver gold red blue navy green pink purple yellow orange brown
+    beige cream ivory khaki olive teal turquoise burgundy maroon charcoal rose champagne
+    bronze copper nude tan camel mint lilac lavender coral aqua mustard plum stone sand taupe
+    violet indigo magenta cyan lime peach multicolour multicolor multi clear transparent
+    natural oatmeal ecru mocha espresso graphite slate gunmetal""".split()
+)
+_LETTER_SIZES = frozenset("xxs xs s m l xl xxl xxxl 2xl 3xl 4xl 5xl 6xl".split())
+# The words that come with a size: "Size 9", "UK 9", "EU 42".
+_SIZE_WORDS = frozenset("size sizes uk eu us".split())
+# An amount and its unit, one word as `_words` reads it: "500gb", "7l" (of "1.7L"), "18v".
+_AMOUNT_RE = re.compile(
+    r"^\d+(?:gb|tb|mb|ml|l|ltr|litre|liter|w|kw|mah|v|cm|mm|m|kg|g|oz|in|inch|ft|pcs|pc|pk|pack)$"
+)
+_NUMBER_RE = re.compile(r"^\d+[a-z]*$")
+CERTAIN = "certain"
+DOUBTFUL = "doubtful"
+
+
+# A number after a size word is a size ("Size 9", "UK 10"), kept as "~9".
+_SIZED_NUMBER = "~"
+_DECIMAL_RE = re.compile(r"(\d)[.,](\d)")
+
+
+def _variant_word(word: str) -> str:
+    """"size" for a size or an amount with its unit, "other" for a colour or a number that
+    may name a model, "" for one of the product's own words."""
+    if word.startswith(_SIZED_NUMBER) or word in _LETTER_SIZES or word in _SIZE_WORDS or _AMOUNT_RE.match(word):
+        return "size"
+    if word in _COLOURS or _NUMBER_RE.match(word):
+        return "other"
+    return ""
+
+
+@lru_cache(maxsize=262144)
+def title_parts(title: str) -> tuple[str, frozenset[str]]:
+    """A title's own words (the words that name no variant, in order, once each) and the
+    words that may name a variant. "1.7L" is read as one amount ("17l")."""
+    own: list[str] = []
+    variant: set[str] = set()
+    previous = ""
+    for word in _words(_DECIMAL_RE.sub(r"\1\2", str(title or ""))):
+        if previous in _SIZE_WORDS and word.isdigit():
+            variant.add(_SIZED_NUMBER + word)
+        elif _variant_word(word):
+            variant.add(word)
+        elif word not in own:
+            own.append(word)
+        previous = word
+    return " ".join(own), frozenset(variant)
+
+
+def family_key(*, shop: str, brand: str, title: str) -> str:
+    """The key the products of one shop and brand with the same own words share; "" when a
+    title has fewer than two words of its own, too few to tell a product."""
+    own, _variant = title_parts(title)
+    if not shop or len(own.split()) < 2:
+        return ""
+    return f"{shop}\x1f{brand.strip().lower()}\x1f{own}"
+
+
+def sizes_apart_key(*, shop: str, brand: str, title: str) -> str:
+    """The key the products of one family key share when only sizes or amounts tell them
+    apart: their colours and numbers are part of it, so two products with the same one
+    are `CERTAIN` one product ("" when the title has no family key)."""
+    key = family_key(shop=shop, brand=brand, title=title)
+    if not key:
+        return ""
+    others = sorted(word for word in title_parts(title)[1] if _variant_word(word) == "other")
+    return f"{key}\x1f{' '.join(others)}"
+
+
+def variant_difference(first: str, second: str) -> str:
+    """How two titles of one family key differ: "" not at all, `CERTAIN` by sizes or amounts
+    only, `DOUBTFUL` by a colour or a number."""
+    apart = title_parts(first)[1] ^ title_parts(second)[1]
+    if not apart:
+        return ""
+    if all(_variant_word(word) == "size" for word in apart):
+        return CERTAIN
+    return DOUBTFUL

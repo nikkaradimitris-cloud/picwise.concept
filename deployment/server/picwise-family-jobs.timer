@@ -1,0 +1,9 @@
+[Unit]
+Description=PicWise: write the sets of listings the AI is asked about, every night
+
+[Timer]
+OnCalendar=*-*-* 05:10:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

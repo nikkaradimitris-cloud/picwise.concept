@@ -5,7 +5,7 @@ import math
 import re
 import threading
 from array import array
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable
 from collections import Counter
 from dataclasses import dataclass, field, replace
 from functools import lru_cache
@@ -43,7 +43,14 @@ from .decision_labels import parse_price_amount
 from .product_description import has_sufficient_description
 from .product_specs import read_product_specs
 from .product_offers import offers_covering
-from .product_variants import page_key, title_words, variant_key, words_close
+from .product_variants import (
+    page_key,
+    sizes_apart_key,
+    title_words,
+    variant_key,
+    words_close,
+)
+from .variant_families import families_of
 from .product_identity import same_product_key
 from .product_condition import (
     non_new_condition,
@@ -1890,24 +1897,26 @@ def _merchant_identity(product: ProviderProduct) -> str:
     return merchant.lower()
 
 
-def _shop_count(offers: list[ProviderProduct]) -> int:
-    """How many shops the feed names for these offers. An unnamed one is not counted as
-    another shop: "Lowest price of 2 shops" must not rest on a guess."""
-    return max(1, len({_merchant_identity(offer) for offer in offers} - {""}))
-
-
-def _join_variants(groups: dict[str, list[ProviderProduct]]) -> dict[str, list[ProviderProduct]]:
+def _join_variants(
+    groups: dict[str, list[ProviderProduct]], shop_of: Callable[[ProviderProduct], str] | None = None
+) -> dict[str, list[ProviderProduct]]:
     """One card per product: its sizes and colours are chosen at the shop (owner,
     2026-11-19: «βλέπει τα νούμερα και τα χρώματα στο κατάστημα και όχι σε μας»).
 
     `groups` are the answer's products, each its offers cheapest first, in price order.
     Two are one product when an offer of each is a row of one shop with the same product
     page (`product_variants.page_key`: the size or colour is chosen on it) and their
-    titles differ as a size or colour makes them differ (`titles_close`), or when Google's
-    columns tie them (`variant_key`, rare in the feed). The product keeps the place, the
-    price and the card of its cheapest; its offers are all of theirs, so "Lowest price of
-    N shops" counts every shop selling it in any size or colour.
+    titles differ as a size or colour makes them differ (`titles_close`); when Google's
+    columns tie them (`variant_key`, rare in the feed); when, each on a page of its own,
+    one shop and brand list them with the same own words and only sizes or amounts apart
+    ("S" and "2XL", "500GB" and "1TB": `sizes_apart_key`); or when the AI
+    put them in one family, a colour or a number apart (`variant_families.families_of`;
+    owner, 2026-11-19: «εκεί εμπλέκεται και το σύστημα ai»). The product keeps the place,
+    the price and the card of its cheapest; its offers are all of theirs, so "Lowest price
+    of N shops" counts every shop selling it in any size or colour.
     """
+    families = families_of()
+    shop_of = shop_of or _merchant_identity
     order = list(groups)
     rank = {group: index for index, group in enumerate(order)}
     parent: dict[str, str] = {}
@@ -1917,7 +1926,9 @@ def _join_variants(groups: dict[str, list[ProviderProduct]]) -> dict[str, list[P
             group = parent[group]
         return group
 
-    first: dict[str, str] = {}
+    # Per tie, the groups met with it so far: each later one is joined to the first of
+    # them its title allows (a size apart, not a list page's other product).
+    holders: dict[str, list[str]] = {}
     words: dict[str, frozenset[str]] = {}
 
     def words_of(group: str) -> frozenset[str]:
@@ -1928,31 +1939,50 @@ def _join_variants(groups: dict[str, list[ProviderProduct]]) -> dict[str, list[P
 
     for group in order:
         for offer in groups[group]:
-            raw = offer.raw if isinstance(offer.raw, Mapping) else {}
+            raw = offer.raw if isinstance(offer.raw, dict) else {}
             title = str(offer.title or "")
-            for tie, by_page in (
-                (page_key(raw), True),
-                (variant_key(raw, title=title, brand=str(offer.brand or "")), False),
+            brand = str(offer.brand or "")
+            shop = shop_of(offer).strip()
+            family = families.get(f"{shop}\x1f{str(offer.provider_product_id or '').strip()}") if families else None
+            # Google's columns are filled on almost no row: read only where they are.
+            columns = (
+                variant_key(raw, title=title, brand=brand)
+                if raw.get("item_group_id") or raw.get("color") or raw.get("size")
+                else ""
+            )
+            offer_words: frozenset[str] | None = None
+            for tie, by in (
+                (page_key(raw), "page"),
+                (columns, "columns"),
+                (sizes_apart_key(shop=shop, brand=brand, title=title), "words"),
+                (f"family\x1f{family}" if family else "", "ai"),
             ):
                 if not tie:
                     continue
-                other = first.setdefault(tie, group)
-                if other == group:
+                met = holders.setdefault(tie, [])
+                other = None
+                for held in met:
+                    if root(held) == root(group) or by != "page":
+                        other = held
+                        break
+                    if offer_words is None:
+                        offer_words = words_of(group) if offer is groups[group][0] else title_words(title)
+                    if words_close(words_of(held), offer_words):
+                        other = held
+                        break
+                if other is None:
+                    if len(met) < 40:
+                        met.append(group)
                     continue
                 kept, joined = sorted((root(other), root(group)), key=rank.__getitem__)
-                if kept == joined:
-                    continue
-                if by_page and not words_close(
-                    words_of(kept), title_words(title) if offer is not groups[group][0] else words_of(group)
-                ):
-                    continue
-                parent[joined] = kept
+                if kept != joined:
+                    parent[joined] = kept
     if not parent:
         return groups
-    families: dict[str, list[ProviderProduct]] = {}
+    joined: dict[str, list[ProviderProduct]] = {}
     for group in order:
-        families.setdefault(root(group), []).extend(groups[group])
-    return families
+        joined.setdefault(root(group), []).extend(groups[group])
+    return joined
 
 
 def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduct]:
@@ -2002,7 +2032,15 @@ def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduc
             groups[group] = []
             group_price[group] = price
         groups[group].append(product)
-    groups = _join_variants(groups)
+    shops: dict[int, str] = {}
+
+    def shop_of(product: ProviderProduct) -> str:
+        found = shops.get(id(product))
+        if found is None:
+            found = shops[id(product)] = _merchant_identity(product)
+        return found
+
+    groups = _join_variants(groups, shop_of)
 
     ordered: list[_PricedProduct] = []
     seen_cards: set[tuple[str, float, str]] = set()
@@ -2014,7 +2052,7 @@ def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduc
         card = (
             _normalize_dedupe_title(cheapest.title),
             group_price[group],
-            _merchant_identity(cheapest),
+            shop_of(cheapest),
         )
         if card in seen_cards or (product_id and product_id in seen_ids):
             continue
@@ -2026,7 +2064,9 @@ def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduc
                 product=cheapest,
                 price=group_price[group],
                 key="" if group.startswith("offer:") else group,
-                shops=_shop_count(offers),
+                # The shops the feed names for its offers; an unnamed one is not counted
+                # as another shop: "Lowest price of 2 shops" must not rest on a guess.
+                shops=max(1, len({shop_of(offer) for offer in offers} - {""})),
             )
         )
     return ordered

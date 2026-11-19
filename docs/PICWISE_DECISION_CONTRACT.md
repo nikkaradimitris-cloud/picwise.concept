@@ -829,17 +829,46 @@ The owner: «ένα μαγαζί πουλάει ένα ζευγάρι παπού
    `_price_first_products`). A price chosen on the bar reads each product at its
    cheapest variant: a product whose variants run from £500 to £5,000 is under "from
    £3,000" at £500, so left out of it.
-4. **Not yet.** The cap of each category (`catalogue_cap`) still counts rows, so a
-   product's variants still take its places in the prepared catalogue: counting products
-   there is the next step.
+4. **The owner's three rules, 2026-11-19 (afternoon).** Asked for a lasting answer, not
+   patches («Να σκεφτείς καλύτερα μία μόνιμη λύση από το να κάνεις μπαλώματα.. πρέπει να
+   ορίσουμε κανόνες που ενεργοποιείται το ai»), and shown a drawing of the card, the
+   owner: (1) a shop whose page holds the variants: one card showing them; (2) a shop
+   that lists the same product many times, a variant each: grouped, one card showing the
+   variants, «εκεί εμπλέκεται και το σύστημα ai»; (3) another shop selling one of the
+   variants cheaper: the grouped card marks that variant ("Green is £18.00 at Shop A"),
+   and that shop's own card stands higher, being cheaper. Then: «Το όριο του ai μπορεί να
+   ανέβει για την ώρα δεν θα περιμένω τη νύχτα για να κάνει το σκανάρισμα θα το κάνουμε
+   τώρα».
+   - **Rule 2, by the words** (`product_variants.title_parts`): a title is its own words
+     and the words that may name a variant (a colour, a letter size, "Size 9", an amount
+     with its unit, a number). Two products of one shop and brand with the same own words
+     (two at least) are one product, at search time, when only sizes or amounts tell them
+     apart (`sizes_apart_key`: "Tracksuit - S" and "- 2XL", "500GB" and "1TB"); when a
+     colour or a number does ("Red Wine Glass" and "White Wine Glass", "Phone 15" and
+     "Phone 16"), the AI decides.
+   - **Rule 2, by the AI** (`variant_families`, `picwise_ai.families`): after each
+     preparation and at each deployment `family_jobs.py` writes the sets, each page once,
+     at most 20 listings a set, those not answered yet; `picwise-families`, under the AI
+     layer's own user and key, asks Claude Haiku 5.5 25 sets a call, which listings are
+     one product in variants (a different model, a different type of item, a flavour of a
+     food: apart; unsure: apart), uses an answer only when every listing is in exactly one
+     group, and keeps each product's family in the file the site reads
+     (`PICWISE_FAMILIES_FILE`). Its own cap: $5.00 a day (the searches keep their $1.00),
+     20 calls a minute. A set not answered stays apart.
+   - **The check:** the AI layer's rule is to check a sample before its answers show; on
+     the owner's «θα το κάνουμε τώρα» the answers show at once and the sample is read
+     right after the first scan (`print_families.py`, in `server-health.yml`).
+   - **Not yet:** the card listing the variants (rule 1 and 2's card, as drawn), the mark
+     of a variant cheaper elsewhere (rule 3), and the cap of each category
+     (`catalogue_cap`) counting products, not rows.
 5. **Deployed** 19/11, 11:34 UTC (`e9aa85a`): on the live site "tracksuit" shows
    "Dominate Tracksuit" and "Warrior Tracksuit" once each, where before each came in
    "2XL" and "S". "The Bear Colour Tracksuit - GRAY / 12-18 M" and "- Pink / 3-4 Y", one
    page, stayed apart (four words apart, three of them a size): sizes are no longer
    counted as a difference since. Products a shop puts on pages of their own, one per
    colour (Geepas' kettles), stay apart: no page ties them.
-6. Pinned by `tests/test_picwise_one_card_per_product.py` and
-   `tests/test_picwise_product_variants.py`.
+6. Pinned by `tests/test_picwise_one_card_per_product.py`,
+   `tests/test_picwise_product_variants.py` and `tests/test_picwise_variant_families.py`.
 
 ## The price bar, decided by the owner, 2026-11-12
 
