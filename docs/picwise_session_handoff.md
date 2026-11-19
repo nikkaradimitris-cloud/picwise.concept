@@ -8,6 +8,11 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **19/11 evening: both Awin links live** (`6c5d6b5`, 363,689 products from 138 shops; preparation 14.1 GB,
+  21.8 min; site 5.6 GB with 3 workers; 19.8 GB at night, limit 20). **Next, the search's accuracy with the new
+  shops:** a word in a title is not enough when the row's aisle disagrees with the kind searched (kettle -> paint
+  kettle, kettle lead; car tyres -> printer feed tyres; router -> modem lead, router collet nut). Read the second
+  link's aisle (`awin_categories`) against the kind's department, as the Google shelf is read for the first link.
 - **NEXT (owner, 19/11: «Θα υλοποιηθεί η διαδικασία σε άλλη συζήτηση»): the second Awin link, road 1, cut the
   preparation's memory.** Built and on `main` and the work branch, nothing on the server or the site:
   `catalogue_balance.cap_limits` (`PICWISE_CAP_SHARE` 0.15, `PICWISE_CAP_CATEGORY_MAX` 12,000, in
