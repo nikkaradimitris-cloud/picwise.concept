@@ -8,6 +8,12 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **Awin-format feeds again (owner, 19/11), the decision of 20/10 changed:** «Όταν είχα βάλει αυτόν τον κανόνα δεν
+  είχαμε αναπτύξει έξυπνο search.. εφόσον το σετ μπορεί να υποστηρίξει την υποδομή της awin προχωράμε πρέπει να
+  παίρνουμε προμήθεια από όλους». Awin puts the two formats in separate links («You can only select advertisers that
+  use the same datafeed format»; 213 feeds in Awin's format are offered): a second link, in the secret
+  `AWIN_FEED_URL_AWIN`, read beside `AWIN_FEED_URL` once measured (shops, rows, pounds, categories, size, memory).
+  Commission only from programmes that accepted the owner (Joined): the owner to join every programme of both feeds.
 - **19/11 afternoon, one card per product, the owner's lasting rules: the AI's families built and
   deployed (this record's push; the owner: «Ανέβασε προοδευτικά να τελειώσουμε τις εργασίες», then «Το
   όριο του ai μπορεί να ανέβει για την ώρα δεν θα περιμένω τη νύχτα για να κάνει το σκανάρισμα θα το
