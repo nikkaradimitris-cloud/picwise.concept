@@ -51,6 +51,7 @@ from .product_variants import (
     words_close,
 )
 from .variant_families import families_of
+from .variant_names import TITLES_READ, variant_values
 from .product_identity import same_product_key
 from .product_condition import (
     non_new_condition,
@@ -477,6 +478,10 @@ class ProviderProductSelectionResult:
     # (product id, place in the whole answer by price) for shown products: 1 is the
     # cheapest, and products at one price share a place.
     price_ranks: tuple[tuple[str, int], ...] = field(default_factory=tuple)
+    # (product id, ((kind, values), ...)) for shown products whose shop lists them in
+    # variants: the card names them ("Colours at the shop: Black, White"; owner,
+    # 2026-11-19, `variant_names.variant_values`).
+    variant_lists: tuple[tuple[str, tuple[tuple[str, tuple[str, ...]], ...]], ...] = field(default_factory=tuple)
     # The products the AI layer reads for this answer, with their prices, in the usual
     # order (`candidates_signature`); "" for an answer that is not price first.
     candidates_signature: str = ""
@@ -517,6 +522,10 @@ class ProviderProductSelectionResult:
             "cheapest_product_ids": list(self.cheapest_product_ids),
             "shop_counts": [list(row) for row in self.shop_counts],
             "price_ranks": [list(row) for row in self.price_ranks],
+            "variant_lists": [
+                [product_id, [[kind, list(values)] for kind, values in kinds]]
+                for product_id, kinds in self.variant_lists
+            ],
             "partially_matched_terms": [list(row) for row in self.partially_matched_terms],
             "understood_concept": self.understood_concept,
             "effective_query": self.effective_query,
@@ -1560,6 +1569,9 @@ class _PricedProduct:
     # `same_product_key`: a GTIN key, a brand and MPN key, or "".
     key: str
     shops: int
+    # The titles of its shop's listings of it, its own first: its variants at the shop
+    # (`variant_names.variant_values`; owner, 2026-11-19).
+    variant_titles: tuple[str, ...] = ()
 
 
 def _word_forms(word: str) -> tuple[str, ...]:
@@ -2059,6 +2071,12 @@ def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduc
         seen_cards.add(card)
         if product_id:
             seen_ids.add(product_id)
+        variant_titles: tuple[str, ...] = ()
+        if len(offers) > 1:
+            own_shop = shop_of(cheapest)
+            variant_titles = tuple(
+                dict.fromkeys(str(offer.title or "") for offer in offers if shop_of(offer) == own_shop)
+            )[:TITLES_READ]
         ordered.append(
             _PricedProduct(
                 product=cheapest,
@@ -2067,6 +2085,7 @@ def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduc
                 # The shops the feed names for its offers; an unnamed one is not counted
                 # as another shop: "Lowest price of 2 shops" must not rest on a guess.
                 shops=max(1, len({shop_of(offer) for offer in offers} - {""})),
+                variant_titles=variant_titles if len(variant_titles) > 1 else (),
             )
         )
     return ordered
@@ -2741,6 +2760,15 @@ def _price_first_result(
         (str(entry.product.provider_product_id or "").strip(), first_place[entry.price])
         for entry in first_page + opened
     )
+    # The variants at the shop of each product shown (owner, 2026-11-19, rules 1 and 2),
+    # read from its listings' titles; none when they do not read as variants.
+    variant_lists = tuple(
+        (str(entry.product.provider_product_id or "").strip(), kinds)
+        for entry in first_page + opened
+        if entry.variant_titles
+        for kinds in (variant_values(entry.variant_titles),)
+        if kinds
+    )
 
     # A filter dropped for the whole answer may still be carried by part of it. Say
     # how many rather than calling it unmatched, and nothing when every product of the
@@ -2802,6 +2830,7 @@ def _price_first_result(
         cheapest_product_ids=cheapest_ids,
         shop_counts=shop_counts,
         price_ranks=price_ranks,
+        variant_lists=variant_lists,
         candidates_signature=signature,
         fitting_product_ids=tuple(_entry_id(entry) for entry in display_order if _entry_id(entry) in fitting),
         recommended_among_fitting=recommended_among_fitting,

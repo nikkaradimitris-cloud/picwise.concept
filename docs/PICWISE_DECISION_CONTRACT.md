@@ -821,9 +821,18 @@ The owner: «ένα μαγαζί πουλάει ένα ζευγάρι παπού
    apart.
 2. **The card.** The product keeps the place, the price and the card of its cheapest
    variant in stock; the link goes to that variant at the shop, where the visitor picks
-   the size and colour. Nothing is added to the card's words. Its offers are all of its
-   variants', so "Lowest price of N shops" counts every shop selling it, in any size or
-   colour, by the barcode rule ("Price first" 5).
+   the size and colour. Its offers are all of its variants', so "Lowest price of N shops"
+   counts every shop selling it, in any size or colour, by the barcode rule ("Price
+   first" 5). **Its variants named (owner's rules 1 and 2, 19/11; the drawing shown, and
+   the card as it renders):** under the price's place, a line a kind, two kinds at most
+   ("Colours at the shop: Black, White", "Sizes at the shop: 7, 8, 9, 10"; "Capacities",
+   "Power", and "Options" for prints and finishes, colours beside them), six values and
+   "+N more", from the titles of its shop's listings of it (`variant_names.
+   variant_values`): what tells them apart, the card's own colour or option first, sizes
+   from small to large. A part several titles share and no variant ("- Sleep Mask
+   Only") is left out; a title that differs in two things of a kind or in words that
+   name no variant leaves the card without the line: no line rather than words that are
+   not the variants.
 3. **The answer.** The counter, "More", the Recommended (the middle price) and the price
    bar count products, not rows (`search_selection._join_variants`, inside
    `_price_first_products`). A price chosen on the bar reads each product at its
@@ -863,9 +872,8 @@ The owner: «ένα μαγαζί πουλάει ένα ζευγάρι παπού
    - **The check:** the AI layer's rule is to check a sample before its answers show; on
      the owner's «θα το κάνουμε τώρα» the answers show at once and the sample is read
      right after the first scan (`print_families.py`, in `server-health.yml`).
-   - **Not yet:** the card listing the variants (rule 1 and 2's card, as drawn), the mark
-     of a variant cheaper elsewhere (rule 3), and the cap of each category
-     (`catalogue_cap`) counting products, not rows.
+   - **Not yet:** the mark of a variant cheaper elsewhere (rule 3), and the cap of each
+     category (`catalogue_cap`) counting products, not rows.
 5. **Deployed** 19/11, 11:34 UTC (`e9aa85a`): on the live site "tracksuit" shows
    "Dominate Tracksuit" and "Warrior Tracksuit" once each, where before each came in
    "2XL" and "S". "The Bear Colour Tracksuit - GRAY / 12-18 M" and "- Pink / 3-4 Y", one
@@ -873,7 +881,8 @@ The owner: «ένα μαγαζί πουλάει ένα ζευγάρι παπού
    counted as a difference since. Products a shop puts on pages of their own, one per
    colour (Geepas' kettles), stay apart: no page ties them.
 6. Pinned by `tests/test_picwise_one_card_per_product.py`,
-   `tests/test_picwise_product_variants.py` and `tests/test_picwise_variant_families.py`.
+   `tests/test_picwise_product_variants.py`, `tests/test_picwise_variant_families.py` and
+   `tests/test_picwise_variant_names.py`.
 
 ## The price bar, decided by the owner, 2026-11-12
 

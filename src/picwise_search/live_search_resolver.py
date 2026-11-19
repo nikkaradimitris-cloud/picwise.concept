@@ -126,6 +126,11 @@ class LiveSearchResolution:
     provider_feed_shop_counts: tuple[tuple[str, int], ...] = field(default_factory=tuple)
     # (product id, place in the whole answer by price, 1 = cheapest; equal prices share)
     provider_feed_price_ranks: tuple[tuple[str, int], ...] = field(default_factory=tuple)
+    # (product id, ((kind, values), ...)) for shown products listed in variants at their
+    # shop: the card names them (owner, 2026-11-19; `picwise_providers.variant_names`).
+    provider_feed_variant_lists: tuple[tuple[str, tuple[tuple[str, tuple[str, ...]], ...]], ...] = field(
+        default_factory=tuple
+    )
     # (product id, the current shop offer covering it) for shown products on offer, which
     # come right after the Recommended (owner, 2026-11-01; `picwise_providers.product_offers`).
     provider_feed_offers: tuple[tuple[str, dict[str, Any]], ...] = field(default_factory=tuple)
@@ -215,6 +220,10 @@ class LiveSearchResolution:
             ]
             payload["provider_feed_price_ranks"] = [
                 list(row) for row in self.provider_feed_price_ranks
+            ]
+            payload["provider_feed_variant_lists"] = [
+                [product_id, [[kind, list(values)] for kind, values in kinds]]
+                for product_id, kinds in self.provider_feed_variant_lists
             ]
             payload["provider_feed_offers"] = [list(row) for row in self.provider_feed_offers]
             payload["provider_feed_candidates_signature"] = self.provider_feed_candidates_signature
@@ -616,6 +625,7 @@ def resolve_live_search(
     provider_feed_cheapest_product_ids: tuple[str, ...] = ()
     provider_feed_shop_counts: tuple[tuple[str, int], ...] = ()
     provider_feed_price_ranks: tuple[tuple[str, int], ...] = ()
+    provider_feed_variant_lists: tuple[tuple[str, tuple[tuple[str, tuple[str, ...]], ...]], ...] = ()
     provider_feed_price_low = 0.0
     provider_feed_price_high = 0.0
     provider_feed_price_bins: tuple[int, ...] = ()
@@ -737,6 +747,7 @@ def resolve_live_search(
                         provider_feed_cheapest_product_ids = selection.cheapest_product_ids
                         provider_feed_shop_counts = selection.shop_counts
                         provider_feed_price_ranks = selection.price_ranks
+                        provider_feed_variant_lists = selection.variant_lists
                         provider_feed_price_low = selection.price_low
                         provider_feed_price_high = selection.price_high
                         provider_feed_price_bins = selection.price_bins
@@ -904,6 +915,7 @@ def resolve_live_search(
         provider_feed_cheapest_product_ids=provider_feed_cheapest_product_ids,
         provider_feed_shop_counts=provider_feed_shop_counts,
         provider_feed_price_ranks=provider_feed_price_ranks,
+        provider_feed_variant_lists=provider_feed_variant_lists,
         provider_feed_price_low=provider_feed_price_low,
         provider_feed_price_high=provider_feed_price_high,
         provider_feed_price_bins=provider_feed_price_bins,

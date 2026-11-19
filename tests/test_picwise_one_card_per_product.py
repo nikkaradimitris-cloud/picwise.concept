@@ -220,6 +220,10 @@ class SearchPageTests(unittest.TestCase):
         self.assertEqual(sorted(prices), ["£29.99", "£39.99", "£49.99", "£59.99"])
         self.assertIn("4 of 4", text)
         self.assertEqual(text.count("Fixturon Runner Trainers"), 1)
+        # Its colours and sizes named on its card, chosen at the shop (owner, 2026-11-19).
+        self.assertIn("Colours at the shop: Black, White", text)
+        self.assertIn("Sizes at the shop: 7, 8, 9, 10", text)
+        self.assertEqual(page.count('class="pw-card-variants"'), 2)
 
 
 if __name__ == "__main__":

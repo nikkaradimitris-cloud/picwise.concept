@@ -145,6 +145,34 @@ _PRICE_FIRST_RECOMMENDED_BADGE = "&#9733; Recommended"
 _PRICE_FIRST_RECOMMENDED_LABEL = "Mid-priced for this category"
 _PRICE_FIRST_LOWEST_LABEL = "Lowest price"
 _PRICE_FIRST_SHOPS_LABEL = "Lowest price of {shops} shops"
+# One card per product, its variants named on it (owner, 2026-11-19, shown a drawing of
+# the card: «δείχνουμε τις διαφορετικές παραλλαγές στην ίδια κάρτα»; «λέμε
+# συμπεριλαμβάνονται χρώματα … μεγέθη … χωρητικότητα στο κατάστημα»), from the titles of
+# its shop's listings (`picwise_providers.variant_names`). The shop is where they are
+# chosen, so the line says so.
+_VARIANT_HEADINGS = {
+    "colours": "Colours",
+    "options": "Options",
+    "sizes": "Sizes",
+    "capacities": "Capacities",
+    "power": "Power",
+}
+_VARIANTS_NAMED = 6
+
+
+def _variant_lines(kinds: object) -> list[str]:
+    """ "Colours at the shop: Black, Pink, White", one line a kind, six values at most and
+    then how many more."""
+    lines: list[str] = []
+    for kind, values in tuple(kinds or ()):  # type: ignore[arg-type]
+        heading = _VARIANT_HEADINGS.get(str(kind))
+        values = [str(value) for value in values if str(value).strip()]
+        if not heading or len(values) < 2:
+            continue
+        named = ", ".join(values[:_VARIANTS_NAMED])
+        more = len(values) - _VARIANTS_NAMED
+        lines.append(f"{heading} at the shop: {named}" + (f" +{more} more" if more > 0 else ""))
+    return lines
 # How an answer is sorted is said by its heading alone ("Results for: kettle, offers
 # first, then cheapest first"): the line under it no longer opens with a sentence of the
 # order (owner, 2026-11-12: "from the shops connected to PicWise" «εννοείται και είναι
@@ -675,6 +703,7 @@ def _build_price_first_cards(
     cheapest = set(getattr(resolution, "provider_feed_cheapest_product_ids", ()) or ())
     shops = dict(getattr(resolution, "provider_feed_shop_counts", ()) or ())
     places = dict(getattr(resolution, "provider_feed_price_ranks", ()) or ())
+    variants = dict(getattr(resolution, "provider_feed_variant_lists", ()) or ())
     total = int(getattr(resolution, "provider_feed_total_count", 0) or 0)
     products = first_page + opened
     labels = build_fact_based_choice_labels(products)
@@ -733,6 +762,8 @@ def _build_price_first_cards(
                 "stock_line": stock_line,
                 "stock_state": stock_state,
                 "extra_line": shops_label if is_recommended or (offer and shops_label) else "",
+                # Its variants at the shop, where the visitor chooses them.
+                "variant_lines": _variant_lines(variants.get(product_id)),
                 "offer": offer or None,
                 "note": _card_note(label),
                 "meta": "",
@@ -1043,6 +1074,12 @@ def _render_choice_card(
     lines.append(f'<p class="pw-card-description">{escape(str(card["description"]))}</p>')
     if str(card.get("extra_line") or ""):
         lines.append(f'<p class="pw-card-extra">{escape(str(card["extra_line"]))}</p>')
+    for variant_line in card.get("variant_lines") or ():  # type: ignore[union-attr]
+        heading, _, values = str(variant_line).partition(": ")
+        lines.append(
+            f'<p class="pw-card-variants"><span class="pw-variants-heading">{escape(heading)}:</span> '
+            f"{escape(values)}</p>"
+        )
     if str(card.get("meta") or ""):
         lines.append(f'<p class="pw-meta">{escape(str(card["meta"]))}</p>')
     if reasons:
