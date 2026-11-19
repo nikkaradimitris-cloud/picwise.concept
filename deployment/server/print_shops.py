@@ -124,6 +124,19 @@ def print_memory(note: dict) -> None:
     if memory.get("history_restarted_tonight"):
         line += f", {memory['history_restarted_tonight']:,} of them starting their price's history again"
     print(line)
+    # How many products give a sale price and why each is or is not their price (owner,
+    # 2026-11-19: the first night read none); a note written before it has none.
+    sales = memory.get("sale_prices")
+    if sales is not None:
+        if not sales.get("given"):
+            print("  sale prices: none of tonight's products gives one")
+        else:
+            readings = ", ".join(f"{name.replace('_', ' ')} {count:,}" for name, count in sales["readings"].items())
+            print(f"  sale prices: {sales['given']:,} of tonight's products give one: {readings}")
+            print(
+                "  shops giving the most: "
+                + "; ".join(f"{entry['shop']} {entry['given']:,} ({entry['used']:,} used)" for entry in sales["shops"])
+            )
     print()
 
 

@@ -8,6 +8,15 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **19/11 late morning, the sale prices counted (built, tested, pushed to the work branch; NOT deployed:
+  waits for «ανέβασε»).** The owner, offered a count of why the first night read no sale price and a look
+  at the new pages, answered «Ναι». `normalization.sale_price_reading` names why a row's `sale_price` is
+  or is not its price (used, price unread, not lower, other currency, dates unread, not begun, ended,
+  ending within 24 h; `sale_price_in_force` now reads through it, the rule unchanged); the memory's
+  summary gives `sale_prices` (how many give one, the readings, the 8 shops giving the most), printed by
+  `print_shops.py` under the memory's line ("sale prices: ...") and by `prepare_catalogue.py`. Read it in
+  the deployment's "Each shop of the prepared catalogue". The look at the pages: the session's fetch of
+  the site needs the owner's approval on their screen, unanswered twice (09:1x and 09:37 UTC).
 - **19/11, the shop's own price: DEPLOYED 09:08 UTC on the owner's «Ανέβασε» (10:51 Athens)**: `512ebf2`
   pushed to `ccr-1361f1a7-dcpo60` at 08:52 UTC, a fast-forward from `82f2f49` (it carried only one more
   record line, of the wording's deployment); run `44491367174`, release `20261119T085257Z-512ebf2`.

@@ -107,6 +107,58 @@ def _sale_moment(text: str) -> datetime | None:
     return moment if moment.tzinfo is not None else moment.replace(tzinfo=timezone.utc)
 
 
+# Why a row's sale price is its price or not (`sale_price_reading`), counted in the
+# night's note (owner, 2026-11-19: the first night read no sale price at all).
+SALE_USED = "used"
+SALE_PRICE_UNREAD = "price_unread"
+SALE_NOT_LOWER = "not_lower"
+SALE_OTHER_CURRENCY = "other_currency"
+SALE_DATES_UNREAD = "dates_unread"
+SALE_NOT_BEGUN = "not_begun"
+SALE_ENDED = "ended"
+SALE_ENDING = "ending_within_24h"
+
+
+def sale_price_reading(payload: Mapping[str, Any], *, now: datetime | None = None) -> str:
+    """Whether the row's sale price is the shop's price now, and if not, why: "" when the
+    row gives no sale price, `SALE_USED` when it is the price, else the first reason that
+    leaves the usual price (`sale_price_in_force` reads the rule; this only names it)."""
+    if not isinstance(payload, Mapping):
+        return ""
+    sale_text = _normalize_text(payload.get(_SALE_PRICE_KEY))
+    if not sale_text:
+        return ""
+    sale_amount, sale_code = _split_currency(sale_text)
+    sale = parse_price_amount(sale_amount)
+    if sale is None or sale <= 0:
+        return SALE_PRICE_UNREAD
+    usual_amount, usual_code = _split_currency(_first_non_empty(payload, _PRICE_KEYS))
+    usual = parse_price_amount(usual_amount)
+    if usual is not None:
+        if sale >= usual:
+            return SALE_NOT_LOWER
+        if sale_code and usual_code and sale_code.upper() != usual_code.upper():
+            return SALE_OTHER_CURRENCY
+    dates = _normalize_text(payload.get(_SALE_DATES_KEY))
+    if dates:
+        ends = [part for part in dates.split("/") if part.strip()]
+        if len(ends) != 2:
+            return SALE_DATES_UNREAD
+        start, end = _sale_moment(ends[0]), _sale_moment(ends[1])
+        if start is None or end is None or end <= start:
+            return SALE_DATES_UNREAD
+        moment = now if now is not None else datetime.now(timezone.utc)
+        if moment.tzinfo is None:
+            moment = moment.replace(tzinfo=timezone.utc)
+        if moment < start:
+            return SALE_NOT_BEGUN
+        if moment >= end:
+            return SALE_ENDED
+        if moment + SALE_MUST_LAST > end:
+            return SALE_ENDING
+    return SALE_USED
+
+
 def sale_price_in_force(payload: Mapping[str, Any], *, now: datetime | None = None) -> str:
     """The row's sale price as the feed wrote it ("29.99 GBP") when it is the shop's price
     now, else "" (owner, 2026-11-19: «Στην έκπτωση τραβά στην τιμή της έκπτωσης»).
@@ -117,36 +169,9 @@ def sale_price_in_force(payload: Mapping[str, Any], *, now: datetime | None = No
     that the shop may have ended. A row with no usual price PicWise can read takes a sale
     price live by its dates. Nothing here is worked out: the price is the shop's.
     """
-    if not isinstance(payload, Mapping):
+    if sale_price_reading(payload, now=now) != SALE_USED:
         return ""
-    sale_text = _normalize_text(payload.get(_SALE_PRICE_KEY))
-    if not sale_text:
-        return ""
-    sale_amount, sale_code = _split_currency(sale_text)
-    sale = parse_price_amount(sale_amount)
-    if sale is None or sale <= 0:
-        return ""
-    usual_amount, usual_code = _split_currency(_first_non_empty(payload, _PRICE_KEYS))
-    usual = parse_price_amount(usual_amount)
-    if usual is not None:
-        if sale >= usual:
-            return ""
-        if sale_code and usual_code and sale_code.upper() != usual_code.upper():
-            return ""
-    dates = _normalize_text(payload.get(_SALE_DATES_KEY))
-    if dates:
-        ends = [part for part in dates.split("/") if part.strip()]
-        if len(ends) != 2:
-            return ""
-        start, end = _sale_moment(ends[0]), _sale_moment(ends[1])
-        if start is None or end is None or end <= start:
-            return ""
-        moment = now if now is not None else datetime.now(timezone.utc)
-        if moment.tzinfo is None:
-            moment = moment.replace(tzinfo=timezone.utc)
-        if moment < start or moment + SALE_MUST_LAST > end:
-            return ""
-    return sale_text
+    return _normalize_text(payload.get(_SALE_PRICE_KEY))
 
 
 def _price_and_currency(payload: Mapping[str, Any]) -> tuple[str, str]:

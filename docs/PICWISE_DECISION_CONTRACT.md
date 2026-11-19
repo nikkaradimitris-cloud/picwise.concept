@@ -775,7 +775,13 @@ read: «Στην έκπτωση τραβά στην τιμή της έκπτωσ
    price, so that no price is shown after the shop has ended it; dates PicWise cannot
    read leave the usual price. A row with no usual price takes a sale price live by its
    dates (`normalization.sale_price_in_force`). Nothing is said of the usual price: a
-   price struck through would be a saving told on the shop's word alone.
+   price struck through would be a saving told on the shop's word alone. The first night
+   (the deployment of 19/11, 09:08 UTC) read no sale price on any of 255,564 products; the
+   owner, offered a count of why and a look at the new pages, answered «Ναι» (11:37
+   Athens): the night's note now says how many products give a
+   sale price, why each is or is not their price (`sale_price_reading`: used, price
+   unread, not lower, other currency, dates unread, not begun, ended, ending within 24 h)
+   and the shops that give the most (`catalogue_memory`, `sale_prices`).
 3. **The price's history.** The catalogue's memory first read sale prices on the night
    this was deployed; the price recorded before it was the usual one, whether or not the
    sale had already begun, so on that night a product whose price the sale price changes

@@ -45,8 +45,17 @@ from picwise_providers.awin_adapter import clear_awin_feed_parse_cache  # noqa: 
 from picwise_providers.catalogue_memory import SALE_PRICES_SINCE, remember_night  # noqa: E402
 from picwise_providers.contracts import ProviderProduct  # noqa: E402
 from picwise_providers.normalization import (  # noqa: E402
+    SALE_DATES_UNREAD,
+    SALE_ENDED,
+    SALE_ENDING,
+    SALE_NOT_BEGUN,
+    SALE_NOT_LOWER,
+    SALE_OTHER_CURRENCY,
+    SALE_PRICE_UNREAD,
+    SALE_USED,
     normalize_feed_row_to_provider_product,
     sale_price_in_force,
+    sale_price_reading,
 )
 from picwise_providers.price_history import DOWN, SAME, UP, read_price_notes, write_price_notes  # noqa: E402
 from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
@@ -119,6 +128,21 @@ class SalePriceTests(unittest.TestCase):
         for dates in ("soon", "2026-11-01T00:00Z", "2026-12-01T00:00Z/2026-11-01T00:00Z", "a/b"):
             with self.subTest(dates=dates):
                 self.assertEqual(self._sale("40.00 GBP", "29.99 GBP", dates), "")
+
+    def test_the_reading_names_why_a_sale_price_is_left(self) -> None:
+        # Counted in the night's note: the first night read no sale price at all (19/11).
+        def reading(price: str, sale: str, dates: str = "") -> str:
+            return sale_price_reading({"price": price, "sale_price": sale, "sale_price_effective_date": dates}, now=NOW)
+
+        self.assertEqual(sale_price_reading({"price": "40.00 GBP"}, now=NOW), "")
+        self.assertEqual(reading("40.00 GBP", "29.99 GBP"), SALE_USED)
+        self.assertEqual(reading("40.00 GBP", "free"), SALE_PRICE_UNREAD)
+        self.assertEqual(reading("40.00 GBP", "40.00 GBP"), SALE_NOT_LOWER)
+        self.assertEqual(reading("40.00 GBP", "29.99 EUR"), SALE_OTHER_CURRENCY)
+        self.assertEqual(reading("40.00 GBP", "29.99 GBP", "soon"), SALE_DATES_UNREAD)
+        self.assertEqual(reading("40.00 GBP", "29.99 GBP", _dates(NOW + timedelta(hours=2), NOW + timedelta(days=9))), SALE_NOT_BEGUN)
+        self.assertEqual(reading("40.00 GBP", "29.99 GBP", _dates(NOW - timedelta(days=9), NOW - timedelta(hours=1))), SALE_ENDED)
+        self.assertEqual(reading("40.00 GBP", "29.99 GBP", _dates(NOW - timedelta(days=9), NOW + timedelta(hours=20))), SALE_ENDING)
 
     def test_a_row_is_read_at_its_sale_price_in_its_currency(self) -> None:
         live = _dates(datetime.now(timezone.utc) - timedelta(days=1), datetime.now(timezone.utc) + timedelta(days=5))
@@ -262,6 +286,35 @@ class PriceHistoryTests(unittest.TestCase):
                                  prepared_at=later)
         self.assertEqual(summary["history_restarted_tonight"], 0)
         self.assertEqual(nights.note("a").kind, SAME)
+
+    def test_the_night_s_note_counts_the_sale_prices_given_and_why_each_is_left(self) -> None:
+        nights = _Nights()
+        ended = _product("e", "40.00", sale="30.00")
+        ended.raw["sale_price_effective_date"] = "2026-10-01T00:00Z/2026-10-31T23:59Z"
+        not_lower = _product("n", "40.00")
+        not_lower.raw["sale_price"] = "40.00 GBP"
+        summary = nights.run([_product("a", "40.00", sale="30.00"), ended, not_lower, _product("b", "35.00")])
+        self.assertEqual(
+            summary["sale_prices"],
+            {
+                "given": 3,
+                "readings": {SALE_ENDED: 1, SALE_NOT_LOWER: 1, SALE_USED: 1},
+                "shops": [{"shop": SHOP, "given": 3, "used": 1}],
+            },
+        )
+        self.assertEqual(summary["on_sale_tonight"], 1)
+        import contextlib
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("print_shops", ROOT / "deployment" / "server" / "print_shops.py")
+        print_shops = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(print_shops)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            print_shops.print_memory({"memory": summary})
+        report = out.getvalue()
+        self.assertIn("  sale prices: 3 of tonight's products give one: ended 1, not lower 1, used 1", report)
+        self.assertIn(f"  shops giving the most: {SHOP} 3 (1 used)", report)
 
     def test_from_then_on_a_sale_beginning_or_ending_is_a_change(self) -> None:
         nights = _Nights()

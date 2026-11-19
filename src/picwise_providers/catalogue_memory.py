@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+from collections import Counter
 from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
@@ -47,7 +48,7 @@ from typing import Any, Mapping, Sequence
 
 from .contracts import ProviderProduct
 from .decision_labels import parse_price_amount
-from .normalization import extract_merchant_name, sale_price_in_force
+from .normalization import SALE_USED, extract_merchant_name, sale_price_reading
 from .product_identity import valid_gtin
 
 MEMORY_FILE_ENV = "PICWISE_CATALOGUE_MEMORY_FILE"
@@ -132,7 +133,7 @@ def _pence(product: ProviderProduct) -> int | None:
     return None if amount is None else int(round(amount * 100))
 
 
-def _row(product: ProviderProduct, moment: datetime) -> tuple[str, str, str, str, str, int | None, str, int]:
+def _row(product: ProviderProduct, sale_reading: str) -> tuple[str, str, str, str, str, int | None, str, int]:
     raw = product.raw if isinstance(product.raw, Mapping) else {}
     gtin = valid_gtin(raw)
     title = " ".join(str(product.title or "").split())[:_TITLE_LENGTH]
@@ -145,8 +146,37 @@ def _row(product: ProviderProduct, moment: datetime) -> tuple[str, str, str, str
         _pence(product),
         str(product.currency or "").strip().upper(),
         # At its shop's sale price tonight (`normalization.sale_price_in_force`).
-        1 if sale_price_in_force(raw, now=moment) else 0,
+        1 if sale_reading == SALE_USED else 0,
     )
+
+
+# The shops whose rows give a sale price, named in the night's note.
+SALE_SHOPS_LISTED = 8
+
+
+def _sale_prices(products: Sequence[ProviderProduct], readings: Sequence[str]) -> dict[str, Any]:
+    """How many of tonight's products give a sale price, whether it is their price and
+    if not why (`normalization.sale_price_reading`), and the shops that give the most:
+    counts only, for the night's note (the first night read no sale price at all)."""
+    reasons: Counter[str] = Counter()
+    filled: Counter[str] = Counter()
+    used: Counter[str] = Counter()
+    for product, reading in zip(products, readings):
+        if not reading:
+            continue
+        reasons[reading] += 1
+        shop = _shop(product)
+        filled[shop] += 1
+        if reading == SALE_USED:
+            used[shop] += 1
+    return {
+        "given": sum(reasons.values()),
+        "readings": dict(sorted(reasons.items(), key=lambda item: (-item[1], item[0]))),
+        "shops": [
+            {"shop": shop, "given": count, "used": used[shop]}
+            for shop, count in sorted(filled.items(), key=lambda item: (-item[1], item[0]))[:SALE_SHOPS_LISTED]
+        ],
+    }
 
 
 def _add_seen_nights(db: sqlite3.Connection) -> None:
@@ -178,7 +208,12 @@ def remember_night(
     """Write one night's catalogue into the memory at `path`; what the memory now says,
     for the night's public note (counts only)."""
     night = prepared_at.astimezone(timezone.utc).date().isoformat()
-    tonight = {row[0]: row for row in (_row(product, prepared_at) for product in products)}
+    products = products if isinstance(products, (list, tuple)) else list(products)
+    readings = [
+        sale_price_reading(product.raw if isinstance(product.raw, Mapping) else {}, now=prepared_at)
+        for product in products
+    ]
+    tonight = {row[0]: row for row in (_row(product, reading) for product, reading in zip(products, readings))}
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with closing(sqlite3.connect(str(path), timeout=60)) as db:
@@ -284,6 +319,7 @@ def remember_night(
             # only, how many started their price's history again (owner, 2026-11-19).
             "on_sale_tonight": sum(row[7] for row in tonight.values()),
             "history_restarted_tonight": len(restarted),
+            "sale_prices": _sale_prices(products, readings),
             "gone_since": (
                 one("SELECT COUNT(*) FROM products WHERE last_seen = ?", before) if before is not None else None
             ),

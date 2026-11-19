@@ -135,6 +135,7 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 # The shops' sale prices (owner, 2026-11-19).
                 + f"; {memory['on_sale_tonight']:,} at the shop's sale price"
+                + f" (of {memory['sale_prices']['given']:,} giving one)"
                 + (
                     f", {memory['history_restarted_tonight']:,} of them starting their price's history again"
                     if memory["history_restarted_tonight"]

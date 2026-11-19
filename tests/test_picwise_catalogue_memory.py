@@ -75,6 +75,7 @@ class MemoryTests(unittest.TestCase):
                 "file": "memory.sqlite", "night": "2026-11-12", "nights": 1, "products_known": 2,
                 "seen_tonight": 2, "new_tonight": 2, "price_changed_tonight": 0,
                 "compared_with": None, "on_sale_tonight": 0, "history_restarted_tonight": 0,
+                "sale_prices": {"given": 0, "readings": {}, "shops": []},
                 "gone_since": None,
             },
         )
@@ -237,6 +238,8 @@ class PreparationTests(unittest.TestCase):
             input=json.dumps(note), capture_output=True, text=True, check=True,
         ).stdout
         self.assertIn(f"the catalogue's memory: {note['products']:,} products over 1 nights; the night of ", report)
+        # The fixture's rows give no sale price (owner, 2026-11-19: the night's note says so).
+        self.assertIn("  sale prices: none of tonight's products gives one", report)
 
     def test_none_is_kept_when_none_is_named(self) -> None:
         folder = Path(tempfile.mkdtemp())
