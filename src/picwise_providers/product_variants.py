@@ -198,6 +198,8 @@ _COLOURS = frozenset(
     natural oatmeal ecru mocha espresso graphite slate gunmetal""".split()
 )
 _LETTER_SIZES = frozenset("xxs xs s m l xl xxl xxxl 2xl 3xl 4xl 5xl 6xl".split())
+# Sizes in words: one shop's "Sweatshirt Grey Small" and "Sweatshirt Grey XL" (19/11).
+_NAMED_SIZES = frozenset("small medium large".split())
 # The words that come with a size: "Size 9", "UK 9", "EU 42".
 _SIZE_WORDS = frozenset("size sizes uk eu us".split())
 # An amount and its unit, one word as `_words` reads it: "500gb", "7l" (of "1.7L"), "18v".
@@ -217,7 +219,13 @@ _DECIMAL_RE = re.compile(r"(\d)[.,](\d)")
 def _variant_word(word: str) -> str:
     """"size" for a size or an amount with its unit, "other" for a colour or a number that
     may name a model, "" for one of the product's own words."""
-    if word.startswith(_SIZED_NUMBER) or word in _LETTER_SIZES or word in _SIZE_WORDS or _AMOUNT_RE.match(word):
+    if (
+        word.startswith(_SIZED_NUMBER)
+        or word in _LETTER_SIZES
+        or word in _NAMED_SIZES
+        or word in _SIZE_WORDS
+        or _AMOUNT_RE.match(word)
+    ):
         return "size"
     if word in _COLOURS or _NUMBER_RE.match(word):
         return "other"

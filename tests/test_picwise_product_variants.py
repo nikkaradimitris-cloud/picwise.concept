@@ -160,6 +160,20 @@ class OwnWordsTests(unittest.TestCase):
             sizes_apart_key(shop="s", brand="Fixturon", title="Fixturon Runner White Size 8"),
         )
 
+class NamedSizesTests(unittest.TestCase):
+    def test_small_and_large_are_sizes_of_one_product(self) -> None:
+        from picwise_providers.product_variants import sizes_apart_key
+
+        def key(title: str) -> str:
+            return sizes_apart_key(shop="fixture shop", brand="Regatta", title=title)
+
+        self.assertEqual(
+            key("Regatta TRF635 Disruptive Overhead Hooded Sweatshirt Grey Small - Seal Grey / Small"),
+            key("Regatta TRF635 Disruptive Overhead Hooded Sweatshirt Grey XL - Seal Grey / XL"),
+        )
+        self.assertNotEqual(key("Fixturon Storage Box Small Black"), key("Fixturon Storage Box Small White"))
+
+
 class HeadKeyTests(unittest.TestCase):
     def test_the_head_is_the_name_before_the_variant(self) -> None:
         from picwise_providers.product_variants import family_key, head_key
