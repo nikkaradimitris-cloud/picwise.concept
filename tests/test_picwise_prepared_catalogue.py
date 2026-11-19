@@ -176,7 +176,9 @@ class PreparedFileTests(_PreparedMixin, unittest.TestCase):
              for product in prepared.products],
         )
         self.assertNotIn("condition", again.products[0].raw)
-        self.assertEqual(prepared.products[0].raw["aw_thumb_url"], "https://fixture.example.invalid/thumb/k1.jpg")
+        # Since 2026-11-19 the feed is read without the columns no rule reads, so they are
+        # not there before the file is written either.
+        self.assertNotIn("aw_thumb_url", prepared.products[0].raw)
         for product in again.products:
             self.assertNotIn("aw_thumb_url", product.raw)
             self.assertNotIn("delivery_cost", product.raw)

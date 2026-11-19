@@ -48,10 +48,11 @@ jobs:
           PICWISE_CAP_SHARE: ${{ inputs.share }}
           PICWISE_CAP_CATEGORY_MAX: ${{ inputs.category_max }}
           AWIN_FEED_FILE_AWIN: ${{ runner.temp }}/awin.bin
+          PICWISE_MEMORY_TRACE: "1"
         run: |
           mkdir -p "$RUNNER_TEMP/both"
           /usr/bin/time -f "peak memory %M KB, %e s" python3 tools/prepare_catalogue.py --keep-going \
-            --feed-file "$RUNNER_TEMP/google.bin" --out "$RUNNER_TEMP/both/catalogue.json.gz" --static-dir "$RUNNER_TEMP/both" 2>&1 | tail -n 4
+            --feed-file "$RUNNER_TEMP/google.bin" --out "$RUNNER_TEMP/both/catalogue.json.gz" --static-dir "$RUNNER_TEMP/both" 2>&1 | grep -E "^prepare_catalogue|peak memory|Command" | tail -n 12
       - name: What each kept, by category and shop
         if: always()
         run: python3 .github/scripts/print_trial.py "$RUNNER_TEMP/one" "$RUNNER_TEMP/both"

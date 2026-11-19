@@ -86,6 +86,7 @@ def main(argv: list[str] | None = None) -> int:
 
         capping = _Cap(args.out)
         prepared = prepare_feed_catalogue(cap=capping)
+        _trace("the catalogue prepared")
         size = write_prepared_catalogue(prepared, args.out) if prepared is not None else 0
     except Exception as error:
         if not args.keep_going:
@@ -118,7 +119,9 @@ def main(argv: list[str] | None = None) -> int:
             f" {pool['kept_from_before']:,} of them kept the night before; the search and the pool Google may be"
             " given from hold the same"
         )
+    _trace("the file written")
     intake = _intake() if args.static_dir is not None else None
+    _trace("the intake measured")
     memory = _memory(args.memory, prepared, intake)
     if memory is not None:
         if "error" in memory:
@@ -242,6 +245,17 @@ def _freshness(prepared) -> dict[str, object]:
     except Exception as error:
         return {"error": _where(error)}
 
+
+
+def _trace(stage: str) -> None:
+    """With PICWISE_MEMORY_TRACE set, the peak memory so far at each step of the night, so
+    that a trial shows where the memory goes (2026-11-19, the two Awin links)."""
+    if not os.environ.get("PICWISE_MEMORY_TRACE"):
+        return
+    import resource
+
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1048576
+    print(f"prepare_catalogue: memory after {stage}: peak {peak:.1f} GB so far", flush=True)
 
 def _intake() -> dict[str, object] | None:
     """What each shop's feed brings in and why the rest is held; a failure is only noted."""

@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import os
+import sys
 import tempfile
 import time
 import zlib
@@ -38,6 +39,8 @@ SECOND_FEED_FILE_ENV = "AWIN_FEED_FILE_AWIN"
 SECOND_FEED_URL_ENV = "AWIN_FEED_URL_AWIN"
 _SHOP_ID_KEYS = ("advertiser_id", "merchant_id")
 _GZIP_MAGIC = b"\x1f\x8b"
+# A value this short or shorter is held once for all the rows that give it.
+_SHARED_VALUE_CHARS = 64
 
 # A feed URL (Awin's Create-a-Feed download link) is downloaded to a local file and
 # reused, instead of being fetched on every search: a real feed is tens of megabytes
@@ -243,15 +246,33 @@ def _parse_csv_stream(text: IO[str], keep=None) -> tuple[list[dict[str, Any]], t
         repeated_names = len(set(header)) != len(header)
         rows: list[dict[str, Any]] = []
         width = len(header)
+        # The columns no rule reads (`prepared_catalogue.LEFT_OUT_COLUMNS`, which a test keeps
+        # true) are never kept, and a short value is shared by every row that gives it
+        # (`sys.intern`): a shop's name, a currency, a category, a brand once in memory,
+        # not once a row (2026-11-19: the two Awin links passed the server's memory).
+        from .prepared_catalogue import LEFT_OUT_COLUMNS
+
+        read = [name not in LEFT_OUT_COLUMNS for name in header]
+        header = [sys.intern(name) for name in header]
         for row in reader:
             if not row:
                 continue
             if len(row) > width and any(field.strip() for field in row[width:]):
                 continue
             if repeated_names:
-                record = {key: value for key, value in dict(zip(header, row)).items() if value}
+                record = {
+                    key: (sys.intern(value) if len(value) <= _SHARED_VALUE_CHARS else value)
+                    for key, value in dict(
+                        (name, field) for name, field, wanted in zip(header, row, read) if wanted
+                    ).items()
+                    if value
+                }
             else:
-                record = {key: value for key, value in zip(header, row) if value}
+                record = {
+                    key: (sys.intern(value) if len(value) <= _SHARED_VALUE_CHARS else value)
+                    for key, value, wanted in zip(header, row, read)
+                    if wanted and value
+                }
             # A row that can never show is left here, before it costs memory (`keep`).
             if keep is None or keep(record):
                 rows.append(record)

@@ -56,8 +56,10 @@ class StreamReadingTests(unittest.TestCase):
             [
                 {"aw_product_id": "A1", "product_name": "Fixturon Kettle",
                  "aw_deep_link": "https://fixture.example.invalid/a1", "brand_name": "Fixturon"},
+                # "colour" is a column no rule reads (`prepared_catalogue.LEFT_OUT_COLUMNS`):
+                # since 2026-11-19 it is not kept, filled or not.
                 {"aw_product_id": "A2", "product_name": "Fixturon Lamp",
-                 "aw_deep_link": "https://fixture.example.invalid/a2", "colour": "Black"},
+                 "aw_deep_link": "https://fixture.example.invalid/a2"},
             ],
         )
         self.assertEqual(result.products[1].brand, "")
