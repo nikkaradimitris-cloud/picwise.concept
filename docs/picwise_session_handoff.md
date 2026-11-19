@@ -8,6 +8,23 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **NEXT (owner, 19/11: «Θα υλοποιηθεί η διαδικασία σε άλλη συζήτηση»): the second Awin link, road 1, cut the
+  preparation's memory.** Built and on `main` and the work branch, nothing on the server or the site:
+  `catalogue_balance.cap_limits` (`PICWISE_CAP_SHARE` 0.15, `PICWISE_CAP_CATEGORY_MAX` 12,000, in
+  `picwise-prepare.service`); `awin_adapter.second_feed_config_from_env`/`merge_feeds` (`AWIN_FEED_URL_AWIN` or
+  `AWIN_FEED_FILE_AWIN`, a shop in both read from the first by advertiser id); `awin_categories` (each Awin-format
+  row's aisle from its category words); `.github/workflows/trial-prepare.yml` + `.github/scripts/print_trial.py`
+  (by hand: the first link alone and both, each category, the shops added, peak memory). The trial of 19/11
+  (run `44561166923`): both links 347,018 products from 138 shops, peak 15.4 GB, 14.9 min; the first alone with the
+  new limit 167,583, 9.0 GB. With the site at about 10 GB that is about 25 GB at night of the server's 24 (limit 18).
+  **The step:** drop the second link's rows that can never show before they become products (not in pounds, no
+  price, out of stock, no category words, a shop the first link has, Luxefashion/Aussui-like rows), read row by
+  row, then run `trial-prepare.yml` again and compare the peak. If still too high, the owner chooses: a lower
+  `PICWISE_CAP_CATEGORY_MAX` (smaller site, same preparation) or a larger server. Only then, on the owner's «ναι»:
+  `AWIN_FEED_URL_AWIN` into the server's settings (`server-deploy.yml` writes `/etc/picwise/picwise.env`, as it does
+  `AWIN_FEED_URL`) and a deployment. The new limit cuts the first link alone to 167,583: deploy it with the second
+  link, never alone. Also asked by the owner: commission from every shop (the owner joins programmes through Claude
+  in Chrome); describe PicWise to shops as a shopping search, never «price comparison».
 - **Awin-format feeds again (owner, 19/11), the decision of 20/10 changed:** «Όταν είχα βάλει αυτόν τον κανόνα δεν
   είχαμε αναπτύξει έξυπνο search.. εφόσον το σετ μπορεί να υποστηρίξει την υποδομή της awin προχωράμε πρέπει να
   παίρνουμε προμήθεια από όλους». Awin puts the two formats in separate links («You can only select advertisers that
