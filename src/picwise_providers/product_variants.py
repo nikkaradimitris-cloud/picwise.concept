@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import re
 from typing import Any, Mapping
+from urllib.parse import urlsplit
 
 GROUP_KEYS = ("item_group_id",)
 COLOUR_KEYS = ("color", "colour")
@@ -90,3 +91,49 @@ def variant_key(raw: Mapping[str, Any], *, shop: str = "", title: str = "", bran
         return f"{shop}\x1fgroup:{group}\x1f{base}"
     brand = (brand or _value(raw, _BRAND_KEYS)).lower()
     return f"{shop}\x1fbrand:{brand}\x1f{base}"
+
+
+# The shop's own page of a product (Google's `link`): a shop selling one product in sizes
+# and colours often lists each as a row with the same page, the choice in its address
+# ("/products/runner?variant=111"). The page, less its query, is where the visitor picks
+# the size and colour (2026-11-19: the feed names a group, colour or size on 81, 108 and
+# 94 of 1,683,586 rows, so those columns tie almost nothing).
+_LINK_KEYS = ("link",)
+_VARIANT_QUERY_RE = re.compile(r"(?:^|&)(?:variant|size|colou?r|sku|option)[^=&]*=", re.IGNORECASE)
+
+
+def page_key(raw: Mapping[str, Any], *, shop: str = "") -> str:
+    """The shop and its product page (host and path, lower case, no query) a row links to;
+    "" when it links to none, or to a shop's front page."""
+    if not isinstance(raw, Mapping):
+        return ""
+    link = _value(raw, _LINK_KEYS)
+    if not link:
+        return ""
+    try:
+        parts = urlsplit(link)
+    except ValueError:
+        return ""
+    path = parts.path.rstrip("/").lower()
+    if not parts.netloc or not path:
+        return ""
+    shop = shop or _value(raw, _SHOP_KEYS)
+    return f"{shop}\x1f{parts.netloc.lower()}{path}"
+
+
+def names_a_variant(raw: Mapping[str, Any]) -> bool:
+    """Whether the row's own page address names a variant ("?variant=111", "?size=9")."""
+    link = _value(raw, _LINK_KEYS) if isinstance(raw, Mapping) else ""
+    if not link:
+        return False
+    try:
+        return bool(_VARIANT_QUERY_RE.search(urlsplit(link).query))
+    except ValueError:
+        return False
+
+
+def titles_close(first: str, second: str, *, most: int = 3) -> bool:
+    """Whether two titles differ by at most `most` words (each side's words not in the
+    other's), as a size or colour would make them differ."""
+    a, b = set(_words(first)), set(_words(second))
+    return bool(a and b) and len(a ^ b) <= most

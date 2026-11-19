@@ -48,7 +48,12 @@ from picwise_providers.normalization import (  # noqa: E402
     SALE_USED,
     sale_price_reading,
 )
-from picwise_providers.product_variants import variant_key  # noqa: E402
+from picwise_providers.product_variants import (  # noqa: E402
+    names_a_variant,
+    page_key,
+    titles_close,
+    variant_key,
+)
 
 # The most a link may send: a feed of every shop is about 1-2 GB (the server takes 2 GB).
 LIMIT = 4 * 1024**3
@@ -78,7 +83,9 @@ EXTRA_PHOTOS = "additional_image_link"
 # The shop's sale price and its dates (Google's columns), and the usual price.
 SALE_COLUMNS = ("price", "sale_price", "sale_price_effective_date")
 # What ties a product's variants, and what tells them apart (Google's columns).
-VARIANT_COLUMNS = ("item_group_id", "color", "size", "title", "brand")
+VARIANT_COLUMNS = ("item_group_id", "color", "size", "title", "brand", "link")
+# A page that many rows link to is no product's own page (a shop's list or front page).
+CROWDED_PAGE = 20
 
 
 def _shape(value: str) -> str:
@@ -115,6 +122,12 @@ def shops_of(path: Path, seen: dict | None = None) -> tuple[Counter, dict[str, s
         seen_keys: set[int] = set()
         group_base: dict[int, int] = {}
         mixed: set[int] = set()
+        with_page = 0
+        variant_address = 0
+        page_rows: Counter = Counter()
+        page_title: dict[int, str] = {}
+        page_close = Counter()
+        page_far = Counter()
         uneven = Counter()
         uneven_by = Counter()
         with_extra = 0
@@ -157,6 +170,18 @@ def shops_of(path: Path, seen: dict | None = None) -> tuple[Counter, dict[str, s
             for name in ("item_group_id", "color", "size"):
                 if fields[name].strip():
                     named[name] += 1
+            page = page_key(fields, shop=key)
+            if page:
+                with_page += 1
+                variant_address += names_a_variant(fields)
+                hashed_page = hash(page)
+                page_rows[hashed_page] += 1
+                first_title = page_title.setdefault(hashed_page, fields["title"])
+                if page_rows[hashed_page] > 1:
+                    if titles_close(first_title, fields["title"]):
+                        page_close[key] += 1
+                    else:
+                        page_far[key] += 1
             key_text = variant_key(fields, shop=key)
             if key_text:
                 variant_rows[key] += 1
@@ -197,6 +222,11 @@ def shops_of(path: Path, seen: dict | None = None) -> tuple[Counter, dict[str, s
                 joined_by=joined_by,
                 groups=len(group_base),
                 mixed=len(mixed),
+                with_page=with_page,
+                variant_address=variant_address,
+                page_close=page_close,
+                page_far=page_far,
+                crowded=[count for count in page_rows.values() if count >= CROWDED_PAGE],
             )
         return rows, names
 
@@ -267,6 +297,31 @@ def print_variants(info: dict, rows: Counter, names: dict[str, str]) -> None:
             print(f"      {count:>9,} of {rows[key]:>9,}  {shown}")
 
 
+def print_pages(info: dict, rows: Counter, names: dict[str, str]) -> None:
+    """The shops' product pages: rows that link to a page another row already links to,
+    their titles within three words of the first (a size or colour) or further apart, and
+    the pages many rows share (a list, not a product)."""
+    if "with_page" not in info:
+        return
+    close: Counter = info["page_close"]
+    far: Counter = info["page_far"]
+    crowded = info["crowded"]
+    print(
+        f"  pages: rows linking to a product page: {info['with_page']:,}; "
+        f"naming a variant in its address: {info['variant_address']:,}"
+    )
+    print(
+        f"    rows whose page another row already has: {sum(close.values()) + sum(far.values()):,} "
+        f"(titles within 3 words of the first: {sum(close.values()):,}; further apart: {sum(far.values()):,})"
+    )
+    print(f"    pages with {CROWDED_PAGE} rows or more: {len(crowded):,} ({sum(crowded):,} rows)")
+    if +close:
+        print("    the shops with the most rows joining another of their page, titles close (of the shop's rows):")
+        for key, count in (+close).most_common(15):
+            shown = names[key] if names[key] == key else f"{names[key]} ({key})"
+            print(f"      {count:>9,} of {rows[key]:>9,}  {shown}  (further apart: {far[key]:,})")
+
+
 def why(error: Exception) -> str:
     # Only the kind of failure: a message could carry the link.
     if isinstance(error, urllib.error.HTTPError):
@@ -325,6 +380,7 @@ def main() -> int:
         print_sales(info, names)
         print_uneven(info, rows, names)
         print_variants(info, rows, names)
+        print_pages(info, rows, names)
     if "new" in seen and "in use" in seen:
         only_new = [name for name in seen["new"]["columns"] if name not in seen["in use"]["columns"]]
         only_old = [name for name in seen["in use"]["columns"] if name not in seen["new"]["columns"]]

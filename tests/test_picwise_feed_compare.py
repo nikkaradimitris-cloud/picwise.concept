@@ -161,10 +161,41 @@ class CompareFeedsTests(unittest.TestCase):
         self.assertRegex(out, r"3 of\s+6\s+Fictional Shoes \(101\)")
         self.assertRegex(out, r"1 of\s+3\s+Fictional Home \(102\)")
         self.assertNotIn("Fictional Runner", out)
+        # The shops' pages: no row here links to one.
+        self.assertIn("pages: rows linking to a product page: 0; naming a variant in its address: 0", out)
         # Without the columns, it says so.
         with tempfile.TemporaryDirectory() as folder:
             done = _run(_feed(Path(folder) / "old.csv", OLD), None)
         self.assertIn("variants: no item_group_id, color or size among its columns", done.stdout)
+
+    def test_the_rows_sharing_a_product_page_are_counted(self) -> None:
+        # 2026-11-19: the feed names a group, colour or size on almost no row; a shop's
+        # product page, the size and colour chosen on it, may tie them instead.
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "feed.csv"
+            text = io.StringIO()
+            writer = csv.writer(text)
+            writer.writerow(["id", "advertiser_id", "advertiser_name", "title", "brand", "price", "link"])
+            page = "https://shoes.example.invalid/products/runner"
+            for number, size in enumerate(("8", "9", "10")):
+                writer.writerow([f"r{number}", "101", "Fictional Shoes", f"Fictional Runner Size {size}", "Fictional",
+                                 "40.00 GBP", f"{page}?variant={number}"])
+            # The same page, a title far apart: counted apart.
+            writer.writerow(["x1", "101", "Fictional Shoes", "Fictional Garden Hose Reel 50m", "Fictional",
+                             "20.00 GBP", page])
+            # A front page: no product's page.
+            writer.writerow(["h1", "102", "Fictional Home", "Fictional Mug", "Fictional", "5.00 GBP",
+                             "https://home.example.invalid/"])
+            path.write_text(text.getvalue(), encoding="utf-8")
+            done = _run(path.resolve().as_uri(), None)
+        out = done.stdout
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn("pages: rows linking to a product page: 4; naming a variant in its address: 3", out)
+        self.assertIn("rows whose page another row already has: 3 (titles within 3 words of the first: 2; "
+                      "further apart: 1)", out)
+        self.assertIn("pages with 20 rows or more: 0 (0 rows)", out)
+        self.assertRegex(out, r"2 of\s+4\s+Fictional Shoes \(101\)  \(further apart: 1\)")
+        self.assertNotIn("runner", out.lower())
 
     def test_a_new_feed_lacking_an_old_shop_fails_and_names_it(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
