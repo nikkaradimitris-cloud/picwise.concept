@@ -5,7 +5,7 @@ import math
 import re
 import threading
 from array import array
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from collections import Counter
 from dataclasses import dataclass, field, replace
 from functools import lru_cache
@@ -1569,9 +1569,9 @@ class _PricedProduct:
     # `same_product_key`: a GTIN key, a brand and MPN key, or "".
     key: str
     shops: int
-    # The titles of its shop's listings of it, its own first: its variants at the shop
-    # (`variant_names.variant_values`; owner, 2026-11-19).
-    variant_titles: tuple[str, ...] = ()
+    # All its offers, cheapest first, when it has more than one: its shop's titles name
+    # its variants at the shop for the cards shown (`_variant_titles`; owner, 2026-11-19).
+    offers: Sequence[ProviderProduct] = ()
 
 
 def _word_forms(word: str) -> tuple[str, ...]:
@@ -1997,6 +1997,16 @@ def _join_variants(
     return joined
 
 
+def _variant_titles(entry: _PricedProduct) -> tuple[str, ...]:
+    """The titles of the shop's listings of a product shown, its own first: another
+    shop's listings of it are the same variant, under that shop's words."""
+    own_shop = _merchant_identity(entry.product)
+    titles = dict.fromkeys(
+        str(offer.title or "") for offer in entry.offers if _merchant_identity(offer) == own_shop
+    )
+    return tuple(titles)[:TITLES_READ]
+
+
 def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduct]:
     """The answer's products, each once at its cheapest offer, cheapest first.
 
@@ -2071,12 +2081,6 @@ def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduc
         seen_cards.add(card)
         if product_id:
             seen_ids.add(product_id)
-        variant_titles: tuple[str, ...] = ()
-        if len(offers) > 1:
-            own_shop = shop_of(cheapest)
-            variant_titles = tuple(
-                dict.fromkeys(str(offer.title or "") for offer in offers if shop_of(offer) == own_shop)
-            )[:TITLES_READ]
         ordered.append(
             _PricedProduct(
                 product=cheapest,
@@ -2085,7 +2089,7 @@ def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduc
                 # The shops the feed names for its offers; an unnamed one is not counted
                 # as another shop: "Lowest price of 2 shops" must not rest on a guess.
                 shops=max(1, len({shop_of(offer) for offer in offers} - {""})),
-                variant_titles=variant_titles if len(variant_titles) > 1 else (),
+                offers=offers if len(offers) > 1 else (),
             )
         )
     return ordered
@@ -2765,8 +2769,8 @@ def _price_first_result(
     variant_lists = tuple(
         (str(entry.product.provider_product_id or "").strip(), kinds)
         for entry in first_page + opened
-        if entry.variant_titles
-        for kinds in (variant_values(entry.variant_titles),)
+        if entry.offers
+        for kinds in (variant_values(_variant_titles(entry)),)
         if kinds
     )
 
