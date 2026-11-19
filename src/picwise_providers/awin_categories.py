@@ -110,6 +110,23 @@ _COMPILED = tuple((_compile(words), aisle) for words, aisle in _RULES)
 # category ("Printer Consumables", "Laptops", "Hubs & Switches"), then these, then the
 # aisles above.
 _DEEPER: tuple[tuple[str, str], ...] = (
+    # The parts and accessories of a thing first, before the thing's own name (live 19/11:
+    # "Kettle Leads" went to the kitchen, "Feed Tyres" of printers to cars' tyres, "Paint
+    # Kettles" to a shelf where the title's kettle stood unchallenged).
+    ("lead,leads,cable,cables,adapter,adapters,adaptor,adaptors,connector,connectors,extension lead,extension leads",
+     "Electronics > Electronics Accessories > Cables"),
+    ("feed tyre,feed tyres,feed tire,feed tires,feed roller,feed rollers,pick roller,pick rollers,pickup roller,"
+     "pickup rollers,fuser,fusers,drum unit,drum units,maintenance kit,maintenance kits,printer part,printer parts,"
+     "printer spare,printer spares,printer accessories",
+     "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories"),
+    ("drill bit,drill bits,screwdriver bit,screwdriver bits,router bit,router bits,saw blade,saw blades,hole saw,"
+     "hole saws,holesaw,holesaws,chisel,chisels,collet,collets,tool accessories,power tool accessories,pilot drill,pilot drills",
+     "Hardware > Tool Accessories"),
+    ("paint,paints,painting,decorating,decorator,paint kettle,paint kettles,paint brush,paint brushes",
+     "Hardware > Building Consumables > Painting Consumables"),
+    ("antenna,antennas,aerial,aerials", "Electronics > Video"),
+    ("kettle,kettles,electric kettle,electric kettles", "Home & Garden > Kitchen & Dining > Kitchen Appliances > Electric Kettles"),
+    ("kitchen appliance,kitchen appliances,small appliance,small appliances", "Home & Garden > Kitchen & Dining > Kitchen Appliances"),
     ("tyre tyres tire tires", "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems > Motor Vehicle Tires"),
     ("car part,car parts,motorsport,exhaust,4x4,motor vehicle", "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts"),
     ("laptop bag,laptop case,laptop sleeve,peripheral,peripherals,webcam,webcams", "Electronics > Electronics Accessories > Computer Accessories"),
@@ -154,31 +171,52 @@ def _leaves() -> dict[str, str]:
 _DEEPER_COMPILED = tuple((_compile(words), shelf) for words, shelf in _DEEPER)
 
 
-def shelf_for(text: str) -> str:
-    """The deepest Google shelf the words name: a shelf of that very name, else the rules."""
+def _shelf_of_part(part: str) -> tuple[str, bool]:
+    """A piece's shelf, and whether it is precise: a shelf of that very name or one of
+    the rules above (True), or only an aisle (False)."""
+    shelf = _leaves().get(_leaf_key(part))
+    if shelf:
+        return shelf, True
+    for pattern, shelf in _DEEPER_COMPILED:
+        if pattern.search(part):
+            return shelf, True
+    return aisle_for(part), False
+
+
+def shelf_detail(text: str) -> tuple[str, bool]:
+    """The deepest Google shelf the words name, read from the most specific piece of a
+    shop's path first ("Printer Parts > Feed Tyres": "Feed Tyres"), the whole words last;
+    and whether it is precise."""
     words = " ".join(str(text or "").split())
     if not words:
-        return ""
-    for part in [words] + [piece.strip() for piece in re.split(r"[>/|]", words)[::-1] if piece.strip()]:
-        shelf = _leaves().get(_leaf_key(part))
+        return "", False
+    pieces = [piece.strip() for piece in re.split(r"[>/|]", words)[::-1] if piece.strip()]
+    for part in pieces + ([words] if len(pieces) != 1 else []):
+        shelf, precise = _shelf_of_part(part)
         if shelf:
-            return shelf
-    for pattern, shelf in _DEEPER_COMPILED:
-        if pattern.search(words):
-            return shelf
-    return aisle_for(words)
+            return shelf, precise
+    return "", False
+
+
+def shelf_for(text: str) -> str:
+    return shelf_detail(text)[0]
+
+
+def row_shelf_detail(raw: Mapping[str, Any]) -> tuple[str, bool]:
+    """The Google shelf of an Awin-format row, from its most specific category column that
+    names one, and whether it is precise; ("", False) when the row has Google's own or none
+    fits."""
+    if str(raw.get("google_product_category") or "").strip():
+        return "", False
+    for column in CATEGORY_COLUMNS:
+        shelf, precise = shelf_detail(str(raw.get(column) or ""))
+        if shelf:
+            return shelf, precise
+    return "", False
 
 
 def row_shelf(raw: Mapping[str, Any]) -> str:
-    """The Google shelf of an Awin-format row: its most specific category column that
-    names one; "" when the row has Google's own or none fits."""
-    if str(raw.get("google_product_category") or "").strip():
-        return ""
-    for column in CATEGORY_COLUMNS:
-        shelf = shelf_for(str(raw.get(column) or ""))
-        if shelf:
-            return shelf
-    return ""
+    return row_shelf_detail(raw)[0]
 
 
 def aisle_for(text: str) -> str:
