@@ -117,3 +117,21 @@ class AisleTests(unittest.TestCase):
         by_id = {p.provider_product_id: p for p in result.products}
         self.assertEqual(by_id["a1"].category_text, "Electronics > Computers > Laptops")
         self.assertEqual(by_id["g1"].category_text, "Home & Garden > Kitchen & Dining > Kitchen Appliances")
+
+
+class SecondRowKeepTests(unittest.TestCase):
+    def test_rows_that_can_never_show_are_not_read(self) -> None:
+        folder = Path(tempfile.mkdtemp())
+        first = _write(folder / "google.csv", GOOGLE, [_google_row("g1", "101", "Kitchen Shop")])
+        rows = [_awin_row(f"a{i}", "201", "Laptop Shop") for i in range(6)]
+        rows[1][5] = "EUR"            # another currency
+        rows[2][4] = "0"              # no price
+        rows[3][9] = "0"              # out of stock
+        rows[4][10] = ""              # no category words
+        rows[5][2] = "101"            # a shop the first link has
+        second = _write(folder / "awin.csv", AWIN, rows)
+        awin_adapter.clear_awin_feed_parse_cache()
+        with mock.patch.dict(os.environ, {"AWIN_FEED_FILE_AWIN": second}):
+            result = awin_adapter.load_awin_provider_feed(ProviderFeedConfig(provider_key="awin", feed_file=first))
+        awin_adapter.clear_awin_feed_parse_cache()
+        self.assertEqual([p.provider_product_id for p in result.products], ["g1", "a0"])

@@ -196,7 +196,7 @@ def _open_feed_text(path: str, *, gzipped: bool, encoding: str) -> IO[str]:
     return io.TextIOWrapper(binary, encoding=encoding, newline="\n")
 
 
-def _read_feed_rows(path: str) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
+def _read_feed_rows(path: str, keep=None) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
     try:
         gzipped = _is_gzip_file(path)
     except OSError as exc:
@@ -216,7 +216,7 @@ def _read_feed_rows(path: str) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
             with _open_feed_text(path, gzipped=gzipped, encoding=encoding) as text:
                 if head.lstrip()[0] in "{[":
                     return _parse_json_rows(text.read())
-                return _parse_csv_stream(text)
+                return _parse_csv_stream(text, keep)
         except UnicodeDecodeError:
             continue
         except (OSError, EOFError, zlib.error) as exc:
@@ -227,7 +227,7 @@ def _read_feed_rows(path: str) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
     return [], ("feed_decode_failed",)
 
 
-def _parse_csv_stream(text: IO[str]) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
+def _parse_csv_stream(text: IO[str], keep=None) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
     # Read as `csv.DictReader` reads it -- blank lines skipped, a repeated column name
     # taking its last value -- with only the filled fields kept, and each row made in one
     # step. A row with a filled field beyond the header's columns is left out whole: its
@@ -249,9 +249,12 @@ def _parse_csv_stream(text: IO[str]) -> tuple[list[dict[str, Any]], tuple[str, .
             if len(row) > width and any(field.strip() for field in row[width:]):
                 continue
             if repeated_names:
-                rows.append({key: value for key, value in dict(zip(header, row)).items() if value})
+                record = {key: value for key, value in dict(zip(header, row)).items() if value}
             else:
-                rows.append({key: value for key, value in zip(header, row) if value})
+                record = {key: value for key, value in zip(header, row) if value}
+            # A row that can never show is left here, before it costs memory (`keep`).
+            if keep is None or keep(record):
+                rows.append(record)
         return rows, tuple()
     except csv.Error as exc:
         return [], (f"csv_parse_failed:{exc.__class__.__name__}",)
@@ -337,6 +340,42 @@ def _with_aisle(product: ProviderProduct) -> ProviderProduct:
     return replace(product, category_text=f"{aisle} > {own}" if own else aisle)
 
 
+_OUT_OF_STOCK = {"0", "no", "n", "false", "out of stock", "out_of_stock", "outofstock", "sold out"}
+
+
+def second_row_keep(first: ProviderParseResult):
+    """Which of the second link's rows are read at all (2026-11-19: both links together
+    passed the preparation's memory on the server): only rows that could show, in pounds,
+    with a price, in stock or saying nothing, with category words, from a shop the first
+    link does not have. The rest never become products, and cost nothing."""
+    shops = {shop_key(product) for product in first.products} if first.status == "provider_feed_loaded" else set()
+    shops.discard("")
+
+    def keep(row: Mapping[str, Any]) -> bool:
+        currency = str(row.get("currency") or "").strip().upper()
+        if currency and currency != "GBP":
+            return False
+        price = str(row.get("search_price") or row.get("store_price") or row.get("price") or "").strip()
+        try:
+            if float(price.replace(",", "").split()[0]) <= 0:
+                return False
+        except (ValueError, IndexError):
+            return False
+        stock = str(row.get("in_stock") or row.get("stock_status") or "").strip().lower()
+        if stock in _OUT_OF_STOCK:
+            return False
+        if not any(str(row.get(column) or "").strip() for column in
+                   ("merchant_product_category_path", "category_name", "merchant_category")):
+            return False
+        for key in _SHOP_ID_KEYS:
+            value = str(row.get(key) or "").strip()
+            if value:
+                return f"id:{value}" not in shops
+        return True
+
+    return keep
+
+
 def merge_feeds(first: ProviderParseResult, second: ProviderParseResult) -> ProviderParseResult:
     """The first link's products, then the second's from shops the first does not have
     and with ids the first does not use. The first decides when the second fails."""
@@ -376,7 +415,7 @@ def load_awin_provider_feed(
             return cached
     parsed = _load_awin_provider_feed_uncached(resolved)
     if second is not None:
-        parsed = merge_feeds(parsed, _load_awin_provider_feed_uncached(second))
+        parsed = merge_feeds(parsed, _load_awin_provider_feed_uncached(second, keep=second_row_keep(parsed)))
     if cache_key is not None and parsed.status == "provider_feed_loaded":
         if len(_PARSE_CACHE) >= _PARSE_CACHE_MAX_ENTRIES:
             _PARSE_CACHE.clear()
@@ -384,7 +423,7 @@ def load_awin_provider_feed(
     return parsed
 
 
-def _load_awin_provider_feed_uncached(resolved: ProviderFeedConfig) -> ProviderParseResult:
+def _load_awin_provider_feed_uncached(resolved: ProviderFeedConfig, keep=None) -> ProviderParseResult:
     if not resolved.is_configured():
         return ProviderParseResult(
             status="provider_feed_not_configured",
@@ -402,7 +441,7 @@ def _load_awin_provider_feed_uncached(resolved: ProviderFeedConfig) -> ProviderP
             parse_errors=tuple(load_errors or ("feed_load_failed",)),
         )
 
-    rows, parse_errors = _read_feed_rows(path)
+    rows, parse_errors = _read_feed_rows(path, keep)
     if parse_errors:
         return ProviderParseResult(
             status="provider_feed_parse_failed",
