@@ -16,7 +16,10 @@ never printed; nothing on the server or the site changes. Also counted (2026-11-
 the feed in use: the rows that carry a sale price, how many the site takes as the shop's
 price tonight, and why each other one is left (`normalization.sale_price_reading`,
 the site's own rule), with the shapes of the values left as unreadable (digits as 9),
-never a row. Exits 1 when the link in use
+never a row; and the rows whose number of fields is not the header's, by shop: the site
+reads such a row field by field against the header (`awin_adapter._parse_csv_stream`), so
+its fields may stand in the wrong columns (2026-11-19: sale prices reading "Union Jack").
+Exits 1 when the link in use
 cannot be read, or the new one cannot, or lacks or shrinks a shop of the one in use.
 """
 from __future__ import annotations
@@ -96,6 +99,8 @@ def shops_of(path: Path, seen: dict | None = None) -> tuple[Counter, dict[str, s
         in_force_shops = Counter()
         shapes: dict[str, Counter] = {SALE_PRICE_UNREAD: Counter(), SALE_DATES_UNREAD: Counter()}
         extra_at = column(EXTRA_PHOTOS)
+        uneven = Counter()
+        uneven_by = Counter()
         with_extra = 0
         extra_links = Counter()
         id_at = column("advertiser_id", "merchant_id")
@@ -111,6 +116,9 @@ def shops_of(path: Path, seen: dict | None = None) -> tuple[Counter, dict[str, s
             name = " ".join(row[name_at].split()) if name_at is not None and name_at < len(row) else ""
             key = ident or name or "(no shop named)"
             rows[key] += 1
+            if len(row) != len(header):
+                uneven[key] += 1
+                uneven_by["more" if len(row) > len(header) else "fewer"] += 1
             names.setdefault(key, name or key)
             if sale_at["sale_price"] is not None:
                 fields = {
@@ -143,6 +151,8 @@ def shops_of(path: Path, seen: dict | None = None) -> tuple[Counter, dict[str, s
                 sale_shops=sale_shops,
                 in_force_shops=in_force_shops,
                 shapes=shapes,
+                uneven=uneven,
+                uneven_by=uneven_by,
             )
         return rows, names
 
@@ -170,6 +180,19 @@ def print_sales(info: dict, names: dict[str, str]) -> None:
         for key, count in info["sale_shops"].most_common(15):
             shown = names[key] if names[key] == key else f"{names[key]} ({key})"
             print(f"    {count:>9,}  {info['in_force_shops'][key]:>9,}  {shown}")
+
+
+def print_uneven(info: dict, rows: Counter, names: dict[str, str]) -> None:
+    """The rows whose number of fields is not the header's, by shop."""
+    uneven: Counter = info.get("uneven") or Counter()
+    by: Counter = info.get("uneven_by") or Counter()
+    print(
+        f"  rows whose fields do not match the header: {sum(uneven.values()):,} "
+        f"({by['more']:,} with more fields, {by['fewer']:,} with fewer)"
+    )
+    for key, count in uneven.most_common(15):
+        shown = names[key] if names[key] == key else f"{names[key]} ({key})"
+        print(f"    {count:>9,} of {rows[key]:>9,}  {shown}")
 
 
 def why(error: Exception) -> str:
@@ -228,6 +251,7 @@ def main() -> int:
         else:
             print(f"  {EXTRA_PHOTOS}: not among its columns")
         print_sales(info, names)
+        print_uneven(info, rows, names)
     if "new" in seen and "in use" in seen:
         only_new = [name for name in seen["new"]["columns"] if name not in seen["in use"]["columns"]]
         only_old = [name for name in seen["in use"]["columns"] if name not in seen["new"]["columns"]]

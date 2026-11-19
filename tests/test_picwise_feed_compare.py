@@ -105,15 +105,20 @@ class CompareFeedsTests(unittest.TestCase):
             writer.writerow(["a2", "101", "Fictional Home", "40.00 GBP", "", ""])
             writer.writerow(["a3", "102", "Fictional Rings", "40.00 GBP", "40.00 GBP", ""])
             writer.writerow(["a4", "102", "Fictional Rings", "40.00 GBP", "29.99 GBP", "from 1 Nov"])
+            # A row with one field too many: its fields stand in the wrong columns, and its
+            # usual price read as its sale price.
+            writer.writerow(["a5", "102", "Fictional Rings", "Union Jack", "40.00 GBP", "", ""])
             path.write_text(text.getvalue(), encoding="utf-8")
             done = _run(path.resolve().as_uri(), None)
         out = done.stdout
         self.assertEqual(done.returncode, 0, done.stderr)
-        self.assertIn("rows with a sale price: 3; the shop's price tonight by the site's rule: 1", out)
+        self.assertIn("rows with a sale price: 4; the shop's price tonight by the site's rule: 2", out)
+        self.assertIn("rows whose fields do not match the header: 1 (1 with more fields, 0 with fewer)", out)
+        self.assertRegex(out, r"1 of\s+3\s+Fictional Rings \(102\)")
         self.assertIn("left, not_lower: 1", out)
         self.assertIn("left, dates_unread: 1", out)
         self.assertIn("dates_unread, written as 'from 9 Nov': 1", out)
-        self.assertRegex(out, r"2\s+0\s+Fictional Rings \(102\)")
+        self.assertRegex(out, r"3\s+1\s+Fictional Rings \(102\)")
         self.assertRegex(out, r"1\s+1\s+Fictional Home \(101\)")
         # Without the column, it says so.
         with tempfile.TemporaryDirectory() as folder:
