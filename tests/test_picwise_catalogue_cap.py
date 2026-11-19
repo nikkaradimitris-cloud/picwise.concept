@@ -111,6 +111,23 @@ class CapSizeTests(unittest.TestCase):
             self.assertEqual(result.by_category[f"home & garden > decor {SMALL.index(name)}"], (20, 20))
         self.assertEqual(result.by_category["apparel & accessories > jewelry"][1], result.size)
 
+    def test_a_category_keeps_no_more_than_its_most_whatever_the_share(self) -> None:
+        # Owner, 2026-11-19: «μέγιστο όριο ανά κατηγορία», set on the server.
+        sizes = {JEWELLERY: 300, "Apparel & Accessories > Clothing > Shirts": 40, **{name: 20 for name in SMALL}}
+        products = _catalogue(sizes)
+        free = cap_catalogue(products, [frozenset()] * len(products), feed_ctx=_context(products))
+        held = cap_catalogue(products, [frozenset()] * len(products), feed_ctx=_context(products), category_max=25)
+        self.assertGreater(free.size, 25)
+        self.assertEqual(held.size, 25)
+        self.assertEqual(held.category_max, 25)
+        self.assertEqual(held.by_category["apparel & accessories > jewelry"], (300, 25))
+        self.assertEqual(held.by_category["apparel & accessories > clothing"], (40, 25))
+        for name in SMALL:
+            self.assertEqual(held.by_category[f"home & garden > decor {SMALL.index(name)}"], (20, 20))
+        too_few = _catalogue({JEWELLERY: 50})
+        alone = cap_catalogue(too_few, [frozenset()] * len(too_few), feed_ctx=_context(too_few), category_max=30)
+        self.assertEqual(alone.by_category["apparel & accessories > jewelry"], (50, 30))
+
     def test_more_products_elsewhere_raise_the_cap_and_fewer_lower_it(self) -> None:
         base = {JEWELLERY: 300, **{name: 20 for name in SMALL}}
         more = {JEWELLERY: 300, **{name: 30 for name in SMALL}}

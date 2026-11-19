@@ -88,6 +88,8 @@ class CapResult:
     kept_by_missing_signs: dict[int, int] = field(default_factory=dict)
     kept_in_several_shops: int = 0
     kept_from_before: int = 0
+    # The most a category keeps whatever the share allows (`cap_catalogue`), when set.
+    category_max: int | None = None
     # Per category over the cap: the lowest, the middle and the highest price, of all
     # its products and of those kept.
     prices: dict[str, dict[str, tuple[float, float, float] | None]] = field(default_factory=dict)
@@ -222,15 +224,22 @@ def cap_catalogue(
     feed_ctx: FeedAvailabilityContext,
     kept_before: Collection[str] = frozenset(),
     share: float = CAP_SHARE,
+    category_max: int | None = None,
 ) -> CapResult:
     """Which of `products` (those a card can show, `kinds` each one's kinds) a cap of
     `share` a category keeps (module docstring); `kept_before` holds the row keys the
-    previous night kept."""
+    previous night kept. `category_max`, when given, is the most a category keeps
+    whatever the share allows: the point where a category counts as full (owner,
+    2026-11-19), so the server's room goes to filling the other categories evenly."""
     keys = [row_key(product) for product in products]
     categories = [category_of(product) for product in products]
     parts = joined_parts(categories, [part_of(product, product_kinds) for product, product_kinds in zip(products, kinds)])
     sizes = Counter(categories)
     size = capped_size(list(sizes.values()), share)
+    # The most a category keeps holds only where a category has more: below it, the share
+    # alone decides, as before (owner, 2026-11-19).
+    if category_max is not None and category_max > 0 and max(sizes.values(), default=0) > category_max:
+        size = category_max if size is None else min(size, category_max)
     shops = [shop_of(product) for product in products]
     keep = [True] * len(products)
     over = {name for name, count in sizes.items() if size is not None and count > size}
@@ -321,6 +330,7 @@ def cap_catalogue(
         kept_by_missing_signs=dict(sorted(missing_signs.items())),
         kept_in_several_shops=several_shops,
         kept_from_before=from_before,
+        category_max=category_max if category_max and category_max > 0 else None,
         prices=prices,
     )
 
@@ -334,6 +344,7 @@ def cap_summary(result: CapResult, *, listed: int = 10) -> dict[str, Any]:
 
     return {
         "share": result.share,
+        "category_max": result.category_max,
         "size": result.size,
         "products": len(result.keep),
         "kept": result.kept,
