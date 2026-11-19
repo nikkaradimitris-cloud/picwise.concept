@@ -34,7 +34,9 @@ a decision came about.
   calls a minute, ~$0.0013 a call; live, "alienware aw420k keyboard" one card. Then (16:xx Athens) the card
   names its variants ("Colours at the shop: …", `variant_names.variant_values`), a picture sent first;
   then rule 3 (`_cheaper_elsewhere`): another shop's cheaper variant a card of its own, marked on the
-  family's card ("White, Size 9 is £35.00 at Other Shoes"). Open: `catalogue_cap` counts rows. Next: the card listing the variants (as drawn for the owner), then rule 3, then
+  family's card ("White, Size 9 is £35.00 at Other Shoes"), deployed 15:47 UTC (`1aebe8c`). Open:
+  `catalogue_cap` counts rows. **The next push to the site branch also deploys the other session's cap
+  limits (`d3c5b49`, "Not deployed"), merged into the work branch: ask the owner first.** Next: the card listing the variants (as drawn for the owner), then rule 3, then
   `catalogue_cap` counting products; then the series' steps 2-4.
 - **19/11 afternoon, the owner's series of work, step 1 of 4 deployed: one card per product** (the owner:
   «Ανέβασε προοδευτικά να τελειώσουμε τις εργασίες»; the series agreed on 19/11 at night: 1. one card per
