@@ -51,7 +51,7 @@ from .product_variants import (
     words_close,
 )
 from .variant_families import families_of
-from .variant_names import TITLES_READ, variant_values
+from .variant_names import TITLES_READ, variant_label, variant_values
 from .product_identity import same_product_key
 from .product_condition import (
     non_new_condition,
@@ -482,6 +482,9 @@ class ProviderProductSelectionResult:
     # variants: the card names them ("Colours at the shop: Black, White"; owner,
     # 2026-11-19, `variant_names.variant_values`).
     variant_lists: tuple[tuple[str, tuple[tuple[str, tuple[str, ...]], ...]], ...] = field(default_factory=tuple)
+    # (product id, ((variant, price, shop), ...)) for shown products with a variant
+    # another shop sells cheaper (owner's rule 3): "Green is £18.00 at Shop A".
+    variant_marks: tuple[tuple[str, tuple[tuple[str, str, str], ...]], ...] = field(default_factory=tuple)
     # The products the AI layer reads for this answer, with their prices, in the usual
     # order (`candidates_signature`); "" for an answer that is not price first.
     candidates_signature: str = ""
@@ -525,6 +528,9 @@ class ProviderProductSelectionResult:
             "variant_lists": [
                 [product_id, [[kind, list(values)] for kind, values in kinds]]
                 for product_id, kinds in self.variant_lists
+            ],
+            "variant_marks": [
+                [product_id, [list(mark) for mark in marks]] for product_id, marks in self.variant_marks
             ],
             "partially_matched_terms": [list(row) for row in self.partially_matched_terms],
             "understood_concept": self.understood_concept,
@@ -1572,6 +1578,9 @@ class _PricedProduct:
     # All its offers, cheapest first, when it has more than one: its shop's titles name
     # its variants at the shop for the cards shown (`_variant_titles`; owner, 2026-11-19).
     offers: Sequence[ProviderProduct] = ()
+    # Its variants another shop sells cheaper, each a card of its own: (the variant, the
+    # price, the shop), marked on its card (owner's rule 3, `_cheaper_elsewhere`).
+    marks: tuple[tuple[str, str, str], ...] = ()
 
 
 def _word_forms(word: str) -> tuple[str, ...]:
@@ -1912,6 +1921,17 @@ def _merchant_identity(product: ProviderProduct) -> str:
 def _join_variants(
     groups: dict[str, list[ProviderProduct]], shop_of: Callable[[ProviderProduct], str] | None = None
 ) -> dict[str, list[ProviderProduct]]:
+    """`_variant_members`, each product's offers: those of all its members, cheapest
+    member first."""
+    members = _variant_members(groups, shop_of)
+    if all(len(joined) == 1 for joined in members.values()):
+        return groups
+    return {root: [offer for member in joined for offer in groups[member]] for root, joined in members.items()}
+
+
+def _variant_members(
+    groups: dict[str, list[ProviderProduct]], shop_of: Callable[[ProviderProduct], str] | None = None
+) -> dict[str, list[str]]:
     """One card per product: its sizes and colours are chosen at the shop (owner,
     2026-11-19: «βλέπει τα νούμερα και τα χρώματα στο κατάστημα και όχι σε μας»).
 
@@ -1925,7 +1945,8 @@ def _join_variants(
     put them in one family, a colour or a number apart (`variant_families.families_of`;
     owner, 2026-11-19: «εκεί εμπλέκεται και το σύστημα ai»). The product keeps the place,
     the price and the card of its cheapest; its offers are all of theirs, so "Lowest price
-    of N shops" counts every shop selling it in any size or colour.
+    of N shops" counts every shop selling it in any size or colour. Returned: each
+    product's members (the keys of `groups`), the cheapest first, in price order.
     """
     families = families_of()
     shop_of = shop_of or _merchant_identity
@@ -1989,12 +2010,84 @@ def _join_variants(
                 kept, joined = sorted((root(other), root(group)), key=rank.__getitem__)
                 if kept != joined:
                     parent[joined] = kept
-    if not parent:
-        return groups
-    joined: dict[str, list[ProviderProduct]] = {}
+    joined: dict[str, list[str]] = {}
     for group in order:
-        joined.setdefault(root(group), []).extend(groups[group])
+        joined.setdefault(root(group), []).append(group)
     return joined
+
+
+def _price_text(amount: float, currency: str) -> str:
+    sign = {"GBP": "\u00a3", "EUR": "\u20ac", "USD": "$"}.get(currency.upper(), "")
+    return f"{sign}{amount:,.2f}" if sign else f"{amount:,.2f} {currency}".strip()
+
+
+def _cheaper_elsewhere(
+    members: list[str],
+    groups: dict[str, list[ProviderProduct]],
+    prices: dict[int, float],
+    shop_of: Callable[[ProviderProduct], str],
+) -> tuple[list[ProviderProduct], list[list[ProviderProduct]], list[tuple[str, str, str]]]:
+    """The owner's rule 3 (2026-11-19): «Όταν ένα κατάστημα έχει όλες τις παραλλαγές ... και
+    ταυτόχρονα υπάρχει άλλο κατάστημα που έχει μόνο μία παραλλαγή αλλά αυτή είναι
+    φθηνότερη τότε δείχνουμε στην κάρτα που διαθέτει τις παραλλαγές ... πράσινο
+    φθηνότερο στο (α) κατάστημα, το α κατάστημα βγαίνει πιο πάνω στην αναζήτηση με το
+    πράσινο εφόσον έχει μόνο το πράσινο».
+
+    A product's members are its variants, each the offers of one shop or of several with
+    one barcode. The shop with the most variants is the card's; another shop selling one
+    of them alone, cheaper than the card's shop sells it, is a card of its own (cheaper,
+    so higher), and the card marks it ("Green is £18.00 at Shop A"). Returned: the card's
+    offers, the other cards' offers, and the marks (the variant, the price, the shop).
+    Another shop's variant at the card shop's price or dearer stays in the card, as one
+    product sold by several shops ("Lowest price of N shops"); a shop with variants of its
+    own stays too."""
+    offers = [offer for member in members for offer in groups[member]]
+    if len(members) < 2:
+        return offers, [], []
+    variants: dict[str, set[str]] = {}
+    for member in members:
+        for offer in groups[member]:
+            variants.setdefault(shop_of(offer), set()).add(member)
+    if len(variants) < 2:
+        return offers, [], []
+    first_seen = {shop: index for index, shop in enumerate(shop_of(offer) for offer in offers)}
+    main = max(variants, key=lambda shop: (len(variants[shop]), -first_seen[shop]))
+    if len(variants[main]) < 2 or not main:
+        return offers, [], []
+    own_titles = tuple(dict.fromkeys(str(offer.title or "") for offer in offers if shop_of(offer) == main))
+    split: set[int] = set()
+    cards: list[list[ProviderProduct]] = []
+    marks: list[tuple[str, str, str]] = []
+    for shop, held in variants.items():
+        if shop == main or len(held) != 1 or not shop:
+            continue
+        member = next(iter(held))
+        theirs = [offer for offer in groups[member] if shop_of(offer) == shop]
+        ours = [offer for offer in groups[member] if shop_of(offer) == main]
+        if not theirs or not ours or prices[id(theirs[0])] >= prices[id(ours[0])]:
+            continue
+        # The variant, cheaper at another shop: a card of its own, every shop selling it.
+        cards.append(list(groups[member]))
+        split.update(id(offer) for offer in theirs)
+        label = variant_label(own_titles, str(ours[0].title or ""))
+        if label:
+            marks.append(
+                (
+                    label,
+                    _price_text(prices[id(theirs[0])], str(theirs[0].currency or "")),
+                    extract_merchant_name(theirs[0].raw if isinstance(theirs[0].raw, dict) else {})
+                    or shop,
+                )
+            )
+    if not split:
+        return offers, [], []
+    kept = [offer for offer in offers if id(offer) not in split]
+
+    def order(offer: ProviderProduct) -> tuple[float, str, str]:
+        return (prices[id(offer)], _normalize_dedupe_title(offer.title), str(offer.provider_product_id))
+
+    # Each card's offers cheapest first: its card is its cheapest.
+    return sorted(kept, key=order), [sorted(card, key=order) for card in cards], marks
 
 
 def _variant_titles(entry: _PricedProduct) -> tuple[str, ...]:
@@ -2045,15 +2138,11 @@ def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduc
 
     priced.sort(key=order_key)
     groups: dict[str, list[ProviderProduct]] = {}
-    group_price: dict[str, float] = {}
-    for product, price, _currency in priced:
+    for product, _price, _currency in priced:
         raw = product.raw if isinstance(product.raw, dict) else {}
         key = same_product_key(raw, brand=str(product.brand or ""))
         group = key or f"offer:{product.provider_product_id}:{id(product)}"
-        if group not in groups:
-            groups[group] = []
-            group_price[group] = price
-        groups[group].append(product)
+        groups.setdefault(group, []).append(product)
     shops: dict[int, str] = {}
 
     def shop_of(product: ProviderProduct) -> str:
@@ -2062,18 +2151,41 @@ def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduc
             found = shops[id(product)] = _merchant_identity(product)
         return found
 
-    groups = _join_variants(groups, shop_of)
+    members = _variant_members(groups, shop_of)
+    prices = {id(product): price for product, price, _currency in priced}
+    # Each card: its key, its offers (cheapest first) and the marks of its variants
+    # cheaper at another shop (rule 3, `_cheaper_elsewhere`).
+    cards: list[tuple[str, list[ProviderProduct], list[tuple[str, str, str]]]] = []
+    for root, joined in members.items():
+        if len(joined) == 1:
+            cards.append((root, groups[root], []))
+            continue
+        offers, others, marks = _cheaper_elsewhere(joined, groups, prices, shop_of)
+        cards.append((root, offers, marks))
+        cards.extend((f"apart:{root}:{index}", other, []) for index, other in enumerate(others))
+    if any(key.startswith("apart:") for key, _offers, _marks in cards):
+        # A variant cheaper elsewhere goes before the card that marks it.
+        cards.sort(
+            key=lambda card: (
+                prices[id(card[1][0])],
+                _normalize_dedupe_title(card[1][0].title),
+                str(card[1][0].provider_product_id),
+            )
+        )
 
     ordered: list[_PricedProduct] = []
     seen_cards: set[tuple[str, float, str]] = set()
     seen_ids: set[str] = set()
-    # Groups were created in price order, so the first offer of each is its cheapest.
-    for group, offers in groups.items():
+    # Cards are in price order, and the first offer of each is its cheapest.
+    for group, offers, marks in cards:
+        if not offers:
+            continue
         cheapest = offers[0]
+        price = prices[id(cheapest)]
         product_id = str(cheapest.provider_product_id or "").strip()
         card = (
             _normalize_dedupe_title(cheapest.title),
-            group_price[group],
+            price,
             shop_of(cheapest),
         )
         if card in seen_cards or (product_id and product_id in seen_ids):
@@ -2084,12 +2196,13 @@ def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduc
         ordered.append(
             _PricedProduct(
                 product=cheapest,
-                price=group_price[group],
-                key="" if group.startswith("offer:") else group,
+                price=price,
+                key="" if group.startswith(("offer:", "apart:")) else group,
                 # The shops the feed names for its offers; an unnamed one is not counted
                 # as another shop: "Lowest price of 2 shops" must not rest on a guess.
                 shops=max(1, len({shop_of(offer) for offer in offers} - {""})),
                 offers=offers if len(offers) > 1 else (),
+                marks=tuple(marks),
             )
         )
     return ordered
@@ -2773,6 +2886,11 @@ def _price_first_result(
         for kinds in (variant_values(_variant_titles(entry)),)
         if kinds
     )
+    variant_marks = tuple(
+        (str(entry.product.provider_product_id or "").strip(), entry.marks)
+        for entry in first_page + opened
+        if entry.marks
+    )
 
     # A filter dropped for the whole answer may still be carried by part of it. Say
     # how many rather than calling it unmatched, and nothing when every product of the
@@ -2835,6 +2953,7 @@ def _price_first_result(
         shop_counts=shop_counts,
         price_ranks=price_ranks,
         variant_lists=variant_lists,
+        variant_marks=variant_marks,
         candidates_signature=signature,
         fitting_product_ids=tuple(_entry_id(entry) for entry in display_order if _entry_id(entry) in fitting),
         recommended_among_fitting=recommended_among_fitting,

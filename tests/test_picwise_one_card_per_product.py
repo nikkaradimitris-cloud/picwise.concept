@@ -95,11 +95,43 @@ class JoinTests(unittest.TestCase):
         )
         self.assertEqual(_ids(ordered), ["l1", "l2", "o1", "f1", "f2"])
 
-    def test_one_product_in_two_shops_and_its_sizes_at_one_is_one_card(self) -> None:
+    def test_a_size_another_shop_sells_cheaper_is_a_card_of_its_own_and_marked(self) -> None:
+        # The owner's rule 3 (2026-11-19): the shop with the sizes keeps its card, and
+        # marks the size another shop sells alone, cheaper; that shop's card comes first.
         code = _ean(500000000101)
         ordered = _price_first_products(
             [
                 _offer("a8", 50.0, "Fixturon Runner Black Size 8", f"{PAGE}?variant=8", shop="Fixture Shoes"),
+                _offer("a9", 50.0, "Fixturon Runner Black Size 9", f"{PAGE}?variant=9", shop="Fixture Shoes",
+                       gtin=code),
+                _offer("b9", 47.0, "Fixturon Runner Black UK 9", "https://other.example.invalid/p/runner-9",
+                       shop="Fixture Other Shop", gtin=code),
+            ]
+        )
+        self.assertEqual(_ids(ordered), ["b9", "a8"])
+        # Size 9 at two shops, the cheaper first: "Lowest price of 2 shops".
+        self.assertEqual((ordered[0].price, ordered[0].shops, ordered[0].marks), (47.0, 2, ()))
+        self.assertEqual((ordered[1].price, ordered[1].shops), (50.0, 1))
+        self.assertEqual(ordered[1].marks, (("Size 9", "£47.00", "Fixture Other Shop"),))
+
+    def test_a_size_another_shop_sells_dearer_stays_in_the_card(self) -> None:
+        code = _ean(500000000101)
+        ordered = _price_first_products(
+            [
+                _offer("a8", 50.0, "Fixturon Runner Black Size 8", f"{PAGE}?variant=8", shop="Fixture Shoes"),
+                _offer("a9", 50.0, "Fixturon Runner Black Size 9", f"{PAGE}?variant=9", shop="Fixture Shoes",
+                       gtin=code),
+                _offer("b9", 55.0, "Fixturon Runner Black UK 9", "https://other.example.invalid/p/runner-9",
+                       shop="Fixture Other Shop", gtin=code),
+            ]
+        )
+        self.assertEqual(_ids(ordered), ["a8"])
+        self.assertEqual((ordered[0].price, ordered[0].shops, ordered[0].marks), (50.0, 2, ()))
+
+    def test_one_product_at_two_shops_without_variants_is_one_card(self) -> None:
+        code = _ean(500000000101)
+        ordered = _price_first_products(
+            [
                 _offer("a9", 50.0, "Fixturon Runner Black Size 9", f"{PAGE}?variant=9", shop="Fixture Shoes",
                        gtin=code),
                 _offer("b9", 47.0, "Fixturon Runner Black UK 9", "https://other.example.invalid/p/runner-9",
@@ -171,6 +203,8 @@ def _row(pid: str, title: str, price: str, link: str, *, shop_id: str = "101", s
 
 
 class SearchPageTests(unittest.TestCase):
+    """The page as a buyer sees it."""
+
     def setUp(self) -> None:
         folder = Path(tempfile.mkdtemp())
         feed = folder / "google.csv.gz"
@@ -224,6 +258,74 @@ class SearchPageTests(unittest.TestCase):
         self.assertIn("Colours at the shop: Black, White", text)
         self.assertIn("Sizes at the shop: 7, 8, 9, 10", text)
         self.assertEqual(page.count('class="pw-card-variants"'), 2)
+
+
+
+class CheaperElsewherePageTests(unittest.TestCase):
+    """The owner's rule 3 on the page: «πράσινο φθηνότερο στο (α) κατάστημα»."""
+
+    def setUp(self) -> None:
+        folder = Path(tempfile.mkdtemp())
+        feed = folder / "google.csv.gz"
+        columns = (*_COLUMNS, "gtin")
+        rows = []
+        for number, colour in enumerate(("Black", "White")):
+            for size in ("8", "9"):
+                row = _row(f"r-{colour}-{size}", f"Fixturon Runner Trainers {colour} Size {size}", "39.99 GBP",
+                           f"{PAGE}?variant={colour}{size}")
+                row["gtin"] = _ean(500000000200 + number * 10 + int(size))
+                rows.append(row)
+        # Another shop sells the white size 9 alone, cheaper.
+        other = _row("o-white-9", "Fixturon Runner Trainers White UK 9", "35.00 GBP",
+                     "https://othershoes.example.invalid/p/runner-white-9", shop_id="303", shop="Fixture Other Shoes")
+        other["gtin"] = _ean(500000000219)
+        rows.append(other)
+        for number, price in enumerate(("29.99 GBP", "49.99 GBP")):
+            row = _row(f"t{number}", f"Fixturon Model {number} Trainers", price,
+                       f"https://shoes.example.invalid/products/model-{number}")
+            row["gtin"] = ""
+            rows.append(row)
+        with gzip.open(feed, "wt", encoding="utf-8-sig", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=columns)
+            writer.writeheader()
+            writer.writerows(rows)
+        saved = {name: os.environ.get(name) for name in ("AWIN_FEED_FILE", "AWIN_FEED_URL",
+                                                         "PICWISE_PREPARED_CATALOGUE_FILE")}
+        os.environ["AWIN_FEED_FILE"] = str(feed)
+        os.environ.pop("AWIN_FEED_URL", None)
+        os.environ.pop("PICWISE_PREPARED_CATALOGUE_FILE", None)
+        clear_awin_feed_parse_cache()
+        clear_provider_feed_pipeline_cache()
+
+        def restore() -> None:
+            for name, value in saved.items():
+                if value is None:
+                    os.environ.pop(name, None)
+                else:
+                    os.environ[name] = value
+            clear_awin_feed_parse_cache()
+            clear_provider_feed_pipeline_cache()
+
+        self.addCleanup(restore)
+
+    def test_the_cheaper_shop_s_card_comes_first_and_the_card_with_the_variants_marks_it(self) -> None:
+        from api.index import app as wsgi_app
+
+        page = b"".join(wsgi_app(
+            {"REQUEST_METHOD": "GET", "PATH_INFO": "/search", "QUERY_STRING": urlencode({"q": "trainers", "shown": 8}),
+             "wsgi.input": io.BytesIO(b""), "wsgi.url_scheme": "https"},
+            lambda _status, _headers: None,
+        )).decode("utf-8")
+        titles = [html.unescape(title) for title in re.findall(r'<h2 [^>]*class="pw-card-title">(.*?)</h2>', page)]
+        prices = [html.unescape(price) for price in re.findall(r'<p class="pw-price">(.*?)</p>', page)]
+        cards = dict(zip(titles, prices))
+        self.assertEqual(cards["Fixturon Runner Trainers White UK 9"], "£35.00")
+        self.assertEqual(cards["Fixturon Runner Trainers Black Size 8"], "£39.99")
+        marks = [html.unescape(line) for line in re.findall(r'<p class="pw-card-cheaper">(.*?)</p>', page)]
+        self.assertEqual(marks, ["White, Size 9 is £35.00 at Fixture Other Shoes"])
+        text = " ".join(html.unescape(re.sub(r"<[^>]+>", " ", page)).split())
+        self.assertIn("Colours at the shop: Black, White", text)
+        self.assertIn("4 of 4", text)
 
 
 if __name__ == "__main__":
