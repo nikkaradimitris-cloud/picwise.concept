@@ -1,0 +1,60 @@
+# A trial of the night's preparation with both Awin links (owner, 2026-11-19: the
+# Awin-format feeds come back in a second link; the cap's limits, 15% and at most 12,000 a
+# category, set on the server), on GitHub's runner and not on the server: how many
+# products each category keeps, which shops come in, the memory and the time it takes,
+# before the second link is given to the server. Read-only: nothing on the server or the
+# site changes. Run by hand. The repository is public and so is this log: the links are
+# secrets, never printed; counts and names of categories and shops only.
+name: Trial preparation, both Awin links (read-only)
+on:
+  workflow_dispatch:
+    inputs:
+      share:
+        description: "The cap's share (PICWISE_CAP_SHARE)"
+        default: "0.15"
+      category_max:
+        description: "The most a category keeps (PICWISE_CAP_CATEGORY_MAX; 0 for none)"
+        default: "12000"
+permissions:
+  contents: read
+jobs:
+  trial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Download both links
+        env:
+          AWIN_FEED_URL: ${{ secrets.AWIN_FEED_URL }}
+          AWIN_FEED_URL_AWIN: ${{ secrets.AWIN_FEED_URL_AWIN }}
+        run: |
+          set -e
+          curl -sS --fail --max-time 900 -o "$RUNNER_TEMP/google.bin" "$AWIN_FEED_URL" || { echo "the first link could not be read"; exit 1; }
+          curl -sS --fail --max-time 900 -o "$RUNNER_TEMP/awin.bin" "$AWIN_FEED_URL_AWIN" || { echo "the second link could not be read"; exit 1; }
+          ls -l "$RUNNER_TEMP"/*.bin | awk '{printf "%s: %.1f MB\n", $NF, $5/1048576}' | sed "s|$RUNNER_TEMP/||"
+          free -g | awk '/^Mem:/ {print "the runner: " $2 " GB of memory"}'
+      - name: Prepare, first link alone (today's catalogue)
+        env:
+          PICWISE_CAP_SHARE: ${{ inputs.share }}
+          PICWISE_CAP_CATEGORY_MAX: ${{ inputs.category_max }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/one"
+          /usr/bin/time -f "peak memory %M KB, %e s" python3 tools/prepare_catalogue.py --keep-going \
+            --feed-file "$RUNNER_TEMP/google.bin" --out "$RUNNER_TEMP/one/catalogue.json.gz" --static-dir "$RUNNER_TEMP/one" 2>&1 | tail -n 4
+      - name: Prepare, both links
+        env:
+          PICWISE_CAP_SHARE: ${{ inputs.share }}
+          PICWISE_CAP_CATEGORY_MAX: ${{ inputs.category_max }}
+          AWIN_FEED_FILE_AWIN: ${{ runner.temp }}/awin.bin
+        run: |
+          mkdir -p "$RUNNER_TEMP/both"
+          /usr/bin/time -f "peak memory %M KB, %e s" python3 tools/prepare_catalogue.py --keep-going \
+            --feed-file "$RUNNER_TEMP/google.bin" --out "$RUNNER_TEMP/both/catalogue.json.gz" --static-dir "$RUNNER_TEMP/both" 2>&1 | tail -n 4
+      - name: What each kept, by category and shop
+        if: always()
+        run: python3 .github/scripts/print_trial.py "$RUNNER_TEMP/one" "$RUNNER_TEMP/both"
+      - name: Remove the feeds
+        if: always()
+        run: rm -rf "$RUNNER_TEMP"/*.bin "$RUNNER_TEMP/one" "$RUNNER_TEMP/both"

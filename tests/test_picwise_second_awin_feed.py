@@ -89,3 +89,31 @@ class SecondFeedTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AisleTests(unittest.TestCase):
+    def test_awin_names_find_their_aisle_and_phrases_hold_whole(self) -> None:
+        from picwise_providers.awin_categories import aisle_for, row_aisle
+
+        self.assertEqual(aisle_for("Laptops"), "Electronics > Computers")
+        self.assertEqual(aisle_for("Laptop Bags"), "Electronics > Electronics Accessories")
+        self.assertEqual(aisle_for("Handbags"), "Apparel & Accessories > Handbags, Wallets & Cases")
+        self.assertEqual(aisle_for("Tyres"), "Vehicles & Parts > Vehicle Parts & Accessories")
+        self.assertEqual(aisle_for("Power Tools"), "Hardware > Tools")
+        self.assertEqual(aisle_for("Experiences"), "")
+        # The most specific column first; a Google shelf left as it is.
+        self.assertEqual(row_aisle({"merchant_product_category_path": "Monitors > 27 inch", "category_name": "Computers"}),
+                         "Electronics > Video")
+        self.assertEqual(row_aisle({"google_product_category": "Media > Books", "category_name": "Laptops"}), "")
+
+    def test_the_second_link_s_rows_carry_their_aisle(self) -> None:
+        folder = Path(tempfile.mkdtemp())
+        first = _write(folder / "google.csv", GOOGLE, [_google_row("g1", "101", "Kitchen Shop")])
+        second = _write(folder / "awin.csv", AWIN, [_awin_row("a1", "201", "Laptop Shop")])
+        awin_adapter.clear_awin_feed_parse_cache()
+        with mock.patch.dict(os.environ, {"AWIN_FEED_FILE_AWIN": second}):
+            result = awin_adapter.load_awin_provider_feed(ProviderFeedConfig(provider_key="awin", feed_file=first))
+        awin_adapter.clear_awin_feed_parse_cache()
+        by_id = {p.provider_product_id: p for p in result.products}
+        self.assertEqual(by_id["a1"].category_text, "Electronics > Computers > Laptops")
+        self.assertEqual(by_id["g1"].category_text, "Home & Garden > Kitchen & Dining > Kitchen Appliances")

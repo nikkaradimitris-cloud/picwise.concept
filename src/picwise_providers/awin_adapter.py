@@ -322,6 +322,21 @@ def shop_key(product: ProviderProduct) -> str:
     return f"name:{name}" if name else ""
 
 
+def _with_aisle(product: ProviderProduct) -> ProviderProduct:
+    """An Awin-format row given the aisle of Google's taxonomy its words fit, ahead of its
+    own category (`awin_categories`), so the cap counts it in its own category."""
+    from dataclasses import replace
+
+    from .awin_categories import row_aisle
+
+    raw = product.raw if isinstance(product.raw, Mapping) else {}
+    aisle = row_aisle(raw)
+    if not aisle:
+        return product
+    own = " ".join(str(product.category_text or "").split())
+    return replace(product, category_text=f"{aisle} > {own}" if own else aisle)
+
+
 def merge_feeds(first: ProviderParseResult, second: ProviderParseResult) -> ProviderParseResult:
     """The first link's products, then the second's from shops the first does not have
     and with ids the first does not use. The first decides when the second fails."""
@@ -333,7 +348,7 @@ def merge_feeds(first: ProviderParseResult, second: ProviderParseResult) -> Prov
     shops.discard("")
     ids = {str(product.provider_product_id or "").strip() for product in first.products}
     added = [
-        product
+        _with_aisle(product)
         for product in second.products
         if shop_key(product) not in shops and str(product.provider_product_id or "").strip() not in ids
     ]
