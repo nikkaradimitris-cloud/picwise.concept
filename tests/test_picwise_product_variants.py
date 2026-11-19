@@ -19,7 +19,12 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
-from picwise_providers.product_variants import base_title, variant_key  # noqa: E402
+from picwise_providers.product_variants import (  # noqa: E402
+    base_title,
+    page_key,
+    titles_close,
+    variant_key,
+)
 
 
 class BaseTitleTests(unittest.TestCase):
@@ -61,6 +66,42 @@ class VariantKeyTests(unittest.TestCase):
         self.assertEqual(self._key("Fictional Plate"), "")
         self.assertEqual(variant_key({}), "")
         self.assertEqual(variant_key(None), "")  # type: ignore[arg-type]
+
+
+class PageKeyTests(unittest.TestCase):
+    def _page(self, link: str, shop: str = "Fixture Shoes") -> str:
+        return page_key({"merchant_name": shop, "link": link})
+
+    def test_a_variant_s_choice_and_a_visit_s_tracking_are_not_the_page(self) -> None:
+        page = self._page("https://shoes.example.invalid/products/runner")
+        self.assertTrue(page)
+        for link in (
+            "https://Shoes.example.invalid/products/Runner/?variant=111",
+            "https://shoes.example.invalid/products/runner?size=9&colour=Black#reviews",
+            "https://shoes.example.invalid/products/runner?attribute_pa_size=9&utm_source=awin&awc=1",
+        ):
+            with self.subTest(link=link):
+                self.assertEqual(self._page(link), page)
+
+    def test_a_product_named_in_the_address_is_its_own_page(self) -> None:
+        self.assertNotEqual(self._page("https://shop.example.invalid/product.php?id=12"),
+                            self._page("https://shop.example.invalid/product.php?id=13"))
+        self.assertNotEqual(self._page("https://shop.example.invalid/index.php?route=product/product&product_id=50"),
+                            self._page("https://shop.example.invalid/index.php?route=product/product&product_id=51"))
+
+    def test_a_front_page_another_shop_or_no_link_is_no_shared_page(self) -> None:
+        self.assertEqual(self._page("https://shop.example.invalid/"), "")
+        self.assertEqual(self._page("https://shop.example.invalid"), "")
+        self.assertEqual(page_key({"merchant_name": "Fixture Shoes"}), "")
+        self.assertNotEqual(self._page("https://shoes.example.invalid/products/runner"),
+                            self._page("https://shoes.example.invalid/products/runner", shop="Fixture Other"))
+
+    def test_titles_close_as_a_size_or_colour_makes_them(self) -> None:
+        self.assertTrue(titles_close("Fixturon Runner Black Size 8", "Fixturon Runner White Size 9"))
+        self.assertTrue(titles_close("1.7L Fast-Boil Cordless Beige Electric Kettle",
+                                     "1.7L Fast-Boil Cordless Black Electric Kettle"))
+        self.assertFalse(titles_close("Fixturon Runner Black Size 8", "Fixturon Garden Hose Reel With Wall Bracket"))
+        self.assertFalse(titles_close("", "Fixturon Runner"))
 
 
 if __name__ == "__main__":

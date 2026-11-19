@@ -27,7 +27,7 @@ _BRAND_KEYS = ("brand", "brand_name")
 _TITLE_KEYS = ("title", "product_name", "name")
 # A colour or size written as several: "Black/White", "S, M", "Navy | Red".
 _PARTS_RE = re.compile(r"\s*(?:/|,|;|\|)\s*")
-_WORDS_RE = re.compile(r"[^0-9a-z]+")
+_WORDS_RE = re.compile(r"[0-9a-z]+")
 
 
 def _value(raw: Mapping[str, Any], keys: tuple[str, ...]) -> str:
@@ -39,7 +39,7 @@ def _value(raw: Mapping[str, Any], keys: tuple[str, ...]) -> str:
 
 
 def _words(text: str) -> list[str]:
-    return [word for word in _WORDS_RE.split(text.lower()) if word]
+    return _WORDS_RE.findall(text.lower())
 
 
 def _without_last(words: list[str], named: list[str]) -> tuple[list[str], bool]:
@@ -100,6 +100,13 @@ def variant_key(raw: Mapping[str, Any], *, shop: str = "", title: str = "", bran
 # 94 of 1,683,586 rows, so those columns tie almost nothing).
 _LINK_KEYS = ("link",)
 _VARIANT_QUERY_RE = re.compile(r"(?:^|&)(?:variant|size|colou?r|sku|option)[^=&]*=", re.IGNORECASE)
+# The parts of an address that pick a variant or only track a visit: left out of the page.
+# The rest stay, so "product.php?id=12" and "?id=13" are two pages, not one.
+_NOT_THE_PAGE_RE = re.compile(
+    r"^(?:variant|size|colou?r|sku|option|attribute|utm_|ref$|source$|awc$|gclid$|fbclid$|srsltid$|"
+    r"currency$|country$|lang$|aff|cid$|clickref$|campaign)",
+    re.IGNORECASE,
+)
 
 
 def page_key(raw: Mapping[str, Any], *, shop: str = "") -> str:
@@ -107,18 +114,29 @@ def page_key(raw: Mapping[str, Any], *, shop: str = "") -> str:
     "" when it links to none, or to a shop's front page."""
     if not isinstance(raw, Mapping):
         return ""
-    link = _value(raw, _LINK_KEYS)
+    link = raw.get("link")
     if not link:
         return ""
-    try:
-        parts = urlsplit(link)
-    except ValueError:
+    # Read by hand, not by `urlsplit`: this runs on every product of an answer.
+    address, _, query = str(link).strip().split("#", 1)[0].partition("?")
+    start = address.find("://")
+    if start < 0:
         return ""
-    path = parts.path.rstrip("/").lower()
-    if not parts.netloc or not path:
+    rest = address[start + 3:]
+    cut = rest.find("/")
+    if cut <= 0:
         return ""
+    host, path = rest[:cut].lower(), rest[cut:].rstrip("/").lower()
+    if not path:
+        return ""
+    if query:
+        kept = sorted(
+            part for part in query.split("&") if part and not _NOT_THE_PAGE_RE.match(part.split("=", 1)[0])
+        )
+        if kept:
+            path += "?" + "&".join(kept)
     shop = shop or _value(raw, _SHOP_KEYS)
-    return f"{shop}\x1f{parts.netloc.lower()}{path}"
+    return f"{shop}\x1f{host}{path}"
 
 
 def names_a_variant(raw: Mapping[str, Any]) -> bool:
@@ -132,8 +150,18 @@ def names_a_variant(raw: Mapping[str, Any]) -> bool:
         return False
 
 
+def title_words(title: str) -> frozenset[str]:
+    """A title's words, lower case, as `titles_close` compares them."""
+    return frozenset(_words(title))
+
+
+def words_close(first: frozenset[str], second: frozenset[str], *, most: int = 3) -> bool:
+    """`titles_close` on titles already read as words (`title_words`)."""
+    return bool(first and second) and len(first - second) <= most and len(second - first) <= most
+
+
 def titles_close(first: str, second: str, *, most: int = 3) -> bool:
-    """Whether two titles differ by at most `most` words (each side's words not in the
-    other's), as a size or colour would make them differ."""
-    a, b = set(_words(first)), set(_words(second))
-    return bool(a and b) and len(a ^ b) <= most
+    """Whether two titles differ as a size or a colour makes them differ: each has at most
+    `most` words the other lacks ("Runner White Size 9" and "Runner Black Size 8": two
+    each), while the products of a shop's list page differ by more."""
+    return words_close(title_words(first), title_words(second), most=most)
