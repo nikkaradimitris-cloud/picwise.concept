@@ -92,6 +92,34 @@ class CompareFeedsTests(unittest.TestCase):
         self.assertIn("MB as downloaded; 6 columns", out)
         self.assertNotIn("example.invalid", out)
 
+    def test_the_sale_prices_are_counted_with_why_each_is_left(self) -> None:
+        # 2026-11-19: no product was at its shop's sale price on the first night the site
+        # read them; this counts the feed's sale prices by the site's own rule.
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "feed.csv"
+            text = io.StringIO()
+            writer = csv.writer(text)
+            writer.writerow(["id", "advertiser_id", "advertiser_name", "price", "sale_price",
+                             "sale_price_effective_date"])
+            writer.writerow(["a1", "101", "Fictional Home", "40.00 GBP", "29.99 GBP", ""])
+            writer.writerow(["a2", "101", "Fictional Home", "40.00 GBP", "", ""])
+            writer.writerow(["a3", "102", "Fictional Rings", "40.00 GBP", "40.00 GBP", ""])
+            writer.writerow(["a4", "102", "Fictional Rings", "40.00 GBP", "29.99 GBP", "from 1 Nov"])
+            path.write_text(text.getvalue(), encoding="utf-8")
+            done = _run(path.resolve().as_uri(), None)
+        out = done.stdout
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn("rows with a sale price: 3; the shop's price tonight by the site's rule: 1", out)
+        self.assertIn("left, not lower than the usual price: 1", out)
+        self.assertIn("left, dates unreadable: 1", out)
+        self.assertIn("dates unreadable, written as 'from 9 Nov': 1", out)
+        self.assertRegex(out, r"2\s+0\s+Fictional Rings \(102\)")
+        self.assertRegex(out, r"1\s+1\s+Fictional Home \(101\)")
+        # Without the column, it says so.
+        with tempfile.TemporaryDirectory() as folder:
+            done = _run(_feed(Path(folder) / "old.csv", OLD), None)
+        self.assertIn("sale_price: not among its columns", done.stdout)
+
     def test_a_new_feed_lacking_an_old_shop_fails_and_names_it(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
             old = _feed(Path(folder) / "old.csv", OLD)

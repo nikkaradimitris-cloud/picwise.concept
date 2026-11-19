@@ -45,8 +45,16 @@ from picwise_providers.awin_adapter import clear_awin_feed_parse_cache  # noqa: 
 from picwise_providers.catalogue_memory import SALE_PRICES_SINCE, remember_night  # noqa: E402
 from picwise_providers.contracts import ProviderProduct  # noqa: E402
 from picwise_providers.normalization import (  # noqa: E402
+    SALE_DATES_UNREADABLE,
+    SALE_ENDING,
+    SALE_NONE,
+    SALE_NOT_LOWER,
+    SALE_NOT_STARTED,
+    SALE_OTHER_CURRENCY,
+    SALE_UNREADABLE,
     normalize_feed_row_to_provider_product,
     sale_price_in_force,
+    sale_price_left_because,
 )
 from picwise_providers.price_history import DOWN, SAME, UP, read_price_notes, write_price_notes  # noqa: E402
 from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
@@ -119,6 +127,26 @@ class SalePriceTests(unittest.TestCase):
         for dates in ("soon", "2026-11-01T00:00Z", "2026-12-01T00:00Z/2026-11-01T00:00Z", "a/b"):
             with self.subTest(dates=dates):
                 self.assertEqual(self._sale("40.00 GBP", "29.99 GBP", dates), "")
+
+    def test_why_a_sale_price_is_left_is_named(self) -> None:
+        # The measure of the feed's sale prices (`.github/scripts/compare_feeds.py`) counts
+        # these; the rule is the one `sale_price_in_force` applies.
+        def why(price: str, sale: str, dates: str = "") -> str:
+            return sale_price_left_because(
+                {"price": price, "sale_price": sale, "sale_price_effective_date": dates}, now=NOW)
+
+        live = _dates(NOW - timedelta(days=3), NOW + timedelta(days=10))
+        self.assertEqual(why("40.00 GBP", "29.99 GBP", live), "")
+        self.assertEqual(why("40.00 GBP", ""), SALE_NONE)
+        self.assertEqual(why("40.00 GBP", "call us"), SALE_UNREADABLE)
+        self.assertEqual(why("40.00 GBP", "40.00 GBP"), SALE_NOT_LOWER)
+        self.assertEqual(why("40.00 GBP", "29.99 EUR"), SALE_OTHER_CURRENCY)
+        self.assertEqual(why("40.00 GBP", "29.99 GBP", "soon"), SALE_DATES_UNREADABLE)
+        self.assertEqual(why("40.00 GBP", "29.99 GBP", _dates(NOW + timedelta(hours=2), NOW + timedelta(days=9))),
+                         SALE_NOT_STARTED)
+        self.assertEqual(why("40.00 GBP", "29.99 GBP", _dates(NOW - timedelta(days=9), NOW + timedelta(hours=20))),
+                         SALE_ENDING)
+        self.assertEqual(sale_price_left_because("not a row"), SALE_NONE)  # type: ignore[arg-type]
 
     def test_a_row_is_read_at_its_sale_price_in_its_currency(self) -> None:
         live = _dates(datetime.now(timezone.utc) - timedelta(days=1), datetime.now(timezone.utc) + timedelta(days=5))

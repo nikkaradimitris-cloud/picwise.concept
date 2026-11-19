@@ -12,7 +12,11 @@ the shops of the one in use that the new one lacks, those it keeps with over a t
 fewer rows (a category chosen when the link was made leaves the rest of a shop out:
 owner's screenshot of Awin's categories, 31/10), and the shops it adds. A new link
 replaces the old only with none lacking and none shrunk. The links are secrets and
-never printed; nothing on the server or the site changes. Exits 1 when the link in use
+never printed; nothing on the server or the site changes. Also counted (2026-11-19), for
+the feed in use: the rows that carry a sale price, how many the site takes as the shop's
+price tonight, and why each other one is left (`normalization.sale_price_left_because`,
+the site's own rule), with the shapes of the values left as unreadable (digits as 9),
+never a row. Exits 1 when the link in use
 cannot be read, or the new one cannot, or lacks or shrinks a shop of the one in use.
 """
 from __future__ import annotations
@@ -26,7 +30,16 @@ import tempfile
 import urllib.error
 import urllib.request
 from collections import Counter
+from datetime import datetime, timezone
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+from picwise_providers.normalization import (  # noqa: E402
+    SALE_DATES_UNREADABLE,
+    SALE_NONE,
+    SALE_UNREADABLE,
+    sale_price_left_because,
+)
 
 # The most a link may send: a feed of every shop is about 1-2 GB (the server takes 2 GB).
 LIMIT = 4 * 1024**3
@@ -53,6 +66,15 @@ def download(url: str, path: Path) -> None:
 EXTRA_PHOTOS = "additional_image_link"
 
 
+# The shop's sale price and its dates (Google's columns), and the usual price.
+SALE_COLUMNS = ("price", "sale_price", "sale_price_effective_date")
+
+
+def _shape(value: str) -> str:
+    """A value's form with its digits as 9 and cut short: "29.99 GBP" is "99.99 GBP"."""
+    return "".join("9" if char.isdigit() else char for char in value.strip())[:40] or "(empty)"
+
+
 def shops_of(path: Path, seen: dict | None = None) -> tuple[Counter, dict[str, str]]:
     """Rows per shop, keyed by the advertiser's id (else its name), and each key's name.
     `seen`, when given, is filled with the feed's columns, its size, and how many rows
@@ -67,6 +89,12 @@ def shops_of(path: Path, seen: dict | None = None) -> tuple[Counter, dict[str, s
         def column(*names: str) -> int | None:
             return next((header.index(name) for name in names if name in header), None)
 
+        sale_at = {name: column(name) for name in SALE_COLUMNS}
+        now = datetime.now(timezone.utc)
+        sales = Counter()
+        sale_shops = Counter()
+        in_force_shops = Counter()
+        shapes: dict[str, Counter] = {SALE_UNREADABLE: Counter(), SALE_DATES_UNREADABLE: Counter()}
         extra_at = column(EXTRA_PHOTOS)
         with_extra = 0
         extra_links = Counter()
@@ -84,6 +112,21 @@ def shops_of(path: Path, seen: dict | None = None) -> tuple[Counter, dict[str, s
             key = ident or name or "(no shop named)"
             rows[key] += 1
             names.setdefault(key, name or key)
+            if sale_at["sale_price"] is not None:
+                fields = {
+                    name: (row[at] if at is not None and at < len(row) else "")
+                    for name, at in sale_at.items()
+                }
+                reason = sale_price_left_because(fields, now=now)
+                sales[reason] += 1
+                if reason != SALE_NONE:
+                    sale_shops[key] += 1
+                    if not reason:
+                        in_force_shops[key] += 1
+                if reason == SALE_UNREADABLE:
+                    shapes[reason][_shape(fields["sale_price"])] += 1
+                elif reason == SALE_DATES_UNREADABLE:
+                    shapes[reason][_shape(fields["sale_price_effective_date"])] += 1
             if extra_at is not None and extra_at < len(row) and row[extra_at].strip():
                 with_extra += 1
                 links = [part for part in row[extra_at].replace(",", " ").split() if part.startswith("http")]
@@ -94,8 +137,39 @@ def shops_of(path: Path, seen: dict | None = None) -> tuple[Counter, dict[str, s
                 size=path.stat().st_size,
                 with_extra=with_extra,
                 extra_links=extra_links,
+                sale_column=sale_at["sale_price"] is not None,
+                dates_column=sale_at["sale_price_effective_date"] is not None,
+                sales=sales,
+                sale_shops=sale_shops,
+                in_force_shops=in_force_shops,
+                shapes=shapes,
             )
         return rows, names
+
+
+def print_sales(info: dict, names: dict[str, str]) -> None:
+    """The feed's sale prices: how many rows carry one, how many are the shop's price
+    tonight by the site's rule, and why the rest are left."""
+    if not info.get("sale_column"):
+        print("  sale_price: not among its columns")
+        return
+    sales: Counter = info["sales"]
+    carried = sum(count for reason, count in sales.items() if reason != SALE_NONE)
+    print(
+        f"  sale_price: in its columns (its dates column {'too' if info['dates_column'] else 'not'}); "
+        f"rows with a sale price: {carried:,}; the shop's price tonight by the site's rule: {sales['']:,}"
+    )
+    for reason, count in sales.most_common():
+        if reason and reason != SALE_NONE:
+            print(f"    left, {reason}: {count:,}")
+    for reason, shapes in info["shapes"].items():
+        for shape, count in shapes.most_common(5):
+            print(f"    {reason}, written as {shape!r}: {count:,}")
+    if info["sale_shops"]:
+        print("  the shops with the most sale prices (rows with one; of them, the shop's price tonight):")
+        for key, count in info["sale_shops"].most_common(15):
+            shown = names[key] if names[key] == key else f"{names[key]} ({key})"
+            print(f"    {count:>9,}  {info['in_force_shops'][key]:>9,}  {shown}")
 
 
 def why(error: Exception) -> str:
@@ -153,6 +227,7 @@ def main() -> int:
             )
         else:
             print(f"  {EXTRA_PHOTOS}: not among its columns")
+        print_sales(info, names)
     if "new" in seen and "in use" in seen:
         only_new = [name for name in seen["new"]["columns"] if name not in seen["in use"]["columns"]]
         only_old = [name for name in seen["in use"]["columns"] if name not in seen["new"]["columns"]]
