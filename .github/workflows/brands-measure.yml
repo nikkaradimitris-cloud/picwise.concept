@@ -1,0 +1,163 @@
+# The brands of the server's catalogue, measured before the brands' list is built (the
+# owner's series of work agreed on 2026-11-19, step 3: a list of brands from the feeds,
+# their kinds counted; taken up on 2026-11-20: «PicWise: συνέχισε το βήμα 3, τη λίστα
+# brands, όπως γράφει το handoff»). GitHub's runner copies the server's prepared catalogue,
+# as search-audit.yml does (the same steps), and runs deployment/server/print_brands.py:
+# the brands as the feeds write them, the kinds of each, a brand written several ways, the
+# names that are also words or kinds' names, the near-identical names, and the searches for
+# the largest brands as the site answers them from the copy (alone, with their largest kind,
+# and misspelled). Nothing on the server or shown changes, nothing is deployed, no AI is
+# asked: the server is only read, never made to measure (its night is at 19.8 of its 20 GB;
+# docs/picwise_session_handoff.md). The brands' work stays on a branch of its own until it
+# is finished and tested (the owner, 19/11: «Είναι ασφαλές ή θα συγκρουστεί?»). The
+# repository is public and so is this log: the server's names and addresses are masked,
+# and the measure prints counts, brands, kinds, titles and shops, never a link.
+# A run is one commit that changes `if: false` to `if: true`, pushed to the brands' branch,
+# then one that turns it off again and records the run here.
+name: Brands measure (read-only, measured only)
+on:
+  push:
+    branches: [claude/brands-2026-11-20]
+    paths:
+      - '.github/workflows/brands-measure.yml'
+permissions:
+  contents: read
+# Shared with the deployment, the setup and the shops' round, so the file is never
+# copied while one of them writes it.
+concurrency:
+  group: server-setup
+  cancel-in-progress: false
+jobs:
+  measure:
+    if: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Connect with the key, check the server's identity, mask its names
+        id: connect
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          AWIN_FEED_URL: ${{ secrets.AWIN_FEED_URL }}
+        run: |
+          install -m 700 -d ~/.ssh
+          # A key pasted on Windows may carry carriage returns, which ssh refuses.
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # The server must show a login the host key pinned in .github/server-host-key.pin
+          # (an HMAC under the deploy key: .github/scripts/host_key_pin.py), or prove below
+          # that it holds the feed link; every connection accepts the key it showed only.
+          # The key is the one a login's first step is shown: an ssh client offering no
+          # key or password writes it down, and the login ends there.
+          seen="$RUNNER_TEMP/seen"
+          : > "$seen"
+          ssh -F /dev/null -o BatchMode=yes -o ConnectTimeout=15 -o HostKeyAlgorithms=ssh-ed25519 \
+            -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$seen" -o GlobalKnownHostsFile=/dev/null \
+            -o PubkeyAuthentication=no -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no \
+            -o HostbasedAuthentication=no -o GSSAPIAuthentication=no -o LogLevel=QUIET \
+            "ubuntu@$SERVER_HOST" true 2>/dev/null || true
+          host_key=$(awk 'NF >= 3 {print $2, $3; exit}' "$seen")
+          rm -f "$seen"
+          [ -n "$host_key" ] || { echo "the server showed a login no host key"; exit 1; }
+          pin=$(HOST_KEY="$host_key" python3 .github/scripts/host_key_pin.py)
+          expected=$( (grep -v '^#' .github/server-host-key.pin || true) | tr -d '[:space:]')
+          if [ "$pin" = "$expected" ]; then
+            echo "the server matches the pin"
+            echo "pinned=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "the server does NOT match the pin (reinstalled, or not our server); its pin: $pin"
+            echo "pinned=no" >> "$GITHUB_OUTPUT"
+          fi
+          # What a key scan is shown, only to report it.
+          scanned=$(ssh-keyscan -T 15 -t ed25519 "$SERVER_HOST" 2>/dev/null | awk 'NF >= 3 {print $2, $3; exit}')
+          scan_pin=""
+          if [ -n "$scanned" ]; then scan_pin=$(HOST_KEY="$scanned" python3 .github/scripts/host_key_pin.py); fi
+          if [ "$scan_pin" = "$pin" ]; then
+            echo "a key scan is shown the same key"
+            echo "scan_differs=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "a key scan is shown another key (pin ${scan_pin:-none})"
+            echo "scan_differs=yes" >> "$GITHUB_OUTPUT"
+            echo "scan_pin=$scan_pin" >> "$GITHUB_OUTPUT"
+          fi
+          echo "picwise-server $host_key" > ~/.ssh/known_hosts_picwise
+          # The user is OVHcloud's for Ubuntu, written here rather than read from the
+          # SERVER_USER secret: GitHub masks a secret's value all over the log.
+          cat > ~/.ssh/config <<EOF
+          Host picwise
+            HostName $SERVER_HOST
+            HostKeyAlias picwise-server
+            UserKnownHostsFile ~/.ssh/known_hosts_picwise
+            StrictHostKeyChecking yes
+            User ubuntu
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            BatchMode yes
+            ConnectTimeout 15
+            ServerAliveInterval 15
+            ServerAliveCountMax 8
+            LogLevel ERROR
+          EOF
+          chmod 600 ~/.ssh/config
+          # Without the pin, the server must seal a random nonce under the feed link as
+          # GitHub does: only the nonce goes to it, only the seal comes back.
+          nonce=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
+          ours=$(python3 .github/scripts/feed_seal.py "$nonce") || ours=""
+          unset AWIN_FEED_URL
+          if [ "$pin" != "$expected" ]; then
+            [ -n "$ours" ] || { echo "no feed link in GitHub's secrets: nothing can prove the server is ours"; exit 1; }
+            # What any visitor of port 22 is told first: its SSH software and system.
+            banner=$(timeout 10 bash -c 'exec 3<>"/dev/tcp/$1/22"; head -n 1 <&3' _ "$SERVER_HOST" 2>/dev/null \
+              | tr -cd '[:print:]' | cut -c1-80 || true)
+            echo "the server's SSH software says: ${banner:-nothing}"
+            # The server's own words are never printed: its errors are only sorted.
+            errors="$RUNNER_TEMP/seal-errors"
+            theirs=$(ssh picwise "sudo -n python3 - $nonce" < .github/scripts/feed_seal.py 2> "$errors") && status=0 || status=$?
+            if [ "$theirs" != "$ours" ]; then
+              if grep -q 'Permission denied' "$errors"; then why="it did not let the deploy key in"
+              elif grep -q 'Host key verification failed' "$errors"; then why="its host key changed again during the run"
+              elif [ "$status" = 255 ]; then why="the login did not complete"
+              elif grep -q 'sudo:' "$errors"; then why="the deploy key was let in, but sudo was refused"
+              elif grep -q 'feed_seal: no feed link' "$errors"; then why="the deploy key was let in, but the server holds no feed link"
+              elif [ "$status" = 0 ]; then why="the deploy key was let in, but its seal is not GitHub's (another feed link)"
+              else why="the deploy key was let in, but sealing failed (exit $status)"
+              fi
+              rm -f "$errors"
+              echo "the server could NOT prove it holds the feed link: $why; nothing is read"
+              exit 1
+            fi
+            rm -f "$errors"
+            echo "the server proved it holds the feed link: it is ours, with a new host key"
+          fi
+          # The host name resolves to the address, so it is masked like the address.
+          names=$(ssh -n picwise 'hostname; hostname -f; hostname -I')
+          for name in $names; do echo "::add-mask::$name"; done
+          echo "connected"
+      - name: Copy the server's prepared catalogue to the runner
+        id: copy
+        run: |
+          ssh -n picwise 'sudo cat /srv/picwise/shared/prepared/catalogue.json.gz' > "$RUNNER_TEMP/catalogue.json.gz"
+          echo "the catalogue: $(( $(stat -c %s "$RUNNER_TEMP/catalogue.json.gz") / 1048576 )) MB"
+      # The server's Python (Ubuntu 24.04).
+      - uses: actions/setup-python@v5
+        if: always() && steps.copy.outcome == 'success'
+        with:
+          python-version: '3.12'
+      # Ubuntu's list of British English words, to say which brands' names are everyday
+      # words ("Shark", "Tower"); without it the measure says it could not tell.
+      - name: A list of English words
+        if: always() && steps.copy.outcome == 'success'
+        continue-on-error: true
+        run: |
+          [ -f /usr/share/dict/words ] || { sudo apt-get update -qq && sudo apt-get install -y -qq wbritish; }
+          echo "words: $(wc -l < /usr/share/dict/words)"
+      - name: The brands
+        if: always() && steps.copy.outcome == 'success'
+        run: python deployment/server/print_brands.py "$RUNNER_TEMP/catalogue.json.gz" --words /usr/share/dict/words
+      - name: Remove the key and the copy from the runner
+        if: always()
+        run: |
+          rm -f ~/.ssh/deploy_key ~/.ssh/config "$RUNNER_TEMP/catalogue.json.gz"
