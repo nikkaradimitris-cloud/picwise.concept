@@ -28,6 +28,15 @@ _PARSE_CACHE: dict[tuple[str, int, int], ProviderParseResult] = {}
 _PARSE_CACHE_MAX_ENTRIES = 4
 _AWIN_FEED_FILE_ENV = "AWIN_FEED_FILE"
 _AWIN_FEED_URL_ENV = "AWIN_FEED_URL"
+# The second Awin link, in Awin's own feed format (owner, 2026-11-19: «εφόσον το σετ μπορεί
+# να υποστηρίξει την υποδομή της awin προχωράμε»): Awin keeps its two formats in separate
+# links, so the shops whose feeds are in Awin's format come in this one. Read beside the
+# first wherever it is set; unset, nothing changes. A shop in both is read from the first
+# alone (the rule of 2026-10-22: one shop, its products once), known by Awin's advertiser
+# id, else its name.
+SECOND_FEED_FILE_ENV = "AWIN_FEED_FILE_AWIN"
+SECOND_FEED_URL_ENV = "AWIN_FEED_URL_AWIN"
+_SHOP_ID_KEYS = ("advertiser_id", "merchant_id")
 _GZIP_MAGIC = b"\x1f\x8b"
 
 # A feed URL (Awin's Create-a-Feed download link) is downloaded to a local file and
@@ -287,16 +296,72 @@ def clear_awin_feed_parse_cache() -> None:
     _PARSE_CACHE.clear()
 
 
+def second_feed_config_from_env() -> ProviderFeedConfig | None:
+    """The second Awin link (`SECOND_FEED_URL_ENV`), or a local file of it, when set."""
+    feed_file = str(os.environ.get(SECOND_FEED_FILE_ENV) or "").strip() or None
+    feed_url = str(os.environ.get(SECOND_FEED_URL_ENV) or "").strip() or None
+    if feed_file is None and feed_url is None:
+        return None
+    if feed_file is None and feed_url is not None:
+        cached, _errors = materialize_feed_url(feed_url)
+        if cached is not None:
+            return ProviderFeedConfig(provider_key=_AWIN_PROVIDER_KEY, feed_file=cached)
+    return ProviderFeedConfig(provider_key=_AWIN_PROVIDER_KEY, feed_file=feed_file, feed_url=feed_url)
+
+
+def shop_key(product: ProviderProduct) -> str:
+    """The shop a product is from, as two Awin links name it alike: the advertiser's id."""
+    raw = product.raw if isinstance(product.raw, Mapping) else {}
+    for key in _SHOP_ID_KEYS:
+        value = str(raw.get(key) or "").strip()
+        if value:
+            return f"id:{value}"
+    from .normalization import extract_merchant_name
+
+    name = " ".join(str(extract_merchant_name(raw) or "").split()).casefold()
+    return f"name:{name}" if name else ""
+
+
+def merge_feeds(first: ProviderParseResult, second: ProviderParseResult) -> ProviderParseResult:
+    """The first link's products, then the second's from shops the first does not have
+    and with ids the first does not use. The first decides when the second fails."""
+    if second.status != "provider_feed_loaded" or not second.products:
+        return first
+    if first.status != "provider_feed_loaded":
+        return first
+    shops = {shop_key(product) for product in first.products}
+    shops.discard("")
+    ids = {str(product.provider_product_id or "").strip() for product in first.products}
+    added = [
+        product
+        for product in second.products
+        if shop_key(product) not in shops and str(product.provider_product_id or "").strip() not in ids
+    ]
+    if not added:
+        return first
+    return ProviderParseResult(
+        status=first.status,
+        products=tuple(first.products) + tuple(added),
+        reason_codes=tuple(first.reason_codes) + ("second_feed_loaded",),
+        parse_errors=tuple(first.parse_errors),
+    )
+
+
 def load_awin_provider_feed(
     config: ProviderFeedConfig | None = None,
 ) -> ProviderParseResult:
     resolved = config or awin_feed_config_from_env()
+    second = second_feed_config_from_env()
     cache_key = feed_file_cache_key(resolved.feed_file)
+    if cache_key is not None and second is not None:
+        cache_key = cache_key + (feed_file_cache_key(second.feed_file) or (str(second.feed_url or ""), 0, 0))
     if cache_key is not None:
         cached = _PARSE_CACHE.get(cache_key)
         if cached is not None:
             return cached
     parsed = _load_awin_provider_feed_uncached(resolved)
+    if second is not None:
+        parsed = merge_feeds(parsed, _load_awin_provider_feed_uncached(second))
     if cache_key is not None and parsed.status == "provider_feed_loaded":
         if len(_PARSE_CACHE) >= _PARSE_CACHE_MAX_ENTRIES:
             _PARSE_CACHE.clear()
