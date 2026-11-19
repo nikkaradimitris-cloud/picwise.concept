@@ -8,6 +8,14 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **19/11 noon, the daily session: the feed's sale prices counted today, without a deployment.** The
+  read-only `feed-compare.yml` (by hand, from the work branch) now counts, for the feed in use, the rows
+  with a `sale_price`, those the site's rule takes tonight and each reason for the rest
+  (`normalization.sale_price_reading`, the late morning's function), the shapes of unreadable values
+  (digits as 9) and the 15 shops with the most; numbers and shop names only. The morning's checks: the
+  night's note `prepared: true` (08:59 UTC, the deployment's), 255,564 products, 78 shops, nothing
+  shrunk or gone; `server-health.yml` by hand (`44499092746`): within every limit, searches 0.15-0.48 s
+  the server's part.
 - **19/11 late morning, the sale prices counted (built, tested, pushed to the work branch; NOT deployed:
   waits for «ανέβασε»).** The owner, offered a count of why the first night read no sale price and a look
   at the new pages, answered «Ναι». `normalization.sale_price_reading` names why a row's `sale_price` is
