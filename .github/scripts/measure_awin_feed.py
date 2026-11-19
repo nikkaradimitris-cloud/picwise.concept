@@ -99,6 +99,11 @@ def measure(path: Path) -> dict:
     currency_at = at(("currency",))
     counts = Counter()
     currencies = Counter()
+    # Which category column the shops fill, and with what: the cap counts a product in the
+    # first two levels of Google's shelves, so the Awin-format rows need theirs.
+    filled = Counter()
+    values = {name: Counter() for name in ("category_name", "google_product_category")}
+    google_first = Counter()
     shop_rows, shop_shown = Counter(), Counter()
     names: dict[str, str] = {}
     for row in rows:
@@ -122,6 +127,15 @@ def measure(path: Path) -> dict:
         counts["category"] += categorised
         counts["in_stock"] += in_stock
         counts["barcode"] += bool(first(row, barcode_at))
+        for name in CATEGORY_COLUMNS:
+            place = header.index(name) if name in header else None
+            if place is not None and place < len(row) and row[place].strip():
+                filled[name] += 1
+                if name in values:
+                    values[name][" ".join(row[place].split())[:80]] += 1
+        google = first(row, [header.index("google_product_category")] if "google_product_category" in header else [])
+        if google:
+            google_first[google.split(">")[0].strip().lower()[:40]] += 1
         if pounds and priced and categorised and in_stock:
             counts["could_show"] += 1
             shop_shown[key] += 1
@@ -133,6 +147,9 @@ def measure(path: Path) -> dict:
         "shop_rows": shop_rows,
         "shop_shown": shop_shown,
         "names": names,
+        "filled": filled,
+        "values": values,
+        "google_first": google_first,
     }
 
 
@@ -185,6 +202,14 @@ def main() -> int:
     print(f"  rows PicWise could show (pounds, a price, a category, in stock): {counts['could_show']:,} "
           f"({counts['could_show'] / total:.1%})")
     print("  currencies: " + ", ".join(f"{code} {rows:,}" for code, rows in info["currencies"].most_common()))
+    print("category columns, rows that fill them: " + ", ".join(
+        f"{name} {info['filled'][name]:,}" for name in CATEGORY_COLUMNS if name in info["columns"]))
+    print("  google_product_category, its first level: " + ", ".join(
+        f"{name or '(empty)'} {rows:,}" for name, rows in info["google_first"].most_common(25)))
+    for name, found in info["values"].items():
+        print(f"  {name}: {len(found):,} different; the most used:")
+        for value, rows in found.most_common(60):
+            print(f"    {rows:>9,}  {value}")
     shops = info["shop_rows"]
     if known is not None:
         both = [key for key in shops if key in known]

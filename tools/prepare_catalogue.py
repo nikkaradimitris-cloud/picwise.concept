@@ -199,10 +199,13 @@ class _Cap:
 
     def __call__(self, products, kinds, feed_ctx):
         try:
+            from picwise_providers.catalogue_balance import cap_limits
             from picwise_providers.catalogue_cap import cap_catalogue, google_pool_path, read_google_pool
 
+            share, category_max = cap_limits()
             self.result = cap_catalogue(
-                products, kinds, feed_ctx=feed_ctx, kept_before=read_google_pool(google_pool_path(self.out))
+                products, kinds, feed_ctx=feed_ctx, kept_before=read_google_pool(google_pool_path(self.out)),
+                share=share, category_max=category_max,
             )
         except Exception as error:
             self.result, self.error = None, _where(error)

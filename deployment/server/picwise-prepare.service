@@ -21,6 +21,10 @@ Environment=AWIN_FEED_MAX_BYTES=2147483648
 # What the shops' own catalogues say, written by picwise-shops.service
 # (`picwise_providers.shop_catalogue`).
 Environment=PICWISE_SHOP_CATALOGUES=/srv/picwise/shared/shops/catalogues.json.gz
+# The cap's two limits (owner, 2026-11-19: changeable, to open as the server grows):
+# no category over this share, and at most this many products a category.
+Environment=PICWISE_CAP_SHARE=0.15
+Environment=PICWISE_CAP_CATEGORY_MAX=12000
 Environment=PYTHONDONTWRITEBYTECODE=1
 # GNU time adds one line with the run's peak memory and length, for sizing the server.
 ExecStart=/usr/bin/time -f "prepare_catalogue: peak memory %%M KB, %%e s" /usr/bin/python3 \

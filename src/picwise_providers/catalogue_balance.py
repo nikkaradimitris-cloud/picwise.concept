@@ -58,6 +58,40 @@ from .normalization import extract_merchant_name
 from .product_identity import BRAND_KEYS, MPN_KEYS, same_product_key, valid_gtin
 
 CAP_SHARE = 0.15
+# The cap's two limits, set on the server, so that they open as the server grows (owner,
+# 2026-11-19: «Οι κανόνες αυτοί πρέπει να είναι μεταβαλλόμενοι.. έτσι ώστε να κρατάμε τον
+# έλεγχο για την αξιοποίηση του server ... φτιάξε λοιπόν όριο 15%. Και μέγιστο όριο ανά
+# κατηγορία»): the share no category may pass, and the most products a category keeps,
+# the point where it counts as full (0 or unset: no such limit).
+CAP_SHARE_ENV = "PICWISE_CAP_SHARE"
+CATEGORY_MAX_ENV = "PICWISE_CAP_CATEGORY_MAX"
+CATEGORY_MAX = 12000
+
+
+def cap_limits(environ=None) -> tuple[float, int | None]:
+    """The share and the most a category keeps, from the server's settings; a value that
+    cannot be read keeps the default, so a typing slip never empties the catalogue."""
+    import os
+
+    environ = os.environ if environ is None else environ
+    share = CAP_SHARE
+    try:
+        raw = str(environ.get(CAP_SHARE_ENV) or "").strip()
+        if raw:
+            value = float(raw)
+            if 0 < value <= 1:
+                share = value
+    except ValueError:
+        pass
+    most: int | None = CATEGORY_MAX
+    try:
+        raw = str(environ.get(CATEGORY_MAX_ENV) or "").strip()
+        if raw:
+            value = int(raw)
+            most = value if value > 0 else None
+    except ValueError:
+        pass
+    return share, most
 # How many of the largest groups, and of the groups a cap cuts most, the note lists.
 _LISTED = 10
 # How many of the kinds only one or two shops sell the note names, the largest first.
