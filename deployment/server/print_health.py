@@ -47,8 +47,10 @@ SITE_USER = "picwise"
 
 MAX_AGE_HOURS = 30.0
 # 24 GB on the server (OVHcloud VPS-4); the rest for the system and the other services.
-# 19 since 2026-11-19 (owner: «Ανέβασε το όριο του server από τα 18 στα 19»).
-MAX_NIGHT_MEMORY_GB = 19.0
+# 19 since 2026-11-19 (owner: «Ανέβασε το όριο του server από τα 18 στα 19»), then 20 the same
+# evening (owner: «Όχι δεν θα μειώσεις τα 12 και θα τα κάνεις 11 θα προσθέσεις το ένα gigabyte
+# και θα τα κάνεις 20»).
+MAX_NIGHT_MEMORY_GB = 20.0
 MIN_AVAILABLE_GB = 4.0
 MAX_PREPARE_MINUTES = 30.0
 MIN_FREE_DISK_GB = 20.0

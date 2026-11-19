@@ -58,7 +58,7 @@ by email and to their phone. The owner answers in that session, once a day.
    preparation failed, or the catalogue prepared more than 30 hours before, or a shop lost
    or shrunk to less than half; the offers fetched more than 30 hours before, or their
    last fetch failed; the photos checked more than 30 hours before; the site's memory and
-   the preparation's peak together over 19 GB (of the server's 24; 18 until 19/11), less than 4 GB
+   the preparation's peak together over 20 GB (of the server's 24; 18 until 19/11), less than 4 GB
    available, the preparation longer than 30 minutes; less than 20 GB of disk free;
    yesterday's AI spend at its cap. Its step "How fast the site answers, from outside"
    gives each page's first byte and the server's part of it: a page not answering 200, or

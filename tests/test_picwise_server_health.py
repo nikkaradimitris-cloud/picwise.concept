@@ -146,9 +146,9 @@ class HealthTests(unittest.TestCase):
         self.assertIn("over the limit: the catalogue was prepared 31.0 h ago", self.over(self.printed()))
 
     def test_memory_disk_and_length_limits(self) -> None:
-        with mock.patch.object(print_health, "site_memory_gb", lambda *a, **k: 9.5):
+        with mock.patch.object(print_health, "site_memory_gb", lambda *a, **k: 10.5):
             over = self.over(self.printed(prepare="prepare_catalogue: peak memory 10485760 KB, 2400.00 s"))
-        self.assertIn("over the limit: the site and the preparation together need 19.5 GB", over)
+        self.assertIn("over the limit: the site and the preparation together need 20.5 GB", over)
         self.assertIn("over the limit: the preparation took 40 minutes", over)
         with mock.patch.object(print_health, "memory_available_gb", lambda *a, **k: (23.4, 3.1)):
             self.assertIn("over the limit: only 3.1 GB of memory available", self.over(self.printed()))

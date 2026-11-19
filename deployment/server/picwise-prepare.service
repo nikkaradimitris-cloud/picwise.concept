@@ -34,11 +34,12 @@ ExecStart=/usr/bin/time -f "prepare_catalogue: peak memory %%M KB, %%e s" /usr/b
 TimeoutStartSec=60min
 Nice=10
 # A ceiling, so that reading a large feed can never take the memory the site needs.
-# Raised on 2026-11-19 for the second Awin link (the trial's peak 15.4 GB), the site's
+# Raised on 2026-11-19 for the second Awin link (the trial's peak 15.4 GB; one GB more the
+# same evening, the owner: «θα προσθέσεις το ένα gigabyte»), the site's
 # workers lowered to 3 so that both fit the server's 24 GB; past it the preparation alone
 # stops, and the site keeps answering from the night before's catalogue.
-MemoryHigh=16G
-MemoryMax=17G
+MemoryHigh=17G
+MemoryMax=18G
 UMask=0027
 NoNewPrivileges=yes
 PrivateTmp=yes
