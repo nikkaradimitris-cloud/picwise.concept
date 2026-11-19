@@ -355,7 +355,7 @@ def second_row_keep(first: ProviderParseResult):
         currency = str(row.get("currency") or "").strip().upper()
         if currency and currency != "GBP":
             return False
-        price = str(row.get("search_price") or row.get("store_price") or row.get("price") or "").strip()
+        price = str(row.get("search_price") or row.get("price") or "").strip()
         try:
             if float(price.replace(",", "").split()[0]) <= 0:
                 return False
