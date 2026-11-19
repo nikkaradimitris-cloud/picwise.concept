@@ -14,6 +14,20 @@
 # and the measure prints counts, brands, kinds, titles and shops, never a link.
 # A run is one commit that changes `if: false` to `if: true`, pushed to the brands' branch,
 # then one that turns it off again and records the run here.
+# Run 44626133872 (2026-11-19 22:11 UTC, this file at 0e46ea5; the server's catalogue
+# prepared at 21:32 that day, 403,545 products from 137 shops; about 6 minutes): 99.1% of
+# the products carry a brand; 7,424 brands, 3,876 of 3 products or more (some of them shops'
+# own names the rule does not catch: Swadesi, DIY Refurb); 95 brands written several ways
+# (8,436 products: "Black and Decker" and "Black & Decker"), some with broken letters
+# ("PokÃ©mon"). Dyson 8 products, all parts; Samsung 2,046 (televisions 332, monitors 153,
+# chargers 65, headphones 49, phones 37 ...; 1,178 of no kind read). 151 brands read alone as
+# a kind (razer -> electric shaver, motorola -> engine oil, draper -> nappies); 306 are English
+# words (Apple, Canon, Brother). A slip of 2,019 of the 3,480 names of 5 letters or more
+# reads as it alone; 607 are one slip from another brand or a word. The 120 largest brands
+# searched: alone, 90 "not sure", 4 nothing ("apple", "nike": the early stage's guards), 19
+# with the brand's product first; with their largest kind, 105 of 112 the brand's and of the
+# kind first; misspelled alone, 86 of 101 nothing; misspelled with their kind, 29 of 94 the
+# brand's first. Put to the owner.
 name: Brands measure (read-only, measured only)
 on:
   push:
@@ -29,7 +43,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   measure:
-    if: true
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
