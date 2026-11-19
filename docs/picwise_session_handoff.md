@@ -8,6 +8,18 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **19/11, the shop's own price: DEPLOYED 09:08 UTC on the owner's «Ανέβασε» (10:51 Athens)**: `512ebf2`
+  pushed to `ccr-1361f1a7-dcpo60` at 08:52 UTC, a fast-forward from `82f2f49` (it carried only one more
+  record line, of the wording's deployment); run `44491367174`, release `20261119T085257Z-512ebf2`.
+  Preparation 821 s, 9.43 GB at its peak; health ok; 15 of 15 pages the same live and on the server;
+  offers fetched again (101 live, of 32 shops). **The memory's first night of sale prices: 0 of 255,564
+  products at the shop's sale price, so no history restarted.** The feed has 69 columns
+  (`feed-compare.yml`, 18/11), so `sale_price` is likely among them but empty, or filled in a way the
+  rule leaves (not lower, other currency, dates not read or not live): not known which; a count of the
+  rows with a `sale_price` and why each is left would say (a change: the owner's yes, then «ανέβασε»).
+  Seen in the deployment's check: `kettle` shows one Geepas kettle in three colours as three cards (the
+  owner's wish of 19/11: one card per product, sizes and colours at the shop), `tv` shows TV units and
+  dongles (the accessory step). The record below, as written before the deployment:
 - **19/11 night, the shop's own price (built, tested, pushed to the work branch; NOT deployed: waits
   for the owner's «ανέβασε»).** The owner: «Θα ήθελα να αποφύγουμε τους υπολογισμούς τιμής», then «Στην
   έκπτωση τραβά στην τιμή της έκπτωσης». (1) No price after an offer: `product_offers.price_after_offer`
