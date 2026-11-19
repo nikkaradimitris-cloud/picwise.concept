@@ -463,7 +463,8 @@ sales figure between them. In their place:
    below)
 5. the same product (same EAN/GTIN or, without it, same brand and manufacturer code,
    MPN; owner, 2026-10-16) shown once, from the cheapest shop that has it in stock;
-   neither code, no joining
+   neither code, no joining across shops; within one shop, its sizes and colours on one
+   product page are one card (owner, 2026-11-19; "One card per product" below)
 6. no ratings anywhere
 7. the first four are one **"Recommended"** and the three cheapest, with "4 of 45"
    beneath. The Recommended is **the middle product of the whole result in price
@@ -793,6 +794,45 @@ read: «Στην έκπτωση τραβά στην τιμή της έκπτωσ
    in the shop's words.
 5. Pinned by `tests/test_picwise_offers_first.py`, `tests/test_picwise_sale_price.py` and
    `tests/test_picwise_catalogue_memory.py`.
+
+## One card per product, decided by the owner, 2026-11-19
+
+The owner: «ένα μαγαζί πουλάει ένα ζευγάρι παπούτσια και το βγάζει σε έξι διαφορετικά
+νούμερα και τέσσερα διαφορετικά χρώματα αυτό κουράζει τον επισκέπτη γιατί βλέπει
+ουσιαστικά το ίδιο προϊόν τα είναι καλό να μην μπλέξουμε με τέτοια βλέπει τα νούμερα και
+τα χρώματα στο κατάστημα και όχι σε μας». Then, on the order of the work: «Ανέβασε
+προοδευτικά να τελειώσουμε τις εργασίες».
+
+1. **What ties the variants.** Google's columns for it (`item_group_id`, `color`,
+   `size`) are filled on 81, 108 and 94 of the feed's 1,683,586 rows (`feed-compare.yml`,
+   19/11), so they tie almost nothing. A shop's product page does: a product sold in sizes
+   and colours is one page, the choice made on it, each variant a row whose address names
+   it ("/products/runner?variant=111"). Two rows of one shop are one product when their
+   page is the same (`product_variants.page_key`: host and path, with what picks a variant
+   or tracks a visit left out of the address, so "product.php?id=12" and "?id=13" stay
+   two) and their titles differ as a size or colour makes them differ (`titles_close`:
+   each at most three words the other lacks), or when Google's columns tie them
+   (`variant_key`). A shop's front page, another shop's page, titles further apart on one
+   page (a list page): kept apart. On the feed of 19/11, 1,193,352 rows shared a page with
+   another; with the address read as above and each title's words against the other's,
+   929,143 of them would join a row of their product (InStock UK 646,738 of 1,033,769;
+   Fila UK 18,868 of 22,036; Bad Shirt Club 12,168 of 12,403), and 264,225 are kept
+   apart.
+2. **The card.** The product keeps the place, the price and the card of its cheapest
+   variant in stock; the link goes to that variant at the shop, where the visitor picks
+   the size and colour. Nothing is added to the card's words. Its offers are all of its
+   variants', so "Lowest price of N shops" counts every shop selling it, in any size or
+   colour, by the barcode rule ("Price first" 5).
+3. **The answer.** The counter, "More", the Recommended (the middle price) and the price
+   bar count products, not rows (`search_selection._join_variants`, inside
+   `_price_first_products`). A price chosen on the bar reads each product at its
+   cheapest variant: a product whose variants run from £500 to £5,000 is under "from
+   £3,000" at £500, so left out of it.
+4. **Not yet.** The cap of each category (`catalogue_cap`) still counts rows, so a
+   product's variants still take its places in the prepared catalogue: counting products
+   there is the next step.
+5. Pinned by `tests/test_picwise_one_card_per_product.py` and
+   `tests/test_picwise_product_variants.py`.
 
 ## The price bar, decided by the owner, 2026-11-12
 

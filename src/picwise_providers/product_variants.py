@@ -20,7 +20,8 @@ from typing import Any, Mapping
 from urllib.parse import urlsplit
 
 GROUP_KEYS = ("item_group_id",)
-COLOUR_KEYS = ("color", "colour")
+# Google's column only: Awin's own `colour` is one the prepared catalogue leaves out.
+COLOUR_KEYS = ("color",)
 SIZE_KEYS = ("size",)
 _SHOP_KEYS = ("advertiser_id", "merchant_id", "advertiser_name", "merchant_name")
 _BRAND_KEYS = ("brand", "brand_name")

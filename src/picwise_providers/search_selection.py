@@ -5,7 +5,7 @@ import math
 import re
 import threading
 from array import array
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from collections import Counter
 from dataclasses import dataclass, field, replace
 from functools import lru_cache
@@ -43,6 +43,7 @@ from .decision_labels import parse_price_amount
 from .product_description import has_sufficient_description
 from .product_specs import read_product_specs
 from .product_offers import offers_covering
+from .product_variants import page_key, title_words, variant_key, words_close
 from .product_identity import same_product_key
 from .product_condition import (
     non_new_condition,
@@ -1895,6 +1896,65 @@ def _shop_count(offers: list[ProviderProduct]) -> int:
     return max(1, len({_merchant_identity(offer) for offer in offers} - {""}))
 
 
+def _join_variants(groups: dict[str, list[ProviderProduct]]) -> dict[str, list[ProviderProduct]]:
+    """One card per product: its sizes and colours are chosen at the shop (owner,
+    2026-11-19: «βλέπει τα νούμερα και τα χρώματα στο κατάστημα και όχι σε μας»).
+
+    `groups` are the answer's products, each its offers cheapest first, in price order.
+    Two are one product when an offer of each is a row of one shop with the same product
+    page (`product_variants.page_key`: the size or colour is chosen on it) and their
+    titles differ as a size or colour makes them differ (`titles_close`), or when Google's
+    columns tie them (`variant_key`, rare in the feed). The product keeps the place, the
+    price and the card of its cheapest; its offers are all of theirs, so "Lowest price of
+    N shops" counts every shop selling it in any size or colour.
+    """
+    order = list(groups)
+    rank = {group: index for index, group in enumerate(order)}
+    parent: dict[str, str] = {}
+
+    def root(group: str) -> str:
+        while group in parent:
+            group = parent[group]
+        return group
+
+    first: dict[str, str] = {}
+    words: dict[str, frozenset[str]] = {}
+
+    def words_of(group: str) -> frozenset[str]:
+        found = words.get(group)
+        if found is None:
+            found = words[group] = title_words(str(groups[group][0].title or ""))
+        return found
+
+    for group in order:
+        for offer in groups[group]:
+            raw = offer.raw if isinstance(offer.raw, Mapping) else {}
+            title = str(offer.title or "")
+            for tie, by_page in (
+                (page_key(raw), True),
+                (variant_key(raw, title=title, brand=str(offer.brand or "")), False),
+            ):
+                if not tie:
+                    continue
+                other = first.setdefault(tie, group)
+                if other == group:
+                    continue
+                kept, joined = sorted((root(other), root(group)), key=rank.__getitem__)
+                if kept == joined:
+                    continue
+                if by_page and not words_close(
+                    words_of(kept), title_words(title) if offer is not groups[group][0] else words_of(group)
+                ):
+                    continue
+                parent[joined] = kept
+    if not parent:
+        return groups
+    families: dict[str, list[ProviderProduct]] = {}
+    for group in order:
+        families.setdefault(root(group), []).extend(groups[group])
+    return families
+
+
 def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduct]:
     """The answer's products, each once at its cheapest offer, cheapest first.
 
@@ -1904,6 +1964,8 @@ def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduc
       offer, and the number of shops selling it is kept for the card (owner rule 5,
       2026-10-16). Every offer here is listed as in stock: card eligibility has
       already removed the rest, so the cheapest kept is the cheapest in stock.
+    - A product in sizes and colours is one card, at its cheapest: the visitor chooses
+      them at the shop (`_join_variants`; owner, 2026-11-19).
     - The same shop listing one title at one price twice is one card: nothing on the
       page could tell the two apart. Offers whose shop the feed does not name count as
       one shop here.
@@ -1940,6 +2002,7 @@ def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduc
             groups[group] = []
             group_price[group] = price
         groups[group].append(product)
+    groups = _join_variants(groups)
 
     ordered: list[_PricedProduct] = []
     seen_cards: set[tuple[str, float, str]] = set()
