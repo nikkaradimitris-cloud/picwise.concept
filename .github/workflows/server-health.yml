@@ -136,7 +136,9 @@ jobs:
               | grep "^family_jobs:" | tail -n 1; printf "families today: "; \
             sudo cat "/srv/picwise/assist/families/spend/$(date -u +%F).json" 2> /dev/null || printf "nothing spent"; \
             printf "\nfamilies: jobs waiting: "; \
-            sudo find /srv/picwise/assist/families/jobs -maxdepth 1 -name "family-*.json" 2> /dev/null | wc -l' || true
+            sudo find /srv/picwise/assist/families/jobs -maxdepth 1 -name "family-*.json" 2> /dev/null | wc -l; \
+            echo "families: the last calls (a job, its sets answered, seconds, cost):"; \
+            sudo journalctl -u picwise-families.service -o cat --no-pager -n 6' || true
           ssh -n picwise 'sudo cat /srv/picwise/assist/families/answers/sets.json 2> /dev/null || true' \
             | python3 deployment/server/print_families.py --sample 60
       - name: Remove the key from the runner
