@@ -347,18 +347,27 @@ def shop_key(product: ProviderProduct) -> str:
 
 
 def _with_aisle(product: ProviderProduct) -> ProviderProduct:
-    """An Awin-format row given the aisle of Google's taxonomy its words fit, ahead of its
-    own category (`awin_categories`), so the cap counts it in its own category."""
+    """An Awin-format row given the Google shelf its words name (`awin_categories`), in the
+    place and the form a Google-format row has it, its own category kept as its type: the
+    rules that read a shelf, the cap among them, read it as every other row's (owner,
+    2026-11-19: «να κλωνοποιήσουμε τους κανόνες και στο δεύτερο feed»)."""
     from dataclasses import replace
 
-    from .awin_categories import row_aisle
+    from .awin_categories import row_shelf
 
-    raw = product.raw if isinstance(product.raw, Mapping) else {}
-    aisle = row_aisle(raw)
-    if not aisle:
+    raw = product.raw
+    if not isinstance(raw, dict):
         return product
+    shelf = row_shelf(raw)
+    if not shelf:
+        return product
+    shelf = sys.intern(shelf)
     own = " ".join(str(product.category_text or "").split())
-    return replace(product, category_text=f"{aisle} > {own}" if own else aisle)
+    # In place: the row's own dict, made by the reader, so no row is copied.
+    raw["google_product_category"] = shelf
+    if own and not str(raw.get("product_type") or "").strip():
+        raw["product_type"] = own
+    return replace(product, category_text=shelf)
 
 
 _OUT_OF_STOCK = {"0", "no", "n", "false", "out of stock", "out_of_stock", "outofstock", "sold out"}

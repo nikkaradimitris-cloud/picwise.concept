@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping
+from functools import lru_cache
 from typing import Any
 
 # The row's category columns, the most specific first.
@@ -99,6 +100,85 @@ def _compile(words: str) -> re.Pattern[str]:
 
 
 _COMPILED = tuple((_compile(words), aisle) for words, aisle in _RULES)
+
+
+# Owner, 2026-11-19: «πρέπει να κλωνοποιήσουμε τους κανόνες και στο δεύτερο feed»: an
+# Awin-format row is given the deepest shelf of Google's taxonomy its words name, in the
+# place a Google-format row has it (`google_product_category`), so every rule that reads a
+# shelf reads it alike ("Paint Kettle" on a shelf of tools is no kettle; "Feed Tyres" on a
+# shelf of printer accessories is an accessory). First a shelf whose own name is the row's
+# category ("Printer Consumables", "Laptops", "Hubs & Switches"), then these, then the
+# aisles above.
+_DEEPER: tuple[tuple[str, str], ...] = (
+    ("tyre tyres tire tires", "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems > Motor Vehicle Tires"),
+    ("car part,car parts,motorsport,exhaust,4x4,motor vehicle", "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts"),
+    ("laptop bag,laptop case,laptop sleeve,peripheral,peripherals,webcam,webcams", "Electronics > Electronics Accessories > Computer Accessories"),
+    ("printer consumable,printer consumables,ink,toner,cartridge,cartridges", "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Consumables"),
+    ("printer,printers,all-in-one printers,scanner,scanners", "Electronics > Print, Copy, Scan & Fax > Printers, Copiers & Fax Machines"),
+    ("monitor,monitors", "Electronics > Video > Computer Monitors"),
+    ("mice,mouse", "Electronics > Electronics Accessories > Computer Components > Input Devices > Mice & Trackballs"),
+    ("cpu,cpus,processor,processors,motherboard,motherboards,graphics card,graphics cards,computer case,computer cases,"
+     "computer component,computer components,ssd,hard drive,hard drives,memory", "Electronics > Electronics Accessories > Computer Components"),
+    ("dvd,dvds,blu-ray", "Media > DVDs & Videos"),
+    ("skincare,skin care", "Health & Beauty > Personal Care > Cosmetics > Skin Care"),
+    ("fragrance,fragrances,perfume,perfumes", "Health & Beauty > Personal Care > Cosmetics > Perfume & Cologne"),
+    ("watch,watches", "Apparel & Accessories > Jewelry > Watches"),
+    ("cleaning", "Home & Garden > Household Supplies > Household Cleaning Supplies"),
+    ("power tool,power tools,hand tool,hand tools,garden tool,garden tools,diy", "Hardware > Tools"),
+)
+
+
+def _leaf_key(name: str) -> str:
+    words = " ".join(str(name or "").lower().replace("&", "and").replace("'", "").split())
+    return words[:-1] if words.endswith("s") else words
+
+
+@lru_cache(maxsize=1)
+def _leaves() -> dict[str, str]:
+    """Google's shelves by their own last name, the shallowest kept for a name used twice."""
+    try:
+        from picwise_nlu.concept_understanding import _TAXONOMY_PATH
+
+        lines = _TAXONOMY_PATH.read_text(encoding="utf-8").splitlines()
+    except (OSError, ImportError):
+        return {}
+    found: dict[str, str] = {}
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        found.setdefault(_leaf_key(line.split(" > ")[-1]), line)
+    return found
+
+
+_DEEPER_COMPILED = tuple((_compile(words), shelf) for words, shelf in _DEEPER)
+
+
+def shelf_for(text: str) -> str:
+    """The deepest Google shelf the words name: a shelf of that very name, else the rules."""
+    words = " ".join(str(text or "").split())
+    if not words:
+        return ""
+    for part in [words] + [piece.strip() for piece in re.split(r"[>/|]", words)[::-1] if piece.strip()]:
+        shelf = _leaves().get(_leaf_key(part))
+        if shelf:
+            return shelf
+    for pattern, shelf in _DEEPER_COMPILED:
+        if pattern.search(words):
+            return shelf
+    return aisle_for(words)
+
+
+def row_shelf(raw: Mapping[str, Any]) -> str:
+    """The Google shelf of an Awin-format row: its most specific category column that
+    names one; "" when the row has Google's own or none fits."""
+    if str(raw.get("google_product_category") or "").strip():
+        return ""
+    for column in CATEGORY_COLUMNS:
+        shelf = shelf_for(str(raw.get(column) or ""))
+        if shelf:
+            return shelf
+    return ""
 
 
 def aisle_for(text: str) -> str:

@@ -135,3 +135,40 @@ class SecondRowKeepTests(unittest.TestCase):
             result = awin_adapter.load_awin_provider_feed(ProviderFeedConfig(provider_key="awin", feed_file=first))
         awin_adapter.clear_awin_feed_parse_cache()
         self.assertEqual([p.provider_product_id for p in result.products], ["g1", "a0"])
+
+
+class ClonedRulesTests(unittest.TestCase):
+    """Owner, 2026-11-19: «να κλωνοποιήσουμε τους κανόνες και στο δεύτερο feed». A second
+    link's row carries its Google shelf where a Google-format row does, so the search reads
+    it alike: a paint kettle on a shelf of tools is no kettle, a printer's feed tyres are an
+    accessory, a kettle on a kitchen shelf is a kettle, a car's tyres are tyres."""
+
+    def test_the_search_reads_the_second_link_s_rows_as_the_first_s(self) -> None:
+        from picwise_providers import search_selection
+
+        folder = Path(tempfile.mkdtemp())
+        first = _write(folder / "google.csv", GOOGLE, [_google_row("g1", "101", "Kitchen Shop")])
+        rows = []
+        for ident, title, category in (
+            ("p1", "Faithfull Plastic Paint Kettle", "DIY"),
+            ("p2", "Sharp MX3050 MX3070 Feed Tyres NROLR2125FCZZ", "Printer Consumables"),
+            ("p3", "Russell Hobbs 1.7L Electric Kettle", "Kettles"),
+            ("p4", "Continental ContiSportContact 5 245/40 R18 97Y XL", "Tyres"),
+        ):
+            row = _awin_row(ident, "301", "Fictional Big Shop")
+            row[1], row[10] = title, category
+            rows.append(row)
+        second = _write(folder / "awin.csv", AWIN, rows)
+        awin_adapter.clear_awin_feed_parse_cache()
+        with mock.patch.dict(os.environ, {"AWIN_FEED_FILE_AWIN": second}):
+            result = awin_adapter.load_awin_provider_feed(ProviderFeedConfig(provider_key="awin", feed_file=first))
+        awin_adapter.clear_awin_feed_parse_cache()
+        by_id = {p.provider_product_id: p for p in result.products}
+        read = {ident: search_selection._product_concepts(by_id[ident], search_selection._product_search_fields(by_id[ident]))
+                for ident in ("p1", "p2", "p3", "p4")}
+        self.assertNotIn("kettle", read["p1"])
+        self.assertNotIn("tyres", read["p2"])
+        self.assertIn("kettle", read["p3"])
+        self.assertIn("tyres", read["p4"])
+        self.assertEqual(by_id["p4"].raw["google_product_category"], by_id["p4"].category_text)
+        self.assertEqual(by_id["p1"].raw["product_type"], "DIY")
