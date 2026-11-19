@@ -151,18 +151,30 @@ def names_a_variant(raw: Mapping[str, Any]) -> bool:
         return False
 
 
+# Words that name a size, not a product: a number ("9", "12", "100"), a number and its
+# unit or letters ("2xl", "10y", "18m", "128gb"), a letter size, and the words around
+# sizes. On one page they tell the variants apart, so they are not counted as a difference
+# (2026-11-19: "The Bear Colour Tracksuit - GRAY / 12-18 M" and "- Pink / 3-4 Y", one
+# page, differed by four words, all but the colour a size).
+_SIZE_WORD_RE = re.compile(r"^(?:\d+[a-z]{0,3}|x{0,3}[sl]|x{1,3}|m|xxl|xxxl|uk|eu|us|y|yr|yrs|years?|months?|mths?)$")
+
+
 def title_words(title: str) -> frozenset[str]:
-    """A title's words, lower case, as `titles_close` compares them."""
-    return frozenset(_words(title))
+    """A title's words, lower case, as `titles_close` compares them: its sizes left out."""
+    return frozenset(word for word in _words(title) if not _SIZE_WORD_RE.match(word))
 
 
 def words_close(first: frozenset[str], second: frozenset[str], *, most: int = 3) -> bool:
     """`titles_close` on titles already read as words (`title_words`)."""
-    return bool(first and second) and len(first - second) <= most and len(second - first) <= most
+    if not (first and second):
+        return False
+    apart = max(len(first - second), len(second - first))
+    return apart <= most and len(first & second) > apart
 
 
 def titles_close(first: str, second: str, *, most: int = 3) -> bool:
-    """Whether two titles differ as a size or a colour makes them differ: each has at most
-    `most` words the other lacks ("Runner White Size 9" and "Runner Black Size 8": two
-    each), while the products of a shop's list page differ by more."""
+    """Whether two titles differ as a size or a colour makes them differ: sizes aside
+    (`title_words`), each has at most `most` words the other lacks, and they share more
+    words than either lacks ("Runner White Size 9" and "Runner Black Size 8": one each,
+    three shared), while the products of a shop's list page differ by more."""
     return words_close(title_words(first), title_words(second), most=most)

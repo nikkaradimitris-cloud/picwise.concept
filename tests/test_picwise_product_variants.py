@@ -101,6 +101,10 @@ class PageKeyTests(unittest.TestCase):
         self.assertTrue(titles_close("1.7L Fast-Boil Cordless Beige Electric Kettle",
                                      "1.7L Fast-Boil Cordless Black Electric Kettle"))
         self.assertFalse(titles_close("Fixturon Runner Black Size 8", "Fixturon Garden Hose Reel With Wall Bracket"))
+        # Sizes are not counted as a difference: a colour and an age range, one page.
+        self.assertTrue(titles_close("Fixturon Bear Tracksuit 100% Cotton - GRAY / 12-18 M",
+                                     "Fixturon Bear Tracksuit 100% Cotton - Pink / 3-4 Y"))
+        self.assertTrue(titles_close("Fixturon Tracksuit - 2XL", "Fixturon Tracksuit - S"))
         self.assertFalse(titles_close("", "Fixturon Runner"))
 
 

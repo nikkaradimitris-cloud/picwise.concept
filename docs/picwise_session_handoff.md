@@ -8,6 +8,19 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **19/11 afternoon, the owner's series of work, step 1 of 4 deployed: one card per product** (the owner:
+  «Ανέβασε προοδευτικά να τελειώσουμε τις εργασίες»; the series agreed on 19/11 at night: 1. one card per
+  product, sizes and colours chosen at the shop; 2. accessory or main product, the doubtful ones judged by
+  the AI at night; 3. a list of brands from the feeds, their kinds counted; 4. the ~254,000 products with
+  no kind, by the same night's work). Deployed today: at 10:33 UTC `782b029` (the sale prices' night
+  count and the daily session's rows past the header left out: «Ανέβασε»), at 11:18 UTC `e9aa85a` (one
+  card per product), then the size words' refinement (this record's push). The feed names a group,
+  colour or size on almost no row, so the tie is the shop's product page (`product_variants.page_key`,
+  `titles_close`; `search_selection._join_variants`). Measured (`feed-compare.yml` by hand from the work
+  branch, runs `44508614034`, `44509788194`, `44511198948`): 929,143 rows would join a row of their
+  product. Checked live: "tracksuit" no longer shows "Dominate Tracksuit - 2XL" and "- S" both. Open:
+  the cap still counts rows (`catalogue_cap`), so variants still take places in the prepared catalogue;
+  a shop with a page per colour (Geepas' kettles) is not tied. Next: step 2, accessories.
 - **19/11 noon, the daily session: why no product stood at a sale price, measured; and rows read with
   their fields out of place, left out (built, tested, pushed to the work branch; NOT deployed: waits for
   «ανέβασε»).** `feed-compare.yml` by hand from the work branch (runs `44501037362`, `44502112273`; the

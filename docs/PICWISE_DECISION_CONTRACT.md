@@ -811,8 +811,9 @@ The owner: «ένα μαγαζί πουλάει ένα ζευγάρι παπού
    page is the same (`product_variants.page_key`: host and path, with what picks a variant
    or tracks a visit left out of the address, so "product.php?id=12" and "?id=13" stay
    two) and their titles differ as a size or colour makes them differ (`titles_close`:
-   each at most three words the other lacks), or when Google's columns tie them
-   (`variant_key`). A shop's front page, another shop's page, titles further apart on one
+   sizes aside, a number, a letter size or an age, each lacks at most three of the
+   other's words and they share more than either lacks), or when Google's columns tie
+   them (`variant_key`). A shop's front page, another shop's page, titles further apart on one
    page (a list page): kept apart. On the feed of 19/11, 1,193,352 rows shared a page with
    another; with the address read as above and each title's words against the other's,
    929,143 of them would join a row of their product (InStock UK 646,738 of 1,033,769;
@@ -831,7 +832,13 @@ The owner: «ένα μαγαζί πουλάει ένα ζευγάρι παπού
 4. **Not yet.** The cap of each category (`catalogue_cap`) still counts rows, so a
    product's variants still take its places in the prepared catalogue: counting products
    there is the next step.
-5. Pinned by `tests/test_picwise_one_card_per_product.py` and
+5. **Deployed** 19/11, 11:34 UTC (`e9aa85a`): on the live site "tracksuit" shows
+   "Dominate Tracksuit" and "Warrior Tracksuit" once each, where before each came in
+   "2XL" and "S". "The Bear Colour Tracksuit - GRAY / 12-18 M" and "- Pink / 3-4 Y", one
+   page, stayed apart (four words apart, three of them a size): sizes are no longer
+   counted as a difference since. Products a shop puts on pages of their own, one per
+   colour (Geepas' kettles), stay apart: no page ties them.
+6. Pinned by `tests/test_picwise_one_card_per_product.py` and
    `tests/test_picwise_product_variants.py`.
 
 ## The price bar, decided by the owner, 2026-11-12
