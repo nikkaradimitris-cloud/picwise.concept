@@ -38,9 +38,11 @@ FAMILIES_NAME = "families.json"
 # A set holds at most this many listings, each the cheapest of its page and of those only
 # sizes apart: more is a family key too broad to be one product ("Fixturon T-Shirt" for a
 # shop's every print).
-SET_MOST = 20
-# Sets in one job, one call of the AI.
+SET_MOST = 40
+# Sets in one job, one call of the AI, and the listings they hold at most: a call's
+# answer must fit the answer's room (`picwise_ai.families.MAX_TOKENS`).
 SETS_PER_JOB = 25
+LISTINGS_PER_JOB = 250
 # How often the search looks at the file again.
 _RECHECK_SECONDS = 30.0
 
@@ -185,16 +187,26 @@ def answered_set_ids(sets_file: Path) -> set[str]:
 
 
 def write_jobs(sets: list[dict[str, Any]], jobs_dir: Path, *, answered: set[str]) -> int:
-    """Write the sets not answered yet as jobs, `SETS_PER_JOB` a job, after taking away the
-    jobs of the night before that no one has claimed; how many jobs were written."""
+    """Write the sets not answered yet as jobs, `SETS_PER_JOB` sets and `LISTINGS_PER_JOB`
+    listings a job at most, after taking away the jobs of the night before that no one
+    has claimed; how many jobs were written."""
     jobs_dir = Path(jobs_dir)
     jobs_dir.mkdir(parents=True, exist_ok=True)
     for old in jobs_dir.glob("family-*.json"):
         old.unlink(missing_ok=True)
-    waiting = [found for found in sets if found["id"] not in answered]
+    chunks: list[list[dict[str, Any]]] = []
+    listed = 0
+    for found in sets:
+        if found["id"] in answered:
+            continue
+        size = len(found.get("listings") or ())
+        if not chunks or len(chunks[-1]) >= SETS_PER_JOB or listed + size > LISTINGS_PER_JOB:
+            chunks.append([])
+            listed = 0
+        chunks[-1].append(found)
+        listed += size
     written = 0
-    for start in range(0, len(waiting), SETS_PER_JOB):
-        chunk = waiting[start:start + SETS_PER_JOB]
+    for chunk in chunks:
         name = f"family-{chunk[0]['id']}.json"
         partial = jobs_dir / f".{name}.partial"
         partial.write_text(json.dumps({"sets": chunk}, ensure_ascii=False), encoding="utf-8")

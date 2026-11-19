@@ -132,9 +132,10 @@ class SetsTests(unittest.TestCase):
                          ["Fixturon Tee Black S", "Fixturon Tee White S", "Fixturon Tee Navy S"])
         self.assertEqual(len(listings[0]["products"]), 6)
         self.assertIn("fixture shop\x1fblack-3XL", listings[0]["products"])
-        # Twenty-one colours of one shirt: too many for one set, none asked.
-        colours = ("black white grey silver gold red blue navy green pink purple yellow orange brown beige "
-                   "cream ivory khaki olive teal turquoise").split()
+        # More colours of one shirt than a set holds: none asked.
+        from picwise_providers.product_variants import _COLOURS
+
+        colours = sorted(_COLOURS)[:SET_MOST + 1]
         self.assertEqual(len(colours), SET_MOST + 1)
         many = [_product(f"{colour}-{size}", f"Fixturon Tee {colour.title()} {size}", 12.0)
                 for colour in colours for size in ("S", "M")]
@@ -149,6 +150,19 @@ class SetsTests(unittest.TestCase):
         ]), [])
         many = [_product(f"p{number}", f"Fixturon Mug {number}", 5.0) for number in range(SET_MOST + 1)]
         self.assertEqual(doubtful_sets(many), [])
+
+    def test_a_job_holds_so_many_listings_at_most(self) -> None:
+        from picwise_providers.variant_families import LISTINGS_PER_JOB
+
+        folder = Path(tempfile.mkdtemp())
+        listing = {"title": "Fixturon Mug Black", "price": "5.00", "products": ["fixture shop\x1fm"]}
+        sets = [{"id": f"s{number:03d}", "brand": "", "listings": [listing] * SET_MOST} for number in range(10)]
+        written = write_jobs(sets, folder, answered=set())
+        per_job = LISTINGS_PER_JOB // SET_MOST
+        self.assertEqual(written, -(-10 // per_job))
+        for job in folder.glob("family-*.json"):
+            held = json.loads(job.read_text(encoding="utf-8"))["sets"]
+            self.assertLessEqual(sum(len(found["listings"]) for found in held), LISTINGS_PER_JOB)
 
     def test_the_jobs_are_the_sets_not_answered_the_night_before_s_gone(self) -> None:
         folder = Path(tempfile.mkdtemp())

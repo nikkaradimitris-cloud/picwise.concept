@@ -607,8 +607,8 @@ The owner, 2026-11-19: one card per product, «εκεί εμπλέκεται κ�
 όριο του ai μπορεί να ανέβει». Not a search's answer: `picwise-families`, a service of its
 own under the same user and key as `picwise-assist`, reads the sets of listings the site
 writes after each preparation (`deployment/server/family_jobs.py`) and asks Claude Haiku
-5.5, 25 sets a call, which listings of a shop and brand, a colour or a number apart, are
-one product in variants (`picwise_ai.families`). Given: titles and prices only, never a
+5.5, 25 sets and 250 listings a call at most, which listings of a shop and brand, whose
+titles begin with the same name, are one product in variants (`picwise_ai.families`). Given: titles and prices only, never a
 link or a buyer's word. Checked by code: every listing of a set in exactly one group, or
 the set stays apart. Its own cap, $5.00 a day, and 20 calls a minute; the searches keep
 theirs. The site reads only the file of answers (`PICWISE_FAMILIES_FILE`). The Decision

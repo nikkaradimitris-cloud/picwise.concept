@@ -860,8 +860,9 @@ The owner: «ένα μαγαζί πουλάει ένα ζευγάρι παπού
      and the name the titles begin with (`head_key`: the words before " - ", " | " or
      ", ", so a print no list of colours names, "Satin Sleep Mask - Snake Print", is asked
      too; the whole title without one), each page and each size-only listing once, at most
-     20 listings a set, those not answered yet; `picwise-families`, under the AI layer's
-     own user and key, asks Claude Haiku 5.5 25 sets a call, which listings are one
+     40 listings a set (20 until 19/11 16:4x Athens, when one shop's 25 prints of a sleep
+     mask stayed apart), those not answered yet; `picwise-families`, under the AI layer's
+     own user and key, asks Claude Haiku 5.5 25 sets and 250 listings a call at most, which listings are one
      product in variants (colour, print, finish, size, capacity, power, length, pack size;
      a different model, a different type of item, a flavour of a food, a bundle with other
      items: apart; unsure: apart), uses an answer only when every listing is in exactly

@@ -26,7 +26,7 @@ from picwise_ai.service import MinuteLimit, SpendLedger
 
 MODEL = "claude-haiku-5-5"
 EFFORT = "low"
-MAX_TOKENS = 4000
+MAX_TOKENS = 8000
 DAILY_CAP_USD = 5.00
 CALLS_PER_MINUTE = 20
 FAMILIES_NAME = "families.json"
