@@ -90,14 +90,19 @@ class StreamReadingTests(unittest.TestCase):
             )
             self.assertEqual([product.brand for product in result.products], ["", "Two"])
         with self.subTest("blank lines, a short row and a long one"):
+            # A row with filled fields past the header is left out: its fields no longer
+            # stand under their names (2026-11-19: a shop's rows whose sale price read
+            # "Union Jack"). Empty fields past it, a trailing comma, change nothing.
             result = self._load(
                 "uneven.csv",
                 b"product_id,title,url,brand\nE1,Kettle,https://x.example.invalid/e1\n\n\n"
-                b"E2,Lamp,https://x.example.invalid/e2,Br,extra,more\n",
+                b"E2,Lamp,https://x.example.invalid/e2,Br,extra,more\n"
+                b"E3,Fan,https://x.example.invalid/e3,Br,,\n"
+                b"E4,Union Jack,Mug,https://x.example.invalid/e4,Br\n",
             )
             self.assertEqual([dict(product.raw) for product in result.products], [
                 {"product_id": "E1", "title": "Kettle", "url": "https://x.example.invalid/e1"},
-                {"product_id": "E2", "title": "Lamp", "url": "https://x.example.invalid/e2", "brand": "Br"},
+                {"product_id": "E3", "title": "Fan", "url": "https://x.example.invalid/e3", "brand": "Br"},
             ])
 
     def test_a_broken_or_cut_gzip_file_failed_to_parse(self) -> None:

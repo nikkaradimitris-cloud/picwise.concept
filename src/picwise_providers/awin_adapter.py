@@ -219,9 +219,13 @@ def _read_feed_rows(path: str) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
 
 
 def _parse_csv_stream(text: IO[str]) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
-    # Read as `csv.DictReader` reads it -- blank lines skipped, a long row's extra
-    # fields dropped, a repeated column name taking its last value -- with only the
-    # filled fields kept, and each row made in one step.
+    # Read as `csv.DictReader` reads it -- blank lines skipped, a repeated column name
+    # taking its last value -- with only the filled fields kept, and each row made in one
+    # step. A row with a filled field beyond the header's columns is left out whole: its
+    # fields no longer stand under their names, so its price could be another column's
+    # text or number (2026-11-19: 201 of InStock UK's rows, their sale prices reading
+    # "Union Jack" and pieces of JSON; `feed-compare.yml` counts them). Empty fields past
+    # the header, a trailing comma, change nothing and are dropped as before.
     try:
         reader = csv.reader(text)
         header = next(reader, None)
@@ -229,8 +233,11 @@ def _parse_csv_stream(text: IO[str]) -> tuple[list[dict[str, Any]], tuple[str, .
             return [], ("csv_missing_header",)
         repeated_names = len(set(header)) != len(header)
         rows: list[dict[str, Any]] = []
+        width = len(header)
         for row in reader:
             if not row:
+                continue
+            if len(row) > width and any(field.strip() for field in row[width:]):
                 continue
             if repeated_names:
                 rows.append({key: value for key, value in dict(zip(header, row)).items() if value})

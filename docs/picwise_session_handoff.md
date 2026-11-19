@@ -8,6 +8,19 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **19/11 noon, the daily session: why no product stood at a sale price, measured; and rows read with
+  their fields out of place, left out (built, tested, pushed to the work branch; NOT deployed: waits for
+  «ανέβασε»).** `feed-compare.yml` by hand from the work branch (runs `44501037362`, `44502112273`; the
+  run's red is the known "new link lacks 5 shops", not the measure): of 1,683,586 rows of the feed in use,
+  **154 carry a `sale_price`, 153 of them InStock UK's, 1 Back to the Office's**; by the site's rule 19 in
+  force, 38 not lower, 22 dates unread, 75 price unread. The unread ones read "Union Jack", "in_stock" and
+  pieces of JSON: **202 rows carry more fields than the header (201 of InStock UK's 1,033,769, 1 of Back to
+  the Office's)**, and the site read them field by field, so a field could stand under another's name (a
+  price from another column). Fixed at the cause (`awin_adapter._parse_csv_stream`): a row with a filled
+  field past the header is left out whole; empty ones past it (a trailing comma) change nothing. So the
+  first night's 0 is mostly the shops' choice: the feed gives almost no sale prices. Whether the 19 are
+  among the products the search keeps: the late morning's night count (`sale_prices`) says after a
+  deployment. `print_search_reading.py` byte for byte the same; 316 modules, 314 pass, 2 fail as known.
 - **19/11 noon, the daily session: the feed's sale prices counted today, without a deployment.** The
   read-only `feed-compare.yml` (by hand, from the work branch) now counts, for the feed in use, the rows
   with a `sale_price`, those the site's rule takes tonight and each reason for the rest
