@@ -8,6 +8,15 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **NEXT (owner, 19/11 night): the AI to give every product its Google shelf** («εκτός από τον bot.... Μπλέξουμε και
+  το ai για να ταξινομήσουμε όλο τον κατάλογο»). In order: (1) `search-audit.yml`, right answers per feed, the
+  before; (2) a trial on 1,000 products, under $1: title and the shop's own category in, a line of Google's
+  taxonomy out (an answer outside it refused), the real cost and accuracy measured; (3) the whole catalogue, each
+  product asked once and kept on the server, the night's new ones after, under a daily cap the owner sets. First
+  the second link's broad shelves (Tooled Up's 163,000 «DIY»), then the first link's ~900,000 rows held for no
+  category (mostly InStock UK), which could become products. The AI sets only the shelf
+  (`google_product_category`); every rule stays as it is. The families service (`picwise-families`, $5 a day) is
+  the model: about $0.0015 a job of 25; estimated $20-40 once for all, cents a day after.
 - **19/11 evening: both Awin links live** (`6c5d6b5`, 363,689 products from 138 shops; preparation 14.1 GB,
   21.8 min; site 5.6 GB with 3 workers; 19.8 GB at night, limit 20). **Next, the search's accuracy with the new
   shops:** a word in a title is not enough when the row's aisle disagrees with the kind searched (kettle -> paint
