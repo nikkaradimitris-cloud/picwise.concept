@@ -112,6 +112,8 @@ _PAGE_STYLES = (
     ".pw-card-variants{margin:4px 0 0;font-size:12px;line-height:1.35;color:var(--ink-2);"
     "display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}"
     ".pw-variants-heading{font-weight:700;color:var(--ink);}"
+    # A variant another shop sells cheaper (owner's rule 3, 2026-11-19).
+    ".pw-card-cheaper{margin:4px 0 0;font-size:12px;line-height:1.35;font-weight:650;color:var(--green);}"
     ".pw-meta{margin:4px 0 0;font-size:12px;line-height:1.4;color:var(--muted);}"
     ".pw-feature-list{margin:6px 0 0;padding:0;list-style:none;display:grid;gap:4px;}"
     ".pw-feature-item{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--ink-2);line-height:1.35;}"
@@ -243,7 +245,7 @@ _PAGE_STYLES = (
     ".pw-card-title{font-size:15px;line-height:1.3;-webkit-line-clamp:2;min-height:0;}"
     ".pw-card-shop{margin-top:4px;font-size:13px;white-space:normal;}"
     ".pw-card-stock{margin-top:4px;font-size:13px;}"
-    ".pw-card-description,.pw-card-extra,.pw-card-variants,.pw-meta,.pw-feature-item{font-size:13px;}"
+    ".pw-card-description,.pw-card-extra,.pw-card-variants,.pw-card-cheaper,.pw-meta,.pw-feature-item{font-size:13px;}"
     ".pw-warning,.pw-rec-note,.pw-offer-meta,.pw-offer-terms{font-size:12px;}"
     ".pw-card-note{font-size:12px;}"
     ".pw-cta-at{display:none;}"

@@ -225,15 +225,13 @@ def _title_values(
     return {kind: [value for value, _count in found] for kind, found in values.items() if found}
 
 
-def variant_values(titles: Sequence[str]) -> tuple[tuple[str, tuple[str, ...]], ...]:
-    """The variants one shop's titles of one product name, by kind (`KINDS`), each kind
-    with two values at least, `KINDS_SHOWN` kinds at most; the first title is the card's,
-    and its colour or option is named first. Empty when the titles do not read as
-    variants."""
+def _read(titles: Sequence[str]) -> tuple[list[str], list[dict[str, list[str]]]] | None:
+    """The titles once each, and each one's variants by kind; None when they do not read
+    as variants."""
     titles = [" ".join(str(title or "").split()) for title in list(titles)[:TITLES_READ]]
     titles = list(dict.fromkeys(title for title in titles if title))
     if len(titles) < 2:
-        return ()
+        return None
     parts_of = [_parts(title) for title in titles]
     part_keys = [[_part_key(part) for part in parts] for parts in parts_of]
     # How many titles hold each part, and the words every title holds.
@@ -246,8 +244,41 @@ def variant_values(titles: Sequence[str]) -> tuple[tuple[str, tuple[str, ...]], 
     for parts, keys in zip(parts_of, part_keys):
         of_title = _title_values(parts, keys, part_count, common_tokens, len(titles))
         if of_title is None:
-            return ()
+            return None
         read.append(of_title)
+    return titles, read
+
+
+def variant_label(titles: Sequence[str], title: str) -> str:
+    """How one title's variant is named among its shop's titles of the product, for a mark
+    ("Green", "Size 9", "Black, Size 9"); "" when it cannot be told."""
+    found = _read(titles)
+    if found is None:
+        return ""
+    known, read = found
+    wanted = " ".join(str(title or "").split())
+    if wanted not in known:
+        return ""
+    of_title = read[known.index(wanted)]
+    named = []
+    for kind in KINDS:
+        for value in of_title.get(kind, ()):
+            shown = _shown(value)
+            if kind == SIZES and (shown.lower() in _LETTER_SIZES or re.match(r"^\d+(?:[.,]\d+)?$", shown)):
+                shown = f"Size {shown}"
+            named.append(shown)
+    return ", ".join(named)
+
+
+def variant_values(titles: Sequence[str]) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    """The variants one shop's titles of one product name, by kind (`KINDS`), each kind
+    with two values at least, `KINDS_SHOWN` kinds at most; the first title is the card's,
+    and its colour or option is named first. Empty when the titles do not read as
+    variants."""
+    found = _read(titles)
+    if found is None:
+        return ()
+    _titles, read = found
     # Colours beside prints and finishes are one choice at the shop.
     merge = any(OPTIONS in of_title for of_title in read) and any(COLOURS in of_title for of_title in read)
     found: dict[str, list[str]] = {}

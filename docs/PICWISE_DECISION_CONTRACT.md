@@ -873,8 +873,17 @@ The owner: «ένα μαγαζί πουλάει ένα ζευγάρι παπού
    - **The check:** the AI layer's rule is to check a sample before its answers show; on
      the owner's «θα το κάνουμε τώρα» the answers show at once and the sample is read
      right after the first scan (`print_families.py`, in `server-health.yml`).
-   - **Not yet:** the mark of a variant cheaper elsewhere (rule 3), and the cap of each
-     category (`catalogue_cap`) counting products, not rows.
+   - **Rule 3, a variant cheaper at another shop** (`search_selection._cheaper_elsewhere`,
+     19/11, the card shown to the owner first): a product's variants are its members, each
+     the offers of one shop or of several with one barcode. The shop with the most
+     variants is the card's; another shop selling one of them alone, cheaper than the
+     card's shop sells it, is a card of its own (cheaper, so higher; "Lowest price of 2
+     shops" when the card's shop sells it too), and the card says so in green, two at
+     most: "White, Size 9 is £35.00 at Other Shoes" (`variant_names.variant_label`). The
+     same variant at the card shop's price or dearer stays in the card, as one product
+     sold by several shops; a product with no variants at any shop is one card at its
+     cheapest, as before ("Price first" 5).
+   - **Not yet:** the cap of each category (`catalogue_cap`) counting products, not rows.
 5. **Deployed** 19/11, 11:34 UTC (`e9aa85a`): on the live site "tracksuit" shows
    "Dominate Tracksuit" and "Warrior Tracksuit" once each, where before each came in
    "2XL" and "S". "The Bear Colour Tracksuit - GRAY / 12-18 M" and "- Pink / 3-4 Y", one

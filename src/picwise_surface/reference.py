@@ -704,6 +704,7 @@ def _build_price_first_cards(
     shops = dict(getattr(resolution, "provider_feed_shop_counts", ()) or ())
     places = dict(getattr(resolution, "provider_feed_price_ranks", ()) or ())
     variants = dict(getattr(resolution, "provider_feed_variant_lists", ()) or ())
+    cheaper = dict(getattr(resolution, "provider_feed_variant_marks", ()) or ())
     total = int(getattr(resolution, "provider_feed_total_count", 0) or 0)
     products = first_page + opened
     labels = build_fact_based_choice_labels(products)
@@ -764,6 +765,12 @@ def _build_price_first_cards(
                 "extra_line": shops_label if is_recommended or (offer and shops_label) else "",
                 # Its variants at the shop, where the visitor chooses them.
                 "variant_lines": _variant_lines(variants.get(product_id)),
+                # A variant another shop sells cheaper, a card of its own higher up (owner's
+                # rule 3, 2026-11-19): "Green is £18.00 at Shop A".
+                "cheaper_lines": [
+                    f"{label} is {price} at {shop_display_name(str(shop_name))}"
+                    for label, price, shop_name in (cheaper.get(product_id) or ())
+                ][:2],
                 "offer": offer or None,
                 "note": _card_note(label),
                 "meta": "",
@@ -1080,6 +1087,8 @@ def _render_choice_card(
             f'<p class="pw-card-variants"><span class="pw-variants-heading">{escape(heading)}:</span> '
             f"{escape(values)}</p>"
         )
+    for cheaper_line in card.get("cheaper_lines") or ():  # type: ignore[union-attr]
+        lines.append(f'<p class="pw-card-cheaper">{escape(str(cheaper_line))}</p>')
     if str(card.get("meta") or ""):
         lines.append(f'<p class="pw-meta">{escape(str(card["meta"]))}</p>')
     if reasons:
