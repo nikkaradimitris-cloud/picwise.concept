@@ -60,6 +60,71 @@ class KindsTests(unittest.TestCase):
         self.assertIn("never a part", kind_lines.SYSTEM_PROMPT)
 
 
+class EvidenceTests(unittest.TestCase):
+    def test_the_lines_of_the_products_read_as_a_kind_the_most_given_first(self) -> None:
+        rows = [
+            (frozenset({"watch", "__pet__"}), WATCHES, "Casio Classic"),
+            (frozenset({"watch"}), WATCHES, "Diesel Mega Chief"),
+            (frozenset({"watch"}), BANDS, "Nato Strap 20mm"),
+            (frozenset({"watch"}), None, "Not asked"),
+            (frozenset({"__uncertain_kind__"}), BANDS, "Doubtful"),
+        ]
+        found = kind_lines.evidence(rows)
+        self.assertEqual(found, {"watch": [(WATCHES, 2, ["Casio Classic", "Diesel Mega Chief"]), (BANDS, 1, ["Nato Strap 20mm"])]})
+
+    def test_the_model_reads_them_with_each_kind(self) -> None:
+        kinds = [kind for kind in kind_lines.kinds_described() if kind["id"] in ("watch", "air_fryer")]
+        by_id = {kind["id"]: kind for kind in kinds}
+        by_id["watch"]["seen"] = [(WATCHES, 900, ["Casio Classic"]), (BANDS, 40, ["Nato Strap"])]
+        by_id["air_fryer"]["seen"] = []
+        text = kind_lines.user_message(kinds, LINES)
+        self.assertIn(f"- {NUMBER[WATCHES]} {WATCHES}: 900 products, e.g. \"Casio Classic\"", text)
+        self.assertIn("no product of the catalogue is read as this kind", text)
+        del by_id["air_fryer"]["seen"]
+        self.assertNotIn("no product", kind_lines.user_message([by_id["air_fryer"]], LINES))
+
+
+class SeenInTests(unittest.TestCase):
+    def test_a_prepared_file_and_the_scans_answers_give_each_kinds_lines(self) -> None:
+        import gzip
+        from datetime import datetime, timezone
+
+        from picwise_ai.shelves import ask_key, shop_words
+        from picwise_providers.contracts import ProviderFeedStatus, ProviderProduct
+        from picwise_providers.offer_health import build_feed_availability_context
+        from picwise_providers.prepared_catalogue import PreparedCatalogue, write_prepared_catalogue
+
+        def product(number: int, title: str, google: str) -> ProviderProduct:
+            return ProviderProduct(
+                provider_key="awin", provider_product_id=f"row-{number}", title=title, brand="Acme",
+                category_text=google, product_url=f"https://shop.invalid/p/{number}",
+                image_url=f"https://shop.invalid/i/{number}.jpg", price_text="9.00", availability_text="in stock",
+                currency="GBP", raw={"merchant_name": "Shop", "product_type": "Watches", "google_product_category": google},
+            )
+
+        products = [product(1, "Casio Classic Watch", WATCHES), product(2, "Nato Strap 20mm", WATCHES),
+                    product(3, "Unasked Watch", WATCHES)]
+        prepared = PreparedCatalogue(
+            prepared_at=datetime(2026, 11, 20, 12, 6, tzinfo=timezone.utc),
+            feed_status=ProviderFeedStatus(status="ok", provider_key="awin", product_count=3),
+            availability_context=build_feed_availability_context(tuple(products)),
+            products=tuple(products), non_new=("", "", ""),
+            kinds=(frozenset({"watch"}), frozenset({"watch"}), frozenset({"watch"})),
+            eligible_count=3, shop_count=1, suggestions=(),
+        )
+        with tempfile.TemporaryDirectory() as folder:
+            catalogue = Path(folder) / "catalogue.json.gz"
+            answers = Path(folder) / "answers.jsonl.gz"
+            write_prepared_catalogue(prepared, catalogue)
+            with gzip.open(answers, "wt", encoding="utf-8") as handle:
+                for item, line in ((products[0], WATCHES), (products[1], BANDS)):
+                    key = ask_key(item.title, item.brand, shop_words(item.raw))
+                    handle.write(json.dumps({"k": key, "line": line}) + "\n")
+            found, note = write_kind_lines.seen_in(catalogue, answers)
+        self.assertEqual(found, {"watch": [(WATCHES, 1, ["Casio Classic Watch"]), (BANDS, 1, ["Nato Strap 20mm"])]})
+        self.assertIn("3 products, 2 with a line of the AI; 1 kinds", note)
+
+
 class CheckTests(unittest.TestCase):
     def test_a_line_whose_number_and_name_agree(self) -> None:
         answer = {"kinds": [
@@ -164,14 +229,16 @@ class RunTests(unittest.TestCase):
 class WorkflowTests(unittest.TestCase):
     workflow = (ROOT / ".github" / "workflows" / "ai-kind-lines.yml").read_text(encoding="utf-8")
 
-    def test_it_runs_on_its_own_branch_with_the_key_and_reads_nothing_else(self) -> None:
+    def test_it_runs_on_its_own_branch_reads_the_server_and_changes_nothing(self) -> None:
         self.assertIn("branches: [claude/kind-lines]", self.workflow)
-        self.assertEqual(self.workflow.count("secrets."), 1)
-        self.assertIn("secrets.ANTHROPIC_API_KEY", self.workflow)
+        self.assertEqual(self.workflow.count("secrets.ANTHROPIC_API_KEY"), 1)
         self.assertIn("contents: read", self.workflow)
-        for absent in ("ssh", "SERVER_", "AWIN_FEED", "upload-artifact"):
+        for absent in ("upload-artifact", "sudo tee", "sudo mv", "sudo install", "sudo chown"):
             self.assertNotIn(absent, self.workflow)
         self.assertIn("--require-hashes", self.workflow)
+        self.assertIn("server-host-key.pin", self.workflow)
+        self.assertIn("--catalogue", self.workflow)
+        self.assertIn("rm -f ~/.ssh/deploy_key", self.workflow)
 
 
 if __name__ == "__main__":

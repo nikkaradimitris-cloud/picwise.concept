@@ -7,6 +7,11 @@ the site, a few of one department a call (`picwise_ai.kind_lines`); every line i
 checked against the taxonomy (`kind_lines.checked_kind_lines`). A kind not answered, or
 answered twice, is asked again alone, at most twice more.
 
+With `--catalogue` (the server's prepared file) and `--answers` (the scan's answers), each
+kind comes with the lines the scan's AI gave the products the catalogue reads as that kind,
+how many and a few titles (`kind_lines.evidence`): the lists then hold the lines where the
+products really are, and the model sees which of them are look-alikes.
+
 Written to `--out` (JSON, the repository's form: `kind_lines.write`) and printed in few
 characters (`kind_lines.compact`: `id=number,number`, the numbers the taxonomy file's
 lines), kept as GitHub's notes, which its API shows without a login: the lists come back
@@ -14,8 +19,8 @@ to the repository from those, read against the same taxonomy (`kind_lines.from_c
 and are checked there before any rule reads them. No product, link or key is read or
 printed; nothing on the server or the site changes.
 
-    python3 deployment/server/write_kind_lines.py --out LISTS.json [--budget 1.00] \
-        [--workers 4] [--dry-run]
+    python3 deployment/server/write_kind_lines.py --out LISTS.json [--catalogue CATALOGUE.json.gz \
+        --answers ANSWERS.jsonl.gz] [--budget 1.00] [--workers 4] [--dry-run]
 """
 from __future__ import annotations
 
@@ -103,6 +108,35 @@ def run_all(run: Run, kinds: list[dict[str, Any]], workers: int) -> None:
             list(pool.map(run.one, [[kind] for kind in missing]))
 
 
+def seen_in(catalogue: Path, answers: Path) -> tuple[dict[str, list[tuple[str, int, list[str]]]], str]:
+    """Per kind, the AI's lines of the products the catalogue reads as it; and a line
+    saying what was read."""
+    from picwise_ai.kind_lines import evidence
+    from picwise_providers.ai_shelves import line_of, read_answers
+    from picwise_providers.prepared_catalogue import read_prepared_catalogue_to_measure
+
+    prepared = read_prepared_catalogue_to_measure(catalogue)
+    if prepared is None:
+        return {}, "the copy is not a prepared catalogue: no products shown with the kinds"
+    table = read_answers(answers)
+    if not table:
+        return {}, "no answers of the AI: no products shown with the kinds"
+    with_line = 0
+
+    def rows():
+        nonlocal with_line
+        for product, kinds in zip(prepared.products, prepared.kinds):
+            line = line_of(str(product.title or ""), str(product.brand or ""), product.raw, table)
+            with_line += bool(line)
+            yield kinds, line, str(product.title or "")
+
+    found = evidence(rows())
+    return found, (
+        f"the catalogue of {prepared.prepared_at.isoformat()}: {len(prepared.products):,} products, "
+        f"{with_line:,} with a line of the AI; {len(found)} kinds have products read as them"
+    )
+
+
 def ordered(found: dict[str, list[str]], ids: Sequence[str]) -> dict[str, list[str]]:
     return {kind: found[kind] for kind in ids if kind in found}
 
@@ -110,6 +144,8 @@ def ordered(found: dict[str, list[str]], ids: Sequence[str]) -> dict[str, list[s
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--catalogue", type=Path, default=None)
+    parser.add_argument("--answers", type=Path, default=None)
     parser.add_argument("--budget", type=float, default=1.00)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--dry-run", action="store_true")
@@ -127,6 +163,15 @@ def main(argv: list[str] | None = None) -> int:
     kinds = kinds_described()
     ids = all_ids(kinds)
     print(f"{len(kinds)} kinds in {len(batches(kinds))} calls; the taxonomy {len(lines):,} lines")
+    read_note = "no catalogue given: the kinds asked without their products"
+    if args.catalogue is not None and args.answers is not None:
+        began_reading = time.monotonic()
+        seen, read_note = seen_in(args.catalogue, args.answers)
+        read_note += f" (read in {time.monotonic() - began_reading:.0f} s)"
+        if seen:
+            for kind in kinds:
+                kind["seen"] = seen.get(kind["id"], [])
+    print(read_note)
     ask = None
     if not args.dry_run and os.environ.get("ANTHROPIC_API_KEY"):
         from picwise_ai.client import ask as ask_one, make_client
@@ -143,6 +188,7 @@ def main(argv: list[str] | None = None) -> int:
     missing = [kind for kind in ids if kind not in found]
     given = sum(len(chosen) for chosen in found.values())
     totals = [
+        read_note,
         f"{len(found)} of {len(ids)} kinds answered; {given} lines in all; refused {run.refused}",
         f"kinds with no line: {len(empty)}" + (f" ({', '.join(empty[:40])})" if empty else ""),
         f"kinds not answered: {len(missing)}" + (f" ({', '.join(missing[:40])})" if missing else ""),
