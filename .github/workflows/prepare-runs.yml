@@ -84,7 +84,9 @@ jobs:
       - name: The preparation's runs, and why each ended
         if: always() && steps.connect.outcome == 'success'
         env:
-          SINCE: ${{ inputs.since || '-30h' }}
+          # On a push, the last two nights and more (owner, 20/11 23:41: «Πόσο χρειάζεται για να ξέρω
+          # το όριο»: how many new products a night brings, for the nightly scan's daily limit).
+          SINCE: ${{ inputs.since || '-54h' }}
         run: |
           case "$SINCE" in
             *[!-0-9A-Za-z:\ ]*) echo "a time of digits, letters, '-', ':' and spaces only"; exit 1 ;;
