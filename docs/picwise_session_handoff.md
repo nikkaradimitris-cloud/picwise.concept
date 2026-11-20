@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (14:55 Athens).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (15:00 Athens).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,8 +8,12 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (20/11, 14:55 Athens): remedies 1 and 2 built and tested, NOT deployed: waiting for the owner's
-  «ανέβασε»** (owner, of three remedies: «Κάνε το ένα και το τρία», then «Άκυρο ... κάνε μόνο το ένα», then «Φτιάξε
+- **FIRST (20/11, 15:00 Athens): remedies 1 and 2, and a deployment that prepares only when needed, built and
+  tested, NOT deployed: waiting for the owner's «ανέβασε».** Deployment (owner: «από ποια αλλαγή δεν αφορά τον
+  κατάλογο γιατί πρέπει να περιμένουμε μισή ώρα?»): `deploy.sh` prepares again only when the new release would not
+  read the file in place, `tools/prepare_catalogue.py` or `picwise-prepare.service` changed against the release the
+  site runs, or the file is 24 h old or more; else about 3-5 minutes. The coming deployment prepares (remedy 2
+  changed `tools/prepare_catalogue.py`), about 28 minutes, once. Remedies: (owner, of three remedies: «Κάνε το ένα και το τρία», then «Άκυρο ... κάνε μόνο το ένα», then «Φτιάξε
   και αυτό [το 2]»: 3 not done, the site keeps three workers). Remedy 2: `tools/prepare_catalogue.py` chooses the
   feed's copy once and the intake reads the same (no second download or parse in a run; test
   `tests/test_picwise_prepare_reads_the_feed_once.py`). Remedy 1, on the work branch: `deploy.sh` runs `deployment/server/prepared_state.py` with the
@@ -543,7 +547,8 @@ a decision came about.
 - **The server:** a push to `ccr-1361f1a7-dcpo60` deploys that commit
   (`.github/workflows/server-deploy.yml`, `deployment/server/deploy.sh`): only on the
   owner's «ανέβασε» for it, by a fast-forward. The deployment prepares the catalogue
-  (about 14 minutes, peak about 9.3 GB) and restarts the site; each worker loads the
+  only when the change concerns it (20/11; with both links 22-26 minutes, peak about 14.6 GB) and restarts
+  the site, only if the new release reads the catalogue in place; each worker loads the
   catalogue in the background (`state.keep_prepared_catalogue_loaded`). A rollback is
   a push of a revert commit, never a force push.
 - **`main`:** what is live plus its records, moved only on the owner's yes, by a
