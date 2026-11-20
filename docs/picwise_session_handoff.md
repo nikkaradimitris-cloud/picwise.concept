@@ -71,6 +71,21 @@ a decision came about.
   **Found, not done:** "samsung" opens with a printer kit read as a printer (steps 2 and 4); "samsung
   phone case" lists other brands' cases too (their titles name Samsung without "for"); "dyson filter"
   answers nothing, as before the list.
+- **NEXT (owner, 20/11 14:34): the manufacturers' file, "no such product right now", and the table of
+  searches with no results.** The plan, in the owner's words: «αυτά που δεν έχει το site πρέπει το ευρετήριο
+  να καταλαβαίνει και να λέει ότι δεν υπάρχει προϊόν αυτή τη στιγμή» while the searches are kept, to plan
+  which products to add; the file «μπορεί να έχει πολλές χιλιάδες κατασκευαστών όπου για τον κάθε ένα πρέπει
+  να ξέρουμε τι κατασκευάζει έτσι ώστε να προτείνουμε». Decided (~14:40): «Από το AI, με δοκιμή πρώτα»;
+  «Μήνυμα + κουμπί» ("No Dyson vacuum cleaner in our shops right now." + "See other vacuum cleaners", the
+  others only if pressed; **picture to the owner first**); «Πίνακας που ανανεώνεται» (no-result searches by
+  manufacturer and kind; the search words stay on the server, never in GitHub's public logs: the channel to
+  the table is still to be agreed). The AI's trial (run `44738588067`, `brands-ai-trial.yml`, off again):
+  200 brands $0.0188, 10,000 about $0.94; famous brands and five we do not sell answered right; 29 unknown
+  (small sellers); read by hand, of the sample's 28 makers 24 right, 2 partly, 2 wrong. **Next:** the owner's word for the whole file (the catalogue's
+  brands, and the brands of each kind in the UK asked of the AI, for makers our shops do not sell), then the
+  search reading those makers, the page (picture first), the table. **Found:** the catalogue reads some
+  tools' and fixings' words as kinds (Makita's "belt", Timco's washers as washing machines), seen through
+  the AI's answers; not checked yet.
 - **NEXT (owner, 19/11 night): the AI to give every product its Google shelf** («εκτός από τον bot.... Μπλέξουμε και
   το ai για να ταξινομήσουμε όλο τον κατάλογο»). In order: (1) `search-audit.yml`, right answers per feed, the
   before; (2) a trial on 1,000 products, under $1: title and the shop's own category in, a line of Google's
