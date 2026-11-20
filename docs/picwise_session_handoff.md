@@ -10,8 +10,14 @@ a decision came about.
 
 - **FIRST (20/11, 18:50 Athens): the scan DONE ($14.22; answers on the server); the measure after: 69.8% of the
   first 12 cards right (first link 83.5%, second 61.4%; boots, watches, kettle fixed); NOT deployed: rule 2 hides
-  some real products and the kind reader misreads some AI lines (PROGRESS.md, 20/11 18:50). Proposed: each kind
-  its own Google lines, written once with the AI.** Earlier the same day: The owner: the search fell after the second link («στο boots βγάζει και καλώδια ...
+  some real products and the kind reader misreads some AI lines (PROGRESS.md, 20/11 18:50). **NEXT, the owner's
+  decision (20/11 18:59: «αυτό πρέπει να το κάνουμε και θα το ξεκινήσουμε σε άλλη συζήτηση»): each kind of the
+  site its own list of Google lines (tablet: "Tablet Computers"; watch: "Watches"), written once by the AI (about
+  $0.50) and checked; a product in a kind only when the AI's line for it is on the kind's list, the same for both
+  links (replacing rule 2's reading of the AI's line through the kind reader). Build it on
+  `claude/ai-shelves-rules-2026-11-20`; then the measure after again (push to `claude/shelves-after`; the owner
+  wants only the measure after, in plain numbers), and check that real products are not hidden; the site only on
+  the owner's «ανέβασε».** Earlier the same day: The owner: the search fell after the second link («στο boots βγάζει και καλώδια ...
   επιλέγω ρολόγια μου δείχνει και λουράκια»; live, read with a fetch: "boots" 3 of 4 cards TV Cables' RJ45
   boots, "watches" Plusshop's and Bazta's Garmin Fenix 6 strap and InStock UK's earring backs), «ότι κανόνες
   ισχύουν για το ένα feed πρέπει να ισχύουν και για το καινούργιο», not product by product: «να φτιάξουμε
