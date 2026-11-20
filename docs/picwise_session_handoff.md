@@ -40,34 +40,34 @@ a decision came about.
   Next: read the log's 40 disagreements of A and the 60 of B (who is right), cut the refusals (most likely a
   number miscopied: take the line by its name inside the branch, or ask for the full line), then the owner's
   daily cap before any run over the catalogue.
-- **NEXT, step 3 of the series, the brands' list (owner, 19/11 23:46; taken up on 20/11: «PicWise:
-  συνέχισε το βήμα 3, τη λίστα brands, όπως γράφει το handoff»): (1) measured, (2) put to the owner (20/11
-  ~00:30 Athens), waiting for the answer; then (3) build.** All of it on the branch
-  `claude/brands-2026-11-20` (from `d1513e8`), never on the work branch until finished and tested:
-  `deployment/server/print_brands.py` (tests 11) and `.github/workflows/brands-measure.yml` (the server's file
-  copied as `search-audit.yml` does, nothing on the server or the site changed; `if: true` for one run). Run
-  `44626133872`, the catalogue of 19/11 21:32 UTC (403,545 products, 137 shops): 99.1% carry a brand; 7,424
-  brands, 3,876 of 3 products or more (some are shops' own names the rule misses: Swadesi, DIY Refurb); 95
-  written several ways (8,436 products: "Black and Decker"/"Black & Decker"; broken letters "PokÃ©mon").
-  **Dyson: 8 products, all parts.** Samsung 2,046 (televisions 332, monitors 153, chargers 65, headphones 49,
-  phones 37...; 1,178 of no kind read). 151 brands are read alone as a kind (razer -> electric shaver,
-  motorola -> engine oil, draper -> nappies); 306 are English words (Apple, Canon, Brother); "apple" and
-  "nike" alone answer nothing, by the early stage's guards, which hold "bosch" too
-  (`category_detector._OVERMATCH_SINGLE_TOKEN_GUARDS`, `broad_query_suggestions._UNSAFE_BROAD_QUERY_TERMS`). A slip of 2,019 of the 3,480 names of 5 letters or more
-  reads as it alone; 607 are one slip from another brand or a word (Canon ~ cannon). The 120 largest brands:
-  alone, 90 "not sure", 4 nothing, 19 the brand's product first; with their largest kind, 105 of 112 right
-  ("samsung tv" works); misspelled alone, 86 of 101 nothing; misspelled with the kind, 29 of 94 the brand's
-  first. The kinds' choices inherit the kinds' reading ("belt" for Bosch Professional's sanding belts).
-  **Put to the owner:** a brand alone (a question "What kind of Samsung product?" with its kinds and its
-  products below, or its products only); a misspelled brand (corrected when only it is that close, else "Did
-  you mean"). **The build, after the answer:** a list of brands made each night from the feeds (spellings
-  joined, broken letters mended), read by the search: a brand alone, a brand never corrected into a kind, a
-  slip read as the brand; the old guards and `brand_resolver` replaced; measured again with the same
-  workflow, before and after; a picture to the owner before any wording; then into the work branch.
-  **Safety (owner, 19/11: «Είναι ασφαλές ή θα συγκρουστεί?»):** two conversations share the work branch and
-  every deployment takes all of it, so the brands' work stays on its branch until finished and tested;
-  before any push to the site branch, what else rides along is checked and the owner asked; measures on
-  GitHub's runner (the server is at 19.8 of its 20 GB at night).
+- **NEXT, step 3 of the series, the brands' list: BUILT and measured on its branch, waiting for the owner's
+  word on the picture; NOT on the work branch, NOT deployed.** The owner's answers (20/11 ~10:55 Athens, both
+  as proposed): «Ερώτηση + προϊόντα» for a brand alone, «Διόρθωση όταν είναι σίγουρο» for a misspelled brand.
+  On `claude/brands-2026-11-20` (it holds the work branch up to `58d7672`, `94e4dfd` included), written first
+  into the Decision Contract, "The catalogue's brands": `picwise_providers.brand_list` (one name however a
+  brand is written, broken letters mended; the brands of 3 products or more with their kinds, made with the
+  prepared feed and carried by its file, "brands"; `BrandReader.read`: a brand alone with the brands whose
+  names begin with it, a slip of one brand's name, or of a word of a name whose other words are in the
+  search); `concept_understanding.set_brand_names` (a brand's words never corrected into a kind's: razer,
+  draper, "My Store"); `search_selection.select_provider_products_for_brand` (one kind: its products with a
+  Recommended; several: "What kind of Samsung product?" above its products, cheapest first, no Recommended,
+  `no_recommendation_several_kinds`; no kind read: its products; accessories never listed); the resolver
+  reads the brands first, a slip answered as the corrected search ("Understood as: Samsung"), a brand alone
+  past the older guards (they stay for words no brand carries; `brand_resolver` untouched, the old NLU's
+  hint only); `tests/test_picwise_brands.py`; `print_brands.py` part 7. Measured on GitHub's runner (runs
+  `44712550812`, `44713692322`, the catalogue of 20/11 04:33 UTC, 397,635 products): the 120 largest brands
+  alone, 120 shown and 100 asking which kind (before: 25 shown, 90 "not sure", 4 nothing); a slip alone, 101
+  of 101 shown, 100 read as the brand (8 before); a slip with the kind, 87 of 94 the brand's of the kind first
+  (29 before); with the kind, 104 of 112, as before. The list: 3,907 brands, 611 of several kinds, 1,137 of
+  one, 2,159 of no kind read (step 4). A picture of the page (a fictional brand, on a phone) sent to the
+  owner at ~12:00 Athens: the question's words and "Understood as" wait for the owner's word. **Next, in
+  order:** the owner's word on the picture; the branch merged into the work branch only once the site's
+  way back is deployed (the other conversation, the owner's «ανέβασε» of 20/11 ~12:10: the site branch at
+  `857cdb2`, the revert of `94e4dfd`), so that it never rides along unasked; a deployment only on
+  «ανέβασε», which takes all the work branch holds and needs a preparation that succeeds (the first item). **Found, not done:** a brand with its kind lists first other
+  brands' products naming it ("canon ink cartridge": compatibles "for Canon"; so before the list): a word
+  that is a brand of the catalogue could be asked of the brand's own field; "samsung" opens with a printer
+  kit read as a printer (steps 2 and 4).
 - **NEXT (owner, 19/11 night): the AI to give every product its Google shelf** («εκτός από τον bot.... Μπλέξουμε και
   το ai για να ταξινομήσουμε όλο τον κατάλογο»). In order: (1) `search-audit.yml`, right answers per feed, the
   before; (2) a trial on 1,000 products, under $1: title and the shop's own category in, a line of Google's
