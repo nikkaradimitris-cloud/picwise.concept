@@ -28,6 +28,18 @@
 # with the brand's product first; with their largest kind, 105 of 112 the brand's and of the
 # kind first; misspelled alone, 86 of 101 nothing; misspelled with their kind, 29 of 94 the
 # brand's first. Put to the owner.
+# The owner's answers of 2026-11-20 («Ερώτηση + προϊόντα», «Διόρθωση όταν είναι σίγουρο»),
+# built (`picwise_providers.brand_list`) and measured again. Run 44712550812 (2026-11-20
+# 09:39 UTC, the catalogue prepared at 04:33 that day, 397,635 products from 137 shops):
+# "samsung" asks "What kind of Samsung product?" (tv, monitor, charger, headphones +4) above
+# 251 of its products, no Recommended; "samsnug" the same, "Understood as: Samsung"; "dyson"
+# its 2 cards of parts. The 120 largest brands alone: 118 shown (25 before), 99 asking which
+# kind, 2 "not sure" (90 before); with their kind, 104 of 112 the brand's of the kind first
+# (105 before); a slip alone, 89 of 101 shown (8 before), 85 read as the brand; a slip with
+# the kind, 79 of 94 the brand's first (29 before). The list: 3,907 brands, 611 of several
+# kinds, 1,137 of one, 2,159 of no kind read; 306 names of one word one slip from a known
+# word (nike ~ bike, razer ~ razor), now read as the brand. Left, then built: slips inside
+# names of several words ("mira saels"), "online" in a name, "Ltd" in the question.
 name: Brands measure (read-only, measured only)
 on:
   push:
