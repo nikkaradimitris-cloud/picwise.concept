@@ -38,12 +38,6 @@ _AWIN_FEED_URL_ENV = "AWIN_FEED_URL"
 SECOND_FEED_FILE_ENV = "AWIN_FEED_FILE_AWIN"
 SECOND_FEED_URL_ENV = "AWIN_FEED_URL_AWIN"
 _SHOP_ID_KEYS = ("advertiser_id", "merchant_id")
-# The category columns of Awin's own format, read for a row's Google shelf
-# (`awin_categories`), then dropped from the row.
-_AWIN_CATEGORY_COLUMNS = (
-    "merchant_product_category_path", "merchant_product_second_category", "merchant_product_third_category",
-    "merchant_category", "category_name",
-)
 _GZIP_MAGIC = b"\x1f\x8b"
 # A value this short or shorter is held once for all the rows that give it.
 _SHARED_VALUE_CHARS = 64
@@ -354,29 +348,25 @@ def shop_key(product: ProviderProduct) -> str:
 
 def _with_aisle(product: ProviderProduct) -> ProviderProduct:
     """An Awin-format row given the Google shelf its words name (`awin_categories`), in the
-    place and the form a Google-format row has it: the rules that read a shelf, the cap
-    among them, read it as every other row's (owner, 2026-11-19: «να κλωνοποιήσουμε τους
-    κανόνες και στο δεύτερο feed»). Its own category is not made its type: a type is read as
-    naming the kind ("Paint Kettles" would make a paint kettle a kettle)."""
+    place and the form a Google-format row has it, its own category kept as its type: the
+    rules that read a shelf, the cap among them, read it as every other row's (owner,
+    2026-11-19: «να κλωνοποιήσουμε τους κανόνες και στο δεύτερο feed»)."""
     from dataclasses import replace
 
-    from .awin_categories import row_shelf_detail
+    from .awin_categories import row_shelf
 
     raw = product.raw
     if not isinstance(raw, dict):
         return product
-    shelf, precise = row_shelf_detail(raw)
+    shelf = row_shelf(raw)
     if not shelf:
         return product
     shelf = sys.intern(shelf)
-    # In place: the row's own dict, made by the reader, so no row is copied. With a
-    # precise shelf its Awin category columns go: a Google-format row has none, and the
-    # search reads them as a type ("Decorating > Paint Kettles" made a paint kettle a
-    # kettle). With an aisle alone they stay, the more precise words the row has.
+    own = " ".join(str(product.category_text or "").split())
+    # In place: the row's own dict, made by the reader, so no row is copied.
     raw["google_product_category"] = shelf
-    if precise:
-        for column in _AWIN_CATEGORY_COLUMNS:
-            raw.pop(column, None)
+    if own and not str(raw.get("product_type") or "").strip():
+        raw["product_type"] = own
     return replace(product, category_text=shelf)
 
 

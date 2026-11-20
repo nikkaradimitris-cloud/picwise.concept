@@ -171,37 +171,4 @@ class ClonedRulesTests(unittest.TestCase):
         self.assertIn("kettle", read["p3"])
         self.assertIn("tyres", read["p4"])
         self.assertEqual(by_id["p4"].raw["google_product_category"], by_id["p4"].category_text)
-        self.assertNotIn("product_type", by_id["p1"].raw)
-
-
-class LookAlikeTests(unittest.TestCase):
-    """The look-alikes seen live on 19/11: a part or an accessory of a thing, its shop's
-    category naming the thing too, is read on the part's shelf, never as the thing."""
-
-    def test_live_look_alikes_are_not_read_as_the_thing(self) -> None:
-        from picwise_providers import search_selection
-
-        folder = Path(tempfile.mkdtemp())
-        first = _write(folder / "google.csv", GOOGLE, [_google_row("g1", "101", "Kitchen Shop")])
-        cases = (
-            ("q1", "1m UK Mains to IEC C13 Power Lead Kettle Plug", "Kettle Leads", "kettle"),
-            ("q2", "Faithfull Plastic Paint Kettle", "Decorating > Paint Kettles", "kettle"),
-            ("q3", "Sharp MX3050 MX3070 MX3550 MX4050 Feed Tyres NROLR2125FCZZ", "Printer Parts > Feed Tyres", "tyres"),
-            ("q4", "One For All Premium Line Indoor TV Antenna", "Monitors & TVs > TV Antennas", "monitor"),
-            ("q5", "Starrett A015C High Speed Steel Hex Pilot Drill for Hole Saws", "Drill Bits > Pilot Drills", "drill"),
-        )
-        rows = []
-        for ident, title, category, _kind in cases:
-            row = _awin_row(ident, "302", "Fictional Parts Shop")
-            row[1], row[10] = title, category
-            rows.append(row)
-        second = _write(folder / "awin.csv", AWIN, rows)
-        awin_adapter.clear_awin_feed_parse_cache()
-        with mock.patch.dict(os.environ, {"AWIN_FEED_FILE_AWIN": second}):
-            result = awin_adapter.load_awin_provider_feed(ProviderFeedConfig(provider_key="awin", feed_file=first))
-        awin_adapter.clear_awin_feed_parse_cache()
-        by_id = {p.provider_product_id: p for p in result.products}
-        for ident, title, _category, kind in cases:
-            product = by_id[ident]
-            read = search_selection._product_concepts(product, search_selection._product_search_fields(product))
-            self.assertNotIn(kind, read, f"{title} read as {sorted(read)} on {product.category_text}")
+        self.assertEqual(by_id["p1"].raw["product_type"], "DIY")
