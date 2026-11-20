@@ -158,6 +158,42 @@ def judge(found: list[Searched], prepared: Any, ask: Callable[[dict[str, Any]], 
     return spent[0]
 
 
+def doubted(prepared: Any, top: int = 15) -> list[str]:
+    """What rule 2 took away (`ai_shelves.checked_kinds`): the products the catalogue holds
+    as doubtful that the kind reader alone reads as a kind, by that kind. To see that the
+    AI's line hides look-alikes, not the things themselves."""
+    from picwise_nlu.concept_understanding import UNCERTAIN_MARKER, annotate_product_concepts
+    from picwise_providers.search_selection import product_kind_key
+
+    fields = prepared.search_fields
+    if not fields or not prepared.kinds:
+        return ["rule 2: the catalogue keeps no kinds or fields to read"]
+    lost: Counter[str] = Counter()
+    titles: dict[str, list[str]] = {}
+    doubtful = with_kind = 0
+    for product, product_fields, kinds in zip(prepared.products, fields, prepared.kinds):
+        if kinds == frozenset({UNCERTAIN_MARKER}):
+            doubtful += 1
+            alone = annotate_product_concepts(*product_kind_key(product, product_fields))
+            real = sorted(kind for kind in alone if not kind.startswith("__"))
+            if real:
+                head = real[0] if len(real) == 1 else min(real, key=len)
+                lost[head] += 1
+                titles.setdefault(head, [])
+                if len(titles[head]) < 2:
+                    titles[head].append(_short(product.title, 45))
+        elif any(not kind.startswith("__") for kind in kinds):
+            with_kind += 1
+    out = [
+        f"products with a kind {with_kind:,}; doubtful {doubtful:,}, of which the AI's line made doubtful "
+        f"{sum(lost.values()):,} (read as a kind without it)",
+        "the kinds that lost the most: " + "; ".join(
+            f"{kind} {count:,} (e.g. {' / '.join(titles.get(kind, []))})" for kind, count in lost.most_common(top)
+        ),
+    ]
+    return out
+
+
 def _share(part: int, whole: int) -> str:
     return f"{part:,} of {whole:,} ({100 * part / whole:.1f}%)" if whole else f"{part:,} of 0"
 
@@ -240,6 +276,10 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print("the AI: not asked (a dry run, or no key)")
     cost = judge(found, prepared, ask, args.budget)
+    try:
+        notices.say("after: what the AI's line made doubtful", "\n".join(doubted(prepared)), final=True)
+    except Exception as error:  # a measure only
+        print(f"rule 2's count failed: {type(error).__name__}")
     totals, each = report(found)
     totals.append(f"the judging cost ${cost:.4f}")
     notices.say("after: in all", "\n".join(totals), final=True)

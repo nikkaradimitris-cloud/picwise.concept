@@ -141,6 +141,13 @@ class BothLinksTests(_WithAnswers):
         self.assertEqual(_kinds(away), frozenset({UNCERTAIN_MARKER}))
         self.assertIn("watch", _kinds(near))
 
+    def test_the_british_name_of_a_department_is_the_same_department(self) -> None:
+        self.assertEqual(ai_shelves._department("Clothing & Accessories > Shoes"), ai_shelves._department(SHOES))
+        trainers = _first("Nike Air Max 90 Trainers", "Nike", "Trainers", "Clothing & Accessories > Shoes")
+        kinds = _kinds(trainers)
+        self.answer((trainers, "Apparel & Accessories"))
+        self.assertEqual(_kinds(trainers), kinds)
+
     def test_no_answer_no_line_or_no_kind_changes_nothing(self) -> None:
         refused = _first("Nato Strap 20mm Olive", "Acme", "Watches", WATCHES)
         none = _first("Nato Strap 20mm Olive", "Other", "Watches", WATCHES)
@@ -199,6 +206,23 @@ class MeasureAfterTests(unittest.TestCase):
         self.assertIn("TV Cables 1", text)
         self.assertIn('"boots" (boots, 120 products): 1 right, 1 wrong of 3 -- RJ45 Snagless Boot (TV Cables, 2nd)', each[0])
         self.assertIn("the search failed (KeyError)", each[2])
+
+
+class DoubtedTests(unittest.TestCase):
+    def test_what_rule_two_took_away_is_counted_by_kind(self) -> None:
+        from types import SimpleNamespace
+
+        strap = _first("Nato Strap 20mm Olive", "Acme", "Watches", WATCHES)
+        watch = _first("Diesel DZ4283 Mega Chief Chronograph Men's Watch", "Diesel", "Watches > Mens", WATCHES)
+        products = [strap, watch]
+        prepared = SimpleNamespace(
+            products=products,
+            search_fields=[_product_search_fields(product) for product in products],
+            kinds=[frozenset({UNCERTAIN_MARKER}), frozenset({"watch"})],
+        )
+        text = "\n".join(measure_after.doubted(prepared))
+        self.assertIn("products with a kind 1; doubtful 1, of which the AI's line made doubtful 1", text)
+        self.assertIn("watch 1 (e.g. Nato Strap 20mm Olive)", text)
 
 
 class WorkflowTests(unittest.TestCase):

@@ -137,8 +137,15 @@ def second_link_answer(
     return (line, key) if line else ("", "")
 
 
+# Google's taxonomy in British English names one department otherwise: a shop of the first
+# link writes "Clothing & Accessories > Shoes" where the AI, given the American list, writes
+# "Apparel & Accessories > Shoes" (the scan of 20/11: most of its "another department").
+_SAME_DEPARTMENT = {"clothing & accessories": "apparel & accessories"}
+
+
 def _department(line: str) -> str:
-    return " ".join(str(line or "").split(">")[0].split()).casefold()
+    name = " ".join(str(line or "").split(">")[0].split()).casefold()
+    return _SAME_DEPARTMENT.get(name, name)
 
 
 def checked_kinds(
