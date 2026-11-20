@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (21:55 Athens, the kinds' lists; nothing deployed).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (21:35 Athens, the kinds' lists and the asking again; nothing deployed).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,24 +8,26 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (20/11, 21:55 Athens): each kind its own Google lines DONE, the rule built, the measure after read; NOT
-  deployed; waiting for the owner** (PROGRESS.md, 20/11 21:55). Branch `claude/ai-shelves-rules-2026-11-20` at
-  `fdddaa8` (from `eb311a6`: the scan, rule 1, the kinds' lists and their rule, the measure). The lists:
-  `data/kind_lines/google_lines_by_kind.json` (312 kinds, 603 lines chosen by Haiku from the taxonomy, each with the
-  lines under it; 968 lines its check added, each alone), written by `ai-kind-lines.yml` (push `claude/kind-lines`;
-  `--lists` keeps them and asks only the check). Rule 2 (`ai_shelves.checked_kinds`): a kind kept only when the AI's
-  line is on its list; the scan's slips (the tree's first five lines, 6,866 products) are no answer. $0.80 for the
-  lists (four runs; the owner had said about $0.50). The measure after (run 44789340760): 371 of 448 cards right
-  (82.8%; first link 91.2%, second 77.1%); worst printer, drill, tablet, perfume; about 3,700 real products hidden (3%
-  of those with a kind; tyres, garden taps, garden furniture, RAM, bags), most on a wrong line of the scan. **The
-  owner chooses:** «ανέβασε» as it is (push `fdddaa8` to `ccr-1361f1a7-dcpo60`: a fast-forward from `ea1e7dd`; it
-  prepares again, about 25 min, since `picwise-prepare.service` and the rules changed; rides along: the scan's and
-  the lists' workflows, inert), or first the AI asked again about the 9,304 products the lists take out and the slips,
-  then the measure again. Then the nightly scan of new products (a product with no answer keeps the old reading),
-  with daily limits the owner sets.
+- **FIRST (20/11, 21:35 Athens): the kinds' lists, their rule and the doubtful products asked again DONE; NOT
+  deployed; waiting for the owner** (PROGRESS.md, 20/11 20:40 and 21:35). Branch
+  `claude/ai-shelves-rules-2026-11-20` at `a68d928` (from `eb311a6`: the
+  scan, rule 1, the kinds' lists and their rule, the asking again, the measure). The lists:
+  `data/kind_lines/google_lines_by_kind.json` (312 kinds, 603 lines chosen by Haiku, each with the lines under it;
+  968 lines its check added, each alone), written by `ai-kind-lines.yml` (push `claude/kind-lines`; `--lists`
+  keeps them and asks only the check). Rule 2 (`ai_shelves.checked_kinds`): a kind kept only when the AI's line is
+  on its list; the scan's slips (the tree's first five lines) are no answer. The doubtful asked again
+  (`reask_shelves.py`, `ai-shelves-reask.yml`, push `claude/shelves-reask`; run 44797248838, $1.1965, stopped at the
+  budget with 3,313 of 12,553 keys unasked; the server's answers replaced, the old ones in
+  `/srv/picwise/assist/shelves/answers.before-reask.jsonl.gz`). The measure after (run 44799502372): 352 of 438
+  cards right (80.4%; first link 90.1%, second 73.4%); worst printer, drill, perfume, lego, tv; about 2,500 real
+  products hidden (2% of those with a kind; garden taps, car battery chargers, PC fans, bags). AI today for this
+  work $2.04. **The owner chooses:** «ανέβασε» (push `a68d928` to `ccr-1361f1a7-dcpo60`: a fast-forward from
+  `ea1e7dd`; it prepares again, about 25 min, since `picwise-prepare.service` and the rules changed; rides along:
+  the scan's, the lists' and the asking's workflows, inert), or first the 3,313 keys left (about $0.45). Then the
+  nightly scan of new products (a product with no answer keeps the old reading), with daily limits the owner sets.
 - **20/11, 18:50 Athens: the scan DONE ($14.22; answers on the server); the measure after: 69.8% of the
   first 12 cards right (first link 83.5%, second 61.4%; boots, watches, kettle fixed); NOT deployed: rule 2 hides
-  some real products and the kind reader misreads some AI lines (PROGRESS.md, 20/11 18:50). **Done at 21:55 (the
+  some real products and the kind reader misreads some AI lines (PROGRESS.md, 20/11 18:50). **Done at 20:40 (the
   item above), the owner's decision (20/11 18:59: «αυτό πρέπει να το κάνουμε και θα το ξεκινήσουμε σε άλλη συζήτηση»): each kind of the
   site its own list of Google lines (tablet: "Tablet Computers"; watch: "Watches"), written once by the AI (about
   $0.50) and checked; a product in a kind only when the AI's line for it is on the kind's list, the same for both
