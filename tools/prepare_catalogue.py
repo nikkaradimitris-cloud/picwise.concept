@@ -81,11 +81,18 @@ def main(argv: list[str] | None = None) -> int:
 
     started = time.perf_counter()
     try:
+        from picwise_providers.awin_adapter import awin_feed_config_from_env
         from picwise_providers.prepared_catalogue import write_prepared_catalogue
         from picwise_providers.state import prepare_feed_catalogue
 
+        # The feed's copy is chosen once, here, and the intake below reads the same (owner,
+        # 2026-11-20: «Η επεξεργασία να διαβάζει το feed μία φορά, ακόμα κι αν λήξει στη
+        # μέση»). Asked for again past its six hours (`awin_adapter.materialize_feed_url`), a
+        # link was downloaded and parsed a second time beside the first, and the run passed its
+        # memory ceiling (20/11, 10:30 UTC).
+        feed_config = awin_feed_config_from_env()
         capping = _Cap(args.out)
-        prepared = prepare_feed_catalogue(cap=capping)
+        prepared = prepare_feed_catalogue(feed_config, cap=capping)
         _trace("the catalogue prepared")
         size = write_prepared_catalogue(prepared, args.out) if prepared is not None else 0
     except Exception as error:
@@ -120,7 +127,7 @@ def main(argv: list[str] | None = None) -> int:
             " given from hold the same"
         )
     _trace("the file written")
-    intake = _intake() if args.static_dir is not None else None
+    intake = _intake(feed_config) if args.static_dir is not None else None
     _trace("the intake measured")
     memory = _memory(args.memory, prepared, intake)
     if memory is not None:
@@ -257,12 +264,13 @@ def _trace(stage: str) -> None:
     peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1048576
     print(f"prepare_catalogue: memory after {stage}: peak {peak:.1f} GB so far", flush=True)
 
-def _intake() -> dict[str, object] | None:
-    """What each shop's feed brings in and why the rest is held; a failure is only noted."""
+def _intake(feed_config: object = None) -> dict[str, object] | None:
+    """What each shop's feed brings in and why the rest is held, read from the copy of the
+    feed the catalogue was read from (`feed_config`); a failure is only noted."""
     try:
         from picwise_providers.state import measure_configured_feed_intake
 
-        return measure_configured_feed_intake()
+        return measure_configured_feed_intake(feed_config)
     except Exception as error:
         return {"error": _where(error)}
 
