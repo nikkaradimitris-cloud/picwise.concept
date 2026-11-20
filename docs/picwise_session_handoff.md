@@ -8,8 +8,10 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (20/11, 16:40 Athens): the AI's shelves for the whole catalogue: the scan RUNNING, the rules built,
-  nothing deployed.** The owner: the search fell after the second link («στο boots βγάζει και καλώδια ...
+- **FIRST (20/11, 18:50 Athens): the scan DONE ($14.22; answers on the server); the measure after: 69.8% of the
+  first 12 cards right (first link 83.5%, second 61.4%; boots, watches, kettle fixed); NOT deployed: rule 2 hides
+  some real products and the kind reader misreads some AI lines (PROGRESS.md, 20/11 18:50). Proposed: each kind
+  its own Google lines, written once with the AI.** Earlier the same day: The owner: the search fell after the second link («στο boots βγάζει και καλώδια ...
   επιλέγω ρολόγια μου δείχνει και λουράκια»; live, read with a fetch: "boots" 3 of 4 cards TV Cables' RJ45
   boots, "watches" Plusshop's and Bazta's Garmin Fenix 6 strap and InStock UK's earring backs), «ότι κανόνες
   ισχύουν για το ένα feed πρέπει να ισχύουν και για το καινούργιο», not product by product: «να φτιάξουμε
