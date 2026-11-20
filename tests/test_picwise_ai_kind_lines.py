@@ -72,16 +72,36 @@ class EvidenceTests(unittest.TestCase):
         found = kind_lines.evidence(rows)
         self.assertEqual(found, {"watch": [(WATCHES, 2, ["Casio Classic", "Diesel Mega Chief"]), (BANDS, 1, ["Nato Strap 20mm"])]})
 
-    def test_the_model_reads_them_with_each_kind(self) -> None:
-        kinds = [kind for kind in kind_lines.kinds_described() if kind["id"] in ("watch", "air_fryer")]
-        by_id = {kind["id"]: kind for kind in kinds}
-        by_id["watch"]["seen"] = [(WATCHES, 900, ["Casio Classic"]), (BANDS, 40, ["Nato Strap"])]
-        by_id["air_fryer"]["seen"] = []
-        text = kind_lines.user_message(kinds, LINES)
-        self.assertIn(f"- {NUMBER[WATCHES]} {WATCHES}: 900 products, e.g. \"Casio Classic\"", text)
-        self.assertIn("no product of the catalogue is read as this kind", text)
-        del by_id["air_fryer"]["seen"]
-        self.assertNotIn("no product", kind_lines.user_message([by_id["air_fryer"]], LINES))
+    def test_the_check_asks_only_the_lines_the_list_does_not_hold(self) -> None:
+        seen = [(WATCHES, 900, ["Casio Classic"]), (BANDS, 40, ["Nato Strap"]),
+                ("Apparel & Accessories > Jewelry", 5, ["Gift Watch"])]
+        self.assertEqual(kind_lines.candidates(seen, ["Apparel & Accessories > Jewelry > Watches"]), seen[1:])
+        self.assertEqual(kind_lines.candidates(seen, ["Apparel & Accessories > Jewelry"]), [])
+
+    def test_the_check_shows_each_line_with_its_products_and_no_taxonomy(self) -> None:
+        kinds = [kind for kind in kind_lines.kinds_described() if kind["id"] == "watch"]
+        request = kind_lines.judge_request([(kinds[0], [(BANDS, 40, ["Nato Strap", "Leather Band"])])])
+        text = request["messages"][0]["content"]
+        self.assertIn("1. id: watch | names: watch", text)
+        self.assertIn(f'   1. {BANDS}: 40 products, e.g. "Nato Strap" / "Leather Band"', text)
+        self.assertEqual(len(request["system"]), 1)
+        self.assertNotIn("taxonomy:", request["system"][0]["text"])
+        self.assertEqual(request["output_config"]["format"]["schema"], kind_lines.JUDGE_SCHEMA)
+        self.assertNotIn("products", kind_lines.user_message(kinds))
+
+    def test_each_line_answered_once_is_kept(self) -> None:
+        watch = {"id": "watch", "names": ["watch"]}
+        kettle = {"id": "kettle", "names": ["kettle"]}
+        items = [(watch, [(BANDS, 4, []), (WATCHES, 3, []), (TABLETS, 1, [])]), (kettle, [(KETTLES, 2, [])])]
+        answer = {"kinds": [
+            {"id": "watch", "answers": [{"n": 1, "answer": "no"}, {"n": 2, "answer": "yes"}, {"n": 3, "answer": "yes"},
+                                        {"n": 3, "answer": "no"}, {"n": 9, "answer": "yes"}]},
+            {"id": "kettle", "answers": [{"n": 1, "answer": "yes"}]},
+            {"id": "kettle", "answers": []},
+            {"id": "tablet", "answers": [{"n": 1, "answer": "yes"}]},
+        ]}
+        self.assertEqual(kind_lines.checked_judgements(answer, items), {"watch": {BANDS: "no", WATCHES: "yes"}})
+        self.assertEqual(kind_lines.checked_judgements(None, items), {})
 
 
 class SeenInTests(unittest.TestCase):
@@ -184,9 +204,10 @@ class FormTests(unittest.TestCase):
     def test_written_and_read_as_the_repository_keeps_them(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "lists.json"
-            kind_lines.write({"tablet": [TABLETS]}, path, note={"model": "m"})
+            kind_lines.write({"tablet": [TABLETS]}, path, note={"model": "m"}, exact={"watch": [BANDS]})
             self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["model"], "m")
             self.assertEqual(kind_lines.read(path), {"tablet": [TABLETS]})
+            self.assertEqual(kind_lines.read(path, "exact"), {"watch": [BANDS]})
             self.assertEqual(kind_lines.read(Path(folder) / "none.json"), {})
 
 
@@ -211,6 +232,37 @@ class RunTests(unittest.TestCase):
         self.assertEqual(set(run.found), {"tablet", "laptop", "watch"})
         self.assertIn(["laptop"], asked)
         self.assertAlmostEqual(run.spent, 0.01 * len(asked))
+
+    def test_the_check_adds_the_lines_judged_the_kind_itself(self) -> None:
+        kinds = [kind for kind in kind_lines.kinds_described() if kind["id"] in ("watch", "kettle", "tablet")]
+        by_id = {kind["id"]: kind for kind in kinds}
+        by_id["watch"]["seen"] = [(WATCHES, 900, ["Casio"]), (BANDS, 40, ["Nato Strap"]),
+                                  ("Apparel & Accessories > Jewelry", 6, ["Casio Gift Watch"])]
+        by_id["kettle"]["seen"] = [(KETTLES, 80, ["Kettle"])]
+        by_id["tablet"]["seen"] = []
+        asked: list[str] = []
+
+        def ask(request):
+            text = request["messages"][0]["content"]
+            asked.append(text)
+            answers = []
+            kind = None
+            for row in text.splitlines()[1:]:
+                if " id: " in row:
+                    kind = {"id": row.split("id: ")[1].split(" |")[0], "answers": []}
+                    answers.append(kind)
+                else:
+                    number = int(row.strip().split(".")[0])
+                    kind["answers"].append({"n": number, "answer": "yes" if "Watch\"" in row else "no"})
+            return SimpleNamespace(answer={"kinds": answers}, cost_usd=0.001, error="")
+
+        run = write_kind_lines.Run(ask, 1.0, LINES)
+        run.found = {"watch": [WATCHES], "kettle": [KETTLES], "tablet": [TABLETS]}
+        self.assertEqual(write_kind_lines.judge_all(run, kinds, workers=1), 2)
+        self.assertEqual(len(asked), 1)
+        self.assertNotIn("Kettle", asked[0])
+        self.assertEqual(run.judged, {"watch": {BANDS: "no", "Apparel & Accessories > Jewelry": "yes"}})
+        self.assertEqual(run.judge_calls, 1)
 
     def test_it_stops_at_the_budget_and_writes_without_a_key(self) -> None:
         run = write_kind_lines.Run(lambda request: SimpleNamespace(answer=None, cost_usd=2.0, error="HTTP 500"), 1.0, LINES)

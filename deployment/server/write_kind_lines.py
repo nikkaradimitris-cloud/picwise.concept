@@ -7,10 +7,14 @@ the site, a few of one department a call (`picwise_ai.kind_lines`); every line i
 checked against the taxonomy (`kind_lines.checked_kind_lines`). A kind not answered, or
 answered twice, is asked again alone, at most twice more.
 
-With `--catalogue` (the server's prepared file) and `--answers` (the scan's answers), each
-kind comes with the lines the scan's AI gave the products the catalogue reads as that kind,
-how many and a few titles (`kind_lines.evidence`): the lists then hold the lines where the
-products really are, and the model sees which of them are look-alikes.
+Then the check, with `--catalogue` (the server's prepared file) and `--answers` (the scan's
+answers): for each kind, the lines the scan's AI gave the products the catalogue reads as that
+kind (`kind_lines.evidence`), those its list does not hold already, each with how many products
+and a few titles, are judged by the same model, "yes" (the kind itself) or "no" (parts,
+accessories, look-alikes) (`kind_lines.judge_request`). A line judged "yes" is added to the
+kind's list alone, without the lines under it (`exact`): the products really there stay in the
+kind. A first try (run 44781310404) showed the products with the taxonomy in one call, and the
+model copied their lines into the lists, look-alikes and all; so the two are asked apart.
 
 Written to `--out` (JSON, the repository's form: `kind_lines.write`) and printed in few
 characters (`kind_lines.compact`: `id=number,number`, the numbers the taxonomy file's
@@ -60,6 +64,9 @@ class Run:
         self.failed = 0
         self.refused = 0
         self.found: dict[str, list[str]] = {}
+        self.judged: dict[str, dict[str, str]] = {}
+        self.judge_calls = 0
+        self.judge_spent = 0.0
         self.lock = threading.Lock()
         self.errors: list[str] = []
 
@@ -92,6 +99,59 @@ class Run:
             if "HTTP 401" in error or "HTTP 403" in error:
                 return
             time.sleep(PAUSE_SECONDS * (attempt + 1))
+
+
+    def judge_one(self, items: list[tuple[dict[str, Any], list[tuple[str, int, list[str]]]]]) -> None:
+        from picwise_ai.kind_lines import checked_judgements, judge_request
+
+        if self.ask is None:
+            return
+        request = judge_request(items)
+        for attempt in range(MOST_TRIES):
+            with self.lock:
+                if self.spent >= self.budget:
+                    return
+            asked = self.ask(request)
+            cost = float(getattr(asked, "cost_usd", 0.0) or 0.0)
+            with self.lock:
+                self.calls += 1
+                self.judge_calls += 1
+                self.spent += cost
+                self.judge_spent += cost
+            answer = getattr(asked, "answer", None)
+            if answer is not None:
+                found = checked_judgements(answer, items)
+                with self.lock:
+                    for kind, said in found.items():
+                        self.judged.setdefault(kind, said)
+                return
+            error = str(getattr(asked, "error", "") or "")
+            with self.lock:
+                self.failed += 1
+                self.errors.append(error or str(getattr(asked, "stop_reason", "") or "no answer"))
+            if "HTTP 401" in error or "HTTP 403" in error:
+                return
+            time.sleep(PAUSE_SECONDS * (attempt + 1))
+
+
+def judge_all(run: Run, kinds: list[dict[str, Any]], workers: int) -> int:
+    """The check: each kind's lines its list does not hold, judged; how many lines asked."""
+    from picwise_ai.kind_lines import batches, candidates
+
+    items: dict[str, tuple[dict[str, Any], list[tuple[str, int, list[str]]]]] = {}
+    for kind in kinds:
+        lines = candidates(kind.get("seen") or (), run.found.get(kind["id"], []))
+        if lines:
+            items[kind["id"]] = (kind, lines)
+    asked = [kind for kind in kinds if kind["id"] in items]
+    calls = [[items[kind["id"]] for kind in call] for call in batches(asked)]
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+        list(pool.map(run.judge_one, calls))
+    missing = [items[kind["id"]] for kind in asked if kind["id"] not in run.judged]
+    if missing and run.ask is not None:
+        with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+            list(pool.map(run.judge_one, [[item] for item in missing]))
+    return sum(len(lines) for _kind, lines in items.values())
 
 
 def run_all(run: Run, kinds: list[dict[str, Any]], workers: int) -> None:
@@ -187,21 +247,35 @@ def main(argv: list[str] | None = None) -> int:
     empty = [kind for kind, chosen in found.items() if not chosen]
     missing = [kind for kind in ids if kind not in found]
     given = sum(len(chosen) for chosen in found.values())
+    asked_lines = judge_all(run, kinds, args.workers) if any("seen" in kind for kind in kinds) else 0
+    exact = {
+        kind: [line for line, verdict in run.judged[kind].items() if verdict == "yes"]
+        for kind in ids
+        if kind in run.judged and any(verdict == "yes" for verdict in run.judged[kind].values())
+    }
+    verdicts = [verdict for said in run.judged.values() for verdict in said.values()]
+    filled = [kind for kind in empty if kind in exact]
     totals = [
         read_note,
-        f"{len(found)} of {len(ids)} kinds answered; {given} lines in all; refused {run.refused}",
+        f"the lists: {len(found)} of {len(ids)} kinds answered; {given} lines in all; refused {run.refused}",
         f"kinds with no line: {len(empty)}" + (f" ({', '.join(empty[:40])})" if empty else ""),
         f"kinds not answered: {len(missing)}" + (f" ({', '.join(missing[:40])})" if missing else ""),
-        f"{run.calls} calls, {run.failed} failed" + (f" ({'; '.join(sorted(set(run.errors))[:5])})" if run.errors else ""),
-        f"cost ${run.spent:.4f} (budget ${args.budget:.2f}); {time.monotonic() - began:.0f} s",
+        f"the check: {asked_lines} lines of the products not on their kind's list asked; judged {len(verdicts)}:"
+        f" yes {verdicts.count('yes')}, no {verdicts.count('no')}; added to {len(exact)} kinds"
+        + (f", of which {len(filled)} had no line ({', '.join(filled[:30])})" if filled else ""),
+        f"{run.calls} calls ({run.judge_calls} of the check), {run.failed} failed"
+        + (f" ({'; '.join(sorted(set(run.errors))[:5])})" if run.errors else ""),
+        f"cost ${run.spent:.4f} (the check ${run.judge_spent:.4f}; budget ${args.budget:.2f}); {time.monotonic() - began:.0f} s",
     ]
-    text = compact(found, lines)
-    pieces = chunks(text)
+    pieces = [("kind lines", piece) for piece in chunks(compact(found, lines))]
+    pieces += [("exact lines", piece) for piece in chunks(compact(exact, lines))] if exact else []
     if len(pieces) > MOST_NOTES - 1:
         totals.append(f"the lists need {len(pieces)} notes, {MOST_NOTES - 1} fit: read the log for the rest")
     notices.say("kind lines: in all", "\n".join(totals), final=True)
-    for number, piece in enumerate(pieces, 1):
-        notices.say(f"kind lines {number} of {len(pieces)}", piece, final=True)
+    for label in ("kind lines", "exact lines"):
+        mine = [piece for name, piece in pieces if name == label]
+        for number, piece in enumerate(mine, 1):
+            notices.say(f"{label} {number} of {len(mine)}", piece, final=True)
     write(
         found,
         args.out,
@@ -211,6 +285,7 @@ def main(argv: list[str] | None = None) -> int:
             "taxonomy": "data/taxonomy_sources/google/taxonomy.en-US.txt",
             "cost_usd": round(run.spent, 4),
         },
+        exact=exact,
     )
     print(f"written: {args.out}")
     return 0
