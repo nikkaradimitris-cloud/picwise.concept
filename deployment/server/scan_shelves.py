@@ -245,6 +245,8 @@ class Asking:
     totals: Totals = field(default_factory=Totals)
     tries: Counter = field(default_factory=Counter)
     notices: Notices = field(default_factory=lambda: Notices(enabled=False))
+    # The request of one call, when not the scan's own (`reask_shelves.py`: more care).
+    request_fn: Callable[..., dict[str, Any]] | None = None
 
 
 def _record(asking: Asking, key: str, line: str | None) -> None:
@@ -277,7 +279,8 @@ def run_round(asking: Asking, keys: Sequence[str], per_call: int, *, label: str)
     speed_told = False
 
     def do_call(call: Call) -> tuple[Any, str]:
-        request = request_kwargs([asking.groups[key].item for key in call.keys], asking.lines)
+        build = asking.request_fn or request_kwargs
+        request = build([asking.groups[key].item for key in call.keys], asking.lines)
         return asking.ask_fn(request)
 
     def budget_allows(in_flight: int) -> bool:

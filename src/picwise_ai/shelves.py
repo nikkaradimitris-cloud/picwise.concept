@@ -137,15 +137,35 @@ def user_message(items: Sequence[dict[str, Any]]) -> str:
     return "\n".join([f"Products ({len(items)}):", *(item_line(n, item) for n, item in enumerate(items, 1))])
 
 
-def request_kwargs(items: Sequence[dict[str, Any]], lines: Sequence[str] | None = None) -> dict[str, Any]:
+# Asked again (`deployment/server/reask_shelves.py`, owner, 20/11 20:51): the products whose
+# line the first scan gave disagrees with every kind their own words name, and those it gave
+# one of the tree's first lines (a slip). The measure after of 20/11 found real tyres on
+# "Vehicle Hardtops" and garden taps on "Taps & Dies": a line of the right department, the
+# wrong branch.
+CAREFUL_NOTE = """
+Before you answer a product, read its line's full name from the top of the tree: the \
+department, every branch and its own name must all say what the product is. A car tyre is on \
+the line of tyres, never on another line of vehicle parts; a garden tap on a line of taps or \
+valves for water, never on the line of threading taps and dies. Never answer one of the \
+first lines of the tree unless the product is that thing."""
+
+
+def request_kwargs(
+    items: Sequence[dict[str, Any]],
+    lines: Sequence[str] | None = None,
+    *,
+    effort: str = EFFORT,
+    careful: bool = False,
+) -> dict[str, Any]:
     """The Messages API request for one call: the instructions and the tree first, the
-    same on every call and cached; the products after."""
+    same on every call and cached; the products after. `careful`, with more `effort`, for
+    the products asked again."""
     lines = taxonomy_lines() if lines is None else lines
     return {
         "model": MODEL,
         "max_tokens": MAX_TOKENS,
         "system": [
-            {"type": "text", "text": SYSTEM_PROMPT},
+            {"type": "text", "text": SYSTEM_PROMPT + (CAREFUL_NOTE if careful else "")},
             {
                 "type": "text",
                 "text": "Google's product taxonomy:\n" + taxonomy_tree(lines),
@@ -153,7 +173,7 @@ def request_kwargs(items: Sequence[dict[str, Any]], lines: Sequence[str] | None 
             },
         ],
         "messages": [{"role": "user", "content": user_message(items)}],
-        "output_config": {"effort": EFFORT, "format": {"type": "json_schema", "schema": SCHEMA}},
+        "output_config": {"effort": effort, "format": {"type": "json_schema", "schema": SCHEMA}},
     }
 
 
