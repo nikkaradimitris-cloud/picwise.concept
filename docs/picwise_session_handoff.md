@@ -81,9 +81,11 @@ a decision came about.
   manufacturer and kind; the search words stay on the server, never in GitHub's public logs: the channel to
   the table is still to be agreed). The AI's trial (run `44738588067`, `brands-ai-trial.yml`, off again):
   200 brands $0.0188, 10,000 about $0.94; famous brands and five we do not sell answered right; 29 unknown
-  (small sellers); read by hand, of the sample's 28 makers 24 right, 2 partly, 2 wrong. **Next:** the owner's word for the whole file (the catalogue's
-  brands, and the brands of each kind in the UK asked of the AI, for makers our shops do not sell), then the
-  search reading those makers, the page (picture first), the table. **Found:** the catalogue reads some
+  (small sellers); read by hand, of the sample's 28 makers 24 right, 2 partly, 2 wrong. **KEPT FOR LATER
+  by the owner (20/11 ~14:55, asked whether to build the whole file now: «Κράτα την εργασία για
+  αργότερα»).** When taken up: the owner's word for the whole file first (proposed: the catalogue's ~7,400
+  brands, and the brands of each of the 312 kinds sold in the UK asked of the AI, for makers our shops do
+  not sell; under $2), then the search reading those makers, the page (picture first), the table. **Found:** the catalogue reads some
   tools' and fixings' words as kinds (Makita's "belt", Timco's washers as washing machines), seen through
   the AI's answers; not checked yet.
 - **NEXT (owner, 19/11 night): the AI to give every product its Google shelf** («εκτός από τον bot.... Μπλέξουμε και
