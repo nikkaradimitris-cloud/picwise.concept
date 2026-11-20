@@ -1,0 +1,95 @@
+# A read-only look at the catalogue preparation's runs in the server's journal (owner,
+# 2026-11-20: «μας ενδιαφέρει γιατί δεν δούλεψε το feed», after two deployments that day
+# whose preparation failed with no line saying why: deploy.sh keeps only the run's
+# `prepare_catalogue|Consumed` lines). deployment/server/print_prepare_runs.py, this
+# commit's, is read by the server's python3 from the standard input: it reads the unit's
+# journal, the kernel's lines about memory, systemd's view of the last run, the prepared
+# and cached files' sizes and times, and the server's memory; it changes nothing. The log
+# is public, like the repository: the server's names are masked here, and the script
+# masks every value of the server's secret files, every link and every long token on the
+# server, before a line leaves it. Starts on a push of its own branch, or by hand.
+name: Preparation runs (read-only)
+on:
+  push:
+    branches: [claude/prepare-runs-2026-11-20]
+    paths: [.github/workflows/prepare-runs.yml, deployment/server/print_prepare_runs.py]
+  workflow_dispatch:
+    inputs:
+      since:
+        description: "From when, as journalctl reads it (-30h, or 2026-11-20 04:00:00)"
+        default: "-30h"
+permissions:
+  contents: read
+concurrency:
+  group: prepare-runs
+  cancel-in-progress: false
+jobs:
+  look:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Connect with the key, check the server's identity, mask its names
+        id: connect
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          # A key pasted on Windows may carry carriage returns, which ssh refuses.
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # As server-deploy.yml: the server must show a login the host key pinned in
+          # .github/server-host-key.pin, and every connection below accepts that key only.
+          seen="$RUNNER_TEMP/seen"
+          : > "$seen"
+          ssh -F /dev/null -o BatchMode=yes -o ConnectTimeout=15 -o HostKeyAlgorithms=ssh-ed25519 \
+            -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$seen" -o GlobalKnownHostsFile=/dev/null \
+            -o PubkeyAuthentication=no -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no \
+            -o HostbasedAuthentication=no -o GSSAPIAuthentication=no -o LogLevel=QUIET \
+            "ubuntu@$SERVER_HOST" true 2>/dev/null || true
+          host_key=$(awk 'NF >= 3 {print $2, $3; exit}' "$seen")
+          rm -f "$seen"
+          [ -n "$host_key" ] || { echo "the server showed a login no host key"; exit 1; }
+          pin=$(HOST_KEY="$host_key" python3 .github/scripts/host_key_pin.py)
+          expected=$( (grep -v '^#' .github/server-host-key.pin || true) | tr -d '[:space:]')
+          if [ "$pin" != "$expected" ]; then
+            echo "the server does NOT match the pin (reinstalled, or not our server); its pin: $pin"
+            exit 1
+          fi
+          echo "the server matches the pin"
+          echo "picwise-server $host_key" > ~/.ssh/known_hosts_picwise
+          cat > ~/.ssh/config <<EOF
+          Host picwise
+            HostName $SERVER_HOST
+            HostKeyAlias picwise-server
+            UserKnownHostsFile ~/.ssh/known_hosts_picwise
+            StrictHostKeyChecking yes
+            User ubuntu
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            BatchMode yes
+            ConnectTimeout 15
+            ServerAliveInterval 15
+            ServerAliveCountMax 8
+            LogLevel ERROR
+          EOF
+          chmod 600 ~/.ssh/config
+          # The host name resolves to the address, so it is masked like the address.
+          names=$(ssh -n picwise 'hostname; hostname -f; hostname -I')
+          for name in $names; do echo "::add-mask::$name"; done
+          echo "connected"
+      - name: The preparation's runs, and why each ended
+        if: always() && steps.connect.outcome == 'success'
+        env:
+          SINCE: ${{ inputs.since || '-30h' }}
+        run: |
+          case "$SINCE" in
+            *[!-0-9A-Za-z:\ ]*) echo "a time of digits, letters, '-', ':' and spaces only"; exit 1 ;;
+          esac
+          ssh picwise "sudo python3 - --since='$SINCE'" < deployment/server/print_prepare_runs.py
+      - name: Remove the key from the runner
+        if: always()
+        run: rm -f ~/.ssh/deploy_key ~/.ssh/config
