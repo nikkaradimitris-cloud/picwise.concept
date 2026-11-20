@@ -15,6 +15,9 @@ accessories, look-alikes) (`kind_lines.judge_request`). A line judged "yes" is a
 kind's list alone, without the lines under it (`exact`): the products really there stay in the
 kind. A first try (run 44781310404) showed the products with the taxonomy in one call, and the
 model copied their lines into the lists, look-alikes and all; so the two are asked apart.
+With `--lists` the lists kept are read and only the check is asked (the measure after of
+20/11, run 44784049044: a third of the products the lists took out of a kind were the kind
+itself, most on lines the first check never asked about: it asked 15 a kind).
 
 Written to `--out` (JSON, the repository's form: `kind_lines.write`) and printed in few
 characters (`kind_lines.compact`: `id=number,number`, the numbers the taxonomy file's
@@ -23,8 +26,8 @@ to the repository from those, read against the same taxonomy (`kind_lines.from_c
 and are checked there before any rule reads them. No product, link or key is read or
 printed; nothing on the server or the site changes.
 
-    python3 deployment/server/write_kind_lines.py --out LISTS.json [--catalogue CATALOGUE.json.gz \
-        --answers ANSWERS.jsonl.gz] [--budget 1.00] [--workers 4] [--dry-run]
+    python3 deployment/server/write_kind_lines.py --out LISTS.json [--lists KEPT.json] \
+        [--catalogue CATALOGUE.json.gz --answers ANSWERS.jsonl.gz] [--budget 1.00] [--workers 4] [--dry-run]
 """
 from __future__ import annotations
 
@@ -204,6 +207,7 @@ def ordered(found: dict[str, list[str]], ids: Sequence[str]) -> dict[str, list[s
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--lists", type=Path, default=None, help="keep these lists; ask only the check")
     parser.add_argument("--catalogue", type=Path, default=None)
     parser.add_argument("--answers", type=Path, default=None)
     parser.add_argument("--budget", type=float, default=1.00)
@@ -242,7 +246,13 @@ def main(argv: list[str] | None = None) -> int:
         print("the AI: not asked (a dry run, or no key)")
     began = time.monotonic()
     run = Run(ask, args.budget, lines)
-    run_all(run, kinds, args.workers)
+    if args.lists is not None:
+        from picwise_ai.kind_lines import read
+
+        run.found = {kind: chosen for kind, chosen in read(args.lists).items() if kind in ids}
+        print(f"the lists kept from {args.lists}: {len(run.found)} kinds; only the check is asked")
+    else:
+        run_all(run, kinds, args.workers)
     found = ordered(run.found, ids)
     empty = [kind for kind, chosen in found.items() if not chosen]
     missing = [kind for kind in ids if kind not in found]
@@ -267,7 +277,8 @@ def main(argv: list[str] | None = None) -> int:
         + (f" ({'; '.join(sorted(set(run.errors))[:5])})" if run.errors else ""),
         f"cost ${run.spent:.4f} (the check ${run.judge_spent:.4f}; budget ${args.budget:.2f}); {time.monotonic() - began:.0f} s",
     ]
-    pieces = [("kind lines", piece) for piece in chunks(compact(found, lines))]
+    # The lists kept are in the repository already: only what the check added is noted.
+    pieces = [] if args.lists is not None else [("kind lines", piece) for piece in chunks(compact(found, lines))]
     pieces += [("exact lines", piece) for piece in chunks(compact(exact, lines))] if exact else []
     if len(pieces) > MOST_NOTES - 1:
         totals.append(f"the lists need {len(pieces)} notes, {MOST_NOTES - 1} fit: read the log for the rest")

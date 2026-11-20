@@ -177,14 +177,17 @@ class Taken:
     products: int = 0
     left_with_none: int = 0
     with_kind: int = 0
+    # Products whose AI line is one the model gave when it slipped (`ai_shelves.SLIP_LINES`).
+    slips: int = 0
 
 
 def taken_away(prepared: Any) -> Taken:
-    from picwise_providers.ai_shelves import line_of
+    from picwise_providers.ai_shelves import is_slip, line_of
     from picwise_providers.search_selection import kinds_before_the_kind_lists
 
     taken = Taken()
     for place, (product, fields, kinds) in enumerate(zip(prepared.products, prepared.search_fields, prepared.kinds)):
+        taken.slips += is_slip(line_of(str(product.title or ""), str(product.brand or ""), product.raw))
         after = {kind for kind in kinds if not kind.startswith("__")}
         taken.with_kind += bool(after)
         before = {kind for kind in kinds_before_the_kind_lists(product, fields) if not kind.startswith("__")}
@@ -208,7 +211,8 @@ def report_taken(prepared: Any, taken: Taken, top: int = TAKEN_KINDS) -> list[st
     the AI's lines they carry."""
     out = [
         f"products with a kind {taken.with_kind:,}; taken out of a kind by the lists {taken.products:,}"
-        f" (left with no kind, so doubtful: {taken.left_with_none:,})",
+        f" (left with no kind, so doubtful: {taken.left_with_none:,}); products whose AI line is one of the"
+        f" tree's first five, given when the model slipped, read as no answer: {taken.slips:,}",
     ]
     ranked = sorted(taken.by_kind.items(), key=lambda item: -len(item[1]))
     rows = []

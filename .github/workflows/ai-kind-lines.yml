@@ -161,6 +161,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           "$RUNNER_TEMP/ai/bin/python" deployment/server/write_kind_lines.py --out "$RUNNER_TEMP/kind_lines.json" \
+            --lists data/kind_lines/google_lines_by_kind.json \
             --catalogue "$RUNNER_TEMP/catalogue.json.gz" --answers "$RUNNER_TEMP/answers.jsonl.gz" \
             --budget "$BUDGET" --workers "$WORKERS"
       - name: Remove the key, the copies and the lists from the runner

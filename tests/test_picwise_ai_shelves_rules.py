@@ -221,6 +221,19 @@ class BothLinksTests(_WithAnswers):
             frozenset({"laptop"}),
         )
 
+    def test_a_line_the_model_gave_when_it_slipped_is_no_answer(self) -> None:
+        self.assertTrue(ai_shelves.is_slip("Animals & Pet Supplies"))
+        self.assertTrue(ai_shelves.is_slip(" animals & pet supplies >  Pet Supplies > Bird Supplies "))
+        self.assertFalse(ai_shelves.is_slip("Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Beds"))
+        self.assertFalse(ai_shelves.is_slip(None))
+        watch = _first("Diesel DZ4283 Mega Chief Chronograph Men's Watch", "Diesel", "Watches > Mens", WATCHES)
+        boots = _second("RJ45 Snagless Boots for Cat6 6.5mm Pink 50 Pack", "", "RJ45 Boots")
+        self.answer((watch, "Animals & Pet Supplies"), (boots, "Animals & Pet Supplies > Live Animals"))
+        self.assertIn("watch", _kinds(watch))
+        kept = _with_aisle(boots)
+        self.assertEqual(kept.raw["google_product_category"], SHOES)
+        self.assertNotIn(ai_shelves.AI_KEY_COLUMN, kept.raw)
+
     def test_the_repositorys_lists_are_read_without_the_setting(self) -> None:
         os.environ.pop(ai_shelves.KIND_LINES_FILE_ENV, None)
         ai_shelves.reset()
@@ -310,6 +323,7 @@ class TakenTests(_WithAnswers):
         self.assertEqual((taken.products, taken.left_with_none, taken.with_kind), (2, 2, 1))
         text = "\n".join(measure_after.report_taken(prepared, taken))
         self.assertIn("taken out of a kind by the lists 2 (left with no kind, so doubtful: 2)", text)
+        self.assertIn("given when the model slipped, read as no answer: 0", text)
         self.assertIn("watch 1 (Watch Bands 1; e.g. Nato Strap 20mm Olive)", text)
         self.assertIn("washing_machine 1 (Washers 1;", text)
 

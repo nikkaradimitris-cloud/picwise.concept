@@ -28,7 +28,8 @@ server `/srv/picwise/assist/shelves/answers.jsonl.gz`). Without the file, nothin
    and title give only when the AI's line for it is on that kind's list (`checked_kinds`);
    a product left with none of its kinds is doubtful (`UNCERTAIN_MARKER`): it is found by
    its words, never by its kind ("watches" shows watches; "garmin strap" still finds the
-   strap). No line from the AI (not asked yet, refused, "no line fits"), or a kind with no
+   strap). No line from the AI (not asked yet, refused, "no line fits", or one of the
+   tree's first lines, which it gave when it slipped: `SLIP_LINES`), or a kind with no
    list, changes nothing. Until 20/11 19:00 the AI's line was read through the kind reader
    (rule 2 of 16:40), which read "Hardware Accessories > Washers" as a washing machine.
 """
@@ -131,6 +132,24 @@ def line_of(title: str, brand: str, raw: Any, table: Mapping[str, str] | None = 
     return table.get(key_of(title, brand, raw))
 
 
+# The first five lines of Google's tree, which the model gave products of every kind when it
+# slipped (the check of 20/11: "Animals & Pet Supplies" on products read as 162 kinds,
+# watches, kettles, televisions...): a line among them says nothing of the product, and is
+# read as no answer by both rules.
+SLIP_LINES = frozenset({
+    "animals & pet supplies",
+    "animals & pet supplies > live animals",
+    "animals & pet supplies > pet supplies",
+    "animals & pet supplies > pet supplies > bird supplies",
+    "animals & pet supplies > pet supplies > bird supplies > bird cage accessories",
+})
+
+
+def is_slip(line: str | None) -> bool:
+    """A line the model gave when it slipped (`SLIP_LINES`)."""
+    return " > ".join(" ".join(part.split()).casefold() for part in str(line or "").split(">") if part.strip()) in SLIP_LINES
+
+
 def second_link_answer(
     title: str, brand: str, raw: Any, table: Mapping[str, str] | None = None
 ) -> tuple[str, str]:
@@ -141,7 +160,7 @@ def second_link_answer(
         return "", ""
     key = key_of(title, brand, raw)
     line = table.get(key) or ""
-    return (line, key) if line else ("", "")
+    return (line, key) if line and not is_slip(line) else ("", "")
 
 
 KIND_LINES_FILE_ENV = "PICWISE_KIND_LINES_FILE"
@@ -221,7 +240,7 @@ def checked_kinds(
     if not real:
         return kinds
     line = line_of(title, brand, raw, table)
-    if not line:
+    if not line or is_slip(line):
         return kinds
     lists = kind_lists() if lists is None else lists
     left = {kind for kind in real if kind in lists and not on_list(line, lists[kind])}

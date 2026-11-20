@@ -78,6 +78,11 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual(kind_lines.candidates(seen, ["Apparel & Accessories > Jewelry > Watches"]), seen[1:])
         self.assertEqual(kind_lines.candidates(seen, ["Apparel & Accessories > Jewelry"]), [])
 
+    def test_the_check_asks_no_department_alone_and_no_slip(self) -> None:
+        seen = [("Apparel & Accessories", 30, ["Casio Watch"]), ("Animals & Pet Supplies > Pet Supplies", 12, ["Casio"]),
+                ("Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Beds", 2, ["Dog Bed"]), (BANDS, 4, ["Strap"])]
+        self.assertEqual(kind_lines.candidates(seen, [WATCHES]), seen[2:])
+
     def test_the_check_shows_each_line_with_its_products_and_no_taxonomy(self) -> None:
         kinds = [kind for kind in kind_lines.kinds_described() if kind["id"] == "watch"]
         request = kind_lines.judge_request([(kinds[0], [(BANDS, 40, ["Nato Strap", "Leather Band"])])])
@@ -263,6 +268,15 @@ class RunTests(unittest.TestCase):
         self.assertNotIn("Kettle", asked[0])
         self.assertEqual(run.judged, {"watch": {BANDS: "no", "Apparel & Accessories > Jewelry": "yes"}})
         self.assertEqual(run.judge_calls, 1)
+
+    def test_the_lists_kept_are_read_and_only_the_check_is_asked(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            kept = Path(folder) / "kept.json"
+            out = Path(folder) / "out.json"
+            kind_lines.write({"tablet": [TABLETS], "no_such_kind": [WATCHES]}, kept, note={}, exact={"watch": [BANDS]})
+            self.assertEqual(write_kind_lines.main(["--out", str(out), "--lists", str(kept), "--dry-run"]), 0)
+            self.assertEqual(kind_lines.read(out), {"tablet": [TABLETS]})
+            self.assertEqual(kind_lines.read(out, "exact"), {})
 
     def test_it_stops_at_the_budget_and_writes_without_a_key(self) -> None:
         run = write_kind_lines.Run(lambda request: SimpleNamespace(answer=None, cost_usd=2.0, error="HTTP 500"), 1.0, LINES)
