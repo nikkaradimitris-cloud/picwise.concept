@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (15:00 Athens).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (14:20 Athens, after the deployment).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,12 +8,18 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (20/11, 15:00 Athens): remedies 1 and 2, and a deployment that prepares only when needed, built and
-  tested, NOT deployed: waiting for the owner's «ανέβασε».** Deployment (owner: «από ποια αλλαγή δεν αφορά τον
-  κατάλογο γιατί πρέπει να περιμένουμε μισή ώρα?»): `deploy.sh` prepares again only when the new release would not
-  read the file in place, `tools/prepare_catalogue.py` or `picwise-prepare.service` changed against the release the
-  site runs, or the file is 24 h old or more; else about 3-5 minutes. The coming deployment prepares (remedy 2
-  changed `tools/prepare_catalogue.py`), about 28 minutes, once. Remedies: (owner, of three remedies: «Κάνε το ένα και το τρία», then «Άκυρο ... κάνε μόνο το ένα», then «Φτιάξε
+- **FIRST (20/11, 14:20 Athens): DEPLOYED on the owner's «Ανέβασε»: remedies 1 and 2, and a deployment that
+  prepares only when needed.** `ea1e7dd` pushed to `ccr-1361f1a7-dcpo60` at 11:53:02 UTC (fast-forward from
+  `857cdb2`; rode along, inert on the site: the AI shelves trial's files, `print_prepare_runs.py`); run
+  `44731201677`, success, release `20261120T115315Z-ea1e7dd`, site since 12:16:48 UTC. It prepared (remedy 2 changed
+  `tools/prepare_catalogue.py`): **success**, peak 14,615,528 KB, 1,319 s; the step after it: "fresh
+  2026-11-20T12:06:09"; 397,577 products, 137 shops (valid until 21/11 18:06 UTC); the price notes written again;
+  the site 4,701 MB; 15 of 15 pages and 12 of 12 searches with cards the same on the public site and the server
+  (tv 411, laptop 56, kettle 90...). "Tests" on `ea1e7dd`: every module but the two slow ones green. From now on a
+  deployment that changes neither the catalogue's rules nor the preparation takes about 3-5 minutes (owner:
+  «από ποια αλλαγή δεν αφορά τον κατάλογο γιατί πρέπει να περιμένουμε μισή ώρα?»): `deploy.sh` prepares again
+  only when the new release would not read the file in place, `tools/prepare_catalogue.py` or
+  `picwise-prepare.service` changed against the release the site runs, or the file is 24 h old or more. Remedies: (owner, of three remedies: «Κάνε το ένα και το τρία», then «Άκυρο ... κάνε μόνο το ένα», then «Φτιάξε
   και αυτό [το 2]»: 3 not done, the site keeps three workers). Remedy 2: `tools/prepare_catalogue.py` chooses the
   feed's copy once and the intake reads the same (no second download or parse in a run; test
   `tests/test_picwise_prepare_reads_the_feed_once.py`). Remedy 1, on the work branch: `deploy.sh` runs `deployment/server/prepared_state.py` with the
