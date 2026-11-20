@@ -36,6 +36,7 @@ from picwise_nlu.concept_understanding import (
 from picwise_nlu.product_concepts import broader_concepts, get_product_concepts_by_id, get_qualifiers
 from picwise_taxonomy.comparison_rules import comparison_rule
 
+from .ai_shelves import checked_kinds
 from .shop_words import learned_kind
 from .contracts import FeedAvailabilityContext, OfferHealth, ProviderProduct
 from .normalization import extract_merchant_name, extra_image_urls
@@ -1284,8 +1285,12 @@ def _product_concepts(product: ProviderProduct, fields: dict[str, str]) -> froze
     if known is not None:
         return known
     # A shop's own type learned by review (`shop_words`, 2026-11-12) names the kind.
-    learned = learned_kind(product.raw if isinstance(product.raw, dict) else {}, key[0])
-    return frozenset({learned}) if learned else annotate_product_concepts(*key)
+    raw = product.raw if isinstance(product.raw, dict) else {}
+    learned = learned_kind(raw, key[0])
+    kinds = frozenset({learned}) if learned else annotate_product_concepts(*key)
+    # Read against the kinds of the AI's line (`ai_shelves`, rule 2; owner, 2026-11-20),
+    # where the preparation has the AI's answers; else unchanged.
+    return checked_kinds(kinds, title=str(product.title or ""), brand=str(product.brand or ""), raw=raw)
 
 
 def _unannotated_product_names_concept(

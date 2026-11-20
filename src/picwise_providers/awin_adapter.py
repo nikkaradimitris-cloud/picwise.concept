@@ -38,6 +38,12 @@ _AWIN_FEED_URL_ENV = "AWIN_FEED_URL"
 SECOND_FEED_FILE_ENV = "AWIN_FEED_FILE_AWIN"
 SECOND_FEED_URL_ENV = "AWIN_FEED_URL_AWIN"
 _SHOP_ID_KEYS = ("advertiser_id", "merchant_id")
+# The category columns of Awin's own format: a row the AI gave a line has none left
+# (`ai_shelves`, rule 1).
+_AWIN_CATEGORY_COLUMNS = (
+    "merchant_product_category_path", "merchant_product_second_category", "merchant_product_third_category",
+    "merchant_category", "category_name",
+)
 _GZIP_MAGIC = b"\x1f\x8b"
 # A value this short or shorter is held once for all the rows that give it.
 _SHARED_VALUE_CHARS = 64
@@ -350,15 +356,24 @@ def _with_aisle(product: ProviderProduct) -> ProviderProduct:
     """An Awin-format row given the Google shelf its words name (`awin_categories`), in the
     place and the form a Google-format row has it, its own category kept as its type: the
     rules that read a shelf, the cap among them, read it as every other row's (owner,
-    2026-11-19: «να κλωνοποιήσουμε τους κανόνες και στο δεύτερο feed»)."""
+    2026-11-19: «να κλωνοποιήσουμε τους κανόνες και στο δεύτερο feed»). The AI's line, where
+    it gave one (`ai_shelves`, rule 1; owner, 2026-11-20), in place of the one guessed: the
+    guess is read from the same words as the row's type, so it checked nothing."""
     from dataclasses import replace
 
+    from .ai_shelves import AI_KEY_COLUMN, second_link_answer
     from .awin_categories import row_shelf
 
     raw = product.raw
     if not isinstance(raw, dict):
         return product
-    shelf = row_shelf(raw)
+    # Read before the row is changed: the AI was asked with the shop's own words.
+    by_ai, key = (
+        second_link_answer(product.title, product.brand, raw)
+        if not str(raw.get("google_product_category") or "").strip()
+        else ("", "")
+    )
+    shelf = by_ai or row_shelf(raw)
     if not shelf:
         return product
     shelf = sys.intern(shelf)
@@ -367,6 +382,12 @@ def _with_aisle(product: ProviderProduct) -> ProviderProduct:
     raw["google_product_category"] = shelf
     if own and not str(raw.get("product_type") or "").strip():
         raw["product_type"] = own
+    if by_ai:
+        # As a first-link row: the shop's words its type, the Google line its shelf, and no
+        # Awin category column read as a shelf of its own before it (`ai_shelves`, rule 1).
+        raw[AI_KEY_COLUMN] = key
+        for column in _AWIN_CATEGORY_COLUMNS:
+            raw.pop(column, None)
     return replace(product, category_text=shelf)
 
 

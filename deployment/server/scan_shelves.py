@@ -123,7 +123,8 @@ class Group:
 
 def groups_of(products: Iterable[Any], lines: Sequence[str]) -> dict[str, Group]:
     """The catalogue's products by key, each key's first product shown to the AI."""
-    from picwise_ai.shelves import ask_key, levels, line_index, shop_words
+    from picwise_ai.shelves import levels, line_index, shop_words
+    from picwise_providers.ai_shelves import key_of
     from picwise_providers.catalogue_cap import shop_of
 
     index = line_index(lines)
@@ -131,7 +132,8 @@ def groups_of(products: Iterable[Any], lines: Sequence[str]) -> dict[str, Group]
     for product in products:
         raw = product.raw if hasattr(product.raw, "get") else {}
         words = shop_words(raw)
-        key = ask_key(product.title, product.brand, words)
+        # A row given the AI's line keeps the key it was asked by (`ai_shelves`, rule 1).
+        key = key_of(product.title, product.brand, raw)
         group = groups.get(key)
         if group is None:
             second = any(_text(raw.get(column)) for column in SECOND_KEYS)
