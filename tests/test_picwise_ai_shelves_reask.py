@@ -148,6 +148,20 @@ class DryRunTests(unittest.TestCase):
                     handle.write(json.dumps({"k": ask_key(item.title, item.brand, shop_words(item.raw)), "line": line}) + "\n")
             self.assertEqual(reask_shelves.main([str(catalogue), "--answers", str(kept), "--out", str(out), "--dry-run"]), 0)
             self.assertFalse(out.exists())
+            # Asked again before: not asked a third time.
+            from io import StringIO
+            from contextlib import redirect_stdout
+
+            with gzip.open(kept, "wt", encoding="utf-8") as handle:
+                for item, line, again in ((products[0], BANDS, "2026-11-20"), (products[1], WATCHES, None)):
+                    record = {"k": ask_key(item.title, item.brand, shop_words(item.raw)), "line": line}
+                    if again:
+                        record.update({"was": HARDTOPS, "again": again})
+                    handle.write(json.dumps(record) + "\n")
+            printed = StringIO()
+            with redirect_stdout(printed):
+                reask_shelves.main([str(catalogue), "--answers", str(kept), "--out", str(out), "--dry-run"])
+            self.assertIn("asked again before 1 keys; to ask again 0 keys", printed.getvalue())
 
 
 class WorkflowTests(unittest.TestCase):
@@ -159,7 +173,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("group: shelves-scan", self.workflow)
         self.assertIn("answers.before-reask.jsonl.gz", self.workflow)
         self.assertLess(self.workflow.index("answers.before-reask"), self.workflow.index("sudo mv -f"))
-        self.assertIn("BUDGET: '1.20'", self.workflow)
+        self.assertIn("BUDGET: '0.60'", self.workflow)
         self.assertNotIn("upload-artifact", self.workflow)
         self.assertIn("rm -f ~/.ssh/deploy_key", self.workflow)
 

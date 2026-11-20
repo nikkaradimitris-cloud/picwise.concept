@@ -25,8 +25,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      # The most this run's calls may cost, in dollars (owner, 20/11: «περίπου 1 $»).
-      BUDGET: '1.20'
+      # The most this run's calls may cost, in dollars. The first run (44797248838, owner,
+      # 20/11: «περίπου 1 $») stopped at $1.20 with 3,313 keys left; this one asks those
+      # (owner, 20/11 21:57: «Πρώτα να ρωτηθούν οι ομάδες..»; about $0.45 at that pace).
+      BUDGET: '0.60'
       WORKERS: '8'
       # Seconds of asking before the answers are written and put on the server.
       STOP_AFTER: '5400'

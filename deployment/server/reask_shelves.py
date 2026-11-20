@@ -13,7 +13,9 @@ and every product whose line is on none of the lists of the kinds its own words 
 server's catalogue (`ai_shelves.kind_lists`, `on_list`): the products the lists take out of
 a kind. The same question as the scan's, with more care: `shelves.CAREFUL_NOTE`, effort
 "medium", fewer products a call (`--per-call`, 30). A key answered again keeps its new line,
-the old one beside it ("was"); a key refused again keeps its old answer. Whether a new line
+the old one beside it ("was"), and the day ("again"); a key refused again keeps its old
+answer. A key asked again before is never asked again: a run stopped by its budget is
+carried on by the next. Whether a new line
 is right is not decided here: the rule reads it as it reads every line, and the measure
 after says what it gives.
 
@@ -137,6 +139,12 @@ def main(argv: list[str] | None = None) -> int:
         {key: record.get("line") for key, record in answers.items()},
         lists,
     )
+    # A key asked again already (its record says when) is not asked a third time: a run
+    # stopped by its budget is carried on by the next (owner, 20/11 21:57: «Πρώτα να
+    # ρωτηθούν οι ομάδες..», the 3,313 left by run 44797248838).
+    asked_before = {key for key in why if (answers.get(key) or {}).get("again")}
+    for key in asked_before:
+        del why[key]
     # The kinds each key's products are read as, to say after whether the new line keeps them.
     kinds_of: dict[str, set[str]] = {}
     count_of: Counter[str] = Counter()
@@ -153,7 +161,8 @@ def main(argv: list[str] | None = None) -> int:
     notices = Notices()
     notices.say(
         "start",
-        f"{len(products):,} products, {len(answers):,} answers kept; to ask again {len(keys):,} keys "
+        f"{len(products):,} products, {len(answers):,} answers kept; asked again before {len(asked_before):,} keys; "
+        f"to ask again {len(keys):,} keys "
         f"({products_asked:,} products): a slip {reasons['slip']:,} keys "
         f"({sum(count_of[key] for key in keys if why[key] == 'slip'):,} products), taken out of a kind "
         f"{reasons['taken']:,} keys ({sum(count_of[key] for key in keys if why[key] == 'taken'):,} products); "
