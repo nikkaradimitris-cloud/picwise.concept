@@ -23,8 +23,11 @@ a decision came about.
   measure `measure_after.py` / `ai-shelves-after.yml` (push `claude/shelves-after`). The last measure (run
   44808052331): 353 of 439 cards right (80.4%; first link 92.3%, second 71.9%); about 1,900 real products hidden
   (1.6%). AI for this work on 20/11: $2.56. **Next:** the nightly scan of new products (a product with no answer
-  keeps the old reading), with daily limits the owner sets; "car tyres" apart from motorcycle tyres; garden taps
-  (still on the threading taps' line); the weak searches above.
+  keeps the old reading), with the daily limit the owner sets (asked 20/11 23:55, proposed $1 a day; measured:
+  16,547 keys, 30,264 products not answered now, about $1.15 with the scan's question or $2.25 with the careful
+  one, once; then about 900 keys a night, $0.07 or $0.13; `ai-shelves-count.yml`, push `claude/shelves-count`,
+  counts them with no key); "car tyres" apart from motorcycle tyres; garden taps (still on the threading taps'
+  line); the weak searches above.
 - **20/11, 18:50 Athens: the scan DONE ($14.22; answers on the server); the measure after: 69.8% of the
   first 12 cards right (first link 83.5%, second 61.4%; boots, watches, kettle fixed); NOT deployed: rule 2 hides
   some real products and the kind reader misreads some AI lines (PROGRESS.md, 20/11 18:50). **Done at 20:40 (the
