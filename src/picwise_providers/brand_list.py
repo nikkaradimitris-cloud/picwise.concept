@@ -527,14 +527,16 @@ class BrandReader:
             if not close:
                 continue
             own_words = {own for _brand, own in close}
-            # Another brand, or another kind the reading would correct the word into
-            # ("torres" read as tyres), as close: a question. So is a word the search knows
-            # as close, unless the name's other words are in the search ("mira saels":
+            # A name's other words in the search say which brand is meant ("harriosn
+            # cameras": Harrison Cameras, though a brand Harrison is as close).
+            in_its_name = [brand for brand, _own in close if " " in self._spoken[brand.key]]
+            # Two words it could be a slip of, or another kind the reading would correct
+            # it into ("torres" read as tyres): a question. So is a word the search knows
+            # as close, unless a name's other words are in the search ("mira saels":
             # "sails" is as close, and "mira" says which).
             as_kind = understand_product_query(word)
-            in_its_name = all(" " in self._spoken[brand.key] for brand, _own in close)
             ambiguous = (
-                len(close) > 1
+                len(own_words) > 1
                 or (not in_its_name and bool(set(_known_words().near(word, 1)) - own_words))
                 or (
                     as_kind.understood
@@ -542,8 +544,8 @@ class BrandReader:
                 )
             )
             if not ambiguous and not corrected_to:
-                brand, own = close[0]
-                corrected[place] = own
+                brand = in_its_name[0] if in_its_name else close[0][0]
+                corrected[place] = close[0][1]
                 corrected_to = shown_name(brand.name)
                 continue
             for _brand, own in close[:3]:

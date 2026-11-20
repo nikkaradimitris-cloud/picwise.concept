@@ -40,6 +40,13 @@
 # kinds, 1,137 of one, 2,159 of no kind read; 306 names of one word one slip from a known
 # word (nike ~ bike, razer ~ razor), now read as the brand. Left, then built: slips inside
 # names of several words ("mira saels"), "online" in a name, "Ltd" in the question.
+# Run 44713692322 (09:47 UTC, the same catalogue, the commit 83558bd): the 120 largest brands
+# alone, 120 shown, 100 asking which kind; with their kind as before, 104 of 112; a slip
+# alone, 101 of 101 shown, 100 read as the brand; a slip with the kind, 94 shown, 87 the
+# brand's of the kind first (29 before). Left: "harriosn cameras" (Harrison Cameras and a
+# brand Harrison both one slip away: read since, the name's other word saying which); a
+# brand with its kind still lists first other brands' products naming it ("canon ink
+# cartridge": compatibles "for Canon"), as before the list. The workflow turned off.
 name: Brands measure (read-only, measured only)
 on:
   push:
@@ -55,7 +62,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   measure:
-    if: true
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:

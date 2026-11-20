@@ -195,6 +195,9 @@ def _reader() -> BrandReader:
             CatalogueBrand("workwearnation", "Workwear Nation Ltd", 9, (("trousers", 5), ("jacket", 4))),
             # A brand named by a word the search knows.
             CatalogueBrand("compass", "Compass", 5, (("backpack", 5),)),
+            # A brand whose name begins another's: a slip of the word is of both.
+            CatalogueBrand("corvane", "Corvane", 4, (("toy", 4),)),
+            CatalogueBrand("corvanecameras", "Corvane Cameras", 8, (("photo_frame", 8),)),
         )
     )
 
@@ -251,6 +254,10 @@ class BrandReaderTests(unittest.TestCase):
         self.assertEqual(self.reader.read("saels").corrected, "")
         # A brand named by a word the search knows: its slip read as it.
         self.assertEqual(self.reader.read("compas").corrected_to, "Compass")
+        # One word it could be a slip of, two brands: the name's other words say which.
+        search = self.reader.read("corvnae cameras")
+        self.assertEqual((search.corrected, search.corrected_to), ("corvane cameras", "Corvane Cameras"))
+        self.assertEqual(self.reader.read("corvnae").corrected_to, "Corvane")
 
     def test_a_name_holding_a_word_that_judges_and_a_name_shown_without_ltd(self) -> None:
         self.assertEqual(self.reader.read("best home gadgets").alone.name, "Best Home Gadgets")
