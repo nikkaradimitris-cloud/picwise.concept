@@ -24,9 +24,13 @@ permissions:
   contents: read
 concurrency:
   group: shelves-scan
-  cancel-in-progress: false
+  # Paused (owner, 20/11 15:45: «ΠΡΟΧΩΡΑΣ ΣΕ ΔΙΑΔΙΚΑΣΙΑ ΠΡΙΝ ΟΛΟΚΛΗΡΩΣΩ ΤΗΝ ΑΝΑΤΡΟΦΟΔΟΤΗΣΗ
+  # ΧΡΗΜΑΤΩΝ»): this push stops the run under way, and asks nothing, until the owner has put
+  # money in the API account. The push that starts the scan again sets both back.
+  cancel-in-progress: true
 jobs:
   scan:
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 355
     env:
