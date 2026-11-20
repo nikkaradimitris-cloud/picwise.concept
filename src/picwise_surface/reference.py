@@ -219,6 +219,10 @@ _PRICE_FIRST_DISCLOSURES = {
     # A price chosen on the price bar: no Recommended, and nothing to say of one (owner,
     # 2026-11-12); the heading says the price ("from £90").
     "no_recommendation_price_chosen": _PRICE_FIRST_FEED_NOTE,
+    # A brand's products of several kinds: no Recommended until a kind is chosen, which
+    # the question above the cards asks (owner, 2026-11-20: «Χωρίς Recommended μέχρι να
+    # διαλέξει είδος»).
+    "no_recommendation_several_kinds": _PRICE_FIRST_FEED_NOTE,
 }
 _PRICE_FIRST_PAGE_NOTE = (
     "Real products from the shops' feeds, cheapest first. Prices and stock are as the shops "
@@ -1162,6 +1166,20 @@ def _render_choice_card(
     )
 
 
+def _understood_as(resolution: LiveSearchResolution) -> str:
+    """What a search read through a correction was read as, after its heading: the brand a
+    word was read as ("samsnug": "Understood as: Samsung"; owner, 2026-11-20: «Διόρθωση
+    όταν είναι σίγουρο»), and the kind, when a correction read it; "" for neither."""
+    parts = []
+    brand = str(getattr(resolution, "understood_brand_name", "") or "").strip()
+    if brand:
+        parts.append(brand)
+    kind = str(getattr(resolution, "understood_concept_name", "") or "").strip()
+    if kind and getattr(resolution, "understood_by_correction", False):
+        parts.append(kind)
+    return f"  ·  Understood as: {' '.join(parts)}" if parts else ""
+
+
 def _kind_choices_html(resolution: LiveSearchResolution) -> str:
     """The question above the results of a search naming only a general kind, with the
     searches that narrow it as links: "What kind of cable? extension cable, hdmi cable"
@@ -1293,9 +1311,7 @@ def render_picwise_reference_surface(
                         f"Results for: {display_query}, {chosen_words[0].lower() + chosen_words[1:]},",
                         1,
                     )
-                understood_name = str(getattr(resolution, "understood_concept_name", "") or "")
-                if understood_name and getattr(resolution, "understood_by_correction", False):
-                    query_line += f"  ·  Understood as: {understood_name}"
+                query_line += _understood_as(resolution)
                 total = int(getattr(resolution, "provider_feed_total_count", 0) or 0)
                 partial_terms = tuple(
                     getattr(resolution, "provider_feed_partially_matched_terms", ()) or ()
@@ -1310,11 +1326,9 @@ def render_picwise_reference_surface(
                     query_line += "  ·  PicWise could not match: " + ", ".join(unmatched_terms)
             elif has_live_results and feed_results:
                 query_line = f"Showing 4 selected real products for: {display_query}"
-                understood_name = str(getattr(resolution, "understood_concept_name", "") or "")
-                if understood_name and getattr(resolution, "understood_by_correction", False):
-                    # The query was read through a typo correction. Say what it was
-                    # read as, so a wrong correction is visible instead of silent.
-                    query_line += f"  ·  Understood as: {understood_name}"
+                # The query was read through a typo correction. Say what it was read as,
+                # so a wrong correction is visible instead of silent.
+                query_line += _understood_as(resolution)
                 partial_terms = tuple(
                     getattr(resolution, "provider_feed_partially_matched_terms", ()) or ()
                 )

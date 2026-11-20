@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from collections.abc import Callable, Iterable
 from typing import Any
 
@@ -34,9 +34,11 @@ from picwise_providers.search_selection import (
     provider_product_to_backend_dict,
 )
 from picwise_providers.state import (
+    resolve_search_provider_feed_brand_selection,
     resolve_search_provider_feed_metadata,
     resolve_search_provider_feed_product_selection,
     resolve_search_provider_feed_recommendation_decision,
+    search_brands,
     search_kind_choices,
 )
 
@@ -93,6 +95,9 @@ class LiveSearchResolution:
     # True when understanding needed a typo correction rather than an exact (or
     # exact-by-sound) match. The page then states what it understood.
     understood_by_correction: bool = False
+    # The brand a word of the search was read as, one slip from its name ("samsnug" as
+    # Samsung; owner, 2026-11-20: «Διόρθωση όταν είναι σίγουρο»): the page says so.
+    understood_brand_name: str = ""
     understood_specs: tuple[dict[str, Any], ...] = field(default_factory=tuple)
     # Product names to ask about when nothing was understood ("dsk" -> desk).
     did_you_mean: tuple[str, ...] = field(default_factory=tuple)
@@ -168,6 +173,7 @@ class LiveSearchResolution:
             "understood_concept_id": self.understood_concept_id,
             "understood_concept_name": self.understood_concept_name,
             "understood_by_correction": self.understood_by_correction,
+            "understood_brand_name": self.understood_brand_name,
             "understood_specs": list(self.understood_specs),
             "did_you_mean": list(self.did_you_mean),
             "raw_query": self.raw_query,
@@ -432,6 +438,7 @@ def resolve_live_search(
     min_price: float | None = None,
     max_price: float | None = None,
     fitting_for: Callable[[str], Iterable[str] | None] | None = None,
+    _brand_read: bool = False,
 ) -> LiveSearchResolution:
     """Resolve one search. `shown` is how many products of a price-first answer the
     page holds: 4, then 8, 12 and so on as "More" is pressed. 0 means the first page.
@@ -443,6 +450,27 @@ def resolve_live_search(
     raw_query = str(query or "")
     if searches_in_greek_letters(raw_query):
         return search_in_english_resolution(raw_query)
+    # The catalogue's brands, read first (the Decision Contract, "The catalogue's brands";
+    # owner, 2026-11-20): their names are given to the reading below, which never corrects
+    # them into a kind's; a word one slip from one brand's name alone is read as it, the
+    # search answered as if so typed and the page saying so.
+    brand_search = search_brands().read(raw_query)
+    if brand_search.corrected and not _brand_read:
+        corrected = resolve_live_search(
+            brand_search.corrected,
+            shown=shown,
+            min_price=min_price,
+            max_price=max_price,
+            fitting_for=fitting_for,
+            _brand_read=True,
+        )
+        return replace(
+            corrected,
+            raw_query=raw_query,
+            display_query=raw_query,
+            understood_brand_name=brand_search.corrected_to,
+            reason_codes=tuple(sorted(set(corrected.reason_codes) | {"brand_understood_by_correction"})),
+        )
     display_query = raw_query
     normalized_query = normalize_query(raw_query)
     canonicalized_query = normalize_greeklish_and_typos(normalized_query)
@@ -647,13 +675,29 @@ def resolve_live_search(
     provider_feed_fitting_product_ids: tuple[str, ...] = ()
     provider_feed_recommended_among_fitting = False
     selection_query = canonicalized_query or normalized_query or raw_query
+    # A search naming a brand alone (owner, 2026-11-20: «Ερώτηση + προϊόντα»): the brand's
+    # products, whatever the older gates make of its name ("apple", "nike", "bosch" were
+    # answered with nothing); the question above them is asked below.
+    brand_selection = None
+    if brand_search.alone is not None:
+        found = resolve_search_provider_feed_brand_selection(
+            brand_search.alone, shown=shown, min_price=min_price, max_price=max_price
+        )
+        if found.status == "selected" and found.selected_products:
+            brand_selection = found
+            reason_codes.append("brand_alone")
+            # The brand is what the search names, never a kind a word of its name is
+            # also ("luxe mattresses" is the brand Luxe Mattresses).
+            concept_understood = False
+            if resolver_state == "blocked_or_unsafe":
+                resolver_state = "not_understood"
     standard_provider_feed_path = bool(
         mega_category_id
         and provider_lookup_key not in _CONNECTED_PROVIDER_BY_CATEGORY
         and not offer_broad_suggestions
         and resolver_state != "blocked_or_unsafe"
     )
-    feed_opportunity_attempt = _query_eligible_for_feed_opportunity_attempt(
+    feed_opportunity_attempt = brand_selection is not None or _query_eligible_for_feed_opportunity_attempt(
         canonicalized_query=canonicalized_query,
         offer_broad_suggestions=offer_broad_suggestions,
         broad_suggestions=broad_suggestions,
@@ -694,7 +738,7 @@ def resolve_live_search(
                 provider_feed_status == "provider_feed_ready"
                 and (recognized_product_search or feed_opportunity_search)
             ):
-                selection = resolve_search_provider_feed_product_selection(
+                selection = brand_selection or resolve_search_provider_feed_product_selection(
                     query=selection_query,
                     reading=concept_reading,
                     shown=shown,
@@ -702,8 +746,10 @@ def resolve_live_search(
                     max_price=max_price,
                     fitting_for=fitting_for,
                 )
-                expose_selection = recognized_product_search or is_strong_feed_opportunity_selection(
-                    selection
+                expose_selection = (
+                    recognized_product_search
+                    or brand_selection is not None
+                    or is_strong_feed_opportunity_selection(selection)
                 )
                 # An ambiguous answer is reported too, so the page can ask which product
                 # is meant ("switch": network, KVM or video switch); nothing is shown.
@@ -846,9 +892,14 @@ def resolve_live_search(
         # Only when nothing else understood the search either: the index may have
         # recognised it ("cordless dril") where the concept lexicon did not. For a
         # reading unsure of its kind, the names that take in the words it left.
-        did_you_mean = suggest_product_names(
-            raw_query, covering=provider_feed_unmatched_query_terms if unsure_reading else ()
-        )
+        did_you_mean = tuple(
+            dict.fromkeys(
+                brand_search.suggestions
+                + suggest_product_names(
+                    raw_query, covering=provider_feed_unmatched_query_terms if unsure_reading else ()
+                )
+            )
+        )[:3]
     understood_concept_name = None
     kind_choices: tuple[str, ...] = ()
     kind_choices_name = ""
@@ -872,6 +923,10 @@ def resolve_live_search(
                     choice.text for choice in search_kind_choices().get(concept.concept_id, ())
                 )
                 kind_choices_name = concept.primary_english if kind_choices else ""
+    if brand_selection is not None and provider_feed_selected_products:
+        # The brand's kinds, when it has several: "What kind of Samsung product?"
+        kind_choices = brand_search.alone.choices()
+        kind_choices_name = f"{brand_search.alone.name} product" if kind_choices else ""
     return LiveSearchResolution(
         did_you_mean=did_you_mean,
         understood_concept_id=concept_reading.concept_id if concept_understood else None,

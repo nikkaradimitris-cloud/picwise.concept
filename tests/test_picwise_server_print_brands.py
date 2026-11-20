@@ -15,7 +15,10 @@ Pinned here, on a prepared catalogue of the test's own:
   brand goes; what a search for a brand alone could show;
 - the report: the brands, their kinds, their spellings, the names that are words, the
   near names, and the searches as the site answers them from the copy; nothing printed
-  is a link; an unreadable file says so; every case exits 0.
+  is a link; an unreadable file says so; every case exits 0;
+- from 2026-11-20, with the brands' list built (`picwise_providers.brand_list`): a
+  brand's spellings joined with its letters mended, the searches' question and
+  correction told, and the list as the search reads it (part 7).
 
 Every product is local test data: fictional brands and shops, `.invalid` addresses.
 """
@@ -243,6 +246,34 @@ class CatalogueTests(unittest.TestCase):
         self.assertIn("testlnie kettle", queries)
         self.assertNotIn("velvet", queries)
         self.assertTrue(all(result["seconds"] >= 0 for result in answered))
+        self.assertNotIn("invalid", out)
+        # With the brands' list (owner, 2026-11-20): a brand of several kinds asks which,
+        # with no Recommended; a slip of one brand is read as it, and said.
+        self.assertIn(
+            '  "fixturon": 4 of 12 shown; of the first 4: 4 the brand\'s; first: Fixturon Electric Kettle 1 | '
+            "asks What kind of Fixturon product? fixturon kettle, fixturon toaster, fixturon laptop | "
+            "no recommendation several kinds |",
+            out,
+        )
+        self.assertIn("understood as: Testline", out)
+        self.assertIn("  alone: 3 searches; shown 3;", out)
+
+    def test_the_list_as_the_search_reads_it(self) -> None:
+        lines: list[str] = []
+        print_brands.print_searches(self.prepared, self.brands, self.words, 1, out=lambda line: None, examples=())
+        real = sorted(
+            (brand for brand in self.brands.values() if brand.real and brand.products >= print_brands.COUNTED),
+            key=lambda brand: (-brand.products, brand.key),
+        )
+        print_brands.print_the_list(self.brands, real, out=lines.append)
+        out = "\n".join(lines)
+        self.assertIn("== 7. THE BRANDS' LIST AS THE SEARCH READS IT", out)
+        self.assertIn(
+            "listed: 5 brands of 3 products or more, 25 products; one kind 3, several kinds (a question) 1, "
+            "no kind read 1",
+            out,
+        )
+        self.assertIn("names the reading never corrects: 4 of one word, 1 of several", out)
         self.assertNotIn("invalid", out)
 
 

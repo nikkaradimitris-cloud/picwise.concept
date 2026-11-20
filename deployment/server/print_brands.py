@@ -43,10 +43,8 @@ never a link. Always exits 0.
 from __future__ import annotations
 
 import argparse
-import re
 import sys
 import time
-import unicodedata
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping
 from pathlib import Path
@@ -54,6 +52,9 @@ from typing import Any, Callable
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
+for _folder in (HERE, ROOT, ROOT / "src"):
+    if str(_folder) not in sys.path:
+        sys.path.insert(0, str(_folder))
 
 # A brand the search counts today from this many products (`_catalogue_brand_names`).
 COUNTED = 3
@@ -68,16 +69,6 @@ TOP = 120
 # The cards read of each search: the first page.
 CARDS = 4
 TITLE = 70
-# What feeds write where a product has no brand.
-PLACEHOLDERS = (
-    "generic", "unbranded", "un-branded", "unbrand", "no brand", "nobrand", "non branded", "non-branded",
-    "none", "n/a", "na", "unknown", "other", "others", "oem", "does not apply", "not applicable",
-    "not specified", "unspecified", "brand", "no", "null", "various", "assorted", "misc", "miscellaneous",
-    "default", "own brand", "own label", "private label", "white label", "no name", "noname", "blank",
-)
-# Endings of a company's name, set aside when two spellings are compared ("Samsung UK",
-# "Acme Ltd"), never the only word of a name.
-ENDINGS = frozenset("ltd limited plc inc llc gmbh co corp uk".split())
 # The searches always measured, each with the brand and the kind it asks for: the owner's
 # examples of 2026-11-19.
 EXAMPLES = (
@@ -88,107 +79,18 @@ EXAMPLES = (
     ("samsnug tv", "samsung", "television"),
 )
 
-_NOT_A_LETTER = re.compile(r"[^0-9a-z]+")
-
-
-# --------------------------------------------------------------------------------------
-# Names
-# --------------------------------------------------------------------------------------
-
-
-def plain(text: object) -> str:
-    """Lowercase, without accents or punctuation, "&", "+" and "and" left out."""
-    lowered = str(text or "").lower().replace("'", "").replace("’", "")
-    decomposed = unicodedata.normalize("NFKD", lowered)
-    stripped = "".join(char for char in decomposed if not unicodedata.combining(char))
-    return " ".join(word for word in _NOT_A_LETTER.sub(" ", stripped).split() if word != "and")
-
-
-def brand_key(text: object) -> str:
-    """One name for the ways a brand is written: `plain`, a leading "The" and an ending
-    of a company's name ("Ltd", "UK") set aside, the words joined: "SAMSUNG", "Samsung UK"
-    and "Samsung" are "samsung"; "Black & Decker", "Black+Decker" and "Black and Decker"
-    "blackdecker". A name of letters no ASCII holds keeps them, lowercased."""
-    words = plain(text).split()
-    while len(words) > 1 and words[-1] in ENDINGS:
-        words.pop()
-    if len(words) > 1 and words[0] == "the":
-        words.pop(0)
-    if words:
-        return "".join(words)
-    # Letters no ASCII holds are kept; punctuation alone ("-") is no name.
-    text = str(text or "")
-    return "".join(text.lower().split()) if any(char.isalnum() for char in text) else ""
-
-
-def spoken(text: object) -> str:
-    """A name as a buyer would type it: `plain`, its words kept apart."""
-    words = plain(text).split()
-    while len(words) > 1 and words[-1] in ENDINGS:
-        words.pop()
-    if len(words) > 1 and words[0] == "the":
-        words.pop(0)
-    return " ".join(words)
-
-
-_PLACEHOLDER_KEYS = frozenset(brand_key(name) for name in PLACEHOLDERS)
-
-
-def is_placeholder(key: str) -> bool:
-    return not key or key in _PLACEHOLDER_KEYS
-
-
-def slips(a: str, b: str) -> int:
-    """How many slips turn `a` into `b`: a letter more, less or other, or two side by side
-    swapped (optimal string alignment); 3 stands for three or more."""
-    if a == b:
-        return 0
-    if abs(len(a) - len(b)) > 2:
-        return 3
-    previous2: list[int] = []
-    previous = list(range(len(b) + 1))
-    for i in range(1, len(a) + 1):
-        current = [i] + [0] * len(b)
-        for j in range(1, len(b) + 1):
-            cost = 0 if a[i - 1] == b[j - 1] else 1
-            current[j] = min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + cost)
-            if i > 1 and j > 1 and a[i - 1] == b[j - 2] and a[i - 2] == b[j - 1]:
-                current[j] = min(current[j], previous2[j - 2] + 1)
-        if min(current) > 2:
-            return 3
-        previous2, previous = previous, current
-    return min(previous[len(b)], 3)
-
-
-def _deletions(word: str, depth: int) -> set[str]:
-    found = {word}
-    edge = {word}
-    for _step in range(depth):
-        edge = {variant[:i] + variant[i + 1 :] for variant in edge for i in range(len(variant))}
-        found |= edge
-    return found
-
-
-class NearIndex:
-    """Words by the strings a few deleted letters leave of them, so the words a few slips
-    from a name are found without comparing it with every word (symmetric deletion)."""
-
-    def __init__(self, words: Iterable[str], depth: int) -> None:
-        self.depth = depth
-        self.by_variant: dict[str, list[str]] = defaultdict(list)
-        for word in set(words):
-            for variant in _deletions(word, depth):
-                self.by_variant[variant].append(word)
-
-    def near(self, word: str, most: int) -> dict[str, int]:
-        found: dict[str, int] = {}
-        for variant in _deletions(word, min(most, self.depth)):
-            for other in self.by_variant.get(variant, ()):
-                if other != word and other not in found:
-                    distance = slips(word, other)
-                    if distance <= most:
-                        found[other] = distance
-        return found
+# The names as the brands' list reads them (`picwise_providers.brand_list`, from
+# 2026-11-20): one module for the list, the site and this measure.
+from picwise_providers.brand_list import (  # noqa: E402
+    NearIndex,
+    _deletions,
+    brand_key,
+    is_placeholder,
+    mend_letters,
+    plain,
+    slips,
+    spoken,
+)
 
 
 def a_slip_of(word: str, taken: Callable[[str], bool]) -> str:
@@ -288,7 +190,7 @@ def read_brands(products: Iterable[Any], kinds: Iterable[frozenset[str]]) -> dic
     brands: dict[str, Brand] = {}
     shop_keys: dict[str, tuple[str, str]] = {}
     for product, product_kinds in zip(products, kinds):
-        written = " ".join(str(product.brand or "").split())
+        written = mend_letters(" ".join(str(product.brand or "").split()))
         key = brand_key(written)
         brand = brands.get(key)
         if brand is None:
@@ -668,6 +570,9 @@ def answer(query: str, kinds_of: Mapping[str, frozenset[str]]) -> dict[str, Any]
         "did_you_mean": list(resolution.did_you_mean or ()),
         "unmatched": list(resolution.provider_feed_unmatched_query_terms or ()),
         "choices": list(resolution.kind_choices or ()),
+        "asks": str(resolution.kind_choices_name or ""),
+        "understood_brand": str(getattr(resolution, "understood_brand_name", "") or ""),
+        "decision": str(resolution.provider_feed_decision_status or ""),
         "cards": [
             {
                 "brand": brand_key(card.get("brand") or ""),
@@ -709,8 +614,15 @@ def describe(answered: dict[str, Any], brand: str = "", kind: str = "") -> str:
         line = how
     if answered.get("unmatched"):
         line += " | could not match: " + ", ".join(answered["unmatched"])
+    if answered.get("understood_brand"):
+        line += f" | understood as: {answered['understood_brand']}"
     if answered.get("choices"):
-        line += f" | offers {len(answered['choices'])} choices"
+        asks = f"What kind of {answered['asks']}? " if answered.get("asks") else ""
+        line += f" | asks {asks}{', '.join(answered['choices'][:4])}"
+        if len(answered["choices"]) > 4:
+            line += f" +{len(answered['choices']) - 4} more"
+    if how == "shown" and answered.get("decision") and answered["decision"] != "recommended":
+        line += f" | {answered['decision'].replace('_', ' ')}"
     return f"{line} | {answered['seconds']:.2f} s"
 
 
@@ -769,6 +681,10 @@ def print_searches(
             tally = tallies[way]
             tally["searched"] += 1
             tally[result["how"]] += 1
+            if result.get("asks"):
+                tally["asks which kind"] += 1
+            if result.get("understood_brand"):
+                tally["understood as the brand"] += 1
             cards = result["cards"]
             if cards:
                 if cards[0]["brand"] == brand.key:
@@ -787,7 +703,10 @@ def print_searches(
         parts = [f"{key} {_number(tally[key])}" for key in ("shown", "not sure", "did you mean", "nothing") if tally[key]]
         parts += [
             f"{key} {_number(tally[key])}"
-            for key in ("the first card the brand's", "every card the brand's", "the first card the brand's and of the kind")
+            for key in (
+                "the first card the brand's", "every card the brand's", "the first card the brand's and of the kind",
+                "asks which kind", "understood as the brand",
+            )
             if tally[key]
         ]
         out(f"  {way}: {_number(searched)} searches; " + "; ".join(parts))
@@ -801,6 +720,74 @@ def print_searches(
                 out(line)
     out("")
     return answered
+
+
+# --------------------------------------------------------------------------------------
+# 7. The list as the search reads it
+# --------------------------------------------------------------------------------------
+
+
+def print_the_list(brands: dict[str, Brand], real: list[Brand], out: Callable[[str], None] = print) -> None:
+    """The brands' list the site reads (`state.search_brands`, from 2026-11-20): its size and
+    shapes; the brands' names the reading read as a kind before and how it reads them now;
+    and the names of one word one slip from a kind's name, whose slip of the kind the
+    reading no longer corrects (a buyer's "razer" for a razor reads as Razer)."""
+    from picwise_nlu.concept_understanding import known_english_words, understand_product_query
+    from picwise_providers.brand_list import BrandReader
+    from picwise_providers.state import search_brands
+
+    out("== 7. THE BRANDS' LIST AS THE SEARCH READS IT")
+    reader = search_brands()
+    if not isinstance(reader, BrandReader) or not len(reader):
+        out("no list: the search reads no brand")
+        out("")
+        return
+    listed = sorted(reader.brands.values(), key=lambda brand: (-brand.products, brand.key))
+    shapes = Counter()
+    for brand in listed:
+        own = [kind for kind, count in brand.kinds if count >= CHOICE]
+        shapes["several kinds (a question)" if len(own) >= 2 else "one kind" if own else "no kind read"] += 1
+    out(
+        f"listed: {_number(len(listed))} brands of {COUNTED} products or more, "
+        f"{_number(sum(brand.products for brand in listed))} products; "
+        + ", ".join(f"{name} {_number(count)}" for name, count in shapes.most_common())
+    )
+    single, several = reader.reading_names()
+    out(f"names the reading never corrects: {_number(len(single))} of one word, {_number(len(several))} of several")
+    before = []
+    for brand in real:
+        name = spoken(brand.name)
+        if not name:
+            continue
+        now = understand_product_query(name)
+        if now.understood and now.filters:
+            continue
+        before.append((brand, name, now.concept_id or ""))
+    still = [(brand, concept) for brand, _name, concept in before if concept]
+    out(
+        f"read alone as a kind with the names given: {_number(len(still))} brands (a kind's own name, as "
+        f"'lego'); the {LISTED // 2} largest:"
+    )
+    for brand, concept in still[: LISTED // 2]:
+        out(f"  {brand.name} ({_number(brand.products)}): {concept}")
+    kinds_words = NearIndex(known_english_words(), 1)
+    near_kind = []
+    for word in sorted(single):
+        if len(word) < 4 or not word.isalpha():
+            continue
+        close = kinds_words.near(word, 1)
+        if close:
+            brand = reader.brands.get(brand_key(word))
+            near_kind.append((brand, word, sorted(close)[:3]))
+    near_kind.sort(key=lambda item: (-(item[0].products if item[0] else 0), item[1]))
+    out(
+        f"names of one word one slip from a word the search knows (a buyer's slip of that word now reads "
+        f"as the brand): {_number(len(near_kind))}; the {LISTED} largest:"
+    )
+    for brand, word, close in near_kind[:LISTED]:
+        products = _number(brand.products) if brand else "?"
+        out(f"  {word} ({products}): near {', '.join(close)}")
+    out("")
 
 
 # --------------------------------------------------------------------------------------
@@ -848,6 +835,11 @@ def main(argv: list[str] | None = None) -> int:
         print_brands(prepared, brands, words)
         if not args.no_searches:
             print_searches(prepared, brands, words, args.top)
+        real = sorted(
+            (brand for brand in brands.values() if brand.real and brand.products >= COUNTED),
+            key=lambda brand: (-brand.products, brand.key),
+        )
+        print_the_list(brands, real)
     except Exception as error:  # a measure only
         print(f"the brands could not be measured: {type(error).__name__}: {_short(error, 200)}")
     return 0

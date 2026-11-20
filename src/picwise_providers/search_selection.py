@@ -37,6 +37,8 @@ from picwise_nlu.product_concepts import broader_concepts, get_product_concepts_
 from picwise_taxonomy.comparison_rules import comparison_rule
 
 from .shop_words import learned_kind
+from .brand_list import SEVERAL_KINDS, BrandAnswer, brand_key, mend_letters
+from .catalogue_balance import _narrowest_kind
 from .contracts import FeedAvailabilityContext, OfferHealth, ProviderProduct
 from .normalization import extract_merchant_name, extra_image_urls
 from .decision_labels import parse_price_amount
@@ -1401,9 +1403,10 @@ def _kind_index(
 
 def forget_search_indexes(*catalogue_fields: tuple[dict[str, str], ...]) -> None:
     """Drop what was built for catalogues no search reads any more: their word lookups,
-    kind indexes and brand names, each of which holds its catalogue's texts."""
+    kind indexes, brands' places and brand names, each of which holds its catalogue's
+    texts."""
     for fields in catalogue_fields:
-        for registry in (_WORD_LOOKUPS, _KIND_INDEXES):
+        for registry in (_WORD_LOOKUPS, _KIND_INDEXES, _BRAND_PLACES):
             entry = registry.get(id(fields))
             if entry is not None and entry[0] is fields:
                 registry.pop(id(fields), None)
@@ -2766,8 +2769,13 @@ def _price_first_result(
     reason_code: str,
     strong_only_if_whole: bool = False,
     fitting_for: Callable[[str], Iterable[str] | None] | None = None,
+    no_recommended: str = "",
 ) -> ProviderProductSelectionResult:
     """One price-first answer as the page shows it.
+
+    `no_recommended`, when given, is why the answer has no Recommended whatever its
+    prices: a brand's products of several kinds (`brand_list.SEVERAL_KINDS`; owner,
+    2026-11-20: «Χωρίς Recommended μέχρι να διαλέξει είδος»).
 
     The first page holds the Recommended (`_median_recommendation`) and then the
     cheapest; "More" opens the next cheapest, four at a time, as often as asked.
@@ -2819,6 +2827,8 @@ def _price_first_result(
     # «Το recommendit πρέπει να ακιρονετε όταν χρησιμοποιεί φίλτρο...σε άλλη περίπτωση δείχνει την μέση τιμή παράδειγμα ο Χρίστης επιλέγει από 90 ευρώ και αυτό προτείνει 890»).
     if price_from is not None or price_to is not None:
         recommended, recommendation_status = None, "price_chosen"
+    elif no_recommended:
+        recommended, recommendation_status = None, no_recommended
     else:
         recommended_index, recommendation_status = _median_recommendation(ordered)
         recommended = ordered[recommended_index] if recommended_index is not None else None
@@ -3423,6 +3433,106 @@ def select_provider_products_for_query(
         shown=shown,
         min_price=min_price,
         max_price=max_price,
+    )
+
+
+# Per catalogue a search reads (its tuple of search fields), the places of each brand's
+# products by the brand's key (`brand_list.brand_key`, its letters mended), built once and
+# kept with it, as the word lookup is.
+_BRAND_PLACES: dict[int, tuple[tuple[dict[str, str], ...], dict[str, array]]] = {}
+_BRAND_PLACES_LOCK = threading.Lock()
+
+
+def _brand_places(
+    eligible: tuple[ProviderProduct, ...], eligible_fields: tuple[dict[str, str], ...]
+) -> dict[str, array]:
+    """Each brand's products in a catalogue a search reads, by their places, the brand
+    however its products write it: "Black & Decker" and "Black and Decker" together."""
+    entry = _BRAND_PLACES.get(id(eligible_fields))
+    if entry is not None and entry[0] is eligible_fields:
+        return entry[1]
+    with _BRAND_PLACES_LOCK:
+        entry = _BRAND_PLACES.get(id(eligible_fields))
+        if entry is not None and entry[0] is eligible_fields:
+            return entry[1]
+        keys: dict[str, str] = {}
+        places: dict[str, array] = {}
+        for place, product in enumerate(eligible):
+            written = " ".join(str(product.brand or "").split())
+            if not written:
+                continue
+            key = keys.get(written)
+            if key is None:
+                key = keys[written] = brand_key(mend_letters(written))
+            if not key:
+                continue
+            row = places.get(key)
+            if row is None:
+                row = places[key] = array("I")
+            row.append(place)
+        _keep_at_most(_BRAND_PLACES)
+        _BRAND_PLACES[id(eligible_fields)] = (eligible_fields, places)
+        return places
+
+
+def select_provider_products_for_brand(
+    answer: BrandAnswer,
+    products: tuple[ProviderProduct, ...],
+    *,
+    max_products: int = 4,
+    feed_ctx: FeedAvailabilityContext | None = None,
+    shown: int = 0,
+    min_price: float | None = None,
+    max_price: float | None = None,
+    catalogue: SearchCatalogue | None = None,
+) -> ProviderProductSelectionResult:
+    """The products of a search that names a brand alone (the Decision Contract, "The
+    catalogue's brands", point 3; owner, 2026-11-20: «Ερώτηση + προϊόντα»).
+
+    The brand's new products whose narrowest kind is one of its own (`BrandAnswer.own_kinds`),
+    accessories and doubtful kinds aside, cheapest first, each at the shop's own price, as
+    every answer is. Of one kind, with a Recommended, as a search for the brand and the kind
+    answers; of several, none (`brand_list.SEVERAL_KINDS`): the page asks which kind above
+    them. With no kind of its own, its products as they are, and no Recommended either.
+    """
+    safe_max = max(1, int(max_products))
+    if catalogue is None:
+        catalogue = build_search_catalogue(products, feed_ctx=feed_ctx)
+    eligible, eligible_fields = catalogue.new_products, catalogue.new_fields
+    places = _brand_places(eligible, eligible_fields)
+    own = {kind for kind, _count in answer.own_kinds}
+    every: list[tuple[ProviderProduct, dict[str, str]]] = []
+    of_own_kinds: list[tuple[ProviderProduct, dict[str, str]]] = []
+    for key in answer.keys:
+        for place in places.get(key, ()):
+            product, fields = eligible[place], eligible_fields[place]
+            every.append((product, fields))
+            if not own:
+                continue
+            concepts = _product_concepts(product, fields)
+            if concepts & {ACCESSORY_MARKER, UNCERTAIN_MARKER}:
+                continue
+            if _narrowest_kind(concepts) in own:
+                of_own_kinds.append((product, fields))
+    members = of_own_kinds if own else every
+    one_kind = next(iter(own)) if len(own) == 1 else ""
+    return _price_first_result(
+        _price_first_products([product for product, _fields in members]),
+        tuple(),
+        tuple(),
+        members,
+        [{} for _member in members],
+        safe_max=safe_max,
+        shown=shown,
+        min_price=min_price,
+        max_price=max_price,
+        understood_concept=one_kind,
+        effective_query=answer.search_name,
+        name_terms=tuple(),
+        condition_request=tuple(),
+        also_unmatched=tuple(),
+        reason_code="brand_alone",
+        no_recommended="" if one_kind else SEVERAL_KINDS,
     )
 
 
