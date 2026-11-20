@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (14:40 Athens).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (14:55 Athens).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,9 +8,11 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (20/11, 14:40 Athens): remedy 1 built and tested, NOT deployed: waiting for the owner's «ανέβασε»**
-  (owner, of three remedies: «Κάνε το ένα και το τρία», then «Άκυρο ... κάνε μόνο το ένα»: 2 and 3 not done, the
-  site keeps three workers). On the work branch: `deploy.sh` runs `deployment/server/prepared_state.py` with the
+- **FIRST (20/11, 14:55 Athens): remedies 1 and 2 built and tested, NOT deployed: waiting for the owner's
+  «ανέβασε»** (owner, of three remedies: «Κάνε το ένα και το τρία», then «Άκυρο ... κάνε μόνο το ένα», then «Φτιάξε
+  και αυτό [το 2]»: 3 not done, the site keeps three workers). Remedy 2: `tools/prepare_catalogue.py` chooses the
+  feed's copy once and the intake reads the same (no second download or parse in a run; test
+  `tests/test_picwise_prepare_reads_the_feed_once.py`). Remedy 1, on the work branch: `deploy.sh` runs `deployment/server/prepared_state.py` with the
   new release's code after the preparation and before the restart (the file's first fields, the site's own states,
   without loading the catalogue); unless "fresh", `current` goes back to the release the site runs, its units are
   put back, the site is not restarted, and the deployment fails. Tests: `tests/test_picwise_deploy_keeps_the_site.py`
