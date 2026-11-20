@@ -69,6 +69,7 @@ CASES = "Electronics > Communications > Telephony > Mobile Phone Accessories > M
 KETTLES = "Home & Garden > Kitchen & Dining > Kitchen Appliances > Kettles"
 LAMPS = "Home & Garden > Lighting > Lamps"
 INK = "Office Supplies > Ink Cartridges"
+TONERS = "Office Supplies > Toner Cartridges"
 HEADER = [
     "aw_product_id", "product_name", "brand_name", "product_type", "merchant_category",
     "aw_deep_link", "aw_image_url", "search_price", "currency", "in_stock",
@@ -107,6 +108,9 @@ _ROWS = (
     ("Rosewell", "Rosewell Electric Kettle {n}", KETTLES, 1, 40.0),
     ("Rosewell", "Rosewell Table Lamp {n}", LAMPS, 2, 35.0),
     ("Testline", "Testline Rosewell Pattern Kettle {n}", KETTLES, 5, 23.0),
+    # A brand with few of its own, many compatibles naming it as such: its own only.
+    ("Tonexa", "Tonexa TX-200 Black Toner {n}", TONERS, 3, 40.0),
+    ("DataMax", "DataMax Tonexa TX-200 Black Toner Compatible {n}", TONERS, 7, 9.0),
 )
 
 
@@ -415,6 +419,12 @@ class BrandSearchOnThePageTests(unittest.TestCase):
         page = self._get("inkorra%20compatible%20ink%20cartridge")
         titles = self._titles(page)
         self.assertTrue(titles and all(title.startswith("Jetfix Compatible") for title in titles), titles)
+
+    def test_compatibles_naming_a_brand_are_left_out_however_many(self) -> None:
+        # Seven compatibles say they are compatible: the brand's three alone.
+        page = self._get("tonexa%20toner")
+        self.assertIn('<p class="pw-results-count">3 of 3</p>', page)
+        self.assertNotIn("DataMax", page)
 
     def test_a_brand_word_the_others_carry_most_is_read_as_before(self) -> None:
         # Rosewell sells one kettle; five of another brand carry its name: all six.

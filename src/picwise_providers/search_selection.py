@@ -2307,6 +2307,11 @@ def _median_recommendation(ordered: list[_PricedProduct]) -> tuple[int | None, s
     return best[1], "recommended"
 
 
+# How a product made for another brand's says so ("Compatible ... Canon", "Replacement
+# Filter", "Suitable for"): with these, a brand's name in a title is no word of its own.
+_FOR_A_BRAND = r"compatible|compatibility|replacement|replacements|fits|to\s+fit|suitable\s+for"
+
+
 def _brand_members(
     brand: BrandAnswer,
     words: tuple[str, ...],
@@ -2320,24 +2325,30 @@ def _brand_members(
     whose brand is the brand, written however, or one of the brands whose names begin with
     it; and those whose feed gives none, or a placeholder, when their title begins with its
     name. None, the search then read as before (the brand's words carried anywhere), when
-    the brand's own are fewer than `OWN_SHARE` of the kind's products carrying its words:
-    the words are then the others' ("rose gold ring", the brand Rose selling no ring)."""
+    the brand sells none of the kind, or its own are fewer than `OWN_SHARE` of its own and
+    the others carrying its name as a word of their own, not as made for it: the words are
+    then the others' ("rose gold ring", "oxford shoes")."""
     places = _brand_places(eligible, eligible_fields)
     owned = {id(eligible[place]) for key in brand.keys for place in places.get(key, ())}
     unbranded = {id(eligible[place]) for place in places.get("", ())}
     name = spoken(brand.name)
     units = _filter_units(words, {})
-    carrying = 0
+    for_it = re.compile(
+        rf"\b(?:{_FOR_A_BRAND}|for\s+(?:use\s+with\s+|the\s+)?{re.escape(words[0])})\b", flags=re.IGNORECASE
+    )
+    others = 0
     own: list[tuple[ProviderProduct, dict[str, str]]] = []
     for product, fields in members:
-        is_own = id(product) in owned or (
+        if id(product) in owned or (
             id(product) in unbranded and (plain(product.title) + " ").startswith(name + " ")
-        )
-        if is_own:
+        ):
             own.append((product, fields))
-        if is_own or all(_carries(unit, _haystack(fields)) for unit in units):
-            carrying += 1
-    if not own or len(own) < OWN_SHARE * carrying:
+        elif all(_carries(unit, _haystack(fields)) for unit in units) and not for_it.search(fields["title"]):
+            # Another brand's product naming it, not as made for it: the name is a word of
+            # its own there ("Rose Gold Ring", "Oxford Shoes"). One made for the brand
+            # ("Compatible ... for Canon") is what the rule leaves out, and counts for none.
+            others += 1
+    if not own or len(own) < OWN_SHARE * (len(own) + others):
         return None
     return own
 

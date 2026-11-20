@@ -1037,7 +1037,13 @@ a sketch of each answer, the owner chose:
    The products of other brands naming it ("Compatible ... for Canon") are listed when the
    search asks for them: the brand named after "for" or "with" ("ink cartridge for
    canon"), or a word such as "compatible" or "replacement" in it ("canon compatible
-   ink"). A brand with none of the kind answers with none ("No products found").
+   ink"). The brand's name is read as a word of other brands' own, and the search as
+   before, where the brand sells none of the kind, or its own are fewer than a third of
+   its own and the other brands' products carrying its name not as made for it (without
+   "compatible", "replacement", "fits", "suitable for" or "for" before the name): "rose
+   gold ring" (the brand Rose sells no ring), "oxford shoes". Measured on the server's
+   catalogue (run `44720261741`): "canon ink cartridge" and "hp ink cartridge" list the
+   brand's own only; "ink cartridge for canon" the compatibles too.
 6. The words the visitor reads were seen by the owner in a picture first (a fictional
    brand, on a phone, 2026-11-20) and approved: «Ναι, εγκρίνω».
 7. Pinned by `tests/test_picwise_brands.py`.

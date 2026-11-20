@@ -47,6 +47,14 @@
 # brand Harrison both one slip away: read since, the name's other word saying which); a
 # brand with its kind still lists first other brands' products naming it ("canon ink
 # cartridge": compatibles "for Canon"), as before the list. The workflow turned off.
+# The owner (12:2x): the picture's words approved, and «Μόνο της Canon» for a brand with its
+# kind; built. Run 44720261741 (10:33 UTC, the catalogue prepared at 10:17 by the revert's
+# deployment, 397,635 products): "canon ink cartridge" 4 of 377, all Canon's (1 of the first
+# 4 before); "hp ink cartridge" all HP's; "ink cartridge for canon" the compatibles too; the
+# 120 largest brands with their kind, 108 of 112 the brand's of the kind first (104 before);
+# a slip with the kind, 90 of 94. Left: "brother toner" still opened with compatibles, the
+# brand's own under a third of the toners naming Brother: the compatibles saying so are no
+# longer counted against it (built after); "dyson filter" answers nothing, as before.
 name: Brands measure (read-only, measured only)
 on:
   push:
