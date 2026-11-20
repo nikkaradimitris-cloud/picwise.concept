@@ -62,7 +62,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   measure:
-    if: false
+    if: true
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
