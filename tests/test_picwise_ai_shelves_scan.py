@@ -282,6 +282,31 @@ class ScanTests(unittest.TestCase):
         self.assertIn("strap: 1 products: Apparel & Accessories > Jewelry 1", words)
 
 
+class NoticeTests(unittest.TestCase):
+    def test_the_notes_github_keeps_are_few_one_line_each_the_last_kept_for_the_end(self) -> None:
+        import io
+        from contextlib import redirect_stdout
+
+        notices = scan_shelves.Notices(enabled=True, most=3, keep=1)
+        out = io.StringIO()
+        with redirect_stdout(out):
+            notices.say("progress", "a\nb")
+            notices.say("progress", "c")
+            notices.say("progress", "d")
+            notices.say("done", "100% done", final=True)
+            notices.say("done", "too many", final=True)
+        text = out.getvalue()
+        self.assertIn("::notice title=progress::a%0Ab", text)
+        self.assertIn("::notice title=done::100%25 done", text)
+        self.assertEqual(text.count("::notice"), 3)
+        self.assertIn("[progress] d", text)
+        self.assertNotIn("::notice title=progress::d", text)
+        quiet = io.StringIO()
+        with redirect_stdout(quiet):
+            scan_shelves.Notices(enabled=False).say("start", "x")
+        self.assertNotIn("::notice", quiet.getvalue())
+
+
 class WorkflowTests(unittest.TestCase):
     workflow = (ROOT / ".github" / "workflows" / "ai-shelves-scan.yml").read_text(encoding="utf-8")
 

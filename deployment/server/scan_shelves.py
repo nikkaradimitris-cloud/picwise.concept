@@ -65,6 +65,9 @@ GROW_AFTER_SECONDS = 180.0
 MOST_FAILURES_IN_A_ROW = 12
 CHECKPOINT_SECONDS = 600.0
 PROGRESS_SECONDS = 120.0
+# A note GitHub keeps after the first calls (the pace and the cost), then every so often.
+SPEED_CALLS = 24
+NOTICE_SECONDS = 2700.0
 # The words whose products' lines are printed: the look-alikes the owner saw (20/11).
 WORDS = ("boots", "strap", "watch", "kettle", "tyres", "router", "monitor", "cable", "case", "charger")
 LISTED = 30
@@ -81,6 +84,27 @@ def _text(value: Any) -> str:
 def _short(text: Any, width: int = TITLE) -> str:
     text = _text(text)
     return text if len(text) <= width else text[: width - 1].rstrip() + "…"
+
+
+class Notices:
+    """Lines GitHub keeps as the run's annotations, which its API shows without a login, so
+    the scan can be followed while it runs: at most `most` (GitHub keeps ten a step), the
+    last `keep` saved for the end. Printed as plain lines too; nothing outside GitHub."""
+
+    def __init__(self, enabled: bool | None = None, most: int = 10, keep: int = 3) -> None:
+        self.enabled = os.environ.get("GITHUB_ACTIONS") == "true" if enabled is None else enabled
+        self.most = most
+        self.keep = keep
+        self.used = 0
+
+    def say(self, title: str, text: str, *, final: bool = False) -> None:
+        print(f"[{title}] {text}")
+        if not self.enabled or self.used >= self.most or (not final and self.used >= self.most - self.keep):
+            return
+        self.used += 1
+        body = text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+        name = title.replace("%", "%25").replace("\r", " ").replace("\n", " ").replace(":", " ").replace(",", " ")
+        print(f"::notice title={name}::{body}")
 
 
 @dataclass
@@ -218,6 +242,7 @@ class Asking:
     today: str = field(default_factory=lambda: datetime.now(timezone.utc).date().isoformat())
     totals: Totals = field(default_factory=Totals)
     tries: Counter = field(default_factory=Counter)
+    notices: Notices = field(default_factory=lambda: Notices(enabled=False))
 
 
 def _record(asking: Asking, key: str, line: str | None) -> None:
@@ -246,6 +271,8 @@ def run_round(asking: Asking, keys: Sequence[str], per_call: int, *, label: str)
     failures_in_a_row = 0
     done_calls = 0
     began = asking.clock()
+    last_notice = asking.clock()
+    speed_told = False
 
     def do_call(call: Call) -> tuple[Any, str]:
         request = request_kwargs([asking.groups[key].item for key in call.keys], asking.lines)
@@ -338,14 +365,28 @@ def run_round(asking: Asking, keys: Sequence[str], per_call: int, *, label: str)
             if allowed < asking.workers and now - last_turned_away >= GROW_AFTER_SECONDS:
                 allowed += 1
                 last_turned_away = now
-            if now - last_progress >= PROGRESS_SECONDS:
+            told = (not speed_told and done_calls >= SPEED_CALLS) or now - last_notice >= NOTICE_SECONDS
+            if now - last_progress >= PROGRESS_SECONDS or told:
                 last_progress = now
                 minutes = max((now - began) / 60.0, 1e-9)
-                print(
+                line = (
                     f"{label}: {done_calls:,} of {calls_in_round:,} calls; {totals.answered:,} keys answered in all, "
                     f"{totals.refused:,} refused; ${totals.cost:.2f}; {done_calls / minutes:.1f} calls a minute, "
                     f"{allowed} at a time; turned away {totals.turned_away:,}"
                 )
+                if told:
+                    speed_told = True
+                    last_notice = now
+                    left = calls_in_round - done_calls
+                    rate = done_calls / minutes
+                    each = totals.cost / totals.calls if totals.calls else 0.0
+                    line += (
+                        f"; about {left / rate:.0f} more minutes and ${left * each:.2f} more at this pace"
+                        if rate > 0 else ""
+                    )
+                    asking.notices.say("progress", line)
+                else:
+                    print(line)
             if asking.out is not None and now - last_checkpoint >= CHECKPOINT_SECONDS:
                 last_checkpoint = now
                 write_answers(asking.out, asking.answers)
@@ -545,10 +586,13 @@ def main(argv: list[str] | None = None) -> int:
         f"the catalogue prepared at {when}: {len(products):,} products "
         f"({len(products) - second:,} of the first link, {second:,} of the second), read in {time.monotonic() - began:.0f} s"
     )
-    print(
-        f"keys (a product's sizes and colours together): {len(groups):,}; answered before: "
-        f"{sum(1 for key in groups if key in answers):,}; to ask now: {len(keys):,} "
-        f"({sum(groups[key].products for key in keys):,} products) in about {-(-len(keys) // per_call):,} calls"
+    notices = Notices()
+    notices.say(
+        "start",
+        f"{len(products):,} products ({second:,} of the second link); keys (sizes and colours together) "
+        f"{len(groups):,}; answered before {sum(1 for key in groups if key in answers):,}; to ask now "
+        f"{len(keys):,} ({sum(groups[key].products for key in keys):,} products) in about "
+        f"{-(-len(keys) // per_call):,} calls; budget ${args.budget:.2f}, {args.workers} at a time",
     )
     if keys:
         sample = request_kwargs([groups[key].item for key in keys[:per_call]], lines)
@@ -578,13 +622,20 @@ def main(argv: list[str] | None = None) -> int:
         budget=args.budget,
         deadline=time.monotonic() + args.stop_after,
         out=args.out,
+        notices=notices,
     )
     unasked = scan(asking, keys, per_call)
     write_answers(args.out, answers)
-    for line in (*report_totals(asking, began, len(unasked)), *report(groups, answers), *report_words(groups, answers)):
-        print(line)
+    totals_lines = report_totals(asking, began, len(unasked))
+    compare_lines = report(groups, answers)
+    words_lines = report_words(groups, answers)
     kept = Counter("refused" if record.get("line") is None else "no line fits" if not record.get("line") else "a line" for record in answers.values())
-    print(f"the answers file: {len(answers):,} keys ({dict(kept)}), {args.out.stat().st_size / 1048576:.1f} MB")
+    file_line = f"the answers file: {len(answers):,} keys ({dict(kept)}), {args.out.stat().st_size / 1048576:.1f} MB"
+    notices.say("done", "\n".join([*totals_lines, file_line]), final=True)
+    notices.say("compared", "\n".join(compare_lines), final=True)
+    notices.say("words", "\n".join(words_lines), final=True)
+    for line in (*compare_lines, *words_lines):
+        print(line)
     return 0
 
 

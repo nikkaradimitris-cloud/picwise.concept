@@ -22,21 +22,22 @@ on:
     branches: [claude/shelves-scan]
 permissions:
   contents: read
+# The first run (44746448398) was stopped at the owner's word, 20/11 15:45 («ΠΡΟΧΩΡΑΣ ΣΕ
+# ΔΙΑΔΙΚΑΣΙΑ ΠΡΙΝ ΟΛΟΚΛΗΡΩΣΩ ΤΗΝ ΑΝΑΤΡΟΦΟΔΟΤΗΣΗ ΧΡΗΜΑΤΩΝ»), by a push that set
+# cancel-in-progress and turned the job off; started again on «ΠΡΟΣΘΕΣΑ 40 ΤΟΡΑ ΕΙΝΑΙ ΟΚ» (16:03).
 concurrency:
   group: shelves-scan
-  # Paused (owner, 20/11 15:45: «ΠΡΟΧΩΡΑΣ ΣΕ ΔΙΑΔΙΚΑΣΙΑ ΠΡΙΝ ΟΛΟΚΛΗΡΩΣΩ ΤΗΝ ΑΝΑΤΡΟΦΟΔΟΤΗΣΗ
-  # ΧΡΗΜΑΤΩΝ»): this push stops the run under way, and asks nothing, until the owner has put
-  # money in the API account. The push that starts the scan again sets both back.
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   scan:
-    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 355
     env:
       # The most this run's calls may cost, in dollars (owner, 20/11: today's scan of the whole
-      # catalogue; the daily limits after it are the owner's to set). About $28 expected.
-      BUDGET: '40.00'
+      # catalogue; the daily limits after it are the owner's to set). About $28 expected. The
+      # owner put $40 in the account (20/11 16:03); a little is left for the families' AI,
+      # which pays from the same account.
+      BUDGET: '38.00'
       # Calls at a time at most; fewer while the API turns calls away for its rate.
       WORKERS: '8'
       # Seconds of asking before the answers are written and put on the server.
