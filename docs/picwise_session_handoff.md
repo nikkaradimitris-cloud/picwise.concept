@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (22:25 Athens, the kinds' lists and the asking again; nothing deployed).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (23:30 Athens, after the deployment of the kinds' lists).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,24 +8,23 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (20/11, 22:25 Athens): the kinds' lists, their rule and the doubtful products asked again (all of them)
-  DONE; NOT deployed; waiting for the owner's «ανέβασε»** (PROGRESS.md, 20/11 20:40, 21:35 and 22:25). Branch
-  `claude/ai-shelves-rules-2026-11-20` at `e383e7c` (from `eb311a6`: the scan, rule 1, the kinds' lists and their
-  rule, the asking again, the measure). The lists: `data/kind_lines/google_lines_by_kind.json` (312 kinds, 603
-  lines chosen by Haiku, each with the lines under it; 968 lines its check added, each alone), written by
-  `ai-kind-lines.yml` (push `claude/kind-lines`; `--lists` keeps them and asks only the check). Rule 2
-  (`ai_shelves.checked_kinds`): a kind kept only when the AI's line is on its list; the scan's slips (the tree's
-  first five lines) are no answer. The doubtful asked again (`reask_shelves.py`, `ai-shelves-reask.yml`, push
-  `claude/shelves-reask`; runs 44797248838 and 44807051555, $1.70, every key answered; a key never asked a third
-  time; the server's answers replaced, the first ones in `/srv/picwise/assist/shelves/answers.before-reask.jsonl.gz`).
-  The measure after (run 44808052331): 353 of 439 cards right (80.4%; first link 92.3%, second 71.9%); worst drill,
-  printer, perfume (body sprays), car tyres (motorcycle and scooter tyres: "car" is no kind), lego; about 1,900 real
-  products hidden (1.6% of those with a kind; garden taps on the threading taps' line, car battery chargers,
-  processors, garden tables, bags). AI today for this work $2.56. **On «ανέβασε»:** push `e383e7c` to
-  `ccr-1361f1a7-dcpo60` (a fast-forward from `ea1e7dd`; it prepares again, about 25 min, since
-  `picwise-prepare.service` and the rules changed; rides along: the scan's, the lists' and the asking's workflows,
-  inert); then check the site. Then the nightly scan of new products (a product with no answer keeps the old
-  reading), with daily limits the owner sets; open: "car tyres" showing motorcycle tyres, garden taps.
+- **FIRST (20/11, 23:30 Athens): DEPLOYED on the owner's «Ανέβασε»: the kinds' lists, their rule and the AI's
+  answers asked again** (PROGRESS.md, 20/11 20:40, 21:35, 22:25 and 23:30). `e383e7c` on the site (run
+  44814871339, release `20261120T205008Z-e383e7c`, prepared 21:09:04 UTC: 389,679 products, 135 shops; site since
+  21:20:29 UTC). Read live (run 44819927760, `claude/live-check-2026-11-20`): "boots" and "watches" right, no cables
+  or straps; still wrong among the first four cards: printer, tablet, perfume, drill, lego, washing machine, dress,
+  mattress, desk, laptop, car tyres. The work branch carries the deployed code (merge `a8e29fc`). What is where: the
+  lists `data/kind_lines/google_lines_by_kind.json` (312 kinds, 603 lines chosen by Haiku, each with the lines under
+  it; 968 lines its check added, each alone; written by `ai-kind-lines.yml`, push `claude/kind-lines`, `--lists`
+  keeps them and asks only the check); rule 2 `ai_shelves.checked_kinds` (a kind kept only when the AI's line is on
+  its list; the scan's slips, the tree's first five lines, are no answer); the AI's answers on the server
+  (`/srv/picwise/assist/shelves/answers.jsonl.gz`, asked again by `reask_shelves.py` / `ai-shelves-reask.yml`, push
+  `claude/shelves-reask`, a key never asked a third time; the first answers in `answers.before-reask.jsonl.gz`); the
+  measure `measure_after.py` / `ai-shelves-after.yml` (push `claude/shelves-after`). The last measure (run
+  44808052331): 353 of 439 cards right (80.4%; first link 92.3%, second 71.9%); about 1,900 real products hidden
+  (1.6%). AI for this work on 20/11: $2.56. **Next:** the nightly scan of new products (a product with no answer
+  keeps the old reading), with daily limits the owner sets; "car tyres" apart from motorcycle tyres; garden taps
+  (still on the threading taps' line); the weak searches above.
 - **20/11, 18:50 Athens: the scan DONE ($14.22; answers on the server); the measure after: 69.8% of the
   first 12 cards right (first link 83.5%, second 61.4%; boots, watches, kettle fixed); NOT deployed: rule 2 hides
   some real products and the kind reader misreads some AI lines (PROGRESS.md, 20/11 18:50). **Done at 20:40 (the
