@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (21:35 Athens, the kinds' lists and the asking again; nothing deployed).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (22:25 Athens, the kinds' lists and the asking again; nothing deployed).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,23 +8,24 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (20/11, 21:35 Athens): the kinds' lists, their rule and the doubtful products asked again DONE; NOT
-  deployed; waiting for the owner** (PROGRESS.md, 20/11 20:40 and 21:35). Branch
-  `claude/ai-shelves-rules-2026-11-20` at `a68d928` (from `eb311a6`: the
-  scan, rule 1, the kinds' lists and their rule, the asking again, the measure). The lists:
-  `data/kind_lines/google_lines_by_kind.json` (312 kinds, 603 lines chosen by Haiku, each with the lines under it;
-  968 lines its check added, each alone), written by `ai-kind-lines.yml` (push `claude/kind-lines`; `--lists`
-  keeps them and asks only the check). Rule 2 (`ai_shelves.checked_kinds`): a kind kept only when the AI's line is
-  on its list; the scan's slips (the tree's first five lines) are no answer. The doubtful asked again
-  (`reask_shelves.py`, `ai-shelves-reask.yml`, push `claude/shelves-reask`; run 44797248838, $1.1965, stopped at the
-  budget with 3,313 of 12,553 keys unasked; the server's answers replaced, the old ones in
-  `/srv/picwise/assist/shelves/answers.before-reask.jsonl.gz`). The measure after (run 44799502372): 352 of 438
-  cards right (80.4%; first link 90.1%, second 73.4%); worst printer, drill, perfume, lego, tv; about 2,500 real
-  products hidden (2% of those with a kind; garden taps, car battery chargers, PC fans, bags). AI today for this
-  work $2.04. **The owner chooses:** «ανέβασε» (push `a68d928` to `ccr-1361f1a7-dcpo60`: a fast-forward from
-  `ea1e7dd`; it prepares again, about 25 min, since `picwise-prepare.service` and the rules changed; rides along:
-  the scan's, the lists' and the asking's workflows, inert), or first the 3,313 keys left (about $0.45). Then the
-  nightly scan of new products (a product with no answer keeps the old reading), with daily limits the owner sets.
+- **FIRST (20/11, 22:25 Athens): the kinds' lists, their rule and the doubtful products asked again (all of them)
+  DONE; NOT deployed; waiting for the owner's «ανέβασε»** (PROGRESS.md, 20/11 20:40, 21:35 and 22:25). Branch
+  `claude/ai-shelves-rules-2026-11-20` at `e383e7c` (from `eb311a6`: the scan, rule 1, the kinds' lists and their
+  rule, the asking again, the measure). The lists: `data/kind_lines/google_lines_by_kind.json` (312 kinds, 603
+  lines chosen by Haiku, each with the lines under it; 968 lines its check added, each alone), written by
+  `ai-kind-lines.yml` (push `claude/kind-lines`; `--lists` keeps them and asks only the check). Rule 2
+  (`ai_shelves.checked_kinds`): a kind kept only when the AI's line is on its list; the scan's slips (the tree's
+  first five lines) are no answer. The doubtful asked again (`reask_shelves.py`, `ai-shelves-reask.yml`, push
+  `claude/shelves-reask`; runs 44797248838 and 44807051555, $1.70, every key answered; a key never asked a third
+  time; the server's answers replaced, the first ones in `/srv/picwise/assist/shelves/answers.before-reask.jsonl.gz`).
+  The measure after (run 44808052331): 353 of 439 cards right (80.4%; first link 92.3%, second 71.9%); worst drill,
+  printer, perfume (body sprays), car tyres (motorcycle and scooter tyres: "car" is no kind), lego; about 1,900 real
+  products hidden (1.6% of those with a kind; garden taps on the threading taps' line, car battery chargers,
+  processors, garden tables, bags). AI today for this work $2.56. **On «ανέβασε»:** push `e383e7c` to
+  `ccr-1361f1a7-dcpo60` (a fast-forward from `ea1e7dd`; it prepares again, about 25 min, since
+  `picwise-prepare.service` and the rules changed; rides along: the scan's, the lists' and the asking's workflows,
+  inert); then check the site. Then the nightly scan of new products (a product with no answer keeps the old
+  reading), with daily limits the owner sets; open: "car tyres" showing motorcycle tyres, garden taps.
 - **20/11, 18:50 Athens: the scan DONE ($14.22; answers on the server); the measure after: 69.8% of the
   first 12 cards right (first link 83.5%, second 61.4%; boots, watches, kettle fixed); NOT deployed: rule 2 hides
   some real products and the kind reader misreads some AI lines (PROGRESS.md, 20/11 18:50). **Done at 20:40 (the
