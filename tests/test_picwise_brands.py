@@ -189,6 +189,12 @@ def _reader() -> BrandReader:
             CatalogueBrand("strong", "Strong", 7, (("glue", 7),)),
             CatalogueBrand("gardenmax", "Gardenmax", 9, (("garden_hose", 9),)),
             CatalogueBrand("karchertesthome", "Karchertest Home", 4, (("pressure_washer", 4),)),
+            CatalogueBrand("mirasales", "Mira Sales", 6, (("game_controller", 6),)),
+            CatalogueBrand("mystore", "My Store", 5, (("shoes", 5),)),
+            CatalogueBrand("besthomegadgets", "Best Home Gadgets", 4, (("toy", 4),)),
+            CatalogueBrand("workwearnation", "Workwear Nation Ltd", 9, (("trousers", 5), ("jacket", 4))),
+            # A brand named by a word the search knows.
+            CatalogueBrand("compass", "Compass", 5, (("backpack", 5),)),
         )
     )
 
@@ -235,6 +241,23 @@ class BrandReaderTests(unittest.TestCase):
         self.assertEqual((search.corrected, search.corrected_to), ("fixturon tv", "Fixturon"))
         search = self.reader.read("fixturon profesional")
         self.assertEqual((search.corrected, search.corrected_to), ("fixturon professional", "Fixturon Professional"))
+
+    def test_a_slip_inside_a_name_of_several_words_is_read_as_it(self) -> None:
+        # The name's other words are in the search: "mira saels" is Mira Sales.
+        search = self.reader.read("mira saels controller")
+        self.assertEqual((search.corrected, search.corrected_to), ("mira sales controller", "Mira Sales"))
+        self.assertEqual(self.reader.read("my stroe").corrected_to, "My Store")
+        # Without them, a word one slip from a word of a name is nothing of it.
+        self.assertEqual(self.reader.read("saels").corrected, "")
+        # A brand named by a word the search knows: its slip read as it.
+        self.assertEqual(self.reader.read("compas").corrected_to, "Compass")
+
+    def test_a_name_holding_a_word_that_judges_and_a_name_shown_without_ltd(self) -> None:
+        self.assertEqual(self.reader.read("best home gadgets").alone.name, "Best Home Gadgets")
+        alone = self.reader.read("workwear nation").alone
+        self.assertEqual(alone.name, "Workwear Nation")
+        self.assertEqual(alone.choices(), ("workwear nation trousers", "workwear nation jacket"))
+        self.assertEqual(self.reader.read("best home gadgtes").corrected_to, "Best Home Gadgets")
 
     def test_a_slip_of_two_brands_is_asked_about(self) -> None:
         search = self.reader.read("brandox")

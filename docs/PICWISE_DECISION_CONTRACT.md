@@ -1000,10 +1000,10 @@ a sketch of each answer, the owner chose:
    search is never corrected into a kind's name: "razer" is no razor, "draper" no diaper,
    "store" in "My Store" no stove. A brand named as a kind is that kind ("lego").
 3. **A brand alone**: a search that is a brand's whole name and nothing else, a word like
-   "uk" or "best" aside, is answered with the brand's products, those of the brands whose
-   names begin with it too ("bosch": Bosch, Bosch Professional), unless the search names a
-   kind and nothing else ("rugs", "lego") or one of its words says how a product is
-   ("white", "small"):
+   "uk" or "best" aside unless the name holds it ("Best Home Gadgets"), is answered with
+   the brand's products, those of the brands whose names begin with it too ("bosch":
+   Bosch, Bosch Professional), unless the search names a kind and nothing else ("rugs",
+   "lego") or one of its words says how a product is ("white", "small"):
    - its products of one kind (one kind of 3 products or more): that kind's products of
      the brand, cheapest first, with a Recommended, as a search for the brand and the kind
      answers;
@@ -1020,9 +1020,12 @@ a sketch of each answer, the owner chose:
    the search knows and no kind's name, one slip (a letter more, less or other, or two side
    by side swapped) from one brand's name of 5 letters or more, and from no other brand's
    name and no word the search knows, is read as that brand: "samsnug" as Samsung,
-   "samsnug tv" as Samsung's televisions, the page saying "Understood as: Samsung". A
-   brand's whole name of several words is read so too ("bosch profesional"). One slip from
-   two brands' names or more, or from a known word too, it is not guessed: when nothing
-   else answers the search, the page asks "Did you mean ...?" with the searches it could
-   be.
+   "samsnug tv" as Samsung's televisions, the page saying "Understood as: Samsung". So is a
+   word one slip from a word of a brand's name of several words whose other words are all
+   in the search, however close a known word is, the other words saying which: "mira saels"
+   is Mira Sales ("sails" is as close), "bosch profesional" Bosch Professional. One slip
+   from two brands' names or more, from a known word too, or from a kind the reading would
+   correct it into, it is not guessed: when nothing else answers the search, the page asks
+   "Did you mean ...?" with the searches it could be. The page names a brand without an
+   ending of a company's name ("Workwear Nation Ltd" is "Workwear Nation").
 5. Pinned by `tests/test_picwise_brands.py`.

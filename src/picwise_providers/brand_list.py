@@ -325,6 +325,20 @@ class BrandSearch:
     suggestions: tuple[str, ...] = ()
 
 
+# Endings of a company's name left out where the page names a brand ("Workwear Nation
+# Ltd" is "Workwear Nation"): not "Co", which "White & Co." is named by.
+_SHOWN_WITHOUT = frozenset("ltd limited plc inc llc gmbh uk".split())
+
+
+def shown_name(name: str) -> str:
+    """A brand's name as the page writes it: as most of its products write it, without an
+    ending of a company's name ("Samsung UK" is "Samsung")."""
+    words = name.split()
+    while len(words) > 1 and plain(words[-1]) in _SHOWN_WITHOUT:
+        words.pop()
+    return " ".join(words).rstrip(" ,") or name
+
+
 def _leading_words(name: str, count: int) -> str:
     """The first `count` words of a name as it is written, punctuation between them kept,
     a leading "The" left out: the first two of "Black & Decker Pro" are "Black & Decker",
@@ -367,6 +381,12 @@ class BrandReader:
             tuple(name.split()) for name in self._spoken.values() if name and " " in name
         )
         self._words_of_several = frozenset(word for name in self.several_words for word in name)
+        several_by_word: dict[str, list[str]] = defaultdict(list)
+        for key, name in self._spoken.items():
+            if " " in name:
+                for word in set(name.split()):
+                    several_by_word[word].append(key)
+        self._several_by_word = dict(several_by_word)
         self._near: NearIndex | None = None
 
     def __len__(self) -> int:
@@ -382,13 +402,18 @@ class BrandReader:
         brands", points 3 and 4)."""
         if not self.brands:
             return BrandSearch()
-        words = [word for word in normalize_understanding_text(query).split() if not is_judgement_word(word)]
+        every = normalize_understanding_text(query).split()
+        words = [word for word in every if not is_judgement_word(word)]
         if not words:
             return BrandSearch()
-        alone = self.alone(words, query)
+        # A brand's whole name first, a word like "online" or "best" in it included ("Giant
+        # Bradley's Online Sweet Shop"); then the name without such words ("best samsung").
+        alone = self.alone(every, query) if len(every) > len(words) else None
+        if alone is None:
+            alone = self.alone(words, query)
         if alone is not None:
             return BrandSearch(alone=alone)
-        return self._slips(words, query)
+        return self._slips(every, query)
 
     def alone(self, words: list[str], query: str) -> BrandAnswer | None:
         """The brands a search's words name alone: a brand's whole name, with the brands
@@ -425,7 +450,7 @@ class BrandReader:
         for brand in members:
             kinds.update(dict(brand.kinds))
         if exact is not None:
-            name = exact.name
+            name = shown_name(exact.name)
         else:
             largest = max(members, key=lambda brand: (brand.products, brand.key))
             name = _leading_words(largest.name, len(text.split()))
@@ -436,21 +461,44 @@ class BrandReader:
             kinds=tuple(sorted(kinds.items(), key=lambda item: (-item[1], item[0]))),
         )
 
-    def _close(self, word: str) -> list[CatalogueBrand]:
-        """The brands of one word whose name is one slip from `word`, the largest first."""
-        found = [
-            self.brands[key]
-            for key in self._near_names().near(word, 1)
-            if " " not in self._spoken[key]
-        ]
-        return sorted(found, key=lambda brand: (-brand.products, brand.key))
+    def _close(self, word: str, present: Collection[str]) -> list[tuple[CatalogueBrand, str]]:
+        """The brands whose name `word` may be a slip of, the largest first, each with the
+        word of its name it is one slip from: a name of one word ("samsnug": Samsung); or a
+        word of a name of several whose other words are all in the search (`present`):
+        "mira saels" is Mira Sales, "my stroe" My Store."""
+        found: dict[str, str] = {}
+        for key in self._near_names().near(word, 1):
+            name = self._spoken[key]
+            if " " not in name:
+                found[key] = name
+        for other in present:
+            if other == word:
+                continue
+            for key in self._several_by_word.get(other, ()):
+                if key in found:
+                    continue
+                names = self._spoken[key].split()
+                for place, own in enumerate(names):
+                    if (
+                        len(own) >= SLIP_WORD
+                        and slips(word, own) == 1
+                        and all(name in present for at, name in enumerate(names) if at != place)
+                    ):
+                        found[key] = own
+                        break
+        return sorted(
+            ((self.brands[key], own) for key, own in found.items()),
+            key=lambda item: (-item[0].products, item[0].key),
+        )
 
     def _slips(self, words: list[str], query: str) -> BrandSearch:
-        """A word of the search, or its whole text, read as a brand's name it is one slip
-        from, when only that name and no word the search knows is that close; else the
-        searches to ask about (the Decision Contract, "The catalogue's brands", point 4)."""
+        """A word of the search read as the word of a brand's name it is one slip from,
+        when that brand is the only one so close and no word the search knows is, nor a
+        kind the reading would correct it into; else the searches to ask about (the
+        Decision Contract, "The catalogue's brands", point 4). `words` are the search's
+        words, a word like "uk" or "best" included."""
         reading = understand_product_query(query)
-        # A brand's whole name of several words, one slip off: "bosch profesional".
+        # A brand's whole name of several words one slip off, run together or not.
         whole = brand_key(" ".join(words))
         if len(words) > 1 and len(whole) >= 2 * SLIP_NAME and not reading.understood:
             near = [
@@ -460,7 +508,8 @@ class BrandReader:
             ]
             if len(near) == 1:
                 brand = near[0]
-                return BrandSearch(corrected=" ".join(brand.name.lower().split()), corrected_to=brand.name)
+                return BrandSearch(corrected=self._spoken[brand.key], corrected_to=shown_name(brand.name))
+        present = set(words)
         corrected = list(words)
         corrected_to = ""
         suggestions: list[str] = []
@@ -468,28 +517,38 @@ class BrandReader:
             if (
                 len(word) < SLIP_WORD
                 or not word.isalpha()
+                or is_judgement_word(word)
                 or word in self.single_words
                 or word in self._words_of_several
                 or is_known_english_word(word)
             ):
                 continue
-            close = self._close(word)
+            close = self._close(word, present)
             if not close:
                 continue
-            # Another brand, a word the search knows, or a kind the reading would correct
-            # it into ("torres" read as tyres) as close: a question, never a guess.
+            own_words = {own for _brand, own in close}
+            # Another brand, or another kind the reading would correct the word into
+            # ("torres" read as tyres), as close: a question. So is a word the search knows
+            # as close, unless the name's other words are in the search ("mira saels":
+            # "sails" is as close, and "mira" says which).
+            as_kind = understand_product_query(word)
+            in_its_name = all(" " in self._spoken[brand.key] for brand, _own in close)
             ambiguous = (
                 len(close) > 1
-                or bool(_known_words().near(word, 1))
-                or understand_product_query(word).understood
+                or (not in_its_name and bool(set(_known_words().near(word, 1)) - own_words))
+                or (
+                    as_kind.understood
+                    and all(understand_product_query(own).concept_id != as_kind.concept_id for own in own_words)
+                )
             )
             if not ambiguous and not corrected_to:
-                corrected[place] = " ".join(close[0].name.lower().split())
-                corrected_to = close[0].name
+                brand, own = close[0]
+                corrected[place] = own
+                corrected_to = shown_name(brand.name)
                 continue
-            for brand in close[:3]:
+            for _brand, own in close[:3]:
                 asked = list(words)
-                asked[place] = " ".join(brand.name.lower().split())
+                asked[place] = own
                 suggestions.append(" ".join(asked))
         if corrected_to:
             return BrandSearch(corrected=" ".join(corrected), corrected_to=corrected_to)
