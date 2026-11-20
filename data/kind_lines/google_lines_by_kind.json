@@ -4,7 +4,7 @@
  "model": "claude-haiku-5-5",
  "taxonomy": "data/taxonomy_sources/google/taxonomy.en-US.txt",
  "cost_usd": 0.2096,
- "about": "kinds: each kind's lines, chosen by the AI from Google's taxonomy, each with the lines under it; exact: the lines the scan gave the products the site reads as the kind, judged by the AI to be the kind itself (the check), each alone. Read by picwise_providers.ai_shelves (rule 2).",
+ "about": "kinds: each kind's lines, chosen by the AI from Google's taxonomy (run 44782688770), each with the lines under it; exact: the lines the scan gave the products the site reads as the kind, judged by the AI to be the kind itself (the check of the same run: the 15 lines a kind with the most products, judged by the line and 5 titles), each alone, without the tree's first five lines (the scan's slips, read as no answer) and without a department alone. A wider check (run 44787284618: 40 lines a kind, judged by the titles alone) was not kept: it said yes to lines such as Mattresses for beds and Mobile Phone Cases for chargers. Read by picwise_providers.ai_shelves (rule 2).",
  "kinds": {
   "washing_machine": [
    "Home & Garden > Household Appliances > Laundry Appliances > Washing Machines"
@@ -1242,27 +1242,22 @@
    "Home & Garden > Kitchen & Dining > Kitchen Appliances > Toasters & Grills > Tortilla & Flatbread Makers"
   ],
   "dehumidifier": [
-   "Animals & Pet Supplies",
    "Home & Garden > Household Appliances > Vacuums",
    "Home & Garden > Household Appliance Accessories",
    "Home & Garden > Household Appliances > Climate Control Appliances > Space Heaters",
    "Home & Garden > Household Supplies"
   ],
   "fire_pit": [
-   "Animals & Pet Supplies",
    "Home & Garden > Household Appliances > Climate Control Appliances > Patio Heaters",
    "Home & Garden > Kitchen & Dining > Kitchen Appliances > Outdoor Grills",
    "Home & Garden > Fireplace & Wood Stove Accessories > Log Racks & Carriers"
   ],
   "sauna": [
-   "Animals & Pet Supplies",
    "Home & Garden > Fireplaces",
    "Home & Garden > Lawn & Garden > Outdoor Living > Outdoor Structures",
    "Home & Garden > Lawn & Garden > Outdoor Living > Outdoor Structures > Sheds, Garages & Carports",
    "Home & Garden > Bathroom Accessories > Towel Racks & Holders",
-   "Animals & Pet Supplies > Live Animals",
    "Home & Garden > Decor > Address Signs",
-   "Animals & Pet Supplies > Pet Supplies",
    "Home & Garden > Lawn & Garden > Outdoor Power Equipment Accessories > Grass Edger Accessories",
    "Home & Garden > Lawn & Garden",
    "Home & Garden > Kitchen & Dining > Kitchen Appliances > Food Mixers & Blenders",
@@ -1270,15 +1265,12 @@
   ],
   "heater": [
    "Home & Garden > Pool & Spa > Sauna Accessories > Sauna Heaters",
-   "Animals & Pet Supplies",
    "Home & Garden > Household Appliance Accessories",
    "Home & Garden > Lighting > Lamps",
    "Home & Garden > Household Appliances > Climate Control Appliances > Air Conditioners",
    "Home & Garden > Household Appliances"
   ],
   "fan": [
-   "Animals & Pet Supplies",
-   "Electronics",
    "Home & Garden > Household Appliances > Climate Control Appliances > Air Conditioners",
    "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Storage & Cargo > Motor Vehicle Carrying Racks > Vehicle Ski & Snowboard Racks"
   ],
@@ -1295,14 +1287,11 @@
    "Sporting Goods > Outdoor Recreation > Fishing",
    "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Repair & Specialty Tools > Motor Vehicle Brake Service Kits",
    "Home & Garden > Household Appliances > Climate Control Appliances > Air Purifiers",
-   "Animals & Pet Supplies",
    "Home & Garden > Household Appliances > Water Heaters"
   ],
   "coffee_machine": [
-   "Animals & Pet Supplies",
    "Home & Garden > Kitchen & Dining > Kitchen Appliances",
-   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Electric Kettles",
-   "Animals & Pet Supplies > Live Animals"
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Electric Kettles"
   ],
   "microwave": [
    "Home & Garden > Kitchen & Dining > Kitchen Appliances",
@@ -1330,13 +1319,10 @@
   ],
   "toaster": [
    "Home & Garden > Kitchen & Dining > Kitchen Appliances",
-   "Animals & Pet Supplies",
    "Home & Garden > Kitchen & Dining > Kitchen Appliances > Electric Kettles"
   ],
   "kettle": [
    "Home & Garden > Kitchen & Dining > Kitchen Appliances",
-   "Animals & Pet Supplies",
-   "Food, Beverages & Tobacco",
    "Home & Garden > Kitchen & Dining > Kitchen Appliances > Coffee Makers & Espresso Machines"
   ],
   "juicer": [
@@ -1352,22 +1338,18 @@
   ],
   "office_chair": [
    "Furniture > Chairs > Gaming Chairs",
-   "Animals & Pet Supplies",
    "Furniture > Chairs",
    "Health & Beauty > Personal Care > Massage & Relaxation > Massage Chairs",
    "Furniture > Office Furniture",
-   "Animals & Pet Supplies > Live Animals",
    "Furniture > Office Furniture > Desks",
    "Furniture > Office Furniture Accessories > Office Chair Accessories"
   ],
   "chair": [
-   "Animals & Pet Supplies",
    "Furniture > Sofas",
    "Sporting Goods > Outdoor Recreation > Camping & Hiking > Camp Furniture"
   ],
   "desk": [
    "Furniture > Furniture Sets",
-   "Animals & Pet Supplies",
    "Furniture > Office Furniture"
   ],
   "sofa": [
@@ -1375,10 +1357,8 @@
    "Furniture > Futons",
    "Furniture > Chairs > Arm Chairs, Recliners & Sleeper Chairs",
    "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Beds",
-   "Animals & Pet Supplies",
    "Furniture > Furniture Sets > Living Room Furniture Sets",
    "Furniture > Beds & Accessories > Beds & Bed Frames",
-   "Animals & Pet Supplies > Pet Supplies",
    "Furniture > Furniture Sets",
    "Furniture > Chairs > Bean Bag Chairs",
    "Food, Beverages & Tobacco > Food Items > Snack Foods > Chips",
@@ -1388,10 +1368,8 @@
   "sofa_bed": [
    "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Beds",
    "Furniture > Beds & Accessories > Beds & Bed Frames",
-   "Animals & Pet Supplies",
    "Furniture > Chairs > Arm Chairs, Recliners & Sleeper Chairs",
    "Furniture > Chairs",
-   "Animals & Pet Supplies > Pet Supplies",
    "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Beds",
    "Furniture > Furniture Sets",
    "Food, Beverages & Tobacco > Tobacco Products",
@@ -1401,18 +1379,14 @@
   "bed": [
    "Furniture > Beds & Accessories",
    "Furniture > Futons",
-   "Animals & Pet Supplies",
    "Furniture > Beds & Accessories > Mattress Foundations",
-   "Animals & Pet Supplies > Pet Supplies",
    "Furniture > Sofas",
    "Furniture > Chairs > Arm Chairs, Recliners & Sleeper Chairs"
   ],
   "mattress": [
-   "Animals & Pet Supplies",
    "Furniture > Beds & Accessories > Beds & Bed Frames",
    "Home & Garden > Household Supplies",
    "Furniture > Beds & Accessories",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Animals & Pet Supplies > Pet Supplies > Pet Food Containers",
    "Home & Garden > Linens & Bedding > Bedding > Pillows",
    "Furniture > Baby & Toddler Furniture > Cribs & Toddler Beds",
@@ -1421,13 +1395,10 @@
    "Furniture > Beds & Accessories > Mattress Foundations"
   ],
   "wardrobe": [
-   "Animals & Pet Supplies",
    "Furniture > Furniture Sets > Bedroom Furniture Sets",
    "Furniture > Cabinets & Storage",
-   "Animals & Pet Supplies > Live Animals",
    "Furniture > Chairs",
    "Furniture > Beds & Accessories",
-   "Furniture",
    "Home & Garden > Household Supplies > Storage & Organization > Clothing & Closet Storage > Closet Organizers & Garment Racks",
    "Home & Garden > Household Supplies > Storage & Organization > Clothing & Closet Storage"
   ],
@@ -1435,27 +1406,21 @@
    "Business & Industrial > Industrial Storage > Industrial Shelving",
    "Furniture > Cabinets & Storage > Media Storage Cabinets & Racks",
    "Furniture > Cabinets & Storage",
-   "Animals & Pet Supplies",
    "Hardware > Hardware Accessories > Hardware Fasteners"
   ],
   "bookcase": [
    "Furniture > Shelving > Wall Shelves & Ledges",
-   "Animals & Pet Supplies",
    "Furniture > Shelving",
    "Furniture > Cabinets & Storage",
    "Furniture > Room Dividers",
    "Furniture > Chairs",
    "Furniture > Chairs > Kitchen & Dining Room Chairs",
-   "Animals & Pet Supplies > Pet Supplies",
    "Furniture > Beds & Accessories > Mattresses",
-   "Home & Garden > Decor > Window Treatment Accessories",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
-   "Furniture"
+   "Home & Garden > Decor > Window Treatment Accessories"
   ],
   "table": [
    "Furniture > Cabinets & Storage > Vanities > Bedroom Vanities",
    "Furniture > Furniture Sets > Kitchen & Dining Furniture Sets",
-   "Animals & Pet Supplies",
    "Furniture > Office Furniture > Desks",
    "Furniture > Baby & Toddler Furniture > Baby & Toddler Furniture Sets",
    "Furniture > Furniture Sets",
@@ -1465,13 +1430,10 @@
   "bedside_table": [
    "Furniture > Tables",
    "Furniture > Cabinets & Storage",
-   "Animals & Pet Supplies",
    "Furniture > Furniture Sets",
    "Furniture > Chairs",
-   "Animals & Pet Supplies > Pet Supplies",
    "Furniture > Sofas",
    "Furniture > Cabinets & Storage > Vanities",
-   "Furniture",
    "Furniture > Chairs > Folding Chairs & Stools",
    "Furniture > Shelving",
    "Food, Beverages & Tobacco > Food Items > Grains, Rice & Cereal > Rice",
@@ -1481,32 +1443,21 @@
   "lamp": [
    "Hardware > Tools > Work Lights",
    "Home & Garden > Lighting > Lighting Fixtures",
-   "Animals & Pet Supplies",
    "Home & Garden > Lighting",
    "Home & Garden > Lighting > Light Bulbs"
   ],
   "light_bulb": [
-   "Animals & Pet Supplies",
    "Electronics > Electronics Accessories > Power > Battery Accessories",
    "Home & Garden > Lighting > Lamps",
    "Business & Industrial > Signage > Electric Signs",
    "Food, Beverages & Tobacco > Food Items > Grains, Rice & Cereal > Rice",
    "Business & Industrial > Food Service > Food Service Baskets",
    "Electronics > Audio > Audio Players & Recorders > Radios",
-   "Electronics > Electronics Accessories > Power > Battery Accessories > Camera Battery Chargers",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
-   "Animals & Pet Supplies > Live Animals",
-   "Cameras & Optics",
-   "Food, Beverages & Tobacco"
+   "Electronics > Electronics Accessories > Power > Battery Accessories > Camera Battery Chargers"
   ],
   "smart_plug": [
    "Electronics > Communications > Telephony > Mobile Phone Accessories",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Hardware > Power & Electrical Supplies > Power Outlets & Sockets"
-  ],
-  "smartphone": [
-   "Animals & Pet Supplies > Live Animals",
-   "Animals & Pet Supplies"
   ],
   "desk_phone": [
    "Electronics > Communications > Telephony",
@@ -1514,18 +1465,15 @@
    "Electronics > Computers",
    "Electronics > Computers > Smart Glasses",
    "Electronics > Video > Televisions",
-   "Animals & Pet Supplies",
    "Electronics > Communications > Telephony > Mobile Phones",
    "Electronics > Print, Copy, Scan & Fax > Printers, Copiers & Fax Machines",
    "Electronics > Communications > Intercom Accessories",
-   "Electronics",
    "Electronics > Audio > Audio Components > Headphones & Headsets > Headphones"
   ],
   "power_bank": [
    "Electronics > Electronics Accessories > Power > Batteries",
    "Electronics > Electronics Accessories > Power > Power Adapters & Chargers",
    "Electronics > Audio > Audio Players & Recorders > MP3 Players",
-   "Animals & Pet Supplies",
    "Electronics > Electronics Accessories > Power > Batteries > Mobile Phone Batteries",
    "Electronics > Electronics Accessories > Power > Battery Accessories > General Purpose Battery Chargers",
    "Electronics > Electronics Accessories > Power",
@@ -1537,14 +1485,11 @@
    "Electronics > Electronics Accessories > Power > Batteries"
   ],
   "wireless_charger": [
-   "Electronics > Audio",
-   "Animals & Pet Supplies"
+   "Electronics > Audio"
   ],
   "cable": [
-   "Animals & Pet Supplies > Live Animals",
    "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Power & Electrical Systems",
-   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Repair & Specialty Tools > Vehicle Jumper Cables",
-   "Animals & Pet Supplies"
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Repair & Specialty Tools > Vehicle Jumper Cables"
   ],
   "charging_cable": [
    "Electronics > Electronics Accessories > Cables",
@@ -1555,7 +1500,6 @@
    "Electronics > Communications > Telephony > Mobile Phone Accessories"
   ],
   "screen_protector": [
-   "Animals & Pet Supplies",
    "Electronics > Communications > Telephony > Mobile Phone Accessories",
    "Electronics > Electronics Accessories > Computer Accessories",
    "Electronics > Electronics Accessories > Electronics Films & Shields > Privacy Filters",
@@ -1564,7 +1508,6 @@
    "Electronics > Electronics Accessories > Electronics Films & Shields > Electronics Stickers & Decals",
    "Electronics > Audio > Audio Components > Microphones",
    "Health & Beauty > Personal Care > Cosmetics > Skin Care",
-   "Electronics",
    "Electronics > Electronics Accessories > Computer Accessories > Mouse Pads",
    "Electronics > Electronics Accessories > Computer Accessories > Computer Risers & Stands",
    "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories"
@@ -1574,25 +1517,18 @@
   ],
   "smartwatch": [
    "Electronics > Computers > Handheld Devices > PDAs",
-   "Food, Beverages & Tobacco > Food Items > Nuts & Seeds",
-   "Animals & Pet Supplies"
+   "Food, Beverages & Tobacco > Food Items > Nuts & Seeds"
   ],
   "laptop": [
-   "Electronics > Computers",
-   "Animals & Pet Supplies",
-   "Animals & Pet Supplies > Pet Supplies"
+   "Electronics > Computers"
   ],
   "desktop_pc": [
    "Electronics > Computers > Barebone Computers",
    "Electronics > Computers",
-   "Animals & Pet Supplies",
    "Electronics > Electronics Accessories > Computer Accessories > Laptop Docking Stations"
   ],
   "monitor": [
-   "Animals & Pet Supplies",
    "Electronics > Video",
-   "Cameras & Optics",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Electronics > Electronics Accessories > Computer Components > Input Devices",
    "Electronics > Print, Copy, Scan & Fax > Printers, Copiers & Fax Machines",
    "Electronics > Communications > Telephony > Mobile Phone Accessories"
@@ -1603,22 +1539,15 @@
   "label_printer": [
    "Electronics > Print, Copy, Scan & Fax > Printers, Copiers & Fax Machines",
    "Electronics > Print, Copy, Scan & Fax",
-   "Animals & Pet Supplies",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories",
    "Electronics > Electronics Accessories > Computer Components > Input Devices",
-   "Animals & Pet Supplies > Pet Supplies",
    "Electronics > Print, Copy, Scan & Fax > 3D Printers"
   ],
   "toner": [
    "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Consumables",
-   "Animals & Pet Supplies",
-   "Animals & Pet Supplies > Live Animals",
    "Food, Beverages & Tobacco > Beverages > Water > Carbonated Water > Flavored Carbonated Water",
    "Electronics > Communications > Telephony > Mobile Phone Accessories",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Cage Accessories",
    "Electronics > Video",
-   "Hardware",
    "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Consumables > Printer Filters",
    "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Consumables > Printheads",
    "Electronics > Circuit Boards & Components > Printed Circuit Boards",
@@ -1626,13 +1555,9 @@
   ],
   "ink_cartridge": [
    "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Consumables",
-   "Animals & Pet Supplies",
    "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Consumables > Printer Maintenance Kits",
    "Hardware > Building Consumables > Painting Consumables > Paint",
-   "Animals & Pet Supplies > Pet Supplies",
-   "Animals & Pet Supplies > Live Animals",
    "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Consumables > Printer Ribbons",
    "Office Supplies > Filing & Organization > Card Sleeves",
    "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Duplexers",
@@ -1640,17 +1565,14 @@
   ],
   "router": [
    "Electronics > Networking > Bridges & Routers",
-   "Animals & Pet Supplies",
    "Electronics > Networking",
    "Electronics > Computers",
    "Electronics > Print, Copy, Scan & Fax > Scanners",
    "Electronics > Computers > Barebone Computers",
    "Electronics > Electronics Accessories > Power > UPS Accessories",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Electronics > Electronics Accessories > Antennas"
   ],
   "access_point": [
-   "Animals & Pet Supplies",
    "Electronics > Networking",
    "Electronics > Networking > Bridges & Routers > Wireless Routers",
    "Electronics > Networking > Network Cards & Adapters",
@@ -1667,16 +1589,13 @@
   ],
   "firewall": [
    "Electronics > Electronics Accessories > Computer Components > Input Devices",
-   "Animals & Pet Supplies",
    "Electronics > Networking",
    "Electronics > Communications > Video Conferencing",
-   "Electronics > Networking > Bridges & Routers > Wireless Routers",
-   "Animals & Pet Supplies > Live Animals"
+   "Electronics > Networking > Bridges & Routers > Wireless Routers"
   ],
   "server": [
    "Electronics > Electronics Accessories > Computer Components > Storage Devices > Network Storage Systems",
    "Electronics > Networking",
-   "Animals & Pet Supplies",
    "Electronics > Print, Copy, Scan & Fax",
    "Electronics > Networking > Concentrators & Multiplexers",
    "Electronics > Computers > Desktop Computers",
@@ -1686,41 +1605,30 @@
   ],
   "memory_card": [
    "Electronics > Electronics Accessories > Memory > Flash Memory",
-   "Electronics > Electronics Accessories > Memory > RAM",
-   "Animals & Pet Supplies",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies"
+   "Electronics > Electronics Accessories > Memory > RAM"
   ],
   "battery": [
    "Electronics > Electronics Accessories > Power > Batteries",
-   "Animals & Pet Supplies",
-   "Furniture",
    "Hardware > Building Consumables",
    "Sporting Goods > Exercise & Fitness > Exercise Bands",
    "Hardware > Tools > Flashlights & Headlamps",
    "Electronics > Audio > Audio Accessories > MP3 Player Accessories",
-   "Food, Beverages & Tobacco > Food Items > Snack Foods",
-   "Animals & Pet Supplies > Live Animals",
-   "Animals & Pet Supplies > Pet Supplies"
+   "Food, Beverages & Tobacco > Food Items > Snack Foods"
   ],
   "pen": [
-   "Animals & Pet Supplies",
    "Office Supplies > Office Instruments > Writing & Drawing Instruments > Pens & Pencils",
    "Office Supplies > Office Instruments > Writing & Drawing Instrument Accessories"
   ],
   "marker": [
-   "Media",
    "Office Supplies > Office Equipment",
    "Hardware > Tools > Masonry Tools",
    "Office Supplies > Office Instruments > Clipboards"
   ],
   "folder": [
    "Office Supplies > Office Instruments > Clipboards",
-   "Office Supplies > General Office Supplies",
-   "Animals & Pet Supplies",
-   "Animals & Pet Supplies > Pet Supplies"
+   "Office Supplies > General Office Supplies"
   ],
   "network_switch": [
-   "Animals & Pet Supplies",
    "Electronics > Electronics Accessories > Power > Power Strips & Surge Suppressors"
   ],
   "media_converter": [
@@ -1728,26 +1636,21 @@
    "Electronics > Networking > Network Cards & Adapters",
    "Electronics > Electronics Accessories > Adapters",
    "Electronics > Electronics Accessories > Cables > Network Cables",
-   "Animals & Pet Supplies",
    "Electronics > Components > Converters",
    "Electronics > Networking > Concentrators & Multiplexers",
    "Electronics > Video > Projectors > Overhead Projectors",
    "Electronics > Networking > Hubs & Switches",
    "Electronics > Networking > Power Over Ethernet Adapters",
-   "Animals & Pet Supplies > Live Animals",
    "Electronics > Print, Copy, Scan & Fax > Scanner Accessories",
    "Electronics > Electronics Accessories > Signal Jammers"
   ],
   "network_card": [
-   "Animals & Pet Supplies",
    "Electronics > Electronics Accessories > Adapters > USB Adapters",
    "Electronics > Electronics Accessories > Computer Components",
    "Electronics > Electronics Accessories > Computer Accessories > Mouse Pads",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Cage Accessories",
    "Electronics > Electronics Accessories > Adapters",
    "Electronics > Electronics Accessories",
    "Electronics > Electronics Accessories > Antennas",
-   "Cameras & Optics",
    "Electronics > Computers > Laptops",
    "Electronics > Electronics Accessories > Computer Components > Input Devices",
    "Electronics > Electronics Accessories > Computer Components > I/O Cards & Adapters > Computer Interface Cards & Adapters",
@@ -1756,22 +1659,18 @@
   ],
   "keyboard": [
    "Electronics > Electronics Accessories > Computer Components > Input Devices",
-   "Animals & Pet Supplies",
    "Electronics > Electronics Accessories > Computer Accessories > Computer Accessory Sets",
    "Electronics > Electronics Accessories",
-   "Electronics > Communications > Telephony > Mobile Phone Accessories",
-   "Animals & Pet Supplies > Pet Supplies"
+   "Electronics > Communications > Telephony > Mobile Phone Accessories"
   ],
   "mouse": [
    "Electronics > Electronics Accessories > Computer Components > Input Devices",
-   "Animals & Pet Supplies",
    "Electronics > Electronics Accessories > Computer Accessories > Computer Accessory Sets",
    "Electronics > Electronics Accessories > Computer Components > Input Devices > Keyboards",
    "Sporting Goods > Indoor Games > Table Shuffleboard > Table Shuffleboard Pucks"
   ],
   "webcam": [
    "Electronics > Video > Computer Monitors",
-   "Animals & Pet Supplies",
    "Electronics > Electronics Accessories > Computer Components > Input Devices > Keyboards",
    "Electronics > Circuit Boards & Components > Printed Circuit Boards",
    "Cameras & Optics > Optics > Monoculars",
@@ -1783,15 +1682,12 @@
    "Electronics > Electronics Accessories > Computer Components > Input Devices"
   ],
   "storage_drive": [
-   "Electronics > Electronics Accessories > Computer Components > Storage Devices",
-   "Animals & Pet Supplies"
+   "Electronics > Electronics Accessories > Computer Components > Storage Devices"
   ],
   "usb_flash_drive": [
-   "Animals & Pet Supplies",
    "Electronics > Electronics Accessories > Power > Batteries",
    "Electronics > Electronics Accessories > Computer Components > Storage Devices > Hard Drives",
    "Electronics > Electronics Accessories > Computer Accessories",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Electronics > Computers > Laptops",
    "Electronics > Electronics Accessories > Electronics Films & Shields > Screen Protectors"
   ],
@@ -1801,16 +1697,13 @@
    "Electronics > Electronics Accessories > Computer Components > Storage Devices > Hard Drive Accessories > Hard Drive Docks",
    "Electronics > Communications > Telephony > Mobile Phone Accessories > Mobile Phone Stands",
    "Electronics > Electronics Accessories > Computer Components > Input Device Accessories > Barcode Scanner Stands",
-   "Animals & Pet Supplies",
    "Electronics > Electronics Accessories > Computer Components > Input Devices > Barcode Scanners",
    "Electronics > Electronics Accessories > Computer Accessories",
    "Electronics > Electronics Accessories > Power > Power Adapters & Chargers",
    "Electronics > Electronics Accessories > Adapters"
   ],
   "television": [
-   "Animals & Pet Supplies",
-   "Electronics > Video",
-   "Electronics"
+   "Electronics > Video"
   ],
   "speaker": [
    "Electronics > Audio > Audio Players & Recorders > Karaoke Systems",
@@ -1821,35 +1714,29 @@
    "Electronics > Audio > Audio Components > Microphones"
   ],
   "soundbar": [
-   "Animals & Pet Supplies",
    "Electronics > Audio > Audio Components > Audio & Video Receivers",
    "Electronics > Audio > Audio Players & Recorders > Home Theater Systems"
   ],
   "headphones": [
    "Electronics > Audio > Audio Components > Headphones & Headsets",
-   "Animals & Pet Supplies",
    "Electronics > Audio > Audio Components > Speakers",
    "Electronics > Electronics Accessories > Computer Components > Input Devices",
    "Electronics > Audio",
-   "Furniture",
    "Electronics > Communications > Telephony > Mobile Phone Accessories",
    "Electronics > Computers > Thin & Zero Clients",
    "Electronics > Audio > Audio Components > Microphones",
    "Electronics > Electronics Accessories > Computer Components > Input Devices > Keyboards"
   ],
   "video_game": [
-   "Toys & Games",
    "Toys & Games > Games > Portable Electronic Games",
    "Media > DVDs & Videos",
    "Software > Computer Software",
    "Sporting Goods > Outdoor Recreation > Golf > Golf Clubs",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Toys & Games > Toys",
    "Toys & Games > Games > Board Games",
    "Toys & Games > Toys > Play Vehicles > Toy Airplanes"
   ],
   "camera": [
-   "Animals & Pet Supplies",
    "Hardware > Tools > Measuring Tools & Sensors > Thermal Imaging Cameras",
    "Cameras & Optics > Cameras"
   ],
@@ -1859,12 +1746,9 @@
    "Electronics > Audio > Audio Components > Headphones & Headsets"
   ],
   "projector": [
-   "Animals & Pet Supplies",
    "Electronics > Video",
    "Electronics > Video > Televisions",
-   "Electronics > Video > Video Accessories",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Cage Accessories",
-   "Animals & Pet Supplies > Live Animals"
+   "Electronics > Video > Video Accessories"
   ],
   "amplifier": [
    "Electronics > Electronics Accessories > Signal Boosters",
@@ -1883,8 +1767,6 @@
    "Home & Garden > Lawn & Garden > Outdoor Power Equipment Accessories",
    "Food, Beverages & Tobacco > Tobacco Products",
    "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Fluids > Vehicle Performance Additives",
-   "Animals & Pet Supplies > Pet Supplies",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Cleaning > Vehicle Fuel Injection Cleaning Kits"
   ],
   "spark_plugs": [
@@ -1892,7 +1774,6 @@
    "Home & Garden > Lawn & Garden > Outdoor Power Equipment Accessories > Lawn Mower Accessories"
   ],
   "tyres": [
-   "Animals & Pet Supplies",
    "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems > Motor Vehicle Tire Accessories",
    "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems",
    "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Safety & Security > Motorcycle Protective Gear > Motorcycle Gloves",
@@ -1906,69 +1787,51 @@
    "Electronics > Radar Detectors"
   ],
   "helmet": [
-   "Animals & Pet Supplies",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Sporting Goods > Outdoor Recreation > Camping & Hiking > Tent Accessories > Tent Poles & Stakes",
    "Sporting Goods > Outdoor Recreation > Equestrian > Horse Tack Accessories > Saddle Accessories > Saddle Pads & Blankets"
   ],
   "bicycle_helmet": [
-   "Animals & Pet Supplies",
    "Sporting Goods > Outdoor Recreation > Equestrian > Horse Tack Accessories > Saddle Accessories > Saddle Pads & Blankets",
    "Furniture > Beds & Accessories > Beds & Bed Frames",
    "Electronics > Video Game Consoles"
   ],
   "moto_helmet": [
-   "Animals & Pet Supplies",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Safety & Security > Motorcycle Protective Gear > Motorcycle Helmet Parts & Accessories",
-   "Animals & Pet Supplies > Pet Supplies",
-   "Toys & Games",
    "Sporting Goods > Outdoor Recreation > Climbing > Climbing Harnesses",
    "Sporting Goods > Athletics > Boxing & Martial Arts",
    "Vehicles & Parts > Vehicles"
   ],
   "scooter": [
-   "Toys & Games > Toys > Riding Toys",
-   "Animals & Pet Supplies"
+   "Toys & Games > Toys > Riding Toys"
   ],
   "drill": [
    "Hardware > Tools > Tool Sets > Power Tool Combo Sets",
    "Hardware > Tools > Drills",
-   "Animals & Pet Supplies",
    "Hardware > Tools > Drills > Drill Presses",
    "Hardware > Tools",
    "Hardware > Tools > Drills > Pneumatic Drills",
-   "Animals & Pet Supplies > Live Animals",
-   "Animals & Pet Supplies > Pet Supplies",
    "Hardware > Tools > Drills > Augers"
   ],
   "rotary_hammer": [
    "Hardware > Tools > Drills > Handheld Power Drills"
   ],
   "impact_driver": [
-   "Animals & Pet Supplies",
-   "Sporting Goods > Exercise & Fitness > Exercise Bands",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies"
+   "Sporting Goods > Exercise & Fitness > Exercise Bands"
   ],
   "angle_grinder": [
    "Hardware > Tools > Drills",
    "Hardware > Tools",
-   "Animals & Pet Supplies > Live Animals",
    "Home & Garden > Kitchen & Dining > Kitchen Appliance Accessories > Outdoor Grill Accessories > Outdoor Grill Covers"
   ],
   "circular_saw": [
-   "Animals & Pet Supplies",
    "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Engine Oil Circulation",
    "Hardware > Tool Accessories > Drill & Screwdriver Accessories > Drill & Screwdriver Bits"
   ],
   "jigsaw": [
    "Hardware > Tools > Drills",
-   "Animals & Pet Supplies > Live Animals",
-   "Hardware > Tools > Drills > Handheld Power Drills",
-   "Animals & Pet Supplies"
+   "Hardware > Tools > Drills > Handheld Power Drills"
   ],
   "mitre_saw": [
-   "Animals & Pet Supplies",
    "Hardware > Tools",
    "Business & Industrial > Food Service > Food Service Baskets",
    "Hardware > Tools > Saws",
@@ -1976,7 +1839,6 @@
    "Sporting Goods > Athletics > Basketball > Basketballs"
   ],
   "sander": [
-   "Animals & Pet Supplies",
    "Sporting Goods > Exercise & Fitness > Ab Wheels & Rollers",
    "Hardware > Tools",
    "Hardware > Tools > Drills > Handheld Power Drills",
@@ -1985,7 +1847,6 @@
    "Home & Garden > Household Appliances > Garage Door Openers"
   ],
   "air_compressor": [
-   "Animals & Pet Supplies",
    "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Repair & Specialty Tools > Vehicle Battery Chargers",
    "Vehicles & Parts > Vehicle Parts & Accessories",
    "Toys & Games > Toys > Sports Toys > Basketball Toys",
@@ -2000,7 +1861,6 @@
    "Hardware > Tools > Putty Knives & Scrapers",
    "Electronics > Electronics Accessories",
    "Office Supplies > Office Equipment > Calculators > Basic Calculators",
-   "Animals & Pet Supplies",
    "Sporting Goods > Outdoor Recreation > Cycling > Bicycle Accessories > Bicycle Tools",
    "Hardware > Tools > Hammers"
   ],
@@ -2017,28 +1877,20 @@
    "Business & Industrial > Work Safety Protective Gear > Welding Helmets"
   ],
   "screwdriver": [
-   "Animals & Pet Supplies",
    "Hardware > Tools > Tool Sets",
-   "Animals & Pet Supplies > Pet Supplies",
    "Hardware > Tools > Flashlights & Headlamps",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Hardware > Tools > Cutters > Utility Knives",
    "Hardware > Tools > Oil Filter Drains"
   ],
   "screwdriver_set": [
-   "Animals & Pet Supplies",
    "Hardware > Tools > Tool Sets",
-   "Animals & Pet Supplies > Pet Supplies",
    "Hardware > Tools > Oil Filter Drains"
   ],
   "socket_set": [
    "Hardware > Tools > Tool Sets",
    "Hardware > Tools",
-   "Animals & Pet Supplies",
-   "Food, Beverages & Tobacco",
    "Home & Garden > Kitchen & Dining > Kitchen Tools & Utensils",
    "Hardware > Tool Accessories > Soldering Iron Accessories",
-   "Animals & Pet Supplies > Live Animals",
    "Hardware > Tools > Sanders",
    "Hardware > Tool Accessories"
   ],
@@ -2047,7 +1899,6 @@
    "Hardware > Tools > Impact Wrenches & Drivers",
    "Home & Garden > Lawn & Garden > Gardening > Gardening Tools",
    "Electronics > Communications > Communication Radios > Two-Way Radios",
-   "Animals & Pet Supplies",
    "Hardware > Tools > Socket Drivers",
    "Sporting Goods > Outdoor Recreation > Cycling > Bicycle Accessories > Bicycle Tools",
    "Hardware > Tools > Screwdrivers",
@@ -2056,7 +1907,6 @@
   "pliers": [
    "Hardware > Tools > Wrenches",
    "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Fluids > Vehicle Windshield Fluid",
-   "Animals & Pet Supplies > Live Animals",
    "Hardware > Tools > Tool Knives",
    "Hardware > Tools > Tool Clamps & Vises",
    "Hardware > Tools > Cutters > Pipe Cutters",
@@ -2064,12 +1914,9 @@
    "Hardware > Tools",
    "Home & Garden > Kitchen & Dining > Tableware > Serveware > Butter Dishes",
    "Hardware > Tools > Cutters > Nippers",
-   "Animals & Pet Supplies",
-   "Hardware > Tool Accessories",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Cage Accessories"
+   "Hardware > Tool Accessories"
   ],
   "hammer": [
-   "Animals & Pet Supplies",
    "Office Supplies > Paper Handling > Paperweights",
    "Hardware > Tool Accessories > Drill & Screwdriver Accessories",
    "Hardware > Tools > Masonry Tools > Brick Tools",
@@ -2077,17 +1924,12 @@
    "Home & Garden > Household Supplies > Household Cleaning Supplies"
   ],
   "tape_measure": [
-   "Animals & Pet Supplies",
    "Sporting Goods > Exercise & Fitness > Cardio > Cardio Machine Accessories > Elliptical Trainer Accessories"
   ],
   "spirit_level": [
    "Hardware > Tools > Measuring Tools & Sensors > Squares"
   ],
-  "drill_bits": [
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies"
-  ],
   "tool_box": [
-   "Animals & Pet Supplies",
    "Hardware > Hardware Accessories > Tool Storage & Organization > Tool Bags",
    "Home & Garden > Household Supplies > Household Cleaning Supplies"
   ],
@@ -2105,14 +1947,12 @@
    "Home & Garden > Lawn & Garden > Gardening > Gardening Tools > Pruning Saws",
    "Hardware > Tools > Saws > Miter Saws",
    "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Cages & Stands",
-   "Animals & Pet Supplies",
    "Sporting Goods > Outdoor Recreation > Fishing"
   ],
   "lawn_mower": [
    "Home & Garden > Lawn & Garden > Outdoor Power Equipment > Outdoor Power Equipment Sets",
    "Home & Garden > Lawn & Garden > Watering & Irrigation > Sprinklers & Sprinkler Heads",
-   "Toys & Games > Toys > Remote Control Toys > Remote Control Cars & Trucks",
-   "Animals & Pet Supplies"
+   "Toys & Games > Toys > Remote Control Toys > Remote Control Cars & Trucks"
   ],
   "brush_cutter": [
    "Home & Garden > Lawn & Garden > Outdoor Power Equipment > Lawn Mowers",
@@ -2131,13 +1971,11 @@
    "Sporting Goods > Outdoor Recreation > Fishing"
   ],
   "pressure_washer": [
-   "Animals & Pet Supplies",
    "Home & Garden > Lawn & Garden > Outdoor Power Equipment > Lawn Mowers",
    "Electronics > Communications > Communication Radios"
   ],
   "garden_hose": [
    "Hardware > Plumbing > Plumbing Hoses & Supply Lines",
-   "Animals & Pet Supplies",
    "Hardware > Hardware Accessories > Gas Hoses"
   ],
   "water_pump": [
@@ -2150,12 +1988,10 @@
    "Toys & Games > Outdoor Play Equipment > Swing Sets & Playsets"
   ],
   "garden_sprayer": [
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Home & Garden > Fireplace & Wood Stove Accessories > Log Racks & Carriers",
    "Hardware > Tools > Masonry Tools"
   ],
   "paint": [
-   "Animals & Pet Supplies",
    "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Paint",
    "Office Supplies > Filing & Organization > Binding Supplies > Binder Accessories"
   ],
@@ -2167,15 +2003,10 @@
    "Hardware > Tool Accessories",
    "Hardware > Hardware Accessories",
    "Health & Beauty > Health Care > Biometric Monitors > Blood Glucose Meters",
-   "Hardware > Plumbing > Water Dispensing & Filtration > Water Filtration Accessories",
-   "Animals & Pet Supplies > Pet Supplies"
+   "Hardware > Plumbing > Water Dispensing & Filtration > Water Filtration Accessories"
   ],
   "thermometer": [
-   "Animals & Pet Supplies",
    "Hardware > Tools > Measuring Tools & Sensors"
-  ],
-  "smoke_detector": [
-   "Animals & Pet Supplies"
   ],
   "massager": [
    "Health & Beauty > Personal Care > Cosmetics > Cosmetic Tools > Skin Care Tools",
@@ -2202,21 +2033,16 @@
    "Animals & Pet Supplies > Pet Supplies > Pet Grooming Supplies > Pet Hair Dryers"
   ],
   "electric_toothbrush": [
-   "Animals & Pet Supplies",
    "Health & Beauty > Personal Care > Shaving & Grooming > Electric Razors"
   ],
   "shampoo": [
    "Health & Beauty > Personal Care > Hair Care > Shampoo & Conditioner",
    "Sporting Goods > Outdoor Recreation > Equestrian > Horse Care > Horse Grooming",
    "Animals & Pet Supplies > Pet Supplies > Pet Flea & Tick Control",
-   "Health & Beauty > Personal Care > Hair Care > Shampoo & Conditioner > Shampoo & Conditioner Sets",
-   "Animals & Pet Supplies",
-   "Animals & Pet Supplies > Pet Supplies"
+   "Health & Beauty > Personal Care > Hair Care > Shampoo & Conditioner > Shampoo & Conditioner Sets"
   ],
   "face_cream": [
    "Health & Beauty > Personal Care > Cosmetics > Skin Care",
-   "Animals & Pet Supplies",
-   "Animals & Pet Supplies > Pet Supplies",
    "Health & Beauty > Personal Care > Cosmetics > Skin Care > Wart Removers",
    "Home & Garden > Lawn & Garden > Gardening",
    "Home & Garden > Decor > Fountains & Ponds > Ponds",
@@ -2224,19 +2050,15 @@
    "Health & Beauty > Personal Care"
   ],
   "perfume": [
-   "Animals & Pet Supplies",
-   "Home & Garden > Household Appliances > Climate Control Appliances > Duct Heaters",
-   "Animals & Pet Supplies > Pet Supplies"
+   "Home & Garden > Household Appliances > Climate Control Appliances > Duct Heaters"
   ],
   "sunscreen": [
-   "Animals & Pet Supplies",
    "Home & Garden > Household Supplies > Household Cleaning Supplies > Household Cleaning Products",
    "Home & Garden > Household Supplies > Laundry Supplies > Fabric Stain Removers",
    "Health & Beauty > Health Care > First Aid > Antiseptics & Cleaning Supplies",
    "Home & Garden > Household Supplies > Household Cleaning Supplies"
   ],
   "baby_stroller": [
-   "Animals & Pet Supplies",
    "Home & Garden > Lawn & Garden > Outdoor Living > Outdoor Structures > Sheds, Garages & Carports"
   ],
   "baby_carrier": [
@@ -2246,34 +2068,22 @@
    "Electronics > Communications > Telephony > Mobile Phone Accessories"
   ],
   "nappies": [
-   "Animals & Pet Supplies",
    "Apparel & Accessories > Clothing > Underwear & Socks > Underwear",
    "Apparel & Accessories > Clothing > Baby & Toddler Clothing > Baby & Toddler Swimwear"
   ],
-  "toy": [
-   "Animals & Pet Supplies"
-  ],
   "dog_food": [
-   "Animals & Pet Supplies > Pet Supplies",
-   "Animals & Pet Supplies",
    "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Treats",
    "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Treats",
    "Home & Garden > Household Appliances > Laundry Appliances > Dryers",
    "Animals & Pet Supplies > Pet Supplies > Fish Supplies > Fish Food",
    "Animals & Pet Supplies > Pet Supplies > Small Animal Supplies > Small Animal Food",
    "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Food",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Cage Accessories",
-   "Home & Garden > Parasols & Rain Umbrellas",
-   "Baby & Toddler"
+   "Home & Garden > Parasols & Rain Umbrellas"
   ],
   "cat_food": [
-   "Animals & Pet Supplies",
-   "Animals & Pet Supplies > Pet Supplies",
    "Animals & Pet Supplies > Pet Supplies > Cat Supplies",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Food",
    "Furniture > Tables",
-   "Animals & Pet Supplies > Live Animals",
    "Health & Beauty > Health Care > Fitness & Nutrition > Vitamins & Supplements",
    "Animals & Pet Supplies > Pet Supplies > Pet Grooming Supplies > Pet Hair Clippers & Trimmers",
    "Media > Books > E-books",
@@ -2289,13 +2099,10 @@
   "exercise_bike": [
    "Sporting Goods > Exercise & Fitness > Cardio > Cardio Machines",
    "Sporting Goods > Outdoor Recreation > Cycling > Bicycles",
-   "Animals & Pet Supplies > Pet Supplies",
    "Sporting Goods > Outdoor Recreation > Cycling > Bicycle Accessories"
   ],
   "dumbbells": [
-   "Animals & Pet Supplies",
    "Sporting Goods > Exercise & Fitness > Medicine Balls",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Sporting Goods > Exercise & Fitness > Cardio > Cardio Machine Accessories > Stair Climber & Stepper Accessories",
    "Sporting Goods > Exercise & Fitness > Cardio > Cardio Machines > Rowing Machines",
    "Sporting Goods > Exercise & Fitness > Inversion Tables & Systems",
@@ -2304,23 +2111,14 @@
    "Sporting Goods > Exercise & Fitness > Cardio > Cardio Machines > Stair Climbers & Steppers"
   ],
   "barbell": [
-   "Sporting Goods",
    "Sporting Goods > Exercise & Fitness > Weight Lifting > Free Weight Accessories"
   ],
   "tent": [
    "Home & Garden > Lawn & Garden > Outdoor Living > Outdoor Structures > Canopies & Gazebos",
-   "Animals & Pet Supplies > Pet Supplies",
    "Mature > Weapons > Guns",
    "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Furniture"
   ],
-  "play_tent": [
-   "Animals & Pet Supplies"
-  ],
-  "sleeping_bag": [
-   "Animals & Pet Supplies"
-  ],
   "trousers": [
-   "Animals & Pet Supplies",
    "Apparel & Accessories > Clothing > One-Pieces > Overalls",
    "Food, Beverages & Tobacco > Food Items > Meat, Seafood & Eggs",
    "Sporting Goods > Athletics > American Football",
@@ -2332,15 +2130,12 @@
   ],
   "jeans": [
    "Apparel & Accessories > Clothing > Activewear > Motorcycle Protective Clothing > Motorcycle Pants",
-   "Animals & Pet Supplies",
-   "Animals & Pet Supplies > Pet Supplies",
    "Toys & Games > Toys > Sports Toys > Golf Toys",
    "Apparel & Accessories > Clothing > Shorts"
   ],
   "jacket": [
    "Apparel & Accessories > Clothing > Outerwear",
    "Apparel & Accessories > Clothing > Uniforms > White Coats",
-   "Animals & Pet Supplies",
    "Apparel & Accessories > Clothing > Outerwear > Vests",
    "Apparel & Accessories > Clothing > Shirts & Tops",
    "Furniture > Cabinets & Storage > Storage Cabinets & Lockers",
@@ -2352,10 +2147,7 @@
   ],
   "t_shirt": [
    "Apparel & Accessories > Clothing",
-   "Animals & Pet Supplies",
    "Apparel & Accessories > Clothing > Underwear & Socks > Socks",
-   "Animals & Pet Supplies > Pet Supplies",
-   "Animals & Pet Supplies > Live Animals",
    "Toys & Games > Toys > Sports Toy Accessories",
    "Home & Garden > Linens & Bedding",
    "Home & Garden > Household Supplies > Household Cleaning Supplies > Squeegees",
@@ -2366,7 +2158,6 @@
    "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Apparel"
   ],
   "shirt": [
-   "Animals & Pet Supplies",
    "Apparel & Accessories > Clothing > Activewear > Motorcycle Protective Clothing",
    "Apparel & Accessories > Clothing > Outerwear > Coats & Jackets",
    "Apparel & Accessories > Clothing",
@@ -2379,7 +2170,6 @@
   ],
   "hoodie": [
    "Apparel & Accessories > Clothing > Outerwear > Coats & Jackets",
-   "Animals & Pet Supplies",
    "Apparel & Accessories > Clothing > Activewear > Motorcycle Protective Clothing",
    "Apparel & Accessories > Clothing",
    "Apparel & Accessories > Clothing > Underwear & Socks > Socks",
@@ -2387,23 +2177,18 @@
    "Apparel & Accessories > Clothing > Pants",
    "Mature > Weapons > Guns",
    "Apparel & Accessories > Clothing > One-Pieces",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Hardware > Building Materials > Shutters",
-   "Hardware",
    "Office Supplies > Office Instruments > Writing & Drawing Instruments > Crayons",
    "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Apparel"
   ],
   "sweater": [
    "Apparel & Accessories > Clothing",
-   "Animals & Pet Supplies",
    "Apparel & Accessories > Clothing Accessories > Hats",
    "Apparel & Accessories > Clothing > Outerwear > Coats & Jackets",
    "Home & Garden > Decor > Home Fragrances > Candles",
    "Sporting Goods > Athletics > Basketball > Basketballs",
    "Apparel & Accessories > Clothing > Shorts",
    "Apparel & Accessories > Clothing > One-Pieces",
-   "Apparel & Accessories",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Apparel & Accessories > Clothing > Underwear & Socks > Socks",
    "Sporting Goods > Outdoor Recreation > Cycling > Bicycle Accessories",
    "Apparel & Accessories > Clothing > Traditional & Ceremonial Clothing > Japanese Black Formal Wear"
@@ -2411,22 +2196,18 @@
   "dress": [
    "Apparel & Accessories > Clothing > Shirts & Tops",
    "Apparel & Accessories > Clothing > Skirts",
-   "Animals & Pet Supplies",
    "Apparel & Accessories > Clothing",
    "Apparel & Accessories > Clothing > One-Pieces"
   ],
   "skirt": [
    "Apparel & Accessories > Clothing > Pants",
-   "Animals & Pet Supplies",
    "Apparel & Accessories > Clothing > Shorts",
    "Furniture > Chairs"
   ],
   "shorts": [
    "Apparel & Accessories > Clothing > Pants",
    "Apparel & Accessories > Clothing > Underwear & Socks > Underwear",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Sporting Goods > Outdoor Recreation > Cycling > Cycling Apparel & Accessories",
-   "Animals & Pet Supplies",
    "Mature > Erotic > Pole Dancing Kits",
    "Office Supplies > Office Equipment > Calculators > Basic Calculators",
    "Hardware > Tools > Abrasive Blasters",
@@ -2441,45 +2222,32 @@
    "Apparel & Accessories > Clothing > Underwear & Socks > Shapewear",
    "Apparel & Accessories > Clothing > Underwear & Socks > Underwear",
    "Apparel & Accessories > Clothing > Outfit Sets",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
-   "Animals & Pet Supplies",
    "Apparel & Accessories > Clothing > Activewear > Motorcycle Protective Clothing > Motorcycle Pants",
    "Apparel & Accessories > Clothing > Sleepwear & Loungewear > Loungewear"
   ],
   "underwear": [
-   "Animals & Pet Supplies",
    "Apparel & Accessories > Clothing > Underwear & Socks > Socks",
    "Apparel & Accessories > Clothing > Underwear & Socks",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Cage Accessories",
    "Apparel & Accessories > Clothing > Underwear & Socks > Jock Straps",
    "Software > Computer Software > Multimedia & Design Software > Music Composition Software",
    "Apparel & Accessories > Shoes"
   ],
   "socks": [
-   "Animals & Pet Supplies > Live Animals",
-   "Animals & Pet Supplies",
-   "Sporting Goods",
-   "Animals & Pet Supplies > Pet Supplies",
    "Sporting Goods > Outdoor Recreation > Equestrian > Horse Care > Horse Blankets & Sheets",
-   "Food, Beverages & Tobacco",
    "Apparel & Accessories > Clothing > Pants",
    "Sporting Goods > Athletics > Boxing & Martial Arts",
    "Apparel & Accessories > Shoes"
   ],
   "swimwear": [
    "Sporting Goods > Outdoor Recreation > Boating & Water Sports > Boating & Water Sport Apparel > Rash Guards & Swim Shirts",
-   "Animals & Pet Supplies",
    "Home & Garden > Smoking Accessories",
-   "Animals & Pet Supplies > Pet Supplies",
    "Sporting Goods > Athletics > American Football",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Cage Accessories",
    "Home & Garden > Decor > Home Fragrances > Fragrance Oil",
    "Sporting Goods > Outdoor Recreation > Cycling > Cycling Apparel & Accessories > Bicycle Cleat Accessories > Bicycle Cleat Bolts"
   ],
   "pyjamas": [
    "Apparel & Accessories > Clothing > Sleepwear & Loungewear > Loungewear",
    "Luggage & Bags > Backpacks",
-   "Animals & Pet Supplies",
    "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Repair & Specialty Tools > Motor Vehicle Brake Service Kits"
   ],
   "suit": [
@@ -2489,26 +2257,19 @@
    "Apparel & Accessories > Clothing > One-Pieces > Jumpsuits & Rompers"
   ],
   "raincoat": [
-   "Animals & Pet Supplies > Live Animals",
    "Apparel & Accessories > Clothing > Outerwear > Rain Suits"
   ],
   "shoes": [
-   "Animals & Pet Supplies",
    "Apparel & Accessories > Shoe Accessories",
-   "Hardware",
    "Toys & Games > Toys > Sports Toy Accessories",
-   "Sporting Goods",
-   "Sporting Goods > Athletics > Basketball > Basketballs",
-   "Animals & Pet Supplies > Pet Supplies"
+   "Sporting Goods > Athletics > Basketball > Basketballs"
   ],
   "athletic_shoes": [
-   "Animals & Pet Supplies > Live Animals",
    "Electronics > Electronics Accessories > Computer Accessories > Mouse Pads",
    "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts",
    "Apparel & Accessories > Clothing > Underwear & Socks > Socks",
    "Sporting Goods > Athletics > Basketball > Basketballs",
-   "Sporting Goods > Athletics > Boxing & Martial Arts > Boxing & Martial Arts Protective Gear > Boxing Gloves & Mitts",
-   "Animals & Pet Supplies"
+   "Sporting Goods > Athletics > Boxing & Martial Arts > Boxing & Martial Arts Protective Gear > Boxing Gloves & Mitts"
   ],
   "running_shoes": [
    "Sporting Goods > Athletics > Basketball > Basketballs",
@@ -2516,62 +2277,45 @@
   ],
   "boots": [
    "Toys & Games > Toys > Sports Toy Accessories",
-   "Sporting Goods",
-   "Animals & Pet Supplies",
    "Sporting Goods > Athletics > Soccer > Soccer Gloves",
    "Sporting Goods > Athletics > Basketball > Basketballs",
-   "Animals & Pet Supplies > Pet Supplies",
    "Apparel & Accessories > Clothing > Activewear > Motorcycle Protective Clothing"
   ],
   "safety_shoes": [
-   "Animals & Pet Supplies",
    "Hardware > Building Materials > Door Hardware > Door Strikes",
    "Sporting Goods > Athletics > American Football",
    "Sporting Goods > Athletics > Broomball Equipment",
    "Mature > Erotic > Pole Dancing Kits",
-   "Home & Garden > Decor",
-   "Animals & Pet Supplies > Pet Supplies"
+   "Home & Garden > Decor"
   ],
   "watch": [
-   "Animals & Pet Supplies",
    "Apparel & Accessories > Jewelry > Rings",
-   "Animals & Pet Supplies > Pet Supplies",
    "Health & Beauty > Health Care > Biometric Monitors > Body Fat Analyzers"
   ],
   "ring": [
    "Apparel & Accessories > Jewelry",
-   "Animals & Pet Supplies",
-   "Animals & Pet Supplies > Live Animals",
    "Hardware > Plumbing > Plumbing Fittings & Supports > Pipe Caps & Plugs",
    "Apparel & Accessories > Jewelry > Necklaces",
    "Health & Beauty > Personal Care > Sleeping Aids > Snoring & Sleep Apnea Aids",
-   "Animals & Pet Supplies > Pet Supplies",
    "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Cage Accessories > Bird Cage Bird Baths",
    "Hardware > Building Materials > Door Hardware > Door Knobs & Handles",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Cage Accessories",
    "Electronics > Audio > Audio Accessories > MP3 Player Accessories",
    "Home & Garden > Bathroom Accessories",
    "Sporting Goods > Athletics > Tennis > Tennis Racquet Accessories > Tennis Racquet Grommets",
    "Hardware > Hardware Accessories > Ground Spikes"
   ],
   "necklace": [
-   "Animals & Pet Supplies",
    "Apparel & Accessories > Jewelry",
    "Apparel & Accessories > Jewelry > Rings",
    "Furniture > Office Furniture",
    "Apparel & Accessories > Jewelry > Jewelry Sets",
-   "Home & Garden > Kitchen & Dining > Tableware > Serveware > Egg Cups",
-   "Animals & Pet Supplies > Live Animals"
+   "Home & Garden > Kitchen & Dining > Tableware > Serveware > Egg Cups"
   ],
   "bracelet": [
    "Apparel & Accessories > Jewelry",
    "Apparel & Accessories > Jewelry > Necklaces",
-   "Animals & Pet Supplies",
    "Apparel & Accessories > Jewelry > Rings",
    "Sporting Goods > Outdoor Recreation > Fishing",
-   "Animals & Pet Supplies > Pet Supplies",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
-   "Animals & Pet Supplies > Live Animals",
    "Apparel & Accessories > Jewelry > Charms & Pendants",
    "Apparel & Accessories > Jewelry > Earrings",
    "Apparel & Accessories > Costumes & Accessories > Costume Accessories > Pretend Jewelry",
@@ -2581,13 +2325,10 @@
   "earrings": [
    "Apparel & Accessories > Jewelry > Necklaces",
    "Apparel & Accessories > Jewelry",
-   "Animals & Pet Supplies",
-   "Animals & Pet Supplies > Live Animals",
    "Apparel & Accessories > Jewelry > Rings",
    "Apparel & Accessories > Jewelry > Charms & Pendants",
    "Sporting Goods > Outdoor Recreation > Cycling > Cycling Apparel & Accessories > Bicycle Shoe Covers",
    "Media > DVDs & Videos > Film & Television Digital Downloads",
-   "Software",
    "Sporting Goods > Outdoor Recreation > Equestrian > Horse Care > Horse Grooming",
    "Home & Garden > Household Supplies > Household Cleaning Supplies > Squeegees",
    "Mature > Weapons > Stun Guns & Tasers"
@@ -2595,21 +2336,16 @@
   "sunglasses": [
    "Business & Industrial > Work Safety Protective Gear > Protective Eyewear",
    "Office Supplies > Filing & Organization > Binding Supplies > Binding Machines",
-   "Animals & Pet Supplies",
    "Electronics > Audio > Audio Accessories > Microphone Accessories",
    "Health & Beauty > Personal Care > Vision Care > Eyewear Accessories",
    "Luggage & Bags > Luggage Accessories"
   ],
   "bag": [
    "Hardware > Hardware Accessories > Tool Storage & Organization > Tool Bags",
-   "Luggage & Bags",
-   "Animals & Pet Supplies",
    "Sporting Goods > Exercise & Fitness > Yoga & Pilates > Yoga Mat Bags & Straps",
    "Home & Garden > Household Supplies > Garbage Bags"
   ],
   "backpack": [
-   "Animals & Pet Supplies",
-   "Media",
    "Luggage & Bags > Diaper Bags",
    "Hardware > Hardware Accessories > Tool Storage & Organization > Tool Bags",
    "Animals & Pet Supplies > Pet Supplies > Dog Supplies",
@@ -2618,65 +2354,44 @@
    "Apparel & Accessories > Clothing > Underwear & Socks > Underwear",
    "Sporting Goods > Outdoor Recreation > Cycling > Bicycle Accessories > Bicycle Bags & Panniers",
    "Luggage & Bags > Fanny Packs",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Home & Garden > Kitchen & Dining > Food & Beverage Carriers",
    "Home & Garden > Household Appliance Accessories"
   ],
-  "laptop_bag": [
-   "Luggage & Bags"
-  ],
   "handbag": [
-   "Animals & Pet Supplies",
    "Luggage & Bags > Messenger Bags",
    "Apparel & Accessories > Handbags, Wallets & Cases",
-   "Luggage & Bags",
-   "Animals & Pet Supplies > Pet Supplies",
-   "Hardware",
    "Home & Garden > Smoking Accessories > Humidors"
   ],
   "suitcase": [
-   "Animals & Pet Supplies",
-   "Luggage & Bags",
-   "Luggage & Bags > Duffel Bags",
-   "Vehicles & Parts",
-   "Animals & Pet Supplies > Live Animals"
+   "Luggage & Bags > Duffel Bags"
   ],
   "wallet": [
    "Apparel & Accessories > Handbags, Wallets & Cases > Handbags",
    "Apparel & Accessories > Handbags, Wallets & Cases",
    "Luggage & Bags > Backpacks",
    "Business & Industrial > Piercing & Tattooing > Tattooing Supplies > Tattooing Machines",
-   "Animals & Pet Supplies > Live Animals",
    "Home & Garden > Decor > Coat & Hat Racks",
    "Vehicles & Parts > Vehicles > Motor Vehicles > Cars, Trucks & Vans"
   ],
   "belt": [
    "Hardware > Hardware Accessories > Tool Storage & Organization > Tool & Equipment Belts",
-   "Sporting Goods > Exercise & Fitness > Weight Lifting > Weight Lifting Belts",
-   "Animals & Pet Supplies"
+   "Sporting Goods > Exercise & Fitness > Weight Lifting > Weight Lifting Belts"
   ],
   "hat": [
-   "Animals & Pet Supplies",
    "Apparel & Accessories > Clothing Accessories > Headwear",
-   "Animals & Pet Supplies > Live Animals",
    "Sporting Goods > Outdoor Recreation > Skateboarding > Skateboards",
    "Sporting Goods > Athletics",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
    "Sporting Goods > Outdoor Recreation > Golf > Golf Club Parts & Accessories",
    "Apparel & Accessories > Clothing"
   ],
   "gloves": [
    "Sporting Goods > Exercise & Fitness > Weight Lifting > Weight Lifting Gloves & Hand Supports",
-   "Animals & Pet Supplies",
    "Business & Industrial > Medical > Medical Supplies > Disposable Gloves",
    "Home & Garden > Household Supplies > Household Cleaning Supplies > Cleaning Gloves",
-   "Animals & Pet Supplies > Pet Supplies",
    "Sporting Goods > Athletics > Cricket > Cricket Protective Gear > Cricket Gloves",
    "Sporting Goods > Outdoor Recreation > Equestrian > Riding Apparel & Accessories > Equestrian Gloves",
    "Sporting Goods > Athletics > American Football > American Football Gloves",
-   "Sporting Goods > Athletics > Basketball > Basketballs",
-   "Sporting Goods",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Cage Accessories"
+   "Sporting Goods > Athletics > Basketball > Basketballs"
   ],
   "graphics_card": [
    "Electronics > Electronics Accessories > Computer Components",
@@ -2687,26 +2402,20 @@
    "Electronics > Electronics Accessories > Computer Accessories"
   ],
   "ram_memory": [
-   "Animals & Pet Supplies",
    "Electronics > Electronics Accessories > Memory",
    "Electronics > Electronics Accessories > Computer Components > Storage Devices > Hard Drives",
    "Electronics > Electronics Accessories > Computer Components",
    "Electronics > Electronics Accessories > Memory > ROM",
    "Electronics > Electronics Accessories > Power > Batteries",
    "Business & Industrial > Medical > Medical Supplies > Medical Needles & Syringes > Medical Syringes",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies",
-   "Animals & Pet Supplies > Live Animals",
    "Electronics > Electronics Accessories > Computer Accessories",
-   "Animals & Pet Supplies > Pet Supplies",
    "Electronics > Electronics Accessories > Memory > Flash Memory",
    "Cameras & Optics > Photography > Lighting & Studio"
   ],
   "motherboard": [
    "Electronics > Electronics Accessories > Computer Components",
-   "Animals & Pet Supplies",
    "Electronics > Computers",
    "Electronics > Electronics Accessories > Computer Components > Input Devices",
-   "Animals & Pet Supplies > Pet Supplies",
    "Electronics > Electronics Accessories > Computer Components > Computer Processors",
    "Electronics > Networking > Hubs & Switches",
    "Electronics > Electronics Accessories > Electronics Films & Shields > Screen Protectors",
@@ -2720,9 +2429,7 @@
   "power_supply": [
    "Electronics > Electronics Accessories > Power > Power Adapters & Chargers",
    "Electronics > Electronics Accessories > Power > Batteries",
-   "Animals & Pet Supplies",
    "Electronics > Electronics Accessories > Power",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Cage Accessories",
    "Electronics > Electronics Accessories > Power > UPS",
    "Electronics > Electronics Accessories > Computer Components > Desktop Computer & Server Cases"
   ],
@@ -2731,12 +2438,7 @@
   ],
   "pc_cooling": [
    "Electronics > Electronics Accessories > Computer Components > Computer Power Supplies",
-   "Electronics",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Cage Accessories",
    "Electronics > Electronics Accessories > Computer Accessories"
-  ],
-  "ups": [
-   "Animals & Pet Supplies"
   ],
   "drone": [
    "Cameras & Optics > Cameras"
@@ -2745,7 +2447,6 @@
    "Electronics > Electronics Accessories > Power > Power Adapter & Charger Accessories",
    "Hardware > Tool Accessories > Power Tool Chargers",
    "Electronics > Electronics Accessories > Power > Battery Accessories > General Purpose Battery Chargers",
-   "Animals & Pet Supplies",
    "Electronics > Electronics Accessories > Power > Travel Converters & Adapters",
    "Electronics > Electronics Accessories > Power > Surge Protection Devices",
    "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories",
@@ -2757,7 +2458,6 @@
    "Electronics > Audio > Audio Accessories > MP3 Player Accessories"
   ],
   "car_audio": [
-   "Animals & Pet Supplies",
    "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Electronics"
   ],
   "dishwasher_tablets": [
@@ -2765,19 +2465,13 @@
    "Home & Garden > Household Supplies > Household Cleaning Supplies"
   ],
   "laundry_detergent": [
-   "Animals & Pet Supplies",
    "Home & Garden > Kitchen & Dining > Food Storage > Food Storage Containers",
    "Home & Garden > Household Supplies > Laundry Supplies",
    "Home & Garden > Household Supplies > Household Cleaning Supplies"
   ],
-  "knife_set": [
-   "Animals & Pet Supplies"
-  ],
   "cutlery": [
    "Home & Garden > Kitchen & Dining > Tableware",
-   "Animals & Pet Supplies",
-   "Home & Garden > Kitchen & Dining > Kitchen Tools & Utensils > Kitchen Utensil Sets",
-   "Animals & Pet Supplies > Live Animals"
+   "Home & Garden > Kitchen & Dining > Kitchen Tools & Utensils > Kitchen Utensil Sets"
   ],
   "dinnerware": [
    "Home & Garden > Kitchen & Dining > Tableware > Flatware > Flatware Sets",
@@ -2785,16 +2479,13 @@
    "Baby & Toddler > Nursing & Feeding",
    "Home & Garden > Decor > Decorative Plates",
    "Home & Garden > Kitchen & Dining",
-   "Animals & Pet Supplies",
    "Sporting Goods > Outdoor Recreation > Camping & Hiking > Camping Cookware & Dinnerware"
   ],
   "glassware": [
-   "Animals & Pet Supplies",
    "Home & Garden > Kitchen & Dining > Tableware > Flatware > Forks",
    "Home & Garden > Kitchen & Dining > Tableware > Trivets",
    "Home & Garden > Kitchen & Dining > Tableware > Flatware",
    "Electronics > Audio > Audio Accessories > Headphone & Headset Accessories",
-   "Animals & Pet Supplies > Pet Supplies",
    "Home & Garden > Kitchen & Dining > Tableware > Dinnerware"
   ],
   "food_storage": [
@@ -2809,15 +2500,12 @@
    "Home & Garden > Decor > Baskets"
   ],
   "grill": [
-   "Animals & Pet Supplies",
-   "Furniture",
    "Home & Garden > Kitchen & Dining > Kitchen Appliances > Frozen Drink Makers"
   ],
   "garden_furniture": [
    "Furniture > Chairs > Hanging Chairs",
    "Home & Garden > Lawn & Garden > Outdoor Living > Porch Swings",
-   "Furniture > Chairs",
-   "Animals & Pet Supplies"
+   "Furniture > Chairs"
   ],
   "parasol": [
    "Home & Garden > Fireplace & Wood Stove Accessories > Log Racks & Carriers"
@@ -2825,17 +2513,14 @@
   "flower_pot": [
    "Home & Garden > Lawn & Garden > Gardening > Greenhouses",
    "Home & Garden > Lawn & Garden > Gardening > Gardening Tools > Wheelbarrows",
-   "Animals & Pet Supplies",
    "Home & Garden > Decor > Baskets",
    "Home & Garden > Decor"
   ],
   "greenhouse": [
    "Home & Garden > Lawn & Garden > Outdoor Living > Outdoor Structures > Sheds, Garages & Carports",
-   "Animals & Pet Supplies",
    "Home & Garden > Decor > Bird & Wildlife Feeder Accessories",
    "Home & Garden > Lawn & Garden > Outdoor Living > Outdoor Blankets > Beach Mats",
    "Home & Garden > Lawn & Garden > Outdoor Power Equipment Accessories > Weed Trimmer Accessories > Weed Trimmer Blades & Spools",
-   "Animals & Pet Supplies > Pet Supplies",
    "Home & Garden > Lawn & Garden > Watering & Irrigation > Garden Hoses",
    "Home & Garden > Lawn & Garden",
    "Home & Garden > Lawn & Garden > Watering & Irrigation > Watering Can Accesssories",
@@ -2849,15 +2534,11 @@
    "Sporting Goods > Exercise & Fitness > Cardio > Cardio Machine Accessories > Stair Climber & Stepper Accessories"
   ],
   "bedding": [
-   "Animals & Pet Supplies",
    "Animals & Pet Supplies > Pet Supplies > Small Animal Supplies > Small Animal Bedding",
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Cage Accessories",
    "Home & Garden > Household Appliances > Water Heaters"
   ],
   "bed_linen": [
-   "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Cage Accessories",
    "Home & Garden > Household Appliances > Water Heaters",
-   "Food, Beverages & Tobacco",
    "Furniture > Beds & Accessories",
    "Home & Garden > Linens & Bedding > Bedding"
   ],
@@ -2865,71 +2546,53 @@
    "Furniture > Beds & Accessories > Mattresses"
   ],
   "duvet": [
-   "Home & Garden > Linens & Bedding > Bedding",
-   "Animals & Pet Supplies"
+   "Home & Garden > Linens & Bedding > Bedding"
   ],
   "bedspread": [
    "Home & Garden > Linens & Bedding > Bedding > Blankets"
   ],
   "curtains": [
-   "Animals & Pet Supplies",
    "Home & Garden > Parasols & Rain Umbrellas",
    "Home & Garden > Decor > Seasonal & Holiday Decorations"
   ],
   "rug": [
-   "Animals & Pet Supplies",
    "Furniture > Tables > Accent Tables > End Tables",
-   "Animals & Pet Supplies > Pet Supplies",
    "Home & Garden > Decor > Window Treatment Accessories > Curtain Holdbacks & Tassels",
    "Furniture > Futon Pads",
    "Home & Garden > Linens & Bedding > Bedding > Blankets",
    "Furniture > Cabinets & Storage",
    "Hardware > Building Materials",
-   "Furniture > Sofa Accessories",
-   "Furniture"
+   "Furniture > Sofa Accessories"
   ],
   "bath_mat": [
-   "Animals & Pet Supplies",
    "Home & Garden > Household Supplies",
-   "Animals & Pet Supplies > Pet Supplies",
    "Home & Garden > Decor > Door Mats"
   ],
   "mirror": [
    "Health & Beauty > Personal Care > Cosmetics > Cosmetic Tools > Makeup Tools > Face Mirrors",
-   "Animals & Pet Supplies",
    "Home & Garden > Decor",
    "Home & Garden > Decor > Picture Frames",
-   "Home & Garden > Business & Home Security > Safety & Security Mirrors",
-   "Cameras & Optics"
+   "Home & Garden > Business & Home Security > Safety & Security Mirrors"
   ],
   "photo_frame": [
-   "Animals & Pet Supplies",
-   "Cameras & Optics",
    "Home & Garden > Decor",
    "Home & Garden > Decor > Bird & Wildlife Houses > Birdhouses",
-   "Software > Computer Software > Multimedia & Design Software > Home Publishing Software",
-   "Animals & Pet Supplies > Pet Supplies",
-   "Animals & Pet Supplies > Live Animals"
+   "Software > Computer Software > Multimedia & Design Software > Home Publishing Software"
   ],
   "wall_clock": [
-   "Animals & Pet Supplies",
-   "Home & Garden > Decor > Clocks",
-   "Animals & Pet Supplies > Live Animals"
+   "Home & Garden > Decor > Clocks"
   ],
   "baby_bottle": [
    "Baby & Toddler > Nursing & Feeding > Sippy Cups",
    "Animals & Pet Supplies > Pet Supplies > Pet Leash Extensions",
    "Office Supplies > General Office Supplies > Labels & Tags > Shipping Labels",
-   "Animals & Pet Supplies > Pet Supplies",
    "Baby & Toddler > Nursing & Feeding > Bottle Warmers & Sterilizers",
    "Home & Garden > Decor > Picture Frames"
   ],
   "cat_litter": [
-   "Animals & Pet Supplies > Pet Supplies",
    "Home & Garden > Lighting",
    "Home & Garden > Household Supplies > Household Cleaning Supplies > Household Cleaning Products > Oven & Grill Cleaners",
    "Health & Beauty > Personal Care > Sleeping Aids > Snoring & Sleep Apnea Aids",
-   "Animals & Pet Supplies",
    "Animals & Pet Supplies > Pet Supplies > Pet Carriers & Crates"
   ],
   "lego": [
@@ -2941,22 +2604,18 @@
   ],
   "board_game": [
    "Toys & Games > Games",
-   "Animals & Pet Supplies",
    "Toys & Games > Games > Card Games",
    "Toys & Games > Toys > Dolls, Playsets & Toy Figures > Dolls",
    "Arts & Entertainment > Party & Celebration > Party Supplies > Drinking Games",
    "Toys & Games > Puzzles",
    "Sporting Goods > Outdoor Recreation > Fishing",
-   "Toys & Games > Puzzles > Jigsaw Puzzles",
-   "Toys & Games"
+   "Toys & Games > Puzzles > Jigsaw Puzzles"
   ],
   "doll": [
    "Toys & Games > Toys > Dolls, Playsets & Toy Figures",
-   "Toys & Games > Toys > Dolls, Playsets & Toy Figures > Action & Toy Figures",
-   "Animals & Pet Supplies"
+   "Toys & Games > Toys > Dolls, Playsets & Toy Figures > Action & Toy Figures"
   ],
   "kettlebell": [
-   "Animals & Pet Supplies",
    "Sporting Goods > Exercise & Fitness > Cardio",
    "Sporting Goods > Athletics > General Purpose Athletic Equipment"
   ],
@@ -2967,7 +2626,6 @@
    "Sporting Goods > Outdoor Recreation > Camping & Hiking > Tent Accessories > Inner Tents",
    "Software > Digital Goods & Currency",
    "Home & Garden > Lighting > Picture Lights",
-   "Animals & Pet Supplies",
    "Health & Beauty > Personal Care > Cosmetics > Makeup"
   ],
   "hair_brush": [
@@ -2982,14 +2640,11 @@
   "razor_blades": [
    "Health & Beauty > Personal Care > Ear Care > Ear Wax Removal Kits",
    "Sporting Goods > Outdoor Recreation > Skateboarding > Skateboard Parts > Skateboard Small Parts",
-   "Animals & Pet Supplies",
    "Health & Beauty > Personal Care > Shaving & Grooming > Hair Clippers & Trimmers"
   ],
   "deodorant": [
    "Health & Beauty > Personal Care > Cosmetics > Perfume & Cologne",
-   "Animals & Pet Supplies",
    "Health & Beauty > Personal Care > Cosmetics > Skin Care > Wart Removers",
-   "Animals & Pet Supplies > Pet Supplies",
    "Health & Beauty > Personal Care > Shaving & Grooming > Razors & Razor Blades",
    "Home & Garden > Household Appliances > Floor & Steam Cleaners > Carpet Steamers"
   ],
@@ -3004,7 +2659,6 @@
   "face_mask": [
    "Health & Beauty > Personal Care > Cosmetics > Skin Care",
    "Business & Industrial > Work Safety Protective Gear",
-   "Animals & Pet Supplies",
    "Home & Garden > Household Supplies",
    "Health & Beauty > Personal Care > Cosmetics > Skin Care > Lotion & Moisturizer",
    "Hardware > Building Materials > Roofing > Roofing Shingles & Tiles",
