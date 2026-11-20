@@ -35,6 +35,11 @@ _WORTH_A_LINE = re.compile(
 _LINK = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://\S+")
 _TOKEN = re.compile(r"[A-Za-z0-9_\-]{32,}")
 _KERNEL_MEMORY = re.compile(r"oom|out of memory|killed process|memory cgroup", re.IGNORECASE)
+# A process's line in the kernel's table of an out-of-memory kill:
+# [  pid  ]   uid  tgid total_vm      rss rss_anon rss_file rss_shmem pgtables_bytes swapents oom_score_adj name
+_TASK_ROW = re.compile(r"\[\s*\d+\]\s+\d+\s+\d+\s+\d+\s+(\d+)\s.*\s(\S+)\s*$")
+_OOM_TOTALS = re.compile(r"Mem-Info|active_anon|pages RAM|Free swap|Total swap|Node 0 Normal free", re.IGNORECASE)
+TASK_PAGES_SHOWN = 25_000  # 100 MB of 4 kB pages: the processes that matter
 
 Run = Callable[[Sequence[str]], str]
 
@@ -102,6 +107,27 @@ def lines_of_a_run(lines: Sequence[str]) -> list[str]:
     return chosen
 
 
+def kernel_memory_lines(lines: Sequence[str]) -> list[str]:
+    """The kernel's lines about memory; within each out-of-memory kill, from "invoked
+    oom-killer" to "Killed process", also its totals and each process holding more than
+    `TASK_PAGES_SHOWN` pages, with its memory in MB: who held the server's memory then."""
+    chosen: list[str] = []
+    inside = False
+    for line in lines:
+        if "invoked oom-killer" in line:
+            inside = True
+        row = _TASK_ROW.search(line) if inside else None
+        if row is not None:
+            pages = int(row.group(1))
+            if pages > TASK_PAGES_SHOWN:
+                chosen.append(f"{line.rstrip()}   <- {pages * 4 / 1024:,.0f} MB")
+        elif _KERNEL_MEMORY.search(line) or (inside and _OOM_TOTALS.search(line)):
+            chosen.append(line)
+        if "Killed process" in line:
+            inside = False
+    return chosen[-200:]
+
+
 def main(argv: Sequence[str] | None = None, *, runner: Run = run, secrets: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--since", default="-30h", help="from when, as journalctl reads it (--since=-30h)")
@@ -138,8 +164,9 @@ def main(argv: Sequence[str] | None = None, *, runner: Run = run, secrets: Seque
 
     say()
     say("== the kernel's lines about memory")
-    kernel = [line for line in runner(["journalctl", "-k", "-o", "short-iso", "--no-pager", "--since", args.since]).splitlines() if _KERNEL_MEMORY.search(line)]
-    for line in kernel[-40:] or ["(none)"]:
+    for line in kernel_memory_lines(
+        runner(["journalctl", "-k", "-o", "short-iso", "--no-pager", "--since", args.since]).splitlines()
+    ) or ["(none)"]:
         say(line)
     oomd = runner(["journalctl", "-u", "systemd-oomd.service", "-o", "short-iso", "--no-pager", "--since", args.since]).splitlines()
     say("== systemd-oomd")

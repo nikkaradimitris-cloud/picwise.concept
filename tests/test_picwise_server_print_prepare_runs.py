@@ -98,6 +98,32 @@ class RunsTests(unittest.TestCase):
         self.assertLessEqual(len(runs.lines_of_a_run(many)), runs.LINES_A_RUN + 1)
 
 
+class KernelTests(unittest.TestCase):
+    def test_an_out_of_memory_kill_names_who_held_the_memory(self) -> None:
+        lines = [
+            "2026-11-20T09:10:38+00:00 host-a kernel: usb 1-1: new device",
+            "2026-11-20T09:10:38+00:00 host-a kernel: python3 invoked oom-killer: gfp_mask=0x140dca, order=0, oom_score_adj=0",
+            "2026-11-20T09:10:38+00:00 host-a kernel: Mem-Info:",
+            "2026-11-20T09:10:38+00:00 host-a kernel: active_anon:5000000 inactive_anon:900000",
+            "2026-11-20T09:10:38+00:00 host-a kernel: [  pid  ]   uid  tgid total_vm      rss rss_anon rss_file rss_shmem pgtables_bytes swapents oom_score_adj name",
+            "2026-11-20T09:10:38+00:00 host-a kernel: [    512]     0   512    12000     3000     2000     1000         0   100000        0             0 systemd-journal",
+            "2026-11-20T09:10:38+00:00 host-a kernel: [  40001]   999 40001  1900000  1800000  1790000    10000         0 15000000        0             0 gunicorn",
+            "2026-11-20T09:10:38+00:00 host-a kernel: [  61260]   999 61260  3661813  3581843  3581235      608         0 28975104        0             0 python3",
+            "2026-11-20T09:10:38+00:00 host-a kernel: Out of memory: Killed process 61260 (python3) total-vm:14647252kB, anon-rss:14327372kB",
+            "2026-11-20T09:10:39+00:00 host-a kernel: [  70000]   999 70000  1900000  1800000  1790000    10000         0 15000000        0             0 later",
+        ]
+        chosen = runs.kernel_memory_lines(lines)
+        text = "\n".join(chosen)
+        self.assertIn("invoked oom-killer", text)
+        self.assertIn("active_anon", text)
+        self.assertIn("gunicorn   <- 7,031 MB", text)
+        self.assertIn("python3   <- 13,992 MB", text)
+        self.assertIn("Killed process 61260", text)
+        self.assertNotIn("systemd-journal", text)  # under 100 MB
+        self.assertNotIn("usb 1-1", text)
+        self.assertNotIn(" later", text)  # a row after the kill's end is no row of it
+
+
 class MainTests(unittest.TestCase):
     def test_the_report_names_each_run_and_prints_nothing_secret(self) -> None:
         out = io.StringIO()
