@@ -8,6 +8,38 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **FIRST, URGENT (20/11 09:12 UTC = 11:12 Athens): the site shows NO products** ("No products found" for
+  every search, checked 09:15 UTC). The deployment of `94e4dfd` (run `44706433016`, «Ανεβασε», 08:55 UTC) ran
+  its preparation, which FAILED ("Job for picwise-prepare.service failed", 14 min 28 s of CPU, no
+  `prepare_catalogue` summary line), then restarted the site with `94e4dfd`'s code at 09:11:53. The night's
+  catalogue (prepared 04:33 UTC, 397,635 products) was written by `02e0ac5`'s rules, and a prepared file is
+  read only by the code that wrote it (`prepared_catalogue.code_fingerprint`: 02e0ac5 `744f91ce…`, 94e4dfd
+  `ef8f7e91…`), so the site holds no catalogue. **The way back, asked and NOT done:** `git revert 94e4dfd` on
+  top of `94e4dfd` (only `awin_adapter.py`, `awin_categories.py` and their test change; checked: the reverted
+  `src/` is byte for byte `02e0ac5`'s, fingerprint `744f91ce…`), pushed to `ccr-1361f1a7-dcpo60` as a fast-forward:
+  the site then reads the night's file at once, whatever the deployment's own preparation does (the file is
+  valid until 30 h after 04:33, 21/11 10:33 UTC). Asked at 09:21 UTC; the owner answered «Σταματάμε εδώ και πάμε
+  σε άλλη συζήτηση»: nothing deployed. **It needs the owner's «ανέβασε» first, as every deployment.** Tonight
+  (04:17 UTC) the timer prepares again with `94e4dfd`: if it succeeds the site shows products again by itself;
+  if not, the site stays empty. Then: why the preparation failed. No read-only workflow prints the error
+  (`deploy.sh` and `server-night.yml` keep only the `prepare_catalogue|Consumed` lines); `trial-prepare.yml` (on
+  `main`, run by hand with `ref` the work branch) prepares both links with this code on GitHub's runner and shows
+  the peak memory and any traceback. A guess, not checked: precise shelves split the second link's big aisles
+  (Tooled Up's «DIY») into more Google categories of 12,000 each, so more products are kept and the peak passes
+  `MemoryMax=18G`; or an exception in `awin_categories.shelf_detail` on a row the tests do not have.
+- **The AI's shelves, the trial of 1,000 (owner, 20/11: «Ναι κάνε καί τά 2»), done: run `44708919103`**
+  (`bff970a`; `picwise_ai/shelves.py`, `deployment/server/measure_shelves.py`, `.github/workflows/ai-shelves-trial.yml`,
+  off again after it). The night's catalogue of 20/11 04:33 (397,635 products): 20 calls of 50, **$0.0696 in
+  all, $0.07 for 1,000**; the cached tree 77,287 tokens (under the 100,000 that cost five times), 13.3 s a call.
+  The whole catalogue at that price ~$27.68, ~$13.84 through the Batch API. **A** (500 of the first link, the
+  shop's own Google line hidden): a line for 399, "none fits" 4, **refused 97** (number and name not agreeing);
+  of the 399, the same category as the shop's (the cap's two levels) 86.0%, the same line 73.9%. **B** (500 of
+  the second link): a line for 444, refused 54; deeper on the same path 40.1%, the same 16.0%, another branch
+  21.8%, another department 22.1%; 2.4 levels now on average, 3.7 the AI's. The second link's products in that
+  catalogue were from `02e0ac5`'s rules, which kept every row's category words, so B is not only broad shelves.
+  Next: read the log's 40 disagreements of A and the 60 of B (who is right), cut the refusals (most likely a
+  number miscopied: take the line by its name inside the branch, or ask for the full line), then the owner's
+  daily cap before any run over the catalogue.
 - **NEXT, step 3 of the series, the brands' list (owner, 19/11 23:46; taken up on 20/11: «PicWise:
   συνέχισε το βήμα 3, τη λίστα brands, όπως γράφει το handoff»): (1) measured, (2) put to the owner (20/11
   ~00:30 Athens), waiting for the answer; then (3) build.** All of it on the branch
