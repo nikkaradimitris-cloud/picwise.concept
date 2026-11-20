@@ -144,6 +144,39 @@ systemctl start picwise-prepare.service || echo "preparing failed; the site keep
 # The summary line, the peak memory and length, and systemd's own line, of this run.
 journalctl -u picwise-prepare.service -n 20 -o cat --no-pager --since "-65min" \
   | grep -E 'prepare_catalogue|Consumed' | tail -n 3 || true
+
+echo "== the catalogue in place, as this release reads it"
+# Owner, 2026-11-20 («κάνε μόνο το ένα», of three remedies): this release goes in only if it can read
+# the catalogue in place. That day a deployment whose preparation was killed for memory
+# restarted the site with code that refuses the file in place (a prepared file is read only
+# by the code that wrote it), and the site showed no product for 80 minutes. Otherwise the
+# site stays on the release it runs, not restarted, with that release's units, and the
+# deployment fails, so that its run says so. Read without loading the catalogue.
+STATE=$(python3 "$RELEASE/deployment/server/prepared_state.py" "$SHARED/prepared/catalogue.json.gz" 2>&1 \
+  | tail -n 1 || true)
+echo "${STATE:-unreadable}"
+case "$STATE" in
+  fresh*) ;;
+  *)
+    # The units the step "== services" put in place, each as the release the site runs has it.
+    UNITS="picwise-web.service picwise-prepare.service picwise-prepare.timer picwise-shops.service
+      picwise-shops.timer picwise-photos.service picwise-photos.timer picwise-offers.service picwise-offers.timer
+      picwise-assist.service picwise-families.service picwise-family-jobs.service picwise-family-jobs.timer"
+    if [ -n "$PREVIOUS" ] && [ -d "$APP/$PREVIOUS" ] && [ "$(readlink -f "$APP/$PREVIOUS")" != "$RELEASE" ]; then
+      ln -sfn "$PREVIOUS" "$APP/current.new"
+      mv -T "$APP/current.new" "$APP/current"
+      for unit in $UNITS; do
+        if [ -f "$APP/$PREVIOUS/deployment/server/$unit" ]; then
+          install -m 644 "$APP/$PREVIOUS/deployment/server/$unit" /etc/systemd/system/
+        fi
+      done
+      systemctl daemon-reload
+      echo "this release cannot read the catalogue in place (${STATE:-unreadable}): the site stays on $PREVIOUS, not restarted" >&2
+      exit 1
+    fi
+    echo "no release before this one to stay on: this one goes in"
+    ;;
+esac
 systemctl enable --now picwise-prepare.timer
 # The shops' catalogues each night before the preparation (owner, 2026-10-26); a
 # deployment never asks them itself.
