@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (12:40 Athens).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (13:40 Athens).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,30 +8,37 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (20/11, 12:40 Athens): products back on the site; the catalogue's preparation fails in the day;
-  tonight's must succeed.** On the owner's «ανέβασε την επιστροφή», `857cdb2` (`git revert 94e4dfd` on top of
-  `94e4dfd`: `awin_adapter.py`, `awin_categories.py` and their test; its `src/` byte for byte `02e0ac5`'s, the
-  prepared file's fingerprint `744f91ce…`, the night's file's) was pushed to `ccr-1361f1a7-dcpo60` at 10:04:19
-  UTC (fast-forward, nothing else riding along); run `44716070185`, release `20261120T100434Z-857cdb2`; the site
-  restarted at 10:31:46 UTC on the night's file (prepared 04:33:55 UTC, 397,635 products, 137 shops; the site
-  4,720 MB); the deployment's comparison at 10:32 UTC: 12 of 12 searches with cards on the public site (tv 411,
-  laptop 56, kettle 90...). No products from 09:12 to 10:31 UTC. **The deployment's preparation failed again,
-  with `02e0ac5`'s code** (10:04:47 to 10:30:33 UTC, 16 min 25 s of CPU, no `prepare_catalogue` line), as the
-  morning's did with `94e4dfd`'s (14 min 28 s of CPU), while the timer's at 04:17 UTC today with `02e0ac5`'s code
-  succeeded: the cause is not `94e4dfd`'s change alone. A guess, not checked: memory (`MemoryHigh=17G` slows a
-  process near it, which fits 26 min of time for 16 of CPU; `MemoryMax=18G` ends it, which fits no summary line).
-  **The night's file stands until 21/11 10:33:55 UTC (30 h): if tonight's preparation (04:17 UTC, `02e0ac5`'s
-  code) fails too, the site is empty again from then.** A preparation killed this way leaves `/prepared.json` as
-  it was (`"prepared": true`, 04:33:55), so the daily session at 10:00 UTC would read a `prepared_at` of 29.4 h,
-  under its 30 h, and see nothing wrong: tomorrow read the night's run itself (`server-night.yml`), not the
-  note's age alone. To do: the failed runs' journal (`journalctl -u picwise-prepare.service` with the kernel's
-  lines, 08:55-09:11 and 10:04-10:30 UTC: an out-of-memory kill or a traceback); no read-only workflow prints it
-  yet (`deploy.sh` and `server-night.yml` keep only the `prepare_catalogue|Consumed` lines); then the fix, on the
-  owner's word. `94e4dfd`'s change (parts and accessories before the thing they serve; the second link's rows
-  like Google's) is off on the site and on the work branch (merged, `5f13349`, so the next deployment is a
-  fast-forward): "kettle" shows a paint kettle and a kettle lead again. It comes back by reverting `857cdb2`,
-  once the preparation succeeds again, on the owner's «ανέβασε»; to try its preparation first, `trial-prepare.yml`
-  by hand on a `claude/...` branch with `857cdb2` reverted.
+- **FIRST (20/11, 13:40 Athens): why the feed's preparation failed, found: memory. Products back on the site
+  since 10:31 UTC.** The way back: on the owner's «ανέβασε την επιστροφή», `857cdb2` (`git revert 94e4dfd` on top
+  of `94e4dfd`; its `src/` byte for byte `02e0ac5`'s, fingerprint `744f91ce…`, the night's file's), pushed to
+  `ccr-1361f1a7-dcpo60` at 10:04:19 UTC; run `44716070185`, release `20261120T100434Z-857cdb2`; the site restarted
+  at 10:31:46 UTC on the night's file (prepared 04:33:55 UTC, 397,635 products); 12 of 12 searches with cards at
+  10:32 UTC. No products 09:12 to 10:31 UTC. Merged into the work branch (`5f13349`). **The cause** (owner:
+  «μας ενδιαφέρει γιατί δεν δούλεψε το feed»), read with the new read-only `prepare-runs.yml`
+  (`deployment/server/print_prepare_runs.py`, run `44724683162`): each failed preparation was an out-of-memory
+  kill. (1) 08:56-09:10 (`94e4dfd`): the whole server out of memory (`global_oom`; 23.4 GB, no swap): the site's
+  three workers held 2.95 + 2.91 + 2.94 GB (the night's catalogue, swapped in at 04:43), the preparation 14.0 GB
+  when the kernel killed it, before writing anything; so not shown to be `94e4dfd`'s code. (2) 10:04-10:30
+  (`857cdb2`, `02e0ac5`'s code; the site's workers held no catalogue): its own ceiling, 18.4 GB of `MemoryMax=18G`.
+  The feed's download lives 6 h (`awin_adapter._DEFAULT_FEED_CACHE_TTL_SECONDS`, not set on the server): the night's,
+  of 04:17, expired at about 10:17, after the catalogue was written (10:19:40) and before `_intake()`
+  (`measure_configured_feed_intake`), which downloaded both links again (10:21:52, 10:23:32); the new files missed
+  the pipeline's cache (keyed by the file's identity), so all 2.7 M rows were parsed a second time with the first
+  parse still held. (3) 19/11 17:21 (`5500291`, before that evening's cuts): its ceiling, then 17 GB, at 17.4 GB.
+  The nights pass (20/11 04:17: peak 14.6 GB, 25.9 min). **What it means:** a deployment in the day prepares
+  beside a site of about 8.8 GB, and 14-15 GB more does not fit: a daytime deployment's preparation is likely to
+  fail, and one that changes `src/picwise_providers` or `src/picwise_nlu` then restarts the site with code that
+  refuses the file in place: an empty site, as at 09:12. Tonight (04:17 UTC) should go as last night, which
+  passed (the site's workers fresh since 10:31): likely, not certain. **Put to the owner (20/11), nothing changed yet:** (a) `deploy.sh`: when the
+  preparation fails and the new code cannot read the file in place, keep the old release running; (b) the
+  intake reads the files the preparation read (no second download within a run); (c) less memory: 2 workers
+  instead of 3, or a larger server. The night's file stands until 21/11 10:33:55 UTC; a killed preparation leaves
+  `/prepared.json` as it was, so the daily session reads the night's run itself (`server-night.yml` or
+  `prepare-runs.yml`), not the note's age alone. `prepare-runs.yml` runs on a push of its two files to
+  `claude/prepare-runs-2026-11-20`, or by hand once on `main`. `94e4dfd`'s change (parts and accessories before the
+  thing they serve; the second link's rows like Google's) is off on the site and on the work branch: "kettle"
+  shows a paint kettle and a kettle lead again; it comes back by reverting `857cdb2`, on the owner's «ανέβασε»,
+  once a deployment can prepare.
 - **The AI's shelves, the trial of 1,000 (owner, 20/11: «Ναι κάνε καί τά 2»), done: run `44708919103`**
   (`bff970a`; `picwise_ai/shelves.py`, `deployment/server/measure_shelves.py`, `.github/workflows/ai-shelves-trial.yml`,
   off again after it). The night's catalogue of 20/11 04:33 (397,635 products): 20 calls of 50, **$0.0696 in
