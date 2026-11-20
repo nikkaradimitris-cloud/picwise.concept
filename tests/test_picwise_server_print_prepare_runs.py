@@ -56,6 +56,10 @@ def fake_runner(command):
         return {1: "host-a\n", 2: "host-a.example.invalid\n"}.get(len(command), "192.0.2.10 \n")
     if command[0] == "systemctl":
         return "Result=oom-kill\nMemoryMax=19327352832\n"
+    if command[0] == "curl":
+        return '{"status": "needs_data", "prepared_feed": {"state": "in_use", "prepared_at": "2026-11-20T10:19:00+00:00"}}'
+    if command[0] == "ps":
+        return " 4001 2048000 gunicorn\n 4002 51200 caddy\n"
     return ""
 
 
@@ -136,6 +140,9 @@ class MainTests(unittest.TestCase):
         self.assertIn("prepare_catalogue: peak memory 14574592 KB", text)
         self.assertIn("invoked oom-killer", text)
         self.assertNotIn("usb 1-1", text)
+        self.assertEqual(text.count('prepared_feed: {"prepared_at": "2026-11-20T10:19:00+00:00", "state": "in_use"}'), 1)
+        self.assertIn("gunicorn 4001: 2,000 MB", text)
+        self.assertNotIn("caddy", text)  # under 100 MB
         for secret in (FEED_LINK, FEED_KEY, "host-a", "192.0.2.10", "feeds.example.invalid"):
             self.assertNotIn(secret, text)
 

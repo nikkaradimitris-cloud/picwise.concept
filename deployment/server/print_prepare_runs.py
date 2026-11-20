@@ -16,6 +16,7 @@ printed; the server's names are masked by the workflow.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import subprocess
 from collections.abc import Callable, Sequence
@@ -26,6 +27,7 @@ SECRET_FILES = (Path("/etc/picwise/picwise.env"), Path("/etc/picwise/assist.env"
 FOLDERS = (Path("/srv/picwise/shared/prepared"), Path("/srv/picwise/shared/cache"))
 LINES_AT_END = 25
 LINES_A_RUN = 120
+SITE_READINESS = "http://127.0.0.1:8016/private-beta-readiness"
 
 _RUN_STARTS = re.compile(r"Starting (?:picwise-prepare\.service|PicWise: prepare)")
 _WORTH_A_LINE = re.compile(
@@ -181,6 +183,24 @@ def main(argv: Sequence[str] | None = None, *, runner: Run = run, secrets: Seque
     say()
     say("== the server's memory")
     say(runner(["free", "-m"]).strip())
+
+    say()
+    say("== the site now: the catalogue each answer came from, and each process's memory")
+    seen: list[str] = []
+    for _ask in range(6):  # several asks, so that each of the site's workers is likely met
+        try:
+            page = json.loads(runner(["curl", "-s", "-m", "10", SITE_READINESS]) or "{}")
+        except ValueError:
+            page = {}
+        told = json.dumps(page.get("prepared_feed") if isinstance(page, dict) else None, sort_keys=True)
+        if told not in seen:
+            seen.append(told)
+    for told in seen:
+        say(f"prepared_feed: {told}")
+    for line in runner(["ps", "-o", "pid=,rss=,comm=", "-u", "picwise"]).splitlines():
+        parts = line.split()
+        if len(parts) >= 3 and parts[1].isdigit() and int(parts[1]) > 100 * 1024:
+            say(f"  {parts[2]} {parts[0]}: {int(parts[1]) / 1024:,.0f} MB")
     return 0
 
 
