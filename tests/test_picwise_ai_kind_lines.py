@@ -1,0 +1,178 @@
+"""Each kind of the site its own lines of Google's taxonomy, written once by the AI
+(`picwise_ai.kind_lines`, `deployment/server/write_kind_lines.py`; owner, 2026-11-20:
+«Κάθε είδος του site να έχει τη δική του λίστα κατηγοριών Google ... Τη λίστα να τη φτιάξει
+το AI μία φορά ... και να ελεγχθεί»)."""
+from __future__ import annotations
+
+import json
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from types import SimpleNamespace
+
+ROOT = Path(__file__).resolve().parents[1]
+for path in (ROOT / "src", ROOT / "deployment" / "server"):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
+
+import write_kind_lines  # noqa: E402
+from picwise_ai import kind_lines  # noqa: E402
+from picwise_ai.shelves import taxonomy_lines  # noqa: E402
+from picwise_nlu.product_concepts import get_product_concepts  # noqa: E402
+
+LINES = taxonomy_lines()
+NUMBER = {line: number for number, line in enumerate(LINES, 1)}
+TABLETS = "Electronics > Computers > Tablet Computers"
+WATCHES = "Apparel & Accessories > Jewelry > Watches"
+BANDS = "Apparel & Accessories > Jewelry > Watch Accessories > Watch Bands"
+KETTLES = "Home & Garden > Kitchen & Dining > Kitchen Appliances > Electric Kettles"
+
+
+class KindsTests(unittest.TestCase):
+    def test_every_kind_once_with_its_names_department_and_relations(self) -> None:
+        kinds = kind_lines.kinds_described()
+        self.assertEqual([kind["id"] for kind in kinds], [concept.concept_id for concept in get_product_concepts()])
+        by_id = {kind["id"]: kind for kind in kinds}
+        self.assertIn("smartwatch (smartwatch)", by_id["watch"]["narrower"])
+        self.assertEqual(by_id["smartwatch"]["part_of"], ["watch (watch)"])
+        self.assertIn("ipad", by_id["tablet"]["names"])
+        self.assertIn("a kind of: watch (watch)", kind_lines.kind_line(1, by_id["smartwatch"]))
+
+    def test_each_call_one_department_every_kind_once(self) -> None:
+        kinds = kind_lines.kinds_described()
+        calls = kind_lines.batches(kinds)
+        self.assertEqual(sorted(kind["id"] for call in calls for kind in call), sorted(kind["id"] for kind in kinds))
+        for call in calls:
+            self.assertLessEqual(len(call), kind_lines.PER_CALL)
+            self.assertEqual(len({kind["department"] for kind in call}), 1)
+
+    def test_the_request_caches_the_tree_and_names_every_kind(self) -> None:
+        kinds = [kind for kind in kind_lines.kinds_described() if kind["id"] in ("tablet", "watch")]
+        request = kind_lines.request_kwargs(kinds, LINES)
+        self.assertEqual(request["model"], "claude-haiku-5-5")
+        self.assertEqual(request["system"][1]["cache_control"], {"type": "ephemeral"})
+        self.assertIn(f"{NUMBER[TABLETS]} Tablet Computers", request["system"][1]["text"])
+        text = request["messages"][0]["content"]
+        self.assertIn("id: tablet", text)
+        self.assertIn("id: watch", text)
+        self.assertEqual(request["output_config"]["format"]["schema"], kind_lines.SCHEMA)
+        self.assertIn("never a part", kind_lines.SYSTEM_PROMPT)
+
+
+class CheckTests(unittest.TestCase):
+    def test_a_line_whose_number_and_name_agree(self) -> None:
+        answer = {"kinds": [
+            {"id": "tablet", "lines": [{"line": NUMBER[TABLETS], "name": "Tablet Computers"}]},
+            {"id": "watch", "lines": [{"line": NUMBER[WATCHES], "name": "Watches"}]},
+        ]}
+        found, refused = kind_lines.checked_kind_lines(answer, ["tablet", "watch"], LINES)
+        self.assertEqual(found, {"tablet": [TABLETS], "watch": [WATCHES]})
+        self.assertEqual(refused, 0)
+
+    def test_a_miscopied_number_is_read_by_the_name_in_its_department_else_refused(self) -> None:
+        answer = {"kinds": [
+            # The number of the watch bands, the name of the watches: the same department.
+            {"id": "watch", "lines": [{"line": NUMBER[BANDS], "name": "Watches"}]},
+            # The number of the watches, the name of the tablets: another department.
+            {"id": "tablet", "lines": [{"line": NUMBER[WATCHES], "name": "Tablet Computers"},
+                                       {"line": 12, "name": "No Such Line"}, {"line": "x", "name": "Watches"}]},
+            {"id": "kettle", "lines": [{"line": 999999, "name": "Electric Kettles"}]},
+        ]}
+        found, refused = kind_lines.checked_kind_lines(answer, ["watch", "tablet", "kettle"], LINES)
+        self.assertEqual(found["watch"], [WATCHES])
+        self.assertEqual(found["tablet"], [])
+        self.assertEqual(found["kettle"], [KETTLES])
+        self.assertEqual(refused, 3)
+
+    def test_a_kind_answered_twice_or_not_asked_is_left_out_an_empty_list_kept(self) -> None:
+        answer = {"kinds": [
+            {"id": "tablet", "lines": [{"line": NUMBER[TABLETS], "name": "Tablet Computers"}]},
+            {"id": "tablet", "lines": []},
+            {"id": "laptop", "lines": [{"line": NUMBER[TABLETS], "name": "Tablet Computers"}]},
+            {"id": "software", "lines": []},
+        ]}
+        found, _refused = kind_lines.checked_kind_lines(answer, ["tablet", "software"], LINES)
+        self.assertEqual(found, {"software": []})
+        self.assertEqual(kind_lines.checked_kind_lines(None, ["tablet"], LINES), ({}, 0))
+
+    def test_the_same_line_twice_is_kept_once(self) -> None:
+        answer = {"kinds": [{"id": "tablet", "lines": [{"line": NUMBER[TABLETS], "name": "Tablet Computers"}] * 2}]}
+        self.assertEqual(kind_lines.checked_kind_lines(answer, ["tablet"], LINES)[0], {"tablet": [TABLETS]})
+
+
+class FormTests(unittest.TestCase):
+    def test_the_lists_in_few_characters_read_back_the_same(self) -> None:
+        found = {"tablet": [TABLETS], "watch": [WATCHES, BANDS], "software": []}
+        text = kind_lines.compact(found, LINES)
+        self.assertIn(f"tablet={NUMBER[TABLETS]}", text)
+        self.assertIn("software=", text)
+        self.assertEqual(kind_lines.from_compact(text + "\nnot a row\n", LINES), found)
+
+    def test_the_notes_keep_rows_whole(self) -> None:
+        text = "\n".join(f"kind_{n}=" + ",".join(str(i) for i in range(n, n + 30)) for n in range(400))
+        pieces = kind_lines.chunks(text, 3500)
+        self.assertGreater(len(pieces), 1)
+        self.assertTrue(all(len(piece) <= 3500 for piece in pieces))
+        self.assertEqual("\n".join(pieces), text)
+
+    def test_written_and_read_as_the_repository_keeps_them(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "lists.json"
+            kind_lines.write({"tablet": [TABLETS]}, path, note={"model": "m"})
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["model"], "m")
+            self.assertEqual(kind_lines.read(path), {"tablet": [TABLETS]})
+            self.assertEqual(kind_lines.read(Path(folder) / "none.json"), {})
+
+
+class RunTests(unittest.TestCase):
+    def test_every_kind_asked_and_one_not_answered_asked_again_alone(self) -> None:
+        kinds = [kind for kind in kind_lines.kinds_described() if kind["id"] in ("tablet", "laptop", "watch")]
+        asked: list[list[str]] = []
+
+        def ask(request):
+            text = request["messages"][0]["content"]
+            ids = [row.split("id: ")[1].split(" |")[0] for row in text.splitlines()[1:]]
+            asked.append(ids)
+            # The first call forgets the laptop.
+            given = [i for i in ids if not (i == "laptop" and len(ids) > 1)]
+            return SimpleNamespace(
+                answer={"kinds": [{"id": i, "lines": [{"line": NUMBER[TABLETS], "name": "Tablet Computers"}]} for i in given]},
+                cost_usd=0.01, error="",
+            )
+
+        run = write_kind_lines.Run(ask, 1.0, LINES)
+        write_kind_lines.run_all(run, kinds, workers=1)
+        self.assertEqual(set(run.found), {"tablet", "laptop", "watch"})
+        self.assertIn(["laptop"], asked)
+        self.assertAlmostEqual(run.spent, 0.01 * len(asked))
+
+    def test_it_stops_at_the_budget_and_writes_without_a_key(self) -> None:
+        run = write_kind_lines.Run(lambda request: SimpleNamespace(answer=None, cost_usd=2.0, error="HTTP 500"), 1.0, LINES)
+        write_kind_lines.PAUSE_SECONDS, before = 0.0, write_kind_lines.PAUSE_SECONDS
+        try:
+            run.one([{"id": "tablet", "names": ["tablet"], "department": "x"}])
+        finally:
+            write_kind_lines.PAUSE_SECONDS = before
+        self.assertEqual(run.calls, 1)
+        with tempfile.TemporaryDirectory() as folder:
+            out = Path(folder) / "lists.json"
+            self.assertEqual(write_kind_lines.main(["--out", str(out), "--dry-run"]), 0)
+            self.assertEqual(kind_lines.read(out), {})
+
+
+class WorkflowTests(unittest.TestCase):
+    workflow = (ROOT / ".github" / "workflows" / "ai-kind-lines.yml").read_text(encoding="utf-8")
+
+    def test_it_runs_on_its_own_branch_with_the_key_and_reads_nothing_else(self) -> None:
+        self.assertIn("branches: [claude/kind-lines]", self.workflow)
+        self.assertEqual(self.workflow.count("secrets."), 1)
+        self.assertIn("secrets.ANTHROPIC_API_KEY", self.workflow)
+        self.assertIn("contents: read", self.workflow)
+        for absent in ("ssh", "SERVER_", "AWIN_FEED", "upload-artifact"):
+            self.assertNotIn(absent, self.workflow)
+        self.assertIn("--require-hashes", self.workflow)
+
+
+if __name__ == "__main__":
+    unittest.main()

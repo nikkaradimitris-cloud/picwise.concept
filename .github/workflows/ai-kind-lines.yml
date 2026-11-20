@@ -1,0 +1,53 @@
+# Each kind of the site its own lines of Google's taxonomy, written once by the AI (owner,
+# 2026-11-20: «Κάθε είδος του site να έχει τη δική του λίστα κατηγοριών Google ... Τη λίστα
+# να τη φτιάξει το AI μία φορά (περίπου 0,50 $) και να ελεγχθεί»). GitHub's runner runs
+# deployment/server/write_kind_lines.py with this commit's code: Claude Haiku 5.5 is given
+# Google's taxonomy and the kinds of picwise_nlu.product_concepts, and answers each kind's
+# lines, every line checked against the taxonomy (picwise_ai.kind_lines). The lists are kept
+# as this run's notes, which GitHub's API shows without a login, in few characters (each
+# line by its number in data/taxonomy_sources/google/taxonomy.en-US.txt); they come back to
+# the repository from there and are checked before any rule reads them.
+# Nothing is read from the server, no feed and no product: only the lexicon of kinds and
+# the taxonomy, both in the repository. Nothing on the server or the site changes. The SDK
+# is installed from deployment/server/requirements-ai.txt, every package checked against
+# its hash; the key is ANTHROPIC_API_KEY, never printed; the calls stop before the budget.
+name: AI kind lines (written once; nothing shown changes)
+on:
+  push:
+    branches: [claude/kind-lines]
+permissions:
+  contents: read
+concurrency:
+  group: kind-lines
+  cancel-in-progress: false
+jobs:
+  write:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      # The most the calls may cost, in dollars (owner, 20/11: about $0.50).
+      BUDGET: '1.00'
+      WORKERS: '4'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      # The server's Python (Ubuntu 24.04), for which requirements-ai.txt is compiled.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the SDK, every package checked against its hash
+        run: |
+          python -m venv "$RUNNER_TEMP/ai"
+          "$RUNNER_TEMP/ai/bin/pip" install -q --disable-pip-version-check --no-cache-dir --require-hashes \
+            -r deployment/server/requirements-ai.txt
+          "$RUNNER_TEMP/ai/bin/python" -c "import anthropic, sys; print('anthropic', anthropic.__version__, 'on Python', sys.version.split()[0])"
+      - name: Each kind's lines of Google's taxonomy, by the AI, checked
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          "$RUNNER_TEMP/ai/bin/python" deployment/server/write_kind_lines.py --out "$RUNNER_TEMP/kind_lines.json" \
+            --budget "$BUDGET" --workers "$WORKERS"
+      - name: Remove the lists from the runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/kind_lines.json"
