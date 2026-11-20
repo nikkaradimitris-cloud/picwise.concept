@@ -8,8 +8,14 @@ Google line (`google_product_category`); every rule of the search stays as it is
 Claude Haiku 5.5 reads each product's title, brand, price, the shop's own category words
 and the start of its description, and answers with one line of Google's product taxonomy
 (`data/taxonomy_sources/google/taxonomy.en-US.txt`): the line's number in the list it was
-given and the line's last name. An answer whose number and name do not agree, or that
-names no line, is refused, and the product keeps the shelf it has.
+given and the line's last name. Each last name is used by one line only, so a number
+miscopied is read by the name, within the number's department (`checked_lines`); an
+answer that names no line is refused, and the product keeps the shelf it has.
+
+Owner, 2026-11-20: «Αυτό που πρέπει να κάνουμε είναι να φτιάξουμε μηχανισμούς και κανόνες
+σχετικά με το ai που μπορεί να κάνει την ταξινόμηση», then «Θέλω να σκαναριστεί σήμερα όλος
+ο κατάλογος»: every product of the catalogue asked once (`ask_key`: a product's sizes and
+colours together), by `deployment/server/scan_shelves.py`.
 
 The taxonomy goes in the system prompt as a numbered tree, the same on every call, so it
 is written to the cache once and read from it after: about 45,000 tokens, under the
@@ -151,13 +157,28 @@ def request_kwargs(items: Sequence[dict[str, Any]], lines: Sequence[str] | None 
     }
 
 
+@lru_cache(maxsize=4)
+def _lines_by_own_name(lines: tuple[str, ...]) -> dict[str, str]:
+    """Each line by its own (last) name's key. Every own name in Google's taxonomy is used
+    once (checked by a test), so a name alone tells the line."""
+    found: dict[str, str] = {}
+    for line in lines:
+        found.setdefault(_key(_names(line)[-1]), line)
+    return found
+
+
 def checked_lines(answer: dict[str, Any] | None, count: int, lines: Sequence[str]) -> dict[int, str]:
-    """Each product's line, by its number in the call, when its answer checks out: the
-    number names a line and the name is that line's own (the case and spaces aside). ""
-    means the model found no line fits. A product answered twice, or not answered, or
-    answered with a number and a name that do not agree, is left out: it keeps its shelf."""
+    """Each product's line, by its number in the call, when its answer checks out. ""
+    means the model found no line fits. The number and the name agree: that line. They do
+    not (the trial of 20/11 refused 97 of 500 so, most of them a number miscopied): the line
+    the name names, which no other line shares, when it is in the same department (first
+    level) as the line of the number, or when the number is past the list's ends; a name
+    that names no line, or another department than the number's, is refused, and so is
+    the number 0 with a name or "none" with a number. A product answered twice, not
+    answered, or refused is left out: it keeps the shelf it has."""
     if not isinstance(answer, dict) or not isinstance(answer.get("products"), list):
         return {}
+    by_name = _lines_by_own_name(tuple(lines))
     seen: dict[int, int] = {}
     found: dict[int, str] = {}
     for item in answer["products"]:
@@ -169,8 +190,60 @@ def checked_lines(answer: dict[str, Any] | None, count: int, lines: Sequence[str
         seen[number] = seen.get(number, 0) + 1
         if not isinstance(line, int) or isinstance(line, bool) or not isinstance(name, str):
             continue
-        if line == 0 and _key(name) == "none":
-            found[number] = ""
-        elif 1 <= line <= len(lines) and _key(_names(lines[line - 1])[-1]) == _key(name):
-            found[number] = lines[line - 1]
+        if _key(name) == "none" or line == 0:
+            # "No line fits" is the number 0 with the name "none"; one without the other
+            # says two things at once.
+            if line == 0 and _key(name) == "none":
+                found[number] = ""
+            continue
+        numbered = lines[line - 1] if 1 <= line <= len(lines) else ""
+        if numbered and _key(_names(numbered)[-1]) == _key(name):
+            found[number] = numbered
+            continue
+        named = by_name.get(_key(name), "")
+        if named and (not numbered or _names(named)[0] == _names(numbered)[0]):
+            found[number] = named
     return {number: line for number, line in found.items() if seen.get(number) == 1}
+
+
+# The second link's own category columns (Awin's format), the most specific first.
+AWIN_CATEGORY_COLUMNS = (
+    "merchant_product_category_path",
+    "merchant_product_second_category",
+    "merchant_product_third_category",
+    "merchant_category",
+    "category_name",
+)
+
+
+def shop_words(raw: Any) -> str:
+    """The shop's own category words for a row, as the AI reads them: the second link's
+    Awin category columns, each once, or else a Google-format row's own `product_type`.
+    Never `google_product_category`: the AI's line is read against it."""
+    get = getattr(raw, "get", None)
+    if get is None:
+        return ""
+    words: list[str] = []
+    for column in AWIN_CATEGORY_COLUMNS:
+        value = " ".join(str(get(column) or "").split())
+        if value and value.casefold() not in (word.casefold() for word in words):
+            words.append(value)
+    if words:
+        return " / ".join(words)
+    return " ".join(str(get("product_type") or "").split())
+
+
+def ask_key(title: str, brand: str, category_words: str) -> str:
+    """What one question to the AI is about: a title's own words (sizes, colours and amounts
+    left out, `product_variants.title_parts`), the brand and the shop's own category words,
+    in lower case. The products of one key are asked once and share the answer: a shop's
+    t-shirt in six sizes and four colours is one question. Never the Google line a row
+    carries: for the second link it is PicWise's own guess, and the AI's line is read
+    against it."""
+    import hashlib
+
+    from picwise_providers.product_variants import title_parts
+
+    own, _variants = title_parts(str(title or "").lower())
+    text = "\x1f".join(" ".join(str(part or "").lower().split()) for part in (own or title, brand, category_words))
+    return hashlib.sha1(text.encode("utf-8")).hexdigest()[:20]
