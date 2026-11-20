@@ -139,11 +139,29 @@ PREVIOUS=$(readlink "$APP/current" 2> /dev/null || true)
 ln -sfn "releases/$RELEASE_ID" "$APP/current.new"
 mv -T "$APP/current.new" "$APP/current"
 
-echo "== the catalogue, prepared as a Vercel build prepares it"
-systemctl start picwise-prepare.service || echo "preparing failed; the site keeps the last prepared file (30 h)"
-# The summary line, the peak memory and length, and systemd's own line, of this run.
-journalctl -u picwise-prepare.service -n 20 -o cat --no-pager --since "-65min" \
-  | grep -E 'prepare_catalogue|Consumed' | tail -n 3 || true
+echo "== the catalogue, prepared as a Vercel build prepares it, when this release needs it"
+# Owner, 2026-11-20: «ότι αφορά τον κατάλογο okay από ποια αλλαγή δεν αφορά τον κατάλογο
+# γιατί πρέπει να περιμένουμε μισή ώρα?» (a preparation takes 22 to 26 minutes with both
+# Awin links). Prepared again only when the change concerns the catalogue: this release
+# would not read the file in place (other code wrote it), the preparation's own script or
+# service changed, or the file was prepared a day ago or more. Otherwise the site restarts
+# on the file in place, and the night prepares it as every night.
+PREPARE=yes
+if [ -n "$PREVIOUS" ] && [ -d "$APP/$PREVIOUS" ] \
+  && cmp -s "$APP/$PREVIOUS/tools/prepare_catalogue.py" "$RELEASE/tools/prepare_catalogue.py" \
+  && cmp -s "$APP/$PREVIOUS/deployment/server/picwise-prepare.service" "$RELEASE/deployment/server/picwise-prepare.service"; then
+  BEFORE=$(python3 "$RELEASE/deployment/server/prepared_state.py" --within-hours 24 \
+    "$SHARED/prepared/catalogue.json.gz" 2>&1 | tail -n 1 || true)
+  case "$BEFORE" in fresh*) PREPARE=no ;; esac
+fi
+if [ "$PREPARE" = yes ]; then
+  systemctl start picwise-prepare.service || echo "preparing failed; the site keeps the last prepared file (30 h)"
+  # The summary line, the peak memory and length, and systemd's own line, of this run.
+  journalctl -u picwise-prepare.service -n 20 -o cat --no-pager --since "-65min" \
+    | grep -E 'prepare_catalogue|Consumed' | tail -n 3 || true
+else
+  echo "not prepared again: the change does not concern the catalogue; this release reads the one in place ($BEFORE)"
+fi
 
 echo "== the catalogue in place, as this release reads it"
 # Owner, 2026-11-20 («κάνε μόνο το ένα», of three remedies): this release goes in only if it can read

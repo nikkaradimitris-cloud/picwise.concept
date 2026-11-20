@@ -11,6 +11,11 @@ after the deployment's preparation and before the site is restarted:
 
     python3 <release>/deployment/server/prepared_state.py <prepared file>
 
+`deploy.sh` also runs it before the preparation, with `--within-hours 24`, to prepare the
+catalogue again only when the change concerns it (owner, 2026-11-20: «από ποια αλλαγή δεν
+αφορά τον κατάλογο γιατί πρέπει να περιμένουμε μισή ώρα?»): "fresh" then also means
+prepared within that many hours.
+
 It prints one line, the state first, as the site's own check names them
 (`prepared_catalogue.check_prepared_catalogue`): "fresh" (this release reads it), "too_old",
 "other_code" (written by other code), "other_format", "unreadable", or "missing"; then the
@@ -21,11 +26,12 @@ held in memory beside the site and the preparation.
 """
 from __future__ import annotations
 
+import argparse
 import gzip
 import re
 import sys
 import zlib
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 RELEASE = Path(__file__).resolve().parents[2]
@@ -63,9 +69,10 @@ def read_head(path: Path) -> dict[str, str] | None:
     return found
 
 
-def state_of(path: Path, *, now: datetime | None = None) -> tuple[str, str]:
+def state_of(path: Path, *, now: datetime | None = None, within_hours: float | None = None) -> tuple[str, str]:
     """The file's state for this release, in the order the site checks it, and the time
-    it was prepared ("" when not known)."""
+    it was prepared ("" when not known). With `within_hours`, a file prepared longer ago
+    than that, or than the site's own limit, is "too_old"."""
     if not path.is_file():
         return "missing", ""
     head = read_head(path)
@@ -82,17 +89,20 @@ def state_of(path: Path, *, now: datetime | None = None) -> tuple[str, str]:
         return "unreadable", ""
     if prepared_at.tzinfo is None:
         return "unreadable", ""
-    if (now or datetime.now(timezone.utc)) - prepared_at > prepared_catalogue.prepared_catalogue_age_limit():
+    limit = prepared_catalogue.prepared_catalogue_age_limit()
+    if within_hours is not None:
+        limit = min(limit, timedelta(hours=within_hours))
+    if (now or datetime.now(timezone.utc)) - prepared_at > limit:
         return "too_old", text
     return "fresh", text
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = sys.argv[1:] if argv is None else argv
-    if len(args) != 1:
-        print("usage: prepared_state.py <prepared file>", file=sys.stderr)
-        return 2
-    state, prepared_at = state_of(Path(args[0]))
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--within-hours", type=float, help="fresh only when prepared within these hours")
+    parser.add_argument("path", type=Path, help="the prepared file")
+    args = parser.parse_args(argv)
+    state, prepared_at = state_of(args.path, within_hours=args.within_hours)
     print(f"{state} {prepared_at}".strip())
     return 0
 

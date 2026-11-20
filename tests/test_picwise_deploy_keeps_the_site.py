@@ -13,6 +13,12 @@ Pinned here: the state of real prepared files and of broken ones, as the site's 
 names them; and the deployment's step itself, run in bash with its services stubbed, both
 ways.
 
+Then (owner, the same day: «ότι αφορά τον κατάλογο okay από ποια αλλαγή δεν αφορά τον
+κατάλογο γιατί πρέπει να περιμένουμε μισή ώρα?»): a deployment prepares the catalogue
+again only when the change concerns it: the new release would not read the file in place,
+the preparation's own script or service changed, or the file is a day old or more. Pinned
+too, by running that step in bash, each way.
+
 Every product here is local test data (`.invalid` links).
 """
 from __future__ import annotations
@@ -126,6 +132,20 @@ class StateTests(unittest.TestCase):
         )
         self.assertEqual(wrong.returncode, 2)
 
+    def test_within_hours_a_day_old_file_is_too_old_for_a_deployment(self) -> None:
+        when = datetime.now(timezone.utc) - timedelta(hours=25)
+        _write(self.path, _payload(prepared_at=when.isoformat()))
+        self.assertEqual(prepared_state.state_of(self.path)[0], "fresh")  # the site still reads it
+        self.assertEqual(prepared_state.state_of(self.path, within_hours=24)[0], "too_old")
+        self.assertEqual(prepared_state.state_of(self.path, within_hours=26)[0], "fresh")
+        done = subprocess.run(
+            [sys.executable, str(ROOT / "deployment" / "server" / "prepared_state.py"), "--within-hours", "24",
+             str(self.path)],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertTrue(done.stdout.startswith("too_old "))
+
 
 class DeployStepTests(unittest.TestCase):
     """The deployment's step, cut from deploy.sh and run in bash: `python3`, `install` and
@@ -216,6 +236,77 @@ class DeployStepTests(unittest.TestCase):
         self.assertLess(step, offers)
         self.assertLess(step, restart)
         self.assertIn('prepared_state.py" "$SHARED/prepared/catalogue.json.gz"', text)
+
+
+class PrepareOnlyWhenNeededTests(unittest.TestCase):
+    """The deployment's preparation step, cut from deploy.sh and run in bash: `python3`,
+    `systemctl` and `journalctl` are stubbed; the two releases' files are real."""
+
+    def setUp(self) -> None:
+        text = DEPLOY.read_text(encoding="utf-8")
+        start = text.index('echo "== the catalogue, prepared as a Vercel build prepares it')
+        end = text.index('echo "== the catalogue in place, as this release reads it"', start)
+        self.step = text[start:end]
+        self.app = Path(tempfile.mkdtemp()) / "app"
+        for release in ("old", "new"):
+            folder = self.app / "releases" / release
+            (folder / "tools").mkdir(parents=True)
+            (folder / "deployment" / "server").mkdir(parents=True)
+            (folder / "tools" / "prepare_catalogue.py").write_text("the preparation\n")
+            (folder / "deployment" / "server" / "picwise-prepare.service").write_text("[Service]\n")
+        self.log = self.app / "calls.log"
+
+    def _run(self, state: str, previous: str = "releases/old") -> str:
+        script = "\n".join(
+            [
+                "set -euo pipefail",
+                f"APP='{self.app}'",
+                'RELEASE="$APP/releases/new"',
+                'SHARED="$APP/shared"',
+                f"PREVIOUS='{previous}'",
+                f"python3() {{ echo \"python3 $*\" >> '{self.log}'; echo '{state}'; }}",
+                f"systemctl() {{ echo \"systemctl $*\" >> '{self.log}'; }}",
+                f"journalctl() {{ echo \"journalctl $*\" >> '{self.log}'; }}",
+                self.step,
+            ]
+        )
+        done = subprocess.run(["bash", "-c", script], capture_output=True, text=True, check=False)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        return done.stdout
+
+    def _prepared(self) -> bool:
+        return "systemctl start picwise-prepare.service" in (self.log.read_text() if self.log.exists() else "")
+
+    def test_a_change_that_does_not_concern_the_catalogue_is_not_prepared_again(self) -> None:
+        said = self._run("fresh 2026-11-20T10:17:27+00:00")
+        self.assertFalse(self._prepared())
+        self.assertIn("not prepared again: the change does not concern the catalogue", said)
+        calls = self.log.read_text()
+        self.assertIn("prepared_state.py --within-hours 24", calls)
+        self.assertIn("shared/prepared/catalogue.json.gz", calls)
+
+    def test_a_change_of_the_rules_or_a_day_old_file_is_prepared_again(self) -> None:
+        for state in ("other_code 2026-11-20T10:17:27+00:00", "too_old 2026-11-19T04:17:00+00:00", "missing",
+                      "unreadable", ""):
+            with self.subTest(state):
+                self._run(state)
+                self.assertTrue(self._prepared())
+                self.log.unlink()
+
+    def test_a_change_of_the_preparation_itself_is_prepared_again(self) -> None:
+        for name in ("tools/prepare_catalogue.py", "deployment/server/picwise-prepare.service"):
+            with self.subTest(name):
+                changed = self.app / "releases" / "new" / name
+                kept = changed.read_text()
+                changed.write_text(kept + "changed\n")
+                self._run("fresh 2026-11-20T10:17:27+00:00")
+                self.assertTrue(self._prepared())
+                changed.write_text(kept)
+                self.log.unlink()
+
+    def test_with_no_release_before_it_the_catalogue_is_prepared(self) -> None:
+        self._run("fresh 2026-11-20T10:17:27+00:00", previous="")
+        self.assertTrue(self._prepared())
 
 
 if __name__ == "__main__":
