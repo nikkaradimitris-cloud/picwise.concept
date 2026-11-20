@@ -184,10 +184,12 @@ jobs:
           python -m venv "$RUNNER_TEMP/ai"
           "$RUNNER_TEMP/ai/bin/pip" install -q --disable-pip-version-check --no-cache-dir --require-hashes \
             -r deployment/server/requirements-ai.txt
-      - name: The searches, as the site answers them, and their cards judged
+      - name: The searches, as the site answers them, and their cards judged; real products hidden?
         if: steps.prepare.outcome == 'success'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # The AI's lines, to say which line kept a product out of a kind (the measure only).
+          PICWISE_AI_SHELVES_FILE: ${{ runner.temp }}/site/shelves.jsonl.gz
         run: |
           "$RUNNER_TEMP/ai/bin/python" deployment/server/measure_after.py "$RUNNER_TEMP/after/catalogue.json.gz" \
             --gone "$RUNNER_TEMP/site/gone.json" --offers "$RUNNER_TEMP/site/offers.json" \

@@ -44,6 +44,15 @@ SEARCHES = (
 CARDS = 12
 SECOND_KEYS = ("merchant_id", "aw_product_id")
 TITLE = 70
+# What the kinds' lists took away: the kinds that lost the most, and the AI's lines named.
+TAKEN_KINDS = 15
+TAKEN_LINES = 2
+# The products judged to see whether real ones are hidden: so many of each of the kinds
+# that lost the most, and so many from the other kinds together.
+SAMPLE_KINDS = 30
+SAMPLE_A_KIND = 10
+SAMPLE_REST = 60
+HIDDEN_EXAMPLES = 12
 
 
 def _short(text: Any, width: int = TITLE) -> str:
@@ -158,40 +167,157 @@ def judge(found: list[Searched], prepared: Any, ask: Callable[[dict[str, Any]], 
     return spent[0]
 
 
-def doubted(prepared: Any, top: int = 15) -> list[str]:
-    """What rule 2 took away (`ai_shelves.checked_kinds`): the products the catalogue holds
-    as doubtful that the kind reader alone reads as a kind, by that kind. To see that the
-    AI's line hides look-alikes, not the things themselves."""
-    from picwise_nlu.concept_understanding import UNCERTAIN_MARKER, annotate_product_concepts
-    from picwise_providers.search_selection import product_kind_key
+@dataclass
+class Taken:
+    """What the kinds' lists took away (`ai_shelves.checked_kinds`): per kind, the places of
+    the products its type, shelf and title give it that the AI's line keeps out of it."""
 
-    fields = prepared.search_fields
-    if not fields or not prepared.kinds:
-        return ["rule 2: the catalogue keeps no kinds or fields to read"]
-    lost: Counter[str] = Counter()
-    titles: dict[str, list[str]] = {}
-    doubtful = with_kind = 0
-    for product, product_fields, kinds in zip(prepared.products, fields, prepared.kinds):
-        if kinds == frozenset({UNCERTAIN_MARKER}):
-            doubtful += 1
-            alone = annotate_product_concepts(*product_kind_key(product, product_fields))
-            real = sorted(kind for kind in alone if not kind.startswith("__"))
-            if real:
-                head = real[0] if len(real) == 1 else min(real, key=len)
-                lost[head] += 1
-                titles.setdefault(head, [])
-                if len(titles[head]) < 2:
-                    titles[head].append(_short(product.title, 45))
-        elif any(not kind.startswith("__") for kind in kinds):
-            with_kind += 1
+    by_kind: dict[str, list[int]] = field(default_factory=dict)
+    lines: dict[int, str] = field(default_factory=dict)
+    products: int = 0
+    left_with_none: int = 0
+    with_kind: int = 0
+
+
+def taken_away(prepared: Any) -> Taken:
+    from picwise_providers.ai_shelves import line_of
+    from picwise_providers.search_selection import kinds_before_the_kind_lists
+
+    taken = Taken()
+    for place, (product, fields, kinds) in enumerate(zip(prepared.products, prepared.search_fields, prepared.kinds)):
+        after = {kind for kind in kinds if not kind.startswith("__")}
+        taken.with_kind += bool(after)
+        before = {kind for kind in kinds_before_the_kind_lists(product, fields) if not kind.startswith("__")}
+        lost = before - after
+        if not lost:
+            continue
+        taken.products += 1
+        taken.left_with_none += not after
+        taken.lines[place] = str(line_of(str(product.title or ""), str(product.brand or ""), product.raw) or "")
+        for kind in lost:
+            taken.by_kind.setdefault(kind, []).append(place)
+    return taken
+
+
+def _last(line: str) -> str:
+    return line.split(">")[-1].strip() or "(no line)"
+
+
+def report_taken(prepared: Any, taken: Taken, top: int = TAKEN_KINDS) -> list[str]:
+    """How many products the lists took out of a kind, and from which kinds the most, with
+    the AI's lines they carry."""
     out = [
-        f"products with a kind {with_kind:,}; doubtful {doubtful:,}, of which the AI's line made doubtful "
-        f"{sum(lost.values()):,} (read as a kind without it)",
-        "the kinds that lost the most: " + "; ".join(
-            f"{kind} {count:,} (e.g. {' / '.join(titles.get(kind, []))})" for kind, count in lost.most_common(top)
+        f"products with a kind {taken.with_kind:,}; taken out of a kind by the lists {taken.products:,}"
+        f" (left with no kind, so doubtful: {taken.left_with_none:,})",
+    ]
+    ranked = sorted(taken.by_kind.items(), key=lambda item: -len(item[1]))
+    rows = []
+    for kind, places in ranked[:top]:
+        lines = Counter(_last(taken.lines.get(place, "")) for place in places)
+        example = _short(prepared.products[places[0]].title, 40)
+        rows.append(
+            f"{kind} {len(places):,} ("
+            + ", ".join(f"{name} {count:,}" for name, count in lines.most_common(TAKEN_LINES))
+            + f"; e.g. {example})"
+        )
+    out.append("the kinds that lost the most: " + "; ".join(rows))
+    return out
+
+
+def hidden_sample(taken: Taken, seed: int = 20261120) -> dict[str, list[int]]:
+    """The products judged, per kind: up to `SAMPLE_A_KIND` of each kind that lost the most,
+    and `SAMPLE_REST` from the other kinds together."""
+    import random
+
+    chooser = random.Random(seed)
+    ranked = sorted(taken.by_kind.items(), key=lambda item: (-len(item[1]), item[0]))
+    sample: dict[str, list[int]] = {}
+    for kind, places in ranked[:SAMPLE_KINDS]:
+        sample[kind] = sorted(chooser.sample(places, min(SAMPLE_A_KIND, len(places))))
+    rest = [(kind, place) for kind, places in ranked[SAMPLE_KINDS:] for place in places]
+    for kind, place in chooser.sample(rest, min(SAMPLE_REST, len(rest))):
+        sample.setdefault(kind, []).append(place)
+    return sample
+
+
+def _spread(keys: list[tuple[str, int]], most: int, a_kind: int = 2) -> list[tuple[str, int]]:
+    """At most `a_kind` of each kind, `most` in all."""
+    counted: Counter[str] = Counter()
+    found = []
+    for kind, place in keys:
+        if counted[kind] < a_kind and len(found) < most:
+            counted[kind] += 1
+            found.append((kind, place))
+    return found
+
+
+def hidden_check(
+    prepared: Any, taken: Taken, ask: Callable[[dict[str, Any]], Any] | None, budget: float
+) -> tuple[list[str], float]:
+    """Whether real products are hidden: a sample of the products the lists took out of a
+    kind, each judged by Claude Haiku 5.5 for that kind (`audit_search.KIND_PROMPT`); the
+    share that is the kind itself, by kind, and over all the products taken, estimated
+    kind by kind from the sample."""
+    import audit_search
+    from picwise_nlu.product_concepts import get_product_concepts
+
+    if ask is None or not taken.products:
+        return [f"not judged ({'no AI' if ask is None else 'nothing taken'})"], 0.0
+    names = {concept.concept_id: (concept.english[0] if concept.english else concept.concept_id)
+             for concept in get_product_concepts()}
+    sample = hidden_sample(taken)
+    fields = prepared.search_fields
+    spent = [0.0]
+    verdicts: dict[tuple[str, int], str] = {}
+
+    def one(job: tuple[str, list[int]]) -> None:
+        kind, places = job
+        if spent[0] >= budget:
+            return
+        rows = [(prepared.products[place], fields[place]) for place in places]
+        request = audit_search.kind_request(f"a {names.get(kind, kind.replace('_', ' '))}", rows)
+        asked = ask(request)
+        spent[0] += float(getattr(asked, "cost_usd", 0.0) or 0.0)
+        for place, said in zip(places, audit_search._answers(getattr(asked, "answer", None), len(rows), "answer")):
+            verdicts[(kind, place)] = said
+
+    jobs = [(kind, places[start:start + 20]) for kind, places in sample.items() for start in range(0, len(places), 20)]
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(one, jobs))
+    judged = {key: said for key, said in verdicts.items() if said in ("yes", "no")}
+    real = [key for key, said in judged.items() if said == "yes"]
+    # The kinds that lost the most, each by its own sample; the others by their sample together.
+    ranked = sorted(taken.by_kind.items(), key=lambda item: (-len(item[1]), item[0]))
+    largest = {kind for kind, _places in ranked[:SAMPLE_KINDS]}
+    estimate = 0.0
+    per_kind = []
+    rest_said: list[str] = []
+    rest_count = 0
+    for kind, places in ranked:
+        said = [judged[(kind, place)] for place in sample.get(kind, ()) if (kind, place) in judged]
+        if kind in largest:
+            if said:
+                estimate += said.count("yes") / len(said) * len(places)
+                per_kind.append(f"{kind} {said.count('yes')}/{len(said)}")
+        else:
+            rest_said += said
+            rest_count += len(places)
+    if rest_said:
+        estimate += rest_said.count("yes") / len(rest_said) * rest_count
+        per_kind.append(f"the other kinds together {rest_said.count('yes')}/{len(rest_said)}")
+    total = sum(len(places) for places in taken.by_kind.values())
+    out = [
+        f"judged {len(judged):,} of the products the lists took out of a kind (a sample; unsure {len(verdicts) - len(judged)}):"
+        f" really that kind {_share(len(real), len(judged))}",
+        f"estimated over all {total:,} (product, kind) taken: about {estimate:,.0f} real ones hidden"
+        f" ({100 * estimate / total:.1f}%)" if total else "nothing taken",
+        "by kind (real of judged): " + "; ".join(per_kind),
+        "real ones hidden, e.g.: " + "; ".join(
+            f"{_short(prepared.products[place].title, 45)} ({kind}; {_last(taken.lines.get(place, ''))})"
+            for kind, place in _spread(real, HIDDEN_EXAMPLES)
         ),
     ]
-    return out
+    return out, spent[0]
 
 
 def _share(part: int, whole: int) -> str:
@@ -277,9 +403,13 @@ def main(argv: list[str] | None = None) -> int:
         print("the AI: not asked (a dry run, or no key)")
     cost = judge(found, prepared, ask, args.budget)
     try:
-        notices.say("after: what the AI's line made doubtful", "\n".join(doubted(prepared)), final=True)
+        taken = taken_away(prepared)
+        notices.say("after: what the kinds' lists took away", "\n".join(report_taken(prepared, taken)), final=True)
+        hidden, hidden_cost = hidden_check(prepared, taken, ask, args.budget)
+        cost += hidden_cost
+        notices.say("after: real products hidden?", "\n".join(hidden), final=True)
     except Exception as error:  # a measure only
-        print(f"rule 2's count failed: {type(error).__name__}")
+        print(f"the lists' count failed: {type(error).__name__}: {error}")
     totals, each = report(found)
     totals.append(f"the judging cost ${cost:.4f}")
     notices.say("after: in all", "\n".join(totals), final=True)

@@ -18,13 +18,19 @@ server `/srv/picwise/assist/shelves/answers.jsonl.gz`). Without the file, nothin
    a first-link row has none: the search read them as a shelf of their own, before the
    Google line ("RJ45 Boots" kept a cable boot among the boots). The key it was asked by
    stays in the row (`AI_KEY_COLUMN`).
-2. Every product, of either link: the kinds its type, shelf and title give are read against
-   the kinds the AI's line gives with the same title (`checked_kinds`). The AI's line
-   giving none of them -- an accessory (a strap the shop filed under "Watches"), or another
-   kind -- makes the product doubtful (`UNCERTAIN_MARKER`): it is found by its words, never
-   by its kind ("watches" shows watches; "garmin strap" still finds the strap). A line that
-   names no kind PicWise knows doubts a kind only from another department than the row's
-   own line. No line from the AI (not asked yet, refused, "no line fits") changes nothing.
+2. Every product, of either link (owner, 2026-11-20, 19:00: «ένα προϊόν εμφανίζεται σε ένα
+   είδος μόνο αν η κατηγορία που του έδωσε το AI είναι στη λίστα του είδους. Ο ίδιος κανόνας
+   και για τα δύο feeds»): each kind of the site has its own lines of Google's taxonomy,
+   written once by the AI and checked (`picwise_ai.kind_lines`, kept in
+   `data/kind_lines/google_lines_by_kind.json`); a kind's list holds its narrower kinds'
+   lines too; a line the AI chose holds the lines under it, a line its check added (where
+   the products read as the kind really are, judged the kind itself) only itself. A product keeps a kind its type, shelf
+   and title give only when the AI's line for it is on that kind's list (`checked_kinds`);
+   a product left with none of its kinds is doubtful (`UNCERTAIN_MARKER`): it is found by
+   its words, never by its kind ("watches" shows watches; "garmin strap" still finds the
+   strap). No line from the AI (not asked yet, refused, "no line fits"), or a kind with no
+   list, changes nothing. Until 20/11 19:00 the AI's line was read through the kind reader
+   (rule 2 of 16:40), which read "Hardware Accessories > Washers" as a washing machine.
 """
 from __future__ import annotations
 
@@ -99,9 +105,10 @@ def answers() -> dict[str, str]:
 
 
 def reset() -> None:
-    """Forget the answers read (tests)."""
+    """Forget the answers and the kinds' lists read (tests)."""
     with _LOCK:
         _LOADED.clear()
+        _LISTS.clear()
 
 
 def key_of(title: str, brand: str, raw: Any) -> str:
@@ -137,15 +144,63 @@ def second_link_answer(
     return (line, key) if line else ("", "")
 
 
-# Google's taxonomy in British English names one department otherwise: a shop of the first
-# link writes "Clothing & Accessories > Shoes" where the AI, given the American list, writes
-# "Apparel & Accessories > Shoes" (the scan of 20/11: most of its "another department").
-_SAME_DEPARTMENT = {"clothing & accessories": "apparel & accessories"}
+KIND_LINES_FILE_ENV = "PICWISE_KIND_LINES_FILE"
+_LISTS: dict[str, Any] = {}
 
 
-def _department(line: str) -> str:
-    name = " ".join(str(line or "").split(">")[0].split()).casefold()
-    return _SAME_DEPARTMENT.get(name, name)
+def _levels(line: str) -> tuple[str, ...]:
+    return tuple(" ".join(part.split()).casefold() for part in str(line or "").split(">") if part.strip())
+
+
+def kind_lists(path: Path | None = None) -> dict[str, tuple[tuple[tuple[str, ...], bool], ...]]:
+    """Each kind's lines as kept in the repository, as levels, each kind's own with its
+    narrower kinds' (a robot vacuum is a vacuum cleaner), read once a process: the lines the
+    AI chose with the lines under them; the lines its check added (`exact`) alone. A kind
+    with no line is left out: no rule can be read for it."""
+    if path is None:
+        configured = str(os.environ.get(KIND_LINES_FILE_ENV) or "").strip()
+        from picwise_ai.kind_lines import KIND_LINES_PATH
+
+        path = Path(configured) if configured else KIND_LINES_PATH
+    with _LOCK:
+        if _LISTS.get("path") == str(path):
+            return _LISTS["lists"]
+    from picwise_ai.kind_lines import read
+    from picwise_nlu.product_concepts import get_product_concepts
+
+    own = read(path)
+    exact = read(path, "exact")
+    narrower: dict[str, set[str]] = {}
+    for concept in get_product_concepts():
+        for wide in concept.broader:
+            narrower.setdefault(wide, set()).add(concept.concept_id)
+
+    def under(kind: str, seen: frozenset[str] = frozenset()) -> set[str]:
+        found = {kind}
+        for narrow in narrower.get(kind, ()):
+            if narrow not in seen:
+                found |= under(narrow, seen | {kind})
+        return found
+
+    lists: dict[str, tuple[tuple[tuple[str, ...], bool], ...]] = {}
+    for kind in set(own) | set(exact):
+        parts = under(kind)
+        entries = {(_levels(line), False) for part in parts for line in own.get(part, ())}
+        entries |= {(_levels(line), True) for part in parts for line in exact.get(part, ())}
+        entries = {entry for entry in entries if entry[0]}
+        if entries:
+            lists[kind] = tuple(sorted(entries))
+    with _LOCK:
+        _LISTS["path"] = str(path)
+        _LISTS["lists"] = lists
+    return lists
+
+
+def on_list(line: str, allowed: tuple[tuple[tuple[str, ...], bool], ...]) -> bool:
+    """A line is on a list when it is one of its lines or under one the AI chose (a line
+    its check added holds no line under it)."""
+    levels = _levels(line)
+    return any(levels == part if alone else levels[: len(part)] == part for part, alone in allowed)
 
 
 def checked_kinds(
@@ -155,9 +210,10 @@ def checked_kinds(
     brand: str,
     raw: Any,
     table: Mapping[str, str] | None = None,
+    lists: Mapping[str, tuple[tuple[tuple[str, ...], bool], ...]] | None = None,
 ) -> frozenset[str]:
-    """Rule 2: the kinds a product is read as, kept when the AI's line agrees, else the
-    product doubtful."""
+    """Rule 2: the kinds a product is read as, each kept only when the AI's line for the
+    product is on the kind's list; none kept, the product doubtful."""
     table = answers() if table is None else table
     if not table or not kinds:
         return kinds
@@ -167,16 +223,12 @@ def checked_kinds(
     line = line_of(title, brand, raw, table)
     if not line:
         return kinds
-    from picwise_nlu.concept_understanding import ACCESSORY_MARKER, UNCERTAIN_MARKER, annotate_product_concepts
-
-    by_ai = annotate_product_concepts("", line, str(title or ""))
-    by_ai_real = {kind for kind in by_ai if not kind.startswith("__")}
-    if real & by_ai_real:
+    lists = kind_lists() if lists is None else lists
+    left = {kind for kind in real if kind in lists and not on_list(line, lists[kind])}
+    if not left:
         return kinds
-    if ACCESSORY_MARKER in by_ai or by_ai_real:
+    if left == real:
+        from picwise_nlu.concept_understanding import UNCERTAIN_MARKER
+
         return frozenset({UNCERTAIN_MARKER})
-    get = getattr(raw, "get", None)
-    own_line = str(get("google_product_category") or "") if get is not None else ""
-    if own_line and _department(own_line) != _department(line):
-        return frozenset({UNCERTAIN_MARKER})
-    return kinds
+    return frozenset(kinds - left)

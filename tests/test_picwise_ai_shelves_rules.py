@@ -1,9 +1,11 @@
 """The AI's shelves read by the catalogue (`picwise_providers.ai_shelves`; owner, 2026-11-20:
 the same rules for both links, and the AI's mechanism rather than product by product):
 rule 1, a second-link row given the AI's Google line as a first-link row carries the shop's;
-rule 2, a product of either link doubtful when the AI's line gives none of its kinds. The
-look-alikes seen live on 20/11 pinned: TV Cables' "RJ45 Snagless Boots" under "boots",
-Plusshop's "Garmin Fenix 6 Strap" under "watches"."""
+rule 2 (owner, 20/11 19:00), a product of either link in a kind only when the AI's line for
+it is on the kind's own list of Google's lines, else doubtful. The look-alikes seen live on
+20/11 pinned: TV Cables' "RJ45 Snagless Boots" under "boots", Plusshop's "Garmin Fenix 6
+Strap" under "watches", and those the measure after found: washers under "washing machine",
+room fragrances under "perfume"."""
 from __future__ import annotations
 
 import gzip
@@ -36,6 +38,29 @@ EARRINGS = "Apparel & Accessories > Jewelry > Earrings"
 SHOES = "Apparel & Accessories > Shoes"
 PAINT = "Hardware > Building Consumables > Painting Consumables"
 NETWORKING = "Electronics > Networking"
+KETTLES = "Home & Garden > Kitchen & Dining > Kitchen Appliances > Electric Kettles"
+WASHING_MACHINES = "Home & Garden > Household Appliances > Laundry Appliances > Washing Machines"
+WASHERS = "Hardware > Hardware Accessories > Hardware Fasteners > Washers"
+PERFUME = "Health & Beauty > Personal Care > Cosmetics > Perfume & Cologne"
+ROOM_FRAGRANCE = "Home & Garden > Decor > Home Fragrances"
+CAMERAS = "Cameras & Optics > Cameras"
+DIGITAL_CAMERAS = "Cameras & Optics > Cameras > Digital Cameras"
+DUMMY_CAMERAS = "Home & Garden > Business & Home Security > Dummy Surveillance Cameras"
+SMART = "Electronics > Electronics Accessories > Wearable Technology"
+# The kinds' lists the tests read, in the repository's form.
+LISTS = {
+    "watch": [WATCHES],
+    "smartwatch": [SMART],
+    "shoes": [SHOES],
+    "boots": [SHOES],
+    "kettle": [KETTLES],
+    "washing_machine": [WASHING_MACHINES],
+    "perfume": [PERFUME],
+    "camera": [CAMERAS],
+    "software": [],
+}
+# Lines the check added, each alone.
+EXACT = {"camera": ["Home & Garden > Business & Home Security"]}
 
 
 def _second(title: str, brand: str, category: str) -> ProviderProduct:
@@ -56,14 +81,19 @@ class _WithAnswers(unittest.TestCase):
     def setUp(self) -> None:
         self.folder = tempfile.TemporaryDirectory()
         self.path = Path(self.folder.name) / "answers.jsonl.gz"
-        self.before = os.environ.get(ai_shelves.AI_SHELVES_FILE_ENV)
+        self.lists = Path(self.folder.name) / "lists.json"
+        self.lists.write_text(json.dumps({"kinds": LISTS, "exact": EXACT}), encoding="utf-8")
+        names = (ai_shelves.AI_SHELVES_FILE_ENV, ai_shelves.KIND_LINES_FILE_ENV)
+        self.before = {name: os.environ.get(name) for name in names}
+        os.environ[ai_shelves.KIND_LINES_FILE_ENV] = str(self.lists)
         ai_shelves.reset()
 
     def tearDown(self) -> None:
-        if self.before is None:
-            os.environ.pop(ai_shelves.AI_SHELVES_FILE_ENV, None)
-        else:
-            os.environ[ai_shelves.AI_SHELVES_FILE_ENV] = self.before
+        for name, value in self.before.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
         ai_shelves.reset()
         self.folder.cleanup()
 
@@ -124,7 +154,7 @@ class SecondLinkTests(_WithAnswers):
 
 
 class BothLinksTests(_WithAnswers):
-    def test_a_kind_the_ais_line_does_not_give_makes_the_product_doubtful(self) -> None:
+    def test_a_kind_whose_list_does_not_hold_the_ais_line_makes_the_product_doubtful(self) -> None:
         strap = _first("Nato Strap 20mm Olive", "Acme", "Watches", WATCHES)
         backs = _first("Spare Earring Backs Butterfly Pair - Rosegold", "", "Watches", WATCHES)
         watch = _first("Diesel DZ4283 Mega Chief Chronograph Men's Watch", "Diesel", "Watches > Mens", WATCHES)
@@ -134,19 +164,70 @@ class BothLinksTests(_WithAnswers):
         self.assertEqual(_kinds(backs), frozenset({UNCERTAIN_MARKER}))
         self.assertIn("watch", _kinds(watch))
 
-    def test_a_line_of_no_known_kind_doubts_only_from_another_department(self) -> None:
-        away = _first("Garmin Forerunner 55 GPS Running Watch", "Garmin", "Watches", WATCHES)
-        near = _first("Casio Classic Digital Watch", "Casio", "Watches", WATCHES)
-        self.answer((away, NETWORKING), (near, "Apparel & Accessories > Jewelry"))
-        self.assertEqual(_kinds(away), frozenset({UNCERTAIN_MARKER}))
-        self.assertIn("watch", _kinds(near))
+    def test_the_measures_look_alikes_washers_and_room_fragrances(self) -> None:
+        washer = _first("M10 Steel Washer Pack of 50", "", "Washers", "Hardware")
+        machine = _first("Bosch Series 4 9kg Washing Machine", "Bosch", "Washing Machines", WASHING_MACHINES)
+        room = _first("Flower shop room fragrance - citrus zing", "", "Perfume", ROOM_FRAGRANCE)
+        scent = _first("Chanel No 5 Eau de Parfum 50ml", "Chanel", "Perfume", PERFUME)
+        self.assertIn("washing_machine", _kinds(washer))
+        self.assertIn("perfume", _kinds(room))
+        self.answer((washer, WASHERS), (machine, WASHING_MACHINES), (room, ROOM_FRAGRANCE), (scent, PERFUME))
+        self.assertEqual(_kinds(washer), frozenset({UNCERTAIN_MARKER}))
+        self.assertIn("washing_machine", _kinds(machine))
+        self.assertEqual(_kinds(room), frozenset({UNCERTAIN_MARKER}))
+        self.assertIn("perfume", _kinds(scent))
 
-    def test_the_british_name_of_a_department_is_the_same_department(self) -> None:
-        self.assertEqual(ai_shelves._department("Clothing & Accessories > Shoes"), ai_shelves._department(SHOES))
-        trainers = _first("Nike Air Max 90 Trainers", "Nike", "Trainers", "Clothing & Accessories > Shoes")
-        kinds = _kinds(trainers)
-        self.answer((trainers, "Apparel & Accessories"))
-        self.assertEqual(_kinds(trainers), kinds)
+    def test_a_line_under_a_lists_line_is_on_it(self) -> None:
+        lists = ai_shelves.kind_lists()
+        self.assertTrue(ai_shelves.on_list(DIGITAL_CAMERAS, lists["camera"]))
+        self.assertTrue(ai_shelves.on_list(CAMERAS, lists["camera"]))
+        self.assertFalse(ai_shelves.on_list(DUMMY_CAMERAS, lists["camera"]))
+        self.assertFalse(ai_shelves.on_list("Cameras & Optics", lists["camera"]))
+        self.assertFalse(ai_shelves.on_list("Cameras & Optics > Cameras Extra", lists["camera"]))
+
+    def test_a_line_the_check_added_holds_no_line_under_it(self) -> None:
+        lists = ai_shelves.kind_lists()
+        self.assertTrue(ai_shelves.on_list("Home & Garden > Business & Home Security", lists["camera"]))
+        self.assertFalse(ai_shelves.on_list(DUMMY_CAMERAS, lists["camera"]))
+
+    def test_a_kinds_list_holds_its_narrower_kinds_lines_and_only_the_kinds_off_their_list_leave(self) -> None:
+        lists = ai_shelves.kind_lists()
+        self.assertTrue(ai_shelves.on_list(SMART, lists["watch"]))
+        self.assertFalse(ai_shelves.on_list(WATCHES, lists["smartwatch"]))
+        raw = {ai_shelves.AI_KEY_COLUMN: "k"}
+        self.assertEqual(
+            ai_shelves.checked_kinds(frozenset({"smartwatch", "watch", "__pet__"}), title="x", brand="", raw=raw,
+                                     table={"k": WATCHES}, lists=lists),
+            frozenset({"watch", "__pet__"}),
+        )
+        self.assertEqual(
+            ai_shelves.checked_kinds(frozenset({"smartwatch", "watch"}), title="x", brand="", raw=raw,
+                                     table={"k": SMART}, lists=lists),
+            frozenset({"smartwatch", "watch"}),
+        )
+
+    def test_a_kind_with_no_list_or_an_empty_one_is_not_read(self) -> None:
+        lists = ai_shelves.kind_lists()
+        self.assertNotIn("software", lists)
+        raw = {ai_shelves.AI_KEY_COLUMN: "k"}
+        for kinds in (frozenset({"software"}), frozenset({"laptop"})):
+            self.assertEqual(
+                ai_shelves.checked_kinds(kinds, title="x", brand="", raw=raw, table={"k": NETWORKING}, lists=lists),
+                kinds,
+            )
+        self.assertEqual(
+            ai_shelves.checked_kinds(frozenset({"laptop", "watch"}), title="x", brand="", raw=raw,
+                                     table={"k": NETWORKING}, lists=lists),
+            frozenset({"laptop"}),
+        )
+
+    def test_the_repositorys_lists_are_read_without_the_setting(self) -> None:
+        os.environ.pop(ai_shelves.KIND_LINES_FILE_ENV, None)
+        ai_shelves.reset()
+        from picwise_ai.kind_lines import KIND_LINES_PATH, read
+
+        kept = {kind for part in ("kinds", "exact") for kind, lines in read(KIND_LINES_PATH, part).items() if lines}
+        self.assertEqual(set(ai_shelves.kind_lists()), kept)
 
     def test_no_answer_no_line_or_no_kind_changes_nothing(self) -> None:
         refused = _first("Nato Strap 20mm Olive", "Acme", "Watches", WATCHES)
@@ -208,21 +289,63 @@ class MeasureAfterTests(unittest.TestCase):
         self.assertIn("the search failed (KeyError)", each[2])
 
 
-class DoubtedTests(unittest.TestCase):
-    def test_what_rule_two_took_away_is_counted_by_kind(self) -> None:
+class TakenTests(_WithAnswers):
+    def _prepared(self, products):
         from types import SimpleNamespace
 
-        strap = _first("Nato Strap 20mm Olive", "Acme", "Watches", WATCHES)
-        watch = _first("Diesel DZ4283 Mega Chief Chronograph Men's Watch", "Diesel", "Watches > Mens", WATCHES)
-        products = [strap, watch]
-        prepared = SimpleNamespace(
+        return SimpleNamespace(
             products=products,
             search_fields=[_product_search_fields(product) for product in products],
-            kinds=[frozenset({UNCERTAIN_MARKER}), frozenset({"watch"})],
+            kinds=[_kinds(product) for product in products],
         )
-        text = "\n".join(measure_after.doubted(prepared))
-        self.assertIn("products with a kind 1; doubtful 1, of which the AI's line made doubtful 1", text)
-        self.assertIn("watch 1 (e.g. Nato Strap 20mm Olive)", text)
+
+    def test_what_the_lists_took_away_is_counted_by_kind_with_the_ais_lines(self) -> None:
+        strap = _first("Nato Strap 20mm Olive", "Acme", "Watches", WATCHES)
+        watch = _first("Diesel DZ4283 Mega Chief Chronograph Men's Watch", "Diesel", "Watches > Mens", WATCHES)
+        washer = _first("M10 Steel Washer Pack of 50", "", "Washers", "Hardware")
+        self.answer((strap, BANDS), (watch, WATCHES), (washer, WASHERS))
+        prepared = self._prepared([strap, watch, washer])
+        taken = measure_after.taken_away(prepared)
+        self.assertEqual(taken.by_kind, {"watch": [0], "washing_machine": [2]})
+        self.assertEqual((taken.products, taken.left_with_none, taken.with_kind), (2, 2, 1))
+        text = "\n".join(measure_after.report_taken(prepared, taken))
+        self.assertIn("taken out of a kind by the lists 2 (left with no kind, so doubtful: 2)", text)
+        self.assertIn("watch 1 (Watch Bands 1; e.g. Nato Strap 20mm Olive)", text)
+        self.assertIn("washing_machine 1 (Washers 1;", text)
+
+    def test_a_sample_of_them_is_judged_and_the_real_ones_counted(self) -> None:
+        from types import SimpleNamespace
+
+        straps = [_first(f"Nato Strap {n}mm Olive", "Acme", "Watches", WATCHES) for n in range(12, 26)]
+        real = _first("Casio Classic Digital Watch", "Casio", "Watches", WATCHES)
+        self.answer(*[(strap, BANDS) for strap in straps], (real, BANDS))
+        prepared = self._prepared([*straps, real])
+        taken = measure_after.taken_away(prepared)
+        self.assertEqual(len(taken.by_kind["watch"]), 15)
+        sample = measure_after.hidden_sample(taken)
+        self.assertEqual(len(sample["watch"]), measure_after.SAMPLE_A_KIND)
+        self.assertEqual(sample, measure_after.hidden_sample(taken))
+
+        def ask(request):
+            rows = request["messages"][0]["content"].split("Products:\n")[1].splitlines()
+            return SimpleNamespace(
+                answer={"answers": [{"n": n, "answer": "yes" if "Casio" in row else "no"} for n, row in enumerate(rows, 1)]},
+                cost_usd=0.001,
+            )
+
+        measure_after.SAMPLE_A_KIND, before = 15, measure_after.SAMPLE_A_KIND
+        try:
+            out, cost = measure_after.hidden_check(prepared, taken, ask, 1.0)
+        finally:
+            measure_after.SAMPLE_A_KIND = before
+        text = "\n".join(out)
+        self.assertIn("judged 15 of the products the lists took out of a kind", text)
+        self.assertIn("really that kind 1 of 15 (6.7%)", text)
+        self.assertIn("about 1 real ones hidden", text)
+        self.assertIn("watch 1/15", text)
+        self.assertIn("Casio Classic Digital Watch (watch; Watch Bands)", text)
+        self.assertAlmostEqual(cost, 0.001)
+        self.assertEqual(measure_after.hidden_check(prepared, taken, None, 1.0)[0], ["not judged (no AI)"])
 
 
 class WorkflowTests(unittest.TestCase):
@@ -234,7 +357,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertNotIn("upload-artifact", self.workflow)
         self.assertNotIn("sudo tee", self.workflow)
         self.assertNotIn("sudo mv", self.workflow)
-        self.assertIn("PICWISE_AI_SHELVES_FILE", self.workflow)
+        self.assertEqual(self.workflow.count("PICWISE_AI_SHELVES_FILE"), 2)
         self.assertIn("rm -rf ~/.ssh/deploy_key", self.workflow)
 
 
