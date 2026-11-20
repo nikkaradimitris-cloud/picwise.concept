@@ -40,8 +40,9 @@ a decision came about.
   Next: read the log's 40 disagreements of A and the 60 of B (who is right), cut the refusals (most likely a
   number miscopied: take the line by its name inside the branch, or ask for the full line), then the owner's
   daily cap before any run over the catalogue.
-- **NEXT, step 3 of the series, the brands' list: BUILT and measured on its branch, waiting for the owner's
-  word on the picture; NOT on the work branch, NOT deployed.** The owner's answers (20/11 ~10:55 Athens, both
+- **NEXT, step 3 of the series, the brands' list: BUILT, measured and APPROVED on its branch (the picture:
+  «Ναι, εγκρίνω»; a brand with its kind: «Μόνο της Canon», built, points 5-6 of the contract); NOT on the
+  work branch, NOT deployed: waits for «ανέβασε».** The owner's answers (20/11 ~10:55 Athens, both
   as proposed): «Ερώτηση + προϊόντα» for a brand alone, «Διόρθωση όταν είναι σίγουρο» for a misspelled brand.
   On `claude/brands-2026-11-20` (it holds the work branch up to `58d7672`, `94e4dfd` included), written first
   into the Decision Contract, "The catalogue's brands": `picwise_providers.brand_list` (one name however a
@@ -60,14 +61,16 @@ a decision came about.
   of 101 shown, 100 read as the brand (8 before); a slip with the kind, 87 of 94 the brand's of the kind first
   (29 before); with the kind, 104 of 112, as before. The list: 3,907 brands, 611 of several kinds, 1,137 of
   one, 2,159 of no kind read (step 4). A picture of the page (a fictional brand, on a phone) sent to the
-  owner at ~12:00 Athens: the question's words and "Understood as" wait for the owner's word. **Next, in
-  order:** the owner's word on the picture; the branch merged into the work branch only once the site's
-  way back is deployed (the other conversation, the owner's «ανέβασε» of 20/11 ~12:10: the site branch at
-  `857cdb2`, the revert of `94e4dfd`), so that it never rides along unasked; a deployment only on
-  «ανέβασε», which takes all the work branch holds and needs a preparation that succeeds (the first item). **Found, not done:** a brand with its kind lists first other
-  brands' products naming it ("canon ink cartridge": compatibles "for Canon"; so before the list): a word
-  that is a brand of the catalogue could be asked of the brand's own field; "samsung" opens with a printer
-  kit read as a printer (steps 2 and 4).
+  owner at ~12:00 Athens, its words approved at ~12:25 («Ναι, εγκρίνω»). **Next, in order:** on «ανέβασε»: the site branch's revert of `94e4dfd` (`857cdb2`, deployed 20/11 10:32 UTC by the
+  other conversation) merged into the brands' branch first, so that `94e4dfd`, whose preparation failed,
+  never comes back with it; a trial of the night's preparation with that code on GitHub's runner
+  (`trial-prepare.yml`, the peak memory under the server's 18 GB); then the branch into the work branch
+  and the site branch, what else rides along said to the owner. Measured a brand with its kind (runs
+  `44720261741`, `44721144292`): "canon ink cartridge" all Canon's, "brother toner" Brother's one, "ink
+  cartridge for canon" the compatibles too; the 120 largest with their kind 108 of 112 (104 before).
+  **Found, not done:** "samsung" opens with a printer kit read as a printer (steps 2 and 4); "samsung
+  phone case" lists other brands' cases too (their titles name Samsung without "for"); "dyson filter"
+  answers nothing, as before the list.
 - **NEXT (owner, 19/11 night): the AI to give every product its Google shelf** («εκτός από τον bot.... Μπλέξουμε και
   το ai για να ταξινομήσουμε όλο τον κατάλογο»). In order: (1) `search-audit.yml`, right answers per feed, the
   before; (2) a trial on 1,000 products, under $1: title and the shop's own category in, a line of Google's

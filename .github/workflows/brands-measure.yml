@@ -55,6 +55,10 @@
 # a slip with the kind, 90 of 94. Left: "brother toner" still opened with compatibles, the
 # brand's own under a third of the toners naming Brother: the compatibles saying so are no
 # longer counted against it (built after); "dyson filter" answers nothing, as before.
+# Run 44721144292 (10:39 UTC, the same catalogue): "brother toner" Brother's one toner only;
+# "canon ink cartridge" and "hp ink cartridge" as before; "samsung phone case" still other
+# brands' cases too (their titles name Samsung without "for": read as a word of their own);
+# the 120 largest brands as run 44720261741. The workflow turned off.
 name: Brands measure (read-only, measured only)
 on:
   push:
@@ -70,7 +74,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   measure:
-    if: true
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
