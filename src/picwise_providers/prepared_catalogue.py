@@ -86,6 +86,9 @@ LEFT_OUT_COLUMNS = frozenset(
 # reading its kind, the suggestions. A change to any of their files makes a file
 # written before it stale.
 _FROZEN_PACKAGES = ("src/picwise_providers", "src/picwise_nlu")
+# Files of data whose rules the file freezes too: each kind's lines of Google's taxonomy
+# (`ai_shelves`, rule 2; owner, 2026-11-20): a product's kinds are read against them.
+_FROZEN_FILES = ("data/kind_lines/google_lines_by_kind.json",)
 
 
 @dataclass(frozen=True)
@@ -119,6 +122,11 @@ def code_fingerprint(*, repo_root: Path | None = None) -> str:
     for package in _FROZEN_PACKAGES:
         for path in sorted((root / package).rglob("*.py")):
             digest.update(str(path.relative_to(root)).encode())
+            digest.update(hashlib.sha256(path.read_bytes()).digest())
+    for name in _FROZEN_FILES:
+        path = root / name
+        if path.is_file():
+            digest.update(name.encode())
             digest.update(hashlib.sha256(path.read_bytes()).digest())
     return digest.hexdigest()
 

@@ -102,13 +102,38 @@ class CheckedLinesTests(unittest.TestCase):
         answer = {"products": [{"n": 1, "line": _number(KETTLES), "name": "electric  kettles"}]}
         self.assertEqual(shelves.checked_lines(answer, 1, self.lines), {1: KETTLES})
 
-    def test_a_number_and_another_lines_name_are_refused(self) -> None:
-        answer = {"products": [{"n": 1, "line": _number(KETTLES) + 1, "name": "Electric Kettles"}]}
-        self.assertEqual(shelves.checked_lines(answer, 1, self.lines), {})
+    def test_every_own_name_is_one_lines_so_a_name_tells_the_line(self) -> None:
+        own_names = [line.split(" > ")[-1].casefold() for line in self.lines]
+        self.assertEqual(len(own_names), len(set(own_names)))
+
+    def test_a_number_miscopied_is_read_by_the_name_within_its_department(self) -> None:
+        # The trial of 20/11 refused 97 of 500 products so: a number one line off.
+        answer = {
+            "products": [
+                {"n": 1, "line": _number(KETTLES) + 1, "name": "Electric Kettles"},
+                {"n": 2, "line": len(self.lines) + 7, "name": "cables"},
+            ]
+        }
+        self.assertEqual(shelves.checked_lines(answer, 2, self.lines), {1: KETTLES, 2: CABLES})
+
+    def test_a_name_of_another_department_than_the_number_or_of_no_line_is_refused(self) -> None:
+        answer = {
+            "products": [
+                {"n": 1, "line": _number(CABLES), "name": "Electric Kettles"},
+                {"n": 2, "line": _number(KETTLES), "name": "Kettle Things"},
+            ]
+        }
+        self.assertEqual(shelves.checked_lines(answer, 2, self.lines), {})
 
     def test_no_line_fits_is_an_answer_of_its_own(self) -> None:
-        answer = {"products": [{"n": 1, "line": 0, "name": "none"}, {"n": 2, "line": 0, "name": "Cables"}]}
-        self.assertEqual(shelves.checked_lines(answer, 2, self.lines), {1: ""})
+        answer = {
+            "products": [
+                {"n": 1, "line": 0, "name": "none"},
+                {"n": 2, "line": 0, "name": "Cables"},
+                {"n": 3, "line": _number(CABLES), "name": "none"},
+            ]
+        }
+        self.assertEqual(shelves.checked_lines(answer, 3, self.lines), {1: ""})
 
     def test_numbers_out_of_range_twice_answered_or_not_numbers_are_left_out(self) -> None:
         answer = {
@@ -116,7 +141,7 @@ class CheckedLinesTests(unittest.TestCase):
                 {"n": 1, "line": _number(CABLES), "name": "Cables"},
                 {"n": 1, "line": _number(KETTLES), "name": "Electric Kettles"},
                 {"n": 3, "line": _number(CABLES), "name": "Cables"},
-                {"n": 2, "line": len(self.lines) + 1, "name": "Cables"},
+                {"n": 2, "line": len(self.lines) + 1, "name": "Cable Things"},
                 {"n": True, "line": _number(CABLES), "name": "Cables"},
                 "Cables",
             ]

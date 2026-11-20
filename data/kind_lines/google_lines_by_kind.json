@@ -1,0 +1,2669 @@
+{
+ "written": "2026-11-20T17:24Z",
+ "run": "GitHub Actions run 44782688770 (.github/workflows/ai-kind-lines.yml, commit 435489f)",
+ "model": "claude-haiku-5-5",
+ "taxonomy": "data/taxonomy_sources/google/taxonomy.en-US.txt",
+ "cost_usd": 0.2096,
+ "about": "kinds: each kind's lines, chosen by the AI from Google's taxonomy (run 44782688770), each with the lines under it; exact: the lines the scan gave the products the site reads as the kind, judged by the AI to be the kind itself (the check of the same run: the 15 lines a kind with the most products, judged by the line and 5 titles), each alone, without the tree's first five lines (the scan's slips, read as no answer) and without a department alone. A wider check (run 44787284618: 40 lines a kind, judged by the titles alone) was not kept: it said yes to lines such as Mattresses for beds and Mobile Phone Cases for chargers. Read by picwise_providers.ai_shelves (rule 2).",
+ "kinds": {
+  "washing_machine": [
+   "Home & Garden > Household Appliances > Laundry Appliances > Washing Machines"
+  ],
+  "tumble_dryer": [
+   "Home & Garden > Household Appliances > Laundry Appliances > Dryers"
+  ],
+  "washer_dryer": [
+   "Home & Garden > Household Appliances > Laundry Appliances > Laundry Combo Units"
+  ],
+  "dishwasher": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Dishwashers"
+  ],
+  "refrigerator": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Refrigerators"
+  ],
+  "freezer": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Freezers"
+  ],
+  "air_conditioner": [
+   "Home & Garden > Household Appliances > Climate Control Appliances > Air Conditioners"
+  ],
+  "dehumidifier": [
+   "Home & Garden > Household Appliances > Climate Control Appliances > Dehumidifiers"
+  ],
+  "air_purifier": [
+   "Home & Garden > Household Appliances > Climate Control Appliances > Air Purifiers"
+  ],
+  "fire_pit": [
+   "Home & Garden > Fireplaces"
+  ],
+  "sauna": [
+   "Home & Garden > Pool & Spa > Saunas"
+  ],
+  "heater": [
+   "Home & Garden > Household Appliances > Climate Control Appliances > Duct Heaters",
+   "Home & Garden > Household Appliances > Climate Control Appliances > Heating Radiators",
+   "Home & Garden > Household Appliances > Climate Control Appliances > Patio Heaters",
+   "Home & Garden > Household Appliances > Climate Control Appliances > Space Heaters",
+   "Home & Garden > Fireplaces"
+  ],
+  "fan": [
+   "Home & Garden > Household Appliances > Climate Control Appliances > Fans",
+   "Home & Garden > Household Appliances > Climate Control Appliances > Fans > Ceiling Fans",
+   "Home & Garden > Household Appliances > Climate Control Appliances > Fans > Desk & Pedestal Fans",
+   "Home & Garden > Household Appliances > Climate Control Appliances > Fans > Powered Hand Fans & Misters",
+   "Home & Garden > Household Appliances > Climate Control Appliances > Fans > Ventilation Fans",
+   "Home & Garden > Household Appliances > Climate Control Appliances > Fans > Wall Mount Fans",
+   "Apparel & Accessories > Clothing Accessories > Decorative Fans"
+  ],
+  "heat_pump": [
+   "Home & Garden > Household Appliances > Climate Control Appliances > Air Conditioners",
+   "Home & Garden > Household Appliances > Water Heaters",
+   "Home & Garden > Pool & Spa > Pool & Spa Accessories > Pool Heaters"
+  ],
+  "water_heater": [
+   "Home & Garden > Household Appliances > Water Heaters",
+   "Home & Garden > Household Appliances > Climate Control Appliances > Furnaces & Boilers"
+  ],
+  "vacuum_cleaner": [
+   "Home & Garden > Household Appliances > Vacuums",
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment > Lawn Vacuums"
+  ],
+  "robot_vacuum": [
+   "Home & Garden > Household Appliances > Vacuums"
+  ],
+  "steam_mop": [
+   "Home & Garden > Household Appliances > Floor & Steam Cleaners",
+   "Home & Garden > Household Appliances > Floor & Steam Cleaners > Carpet Steamers",
+   "Home & Garden > Household Appliances > Floor & Steam Cleaners > Steam Mops"
+  ],
+  "iron": [
+   "Home & Garden > Household Appliances > Laundry Appliances > Irons & Ironing Systems"
+  ],
+  "coffee_machine": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Coffee Makers & Espresso Machines"
+  ],
+  "microwave": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Microwave Ovens"
+  ],
+  "oven": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Ovens",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Roaster Ovens & Rotisseries",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Toasters & Grills > Countertop & Toaster Ovens"
+  ],
+  "cooker": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Food Cookers & Steamers",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Ranges"
+  ],
+  "hob": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Cooktops"
+  ],
+  "air_fryer": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Deep Fryers",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Toasters & Grills > Countertop & Toaster Ovens"
+  ],
+  "deep_fryer": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Deep Fryers"
+  ],
+  "mixer": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Food Mixers & Blenders"
+  ],
+  "hand_blender": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Food Mixers & Blenders"
+  ],
+  "blender": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Food Mixers & Blenders"
+  ],
+  "food_processor": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Food Mixers & Blenders"
+  ],
+  "toaster": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Toasters & Grills > Sandwich Makers",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Toasters & Grills > Toasters"
+  ],
+  "kettle": [
+   "Home & Garden > Kitchen & Dining > Cookware & Bakeware > Cookware > Stovetop Kettles",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Electric Kettles"
+  ],
+  "juicer": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Juicers"
+  ],
+  "cookware": [
+   "Home & Garden > Kitchen & Dining > Cookware & Bakeware > Cookware",
+   "Home & Garden > Kitchen & Dining > Cookware & Bakeware > Cookware > Sauté Pans",
+   "Home & Garden > Kitchen & Dining > Cookware & Bakeware > Cookware > Skillets & Frying Pans",
+   "Home & Garden > Kitchen & Dining > Cookware & Bakeware > Cookware > Stock Pots"
+  ],
+  "pressure_cooker": [
+   "Home & Garden > Kitchen & Dining > Cookware & Bakeware > Cookware > Pressure Cookers & Canners"
+  ],
+  "kitchen_scale": [
+   "Home & Garden > Kitchen & Dining > Kitchen Tools & Utensils"
+  ],
+  "office_chair": [
+   "Furniture > Office Furniture > Office Chairs"
+  ],
+  "chair": [
+   "Furniture > Chairs",
+   "Furniture > Office Furniture > Office Chairs",
+   "Furniture > Outdoor Furniture > Outdoor Seating > Outdoor Chairs",
+   "Furniture > Baby & Toddler Furniture > High Chairs & Booster Seats"
+  ],
+  "desk": [
+   "Furniture > Office Furniture > Desks"
+  ],
+  "sofa": [
+   "Furniture > Sofas",
+   "Furniture > Outdoor Furniture > Outdoor Seating > Outdoor Sofas",
+   "Furniture > Sofa Accessories > Sectional Sofa Units"
+  ],
+  "sofa_bed": [
+   "Furniture > Sofas",
+   "Furniture > Futons"
+  ],
+  "bed": [
+   "Furniture > Beds & Accessories > Beds & Bed Frames",
+   "Furniture > Outdoor Furniture > Outdoor Beds",
+   "Furniture > Baby & Toddler Furniture > Cribs & Toddler Beds",
+   "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Beds",
+   "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Beds",
+   "Sporting Goods > Outdoor Recreation > Camping & Hiking > Camp Furniture > Cots"
+  ],
+  "mattress": [
+   "Furniture > Beds & Accessories > Mattresses",
+   "Sporting Goods > Outdoor Recreation > Camping & Hiking > Camp Furniture > Air Mattresses"
+  ],
+  "wardrobe": [
+   "Furniture > Cabinets & Storage > Armoires & Wardrobes"
+  ],
+  "shelving": [
+   "Furniture > Shelving"
+  ],
+  "bookcase": [
+   "Furniture > Shelving > Bookcases & Standing Shelves"
+  ],
+  "table": [
+   "Furniture > Tables",
+   "Furniture > Office Furniture > Workspace Tables",
+   "Furniture > Outdoor Furniture > Outdoor Tables"
+  ],
+  "bedside_table": [
+   "Furniture > Tables > Nightstands"
+  ],
+  "lamp": [
+   "Home & Garden > Lighting > Lamps",
+   "Home & Garden > Lighting > Lighting Fixtures > Ceiling Light Fixtures",
+   "Home & Garden > Lighting > Lighting Fixtures > Chandeliers",
+   "Home & Garden > Lighting > Lighting Fixtures > Wall Light Fixtures"
+  ],
+  "light_bulb": [
+   "Home & Garden > Lighting > Light Bulbs"
+  ],
+  "smart_plug": [
+   "Hardware > Power & Electrical Supplies > Home Automation Kits"
+  ],
+  "smartphone": [
+   "Electronics > Communications > Telephony > Mobile Phones",
+   "Electronics > Communications > Telephony > Mobile Phones > Contract Mobile Phones",
+   "Electronics > Communications > Telephony > Mobile Phones > Pre-paid Mobile Phones",
+   "Electronics > Communications > Telephony > Mobile Phones > Unlocked Mobile Phones"
+  ],
+  "mobile_phone": [
+   "Electronics > Communications > Telephony > Mobile Phones",
+   "Electronics > Communications > Telephony > Mobile Phones > Contract Mobile Phones",
+   "Electronics > Communications > Telephony > Mobile Phones > Pre-paid Mobile Phones",
+   "Electronics > Communications > Telephony > Mobile Phones > Unlocked Mobile Phones"
+  ],
+  "desk_phone": [
+   "Electronics > Communications > Telephony > Conference Phones",
+   "Electronics > Communications > Telephony > Corded Phones",
+   "Electronics > Communications > Telephony > Cordless Phones"
+  ],
+  "power_bank": [
+   "Electronics > Electronics Accessories > Power > Batteries > General Purpose Batteries"
+  ],
+  "phone_charger": [
+   "Electronics > Electronics Accessories > Power > Power Adapters & Chargers"
+  ],
+  "wireless_charger": [
+   "Electronics > Electronics Accessories > Power > Power Adapters & Chargers"
+  ],
+  "cable": [
+   "Electronics > Electronics Accessories > Cables",
+   "Hardware > Power & Electrical Supplies > Electrical Wires & Cable"
+  ],
+  "charging_cable": [
+   "Electronics > Electronics Accessories > Cables > Storage & Data Transfer Cables",
+   "Electronics > Electronics Accessories > Cables > System & Power Cables"
+  ],
+  "phone_case": [
+   "Electronics > Communications > Telephony > Mobile Phone Accessories > Mobile Phone Cases"
+  ],
+  "screen_protector": [
+   "Electronics > Electronics Accessories > Electronics Films & Shields > Screen Protectors"
+  ],
+  "car_phone_holder": [
+   "Electronics > Communications > Telephony > Mobile Phone Accessories > Mobile Phone Stands"
+  ],
+  "smartwatch": [
+   "Apparel & Accessories > Jewelry > Watches",
+   "Health & Beauty > Health Care > Biometric Monitors > Activity Monitors"
+  ],
+  "laptop": [
+   "Electronics > Computers > Laptops"
+  ],
+  "desktop_pc": [
+   "Electronics > Computers > Desktop Computers"
+  ],
+  "monitor": [
+   "Electronics > Video > Computer Monitors"
+  ],
+  "printer": [
+   "Electronics > Print, Copy, Scan & Fax > Printers, Copiers & Fax Machines"
+  ],
+  "label_printer": [
+   "Office Supplies > Office Equipment > Label Makers"
+  ],
+  "toner": [
+   "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Consumables > Toner & Inkjet Cartridge Refills",
+   "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Consumables > Toner & Inkjet Cartridges"
+  ],
+  "ink_cartridge": [
+   "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Consumables > Toner & Inkjet Cartridge Refills",
+   "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Consumables > Toner & Inkjet Cartridges"
+  ],
+  "router": [
+   "Electronics > Networking > Bridges & Routers > VoIP Gateways & Routers",
+   "Electronics > Networking > Bridges & Routers > Wireless Routers",
+   "Electronics > Networking > Modems"
+  ],
+  "access_point": [
+   "Electronics > Networking > Bridges & Routers > Wireless Access Points"
+  ],
+  "firewall": [
+   "Electronics > Networking > Network Security & Firewall Devices"
+  ],
+  "server": [
+   "Electronics > Computers > Computer Servers"
+  ],
+  "memory_card": [
+   "Electronics > Electronics Accessories > Memory > Flash Memory > Flash Memory Cards"
+  ],
+  "battery": [
+   "Electronics > Electronics Accessories > Power > Batteries > General Purpose Batteries"
+  ],
+  "pen": [
+   "Office Supplies > Office Instruments > Writing & Drawing Instruments > Pens & Pencils > Pens"
+  ],
+  "marker": [
+   "Office Supplies > Office Instruments > Writing & Drawing Instruments > Markers & Highlighters"
+  ],
+  "folder": [
+   "Office Supplies > Filing & Organization > Binding Supplies > Binders",
+   "Office Supplies > Filing & Organization > File Folders",
+   "Office Supplies > Filing & Organization > Folders & Report Covers"
+  ],
+  "network_switch": [
+   "Electronics > Networking > Hubs & Switches"
+  ],
+  "media_converter": [
+   "Electronics > Networking > Repeaters & Transceivers"
+  ],
+  "network_card": [
+   "Electronics > Networking > Network Cards & Adapters"
+  ],
+  "software": [
+   "Software > Computer Software > Antivirus & Security Software",
+   "Software > Computer Software > Network Software",
+   "Software > Computer Software > Office Application Software",
+   "Software > Computer Software > Operating Systems"
+  ],
+  "keyboard": [
+   "Electronics > Electronics Accessories > Computer Components > Input Devices > Keyboards"
+  ],
+  "mouse": [
+   "Electronics > Electronics Accessories > Computer Components > Input Devices > Mice & Trackballs"
+  ],
+  "webcam": [
+   "Cameras & Optics > Cameras > Webcams"
+  ],
+  "scanner": [
+   "Electronics > Print, Copy, Scan & Fax > Scanners"
+  ],
+  "storage_drive": [
+   "Electronics > Electronics Accessories > Computer Components > Storage Devices > Hard Drives"
+  ],
+  "usb_flash_drive": [
+   "Electronics > Electronics Accessories > Computer Components > Storage Devices > USB Flash Drives"
+  ],
+  "docking_station": [
+   "Electronics > Electronics Accessories > Computer Accessories > Laptop Docking Stations",
+   "Electronics > Electronics Accessories > Computer Components > USB & FireWire Hubs"
+  ],
+  "television": [
+   "Electronics > Video > Televisions"
+  ],
+  "speaker": [
+   "Electronics > Audio > Audio Components > Speakers"
+  ],
+  "soundbar": [
+   "Electronics > Audio > Audio Components > Speakers"
+  ],
+  "headphones": [
+   "Electronics > Audio > Audio Components > Headphones & Headsets > Headphones",
+   "Electronics > Audio > Audio Components > Headphones & Headsets > Headsets"
+  ],
+  "game_console": [
+   "Electronics > Video Game Consoles"
+  ],
+  "game_controller": [
+   "Electronics > Electronics Accessories > Computer Components > Input Devices > Game Controllers"
+  ],
+  "video_game": [
+   "Software > Video Game Software"
+  ],
+  "camera": [
+   "Cameras & Optics > Cameras > Borescopes",
+   "Cameras & Optics > Cameras > Digital Cameras",
+   "Cameras & Optics > Cameras > Disposable Cameras",
+   "Cameras & Optics > Cameras > Film Cameras",
+   "Cameras & Optics > Cameras > Surveillance Cameras",
+   "Cameras & Optics > Cameras > Trail Cameras",
+   "Cameras & Optics > Cameras > Video Cameras"
+  ],
+  "action_camera": [
+   "Cameras & Optics > Cameras > Digital Cameras",
+   "Cameras & Optics > Cameras > Video Cameras"
+  ],
+  "microphone": [
+   "Electronics > Audio > Audio Components > Microphones"
+  ],
+  "projector": [
+   "Electronics > Video > Projectors"
+  ],
+  "amplifier": [
+   "Arts & Entertainment > Hobbies & Creative Arts > Musical Instrument & Orchestra Accessories > Musical Instrument Amplifiers",
+   "Electronics > Audio > Audio Components > Audio & Video Receivers",
+   "Electronics > Audio > Audio Components > Audio Amplifiers"
+  ],
+  "engine_oil": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Fluids > Vehicle Motor Oil"
+  ],
+  "oil_filter": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Engine Oil Circulation"
+  ],
+  "air_filter": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Engine Parts"
+  ],
+  "cabin_filter": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Climate Control"
+  ],
+  "car_battery": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Power & Electrical Systems"
+  ],
+  "brake_pads": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Braking"
+  ],
+  "wiper_blades": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Window Parts & Accessories"
+  ],
+  "coolant": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Fluids > Vehicle Antifreeze"
+  ],
+  "spark_plugs": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Engine Parts",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Watercraft Parts & Accessories > Watercraft Engine Parts > Watercraft Ignition Parts"
+  ],
+  "tyres": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems > Motor Vehicle Tires",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems > Motor Vehicle Tires > Automotive Tires",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems > Motor Vehicle Tires > Motorcycle Tires",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems > Motor Vehicle Tires > Off-Road and All-Terrain Vehicle Tires",
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment Accessories > Lawn Mower Accessories > Lawn Mower Tires",
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment Accessories > Tractor Parts & Accessories > Tractor Tires",
+   "Sporting Goods > Outdoor Recreation > Cycling > Bicycle Parts > Bicycle Tires"
+  ],
+  "winter_tyres": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems > Motor Vehicle Tires > Automotive Tires"
+  ],
+  "summer_tyres": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems > Motor Vehicle Tires > Automotive Tires"
+  ],
+  "alloy_wheels": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems > Motor Vehicle Rims & Wheels > Automotive Rims & Wheels",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems > Motor Vehicle Rims & Wheels > Motorcycle Rims & Wheels",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems > Motor Vehicle Rims & Wheels > Off-Road and All-Terrain Vehicle Rims & Wheels",
+   "Sporting Goods > Outdoor Recreation > Cycling > Bicycle Parts > Bicycle Wheels"
+  ],
+  "dash_cam": [
+   "Cameras & Optics > Cameras > Video Cameras",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Electronics > Motor Vehicle Parking Cameras"
+  ],
+  "child_car_seat": [
+   "Baby & Toddler > Baby Transport > Baby & Toddler Car Seats"
+  ],
+  "snow_chains": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems > Motor Vehicle Tire Accessories"
+  ],
+  "bicycle": [
+   "Sporting Goods > Outdoor Recreation > Cycling > Bicycles"
+  ],
+  "e_bike": [
+   "Sporting Goods > Outdoor Recreation > Cycling > Bicycles"
+  ],
+  "helmet": [
+   "Sporting Goods > Outdoor Recreation > Cycling > Cycling Apparel & Accessories > Bicycle Helmets",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Safety & Security > Motorcycle Protective Gear > Motorcycle Helmets",
+   "Sporting Goods > Outdoor Recreation > Winter Sports & Activities > Skiing & Snowboarding > Ski & Snowboard Helmets",
+   "Sporting Goods > Outdoor Recreation > Skateboarding > Skateboarding Protective Gear > Skate Helmets",
+   "Sporting Goods > Athletics > Figure Skating & Hockey > Hockey Protective Gear > Hockey Helmets",
+   "Sporting Goods > Athletics > American Football > American Football Protective Gear > American Football Helmets",
+   "Sporting Goods > Athletics > Baseball & Softball > Baseball & Softball Protective Gear > Baseball & Softball Batting Helmets",
+   "Sporting Goods > Athletics > Cricket > Cricket Protective Gear > Cricket Helmets",
+   "Sporting Goods > Outdoor Recreation > Equestrian > Riding Apparel & Accessories > Equestrian Helmets",
+   "Sporting Goods > Outdoor Recreation > Boating & Water Sports > Boating & Water Sport Apparel > Water Sport Helmets",
+   "Sporting Goods > Athletics > Field Hockey & Lacrosse > Field Hockey & Lacrosse Protective Gear > Field Hockey & Lacrosse Helmets",
+   "Business & Industrial > Work Safety Protective Gear > Hardhats",
+   "Sporting Goods > Athletics > Rugby > Rugby Protective Gear > Rugby Headgear",
+   "Sporting Goods > Athletics > Baseball & Softball > Baseball & Softball Protective Gear > Catchers Helmets & Masks"
+  ],
+  "bicycle_helmet": [
+   "Sporting Goods > Outdoor Recreation > Cycling > Cycling Apparel & Accessories > Bicycle Helmets"
+  ],
+  "moto_helmet": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Safety & Security > Motorcycle Protective Gear > Motorcycle Helmets"
+  ],
+  "scooter": [
+   "Sporting Goods > Outdoor Recreation > Riding Scooters",
+   "Toys & Games > Toys > Riding Toys > Push & Pedal Riding Vehicles",
+   "Vehicles & Parts > Vehicles > Motor Vehicles > Motorcycles & Scooters"
+  ],
+  "e_scooter": [
+   "Sporting Goods > Outdoor Recreation > Riding Scooters",
+   "Toys & Games > Toys > Riding Toys > Electric Riding Vehicles",
+   "Vehicles & Parts > Vehicles > Motor Vehicles > Motorcycles & Scooters"
+  ],
+  "bike_lock": [
+   "Sporting Goods > Outdoor Recreation > Cycling > Bicycle Accessories > Bicycle Locks"
+  ],
+  "drill": [
+   "Hardware > Tools > Drills > Handheld Power Drills"
+  ],
+  "rotary_hammer": [
+   "Hardware > Tools > Hammers > Powered Hammers"
+  ],
+  "impact_driver": [
+   "Hardware > Tools > Impact Wrenches & Drivers"
+  ],
+  "angle_grinder": [
+   "Hardware > Tools > Grinders"
+  ],
+  "circular_saw": [
+   "Hardware > Tools > Saws > Handheld Circular Saws"
+  ],
+  "jigsaw": [
+   "Hardware > Tools > Saws > Jigsaws"
+  ],
+  "mitre_saw": [
+   "Hardware > Tools > Saws > Miter Saws"
+  ],
+  "sander": [
+   "Hardware > Tools > Sanders"
+  ],
+  "heat_gun": [
+   "Hardware > Tools > Heat Guns"
+  ],
+  "air_compressor": [
+   "Hardware > Tools > Compressors"
+  ],
+  "multi_tool": [
+   "Hardware > Tools > Multifunction Power Tools"
+  ],
+  "nail_gun": [
+   "Hardware > Tools > Nailers & Staplers"
+  ],
+  "welder": [
+   "Hardware > Tools > Welding Guns & Plasma Cutters"
+  ],
+  "screwdriver": [
+   "Hardware > Tools > Screwdrivers",
+   "Hardware > Tools > Tool Sets > Hand Tool Sets"
+  ],
+  "screwdriver_set": [
+   "Hardware > Tools > Tool Sets > Hand Tool Sets",
+   "Hardware > Tools > Screwdrivers"
+  ],
+  "socket_set": [
+   "Hardware > Tools > Tool Sets > Hand Tool Sets",
+   "Hardware > Tool Accessories > Tool Sockets"
+  ],
+  "spanner": [
+   "Hardware > Tools > Wrenches"
+  ],
+  "pliers": [
+   "Hardware > Tools > Pliers"
+  ],
+  "hammer": [
+   "Hardware > Tools > Hammers"
+  ],
+  "tape_measure": [
+   "Hardware > Tools > Measuring Tools & Sensors > Tape Measures"
+  ],
+  "spirit_level": [
+   "Hardware > Tools > Measuring Tools & Sensors > Levels"
+  ],
+  "utility_knife": [
+   "Hardware > Tools > Cutters > Utility Knives"
+  ],
+  "drill_bits": [
+   "Hardware > Tool Accessories > Drill & Screwdriver Accessories > Drill & Screwdriver Bits"
+  ],
+  "tool_box": [
+   "Hardware > Hardware Accessories > Tool Storage & Organization > Tool Boxes",
+   "Hardware > Hardware Accessories > Tool Storage & Organization > Tool Cabinets & Chests"
+  ],
+  "multimeter": [
+   "Hardware > Tools > Measuring Tools & Sensors > Electrical Testing Tools"
+  ],
+  "soldering_iron": [
+   "Hardware > Tools > Soldering Irons"
+  ],
+  "hand_saw": [
+   "Hardware > Tools > Saws > Hand Saws"
+  ],
+  "work_gloves": [
+   "Apparel & Accessories > Clothing Accessories > Gloves & Mittens",
+   "Business & Industrial > Work Safety Protective Gear > Safety Gloves"
+  ],
+  "lawn_mower": [
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment > Lawn Mowers"
+  ],
+  "robot_mower": [
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment > Lawn Mowers > Robotic Mowers"
+  ],
+  "brush_cutter": [
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment > Weed Trimmers"
+  ],
+  "hedge_trimmer": [
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment > Hedge Trimmers"
+  ],
+  "chainsaw": [
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment > Chainsaws"
+  ],
+  "leaf_blower": [
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment > Leaf Blowers"
+  ],
+  "pressure_washer": [
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment > Pressure Washers"
+  ],
+  "garden_hose": [
+   "Home & Garden > Lawn & Garden > Watering & Irrigation > Garden Hoses"
+  ],
+  "water_pump": [
+   "Hardware > Hardware Pumps > Pool, Fountain & Pond Pumps",
+   "Hardware > Hardware Pumps > Sprinkler, Booster & Irrigation System Pumps",
+   "Hardware > Hardware Pumps > Sump, Sewage & Effluent Pumps",
+   "Hardware > Hardware Pumps > Utility Pumps",
+   "Hardware > Hardware Pumps > Well Pumps & Systems"
+  ],
+  "tiller": [
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment > Power Tillers & Cultivators",
+   "Home & Garden > Lawn & Garden > Gardening > Gardening Tools > Cultivating Tools"
+  ],
+  "ladder": [
+   "Hardware > Tools > Ladders & Scaffolding > Ladders",
+   "Hardware > Tools > Ladders & Scaffolding > Step Stools"
+  ],
+  "garden_sprayer": [
+   "Home & Garden > Lawn & Garden > Gardening > Gardening Tools > Lawn & Garden Sprayers"
+  ],
+  "paint": [
+   "Hardware > Building Consumables > Painting Consumables > Paint",
+   "Hardware > Building Consumables > Painting Consumables > Primers",
+   "Arts & Entertainment > Hobbies & Creative Arts > Arts & Crafts > Art & Crafting Materials > Craft Paint, Ink & Glaze > Art & Craft Paint",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Paint > Motor Vehicle Body Paint",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Paint > Motor Vehicle Brake Caliper Paint"
+  ],
+  "tap": [
+   "Hardware > Plumbing > Plumbing Fixtures > Faucets"
+  ],
+  "blood_pressure_monitor": [
+   "Health & Beauty > Health Care > Biometric Monitors > Blood Pressure Monitors"
+  ],
+  "thermometer": [
+   "Animals & Pet Supplies > Pet Supplies > Pet Biometric Monitors > Pet Thermometers",
+   "Hardware > Tools > Measuring Tools & Sensors > Infrared Thermometers",
+   "Health & Beauty > Health Care > Biometric Monitors > Medical Thermometers",
+   "Home & Garden > Household Supplies > Household Thermometers",
+   "Home & Garden > Kitchen & Dining > Kitchen Tools & Utensils > Cooking Thermometers"
+  ],
+  "pulse_oximeter": [
+   "Health & Beauty > Health Care > Biometric Monitors > Pulse Oximeters"
+  ],
+  "smoke_detector": [
+   "Home & Garden > Flood, Fire & Gas Safety > Smoke & Carbon Monoxide Detectors"
+  ],
+  "bathroom_scale": [
+   "Health & Beauty > Health Care > Biometric Monitors > Body Weight Scales"
+  ],
+  "massager": [
+   "Health & Beauty > Personal Care > Massage & Relaxation > Massagers"
+  ],
+  "glucose_meter": [
+   "Health & Beauty > Health Care > Biometric Monitors > Blood Glucose Meters",
+   "Animals & Pet Supplies > Pet Supplies > Pet Biometric Monitors > Pet Glucose Meters"
+  ],
+  "electric_shaver": [
+   "Health & Beauty > Personal Care > Shaving & Grooming > Electric Razors"
+  ],
+  "hair_clipper": [
+   "Health & Beauty > Personal Care > Shaving & Grooming > Hair Clippers & Trimmers"
+  ],
+  "hair_dryer": [
+   "Health & Beauty > Personal Care > Hair Care > Hair Styling Tools > Hair Dryers"
+  ],
+  "hair_straightener": [
+   "Health & Beauty > Personal Care > Hair Care > Hair Styling Tools > Hair Straighteners"
+  ],
+  "electric_toothbrush": [
+   "Health & Beauty > Personal Care > Oral Care > Toothbrushes"
+  ],
+  "epilator": [
+   "Health & Beauty > Personal Care > Shaving & Grooming > Hair Removal > Epilators"
+  ],
+  "shampoo": [
+   "Health & Beauty > Personal Care > Hair Care > Shampoo & Conditioner > Shampoo",
+   "Animals & Pet Supplies > Pet Supplies > Pet Grooming Supplies > Pet Shampoo & Conditioner"
+  ],
+  "face_cream": [
+   "Health & Beauty > Personal Care > Cosmetics > Skin Care > Lotion & Moisturizer"
+  ],
+  "perfume": [
+   "Health & Beauty > Personal Care > Cosmetics > Perfume & Cologne"
+  ],
+  "sunscreen": [
+   "Health & Beauty > Personal Care > Cosmetics > Skin Care > Sunscreen",
+   "Animals & Pet Supplies > Pet Supplies > Pet Sunscreen"
+  ],
+  "baby_stroller": [
+   "Baby & Toddler > Baby Transport > Baby Strollers",
+   "Animals & Pet Supplies > Pet Supplies > Pet Strollers"
+  ],
+  "baby_carrier": [
+   "Baby & Toddler > Baby Transport > Baby Carriers"
+  ],
+  "high_chair": [
+   "Furniture > Baby & Toddler Furniture > High Chairs & Booster Seats"
+  ],
+  "baby_monitor": [
+   "Baby & Toddler > Baby Safety > Baby Monitors"
+  ],
+  "cot": [
+   "Furniture > Baby & Toddler Furniture > Cribs & Toddler Beds",
+   "Baby & Toddler > Baby Toys & Activity Equipment > Play Yards"
+  ],
+  "nappies": [
+   "Baby & Toddler > Diapering > Diapers",
+   "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Diapers",
+   "Health & Beauty > Health Care > Incontinence Aids"
+  ],
+  "toy": [
+   "Toys & Games > Toys",
+   "Baby & Toddler > Baby Toys & Activity Equipment > Alphabet Toys",
+   "Baby & Toddler > Baby Toys & Activity Equipment > Baby Activity Toys",
+   "Baby & Toddler > Baby Toys & Activity Equipment > Rattles",
+   "Baby & Toddler > Baby Toys & Activity Equipment > Sorting & Stacking Toys",
+   "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Toys",
+   "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Toys",
+   "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Toys",
+   "Toys & Games > Outdoor Play Equipment > Play Tents & Tunnels"
+  ],
+  "punching_bag": [
+   "Sporting Goods > Athletics > Boxing & Martial Arts > Boxing & Martial Arts Training Equipment > Punching & Training Bags"
+  ],
+  "dog_food": [
+   "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Food",
+   "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Food > Non-prescription Dog Food",
+   "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Food > Prescription Dog Food"
+  ],
+  "cat_food": [
+   "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Food",
+   "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Food > Non-prescription Cat Food",
+   "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Food > Prescription Cat Food"
+  ],
+  "treadmill": [
+   "Sporting Goods > Exercise & Fitness > Cardio > Cardio Machines > Treadmills",
+   "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Treadmills"
+  ],
+  "exercise_bike": [
+   "Sporting Goods > Exercise & Fitness > Cardio > Cardio Machines > Exercise Bikes"
+  ],
+  "dumbbells": [
+   "Sporting Goods > Exercise & Fitness > Weight Lifting > Free Weights"
+  ],
+  "barbell": [
+   "Sporting Goods > Exercise & Fitness > Weight Lifting > Free Weight Accessories > Weight Bars",
+   "Sporting Goods > Exercise & Fitness > Weight Lifting > Free Weights"
+  ],
+  "yoga_mat": [
+   "Sporting Goods > Exercise & Fitness > Yoga & Pilates > Yoga & Pilates Mats",
+   "Sporting Goods > Exercise & Fitness > Exercise Equipment Mats",
+   "Sporting Goods > Athletics > General Purpose Athletic Equipment > Gym Mats"
+  ],
+  "tent": [
+   "Sporting Goods > Outdoor Recreation > Camping & Hiking > Tents"
+  ],
+  "play_tent": [
+   "Toys & Games > Outdoor Play Equipment > Play Tents & Tunnels"
+  ],
+  "sleeping_bag": [
+   "Sporting Goods > Outdoor Recreation > Camping & Hiking > Sleeping Bags"
+  ],
+  "trousers": [
+   "Apparel & Accessories > Clothing > Pants",
+   "Apparel & Accessories > Clothing > Uniforms > Contractor Pants & Coveralls",
+   "Apparel & Accessories > Clothing > Uniforms > Food Service Uniforms > Chef's Pants",
+   "Apparel & Accessories > Clothing > Activewear > Hunting Clothing > Hunting & Tactical Pants",
+   "Apparel & Accessories > Clothing > Activewear > Motorcycle Protective Clothing > Motorcycle Pants",
+   "Apparel & Accessories > Clothing > Outerwear > Rain Pants",
+   "Apparel & Accessories > Clothing > Outerwear > Snow Pants & Suits",
+   "Sporting Goods > Outdoor Recreation > Equestrian > Riding Apparel & Accessories > Riding Pants",
+   "Apparel & Accessories > Clothing > Activewear > American Football Pants",
+   "Sporting Goods > Athletics > Figure Skating & Hockey > Hockey Protective Gear > Hockey Pants",
+   "Apparel & Accessories > Clothing > Traditional & Ceremonial Clothing > Traditional Leather Pants",
+   "Apparel & Accessories > Clothing > Traditional & Ceremonial Clothing > Hakama Trousers"
+  ],
+  "work_trousers": [
+   "Apparel & Accessories > Clothing > Uniforms > Contractor Pants & Coveralls",
+   "Apparel & Accessories > Clothing > Uniforms > Food Service Uniforms > Chef's Pants"
+  ],
+  "jeans": [
+   "Apparel & Accessories > Clothing > Pants"
+  ],
+  "jacket": [
+   "Apparel & Accessories > Clothing > Outerwear > Coats & Jackets",
+   "Apparel & Accessories > Clothing > Activewear > Motorcycle Protective Clothing > Motorcycle Jackets",
+   "Apparel & Accessories > Clothing > Traditional & Ceremonial Clothing > Kimono Outerwear > Haori Jackets",
+   "Apparel & Accessories > Clothing > Traditional & Ceremonial Clothing > Kimono Outerwear > Kimono Coats",
+   "Sporting Goods > Outdoor Recreation > Hunting & Shooting > Hunting & Shooting Protective Gear > Hunting & Shooting Jackets",
+   "Sporting Goods > Athletics > Fencing > Fencing Protective Gear > Fencing Jackets & Lamés",
+   "Apparel & Accessories > Clothing > Uniforms > Food Service Uniforms > Chef's Jackets"
+  ],
+  "t_shirt": [
+   "Apparel & Accessories > Clothing > Shirts & Tops",
+   "Apparel & Accessories > Clothing > Baby & Toddler Clothing > Baby & Toddler Tops"
+  ],
+  "shirt": [
+   "Apparel & Accessories > Clothing > Shirts & Tops",
+   "Apparel & Accessories > Clothing > Baby & Toddler Clothing > Baby & Toddler Tops"
+  ],
+  "hoodie": [
+   "Apparel & Accessories > Clothing > Shirts & Tops",
+   "Apparel & Accessories > Clothing > Baby & Toddler Clothing > Baby & Toddler Tops"
+  ],
+  "sweater": [
+   "Apparel & Accessories > Clothing > Shirts & Tops",
+   "Apparel & Accessories > Clothing > Baby & Toddler Clothing > Baby & Toddler Tops"
+  ],
+  "dress": [
+   "Apparel & Accessories > Clothing > Dresses",
+   "Apparel & Accessories > Clothing > Baby & Toddler Clothing > Baby & Toddler Dresses",
+   "Apparel & Accessories > Clothing > Wedding & Bridal Party Dresses > Bridal Party Dresses",
+   "Apparel & Accessories > Clothing > Wedding & Bridal Party Dresses > Wedding Dresses",
+   "Apparel & Accessories > Clothing > Traditional & Ceremonial Clothing > Dirndls",
+   "Apparel & Accessories > Clothing > Traditional & Ceremonial Clothing > Religious Ceremonial Clothing > Baptism & Communion Dresses",
+   "Apparel & Accessories > Clothing > Activewear > Dance Dresses, Skirts & Costumes"
+  ],
+  "skirt": [
+   "Apparel & Accessories > Clothing > Skirts",
+   "Apparel & Accessories > Clothing > Skirts > Knee-Length Skirts",
+   "Apparel & Accessories > Clothing > Skirts > Long Skirts",
+   "Apparel & Accessories > Clothing > Skirts > Mini Skirts"
+  ],
+  "shorts": [
+   "Apparel & Accessories > Clothing > Shorts",
+   "Apparel & Accessories > Clothing > Activewear > Boxing Shorts",
+   "Apparel & Accessories > Clothing > Activewear > Martial Arts Shorts",
+   "Apparel & Accessories > Clothing > Activewear > Bicycle Activewear > Bicycle Shorts & Briefs"
+  ],
+  "leggings": [
+   "Apparel & Accessories > Clothing > Pants",
+   "Apparel & Accessories > Clothing > Baby & Toddler Clothing > Baby & Toddler Bottoms"
+  ],
+  "underwear": [
+   "Apparel & Accessories > Clothing > Underwear & Socks > Underwear",
+   "Apparel & Accessories > Clothing > Baby & Toddler Clothing > Toddler Underwear"
+  ],
+  "socks": [
+   "Apparel & Accessories > Clothing > Underwear & Socks > Socks",
+   "Apparel & Accessories > Clothing > Baby & Toddler Clothing > Baby & Toddler Socks & Tights",
+   "Apparel & Accessories > Clothing Accessories > Traditional Clothing Accessories > Tabi Socks"
+  ],
+  "swimwear": [
+   "Apparel & Accessories > Clothing > Swimwear",
+   "Apparel & Accessories > Clothing > Baby & Toddler Clothing > Baby & Toddler Swimwear"
+  ],
+  "pyjamas": [
+   "Apparel & Accessories > Clothing > Sleepwear & Loungewear > Pajamas",
+   "Apparel & Accessories > Clothing > Baby & Toddler Clothing > Baby & Toddler Sleepwear"
+  ],
+  "suit": [
+   "Apparel & Accessories > Clothing > Suits",
+   "Apparel & Accessories > Clothing > Suits > Pant Suits",
+   "Apparel & Accessories > Clothing > Suits > Skirt Suits",
+   "Apparel & Accessories > Clothing > Suits > Tuxedos",
+   "Apparel & Accessories > Clothing > Activewear > Motorcycle Protective Clothing > Motorcycle Suits",
+   "Business & Industrial > Work Safety Protective Gear > Hazardous Material Suits",
+   "Apparel & Accessories > Clothing > Uniforms > Flight Suits",
+   "Apparel & Accessories > Clothing > Outerwear > Snow Pants & Suits",
+   "Apparel & Accessories > Clothing > Activewear > Hunting Clothing > Ghillie Suits",
+   "Sporting Goods > Outdoor Recreation > Boating & Water Sports > Boating & Water Sport Apparel > Wetsuits",
+   "Sporting Goods > Outdoor Recreation > Boating & Water Sports > Boating & Water Sport Apparel > Drysuits",
+   "Sporting Goods > Outdoor Recreation > Hang Gliding & Skydiving > Air Suits",
+   "Apparel & Accessories > Clothing > Activewear > Bicycle Activewear > Bicycle Skinsuits"
+  ],
+  "safety_vest": [
+   "Apparel & Accessories > Clothing > Outerwear > Vests"
+  ],
+  "raincoat": [
+   "Apparel & Accessories > Clothing > Outerwear > Coats & Jackets",
+   "Apparel & Accessories > Clothing > Baby & Toddler Clothing > Baby & Toddler Outerwear"
+  ],
+  "shoes": [
+   "Apparel & Accessories > Shoes"
+  ],
+  "athletic_shoes": [
+   "Apparel & Accessories > Shoes"
+  ],
+  "running_shoes": [
+   "Apparel & Accessories > Shoes"
+  ],
+  "boots": [
+   "Apparel & Accessories > Shoes"
+  ],
+  "hiking_boots": [
+   "Apparel & Accessories > Shoes"
+  ],
+  "safety_shoes": [
+   "Apparel & Accessories > Shoes"
+  ],
+  "sandals": [
+   "Apparel & Accessories > Shoes"
+  ],
+  "slippers": [
+   "Apparel & Accessories > Shoes"
+  ],
+  "insoles": [
+   "Health & Beauty > Personal Care > Foot Care > Insoles & Inserts"
+  ],
+  "watch": [
+   "Apparel & Accessories > Jewelry > Watches"
+  ],
+  "ring": [
+   "Apparel & Accessories > Jewelry > Rings"
+  ],
+  "necklace": [
+   "Apparel & Accessories > Jewelry > Necklaces",
+   "Apparel & Accessories > Jewelry > Charms & Pendants"
+  ],
+  "bracelet": [
+   "Apparel & Accessories > Jewelry > Bracelets"
+  ],
+  "earrings": [
+   "Apparel & Accessories > Jewelry > Earrings"
+  ],
+  "sunglasses": [
+   "Apparel & Accessories > Clothing Accessories > Sunglasses"
+  ],
+  "bag": [
+   "Apparel & Accessories > Handbags, Wallets & Cases > Handbags",
+   "Business & Industrial > Retail > Paper & Plastic Shopping Bags",
+   "Home & Garden > Kitchen & Dining > Food & Beverage Carriers > Insulated Bags",
+   "Home & Garden > Kitchen & Dining > Food & Beverage Carriers > Lunch Boxes & Totes",
+   "Luggage & Bags > Backpacks",
+   "Luggage & Bags > Briefcases",
+   "Luggage & Bags > Cosmetic & Toiletry Bags",
+   "Luggage & Bags > Diaper Bags",
+   "Luggage & Bags > Duffel Bags",
+   "Luggage & Bags > Fanny Packs",
+   "Luggage & Bags > Garment Bags",
+   "Luggage & Bags > Messenger Bags",
+   "Luggage & Bags > Shopping Totes",
+   "Luggage & Bags > Suitcases",
+   "Luggage & Bags > Train Cases"
+  ],
+  "backpack": [
+   "Luggage & Bags > Backpacks"
+  ],
+  "laptop_bag": [
+   "Luggage & Bags > Briefcases",
+   "Luggage & Bags > Messenger Bags",
+   "Electronics > Electronics Accessories > Computer Accessories > Computer Covers & Skins"
+  ],
+  "handbag": [
+   "Apparel & Accessories > Handbags, Wallets & Cases > Handbags",
+   "Luggage & Bags > Shopping Totes"
+  ],
+  "suitcase": [
+   "Luggage & Bags > Suitcases"
+  ],
+  "wallet": [
+   "Apparel & Accessories > Handbags, Wallets & Cases > Wallets & Money Clips"
+  ],
+  "belt": [
+   "Apparel & Accessories > Clothing Accessories > Belts",
+   "Apparel & Accessories > Clothing Accessories > Baby & Toddler Clothing Accessories > Baby & Toddler Belts"
+  ],
+  "hat": [
+   "Apparel & Accessories > Clothing Accessories > Hats",
+   "Apparel & Accessories > Clothing Accessories > Baby & Toddler Clothing Accessories > Baby & Toddler Hats"
+  ],
+  "gloves": [
+   "Apparel & Accessories > Clothing Accessories > Gloves & Mittens",
+   "Apparel & Accessories > Clothing Accessories > Baby & Toddler Clothing Accessories > Baby & Toddler Gloves & Mittens",
+   "Business & Industrial > Work Safety Protective Gear > Safety Gloves",
+   "Sporting Goods > Outdoor Recreation > Cycling > Cycling Apparel & Accessories > Bicycle Gloves",
+   "Sporting Goods > Outdoor Recreation > Golf > Golf Gloves",
+   "Sporting Goods > Athletics > Boxing & Martial Arts > Boxing & Martial Arts Protective Gear > Boxing Gloves & Mitts"
+  ],
+  "tablet": [
+   "Electronics > Computers > Tablet Computers"
+  ],
+  "e_reader": [
+   "Electronics > Computers > Handheld Devices > E-Book Readers"
+  ],
+  "graphics_card": [
+   "Electronics > Electronics Accessories > Computer Components > I/O Cards & Adapters > Video Cards & Adapters"
+  ],
+  "processor": [
+   "Electronics > Electronics Accessories > Computer Components > Computer Processors"
+  ],
+  "ram_memory": [
+   "Electronics > Electronics Accessories > Memory > RAM"
+  ],
+  "motherboard": [
+   "Electronics > Circuit Boards & Components > Printed Circuit Boards > Computer Circuit Boards > Motherboards"
+  ],
+  "power_supply": [
+   "Electronics > Electronics Accessories > Computer Components > Computer Power Supplies"
+  ],
+  "pc_case": [
+   "Electronics > Electronics Accessories > Computer Components > Desktop Computer & Server Cases"
+  ],
+  "pc_cooling": [
+   "Electronics > Electronics Accessories > Computer Components > Computer System Cooling Parts"
+  ],
+  "printer_paper": [
+   "Office Supplies > General Office Supplies > Paper Products > Printer & Copier Paper"
+  ],
+  "ups": [
+   "Electronics > Electronics Accessories > Power > UPS"
+  ],
+  "smart_speaker": [
+   "Electronics > Audio > Audio Components > Speakers"
+  ],
+  "drone": [
+   "Toys & Games > Toys > Remote Control Toys > Remote Control Helicopters",
+   "Toys & Games > Toys > Remote Control Toys > Remote Control Planes"
+  ],
+  "vr_headset": [
+   "Electronics > Computers > Smart Glasses",
+   "Electronics > Video Game Console Accessories > Home Game Console Accessories"
+  ],
+  "tv_box": [
+   "Electronics > Video > Satellite & Cable TV > Cable TV Receivers",
+   "Electronics > Video > Satellite & Cable TV > Satellite Receivers",
+   "Electronics > Video > Video Accessories > Television Parts & Accessories > TV Converter Boxes",
+   "Electronics > Video > Video Players & Recorders > Streaming & Home Media Players"
+  ],
+  "car_charger": [
+   "Electronics > Electronics Accessories > Power > Power Adapters & Chargers"
+  ],
+  "selfie_stick": [
+   "Electronics > Electronics Accessories > Mobile Phone & Tablet Tripods & Monopods",
+   "Cameras & Optics > Camera & Optic Accessories > Tripods & Monopods"
+  ],
+  "car_audio": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Electronics > Motor Vehicle A/V Players & In-Dash Systems",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Electronics > Motor Vehicle Cassette Players",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Electronics > Motor Vehicle Speakers",
+   "Electronics > Audio > Audio Players & Recorders > Radios"
+  ],
+  "gps_navigator": [
+   "Electronics > GPS Navigation Systems",
+   "Electronics > Marine Electronics > Marine Chartplotters & GPS"
+  ],
+  "dishwasher_tablets": [
+   "Home & Garden > Household Supplies > Household Cleaning Supplies > Household Cleaning Products > Dish Detergent & Soap"
+  ],
+  "laundry_detergent": [
+   "Home & Garden > Household Supplies > Laundry Supplies > Laundry Detergent"
+  ],
+  "knife_set": [
+   "Home & Garden > Kitchen & Dining > Kitchen Tools & Utensils > Kitchen Knives"
+  ],
+  "cutlery": [
+   "Home & Garden > Kitchen & Dining > Tableware > Flatware"
+  ],
+  "dinnerware": [
+   "Home & Garden > Kitchen & Dining > Tableware > Dinnerware"
+  ],
+  "glassware": [
+   "Home & Garden > Kitchen & Dining > Tableware > Drinkware"
+  ],
+  "water_filter_jug": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Water Filters"
+  ],
+  "food_storage": [
+   "Home & Garden > Kitchen & Dining > Food Storage > Food Storage Containers",
+   "Home & Garden > Kitchen & Dining > Food & Beverage Carriers > Lunch Boxes & Totes",
+   "Animals & Pet Supplies > Pet Supplies > Pet Food Containers",
+   "Business & Industrial > Food Service > Concession Food Containers",
+   "Business & Industrial > Food Service > Take-Out Containers",
+   "Business & Industrial > Food Service > Bakery Boxes",
+   "Home & Garden > Kitchen & Dining > Food Storage > Bread Boxes & Bags",
+   "Home & Garden > Kitchen & Dining > Food Storage > Cookie Jars"
+  ],
+  "grill": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Electric Griddles & Grills",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Outdoor Grills"
+  ],
+  "garden_furniture": [
+   "Furniture > Outdoor Furniture"
+  ],
+  "parasol": [
+   "Home & Garden > Lawn & Garden > Outdoor Living > Outdoor Umbrellas & Sunshades",
+   "Home & Garden > Parasols & Rain Umbrellas"
+  ],
+  "pool": [
+   "Home & Garden > Pool & Spa > Swimming Pools"
+  ],
+  "flower_pot": [
+   "Home & Garden > Lawn & Garden > Gardening > Pots & Planters"
+  ],
+  "greenhouse": [
+   "Home & Garden > Lawn & Garden > Gardening > Greenhouses"
+  ],
+  "towels": [
+   "Home & Garden > Linens & Bedding > Towels"
+  ],
+  "bedding": [
+   "Home & Garden > Linens & Bedding > Bedding"
+  ],
+  "bed_linen": [
+   "Home & Garden > Linens & Bedding > Bedding > Bed Sheets",
+   "Home & Garden > Linens & Bedding > Bedding > Duvet Covers"
+  ],
+  "pillow": [
+   "Home & Garden > Linens & Bedding > Bedding > Pillows",
+   "Baby & Toddler > Nursing & Feeding > Nursing Pillows",
+   "Home & Garden > Decor > Throw Pillows",
+   "Health & Beauty > Personal Care > Sleeping Aids > Travel Pillows",
+   "Home & Garden > Decor > Backrest Pillows"
+  ],
+  "duvet": [
+   "Home & Garden > Linens & Bedding > Bedding > Quilts & Comforters"
+  ],
+  "bedspread": [
+   "Home & Garden > Linens & Bedding > Bedding > Quilts & Comforters"
+  ],
+  "curtains": [
+   "Home & Garden > Decor > Window Treatments > Curtains & Drapes",
+   "Home & Garden > Decor > Window Treatments > Window Blinds & Shades",
+   "Home & Garden > Bathroom Accessories > Shower Curtains"
+  ],
+  "rug": [
+   "Home & Garden > Decor > Rugs",
+   "Home & Garden > Bathroom Accessories > Bath Mats & Rugs",
+   "Hardware > Building Materials > Flooring & Carpet"
+  ],
+  "bath_mat": [
+   "Home & Garden > Bathroom Accessories > Bath Mats & Rugs"
+  ],
+  "mirror": [
+   "Home & Garden > Decor > Mirrors"
+  ],
+  "photo_frame": [
+   "Home & Garden > Decor > Picture Frames"
+  ],
+  "wall_clock": [
+   "Home & Garden > Decor > Clocks > Alarm Clocks",
+   "Home & Garden > Decor > Clocks > Wall Clocks"
+  ],
+  "baby_bottle": [
+   "Baby & Toddler > Nursing & Feeding > Baby Bottles"
+  ],
+  "breast_pump": [
+   "Baby & Toddler > Nursing & Feeding > Breast Pumps"
+  ],
+  "pet_carrier": [
+   "Animals & Pet Supplies > Pet Supplies > Pet Carriers & Crates"
+  ],
+  "cat_litter": [
+   "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Litter",
+   "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Litter Boxes"
+  ],
+  "aquarium": [
+   "Animals & Pet Supplies > Pet Supplies > Fish Supplies > Aquariums"
+  ],
+  "lego": [
+   "Toys & Games > Toys > Building Toys > Construction Set Toys",
+   "Toys & Games > Toys > Building Toys > Interlocking Blocks",
+   "Toys & Games > Toys > Building Toys > Wooden Blocks"
+  ],
+  "board_game": [
+   "Toys & Games > Games > Board Games"
+  ],
+  "doll": [
+   "Toys & Games > Toys > Dolls, Playsets & Toy Figures > Dolls",
+   "Toys & Games > Toys > Dolls, Playsets & Toy Figures > Paper & Magnetic Dolls",
+   "Home & Garden > Decor > Seasonal & Holiday Decorations > Japanese Traditional Dolls"
+  ],
+  "kettlebell": [
+   "Sporting Goods > Exercise & Fitness > Weight Lifting > Free Weights"
+  ],
+  "weight_bench": [
+   "Sporting Goods > Exercise & Fitness > Exercise Benches"
+  ],
+  "football": [
+   "Sporting Goods > Athletics > American Football > American Footballs",
+   "Sporting Goods > Athletics > Baseball & Softball > Baseballs",
+   "Sporting Goods > Athletics > Baseball & Softball > Softballs",
+   "Sporting Goods > Athletics > Basketball > Basketballs",
+   "Sporting Goods > Athletics > Cricket > Cricket Balls",
+   "Sporting Goods > Athletics > Field Hockey & Lacrosse > Field Hockey Balls",
+   "Sporting Goods > Athletics > Field Hockey & Lacrosse > Lacrosse Balls",
+   "Sporting Goods > Athletics > Figure Skating & Hockey > Hockey Balls & Pucks",
+   "Sporting Goods > Athletics > Rugby > Rugby Balls",
+   "Sporting Goods > Athletics > Soccer > Soccer Balls",
+   "Sporting Goods > Athletics > Team Handball > Handballs",
+   "Sporting Goods > Athletics > Tennis > Tennis Balls",
+   "Sporting Goods > Athletics > Volleyball > Volleyballs",
+   "Sporting Goods > Athletics > Water Polo > Water Polo Balls",
+   "Sporting Goods > Indoor Games > Bowling > Bowling Balls",
+   "Sporting Goods > Indoor Games > Billiards > Billiard Balls",
+   "Sporting Goods > Outdoor Recreation > Golf > Golf Balls",
+   "Sporting Goods > Outdoor Recreation > Outdoor Games > Pickleball > Pickleballs",
+   "Sporting Goods > Outdoor Recreation > Outdoor Games > Platform & Paddle Tennis > Platform Tennis Balls",
+   "Sporting Goods > Outdoor Recreation > Outdoor Games > Tetherball > Tetherballs",
+   "Toys & Games > Toys > Activity Toys > Bouncy Balls",
+   "Toys & Games > Toys > Ball Pit Accessories > Ball Pit Balls",
+   "Toys & Games > Toys > Sports Toys > Playground Balls"
+  ],
+  "game_table": [
+   "Sporting Goods > Indoor Games > Air Hockey > Air Hockey Tables",
+   "Sporting Goods > Indoor Games > Billiards > Billiard Tables",
+   "Sporting Goods > Indoor Games > Foosball > Foosball Tables",
+   "Sporting Goods > Indoor Games > Multi-Game Tables",
+   "Sporting Goods > Indoor Games > Ping Pong > Ping Pong Tables",
+   "Sporting Goods > Indoor Games > Table Shuffleboard > Shuffleboard Tables",
+   "Furniture > Tables > Poker & Game Tables",
+   "Arts & Entertainment > Party & Celebration > Party Supplies > Drinking Games > Beer Pong > Beer Pong Tables"
+  ],
+  "makeup": [
+   "Health & Beauty > Personal Care > Cosmetics > Makeup"
+  ],
+  "nail_polish": [
+   "Health & Beauty > Personal Care > Cosmetics > Nail Care > Nail Polishes",
+   "Animals & Pet Supplies > Pet Supplies > Pet Grooming Supplies > Pet Nail Polish"
+  ],
+  "hair_brush": [
+   "Health & Beauty > Personal Care > Hair Care > Hair Styling Tools > Combs & Brushes",
+   "Animals & Pet Supplies > Pet Supplies > Pet Grooming Supplies > Pet Combs & Brushes",
+   "Apparel & Accessories > Clothing Accessories > Hair Accessories > Hair Combs"
+  ],
+  "razor_blades": [
+   "Health & Beauty > Personal Care > Shaving & Grooming > Razors & Razor Blades"
+  ],
+  "deodorant": [
+   "Health & Beauty > Personal Care > Deodorant & Anti-Perspirant"
+  ],
+  "hearing_aid": [
+   "Health & Beauty > Health Care > Hearing Aids"
+  ],
+  "wheelchair": [
+   "Health & Beauty > Health Care > Mobility & Accessibility > Accessibility Equipment > Wheelchairs",
+   "Health & Beauty > Health Care > Mobility & Accessibility > Walking Aids > Walkers"
+  ],
+  "shower_seat": [
+   "Health & Beauty > Health Care > Mobility & Accessibility > Accessibility Furniture & Fixtures > Shower Benches & Seats",
+   "Baby & Toddler > Baby Bathing > Baby Bathtubs & Bath Seats"
+  ],
+  "face_mask": [
+   "Business & Industrial > Work Safety Protective Gear > Protective Masks",
+   "Health & Beauty > Personal Care > Cosmetics > Skin Care > Skin Care Masks & Peels",
+   "Health & Beauty > Personal Care > Cosmetics > Skin Care > Compressed Skin Care Mask Sheets"
+  ]
+ },
+ "exact": {
+  "refrigerator": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Wine Fridges",
+   "Food, Beverages & Tobacco > Beverages > Alcoholic Beverages > Liquor & Spirits > Absinthe",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Water Coolers",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Toasters & Grills > Tortilla & Flatbread Makers"
+  ],
+  "dehumidifier": [
+   "Home & Garden > Household Appliances > Vacuums",
+   "Home & Garden > Household Appliance Accessories",
+   "Home & Garden > Household Appliances > Climate Control Appliances > Space Heaters",
+   "Home & Garden > Household Supplies"
+  ],
+  "fire_pit": [
+   "Home & Garden > Household Appliances > Climate Control Appliances > Patio Heaters",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Outdoor Grills",
+   "Home & Garden > Fireplace & Wood Stove Accessories > Log Racks & Carriers"
+  ],
+  "sauna": [
+   "Home & Garden > Fireplaces",
+   "Home & Garden > Lawn & Garden > Outdoor Living > Outdoor Structures",
+   "Home & Garden > Lawn & Garden > Outdoor Living > Outdoor Structures > Sheds, Garages & Carports",
+   "Home & Garden > Bathroom Accessories > Towel Racks & Holders",
+   "Home & Garden > Decor > Address Signs",
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment Accessories > Grass Edger Accessories",
+   "Home & Garden > Lawn & Garden",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Food Mixers & Blenders",
+   "Sporting Goods > Exercise & Fitness > Exercise Bands"
+  ],
+  "heater": [
+   "Home & Garden > Pool & Spa > Sauna Accessories > Sauna Heaters",
+   "Home & Garden > Household Appliance Accessories",
+   "Home & Garden > Lighting > Lamps",
+   "Home & Garden > Household Appliances > Climate Control Appliances > Air Conditioners",
+   "Home & Garden > Household Appliances"
+  ],
+  "fan": [
+   "Home & Garden > Household Appliances > Climate Control Appliances > Air Conditioners",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Storage & Cargo > Motor Vehicle Carrying Racks > Vehicle Ski & Snowboard Racks"
+  ],
+  "heat_pump": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Frozen Drink Makers",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Ice Makers"
+  ],
+  "water_heater": [
+   "Animals & Pet Supplies > Pet Supplies > Fish Supplies > Aquarium Temperature Controllers",
+   "Home & Garden > Lighting > Light Ropes & Strings"
+  ],
+  "vacuum_cleaner": [
+   "Home & Garden > Household Supplies > Household Cleaning Supplies",
+   "Sporting Goods > Outdoor Recreation > Fishing",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Repair & Specialty Tools > Motor Vehicle Brake Service Kits",
+   "Home & Garden > Household Appliances > Climate Control Appliances > Air Purifiers",
+   "Home & Garden > Household Appliances > Water Heaters"
+  ],
+  "coffee_machine": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Electric Kettles"
+  ],
+  "microwave": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Food Mixers & Blenders"
+  ],
+  "oven": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Outdoor Grills",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Microwave Ovens",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Toasters & Grills > Pizza Makers & Ovens"
+  ],
+  "cooker": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Cooktops",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Ovens"
+  ],
+  "hob": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Hot Plates"
+  ],
+  "air_fryer": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Ovens",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Electric Kettles"
+  ],
+  "food_processor": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Food Cookers & Steamers"
+  ],
+  "toaster": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Electric Kettles"
+  ],
+  "kettle": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Coffee Makers & Espresso Machines"
+  ],
+  "juicer": [
+   "Home & Garden > Kitchen & Dining > Kitchen Tools & Utensils",
+   "Home & Garden > Kitchen & Dining > Kitchen Tools & Utensils > Scoops > Popcorn & French Fry Scoops"
+  ],
+  "cookware": [
+   "Sporting Goods > Outdoor Recreation > Camping & Hiking > Camping Cookware & Dinnerware"
+  ],
+  "kitchen_scale": [
+   "Hardware > Tools > Marking Tools",
+   "Food, Beverages & Tobacco > Food Items > Cooking & Baking Ingredients > Cooking Wine"
+  ],
+  "office_chair": [
+   "Furniture > Chairs > Gaming Chairs",
+   "Furniture > Chairs",
+   "Health & Beauty > Personal Care > Massage & Relaxation > Massage Chairs",
+   "Furniture > Office Furniture",
+   "Furniture > Office Furniture > Desks",
+   "Furniture > Office Furniture Accessories > Office Chair Accessories"
+  ],
+  "chair": [
+   "Furniture > Sofas",
+   "Sporting Goods > Outdoor Recreation > Camping & Hiking > Camp Furniture"
+  ],
+  "desk": [
+   "Furniture > Furniture Sets",
+   "Furniture > Office Furniture"
+  ],
+  "sofa": [
+   "Furniture > Chairs",
+   "Furniture > Futons",
+   "Furniture > Chairs > Arm Chairs, Recliners & Sleeper Chairs",
+   "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Beds",
+   "Furniture > Furniture Sets > Living Room Furniture Sets",
+   "Furniture > Beds & Accessories > Beds & Bed Frames",
+   "Furniture > Furniture Sets",
+   "Furniture > Chairs > Bean Bag Chairs",
+   "Food, Beverages & Tobacco > Food Items > Snack Foods > Chips",
+   "Furniture > Outdoor Furniture",
+   "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Beds"
+  ],
+  "sofa_bed": [
+   "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Beds",
+   "Furniture > Beds & Accessories > Beds & Bed Frames",
+   "Furniture > Chairs > Arm Chairs, Recliners & Sleeper Chairs",
+   "Furniture > Chairs",
+   "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Beds",
+   "Furniture > Furniture Sets",
+   "Food, Beverages & Tobacco > Tobacco Products",
+   "Furniture > Cabinets & Storage",
+   "Furniture > Beds & Accessories"
+  ],
+  "bed": [
+   "Furniture > Beds & Accessories",
+   "Furniture > Futons",
+   "Furniture > Beds & Accessories > Mattress Foundations",
+   "Furniture > Sofas",
+   "Furniture > Chairs > Arm Chairs, Recliners & Sleeper Chairs"
+  ],
+  "mattress": [
+   "Furniture > Beds & Accessories > Beds & Bed Frames",
+   "Home & Garden > Household Supplies",
+   "Furniture > Beds & Accessories",
+   "Animals & Pet Supplies > Pet Supplies > Pet Food Containers",
+   "Home & Garden > Linens & Bedding > Bedding > Pillows",
+   "Furniture > Baby & Toddler Furniture > Cribs & Toddler Beds",
+   "Furniture > Baby & Toddler Furniture > High Chair & Booster Seat Accessories",
+   "Office Supplies > Filing & Organization > Binding Supplies > Binding Machines",
+   "Furniture > Beds & Accessories > Mattress Foundations"
+  ],
+  "wardrobe": [
+   "Furniture > Furniture Sets > Bedroom Furniture Sets",
+   "Furniture > Cabinets & Storage",
+   "Furniture > Chairs",
+   "Furniture > Beds & Accessories",
+   "Home & Garden > Household Supplies > Storage & Organization > Clothing & Closet Storage > Closet Organizers & Garment Racks",
+   "Home & Garden > Household Supplies > Storage & Organization > Clothing & Closet Storage"
+  ],
+  "shelving": [
+   "Business & Industrial > Industrial Storage > Industrial Shelving",
+   "Furniture > Cabinets & Storage > Media Storage Cabinets & Racks",
+   "Furniture > Cabinets & Storage",
+   "Hardware > Hardware Accessories > Hardware Fasteners"
+  ],
+  "bookcase": [
+   "Furniture > Shelving > Wall Shelves & Ledges",
+   "Furniture > Shelving",
+   "Furniture > Cabinets & Storage",
+   "Furniture > Room Dividers",
+   "Furniture > Chairs",
+   "Furniture > Chairs > Kitchen & Dining Room Chairs",
+   "Furniture > Beds & Accessories > Mattresses",
+   "Home & Garden > Decor > Window Treatment Accessories"
+  ],
+  "table": [
+   "Furniture > Cabinets & Storage > Vanities > Bedroom Vanities",
+   "Furniture > Furniture Sets > Kitchen & Dining Furniture Sets",
+   "Furniture > Office Furniture > Desks",
+   "Furniture > Baby & Toddler Furniture > Baby & Toddler Furniture Sets",
+   "Furniture > Furniture Sets",
+   "Furniture > Office Furniture",
+   "Furniture > Cabinets & Storage > Vanities"
+  ],
+  "bedside_table": [
+   "Furniture > Tables",
+   "Furniture > Cabinets & Storage",
+   "Furniture > Furniture Sets",
+   "Furniture > Chairs",
+   "Furniture > Sofas",
+   "Furniture > Cabinets & Storage > Vanities",
+   "Furniture > Chairs > Folding Chairs & Stools",
+   "Furniture > Shelving",
+   "Food, Beverages & Tobacco > Food Items > Grains, Rice & Cereal > Rice",
+   "Furniture > Shelving > Bookcases & Standing Shelves",
+   "Furniture > Office Furniture Accessories > Office Chair Accessories"
+  ],
+  "lamp": [
+   "Hardware > Tools > Work Lights",
+   "Home & Garden > Lighting > Lighting Fixtures",
+   "Home & Garden > Lighting",
+   "Home & Garden > Lighting > Light Bulbs"
+  ],
+  "light_bulb": [
+   "Electronics > Electronics Accessories > Power > Battery Accessories",
+   "Home & Garden > Lighting > Lamps",
+   "Business & Industrial > Signage > Electric Signs",
+   "Food, Beverages & Tobacco > Food Items > Grains, Rice & Cereal > Rice",
+   "Business & Industrial > Food Service > Food Service Baskets",
+   "Electronics > Audio > Audio Players & Recorders > Radios",
+   "Electronics > Electronics Accessories > Power > Battery Accessories > Camera Battery Chargers"
+  ],
+  "smart_plug": [
+   "Electronics > Communications > Telephony > Mobile Phone Accessories",
+   "Hardware > Power & Electrical Supplies > Power Outlets & Sockets"
+  ],
+  "desk_phone": [
+   "Electronics > Communications > Telephony",
+   "Electronics > Audio > Audio Components > Speakers",
+   "Electronics > Computers",
+   "Electronics > Computers > Smart Glasses",
+   "Electronics > Video > Televisions",
+   "Electronics > Communications > Telephony > Mobile Phones",
+   "Electronics > Print, Copy, Scan & Fax > Printers, Copiers & Fax Machines",
+   "Electronics > Communications > Intercom Accessories",
+   "Electronics > Audio > Audio Components > Headphones & Headsets > Headphones"
+  ],
+  "power_bank": [
+   "Electronics > Electronics Accessories > Power > Batteries",
+   "Electronics > Electronics Accessories > Power > Power Adapters & Chargers",
+   "Electronics > Audio > Audio Players & Recorders > MP3 Players",
+   "Electronics > Electronics Accessories > Power > Batteries > Mobile Phone Batteries",
+   "Electronics > Electronics Accessories > Power > Battery Accessories > General Purpose Battery Chargers",
+   "Electronics > Electronics Accessories > Power",
+   "Food, Beverages & Tobacco > Beverages > Fruit Flavored Drinks"
+  ],
+  "phone_charger": [
+   "Electronics > Electronics Accessories > Power > Power Adapter & Charger Accessories",
+   "Electronics > Communications > Telephony > Mobile Phone Accessories",
+   "Electronics > Electronics Accessories > Power > Batteries"
+  ],
+  "wireless_charger": [
+   "Electronics > Audio"
+  ],
+  "cable": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Power & Electrical Systems",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Repair & Specialty Tools > Vehicle Jumper Cables"
+  ],
+  "charging_cable": [
+   "Electronics > Electronics Accessories > Cables",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Power & Electrical Systems",
+   "Electronics > Electronics Accessories > Power > Power Adapter & Charger Accessories"
+  ],
+  "phone_case": [
+   "Electronics > Communications > Telephony > Mobile Phone Accessories"
+  ],
+  "screen_protector": [
+   "Electronics > Communications > Telephony > Mobile Phone Accessories",
+   "Electronics > Electronics Accessories > Computer Accessories",
+   "Electronics > Electronics Accessories > Electronics Films & Shields > Privacy Filters",
+   "Electronics > Communications > Telephony > Mobile Phone Accessories > Mobile Phone Cases",
+   "Electronics > Computers > Thin & Zero Clients",
+   "Electronics > Electronics Accessories > Electronics Films & Shields > Electronics Stickers & Decals",
+   "Electronics > Audio > Audio Components > Microphones",
+   "Health & Beauty > Personal Care > Cosmetics > Skin Care",
+   "Electronics > Electronics Accessories > Computer Accessories > Mouse Pads",
+   "Electronics > Electronics Accessories > Computer Accessories > Computer Risers & Stands",
+   "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories"
+  ],
+  "car_phone_holder": [
+   "Electronics > Communications > Telephony > Mobile Phone Accessories"
+  ],
+  "smartwatch": [
+   "Electronics > Computers > Handheld Devices > PDAs",
+   "Food, Beverages & Tobacco > Food Items > Nuts & Seeds"
+  ],
+  "laptop": [
+   "Electronics > Computers"
+  ],
+  "desktop_pc": [
+   "Electronics > Computers > Barebone Computers",
+   "Electronics > Computers",
+   "Electronics > Electronics Accessories > Computer Accessories > Laptop Docking Stations"
+  ],
+  "monitor": [
+   "Electronics > Video",
+   "Electronics > Electronics Accessories > Computer Components > Input Devices",
+   "Electronics > Print, Copy, Scan & Fax > Printers, Copiers & Fax Machines",
+   "Electronics > Communications > Telephony > Mobile Phone Accessories"
+  ],
+  "printer": [
+   "Electronics > Print, Copy, Scan & Fax > 3D Printers"
+  ],
+  "label_printer": [
+   "Electronics > Print, Copy, Scan & Fax > Printers, Copiers & Fax Machines",
+   "Electronics > Print, Copy, Scan & Fax",
+   "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories",
+   "Electronics > Electronics Accessories > Computer Components > Input Devices",
+   "Electronics > Print, Copy, Scan & Fax > 3D Printers"
+  ],
+  "toner": [
+   "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Consumables",
+   "Food, Beverages & Tobacco > Beverages > Water > Carbonated Water > Flavored Carbonated Water",
+   "Electronics > Communications > Telephony > Mobile Phone Accessories",
+   "Electronics > Video",
+   "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Consumables > Printer Filters",
+   "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Consumables > Printheads",
+   "Electronics > Circuit Boards & Components > Printed Circuit Boards",
+   "Electronics > Print, Copy, Scan & Fax > Printers, Copiers & Fax Machines"
+  ],
+  "ink_cartridge": [
+   "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Consumables",
+   "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories",
+   "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Consumables > Printer Maintenance Kits",
+   "Hardware > Building Consumables > Painting Consumables > Paint",
+   "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Consumables > Printer Ribbons",
+   "Office Supplies > Filing & Organization > Card Sleeves",
+   "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories > Printer Duplexers",
+   "Home & Garden > Household Supplies > Moisture Absorbers"
+  ],
+  "router": [
+   "Electronics > Networking > Bridges & Routers",
+   "Electronics > Networking",
+   "Electronics > Computers",
+   "Electronics > Print, Copy, Scan & Fax > Scanners",
+   "Electronics > Computers > Barebone Computers",
+   "Electronics > Electronics Accessories > Power > UPS Accessories",
+   "Electronics > Electronics Accessories > Antennas"
+  ],
+  "access_point": [
+   "Electronics > Networking",
+   "Electronics > Networking > Bridges & Routers > Wireless Routers",
+   "Electronics > Networking > Network Cards & Adapters",
+   "Electronics > Print, Copy, Scan & Fax > Scanners",
+   "Electronics > Networking > Modems",
+   "Electronics > Electronics Accessories > Computer Components",
+   "Electronics > Networking > Hubs & Switches",
+   "Electronics > Networking > Repeaters & Transceivers",
+   "Electronics > Electronics Accessories > Signal Jammers",
+   "Cameras & Optics > Camera & Optic Accessories > Camera Parts & Accessories",
+   "Electronics > Electronics Accessories > Signal Boosters",
+   "Electronics > Electronics Accessories",
+   "Electronics > Print, Copy, Scan & Fax > 3D Printers"
+  ],
+  "firewall": [
+   "Electronics > Electronics Accessories > Computer Components > Input Devices",
+   "Electronics > Networking",
+   "Electronics > Communications > Video Conferencing",
+   "Electronics > Networking > Bridges & Routers > Wireless Routers"
+  ],
+  "server": [
+   "Electronics > Electronics Accessories > Computer Components > Storage Devices > Network Storage Systems",
+   "Electronics > Networking",
+   "Electronics > Print, Copy, Scan & Fax",
+   "Electronics > Networking > Concentrators & Multiplexers",
+   "Electronics > Computers > Desktop Computers",
+   "Electronics > Electronics Accessories > Computer Components > Storage Devices",
+   "Electronics > Electronics Accessories > Computer Components > Storage Devices > Hard Drives",
+   "Electronics > Networking > Network Cards & Adapters"
+  ],
+  "memory_card": [
+   "Electronics > Electronics Accessories > Memory > Flash Memory",
+   "Electronics > Electronics Accessories > Memory > RAM"
+  ],
+  "battery": [
+   "Electronics > Electronics Accessories > Power > Batteries",
+   "Hardware > Building Consumables",
+   "Sporting Goods > Exercise & Fitness > Exercise Bands",
+   "Hardware > Tools > Flashlights & Headlamps",
+   "Electronics > Audio > Audio Accessories > MP3 Player Accessories",
+   "Food, Beverages & Tobacco > Food Items > Snack Foods"
+  ],
+  "pen": [
+   "Office Supplies > Office Instruments > Writing & Drawing Instruments > Pens & Pencils",
+   "Office Supplies > Office Instruments > Writing & Drawing Instrument Accessories"
+  ],
+  "marker": [
+   "Office Supplies > Office Equipment",
+   "Hardware > Tools > Masonry Tools",
+   "Office Supplies > Office Instruments > Clipboards"
+  ],
+  "folder": [
+   "Office Supplies > Office Instruments > Clipboards",
+   "Office Supplies > General Office Supplies"
+  ],
+  "network_switch": [
+   "Electronics > Electronics Accessories > Power > Power Strips & Surge Suppressors"
+  ],
+  "media_converter": [
+   "Electronics > Networking",
+   "Electronics > Networking > Network Cards & Adapters",
+   "Electronics > Electronics Accessories > Adapters",
+   "Electronics > Electronics Accessories > Cables > Network Cables",
+   "Electronics > Components > Converters",
+   "Electronics > Networking > Concentrators & Multiplexers",
+   "Electronics > Video > Projectors > Overhead Projectors",
+   "Electronics > Networking > Hubs & Switches",
+   "Electronics > Networking > Power Over Ethernet Adapters",
+   "Electronics > Print, Copy, Scan & Fax > Scanner Accessories",
+   "Electronics > Electronics Accessories > Signal Jammers"
+  ],
+  "network_card": [
+   "Electronics > Electronics Accessories > Adapters > USB Adapters",
+   "Electronics > Electronics Accessories > Computer Components",
+   "Electronics > Electronics Accessories > Computer Accessories > Mouse Pads",
+   "Electronics > Electronics Accessories > Adapters",
+   "Electronics > Electronics Accessories",
+   "Electronics > Electronics Accessories > Antennas",
+   "Electronics > Computers > Laptops",
+   "Electronics > Electronics Accessories > Computer Components > Input Devices",
+   "Electronics > Electronics Accessories > Computer Components > I/O Cards & Adapters > Computer Interface Cards & Adapters",
+   "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories",
+   "Electronics > Networking > Bridges & Routers > Network Bridges"
+  ],
+  "keyboard": [
+   "Electronics > Electronics Accessories > Computer Components > Input Devices",
+   "Electronics > Electronics Accessories > Computer Accessories > Computer Accessory Sets",
+   "Electronics > Electronics Accessories",
+   "Electronics > Communications > Telephony > Mobile Phone Accessories"
+  ],
+  "mouse": [
+   "Electronics > Electronics Accessories > Computer Components > Input Devices",
+   "Electronics > Electronics Accessories > Computer Accessories > Computer Accessory Sets",
+   "Electronics > Electronics Accessories > Computer Components > Input Devices > Keyboards",
+   "Sporting Goods > Indoor Games > Table Shuffleboard > Table Shuffleboard Pucks"
+  ],
+  "webcam": [
+   "Electronics > Video > Computer Monitors",
+   "Electronics > Electronics Accessories > Computer Components > Input Devices > Keyboards",
+   "Electronics > Circuit Boards & Components > Printed Circuit Boards",
+   "Cameras & Optics > Optics > Monoculars",
+   "Cameras & Optics > Cameras > Video Cameras",
+   "Electronics > Video"
+  ],
+  "scanner": [
+   "Electronics > Electronics Accessories > Computer Components > Input Devices > Barcode Scanners",
+   "Electronics > Electronics Accessories > Computer Components > Input Devices"
+  ],
+  "storage_drive": [
+   "Electronics > Electronics Accessories > Computer Components > Storage Devices"
+  ],
+  "usb_flash_drive": [
+   "Electronics > Electronics Accessories > Power > Batteries",
+   "Electronics > Electronics Accessories > Computer Components > Storage Devices > Hard Drives",
+   "Electronics > Electronics Accessories > Computer Accessories",
+   "Electronics > Computers > Laptops",
+   "Electronics > Electronics Accessories > Electronics Films & Shields > Screen Protectors"
+  ],
+  "docking_station": [
+   "Electronics > Electronics Accessories > Computer Accessories > Tablet Computer Docks & Stands",
+   "Electronics > Electronics Accessories > Computer Accessories > Handheld Device Accessories",
+   "Electronics > Electronics Accessories > Computer Components > Storage Devices > Hard Drive Accessories > Hard Drive Docks",
+   "Electronics > Communications > Telephony > Mobile Phone Accessories > Mobile Phone Stands",
+   "Electronics > Electronics Accessories > Computer Components > Input Device Accessories > Barcode Scanner Stands",
+   "Electronics > Electronics Accessories > Computer Components > Input Devices > Barcode Scanners",
+   "Electronics > Electronics Accessories > Computer Accessories",
+   "Electronics > Electronics Accessories > Power > Power Adapters & Chargers",
+   "Electronics > Electronics Accessories > Adapters"
+  ],
+  "television": [
+   "Electronics > Video"
+  ],
+  "speaker": [
+   "Electronics > Audio > Audio Players & Recorders > Karaoke Systems",
+   "Electronics > Audio > Public Address Systems",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Electronics > Motor Vehicle Speakers",
+   "Electronics > Audio > Audio Players & Recorders > Radios",
+   "Electronics > Print, Copy, Scan & Fax > Printers, Copiers & Fax Machines",
+   "Electronics > Audio > Audio Components > Microphones"
+  ],
+  "soundbar": [
+   "Electronics > Audio > Audio Components > Audio & Video Receivers",
+   "Electronics > Audio > Audio Players & Recorders > Home Theater Systems"
+  ],
+  "headphones": [
+   "Electronics > Audio > Audio Components > Headphones & Headsets",
+   "Electronics > Audio > Audio Components > Speakers",
+   "Electronics > Electronics Accessories > Computer Components > Input Devices",
+   "Electronics > Audio",
+   "Electronics > Communications > Telephony > Mobile Phone Accessories",
+   "Electronics > Computers > Thin & Zero Clients",
+   "Electronics > Audio > Audio Components > Microphones",
+   "Electronics > Electronics Accessories > Computer Components > Input Devices > Keyboards"
+  ],
+  "video_game": [
+   "Toys & Games > Games > Portable Electronic Games",
+   "Media > DVDs & Videos",
+   "Software > Computer Software",
+   "Sporting Goods > Outdoor Recreation > Golf > Golf Clubs",
+   "Toys & Games > Toys",
+   "Toys & Games > Games > Board Games",
+   "Toys & Games > Toys > Play Vehicles > Toy Airplanes"
+  ],
+  "camera": [
+   "Hardware > Tools > Measuring Tools & Sensors > Thermal Imaging Cameras",
+   "Cameras & Optics > Cameras"
+  ],
+  "microphone": [
+   "Electronics > Audio > Audio Components > Audio Transmitters",
+   "Electronics > Electronics Accessories > Computer Components > Input Device Accessories",
+   "Electronics > Audio > Audio Components > Headphones & Headsets"
+  ],
+  "projector": [
+   "Electronics > Video",
+   "Electronics > Video > Televisions",
+   "Electronics > Video > Video Accessories"
+  ],
+  "amplifier": [
+   "Electronics > Electronics Accessories > Signal Boosters",
+   "Electronics > Audio > Audio Components > Audio Mixers",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Electronics > Motor Vehicle Amplifiers",
+   "Electronics > Audio > Audio Components > Headphones & Headsets > Headphones",
+   "Electronics > Audio > Audio Components > Speakers",
+   "Electronics > GPS Accessories",
+   "Electronics > Arcade Equipment",
+   "Electronics > Networking > Repeaters & Transceivers",
+   "Food, Beverages & Tobacco > Beverages > Vinegar Drinks",
+   "Electronics > Audio > Public Address Systems"
+  ],
+  "engine_oil": [
+   "Hardware > Building Consumables > Lubricants",
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment Accessories",
+   "Food, Beverages & Tobacco > Tobacco Products",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Fluids > Vehicle Performance Additives",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Cleaning > Vehicle Fuel Injection Cleaning Kits"
+  ],
+  "spark_plugs": [
+   "Hardware > Small Engines",
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment Accessories > Lawn Mower Accessories"
+  ],
+  "tyres": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems > Motor Vehicle Tire Accessories",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Safety & Security > Motorcycle Protective Gear > Motorcycle Gloves",
+   "Vehicles & Parts > Vehicle Parts & Accessories",
+   "Vehicles & Parts > Vehicles",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Decor > Vehicle Decals"
+  ],
+  "dash_cam": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Electronics",
+   "Electronics > Radar Detectors"
+  ],
+  "helmet": [
+   "Sporting Goods > Outdoor Recreation > Camping & Hiking > Tent Accessories > Tent Poles & Stakes",
+   "Sporting Goods > Outdoor Recreation > Equestrian > Horse Tack Accessories > Saddle Accessories > Saddle Pads & Blankets"
+  ],
+  "bicycle_helmet": [
+   "Sporting Goods > Outdoor Recreation > Equestrian > Horse Tack Accessories > Saddle Accessories > Saddle Pads & Blankets",
+   "Furniture > Beds & Accessories > Beds & Bed Frames",
+   "Electronics > Video Game Consoles"
+  ],
+  "moto_helmet": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Safety & Security > Motorcycle Protective Gear > Motorcycle Helmet Parts & Accessories",
+   "Sporting Goods > Outdoor Recreation > Climbing > Climbing Harnesses",
+   "Sporting Goods > Athletics > Boxing & Martial Arts",
+   "Vehicles & Parts > Vehicles"
+  ],
+  "scooter": [
+   "Toys & Games > Toys > Riding Toys"
+  ],
+  "drill": [
+   "Hardware > Tools > Tool Sets > Power Tool Combo Sets",
+   "Hardware > Tools > Drills",
+   "Hardware > Tools > Drills > Drill Presses",
+   "Hardware > Tools",
+   "Hardware > Tools > Drills > Pneumatic Drills",
+   "Hardware > Tools > Drills > Augers"
+  ],
+  "rotary_hammer": [
+   "Hardware > Tools > Drills > Handheld Power Drills"
+  ],
+  "impact_driver": [
+   "Sporting Goods > Exercise & Fitness > Exercise Bands"
+  ],
+  "angle_grinder": [
+   "Hardware > Tools > Drills",
+   "Hardware > Tools",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliance Accessories > Outdoor Grill Accessories > Outdoor Grill Covers"
+  ],
+  "circular_saw": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Engine Oil Circulation",
+   "Hardware > Tool Accessories > Drill & Screwdriver Accessories > Drill & Screwdriver Bits"
+  ],
+  "jigsaw": [
+   "Hardware > Tools > Drills",
+   "Hardware > Tools > Drills > Handheld Power Drills"
+  ],
+  "mitre_saw": [
+   "Hardware > Tools",
+   "Business & Industrial > Food Service > Food Service Baskets",
+   "Hardware > Tools > Saws",
+   "Sporting Goods > Outdoor Recreation > Winter Sports & Activities > Skiing & Snowboarding > Ski & Snowboard Helmets",
+   "Sporting Goods > Athletics > Basketball > Basketballs"
+  ],
+  "sander": [
+   "Sporting Goods > Exercise & Fitness > Ab Wheels & Rollers",
+   "Hardware > Tools",
+   "Hardware > Tools > Drills > Handheld Power Drills",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Repair & Specialty Tools > Vehicle Battery Chargers",
+   "Health & Beauty > Jewelry Cleaning & Care > Watch Repair Kits",
+   "Home & Garden > Household Appliances > Garage Door Openers"
+  ],
+  "air_compressor": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Repair & Specialty Tools > Vehicle Battery Chargers",
+   "Vehicles & Parts > Vehicle Parts & Accessories",
+   "Toys & Games > Toys > Sports Toys > Basketball Toys",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Safety & Security > Vehicle Alarms & Locks > Vehicle Remote Keyless Systems",
+   "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories"
+  ],
+  "multi_tool": [
+   "Hardware > Tools",
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment > Outdoor Power Equipment Base Units",
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment",
+   "Hardware > Tools > Paint Tools",
+   "Hardware > Tools > Putty Knives & Scrapers",
+   "Electronics > Electronics Accessories",
+   "Office Supplies > Office Equipment > Calculators > Basic Calculators",
+   "Sporting Goods > Outdoor Recreation > Cycling > Bicycle Accessories > Bicycle Tools",
+   "Hardware > Tools > Hammers"
+  ],
+  "nail_gun": [
+   "Hardware > Tools > Sharpeners",
+   "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Food",
+   "Health & Beauty > Personal Care > Cosmetics > Cosmetic Tools > Nail Tools > Nail Drills",
+   "Hardware > Power & Electrical Supplies > Power Inverters",
+   "Hardware > Hardware Accessories > Hinges"
+  ],
+  "welder": [
+   "Hardware > Tools",
+   "Hardware > Tools > Soldering Irons",
+   "Business & Industrial > Work Safety Protective Gear > Welding Helmets"
+  ],
+  "screwdriver": [
+   "Hardware > Tools > Tool Sets",
+   "Hardware > Tools > Flashlights & Headlamps",
+   "Hardware > Tools > Cutters > Utility Knives",
+   "Hardware > Tools > Oil Filter Drains"
+  ],
+  "screwdriver_set": [
+   "Hardware > Tools > Tool Sets",
+   "Hardware > Tools > Oil Filter Drains"
+  ],
+  "socket_set": [
+   "Hardware > Tools > Tool Sets",
+   "Hardware > Tools",
+   "Home & Garden > Kitchen & Dining > Kitchen Tools & Utensils",
+   "Hardware > Tool Accessories > Soldering Iron Accessories",
+   "Hardware > Tools > Sanders",
+   "Hardware > Tool Accessories"
+  ],
+  "spanner": [
+   "Hardware > Tools > Tool Sets > Hand Tool Sets",
+   "Hardware > Tools > Impact Wrenches & Drivers",
+   "Home & Garden > Lawn & Garden > Gardening > Gardening Tools",
+   "Electronics > Communications > Communication Radios > Two-Way Radios",
+   "Hardware > Tools > Socket Drivers",
+   "Sporting Goods > Outdoor Recreation > Cycling > Bicycle Accessories > Bicycle Tools",
+   "Hardware > Tools > Screwdrivers",
+   "Hardware > Tools > Masonry Tools > Masonry Trowels"
+  ],
+  "pliers": [
+   "Hardware > Tools > Wrenches",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Fluids > Vehicle Windshield Fluid",
+   "Hardware > Tools > Tool Knives",
+   "Hardware > Tools > Tool Clamps & Vises",
+   "Hardware > Tools > Cutters > Pipe Cutters",
+   "Health & Beauty > Personal Care > Shaving & Grooming > Hair Clippers & Trimmers",
+   "Hardware > Tools",
+   "Home & Garden > Kitchen & Dining > Tableware > Serveware > Butter Dishes",
+   "Hardware > Tools > Cutters > Nippers",
+   "Hardware > Tool Accessories"
+  ],
+  "hammer": [
+   "Office Supplies > Paper Handling > Paperweights",
+   "Hardware > Tool Accessories > Drill & Screwdriver Accessories",
+   "Hardware > Tools > Masonry Tools > Brick Tools",
+   "Sporting Goods > Outdoor Recreation > Golf > Golf Clubs",
+   "Home & Garden > Household Supplies > Household Cleaning Supplies"
+  ],
+  "tape_measure": [
+   "Sporting Goods > Exercise & Fitness > Cardio > Cardio Machine Accessories > Elliptical Trainer Accessories"
+  ],
+  "spirit_level": [
+   "Hardware > Tools > Measuring Tools & Sensors > Squares"
+  ],
+  "tool_box": [
+   "Hardware > Hardware Accessories > Tool Storage & Organization > Tool Bags",
+   "Home & Garden > Household Supplies > Household Cleaning Supplies"
+  ],
+  "multimeter": [
+   "Electronics > Networking > Bridges & Routers > VoIP Gateways & Routers",
+   "Hardware > Tools > Measuring Tools & Sensors > Tape Measures",
+   "Hardware > Tools",
+   "Hardware > Building Consumables > Painting Consumables > Paint"
+  ],
+  "soldering_iron": [
+   "Electronics > Electronics Accessories"
+  ],
+  "hand_saw": [
+   "Hardware > Tools > Saws",
+   "Home & Garden > Lawn & Garden > Gardening > Gardening Tools > Pruning Saws",
+   "Hardware > Tools > Saws > Miter Saws",
+   "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Cages & Stands",
+   "Sporting Goods > Outdoor Recreation > Fishing"
+  ],
+  "lawn_mower": [
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment > Outdoor Power Equipment Sets",
+   "Home & Garden > Lawn & Garden > Watering & Irrigation > Sprinklers & Sprinkler Heads",
+   "Toys & Games > Toys > Remote Control Toys > Remote Control Cars & Trucks"
+  ],
+  "brush_cutter": [
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment > Lawn Mowers",
+   "Vehicles & Parts > Vehicle Parts & Accessories",
+   "Sporting Goods > Athletics > Cricket > Cricket Protective Gear > Cricket Gloves"
+  ],
+  "hedge_trimmer": [
+   "Home & Garden > Lawn & Garden > Outdoor Living > Outdoor Umbrella & Sunshade Accessories",
+   "Hardware > Tools > Drills"
+  ],
+  "chainsaw": [
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment"
+  ],
+  "leaf_blower": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Repair & Specialty Tools > Vehicle Jump Starters",
+   "Sporting Goods > Outdoor Recreation > Fishing"
+  ],
+  "pressure_washer": [
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment > Lawn Mowers",
+   "Electronics > Communications > Communication Radios"
+  ],
+  "garden_hose": [
+   "Hardware > Plumbing > Plumbing Hoses & Supply Lines",
+   "Hardware > Hardware Accessories > Gas Hoses"
+  ],
+  "water_pump": [
+   "Home & Garden > Lawn & Garden > Watering & Irrigation",
+   "Hardware > Hardware Pumps > Home Appliance Pumps"
+  ],
+  "ladder": [
+   "Hardware > Tools > Ladders & Scaffolding",
+   "Home & Garden > Lighting > Tiki Torches & Oil Lamps",
+   "Toys & Games > Outdoor Play Equipment > Swing Sets & Playsets"
+  ],
+  "garden_sprayer": [
+   "Home & Garden > Fireplace & Wood Stove Accessories > Log Racks & Carriers",
+   "Hardware > Tools > Masonry Tools"
+  ],
+  "paint": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Paint",
+   "Office Supplies > Filing & Organization > Binding Supplies > Binder Accessories"
+  ],
+  "tap": [
+   "Home & Garden > Lawn & Garden > Watering & Irrigation > Garden Hose Fittings & Valves",
+   "Hardware > Plumbing > Plumbing Fittings & Supports > Plumbing Valves",
+   "Hardware > Tools",
+   "Hardware > Fuel Containers & Tanks",
+   "Hardware > Tool Accessories",
+   "Hardware > Hardware Accessories",
+   "Health & Beauty > Health Care > Biometric Monitors > Blood Glucose Meters",
+   "Hardware > Plumbing > Water Dispensing & Filtration > Water Filtration Accessories"
+  ],
+  "thermometer": [
+   "Hardware > Tools > Measuring Tools & Sensors"
+  ],
+  "massager": [
+   "Health & Beauty > Personal Care > Cosmetics > Cosmetic Tools > Skin Care Tools",
+   "Health & Beauty > Personal Care > Oral Care > Toothbrush Accessories",
+   "Home & Garden > Household Appliances > Wallpaper Steamers",
+   "Health & Beauty > Personal Care > Shaving & Grooming > Shaving Bowls & Mugs",
+   "Health & Beauty > Personal Care",
+   "Sporting Goods > Exercise & Fitness > Exercise Bands"
+  ],
+  "glucose_meter": [
+   "Health & Beauty > Health Care > Biometric Monitors > Pulse Oximeters"
+  ],
+  "electric_shaver": [
+   "Health & Beauty > Personal Care > Shaving & Grooming > Hair Clippers & Trimmers",
+   "Home & Garden > Household Supplies > Stair Treads"
+  ],
+  "hair_clipper": [
+   "Health & Beauty > Personal Care > Shaving & Grooming > Electric Razors",
+   "Animals & Pet Supplies > Pet Supplies > Pet Grooming Supplies > Pet Hair Clippers & Trimmers",
+   "Home & Garden > Bathroom Accessories > Bath Caddies"
+  ],
+  "hair_dryer": [
+   "Home & Garden > Household Appliances > Floor & Carpet Dryers",
+   "Animals & Pet Supplies > Pet Supplies > Pet Grooming Supplies > Pet Hair Dryers"
+  ],
+  "electric_toothbrush": [
+   "Health & Beauty > Personal Care > Shaving & Grooming > Electric Razors"
+  ],
+  "shampoo": [
+   "Health & Beauty > Personal Care > Hair Care > Shampoo & Conditioner",
+   "Sporting Goods > Outdoor Recreation > Equestrian > Horse Care > Horse Grooming",
+   "Animals & Pet Supplies > Pet Supplies > Pet Flea & Tick Control",
+   "Health & Beauty > Personal Care > Hair Care > Shampoo & Conditioner > Shampoo & Conditioner Sets"
+  ],
+  "face_cream": [
+   "Health & Beauty > Personal Care > Cosmetics > Skin Care",
+   "Health & Beauty > Personal Care > Cosmetics > Skin Care > Wart Removers",
+   "Home & Garden > Lawn & Garden > Gardening",
+   "Home & Garden > Decor > Fountains & Ponds > Ponds",
+   "Home & Garden > Plants > Flowers",
+   "Health & Beauty > Personal Care"
+  ],
+  "perfume": [
+   "Home & Garden > Household Appliances > Climate Control Appliances > Duct Heaters"
+  ],
+  "sunscreen": [
+   "Home & Garden > Household Supplies > Household Cleaning Supplies > Household Cleaning Products",
+   "Home & Garden > Household Supplies > Laundry Supplies > Fabric Stain Removers",
+   "Health & Beauty > Health Care > First Aid > Antiseptics & Cleaning Supplies",
+   "Home & Garden > Household Supplies > Household Cleaning Supplies"
+  ],
+  "baby_stroller": [
+   "Home & Garden > Lawn & Garden > Outdoor Living > Outdoor Structures > Sheds, Garages & Carports"
+  ],
+  "baby_carrier": [
+   "Baby & Toddler > Baby Transport > Baby Strollers"
+  ],
+  "baby_monitor": [
+   "Electronics > Communications > Telephony > Mobile Phone Accessories"
+  ],
+  "nappies": [
+   "Apparel & Accessories > Clothing > Underwear & Socks > Underwear",
+   "Apparel & Accessories > Clothing > Baby & Toddler Clothing > Baby & Toddler Swimwear"
+  ],
+  "dog_food": [
+   "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Treats",
+   "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Treats",
+   "Home & Garden > Household Appliances > Laundry Appliances > Dryers",
+   "Animals & Pet Supplies > Pet Supplies > Fish Supplies > Fish Food",
+   "Animals & Pet Supplies > Pet Supplies > Small Animal Supplies > Small Animal Food",
+   "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Food",
+   "Home & Garden > Parasols & Rain Umbrellas"
+  ],
+  "cat_food": [
+   "Animals & Pet Supplies > Pet Supplies > Cat Supplies",
+   "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Food",
+   "Furniture > Tables",
+   "Health & Beauty > Health Care > Fitness & Nutrition > Vitamins & Supplements",
+   "Animals & Pet Supplies > Pet Supplies > Pet Grooming Supplies > Pet Hair Clippers & Trimmers",
+   "Media > Books > E-books",
+   "Food, Beverages & Tobacco > Beverages > Alcoholic Beverages > Wine",
+   "Animals & Pet Supplies > Pet Supplies > Pet Vitamins & Supplements"
+  ],
+  "treadmill": [
+   "Sporting Goods > Exercise & Fitness",
+   "Sporting Goods > Exercise & Fitness > Cardio > Cardio Machines > Rowing Machines",
+   "Sporting Goods > Exercise & Fitness > Cardio > Jump Ropes",
+   "Sporting Goods > Exercise & Fitness > Cardio > Cardio Machines"
+  ],
+  "exercise_bike": [
+   "Sporting Goods > Exercise & Fitness > Cardio > Cardio Machines",
+   "Sporting Goods > Outdoor Recreation > Cycling > Bicycles",
+   "Sporting Goods > Outdoor Recreation > Cycling > Bicycle Accessories"
+  ],
+  "dumbbells": [
+   "Sporting Goods > Exercise & Fitness > Medicine Balls",
+   "Sporting Goods > Exercise & Fitness > Cardio > Cardio Machine Accessories > Stair Climber & Stepper Accessories",
+   "Sporting Goods > Exercise & Fitness > Cardio > Cardio Machines > Rowing Machines",
+   "Sporting Goods > Exercise & Fitness > Inversion Tables & Systems",
+   "Sporting Goods > Exercise & Fitness",
+   "Sporting Goods > Athletics > Rounders > Rounders Bats",
+   "Sporting Goods > Exercise & Fitness > Cardio > Cardio Machines > Stair Climbers & Steppers"
+  ],
+  "barbell": [
+   "Sporting Goods > Exercise & Fitness > Weight Lifting > Free Weight Accessories"
+  ],
+  "tent": [
+   "Home & Garden > Lawn & Garden > Outdoor Living > Outdoor Structures > Canopies & Gazebos",
+   "Mature > Weapons > Guns",
+   "Animals & Pet Supplies > Pet Supplies > Cat Supplies > Cat Furniture"
+  ],
+  "trousers": [
+   "Apparel & Accessories > Clothing > One-Pieces > Overalls",
+   "Food, Beverages & Tobacco > Food Items > Meat, Seafood & Eggs",
+   "Sporting Goods > Athletics > American Football",
+   "Toys & Games > Games > Battle Top Accessories"
+  ],
+  "work_trousers": [
+   "Apparel & Accessories > Clothing > Pants",
+   "Business & Industrial > Work Safety Protective Gear > Safety Knee Pads"
+  ],
+  "jeans": [
+   "Apparel & Accessories > Clothing > Activewear > Motorcycle Protective Clothing > Motorcycle Pants",
+   "Toys & Games > Toys > Sports Toys > Golf Toys",
+   "Apparel & Accessories > Clothing > Shorts"
+  ],
+  "jacket": [
+   "Apparel & Accessories > Clothing > Outerwear",
+   "Apparel & Accessories > Clothing > Uniforms > White Coats",
+   "Apparel & Accessories > Clothing > Outerwear > Vests",
+   "Apparel & Accessories > Clothing > Shirts & Tops",
+   "Furniture > Cabinets & Storage > Storage Cabinets & Lockers",
+   "Hardware > Hardware Accessories > Chain, Wire & Rope",
+   "Sporting Goods > Athletics > Baseball & Softball",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Safety & Security > Motorcycle Protective Gear",
+   "Home & Garden > Smoking Accessories > Humidors",
+   "Media > Music & Sound Recordings > Music Cassette Tapes"
+  ],
+  "t_shirt": [
+   "Apparel & Accessories > Clothing",
+   "Apparel & Accessories > Clothing > Underwear & Socks > Socks",
+   "Toys & Games > Toys > Sports Toy Accessories",
+   "Home & Garden > Linens & Bedding",
+   "Home & Garden > Household Supplies > Household Cleaning Supplies > Squeegees",
+   "Home & Garden > Household Appliances > Climate Control Appliances > Fans > Wall Mount Fans",
+   "Toys & Games > Toys",
+   "Toys & Games > Toys > Riding Toys > Push & Pedal Riding Vehicles",
+   "Electronics > Electronics Accessories > Computer Components",
+   "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Apparel"
+  ],
+  "shirt": [
+   "Apparel & Accessories > Clothing > Activewear > Motorcycle Protective Clothing",
+   "Apparel & Accessories > Clothing > Outerwear > Coats & Jackets",
+   "Apparel & Accessories > Clothing",
+   "Apparel & Accessories > Clothing > Baby & Toddler Clothing > Baby & Toddler Swimwear",
+   "Apparel & Accessories > Clothing > Pants",
+   "Apparel & Accessories > Clothing > Outfit Sets",
+   "Health & Beauty > Personal Care > Feminine Sanitary Supplies > Feminine Douches & Creams",
+   "Apparel & Accessories > Clothing > Activewear > Motorcycle Protective Clothing > Motorcycle Jackets",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Fluids > Vehicle Transmission Fluid"
+  ],
+  "hoodie": [
+   "Apparel & Accessories > Clothing > Outerwear > Coats & Jackets",
+   "Apparel & Accessories > Clothing > Activewear > Motorcycle Protective Clothing",
+   "Apparel & Accessories > Clothing",
+   "Apparel & Accessories > Clothing > Underwear & Socks > Socks",
+   "Apparel & Accessories > Clothing > Activewear",
+   "Apparel & Accessories > Clothing > Pants",
+   "Mature > Weapons > Guns",
+   "Apparel & Accessories > Clothing > One-Pieces",
+   "Hardware > Building Materials > Shutters",
+   "Office Supplies > Office Instruments > Writing & Drawing Instruments > Crayons",
+   "Animals & Pet Supplies > Pet Supplies > Dog Supplies > Dog Apparel"
+  ],
+  "sweater": [
+   "Apparel & Accessories > Clothing",
+   "Apparel & Accessories > Clothing Accessories > Hats",
+   "Apparel & Accessories > Clothing > Outerwear > Coats & Jackets",
+   "Home & Garden > Decor > Home Fragrances > Candles",
+   "Sporting Goods > Athletics > Basketball > Basketballs",
+   "Apparel & Accessories > Clothing > Shorts",
+   "Apparel & Accessories > Clothing > One-Pieces",
+   "Apparel & Accessories > Clothing > Underwear & Socks > Socks",
+   "Sporting Goods > Outdoor Recreation > Cycling > Bicycle Accessories",
+   "Apparel & Accessories > Clothing > Traditional & Ceremonial Clothing > Japanese Black Formal Wear"
+  ],
+  "dress": [
+   "Apparel & Accessories > Clothing > Shirts & Tops",
+   "Apparel & Accessories > Clothing > Skirts",
+   "Apparel & Accessories > Clothing",
+   "Apparel & Accessories > Clothing > One-Pieces"
+  ],
+  "skirt": [
+   "Apparel & Accessories > Clothing > Pants",
+   "Apparel & Accessories > Clothing > Shorts",
+   "Furniture > Chairs"
+  ],
+  "shorts": [
+   "Apparel & Accessories > Clothing > Pants",
+   "Apparel & Accessories > Clothing > Underwear & Socks > Underwear",
+   "Sporting Goods > Outdoor Recreation > Cycling > Cycling Apparel & Accessories",
+   "Mature > Erotic > Pole Dancing Kits",
+   "Office Supplies > Office Equipment > Calculators > Basic Calculators",
+   "Hardware > Tools > Abrasive Blasters",
+   "Apparel & Accessories > Clothing > Shirts & Tops",
+   "Apparel & Accessories > Clothing > Swimwear",
+   "Apparel & Accessories > Clothing > Sleepwear & Loungewear",
+   "Sporting Goods > Athletics > Rugby > Rugby Training Aids"
+  ],
+  "leggings": [
+   "Apparel & Accessories > Clothing > Underwear & Socks > Long Johns",
+   "Apparel & Accessories > Clothing > Activewear",
+   "Apparel & Accessories > Clothing > Underwear & Socks > Shapewear",
+   "Apparel & Accessories > Clothing > Underwear & Socks > Underwear",
+   "Apparel & Accessories > Clothing > Outfit Sets",
+   "Apparel & Accessories > Clothing > Activewear > Motorcycle Protective Clothing > Motorcycle Pants",
+   "Apparel & Accessories > Clothing > Sleepwear & Loungewear > Loungewear"
+  ],
+  "underwear": [
+   "Apparel & Accessories > Clothing > Underwear & Socks > Socks",
+   "Apparel & Accessories > Clothing > Underwear & Socks",
+   "Apparel & Accessories > Clothing > Underwear & Socks > Jock Straps",
+   "Software > Computer Software > Multimedia & Design Software > Music Composition Software",
+   "Apparel & Accessories > Shoes"
+  ],
+  "socks": [
+   "Sporting Goods > Outdoor Recreation > Equestrian > Horse Care > Horse Blankets & Sheets",
+   "Apparel & Accessories > Clothing > Pants",
+   "Sporting Goods > Athletics > Boxing & Martial Arts",
+   "Apparel & Accessories > Shoes"
+  ],
+  "swimwear": [
+   "Sporting Goods > Outdoor Recreation > Boating & Water Sports > Boating & Water Sport Apparel > Rash Guards & Swim Shirts",
+   "Home & Garden > Smoking Accessories",
+   "Sporting Goods > Athletics > American Football",
+   "Home & Garden > Decor > Home Fragrances > Fragrance Oil",
+   "Sporting Goods > Outdoor Recreation > Cycling > Cycling Apparel & Accessories > Bicycle Cleat Accessories > Bicycle Cleat Bolts"
+  ],
+  "pyjamas": [
+   "Apparel & Accessories > Clothing > Sleepwear & Loungewear > Loungewear",
+   "Luggage & Bags > Backpacks",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Maintenance, Care & Decor > Vehicle Repair & Specialty Tools > Motor Vehicle Brake Service Kits"
+  ],
+  "suit": [
+   "Apparel & Accessories > Clothing > Activewear",
+   "Apparel & Accessories > Clothing > Outfit Sets",
+   "Apparel & Accessories > Clothing > One-Pieces",
+   "Apparel & Accessories > Clothing > One-Pieces > Jumpsuits & Rompers"
+  ],
+  "raincoat": [
+   "Apparel & Accessories > Clothing > Outerwear > Rain Suits"
+  ],
+  "shoes": [
+   "Apparel & Accessories > Shoe Accessories",
+   "Toys & Games > Toys > Sports Toy Accessories",
+   "Sporting Goods > Athletics > Basketball > Basketballs"
+  ],
+  "athletic_shoes": [
+   "Electronics > Electronics Accessories > Computer Accessories > Mouse Pads",
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts",
+   "Apparel & Accessories > Clothing > Underwear & Socks > Socks",
+   "Sporting Goods > Athletics > Basketball > Basketballs",
+   "Sporting Goods > Athletics > Boxing & Martial Arts > Boxing & Martial Arts Protective Gear > Boxing Gloves & Mitts"
+  ],
+  "running_shoes": [
+   "Sporting Goods > Athletics > Basketball > Basketballs",
+   "Sporting Goods > Athletics > Boxing & Martial Arts > Boxing & Martial Arts Protective Gear > Boxing Gloves & Mitts"
+  ],
+  "boots": [
+   "Toys & Games > Toys > Sports Toy Accessories",
+   "Sporting Goods > Athletics > Soccer > Soccer Gloves",
+   "Sporting Goods > Athletics > Basketball > Basketballs",
+   "Apparel & Accessories > Clothing > Activewear > Motorcycle Protective Clothing"
+  ],
+  "safety_shoes": [
+   "Hardware > Building Materials > Door Hardware > Door Strikes",
+   "Sporting Goods > Athletics > American Football",
+   "Sporting Goods > Athletics > Broomball Equipment",
+   "Mature > Erotic > Pole Dancing Kits",
+   "Home & Garden > Decor"
+  ],
+  "watch": [
+   "Apparel & Accessories > Jewelry > Rings",
+   "Health & Beauty > Health Care > Biometric Monitors > Body Fat Analyzers"
+  ],
+  "ring": [
+   "Apparel & Accessories > Jewelry",
+   "Hardware > Plumbing > Plumbing Fittings & Supports > Pipe Caps & Plugs",
+   "Apparel & Accessories > Jewelry > Necklaces",
+   "Health & Beauty > Personal Care > Sleeping Aids > Snoring & Sleep Apnea Aids",
+   "Animals & Pet Supplies > Pet Supplies > Bird Supplies > Bird Cage Accessories > Bird Cage Bird Baths",
+   "Hardware > Building Materials > Door Hardware > Door Knobs & Handles",
+   "Electronics > Audio > Audio Accessories > MP3 Player Accessories",
+   "Home & Garden > Bathroom Accessories",
+   "Sporting Goods > Athletics > Tennis > Tennis Racquet Accessories > Tennis Racquet Grommets",
+   "Hardware > Hardware Accessories > Ground Spikes"
+  ],
+  "necklace": [
+   "Apparel & Accessories > Jewelry",
+   "Apparel & Accessories > Jewelry > Rings",
+   "Furniture > Office Furniture",
+   "Apparel & Accessories > Jewelry > Jewelry Sets",
+   "Home & Garden > Kitchen & Dining > Tableware > Serveware > Egg Cups"
+  ],
+  "bracelet": [
+   "Apparel & Accessories > Jewelry",
+   "Apparel & Accessories > Jewelry > Necklaces",
+   "Apparel & Accessories > Jewelry > Rings",
+   "Sporting Goods > Outdoor Recreation > Fishing",
+   "Apparel & Accessories > Jewelry > Charms & Pendants",
+   "Apparel & Accessories > Jewelry > Earrings",
+   "Apparel & Accessories > Costumes & Accessories > Costume Accessories > Pretend Jewelry",
+   "Apparel & Accessories > Clothing Accessories > Belts",
+   "Home & Garden > Kitchen & Dining > Kitchen Appliance Accessories > Cooktop, Oven & Range Accessories"
+  ],
+  "earrings": [
+   "Apparel & Accessories > Jewelry > Necklaces",
+   "Apparel & Accessories > Jewelry",
+   "Apparel & Accessories > Jewelry > Rings",
+   "Apparel & Accessories > Jewelry > Charms & Pendants",
+   "Sporting Goods > Outdoor Recreation > Cycling > Cycling Apparel & Accessories > Bicycle Shoe Covers",
+   "Media > DVDs & Videos > Film & Television Digital Downloads",
+   "Sporting Goods > Outdoor Recreation > Equestrian > Horse Care > Horse Grooming",
+   "Home & Garden > Household Supplies > Household Cleaning Supplies > Squeegees",
+   "Mature > Weapons > Stun Guns & Tasers"
+  ],
+  "sunglasses": [
+   "Business & Industrial > Work Safety Protective Gear > Protective Eyewear",
+   "Office Supplies > Filing & Organization > Binding Supplies > Binding Machines",
+   "Electronics > Audio > Audio Accessories > Microphone Accessories",
+   "Health & Beauty > Personal Care > Vision Care > Eyewear Accessories",
+   "Luggage & Bags > Luggage Accessories"
+  ],
+  "bag": [
+   "Hardware > Hardware Accessories > Tool Storage & Organization > Tool Bags",
+   "Sporting Goods > Exercise & Fitness > Yoga & Pilates > Yoga Mat Bags & Straps",
+   "Home & Garden > Household Supplies > Garbage Bags"
+  ],
+  "backpack": [
+   "Luggage & Bags > Diaper Bags",
+   "Hardware > Hardware Accessories > Tool Storage & Organization > Tool Bags",
+   "Animals & Pet Supplies > Pet Supplies > Dog Supplies",
+   "Sporting Goods > Athletics > Tennis > Tennis Racquet Accessories > Tennis Racquet Bags",
+   "Mature > Weapons > Guns",
+   "Apparel & Accessories > Clothing > Underwear & Socks > Underwear",
+   "Sporting Goods > Outdoor Recreation > Cycling > Bicycle Accessories > Bicycle Bags & Panniers",
+   "Luggage & Bags > Fanny Packs",
+   "Home & Garden > Kitchen & Dining > Food & Beverage Carriers",
+   "Home & Garden > Household Appliance Accessories"
+  ],
+  "handbag": [
+   "Luggage & Bags > Messenger Bags",
+   "Apparel & Accessories > Handbags, Wallets & Cases",
+   "Home & Garden > Smoking Accessories > Humidors"
+  ],
+  "suitcase": [
+   "Luggage & Bags > Duffel Bags"
+  ],
+  "wallet": [
+   "Apparel & Accessories > Handbags, Wallets & Cases > Handbags",
+   "Apparel & Accessories > Handbags, Wallets & Cases",
+   "Luggage & Bags > Backpacks",
+   "Business & Industrial > Piercing & Tattooing > Tattooing Supplies > Tattooing Machines",
+   "Home & Garden > Decor > Coat & Hat Racks",
+   "Vehicles & Parts > Vehicles > Motor Vehicles > Cars, Trucks & Vans"
+  ],
+  "belt": [
+   "Hardware > Hardware Accessories > Tool Storage & Organization > Tool & Equipment Belts",
+   "Sporting Goods > Exercise & Fitness > Weight Lifting > Weight Lifting Belts"
+  ],
+  "hat": [
+   "Apparel & Accessories > Clothing Accessories > Headwear",
+   "Sporting Goods > Outdoor Recreation > Skateboarding > Skateboards",
+   "Sporting Goods > Athletics",
+   "Sporting Goods > Outdoor Recreation > Golf > Golf Club Parts & Accessories",
+   "Apparel & Accessories > Clothing"
+  ],
+  "gloves": [
+   "Sporting Goods > Exercise & Fitness > Weight Lifting > Weight Lifting Gloves & Hand Supports",
+   "Business & Industrial > Medical > Medical Supplies > Disposable Gloves",
+   "Home & Garden > Household Supplies > Household Cleaning Supplies > Cleaning Gloves",
+   "Sporting Goods > Athletics > Cricket > Cricket Protective Gear > Cricket Gloves",
+   "Sporting Goods > Outdoor Recreation > Equestrian > Riding Apparel & Accessories > Equestrian Gloves",
+   "Sporting Goods > Athletics > American Football > American Football Gloves",
+   "Sporting Goods > Athletics > Basketball > Basketballs"
+  ],
+  "graphics_card": [
+   "Electronics > Electronics Accessories > Computer Components",
+   "Electronics > Electronics Accessories > Computer Accessories",
+   "Electronics > Print, Copy, Scan & Fax > Scanners"
+  ],
+  "processor": [
+   "Electronics > Electronics Accessories > Computer Accessories"
+  ],
+  "ram_memory": [
+   "Electronics > Electronics Accessories > Memory",
+   "Electronics > Electronics Accessories > Computer Components > Storage Devices > Hard Drives",
+   "Electronics > Electronics Accessories > Computer Components",
+   "Electronics > Electronics Accessories > Memory > ROM",
+   "Electronics > Electronics Accessories > Power > Batteries",
+   "Business & Industrial > Medical > Medical Supplies > Medical Needles & Syringes > Medical Syringes",
+   "Electronics > Electronics Accessories > Computer Accessories",
+   "Electronics > Electronics Accessories > Memory > Flash Memory",
+   "Cameras & Optics > Photography > Lighting & Studio"
+  ],
+  "motherboard": [
+   "Electronics > Electronics Accessories > Computer Components",
+   "Electronics > Computers",
+   "Electronics > Electronics Accessories > Computer Components > Input Devices",
+   "Electronics > Electronics Accessories > Computer Components > Computer Processors",
+   "Electronics > Networking > Hubs & Switches",
+   "Electronics > Electronics Accessories > Electronics Films & Shields > Screen Protectors",
+   "Electronics > Electronics Accessories > Computer Accessories",
+   "Electronics > Electronics Accessories > Computer Components > Computer Racks & Mounts",
+   "Electronics > Electronics Accessories > Computer Components > Computer Power Supplies",
+   "Electronics > Electronics Accessories > Computer Accessories > Tablet Computer Docks & Stands",
+   "Electronics > Circuit Boards & Components > Passive Circuit Components > Resistors",
+   "Hardware > Plumbing > Plumbing Fittings & Supports"
+  ],
+  "power_supply": [
+   "Electronics > Electronics Accessories > Power > Power Adapters & Chargers",
+   "Electronics > Electronics Accessories > Power > Batteries",
+   "Electronics > Electronics Accessories > Power",
+   "Electronics > Electronics Accessories > Power > UPS",
+   "Electronics > Electronics Accessories > Computer Components > Desktop Computer & Server Cases"
+  ],
+  "pc_case": [
+   "Electronics > Electronics Accessories > Computer Components"
+  ],
+  "pc_cooling": [
+   "Electronics > Electronics Accessories > Computer Components > Computer Power Supplies",
+   "Electronics > Electronics Accessories > Computer Accessories"
+  ],
+  "drone": [
+   "Cameras & Optics > Cameras"
+  ],
+  "car_charger": [
+   "Electronics > Electronics Accessories > Power > Power Adapter & Charger Accessories",
+   "Hardware > Tool Accessories > Power Tool Chargers",
+   "Electronics > Electronics Accessories > Power > Battery Accessories > General Purpose Battery Chargers",
+   "Electronics > Electronics Accessories > Power > Travel Converters & Adapters",
+   "Electronics > Electronics Accessories > Power > Surge Protection Devices",
+   "Electronics > Print, Copy, Scan & Fax > Printer, Copier & Fax Machine Accessories",
+   "Electronics > Electronics Accessories > Electronics Films & Shields > Keyboard Protectors",
+   "Electronics > Electronics Accessories"
+  ],
+  "selfie_stick": [
+   "Cameras & Optics > Camera & Optic Accessories > Camera Parts & Accessories > Camera Stabilizers & Supports",
+   "Electronics > Audio > Audio Accessories > MP3 Player Accessories"
+  ],
+  "car_audio": [
+   "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Electronics"
+  ],
+  "dishwasher_tablets": [
+   "Home & Garden > Household Supplies > Garbage Bags",
+   "Home & Garden > Household Supplies > Household Cleaning Supplies"
+  ],
+  "laundry_detergent": [
+   "Home & Garden > Kitchen & Dining > Food Storage > Food Storage Containers",
+   "Home & Garden > Household Supplies > Laundry Supplies",
+   "Home & Garden > Household Supplies > Household Cleaning Supplies"
+  ],
+  "cutlery": [
+   "Home & Garden > Kitchen & Dining > Tableware",
+   "Home & Garden > Kitchen & Dining > Kitchen Tools & Utensils > Kitchen Utensil Sets"
+  ],
+  "dinnerware": [
+   "Home & Garden > Kitchen & Dining > Tableware > Flatware > Flatware Sets",
+   "Home & Garden > Kitchen & Dining > Tableware",
+   "Baby & Toddler > Nursing & Feeding",
+   "Home & Garden > Decor > Decorative Plates",
+   "Home & Garden > Kitchen & Dining",
+   "Sporting Goods > Outdoor Recreation > Camping & Hiking > Camping Cookware & Dinnerware"
+  ],
+  "glassware": [
+   "Home & Garden > Kitchen & Dining > Tableware > Flatware > Forks",
+   "Home & Garden > Kitchen & Dining > Tableware > Trivets",
+   "Home & Garden > Kitchen & Dining > Tableware > Flatware",
+   "Electronics > Audio > Audio Accessories > Headphone & Headset Accessories",
+   "Home & Garden > Kitchen & Dining > Tableware > Dinnerware"
+  ],
+  "food_storage": [
+   "Home & Garden > Household Supplies > Storage & Organization > Household Storage Containers",
+   "Home & Garden > Decor > Decorative Jars",
+   "Home & Garden > Kitchen & Dining > Kitchen Tools & Utensils > Kitchen Organizers > Sugar Caddies",
+   "Home & Garden > Decor > Decorative Bottles",
+   "Home & Garden > Kitchen & Dining > Kitchen Tools & Utensils > Food Dispensers",
+   "Home & Garden > Household Supplies > Waste Containment Accessories > Waste Container Wheels",
+   "Home & Garden > Kitchen & Dining > Food Storage",
+   "Home & Garden > Kitchen & Dining > Kitchen Tools & Utensils > Sugar Dispensers",
+   "Home & Garden > Decor > Baskets"
+  ],
+  "grill": [
+   "Home & Garden > Kitchen & Dining > Kitchen Appliances > Frozen Drink Makers"
+  ],
+  "garden_furniture": [
+   "Furniture > Chairs > Hanging Chairs",
+   "Home & Garden > Lawn & Garden > Outdoor Living > Porch Swings",
+   "Furniture > Chairs"
+  ],
+  "parasol": [
+   "Home & Garden > Fireplace & Wood Stove Accessories > Log Racks & Carriers"
+  ],
+  "flower_pot": [
+   "Home & Garden > Lawn & Garden > Gardening > Greenhouses",
+   "Home & Garden > Lawn & Garden > Gardening > Gardening Tools > Wheelbarrows",
+   "Home & Garden > Decor > Baskets",
+   "Home & Garden > Decor"
+  ],
+  "greenhouse": [
+   "Home & Garden > Lawn & Garden > Outdoor Living > Outdoor Structures > Sheds, Garages & Carports",
+   "Home & Garden > Decor > Bird & Wildlife Feeder Accessories",
+   "Home & Garden > Lawn & Garden > Outdoor Living > Outdoor Blankets > Beach Mats",
+   "Home & Garden > Lawn & Garden > Outdoor Power Equipment Accessories > Weed Trimmer Accessories > Weed Trimmer Blades & Spools",
+   "Home & Garden > Lawn & Garden > Watering & Irrigation > Garden Hoses",
+   "Home & Garden > Lawn & Garden",
+   "Home & Garden > Lawn & Garden > Watering & Irrigation > Watering Can Accesssories",
+   "Home & Garden > Lawn & Garden > Watering & Irrigation > Sprinklers & Sprinkler Heads",
+   "Home & Garden > Lawn & Garden > Gardening > Gardening Tools > Cultivating Tools"
+  ],
+  "towels": [
+   "Home & Garden > Bathroom Accessories > Towel Racks & Holders",
+   "Animals & Pet Supplies > Pet Supplies > Pet Grooming Supplies",
+   "Sporting Goods > Exercise & Fitness > Yoga & Pilates > Yoga & Pilates Towels",
+   "Sporting Goods > Exercise & Fitness > Cardio > Cardio Machine Accessories > Stair Climber & Stepper Accessories"
+  ],
+  "bedding": [
+   "Animals & Pet Supplies > Pet Supplies > Small Animal Supplies > Small Animal Bedding",
+   "Home & Garden > Household Appliances > Water Heaters"
+  ],
+  "bed_linen": [
+   "Home & Garden > Household Appliances > Water Heaters",
+   "Furniture > Beds & Accessories",
+   "Home & Garden > Linens & Bedding > Bedding"
+  ],
+  "pillow": [
+   "Furniture > Beds & Accessories > Mattresses"
+  ],
+  "duvet": [
+   "Home & Garden > Linens & Bedding > Bedding"
+  ],
+  "bedspread": [
+   "Home & Garden > Linens & Bedding > Bedding > Blankets"
+  ],
+  "curtains": [
+   "Home & Garden > Parasols & Rain Umbrellas",
+   "Home & Garden > Decor > Seasonal & Holiday Decorations"
+  ],
+  "rug": [
+   "Furniture > Tables > Accent Tables > End Tables",
+   "Home & Garden > Decor > Window Treatment Accessories > Curtain Holdbacks & Tassels",
+   "Furniture > Futon Pads",
+   "Home & Garden > Linens & Bedding > Bedding > Blankets",
+   "Furniture > Cabinets & Storage",
+   "Hardware > Building Materials",
+   "Furniture > Sofa Accessories"
+  ],
+  "bath_mat": [
+   "Home & Garden > Household Supplies",
+   "Home & Garden > Decor > Door Mats"
+  ],
+  "mirror": [
+   "Health & Beauty > Personal Care > Cosmetics > Cosmetic Tools > Makeup Tools > Face Mirrors",
+   "Home & Garden > Decor",
+   "Home & Garden > Decor > Picture Frames",
+   "Home & Garden > Business & Home Security > Safety & Security Mirrors"
+  ],
+  "photo_frame": [
+   "Home & Garden > Decor",
+   "Home & Garden > Decor > Bird & Wildlife Houses > Birdhouses",
+   "Software > Computer Software > Multimedia & Design Software > Home Publishing Software"
+  ],
+  "wall_clock": [
+   "Home & Garden > Decor > Clocks"
+  ],
+  "baby_bottle": [
+   "Baby & Toddler > Nursing & Feeding > Sippy Cups",
+   "Animals & Pet Supplies > Pet Supplies > Pet Leash Extensions",
+   "Office Supplies > General Office Supplies > Labels & Tags > Shipping Labels",
+   "Baby & Toddler > Nursing & Feeding > Bottle Warmers & Sterilizers",
+   "Home & Garden > Decor > Picture Frames"
+  ],
+  "cat_litter": [
+   "Home & Garden > Lighting",
+   "Home & Garden > Household Supplies > Household Cleaning Supplies > Household Cleaning Products > Oven & Grill Cleaners",
+   "Health & Beauty > Personal Care > Sleeping Aids > Snoring & Sleep Apnea Aids",
+   "Animals & Pet Supplies > Pet Supplies > Pet Carriers & Crates"
+  ],
+  "lego": [
+   "Toys & Games > Toys > Building Toys",
+   "Toys & Games > Toys",
+   "Toys & Games > Toys > Dolls, Playsets & Toy Figures > Action & Toy Figures",
+   "Toys & Games > Toys > Play Vehicles > Toy Race Car & Track Sets",
+   "Toys & Games > Toys > Play Vehicles"
+  ],
+  "board_game": [
+   "Toys & Games > Games",
+   "Toys & Games > Games > Card Games",
+   "Toys & Games > Toys > Dolls, Playsets & Toy Figures > Dolls",
+   "Arts & Entertainment > Party & Celebration > Party Supplies > Drinking Games",
+   "Toys & Games > Puzzles",
+   "Sporting Goods > Outdoor Recreation > Fishing",
+   "Toys & Games > Puzzles > Jigsaw Puzzles"
+  ],
+  "doll": [
+   "Toys & Games > Toys > Dolls, Playsets & Toy Figures",
+   "Toys & Games > Toys > Dolls, Playsets & Toy Figures > Action & Toy Figures"
+  ],
+  "kettlebell": [
+   "Sporting Goods > Exercise & Fitness > Cardio",
+   "Sporting Goods > Athletics > General Purpose Athletic Equipment"
+  ],
+  "nail_polish": [
+   "Health & Beauty > Personal Care > Cosmetics > Makeup > Face Makeup",
+   "Health & Beauty > Personal Care > Cosmetics > Skin Care > Body Oil",
+   "Arts & Entertainment > Hobbies & Creative Arts > Arts & Crafts > Art & Crafting Materials > Craft Paint, Ink & Glaze > Art & Craft Paint",
+   "Sporting Goods > Outdoor Recreation > Camping & Hiking > Tent Accessories > Inner Tents",
+   "Software > Digital Goods & Currency",
+   "Home & Garden > Lighting > Picture Lights",
+   "Health & Beauty > Personal Care > Cosmetics > Makeup"
+  ],
+  "hair_brush": [
+   "Health & Beauty > Personal Care > Sleeping Aids > Snoring & Sleep Apnea Aids",
+   "Home & Garden > Household Supplies > Laundry Supplies",
+   "Animals & Pet Supplies > Pet Supplies > Cat Supplies",
+   "Home & Garden > Household Appliances > Garage Door Openers",
+   "Health & Beauty > Personal Care > Shaving & Grooming > Hair Clippers & Trimmers",
+   "Health & Beauty > Personal Care > Shaving & Grooming > Razors & Razor Blades",
+   "Sporting Goods > Outdoor Recreation > Equestrian > Horse Care > Horse Grooming > Horse Grooming Combs, Brushes & Mitts"
+  ],
+  "razor_blades": [
+   "Health & Beauty > Personal Care > Ear Care > Ear Wax Removal Kits",
+   "Sporting Goods > Outdoor Recreation > Skateboarding > Skateboard Parts > Skateboard Small Parts",
+   "Health & Beauty > Personal Care > Shaving & Grooming > Hair Clippers & Trimmers"
+  ],
+  "deodorant": [
+   "Health & Beauty > Personal Care > Cosmetics > Perfume & Cologne",
+   "Health & Beauty > Personal Care > Cosmetics > Skin Care > Wart Removers",
+   "Health & Beauty > Personal Care > Shaving & Grooming > Razors & Razor Blades",
+   "Home & Garden > Household Appliances > Floor & Steam Cleaners > Carpet Steamers"
+  ],
+  "wheelchair": [
+   "Health & Beauty > Health Care > Mobility & Accessibility > Accessibility Furniture & Fixtures > Shower Benches & Seats"
+  ],
+  "shower_seat": [
+   "Health & Beauty > Health Care > Mobility & Accessibility > Accessibility Furniture & Fixtures",
+   "Home & Garden > Household Supplies",
+   "Hardware > Hardware Accessories > Hooks, Buckles & Fasteners"
+  ],
+  "face_mask": [
+   "Health & Beauty > Personal Care > Cosmetics > Skin Care",
+   "Business & Industrial > Work Safety Protective Gear",
+   "Home & Garden > Household Supplies",
+   "Health & Beauty > Personal Care > Cosmetics > Skin Care > Lotion & Moisturizer",
+   "Hardware > Building Materials > Roofing > Roofing Shingles & Tiles",
+   "Health & Beauty > Personal Care > Feminine Sanitary Supplies > Feminine Deodorant",
+   "Mature > Weapons > Gun Care & Accessories > Gun Holsters"
+  ]
+ }
+}

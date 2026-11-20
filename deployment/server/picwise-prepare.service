@@ -25,6 +25,11 @@ Environment=PICWISE_SHOP_CATALOGUES=/srv/picwise/shared/shops/catalogues.json.gz
 # no category over this share, and at most this many products a category.
 Environment=PICWISE_CAP_SHARE=0.15
 Environment=PICWISE_CAP_CATEGORY_MAX=12000
+# The AI's line of Google's taxonomy for each product (owner, 2026-11-20; written by
+# .github/workflows/ai-shelves-scan.yml, picwise-assist's, which this user's group reads):
+# the second link's rows read it as their Google line, and every product's kind is read
+# against it (`picwise_providers.ai_shelves`). Without the file, nothing changes.
+Environment=PICWISE_AI_SHELVES_FILE=/srv/picwise/assist/shelves/answers.jsonl.gz
 Environment=PYTHONDONTWRITEBYTECODE=1
 # GNU time adds one line with the run's peak memory and length, for sizing the server.
 ExecStart=/usr/bin/time -f "prepare_catalogue: peak memory %%M KB, %%e s" /usr/bin/python3 \

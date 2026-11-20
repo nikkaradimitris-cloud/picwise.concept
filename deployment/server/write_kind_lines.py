@@ -1,0 +1,306 @@
+"""Each kind of the site given its own lines of Google's taxonomy by the AI, once.
+
+Owner, 2026-11-20 (19:00 Athens): «Κάθε είδος του site να έχει τη δική του λίστα κατηγοριών
+Google ... Τη λίστα να τη φτιάξει το AI μία φορά (περίπου 0,50 $) και να ελεγχθεί». Claude
+Haiku 5.5 is given Google's taxonomy (cached, as the scan of the products) and the kinds of
+the site, a few of one department a call (`picwise_ai.kind_lines`); every line it gives is
+checked against the taxonomy (`kind_lines.checked_kind_lines`). A kind not answered, or
+answered twice, is asked again alone, at most twice more.
+
+Then the check, with `--catalogue` (the server's prepared file) and `--answers` (the scan's
+answers): for each kind, the lines the scan's AI gave the products the catalogue reads as that
+kind (`kind_lines.evidence`), those its list does not hold already, each with how many products
+and a few titles, are judged by the same model, "yes" (the kind itself) or "no" (parts,
+accessories, look-alikes) (`kind_lines.judge_request`). A line judged "yes" is added to the
+kind's list alone, without the lines under it (`exact`): the products really there stay in the
+kind. A first try (run 44781310404) showed the products with the taxonomy in one call, and the
+model copied their lines into the lists, look-alikes and all; so the two are asked apart.
+With `--lists` the lists kept are read and only the check is asked (the measure after of
+20/11, run 44784049044: a third of the products the lists took out of a kind were the kind
+itself, most on lines the first check never asked about: it asked 15 a kind).
+
+Written to `--out` (JSON, the repository's form: `kind_lines.write`) and printed in few
+characters (`kind_lines.compact`: `id=number,number`, the numbers the taxonomy file's
+lines), kept as GitHub's notes, which its API shows without a login: the lists come back
+to the repository from those, read against the same taxonomy (`kind_lines.from_compact`),
+and are checked there before any rule reads them. No product, link or key is read or
+printed; nothing on the server or the site changes.
+
+    python3 deployment/server/write_kind_lines.py --out LISTS.json [--lists KEPT.json] \
+        [--catalogue CATALOGUE.json.gz --answers ANSWERS.jsonl.gz] [--budget 1.00] [--workers 4] [--dry-run]
+"""
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+import threading
+import time
+from collections.abc import Callable, Sequence
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[1]
+for folder in (ROOT / "src", HERE):
+    if str(folder) not in sys.path:
+        sys.path.insert(0, str(folder))
+
+# Tries a call in all, for an error of the network or the API's load.
+MOST_TRIES = 4
+PAUSE_SECONDS = 15.0
+# Notes GitHub keeps a step: one for the totals, the rest for the lists.
+MOST_NOTES = 10
+
+
+class Run:
+    """The calls of one run: what they cost, and the lists answered."""
+
+    def __init__(self, ask: Callable[[dict[str, Any]], Any] | None, budget: float, lines: Sequence[str]) -> None:
+        self.ask = ask
+        self.budget = budget
+        self.lines = lines
+        self.spent = 0.0
+        self.calls = 0
+        self.failed = 0
+        self.refused = 0
+        self.found: dict[str, list[str]] = {}
+        self.judged: dict[str, dict[str, str]] = {}
+        self.judge_calls = 0
+        self.judge_spent = 0.0
+        self.lock = threading.Lock()
+        self.errors: list[str] = []
+
+    def one(self, kinds: list[dict[str, Any]]) -> None:
+        from picwise_ai.kind_lines import checked_kind_lines, request_kwargs
+
+        if self.ask is None:
+            return
+        request = request_kwargs(kinds, self.lines)
+        for attempt in range(MOST_TRIES):
+            with self.lock:
+                if self.spent >= self.budget:
+                    return
+            asked = self.ask(request)
+            with self.lock:
+                self.calls += 1
+                self.spent += float(getattr(asked, "cost_usd", 0.0) or 0.0)
+            error = str(getattr(asked, "error", "") or "")
+            answer = getattr(asked, "answer", None)
+            if answer is not None:
+                found, refused = checked_kind_lines(answer, [kind["id"] for kind in kinds], self.lines)
+                with self.lock:
+                    self.refused += refused
+                    for kind, chosen in found.items():
+                        self.found.setdefault(kind, chosen)
+                return
+            with self.lock:
+                self.failed += 1
+                self.errors.append(error or str(getattr(asked, "stop_reason", "") or "no answer"))
+            if "HTTP 401" in error or "HTTP 403" in error:
+                return
+            time.sleep(PAUSE_SECONDS * (attempt + 1))
+
+
+    def judge_one(self, items: list[tuple[dict[str, Any], list[tuple[str, int, list[str]]]]]) -> None:
+        from picwise_ai.kind_lines import checked_judgements, judge_request
+
+        if self.ask is None:
+            return
+        request = judge_request(items)
+        for attempt in range(MOST_TRIES):
+            with self.lock:
+                if self.spent >= self.budget:
+                    return
+            asked = self.ask(request)
+            cost = float(getattr(asked, "cost_usd", 0.0) or 0.0)
+            with self.lock:
+                self.calls += 1
+                self.judge_calls += 1
+                self.spent += cost
+                self.judge_spent += cost
+            answer = getattr(asked, "answer", None)
+            if answer is not None:
+                found = checked_judgements(answer, items)
+                with self.lock:
+                    for kind, said in found.items():
+                        self.judged.setdefault(kind, said)
+                return
+            error = str(getattr(asked, "error", "") or "")
+            with self.lock:
+                self.failed += 1
+                self.errors.append(error or str(getattr(asked, "stop_reason", "") or "no answer"))
+            if "HTTP 401" in error or "HTTP 403" in error:
+                return
+            time.sleep(PAUSE_SECONDS * (attempt + 1))
+
+
+def judge_all(run: Run, kinds: list[dict[str, Any]], workers: int) -> int:
+    """The check: each kind's lines its list does not hold, judged; how many lines asked."""
+    from picwise_ai.kind_lines import batches, candidates
+
+    items: dict[str, tuple[dict[str, Any], list[tuple[str, int, list[str]]]]] = {}
+    for kind in kinds:
+        lines = candidates(kind.get("seen") or (), run.found.get(kind["id"], []))
+        if lines:
+            items[kind["id"]] = (kind, lines)
+    asked = [kind for kind in kinds if kind["id"] in items]
+    calls = [[items[kind["id"]] for kind in call] for call in batches(asked)]
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+        list(pool.map(run.judge_one, calls))
+    missing = [items[kind["id"]] for kind in asked if kind["id"] not in run.judged]
+    if missing and run.ask is not None:
+        with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+            list(pool.map(run.judge_one, [[item] for item in missing]))
+    return sum(len(lines) for _kind, lines in items.values())
+
+
+def run_all(run: Run, kinds: list[dict[str, Any]], workers: int) -> None:
+    """Every kind asked with its department, then each kind not answered asked alone."""
+    from picwise_ai.kind_lines import batches
+
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+        list(pool.map(run.one, batches(kinds)))
+    for _round in range(2):
+        missing = [kind for kind in kinds if kind["id"] not in run.found]
+        if not missing or run.ask is None:
+            break
+        with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+            list(pool.map(run.one, [[kind] for kind in missing]))
+
+
+def seen_in(catalogue: Path, answers: Path) -> tuple[dict[str, list[tuple[str, int, list[str]]]], str]:
+    """Per kind, the AI's lines of the products the catalogue reads as it; and a line
+    saying what was read."""
+    from picwise_ai.kind_lines import evidence
+    from picwise_providers.ai_shelves import line_of, read_answers
+    from picwise_providers.prepared_catalogue import read_prepared_catalogue_to_measure
+
+    prepared = read_prepared_catalogue_to_measure(catalogue)
+    if prepared is None:
+        return {}, "the copy is not a prepared catalogue: no products shown with the kinds"
+    table = read_answers(answers)
+    if not table:
+        return {}, "no answers of the AI: no products shown with the kinds"
+    with_line = 0
+
+    def rows():
+        nonlocal with_line
+        for product, kinds in zip(prepared.products, prepared.kinds):
+            line = line_of(str(product.title or ""), str(product.brand or ""), product.raw, table)
+            with_line += bool(line)
+            yield kinds, line, str(product.title or "")
+
+    found = evidence(rows())
+    return found, (
+        f"the catalogue of {prepared.prepared_at.isoformat()}: {len(prepared.products):,} products, "
+        f"{with_line:,} with a line of the AI; {len(found)} kinds have products read as them"
+    )
+
+
+def ordered(found: dict[str, list[str]], ids: Sequence[str]) -> dict[str, list[str]]:
+    return {kind: found[kind] for kind in ids if kind in found}
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--lists", type=Path, default=None, help="keep these lists; ask only the check")
+    parser.add_argument("--catalogue", type=Path, default=None)
+    parser.add_argument("--answers", type=Path, default=None)
+    parser.add_argument("--budget", type=float, default=1.00)
+    parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args(sys.argv[1:] if argv is None else argv)
+    try:
+        sys.stdout.reconfigure(line_buffering=True)
+    except (AttributeError, ValueError):
+        pass
+    from picwise_ai.kind_lines import MODEL, all_ids, batches, chunks, compact, kinds_described, write
+    from picwise_ai.shelves import taxonomy_lines
+    from scan_shelves import Notices
+
+    notices = Notices(most=MOST_NOTES, keep=MOST_NOTES)
+    lines = taxonomy_lines()
+    kinds = kinds_described()
+    ids = all_ids(kinds)
+    print(f"{len(kinds)} kinds in {len(batches(kinds))} calls; the taxonomy {len(lines):,} lines")
+    read_note = "no catalogue given: the kinds asked without their products"
+    if args.catalogue is not None and args.answers is not None:
+        began_reading = time.monotonic()
+        seen, read_note = seen_in(args.catalogue, args.answers)
+        read_note += f" (read in {time.monotonic() - began_reading:.0f} s)"
+        if seen:
+            for kind in kinds:
+                kind["seen"] = seen.get(kind["id"], [])
+    print(read_note)
+    ask = None
+    if not args.dry_run and os.environ.get("ANTHROPIC_API_KEY"):
+        from picwise_ai.client import ask as ask_one, make_client
+
+        client = make_client(timeout=180.0, max_retries=2)
+        ask = lambda request: ask_one(request, client=client)  # noqa: E731
+    else:
+        print("the AI: not asked (a dry run, or no key)")
+    began = time.monotonic()
+    run = Run(ask, args.budget, lines)
+    if args.lists is not None:
+        from picwise_ai.kind_lines import read
+
+        run.found = {kind: chosen for kind, chosen in read(args.lists).items() if kind in ids}
+        print(f"the lists kept from {args.lists}: {len(run.found)} kinds; only the check is asked")
+    else:
+        run_all(run, kinds, args.workers)
+    found = ordered(run.found, ids)
+    empty = [kind for kind, chosen in found.items() if not chosen]
+    missing = [kind for kind in ids if kind not in found]
+    given = sum(len(chosen) for chosen in found.values())
+    asked_lines = judge_all(run, kinds, args.workers) if any("seen" in kind for kind in kinds) else 0
+    exact = {
+        kind: [line for line, verdict in run.judged[kind].items() if verdict == "yes"]
+        for kind in ids
+        if kind in run.judged and any(verdict == "yes" for verdict in run.judged[kind].values())
+    }
+    verdicts = [verdict for said in run.judged.values() for verdict in said.values()]
+    filled = [kind for kind in empty if kind in exact]
+    totals = [
+        read_note,
+        f"the lists: {len(found)} of {len(ids)} kinds answered; {given} lines in all; refused {run.refused}",
+        f"kinds with no line: {len(empty)}" + (f" ({', '.join(empty[:40])})" if empty else ""),
+        f"kinds not answered: {len(missing)}" + (f" ({', '.join(missing[:40])})" if missing else ""),
+        f"the check: {asked_lines} lines of the products not on their kind's list asked; judged {len(verdicts)}:"
+        f" yes {verdicts.count('yes')}, no {verdicts.count('no')}; added to {len(exact)} kinds"
+        + (f", of which {len(filled)} had no line ({', '.join(filled[:30])})" if filled else ""),
+        f"{run.calls} calls ({run.judge_calls} of the check), {run.failed} failed"
+        + (f" ({'; '.join(sorted(set(run.errors))[:5])})" if run.errors else ""),
+        f"cost ${run.spent:.4f} (the check ${run.judge_spent:.4f}; budget ${args.budget:.2f}); {time.monotonic() - began:.0f} s",
+    ]
+    # The lists kept are in the repository already: only what the check added is noted.
+    pieces = [] if args.lists is not None else [("kind lines", piece) for piece in chunks(compact(found, lines))]
+    pieces += [("exact lines", piece) for piece in chunks(compact(exact, lines))] if exact else []
+    if len(pieces) > MOST_NOTES - 1:
+        totals.append(f"the lists need {len(pieces)} notes, {MOST_NOTES - 1} fit: read the log for the rest")
+    notices.say("kind lines: in all", "\n".join(totals), final=True)
+    for label in ("kind lines", "exact lines"):
+        mine = [piece for name, piece in pieces if name == label]
+        for number, piece in enumerate(mine, 1):
+            notices.say(f"{label} {number} of {len(mine)}", piece, final=True)
+    write(
+        found,
+        args.out,
+        note={
+            "written": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "model": MODEL,
+            "taxonomy": "data/taxonomy_sources/google/taxonomy.en-US.txt",
+            "cost_usd": round(run.spent, 4),
+        },
+        exact=exact,
+    )
+    print(f"written: {args.out}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
