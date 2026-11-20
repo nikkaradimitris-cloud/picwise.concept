@@ -13,6 +13,10 @@
 # prints counts, titles, brands, shops and categories, never a link or a description.
 # A run is one commit that changes only `if: false` to `if: true`, pushed to the working
 # branch, then one that turns it off again and records the run here.
+# Run 44708919103 (2026-11-20, bff970a; the catalogue of 20/11 04:33 UTC, 397,635 products): 1,000
+# products in 20 calls, $0.0696; the cached tree 77,287 tokens; 13.3 s a call. A: a line for 399 of 500
+# (97 refused), the shop's category 86.0%, its line 73.9%. B: a line for 444 of 500, deeper on the same
+# path 40.1%. Off again after it.
 name: AI shelves trial (read-only, measured only)
 on:
   push:
@@ -30,7 +34,7 @@ jobs:
   measure:
     # Off until the owner gives the word for a run: it reads the server with the deploy key.
     # The commit pushed with the owner's word turns it on (true), the next one off again.
-    if: true
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
