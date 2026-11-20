@@ -745,6 +745,10 @@ def resolve_live_search(
                     min_price=min_price,
                     max_price=max_price,
                     fitting_for=fitting_for,
+                    # A brand named with the kind: its products only (owner, 2026-11-20:
+                    # «Μόνο της Canon»).
+                    brand=brand_search.named,
+                    brand_words=brand_search.named_words,
                 )
                 expose_selection = (
                     recognized_product_search

@@ -68,6 +68,7 @@ MONITORS = "Electronics > Computers > Computer Monitors"
 CASES = "Electronics > Communications > Telephony > Mobile Phone Accessories > Mobile Phone Cases"
 KETTLES = "Home & Garden > Kitchen & Dining > Kitchen Appliances > Kettles"
 LAMPS = "Home & Garden > Lighting > Lamps"
+INK = "Office Supplies > Ink Cartridges"
 HEADER = [
     "aw_product_id", "product_name", "brand_name", "product_type", "merchant_category",
     "aw_deep_link", "aw_image_url", "search_price", "currency", "in_stock",
@@ -97,6 +98,15 @@ _ROWS = (
     ("Brandor", "Brandor Electric Kettle {n}", KETTLES, 3, 26.0),
     # A brand named as the kind ("Kettle Co" is "kettle"): "kettle" stays every kettle.
     ("Kettle Co", "Kettle Co Electric Kettle {n}", KETTLES, 3, 27.0),
+    # A brand with its kind: its own cartridges, not the cheaper compatibles naming it;
+    # one row with no brand, its title beginning with the brand's name, is its own.
+    ("Inkorra", "Inkorra 302 Black Ink Cartridge {n}", INK, 4, 18.0),
+    ("Jetfix", "Jetfix Compatible Ink Cartridge for Inkorra 302 Printers {n}", INK, 4, 6.0),
+    ("", "Inkorra XL Ink Cartridge {n}", INK, 1, 25.0),
+    # A brand whose name other brands' kettles carry, selling one kettle itself.
+    ("Rosewell", "Rosewell Electric Kettle {n}", KETTLES, 1, 40.0),
+    ("Rosewell", "Rosewell Table Lamp {n}", LAMPS, 2, 35.0),
+    ("Testline", "Testline Rosewell Pattern Kettle {n}", KETTLES, 5, 23.0),
 )
 
 
@@ -382,7 +392,34 @@ class BrandSearchOnThePageTests(unittest.TestCase):
 
     def test_a_kind_named_alone_stays_the_kinds(self) -> None:
         page = self._get("kettle")
-        self.assertIn('<p class="pw-results-count">4 of 19</p>', page)
+        self.assertIn('<p class="pw-results-count">4 of 25</p>', page)
+
+    def test_a_brand_with_its_kind_lists_its_own_products_only(self) -> None:
+        # Owner, 2026-11-20: «Μόνο της Canon».
+        page = self._get("inkorra%20ink%20cartridge")
+        titles = self._titles(page)
+        # After the Recommended, the cheapest of its own, not the cheaper compatibles.
+        self.assertEqual(titles[1], "Inkorra 302 Black Ink Cartridge 1")
+        self.assertFalse(any("Jetfix" in title for title in titles), titles)
+        # Its four, and the one with no brand whose title begins with its name.
+        self.assertIn('<p class="pw-results-count">4 of 5</p>', page)
+        self.assertNotIn("Jetfix", page)
+
+    def test_the_others_naming_a_brand_when_the_search_asks_for_them(self) -> None:
+        # Named after "for": the cartridges for Inkorra printers, cheapest first.
+        page = self._get("ink%20cartridge%20for%20inkorra")
+        self.assertIn('<p class="pw-results-count">4 of 9</p>', page)
+        # After the Recommended, the cheapest: the compatibles.
+        self.assertTrue(self._titles(page)[1].startswith("Jetfix Compatible Ink Cartridge"), self._titles(page))
+        # Asked for compatibles: those.
+        page = self._get("inkorra%20compatible%20ink%20cartridge")
+        titles = self._titles(page)
+        self.assertTrue(titles and all(title.startswith("Jetfix Compatible") for title in titles), titles)
+
+    def test_a_brand_word_the_others_carry_most_is_read_as_before(self) -> None:
+        # Rosewell sells one kettle; five of another brand carry its name: all six.
+        page = self._get("rosewell%20kettle")
+        self.assertIn('<p class="pw-results-count">4 of 6</p>', page)
 
     def test_a_slip_of_one_brand_is_read_as_it_and_said(self) -> None:
         page = self._get("fixtuorn")

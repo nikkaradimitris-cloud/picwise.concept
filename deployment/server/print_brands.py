@@ -77,6 +77,17 @@ EXAMPLES = (
     ("samsnug", "samsung", ""),
     ("samsung tv", "samsung", "television"),
     ("samsnug tv", "samsung", "television"),
+    # A brand with its kind, the owner's answer of 2026-11-20 («Μόνο της Canon»): its own
+    # products; other brands' naming it when asked ("for", "compatible"); a brand's name
+    # other brands' titles carry most read as before ("rose gold ring").
+    ("canon ink cartridge", "canon", "ink_cartridge"),
+    ("ink cartridge for canon", "canon", "ink_cartridge"),
+    ("canon compatible ink cartridge", "canon", "ink_cartridge"),
+    ("hp ink cartridge", "hp", "ink_cartridge"),
+    ("brother toner", "brother", "toner"),
+    ("samsung phone case", "samsung", "phone_case"),
+    ("dyson filter", "dyson", ""),
+    ("rose gold ring", "rose", "ring"),
 )
 
 # The names as the brands' list reads them (`picwise_providers.brand_list`, from

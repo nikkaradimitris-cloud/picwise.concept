@@ -1016,7 +1016,11 @@ def resolve_search_provider_feed_product_selection(
     min_price: float | None = None,
     max_price: float | None = None,
     fitting_for: Callable[[str], Iterable[str] | None] | None = None,
+    brand: BrandAnswer | None = None,
+    brand_words: tuple[str, ...] = (),
 ) -> ProviderProductSelectionResult:
+    """The products of one search (`select_provider_products_for_query`); `brand` and
+    `brand_words`, the brand it names with a kind (owner, 2026-11-20: «Μόνο της Canon»)."""
     prepared = _active_prepared_catalogue() if feed_config is None else None
     if prepared is not None:
         selection = select_provider_products_for_query(
@@ -1030,6 +1034,8 @@ def resolve_search_provider_feed_product_selection(
             max_price=max_price,
             catalogue=_prepared_search_catalogue(prepared),
             fitting_for=fitting_for,
+            brand=brand,
+            brand_words=brand_words,
         )
         return replace(selection, feed_availability_context=prepared.availability_context)
     config = feed_config or awin_feed_config_from_env()
@@ -1058,6 +1064,8 @@ def resolve_search_provider_feed_product_selection(
         max_price=max_price,
         catalogue=catalogue,
         fitting_for=fitting_for,
+        brand=brand,
+        brand_words=brand_words,
     )
     if availability_context is None:
         return selection

@@ -1028,4 +1028,16 @@ a sketch of each answer, the owner chose:
    correct it into, it is not guessed: when nothing else answers the search, the page asks
    "Did you mean ...?" with the searches it could be. The page names a brand without an
    ending of a company's name ("Workwear Nation Ltd" is "Workwear Nation").
-5. Pinned by `tests/test_picwise_brands.py`.
+5. **A brand with a kind, decided by the owner, 2026-11-20** («Μόνο της Canon», asked after
+   the measure found "canon ink cartridge" opening with other brands' compatibles naming
+   Canon, cheaper): a search for a kind that names a brand's whole name before the kind
+   lists only the products of that brand, however its products write it, and of the
+   brands whose names begin with it ("bosch drill": Bosch's and Bosch Professional's); a
+   product whose feed gives no brand counts when its title begins with the brand's name.
+   The products of other brands naming it ("Compatible ... for Canon") are listed when the
+   search asks for them: the brand named after "for" or "with" ("ink cartridge for
+   canon"), or a word such as "compatible" or "replacement" in it ("canon compatible
+   ink"). A brand with none of the kind answers with none ("No products found").
+6. The words the visitor reads were seen by the owner in a picture first (a fictional
+   brand, on a phone, 2026-11-20) and approved: «Ναι, εγκρίνω».
+7. Pinned by `tests/test_picwise_brands.py`.

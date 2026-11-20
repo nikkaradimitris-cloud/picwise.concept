@@ -37,7 +37,7 @@ from picwise_nlu.product_concepts import broader_concepts, get_product_concepts_
 from picwise_taxonomy.comparison_rules import comparison_rule
 
 from .shop_words import learned_kind
-from .brand_list import SEVERAL_KINDS, BrandAnswer, brand_key, mend_letters
+from .brand_list import OWN_SHARE, SEVERAL_KINDS, BrandAnswer, brand_key, is_placeholder, mend_letters, plain, spoken
 from .catalogue_balance import _narrowest_kind
 from .contracts import FeedAvailabilityContext, OfferHealth, ProviderProduct
 from .normalization import extract_merchant_name, extra_image_urls
@@ -2307,6 +2307,41 @@ def _median_recommendation(ordered: list[_PricedProduct]) -> tuple[int | None, s
     return best[1], "recommended"
 
 
+def _brand_members(
+    brand: BrandAnswer,
+    words: tuple[str, ...],
+    members: list[tuple[ProviderProduct, dict[str, str]]],
+    eligible: tuple[ProviderProduct, ...],
+    eligible_fields: tuple[dict[str, str], ...],
+) -> list[tuple[ProviderProduct, dict[str, str]]] | None:
+    """The kind's products of a brand a search names with the kind (the Decision Contract,
+    "The catalogue's brands", point 5; owner, 2026-11-20: «Μόνο της Canon», after the measure
+    found "canon ink cartridge" opening with other brands' compatibles naming Canon): those
+    whose brand is the brand, written however, or one of the brands whose names begin with
+    it; and those whose feed gives none, or a placeholder, when their title begins with its
+    name. None, the search then read as before (the brand's words carried anywhere), when
+    the brand's own are fewer than `OWN_SHARE` of the kind's products carrying its words:
+    the words are then the others' ("rose gold ring", the brand Rose selling no ring)."""
+    places = _brand_places(eligible, eligible_fields)
+    owned = {id(eligible[place]) for key in brand.keys for place in places.get(key, ())}
+    unbranded = {id(eligible[place]) for place in places.get("", ())}
+    name = spoken(brand.name)
+    units = _filter_units(words, {})
+    carrying = 0
+    own: list[tuple[ProviderProduct, dict[str, str]]] = []
+    for product, fields in members:
+        is_own = id(product) in owned or (
+            id(product) in unbranded and (plain(product.title) + " ").startswith(name + " ")
+        )
+        if is_own:
+            own.append((product, fields))
+        if is_own or all(_carries(unit, _haystack(fields)) for unit in units):
+            carrying += 1
+    if not own or len(own) < OWN_SHARE * carrying:
+        return None
+    return own
+
+
 def _select_products_for_concept(
     reading: ConceptReading,
     eligible: tuple[ProviderProduct, ...],
@@ -2318,8 +2353,13 @@ def _select_products_for_concept(
     min_price: float | None = None,
     max_price: float | None = None,
     fitting_for: Callable[[str], Iterable[str] | None] | None = None,
+    brand: BrandAnswer | None = None,
+    brand_words: tuple[str, ...] = (),
 ) -> ProviderProductSelectionResult:
     """Every instance of the concept the buyer means that carries their filters, cheapest first.
+
+    With a brand named before the kind ("canon ink cartridge"), only the brand's products
+    (`_brand_members`; owner, 2026-11-20: «Μόνο της Canon»).
 
     The product name is not a text filter here: every candidate is already an instance
     of the concept, established from its feed type by `annotate_product_concepts`. That
@@ -2377,6 +2417,12 @@ def _select_products_for_concept(
         else:
             condition_unmatched = (condition_request[0],)
 
+    if brand is not None and brand_words:
+        own = _brand_members(brand, brand_words, members, eligible, eligible_fields)
+        if own is not None:
+            members = own
+            named = set(brand_words)
+            filters = tuple(term for term in filters if term not in named)
     brand_words = frozenset(
         word for _product, fields in members for word in fields.get("brand", "").split()
     )
@@ -3359,8 +3405,13 @@ def select_provider_products_for_query(
     max_price: float | None = None,
     catalogue: SearchCatalogue | None = None,
     fitting_for: Callable[[str], Iterable[str] | None] | None = None,
+    brand: BrandAnswer | None = None,
+    brand_words: tuple[str, ...] = (),
 ) -> ProviderProductSelectionResult:
     """The products to show for one search.
+
+    `brand`, with the words of its name in the search (`brand_list.BrandReader.named`), is
+    the brand a search for a kind names: its products only (`_select_products_for_concept`).
 
     `shown` is how many products of a price-first answer the page holds: the first
     page, plus every four "More" has opened. 0 means the first page only.
@@ -3422,6 +3473,8 @@ def select_provider_products_for_query(
             min_price=min_price,
             max_price=max_price,
             fitting_for=fitting_for,
+            brand=brand,
+            brand_words=brand_words,
         )
     return _select_products_by_words(
         reading,
@@ -3447,7 +3500,8 @@ def _brand_places(
     eligible: tuple[ProviderProduct, ...], eligible_fields: tuple[dict[str, str], ...]
 ) -> dict[str, array]:
     """Each brand's products in a catalogue a search reads, by their places, the brand
-    however its products write it: "Black & Decker" and "Black and Decker" together."""
+    however its products write it: "Black & Decker" and "Black and Decker" together; those
+    whose feed gives no brand, or a placeholder, under ""."""
     entry = _BRAND_PLACES.get(id(eligible_fields))
     if entry is not None and entry[0] is eligible_fields:
         return entry[1]
@@ -3459,13 +3513,11 @@ def _brand_places(
         places: dict[str, array] = {}
         for place, product in enumerate(eligible):
             written = " ".join(str(product.brand or "").split())
-            if not written:
-                continue
             key = keys.get(written)
             if key is None:
-                key = keys[written] = brand_key(mend_letters(written))
-            if not key:
-                continue
+                key = brand_key(mend_letters(written))
+                # A feed's placeholder ("Generic") is no brand: with none, under "".
+                key = keys[written] = "" if is_placeholder(key) else key
             row = places.get(key)
             if row is None:
                 row = places[key] = array("I")

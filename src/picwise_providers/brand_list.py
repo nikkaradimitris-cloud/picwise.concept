@@ -73,6 +73,15 @@ PLACEHOLDERS = (
 ENDINGS = frozenset("ltd limited plc inc llc gmbh co corp uk".split())
 # A brand's answer is no Recommended among several kinds (`search_selection`).
 SEVERAL_KINDS = "several_kinds"
+# Words with which a search asks for other brands' products naming a brand ("canon
+# compatible ink"): the brand is then no brand of the products (owner, 2026-11-20).
+OTHER_BRANDS_WORDS = frozenset(
+    "compatible compatibles replacement replacements aftermarket generic alternative alternatives".split()
+)
+# A brand named with a kind is read as the brand when its own products are at least this
+# share of the kind's products carrying its name: "rose gold ring" names no brand Rose,
+# which sells no ring, nor "oxford shoes" a brand Oxford among the Oxford shoes of others.
+OWN_SHARE = 1 / 3
 
 _NOT_A_LETTER = re.compile(r"[^0-9a-z]+")
 # The letters a broken name shows: UTF-8 read as Windows' or Latin letters.
@@ -323,6 +332,10 @@ class BrandSearch:
     corrected: str = ""
     corrected_to: str = ""
     suggestions: tuple[str, ...] = ()
+    # The brand a search for a kind names with it, and the words of its name ("samsung
+    # tv": Samsung, ("samsung",)); the search lists only its products (owner, 2026-11-20).
+    named: BrandAnswer | None = None
+    named_words: tuple[str, ...] = ()
 
 
 # Endings of a company's name left out where the page names a brand ("Workwear Nation
@@ -413,7 +426,35 @@ class BrandReader:
             alone = self.alone(words, query)
         if alone is not None:
             return BrandSearch(alone=alone)
-        return self._slips(every, query)
+        search = self._slips(every, query)
+        if search.corrected:
+            return search
+        named = self.named(query)
+        if named is None:
+            return search
+        return BrandSearch(suggestions=search.suggestions, named=named[0], named_words=named[1])
+
+    def named(self, query: str) -> tuple[BrandAnswer, tuple[str, ...]] | None:
+        """The brand a search for a kind names before the purpose word, the kind's own name
+        aside, and the words of its name: the longest run of the search's words that is a
+        brand's whole name or begins names, as a brand alone is read (`alone`): "samsung
+        tv", "black and decker drill", "tv samsung". None when the search names no kind,
+        asks for other brands' products naming it ("compatible"; `OTHER_BRANDS_WORDS`), or
+        names it after "for" ("ink cartridge for canon"): those name the brand anywhere."""
+        if not self.brands:
+            return None
+        reading = understand_product_query(query)
+        if not reading.understood or any(token in OTHER_BRANDS_WORDS for token in reading.tokens):
+            return None
+        head = set(reading.concept_words)
+        words = [word for word in reading.product_words if word not in head]
+        for size in range(min(len(words), 4), 0, -1):
+            for start in range(len(words) - size + 1):
+                span = words[start : start + size]
+                answer = self.alone(span, " ".join(span))
+                if answer is not None:
+                    return answer, tuple(span)
+        return None
 
     def alone(self, words: list[str], query: str) -> BrandAnswer | None:
         """The brands a search's words name alone: a brand's whole name, with the brands
