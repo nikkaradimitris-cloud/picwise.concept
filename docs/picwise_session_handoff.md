@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (12:40 Athens).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,25 +8,30 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST, URGENT (20/11 09:12 UTC = 11:12 Athens): the site shows NO products** ("No products found" for
-  every search, checked 09:15 UTC). The deployment of `94e4dfd` (run `44706433016`, «Ανεβασε», 08:55 UTC) ran
-  its preparation, which FAILED ("Job for picwise-prepare.service failed", 14 min 28 s of CPU, no
-  `prepare_catalogue` summary line), then restarted the site with `94e4dfd`'s code at 09:11:53. The night's
-  catalogue (prepared 04:33 UTC, 397,635 products) was written by `02e0ac5`'s rules, and a prepared file is
-  read only by the code that wrote it (`prepared_catalogue.code_fingerprint`: 02e0ac5 `744f91ce…`, 94e4dfd
-  `ef8f7e91…`), so the site holds no catalogue. **The way back, asked and NOT done:** `git revert 94e4dfd` on
-  top of `94e4dfd` (only `awin_adapter.py`, `awin_categories.py` and their test change; checked: the reverted
-  `src/` is byte for byte `02e0ac5`'s, fingerprint `744f91ce…`), pushed to `ccr-1361f1a7-dcpo60` as a fast-forward:
-  the site then reads the night's file at once, whatever the deployment's own preparation does (the file is
-  valid until 30 h after 04:33, 21/11 10:33 UTC). Asked at 09:21 UTC; the owner answered «Σταματάμε εδώ και πάμε
-  σε άλλη συζήτηση»: nothing deployed. **It needs the owner's «ανέβασε» first, as every deployment.** Tonight
-  (04:17 UTC) the timer prepares again with `94e4dfd`: if it succeeds the site shows products again by itself;
-  if not, the site stays empty. Then: why the preparation failed. No read-only workflow prints the error
-  (`deploy.sh` and `server-night.yml` keep only the `prepare_catalogue|Consumed` lines); `trial-prepare.yml` (on
-  `main`, run by hand with `ref` the work branch) prepares both links with this code on GitHub's runner and shows
-  the peak memory and any traceback. A guess, not checked: precise shelves split the second link's big aisles
-  (Tooled Up's «DIY») into more Google categories of 12,000 each, so more products are kept and the peak passes
-  `MemoryMax=18G`; or an exception in `awin_categories.shelf_detail` on a row the tests do not have.
+- **FIRST (20/11, 12:40 Athens): products back on the site; the catalogue's preparation fails in the day;
+  tonight's must succeed.** On the owner's «ανέβασε την επιστροφή», `857cdb2` (`git revert 94e4dfd` on top of
+  `94e4dfd`: `awin_adapter.py`, `awin_categories.py` and their test; its `src/` byte for byte `02e0ac5`'s, the
+  prepared file's fingerprint `744f91ce…`, the night's file's) was pushed to `ccr-1361f1a7-dcpo60` at 10:04:19
+  UTC (fast-forward, nothing else riding along); run `44716070185`, release `20261120T100434Z-857cdb2`; the site
+  restarted at 10:31:46 UTC on the night's file (prepared 04:33:55 UTC, 397,635 products, 137 shops; the site
+  4,720 MB); the deployment's comparison at 10:32 UTC: 12 of 12 searches with cards on the public site (tv 411,
+  laptop 56, kettle 90...). No products from 09:12 to 10:31 UTC. **The deployment's preparation failed again,
+  with `02e0ac5`'s code** (10:04:47 to 10:30:33 UTC, 16 min 25 s of CPU, no `prepare_catalogue` line), as the
+  morning's did with `94e4dfd`'s (14 min 28 s of CPU), while the timer's at 04:17 UTC today with `02e0ac5`'s code
+  succeeded: the cause is not `94e4dfd`'s change alone. A guess, not checked: memory (`MemoryHigh=17G` slows a
+  process near it, which fits 26 min of time for 16 of CPU; `MemoryMax=18G` ends it, which fits no summary line).
+  **The night's file stands until 21/11 10:33:55 UTC (30 h): if tonight's preparation (04:17 UTC, `02e0ac5`'s
+  code) fails too, the site is empty again from then.** A preparation killed this way leaves `/prepared.json` as
+  it was (`"prepared": true`, 04:33:55), so the daily session at 10:00 UTC would read a `prepared_at` of 29.4 h,
+  under its 30 h, and see nothing wrong: tomorrow read the night's run itself (`server-night.yml`), not the
+  note's age alone. To do: the failed runs' journal (`journalctl -u picwise-prepare.service` with the kernel's
+  lines, 08:55-09:11 and 10:04-10:30 UTC: an out-of-memory kill or a traceback); no read-only workflow prints it
+  yet (`deploy.sh` and `server-night.yml` keep only the `prepare_catalogue|Consumed` lines); then the fix, on the
+  owner's word. `94e4dfd`'s change (parts and accessories before the thing they serve; the second link's rows
+  like Google's) is off on the site and on the work branch (merged, `5f13349`, so the next deployment is a
+  fast-forward): "kettle" shows a paint kettle and a kettle lead again. It comes back by reverting `857cdb2`,
+  once the preparation succeeds again, on the owner's «ανέβασε»; to try its preparation first, `trial-prepare.yml`
+  by hand on a `claude/...` branch with `857cdb2` reverted.
 - **The AI's shelves, the trial of 1,000 (owner, 20/11: «Ναι κάνε καί τά 2»), done: run `44708919103`**
   (`bff970a`; `picwise_ai/shelves.py`, `deployment/server/measure_shelves.py`, `.github/workflows/ai-shelves-trial.yml`,
   off again after it). The night's catalogue of 20/11 04:33 (397,635 products): 20 calls of 50, **$0.0696 in
