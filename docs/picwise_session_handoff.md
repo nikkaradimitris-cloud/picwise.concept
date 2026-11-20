@@ -8,6 +8,33 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **FIRST (20/11, 16:40 Athens): the AI's shelves for the whole catalogue: the scan RUNNING, the rules built,
+  nothing deployed.** The owner: the search fell after the second link («στο boots βγάζει και καλώδια ...
+  επιλέγω ρολόγια μου δείχνει και λουράκια»; live, read with a fetch: "boots" 3 of 4 cards TV Cables' RJ45
+  boots, "watches" Plusshop's and Bazta's Garmin Fenix 6 strap and InStock UK's earring backs), «ότι κανόνες
+  ισχύουν για το ένα feed πρέπει να ισχύουν και για το καινούργιο», not product by product: «να φτιάξουμε
+  μηχανισμούς και κανόνες σχετικά με το ai που μπορεί να κάνει την ταξινόμηση», «Θέλω να σκαναριστεί σήμερα
+  όλος ο κατάλογος... Μετά συντήρηση τα όρια ανα ημέρα θα καθοριστούν μετά». Why: a first-link row carries
+  two words of its shop that check each other (its type and a Google line); a second-link row only the first,
+  and the Google line was guessed from the same words (`awin_categories`), so it checked nothing. (1) `94e4dfd`
+  re-applied on `claude/accessories-fix-2026-11-20` (`5eed766`), NOT deployed: offline it fixes neither live
+  example and reads some straps as watches. (2) **The scan** (`claude/shelves-scan`, `c51014d`..`ebf213a`):
+  `deployment/server/scan_shelves.py` + `.github/workflows/ai-shelves-scan.yml`: every product once (sizes and
+  colours one key, `picwise_ai.shelves.ask_key`), Haiku gives a Google line, checked (`checked_lines` now
+  reads a miscopied number by the name, unique in Google's list); answers (keys and lines only) to
+  `/srv/picwise/assist/shelves/answers.jsonl.gz`; a run asks only what has none. The owner put $40 in the API
+  account («ΠΡΟΣΘΕΣΑ 40»; the PicWise key is in the Console org "Νικος's Individual Org"; the Max plan's
+  monthly API credit not linked yet; the first run, 44746448398, was stopped at the owner's word before the
+  money). **Run 44750012387 started 14:04 UTC, $38 at most, 300 minutes of asking at most**; GitHub shows its
+  notes (`::notice`, read without a login at `check-runs/<job>/annotations`) only when it ends. (3) **The rules**
+  (`claude/ai-shelves-rules-2026-11-20`, `picwise_providers.ai_shelves`; 329 modules, 327 pass, 2 as known):
+  rule 1, a second-link row's Google line is the AI's, its Awin category columns leave the row, its key kept
+  (`ai_shelf_key`); rule 2, every product doubtful when the AI's line gives none of its kinds;
+  `picwise-prepare.service` names the answers file. (4) **The measure after** (`measure_after.py`,
+  `ai-shelves-after.yml`, push `claude/shelves-after` once the scan's answers are on the server): both links
+  prepared with the answers on GitHub's runner, 40 searches, first 12 cards judged. The owner wants only the
+  measure after, no before/after. Then the owner's «ανέβασε»; then the nightly scan of new products, with
+  daily limits the owner sets.
 - **FIRST (20/11, 14:20 Athens): DEPLOYED on the owner's «Ανέβασε»: remedies 1 and 2, and a deployment that
   prepares only when needed.** `ea1e7dd` pushed to `ccr-1361f1a7-dcpo60` at 11:53:02 UTC (fast-forward from
   `857cdb2`; rode along, inert on the site: the AI shelves trial's files, `print_prepare_runs.py`); run
