@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (13:40 Athens).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (14:40 Athens).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,37 +8,39 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (20/11, 13:40 Athens): why the feed's preparation failed, found: memory. Products back on the site
-  since 10:31 UTC.** The way back: on the owner's «ανέβασε την επιστροφή», `857cdb2` (`git revert 94e4dfd` on top
-  of `94e4dfd`; its `src/` byte for byte `02e0ac5`'s, fingerprint `744f91ce…`, the night's file's), pushed to
-  `ccr-1361f1a7-dcpo60` at 10:04:19 UTC; run `44716070185`, release `20261120T100434Z-857cdb2`; the site restarted
-  at 10:31:46 UTC on the night's file (prepared 04:33:55 UTC, 397,635 products); 12 of 12 searches with cards at
-  10:32 UTC. No products 09:12 to 10:31 UTC. Merged into the work branch (`5f13349`). **The cause** (owner:
-  «μας ενδιαφέρει γιατί δεν δούλεψε το feed»), read with the new read-only `prepare-runs.yml`
-  (`deployment/server/print_prepare_runs.py`, run `44724683162`): each failed preparation was an out-of-memory
-  kill. (1) 08:56-09:10 (`94e4dfd`): the whole server out of memory (`global_oom`; 23.4 GB, no swap): the site's
-  three workers held 2.95 + 2.91 + 2.94 GB (the night's catalogue, swapped in at 04:43), the preparation 14.0 GB
-  when the kernel killed it, before writing anything; so not shown to be `94e4dfd`'s code. (2) 10:04-10:30
-  (`857cdb2`, `02e0ac5`'s code; the site's workers held no catalogue): its own ceiling, 18.4 GB of `MemoryMax=18G`.
-  The feed's download lives 6 h (`awin_adapter._DEFAULT_FEED_CACHE_TTL_SECONDS`, not set on the server): the night's,
-  of 04:17, expired at about 10:17, after the catalogue was written (10:19:40) and before `_intake()`
-  (`measure_configured_feed_intake`), which downloaded both links again (10:21:52, 10:23:32); the new files missed
-  the pipeline's cache (keyed by the file's identity), so all 2.7 M rows were parsed a second time with the first
-  parse still held. (3) 19/11 17:21 (`5500291`, before that evening's cuts): its ceiling, then 17 GB, at 17.4 GB.
-  The nights pass (20/11 04:17: peak 14.6 GB, 25.9 min). **What it means:** a deployment in the day prepares
-  beside a site of about 8.8 GB, and 14-15 GB more does not fit: a daytime deployment's preparation is likely to
-  fail, and one that changes `src/picwise_providers` or `src/picwise_nlu` then restarts the site with code that
-  refuses the file in place: an empty site, as at 09:12. Tonight (04:17 UTC) should go as last night, which
-  passed (the site's workers fresh since 10:31): likely, not certain. **Put to the owner (20/11), nothing changed yet:** (a) `deploy.sh`: when the
-  preparation fails and the new code cannot read the file in place, keep the old release running; (b) the
-  intake reads the files the preparation read (no second download within a run); (c) less memory: 2 workers
-  instead of 3, or a larger server. The night's file stands until 21/11 10:33:55 UTC; a killed preparation leaves
-  `/prepared.json` as it was, so the daily session reads the night's run itself (`server-night.yml` or
-  `prepare-runs.yml`), not the note's age alone. `prepare-runs.yml` runs on a push of its two files to
-  `claude/prepare-runs-2026-11-20`, or by hand once on `main`. `94e4dfd`'s change (parts and accessories before the
-  thing they serve; the second link's rows like Google's) is off on the site and on the work branch: "kettle"
-  shows a paint kettle and a kettle lead again; it comes back by reverting `857cdb2`, on the owner's «ανέβασε»,
-  once a deployment can prepare.
+- **FIRST (20/11, 14:40 Athens): remedy 1 built and tested, NOT deployed: waiting for the owner's «ανέβασε»**
+  (owner, of three remedies: «Κάνε το ένα και το τρία», then «Άκυρο ... κάνε μόνο το ένα»: 2 and 3 not done, the
+  site keeps three workers). On the work branch: `deploy.sh` runs `deployment/server/prepared_state.py` with the
+  new release's code after the preparation and before the restart (the file's first fields, the site's own states,
+  without loading the catalogue); unless "fresh", `current` goes back to the release the site runs, its units are
+  put back, the site is not restarted, and the deployment fails. Tests: `tests/test_picwise_deploy_keeps_the_site.py`
+  (11, the step run in bash both ways). Nothing under `src/picwise_providers` or `src/picwise_nlu` changed:
+  fingerprint `744f91ce…`, so this deployment keeps the site's file whatever its preparation does. Rides along to
+  the site: the AI shelves trial's files (`bff970a`; nothing of the site imports `picwise_ai.shelves`),
+  `prepare-runs.yml` and its script, records.
+- **The site now (read on the server, run `44726998584`, 11:26 UTC):** it answers from the catalogue the 10:04
+  deployment's run prepared at **10:17:27 UTC** (written 10:19:40, before that run was killed in its intake), from
+  the night's download: valid until **21/11 16:17 UTC**, not 10:33 as written before. The public note
+  `/prepared.json` still names 04:33:55 (that run never rewrote it), and the price notes are the night's, so the
+  cards tell no price history until a preparation completes (`price_history.notes_for_catalogue`). The site's three
+  workers 1,619 + 1,560 + 1,607 MB (fresh since 10:31; about 2.9 GB each after a night's swap); 17.9 GB available.
+- **Why the feed's preparation failed (owner: «μας ενδιαφέρει γιατί δεν δούλεψε το feed»): memory, each time**,
+  read with `prepare-runs.yml` (`deployment/server/print_prepare_runs.py`; runs `44724187812`, `44724683162`).
+  (a) 08:56-09:10 (`94e4dfd`): the whole server out of memory (23.4 GB, no swap): the site's three workers 2,953 +
+  2,909 + 2,939 MB (the night's catalogue, swapped in at 04:43), the preparation 13,994 MB, killed before writing
+  anything: not shown to be `94e4dfd`'s code. (b) 10:04-10:30 (`857cdb2`, `02e0ac5`'s code): its own ceiling,
+  18,405 MB of 18 GB: the feed's download lives 6 h (`awin_adapter._DEFAULT_FEED_CACHE_TTL_SECONDS`); the night's,
+  of 04:17, expired at about 10:17; `_intake()` (`measure_configured_feed_intake`) after the catalogue (10:19:40)
+  downloaded both links again (10:21:52, 10:23:32), missed the pipeline's cache (keyed by the file's identity) and
+  parsed all 2.7 M rows a second time beside the first. (c) 19/11 17:21 (`5500291`): its ceiling, then 17 GB. The
+  nights pass (20/11 04:17: peak 14.6 GB, 25.9 min). Remedy 2 would end (b); without it (b) recurs whenever a run
+  meets the download's sixth hour, but with remedy 1 the site keeps its file. Before all this, the way back:
+  `857cdb2` (`git revert 94e4dfd`) deployed on the owner's «ανέβασε την επιστροφή» (pushed 10:04:19 UTC, run
+  `44716070185`), products again from 10:31:46 UTC, none from 09:12; merged into the work branch (`5f13349`).
+  `94e4dfd`'s change (parts and accessories before the thing they serve) is off on the site and the work branch
+  ("kettle" shows a paint kettle and a kettle lead again); it comes back by reverting `857cdb2`, on the owner's
+  «ανέβασε». `prepare-runs.yml` runs on a push of its two files to `claude/prepare-runs-2026-11-20`, or by hand
+  once on `main`.
 - **The AI's shelves, the trial of 1,000 (owner, 20/11: «Ναι κάνε καί τά 2»), done: run `44708919103`**
   (`bff970a`; `picwise_ai/shelves.py`, `deployment/server/measure_shelves.py`, `.github/workflows/ai-shelves-trial.yml`,
   off again after it). The night's catalogue of 20/11 04:33 (397,635 products): 20 calls of 50, **$0.0696 in
@@ -639,3 +641,6 @@ A conflict between them: stop and say it (`PROJECT_RULES.md` 1.4).
 - A session reaches `picwise.subby.cloud` and the package registries; the server only
   through the deployment's run and the read-only workflows.
 - `pkill -f` or `grep` patterns that match their own command line kill the shell.
+- A session's fetch tool may answer with an old copy of a site page (20/11: `/private-beta-readiness` said
+  "other_code" at 11:20 UTC while the server said "in_use"; "kettle" showed cards of days before): read the
+  live site through a workflow on GitHub's runner or on the server (`prepare-runs.yml` asks the site itself).
