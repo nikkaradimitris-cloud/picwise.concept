@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-19 (night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,22 +8,34 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **NEXT, in a new conversation (owner, 19/11 23:46, step 3 of the series, chosen so as not to overlap
-  with the other conversation's Google-shelf AI): a list of brands from the feeds, their kinds counted.**
-  Seen live on 19/11 at 23:4x Athens: "dyson" and "samsung" alone show no product ("PicWise is not sure
-  which product you mean", no choice offered); "samsnug tv" could not match "samsnug" and put TV aerial
-  splitters first. What exists: `search_selection._catalogue_brand_names` (the brands of 3 products or
-  more, used only so a brand's word is not read as another kind), `picwise_nlu.brand_resolver` (9 brands
-  written by hand, an early stage's), `kind_choices` ("What kind of cable?", the model for "What kind of
-  Dyson product?"). The plan: (1) measure on GitHub's runner, never on the server (the catalogue copied as
-  `search-audit.yml` does it; a workflow run by a push of its own file, `if: true` for one run): brands,
-  products and kinds per brand, spellings of one brand, brands that are also words or kinds' names,
-  near-identical names; (2) put to the owner what it changes (a brand alone: its products, or "What kind of
-  Dyson product?" with its kinds; a brand misspelled: corrected), with the numbers; (3) build. **Safety
-  (owner, 19/11: «Είναι ασφαλές ή θα συγκρουστεί?»):** two conversations share the work branch and every
-  deployment takes all of it, so the brands' work stays on a branch of its own until finished and tested,
-  then goes into the work branch; before any push to the site branch, what else rides along is checked and
-  the owner asked; measures on GitHub's runner (the server is at 19.8 of its 20 GB at night).
+- **NEXT, step 3 of the series, the brands' list (owner, 19/11 23:46; taken up on 20/11: «PicWise:
+  συνέχισε το βήμα 3, τη λίστα brands, όπως γράφει το handoff»): (1) measured, (2) put to the owner (20/11
+  ~00:30 Athens), waiting for the answer; then (3) build.** All of it on the branch
+  `claude/brands-2026-11-20` (from `d1513e8`), never on the work branch until finished and tested:
+  `deployment/server/print_brands.py` (tests 11) and `.github/workflows/brands-measure.yml` (the server's file
+  copied as `search-audit.yml` does, nothing on the server or the site changed; `if: true` for one run). Run
+  `44626133872`, the catalogue of 19/11 21:32 UTC (403,545 products, 137 shops): 99.1% carry a brand; 7,424
+  brands, 3,876 of 3 products or more (some are shops' own names the rule misses: Swadesi, DIY Refurb); 95
+  written several ways (8,436 products: "Black and Decker"/"Black & Decker"; broken letters "PokÃ©mon").
+  **Dyson: 8 products, all parts.** Samsung 2,046 (televisions 332, monitors 153, chargers 65, headphones 49,
+  phones 37...; 1,178 of no kind read). 151 brands are read alone as a kind (razer -> electric shaver,
+  motorola -> engine oil, draper -> nappies); 306 are English words (Apple, Canon, Brother); "apple" and
+  "nike" alone answer nothing, by the early stage's guards, which hold "bosch" too
+  (`category_detector._OVERMATCH_SINGLE_TOKEN_GUARDS`, `broad_query_suggestions._UNSAFE_BROAD_QUERY_TERMS`). A slip of 2,019 of the 3,480 names of 5 letters or more
+  reads as it alone; 607 are one slip from another brand or a word (Canon ~ cannon). The 120 largest brands:
+  alone, 90 "not sure", 4 nothing, 19 the brand's product first; with their largest kind, 105 of 112 right
+  ("samsung tv" works); misspelled alone, 86 of 101 nothing; misspelled with the kind, 29 of 94 the brand's
+  first. The kinds' choices inherit the kinds' reading ("belt" for Bosch Professional's sanding belts).
+  **Put to the owner:** a brand alone (a question "What kind of Samsung product?" with its kinds and its
+  products below, or its products only); a misspelled brand (corrected when only it is that close, else "Did
+  you mean"). **The build, after the answer:** a list of brands made each night from the feeds (spellings
+  joined, broken letters mended), read by the search: a brand alone, a brand never corrected into a kind, a
+  slip read as the brand; the old guards and `brand_resolver` replaced; measured again with the same
+  workflow, before and after; a picture to the owner before any wording; then into the work branch.
+  **Safety (owner, 19/11: «Είναι ασφαλές ή θα συγκρουστεί?»):** two conversations share the work branch and
+  every deployment takes all of it, so the brands' work stays on its branch until finished and tested;
+  before any push to the site branch, what else rides along is checked and the owner asked; measures on
+  GitHub's runner (the server is at 19.8 of its 20 GB at night).
 - **NEXT (owner, 19/11 night): the AI to give every product its Google shelf** («εκτός από τον bot.... Μπλέξουμε και
   το ai για να ταξινομήσουμε όλο τον κατάλογο»). In order: (1) `search-audit.yml`, right answers per feed, the
   before; (2) a trial on 1,000 products, under $1: title and the shop's own category in, a line of Google's
