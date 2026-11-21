@@ -35,9 +35,12 @@ a decision came about.
     account is not joined to (150 shops, 83.1%): one tap of his own on such a button tells.
   - **Next by the split: task 5 is OPUS** (the ledger and the per-shop bots, built to these rules; its
     section 14 is for the builder): the owner switches back to Opus 5.5. Task 7 (FABLE) is the look before
-    the «ανέβασε» of the built checks: of the same day, not nights of report only. **Still waiting for
-    «ανέβασε»:** the button with no dead end (`e82387c` and `2820dd2`; GitHub's "Tests" green on `2820dd2`,
-    run 44917717324). To read on 22/11: the bot's first round with both links, the site's memory after the
+    the «ανέβασε» of the built checks: of the same day, not nights of report only. **The button with no dead end DEPLOYED** 21/11 22:28 Athens on the owner's «Ωραία ανέβασε το» (run
+    44946418723, release `20261121T202811Z-00f7078`, not prepared again: fingerprint `aeac3a5c467e`; 15/15 pages
+    and 12/12 searches the same). **The owner (22:26): «θύμισέ μου μετά να κάνω τους ελέγχους»:** at the end of
+    the work, remind him of his tap on a button of a shop the account is not joined to (InStock UK or Tooled
+    Up: does the shop open?) and of the two proposals that wait for his yes (a feed over 7 days old; a shop
+    closed, suspended or offline at Awin). To read on 22/11: the bot's first round with both links, the site's memory after the
     night.
   - **For the owner, in Greek:** the rules on one page in the claude.ai Project's docs
     (`claude/PicWise-kanones-elegchon.md`: his decisions, the brake, what waits for his yes); keep it in
