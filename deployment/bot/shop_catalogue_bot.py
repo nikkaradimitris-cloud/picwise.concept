@@ -120,19 +120,12 @@ def _every_shop_in_note(note_path: str) -> set[str]:
 
 
 def own_address(product_url: str, raw: Mapping[str, Any]) -> str:
-    """The shop's own address of a feed row, read as text, never opened: the one its link
-    carries (`feed_intake._shop_address`), else the row's own `merchant_deep_link`. A row
-    of the second Awin link (Awin's own format, since 2026-11-19) links through Awin's
-    "pclick.php", which carries none, and gives its shop's address in that column; "" when
-    neither gives an address."""
-    from picwise_providers.feed_intake import _shop_address
+    """The shop's own address of a feed row, its link's or else its `merchant_deep_link`,
+    as the preparation reads it (`shop_catalogue.own_address`), so that the products the
+    bot keeps under a name are the ones the preparation looks for under it."""
+    from picwise_providers.shop_catalogue import own_address as read
 
-    address = _shop_address(product_url)
-    if address:
-        return address
-    own = _shop_address(str(raw.get("merchant_deep_link") or ""))
-    parts = urlsplit(own)
-    return own if parts.scheme.lower() in ("http", "https") and parts.netloc else ""
+    return read(product_url, raw)
 
 
 def read_feed(path: str, wanted: set[str]) -> tuple[dict[str, FeedShop], int]:

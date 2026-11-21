@@ -93,6 +93,22 @@ def shop_name(raw: Mapping[str, Any]) -> str:
     return " ".join(str(extract_merchant_name(raw) or "").split())
 
 
+def own_address(product_url: str, raw: Mapping[str, Any]) -> str:
+    """The shop's own address of a feed row, read as text, never opened: the one its link
+    carries (`feed_intake._shop_address`), else the row's own `merchant_deep_link`. A row
+    of the second Awin link (Awin's own format, since 2026-11-19) links through Awin's
+    "pclick.php", which carries none, and gives its shop's address in that column (the
+    second opinion of 2026-11-21: the bot found no address for any of its shops, and no
+    reading of a shop's site met one of its rows); "" when neither gives an address. The
+    bot reads a row's address here too, so that both read it alike."""
+    address = _shop_address(product_url)
+    if address:
+        return address
+    own = _shop_address(str(raw.get("merchant_deep_link") or ""))
+    parts = urlsplit(own)
+    return own if parts.scheme.lower() in ("http", "https") and parts.netloc else ""
+
+
 def product_address_name(url: str) -> tuple[str, str]:
     """The product's name in its shop's own address, Shopify's ".../products/<name>",
     and the variant the address names ("?variant=<id>"), each "" when there is none.
@@ -221,7 +237,7 @@ def apply_shop_catalogues(
         without_category = not " ".join(str(product.category_text or "").split())
         if without_category:
             note["without_category"] += 1
-        handle, variant = product_address_name(product.product_url)
+        handle, variant = product_address_name(own_address(product.product_url, raw))
         known = (entry.get("products") or {}).get(handle) if handle else None
         if not isinstance(known, list) or len(known) < 4:
             if without_category:
