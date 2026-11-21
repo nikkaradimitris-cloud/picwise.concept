@@ -9,6 +9,8 @@
 # On a push of its own branch that changes the script or this file, or by hand. The
 # repository is public and so is this log: the server's names and addresses are masked;
 # the script prints the shop's host and counts, never an address or a product's name.
+#
+# Run: 2026-11-21, InStock UK, 12 products (to run again, change this line and push).
 name: Server product test (read-only)
 on:
   push:
