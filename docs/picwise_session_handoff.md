@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-21 (15:45 Athens: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-21 (17:15 Athens: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,7 +8,23 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (21/11, 15:45 Athens): task 2 of the work split by model (OPUS) DONE: an hour's look at the
+- **FIRST (21/11, 17:15 Athens): task 3 of the work split by model (OPUS) DONE** (PROGRESS.md, 21/11 17:15).
+  **Awin:** the account is joined to 12 programmes; of the catalogue's 160 shops 150 are not joined (83.1% of
+  the site's products: InStock UK, Tooled Up, GamingKit, Plusshop UK, Bazta UK...), 8 joined (16.9%); 35
+  shops' feeds last imported over 7 days ago (12,684 products). The owner (16:51): «Θα κάνουμε αιτήματα να
+  δούμε ποια από αυτά θα μας εγκρίνουν»: his Sheet "PicWise — Αιτήσεις στην Awin"
+  (https://claude.ai/artifact/3iwKs8EgNgkeJcSF97ksaT) lists the 160 with a dropdown for each application;
+  `server-programmes.yml` (push of `claude/programmes-2026-11-21`, change its `# Run:` line) reads the
+  relationships again, to update the Sheet when he asks. **Deployed** (`a07b2c8`, run 44916373013, no
+  preparation): the offers from both links' shops (55 of 160 with offers, before 39 of 104); a card whose
+  photo has not come 10 s after it is in view leaves the page. **Built, NOT deployed, waits for «ανέβασε»:**
+  `e82387c`, a gone product's button lands on its search's current results with the line the owner chose
+  («Οι τωρινές επιλογές»). **Next by the split: task 4 is FABLE** (the checks' rules): a session on Opus
+  stops there and tells the owner, in Greek, to switch to Fable 5.2. Open for the rules: a feed over 7 days
+  old; shops not joined that Awin rejects; Aosom UK's robots.txt 403; InStock UK accepts the bot (about
+  930,000 feed rows). The owner reads questions only in Greek: English wording for the site goes with its
+  Greek meaning.
+- **(21/11, 15:45 Athens): task 2 of the work split by model (OPUS) DONE: an hour's look at the
   buttons, prices and photos of 95 first cards of the owner's own searches; read-only** (PROGRESS.md, 21/11
   15:45; `deployment/server/look_cards.py`, `server-look-cards.yml` on `claude/look-cards-2026-11-21`, run
   44909213170). No id shared by two products (389,735 of each); all 95 buttons find their own product and
@@ -163,7 +179,8 @@ a decision came about.
        or the shop's; the ids two shops share, counted. **Done 21/11 15:45 (the first item): no id shared; our side of every
        button sound; photos load; prices mostly the shop's.**
     3. OPUS: what needs no bot: Awin's feed list and programmes (joined, last update); the photo's limit
-       on the page; a button that meets no dead end (a picture to the owner first; the wording is his).
+       on the page; a button that meets no dead end (a picture to the owner first; the wording is his). **Done 21/11 17:15 (the first item): Awin read (12 joined;
+       150 of 160 shops not); offers and the photo's limit deployed; the button built, waits for «ανέβασε».**
     4. **FABLE: the checks' rules:** the verdicts, what cuts at once and what after how many failures, the
        brakes, how a product or a shop comes back, what the cap reads; each point that touches a decision
        of the owner's put to him.
