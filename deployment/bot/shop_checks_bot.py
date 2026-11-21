@@ -524,6 +524,9 @@ def print_night(note: Mapping[str, Any], made: Mapping[str, Any], ledger: L.Ledg
         say(f"cannot be checked: {name}: {why} (day {days})")
     if note.get("awin"):
         awin = note["awin"]
+        if awin.get("names_not_matched"):
+            say("Awin: shops whose name its reading does not hold (not judged by it): "
+                + ", ".join(awin["names_not_matched"]))
         say("Awin: newly out " + (", ".join(f"{name} ({reason})" for name, reason in awin["newly_out"]) or "none")
             + (f"; WAITS for the owner's word ({awin['products']:,} products)" if awin.get("waits") else ""))
     say(f"the decisions: shops out {len(made['shops_out'])}, products cut {len(made['cut']):,}, may enter "

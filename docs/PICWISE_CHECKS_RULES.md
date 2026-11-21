@@ -569,7 +569,11 @@ from their first night live (2.2, 4). Where the code had to settle a point:
    ratio 1.2, 1 price in 10 the same; Finediam 1.08; Bern Helmets 1.47): an unproven reader there
    would have cut 3 of InStock UK's 10 as far apart. Unproven, it changes nothing, as 7.5 says of
    its prices.
-9. Not built yet: the shop's recipe by the AI (4.5.3), the category (5.5), the night's numbers in
+9. A shop of the catalogue whose name Awin's reading does not hold is not judged by it: only a shop
+   Awin's reading names, in none of its lists, is "in no list" (5.6.3). Names are matched with
+   "&amp;", accents, case and spaces read alike. The look of 21/11 had two names written
+   otherwise read as "in no list"; the stop of 5.6.3 held them (5,158 products).
+10. Not built yet: the shop's recipe by the AI (4.5.3), the category (5.5), the night's numbers in
    the owner's daily email (11). Without the recipe a shop whose pages no reader reads leaves on
    its day 15 (5.6.2): on 21/11 Tooled Up (68,508), Plusshop UK, Tyres UK, Tirendo UK, MoreThisWay.
 

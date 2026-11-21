@@ -230,6 +230,16 @@ class Rules56ShopsTests(unittest.TestCase):
         _night(ledger, NIGHT + timedelta(days=1), rows, {}, awin={**awin, "Small": ("joined", "")}, filler=False)
         self.assertEqual(ledger.shops["Small"].out, "")
 
+    def test_5_6_3_a_name_written_otherwise_is_matched_and_one_not_held_is_not_judged(self) -> None:
+        ledger, rows = L.Ledger(), _rows("Big", 1000)
+        rows.update(_rows("Shopping Ads: Google & Bing", 5))
+        rows.update(_rows("MONÉ UK", 5))
+        awin = {"Big": ("joined", ""), "Shopping Ads: Google &amp; Bing": ("rejected", ""), "Other": ("joined", "")}
+        result = _night(ledger, NIGHT, rows, {}, awin=awin, filler=False)
+        self.assertEqual(ledger.shops["Shopping Ads: Google & Bing"].out, "Awin: rejected")
+        self.assertEqual(ledger.shops.get("MONÉ UK", L.Shop()).out, "")
+        self.assertEqual(result.note["awin"]["names_not_matched"], ["MONÉ UK"])
+
     def test_5_6_3_the_owners_word_lets_a_large_reading_through(self) -> None:
         ledger, rows = L.Ledger(), _rows("Big", 100)
         rows.update(_rows("Other", 100))

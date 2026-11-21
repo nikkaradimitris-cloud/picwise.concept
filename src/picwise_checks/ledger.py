@@ -17,8 +17,10 @@ and shop names only. `decisions` is what the preparation reads
 from __future__ import annotations
 
 import gzip
+import html
 import json
 import os
+import unicodedata
 import tempfile
 from collections import Counter, defaultdict
 from dataclasses import astuple, dataclass, field, fields
@@ -248,13 +250,27 @@ def _shop_night(ledger: Ledger, name: str, night: date, tonight: ShopNight) -> t
     return checkable, why
 
 
+def shop_name_key(name: str) -> str:
+    """A shop's name as two sources may write it differently ("&amp;", an accent, case,
+    spaces): the key both are matched by."""
+    return " ".join(unicodedata.normalize("NFKC", html.unescape(str(name or ""))).casefold().split())
+
+
 def _awin(ledger: Ledger, awin: Mapping[str, tuple[str | None, str]], shown_by_shop: Mapping[str, int],
           shown: int, owner_awin_word: bool) -> dict[str, Any]:
     """5.6.3: Awin's reading put on each shop of the catalogue; a reading that would put
-    out many shops at once waits for the owner's word."""
+    out many shops at once waits for the owner's word. A shop of the catalogue whose name
+    the reading does not hold is not judged by it (built 21/11, after the look on the
+    server, where two names written otherwise read as "in no list"): only a shop Awin's
+    reading names, in none of its lists, is."""
+    by_key = {shop_name_key(name): value for name, value in awin.items()}
     newly: dict[str, str] = {}
+    unmatched = []
     for name in shown_by_shop:
-        relationship, link = awin.get(name, (None, ""))
+        if shop_name_key(name) not in by_key:
+            unmatched.append(name)
+            continue
+        relationship, link = by_key[shop_name_key(name)]
         shop = ledger.shop(name)
         shop.awin, shop.link = relationship or "", link or ""
         reason = awin_out(relationship, link)
@@ -267,7 +283,8 @@ def _awin(ledger: Ledger, awin: Mapping[str, tuple[str | None, str]], shown_by_s
     if not waits:
         for name, reason in newly.items():
             ledger.shop(name).out = reason
-    return {"newly_out": [[name, newly[name]] for name in sorted(newly)], "products": products_out, "waits": waits}
+    return {"newly_out": [[name, newly[name]] for name in sorted(newly)], "products": products_out, "waits": waits,
+            "names_not_matched": sorted(unmatched)}
 
 
 @dataclass
