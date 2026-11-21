@@ -485,7 +485,11 @@ def record_night(
         if shop.round_over or not shop.first_night:
             continue
         started = _day(shop.first_night)
-        everyone_asked = all(key in ledger.products and ledger.products[key].asked for key in keys)
+        # Asked means decided once, passed or failed: a product the shop refused was not
+        # checked, so a shop that refuses keeps the 14 nights the owner gave it (5.6.2;
+        # built 21/11 after the look, where a shop of 4 products all refused ended its round
+        # on its first night).
+        everyone_asked = all(key in ledger.products and _decided_once(ledger.products[key]) for key in keys)
         if everyone_asked or (started is not None and (night - started).days + 1 >= FIRST_ROUND_NIGHTS):
             shop.round_over = tonight
 
@@ -505,6 +509,10 @@ def record_night(
         "prices_tied": {name: values for name, values in sorted(proof_tonight.items())},
     })
     return Night(note, came_back)
+
+
+def _decided_once(product: Product) -> bool:
+    return bool(product.passed_on) or product.fails > 0 or product.state in (FAILED, HELD)
 
 
 def _hold(product: Product, by: str, night: date) -> None:
@@ -557,8 +565,8 @@ def decisions(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown: Co
             continue
         if key in shown and shop.round_over and (product is None or product.state != HELD):
             passed = _day(product.passed_on) if product is not None else None
-            if product is None or not product.asked:
-                cut[key] = "never asked"
+            if product is None or not _decided_once(product):
+                cut[key] = "never checked"
                 continue
             if passed is None or (night - passed).days >= PASS_VALID_NIGHTS:
                 cut[key] = "not passed in 30 nights"

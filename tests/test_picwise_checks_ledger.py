@@ -272,7 +272,17 @@ class Rules9WhatTheCapReadsTests(unittest.TestCase):
         _night(ledger, NIGHT + timedelta(days=13), rows, {keys[1]: OK})
         self.assertEqual(ledger.shops["Alpha"].round_over, (NIGHT + timedelta(days=13)).isoformat())
         made = L.decisions(ledger, NIGHT + timedelta(days=13), rows, shown=rows.keys())
-        self.assertEqual(made["cut"], {keys[2]: "never asked"})
+        self.assertEqual(made["cut"], {keys[2]: "never checked"})
+
+    def test_9_3_a_shop_whose_products_were_refused_keeps_its_fourteen_nights(self) -> None:
+        ledger, rows = L.Ledger(), _rows("Alpha", 4)
+        refused = {key: Verdict(NOT_CHECKED, REFUSED) for key in rows}
+        _night(ledger, NIGHT, rows, refused)
+        self.assertEqual(ledger.shops["Alpha"].round_over, "")
+        self.assertEqual(L.decisions(ledger, NIGHT, rows, shown=rows.keys())["cut"], {})
+        _night(ledger, NIGHT + timedelta(days=13), rows, refused)
+        made = L.decisions(ledger, NIGHT + timedelta(days=13), rows, shown=rows.keys())
+        self.assertEqual(set(made["cut"].values()), {"never checked"})
 
     def test_9_3_not_passed_in_thirty_nights(self) -> None:
         ledger, rows = L.Ledger(), _rows("Alpha", 1)

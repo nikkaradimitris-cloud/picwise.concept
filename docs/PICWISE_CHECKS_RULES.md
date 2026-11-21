@@ -573,7 +573,11 @@ from their first night live (2.2, 4). Where the code had to settle a point:
    Awin's reading names, in none of its lists, is "in no list" (5.6.3). Names are matched with
    "&amp;", accents, case and spaces read alike. The look of 21/11 had two names written
    otherwise read as "in no list"; the stop of 5.6.3 held them (5,158 products).
-10. Not built yet: the shop's recipe by the AI (4.5.3), the category (5.5), the night's numbers in
+10. A shop's first round (9.3) ends when every product it shows has been decided once, passed or
+    failed, or after 14 nights: a product the shop refused was not checked, so a shop that refuses
+    keeps the 14 nights of 5.6.2 (in the look of 21/11 a shop of 4 products, all refused, would
+    have ended its round, and lost them, on its first night).
+11. Not built yet: the shop's recipe by the AI (4.5.3), the category (5.5), the night's numbers in
    the owner's daily email (11). Without the recipe a shop whose pages no reader reads leaves on
    its day 15 (5.6.2): on 21/11 Tooled Up (68,508), Plusshop UK, Tyres UK, Tirendo UK, MoreThisWay.
 
