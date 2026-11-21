@@ -11,7 +11,7 @@
 # public and so is this log: the server's names and addresses are masked; the script prints
 # hosts, the cards' titles, shops and prices, never an address or a link.
 #
-# Run: 2026-11-21, the owner's 20 searches of 20/11 and 4 of his plan (to run again, change this line and push).
+# Run: 2026-11-21 15:40 Athens, the owner's 20 searches of 20/11 and 4 of his plan (to run again, change this line and push).
 name: Server look at the cards (read-only)
 on:
   push:
