@@ -59,6 +59,14 @@ HEART_ICON = (
 # Google's layout shift 0.87, against 0.1 for "good"). The listeners are set before any
 # photo exists, so none loads or fails unheard. Only where the browser can find a photo's
 # card (`closest`) is anything marked: an older one shows the cards as before.
+# A photo that has not come `PHOTO_LIMIT_SECONDS` after it is in view leaves the page with
+# its card (owner, 2026-11-21, his plan, step 3: «στο site μια κάρτα κρύβεται όταν η
+# φωτογραφία της δεν έχει έρθει σε 10 δευτερόλεπτα»): counted from when it is in view, not
+# from the page's start, since the cards past the first row load their photos only as the
+# page is scrolled to them (`loading="lazy"`), so no card is hidden for a photo it never
+# asked for; until then it waits in its place with the grey frame and the turning sign. A
+# browser without `IntersectionObserver` waits as before.
+PHOTO_LIMIT_SECONDS = 10
 HEAD_SCRIPT = (
     "(function(){var c=document.documentElement.classList;c.add('pw-js');"
     f"try{{if(window.localStorage){{window.localStorage.getItem('{FAVOURITES_STORAGE_KEY}');c.add('pw-store');}}}}"
@@ -71,6 +79,15 @@ HEAD_SCRIPT = (
     "if(a){a.classList.add(e.target.naturalWidth>0?'pw-photo-ok':'pw-no-photo');}},true);"
     "document.addEventListener('error',function(e){var a=card(e.target);"
     "if(a){a.classList.add('pw-no-photo');}},true);"
+    "if(!window.IntersectionObserver){return;}"
+    "var late=new IntersectionObserver(function(es){for(var i=0;i<es.length;i++){"
+    "if(!es[i].isIntersecting){continue;}var img=es[i].target;late.unobserve(img);"
+    "setTimeout(function(img){return function(){var a=card(img);"
+    "if(a&&!a.classList.contains('pw-photo-ok')&&!a.classList.contains('pw-no-photo')){a.classList.add('pw-no-photo');}};}(img),"
+    f"{PHOTO_LIMIT_SECONDS * 1000});}}}});"
+    "document.addEventListener('DOMContentLoaded',function(){"
+    "var imgs=document.querySelectorAll('img.pw-product-image');"
+    "for(var i=0;i<imgs.length;i++){if(!(imgs[i].complete&&imgs[i].naturalWidth>0)){late.observe(imgs[i]);}}});"
     "})();"
 )
 

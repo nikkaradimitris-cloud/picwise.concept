@@ -182,10 +182,35 @@ class BrowserGuardTests(unittest.TestCase):
         self.assertIn(".pw-photo-guard .pw-card:not(.pw-photo-ok) .pw-product-image-wrap::before{content:'';", _PAGE_STYLES)
         self.assertIn("animation:pw-spin .8s linear infinite;", _PAGE_STYLES)
         self.assertIn("@keyframes pw-spin", _PAGE_STYLES)
-        # No card is hidden or taken out while it waits.
+        # No card is hidden or taken out while it waits, up to its limit (the next test).
         self.assertNotIn("visibility:hidden;opacity:0;", _PAGE_STYLES)
         self.assertNotIn("pw-photo-late", _PAGE_STYLES + HEAD_SCRIPT)
-        self.assertNotIn("setTimeout", HEAD_SCRIPT)
+        self.assertEqual(HEAD_SCRIPT.count("setTimeout"), 1)
+
+    def test_a_photo_not_come_ten_seconds_after_it_is_in_view_takes_its_card_out(self) -> None:
+        # Owner, 2026-11-21, his plan, step 3: «στο site μια κάρτα κρύβεται όταν η φωτογραφία
+        # της δεν έχει έρθει σε 10 δευτερόλεπτα». Until then (from 15/11) a card waited
+        # with its grey frame however long its photo took. Counted from when the photo is in
+        # view: the cards past the first row ask for theirs only as the page is scrolled to
+        # them (`loading="lazy"`). Seen in Chrome (21/11): a photo answering 404 out at once,
+        # one never answering out 10 s after it is in view, one below the fold never asked
+        # out only 10 s after the page is scrolled to it, one loaded kept.
+        from picwise_surface.browser_lists import PHOTO_LIMIT_SECONDS
+
+        self.assertEqual(PHOTO_LIMIT_SECONDS, 10)
+        self.assertIn("new IntersectionObserver(", HEAD_SCRIPT)
+        self.assertIn("if(!es[i].isIntersecting){continue;}", HEAD_SCRIPT)
+        self.assertIn("late.unobserve(img);", HEAD_SCRIPT)
+        self.assertIn("},10000);", HEAD_SCRIPT.replace("}(img),10000);", "},10000);"))
+        # Out only if it has neither come nor failed meanwhile.
+        self.assertIn("if(a&&!a.classList.contains('pw-photo-ok')&&!a.classList.contains('pw-no-photo'))"
+                      "{a.classList.add('pw-no-photo');}", HEAD_SCRIPT)
+        # Only the photos not yet come are watched, once the cards are on the page.
+        self.assertIn("document.addEventListener('DOMContentLoaded'", HEAD_SCRIPT)
+        self.assertIn("if(!(imgs[i].complete&&imgs[i].naturalWidth>0)){late.observe(imgs[i]);}", HEAD_SCRIPT)
+        # A browser without it waits as before.
+        self.assertLess(HEAD_SCRIPT.index("if(!window.IntersectionObserver){return;}"),
+                        HEAD_SCRIPT.index("new IntersectionObserver("))
 
     def test_a_browser_that_cannot_find_a_photo_s_card_shows_the_cards_as_before(self) -> None:
         guard = HEAD_SCRIPT.index("c.add('pw-photo-guard')")
