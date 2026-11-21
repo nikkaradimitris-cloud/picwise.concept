@@ -139,6 +139,28 @@ class FetchOffersTests(unittest.TestCase):
         self.assertEqual(filters["status"], "active")
         self.assertEqual(filters["membership"], "all")
 
+    def test_the_shops_of_both_awin_links_are_asked_for(self) -> None:
+        # Since 19/11 two links, one copy each, minutes apart; until 21/11 only the newest
+        # (the second link's) was read, so the first link's shops lost their offers.
+        first = self.folder / "picwise_awin_feed_abc.bin"
+        earlier = first.stat().st_mtime - 120
+        os.utime(first, (earlier, earlier))
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(["id", "title", "advertiser_id", "advertiser_name", "price"])
+        writer.writerow(["g1", "Fixture product g1", "404", "Fixture Google Shop", "9.99 GBP"])
+        (self.folder / "picwise_awin_feed_second.bin").write_bytes(gzip.compress(buffer.getvalue().encode("utf-8")))
+        old = self.folder / "picwise_awin_feed_old.bin"
+        _feed(self.folder, [("505", "A link no longer read")], name=old.name)
+        os.utime(old, (earlier - 40 * 3600, earlier - 40 * 3600))
+        self.assertEqual([path.name for path in fetch.feed_copies(self.folder)],
+                         ["picwise_awin_feed_second.bin", "picwise_awin_feed_abc.bin"])
+        awin = _Awin(self.offers)
+        code, _out = _run(self.folder, awin)
+        self.assertEqual(code, 0)
+        self.assertEqual(awin.bodies[0]["filters"]["advertiserIds"], [101, 202, 303, 404])
+        self.assertEqual(self._document()["shops_in_feed"], 4)
+
     def test_only_offers_live_now_by_their_own_dates_are_kept(self) -> None:
         _run(self.folder, _Awin(self.offers))
         document = self._document()
@@ -181,6 +203,9 @@ class FetchOffersTests(unittest.TestCase):
         _feed(self.folder, rows, name="picwise_awin_feed_newer.bin")
         newer = self.folder / "picwise_awin_feed_newer.bin"
         os.utime(newer, (newer.stat().st_atime, newer.stat().st_mtime + 100))
+        # One copy only: since 21/11 every copy is read (one per Awin link), and this test
+        # counts the groups of one copy's shops, as it did when only the newest was read.
+        (self.folder / "picwise_awin_feed_abc.bin").unlink()
         awin = _Awin([])
         code, _out = _run(self.folder, awin)
         self.assertEqual(code, 0)

@@ -7,9 +7,11 @@ Owner, 2026-11-01: «Οκ να φέρνει τις προσφορές των δ�
 shown on the site, and which product an offer is for, is a later talk. Run by
 picwise-offers.service: every night after the preparation, and once by each deployment.
 
-PicWise's shops are the advertisers of the feed the server last downloaded (the newest
-`picwise_awin_feed_*.bin` the preparation keeps in its cache): read row by row, never held
-whole, by the advertiser's id (`merchant_id`). Awin's Offers API is then asked only for
+PicWise's shops are the advertisers of the feed the server last downloaded: every copy the
+preparation keeps in its cache, one per Awin link (`feed_copies`; until 21/11 only the
+newest `picwise_awin_feed_*.bin`, the second link's since 19/11, so the offers of the first
+link's shops were not fetched from 20/11): read row by row, never held whole, by the
+advertiser's id (`merchant_id`, or `advertiser_id` in the first link's format). Awin's Offers API is then asked only for
 their offers (`advertiserIds`), live now, for the United Kingdom, page by page; the first
 read of every advertiser's offers (31/10) found 28 of PicWise's 85 shops among 4,463.
 
@@ -93,6 +95,24 @@ def _redact(text: str, *secrets: str) -> str:
 def newest_feed(cache_dir: Path) -> Path | None:
     files = [path for path in cache_dir.glob(FEED_PATTERN) if path.is_file()]
     return max(files, key=lambda path: path.stat().st_mtime) if files else None
+
+
+# Since 2026-11-19 the feed comes from two Awin links, each downloaded by the same
+# preparation, minutes apart, to a copy of its own. A copy written longer than this before
+# the newest is of a link no longer read and is left; one whose link failed to download is
+# still read by the preparation for up to 24 hours, so it is kept (as the nightly bot reads
+# them, `shop_catalogue_test.feed_copies`).
+COPIES_APART_HOURS = 30.0
+
+
+def feed_copies(cache_dir: Path) -> list[Path]:
+    """Every copy of the feed the preparation downloaded, one per Awin link, the newest first."""
+    files = {path: path.stat().st_mtime for path in cache_dir.glob(FEED_PATTERN) if path.is_file()}
+    if not files:
+        return []
+    newest = max(files.values())
+    return sorted((path for path, written in files.items() if newest - written <= COPIES_APART_HOURS * 3600),
+                  key=lambda path: (-files[path], path.name))
 
 
 def feed_shops(path: Path) -> dict[str, str]:
@@ -288,12 +308,15 @@ def main(argv: list[str] | None = None, *, post: Post = _post, get: Get = _get, 
     if not token:
         print("offers: no Awin token in the server's secrets; nothing fetched")
         return 0
-    feed = newest_feed(args.feed_cache_dir)
-    if feed is None:
+    copies = feed_copies(args.feed_cache_dir)
+    if not copies:
         print("offers: no downloaded feed to read PicWise's shops from; the last file kept")
         return 1
     try:
-        shops = feed_shops(feed)
+        shops: dict[str, str] = {}
+        for copy in copies:
+            for ident, name in feed_shops(copy).items():
+                shops.setdefault(ident, name)
         if not publisher:
             publisher = find_publisher(token, get=get)
         offers = read_offers(publisher, token, sorted(shops, key=int), post=post)
