@@ -39,6 +39,9 @@ a decision came about.
     «ανέβασε»:** the button with no dead end (`e82387c` and `2820dd2`; GitHub's "Tests" green on `2820dd2`,
     run 44917717324). To read on 22/11: the bot's first round with both links, the site's memory after the
     night.
+  - **For the owner, in Greek:** the rules on one page in the claude.ai Project's docs
+    (`claude/PicWise-kanones-elegchon.md`: his decisions, the brake, what waits for his yes); keep it in
+    step when a rule changes. The repo's file stands where the two differ.
 - **(21/11, 17:15 Athens): task 3 of the work split by model (OPUS) DONE** (PROGRESS.md, 21/11 17:15).
   **Awin:** the account is joined to 12 programmes; of the catalogue's 160 shops 150 are not joined (83.1% of
   the site's products: InStock UK, Tooled Up, GamingKit, Plusshop UK, Bazta UK...), 8 joined (16.9%); 35
