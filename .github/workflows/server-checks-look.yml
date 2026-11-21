@@ -11,7 +11,7 @@
 # file. The repository is public and so is this log: the server's names are masked; the bot
 # prints counts and shop names only, never an address, an id or a key.
 #
-# Run: 2026-11-21 (task 5), 10 products a shop for 20 minutes (to run again, change this line and push).
+# Run: 2026-11-21 23:55 Athens (task 5), 10 products a shop for 20 minutes (to run again, change this line and push).
 name: Server look at the checks (read-only)
 on:
   push:
