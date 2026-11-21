@@ -267,7 +267,7 @@ def _awin(ledger: Ledger, awin: Mapping[str, tuple[str | None, str]], shown_by_s
     if not waits:
         for name, reason in newly.items():
             ledger.shop(name).out = reason
-    return {"newly_out": sorted(newly), "products": products_out, "waits": waits}
+    return {"newly_out": [[name, newly[name]] for name in sorted(newly)], "products": products_out, "waits": waits}
 
 
 @dataclass
@@ -338,6 +338,7 @@ def record_night(
     failed_by_reason: Counter = Counter()
     proof_tonight: dict[str, list[int]] = defaultdict(lambda: [0, 0])
     stock_tonight: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+    # What was read first: the prices and the stock, and with them each shop's proof (7.5).
     for key, reading in readings.items():
         row = rows.get(key)
         if row is None:
@@ -347,10 +348,7 @@ def record_night(
             product = ledger.products[key] = Product(shop=row.shop)
         product.asked = tonight
         product.sig = row_signature(row)
-        verdict = reading.page
         if reading.site_price is not None and row.price:
-            if verdict.state == PASSED and far_apart(reading.site_price, row.price):
-                verdict = Verdict(FAILED, "price far apart")
             product.site_price = f"{reading.site_price:.2f}"
             product.feed_price = f"{row.price:.2f}"
             product.price_on, product.tie = tonight, reading.tie
@@ -363,6 +361,26 @@ def record_night(
             if row.feed_stock:
                 stock_tonight[row.shop][0] += 1
                 stock_tonight[row.shop][1] += reading.stock == row.feed_stock
+    for name, (tied, same) in proof_tonight.items():
+        shop = ledger.shop(name)
+        shop.proof = (shop.proof + [[tonight, tied, same]])[-brakes.PROOF_NIGHTS:]
+    for name, (tied, same) in stock_tonight.items():
+        shop = ledger.shop(name)
+        shop.stock_proof = (shop.stock_proof + [[tonight, tied, same]])[-brakes.PROOF_NIGHTS:]
+
+    # Then the verdicts. A price far apart fails its product only where the shop's reader
+    # of prices is proven (7.5: a reader's word changes the site only once proven; built
+    # 21/11 after the look on the server, where a shop's catalogue gave its prices in
+    # another currency than the feed's).
+    for key, reading in readings.items():
+        row = rows.get(key)
+        if row is None:
+            continue
+        product = ledger.products[key]
+        verdict = reading.page
+        if verdict.state == PASSED and reading.site_price is not None and row.price \
+                and far_apart(reading.site_price, row.price) and proven(ledger.shop(row.shop)):
+            verdict = Verdict(FAILED, "price far apart")
         if verdict.state == PASSED:
             decided[row.shop] += 1
             passed_now[row.shop] += 1
@@ -383,12 +401,6 @@ def record_night(
                 owner_repeats.append(key)
             elif was_state not in (FAILED, HELD):
                 new_failures[row.shop].append(key)
-    for name, (tied, same) in proof_tonight.items():
-        shop = ledger.shop(name)
-        shop.proof = (shop.proof + [[tonight, tied, same]])[-brakes.PROOF_NIGHTS:]
-    for name, (tied, same) in stock_tonight.items():
-        shop = ledger.shop(name)
-        shop.stock_proof = (shop.stock_proof + [[tonight, tied, same]])[-brakes.PROOF_NIGHTS:]
     for name, passes in passed_now.items():
         ledger.shop(name).passes += passes
 

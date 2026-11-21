@@ -563,7 +563,13 @@ from their first night live (2.2, 4). Where the code had to settle a point:
    the preparation names 20 of its rows for the bot.
 7. A reading of Awin is whole or none: if one of its five lists does not answer, the last reading
    stands (a list missing would put its shops "in no list").
-8. Not built yet: the shop's recipe by the AI (4.5.3), the category (5.5), the night's numbers in
+8. A price far apart fails its product only where the shop's reader of prices is proven (7.5):
+   the look on the server of 21/11 (1,233 products of 135 shops, 10 a shop) found Shopify
+   catalogues whose prices are in another currency than the feed's (InStock UK: the commonest
+   ratio 1.2, 1 price in 10 the same; Finediam 1.08; Bern Helmets 1.47): an unproven reader there
+   would have cut 3 of InStock UK's 10 as far apart. Unproven, it changes nothing, as 7.5 says of
+   its prices.
+9. Not built yet: the shop's recipe by the AI (4.5.3), the category (5.5), the night's numbers in
    the owner's daily email (11). Without the recipe a shop whose pages no reader reads leaves on
    its day 15 (5.6.2): on 21/11 Tooled Up (68,508), Plusshop UK, Tyres UK, Tirendo UK, MoreThisWay.
 

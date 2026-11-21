@@ -98,11 +98,21 @@ class Rules5And8FailuresAndComingBackTests(unittest.TestCase):
         _night(ledger, NIGHT + timedelta(days=1), rows, {key: Verdict(NOT_CHECKED, REFUSED)})
         self.assertEqual((ledger.products[key].state, ledger.products[key].passed_on), (PASSED, NIGHT.isoformat()))
 
-    def test_a_price_far_apart_fails_the_product(self) -> None:
+    def test_7_5_a_price_far_apart_fails_the_product_where_the_reader_is_proven(self) -> None:
+        ledger, rows = L.Ledger(), _rows("Alpha", 21, price=20.0)
+        keys = list(rows)
+        # Twenty readings the same as the feed: the shop's reader is proven.
+        _night(ledger, NIGHT, rows, {key: L.Reading(page=OK, site_price=rows[key].price, tie="code")
+                                     for key in keys[:20]})
+        _night(ledger, NIGHT + timedelta(days=1), rows, {keys[20]: L.Reading(page=OK, site_price=9.0, tie="code")})
+        self.assertEqual((ledger.products[keys[20]].state, ledger.products[keys[20]].reason), (FAILED, "price far apart"))
+
+    def test_7_5_a_price_far_apart_cuts_nothing_where_the_reader_is_not_proven(self) -> None:
         ledger, rows = L.Ledger(), _rows("Alpha", 1, price=20.0)
         key = next(iter(rows))
         _night(ledger, NIGHT, rows, {key: L.Reading(page=OK, site_price=9.0, tie="code")})
-        self.assertEqual((ledger.products[key].state, ledger.products[key].reason), (FAILED, "price far apart"))
+        self.assertEqual(ledger.products[key].state, PASSED)
+        self.assertEqual(ledger.products[key].site_price, "9.00")
 
 
 class Rules7BrakesTests(unittest.TestCase):

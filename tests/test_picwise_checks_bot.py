@@ -171,13 +171,15 @@ class ANightEndToEndTests(unittest.TestCase):
                               ledger=ledger, night=date(2026, 12, 1), fetch=shop.fetch, sleep=shop.sleep,
                               clock=shop.clock, deadline=1e9, workers=1, pause=3.0, awin=None, feeds={},
                               owner_cut_shops=[], owner_awin_word=False, say=lambda _line: None)
-        self.assertEqual(made["cut"], {"Kettles\x1f2": GONE, "Kettles\x1f3": "price far apart"})
+        # The price far apart cuts nothing: the shop's reader is not proven (three readings).
+        self.assertEqual(made["cut"], {"Kettles\x1f2": GONE})
         self.assertEqual(ledger.products["Kettles\x1f1"].state, PASSED)
-        self.assertEqual(ledger.products["Kettles\x1f3"].state, FAILED)
+        self.assertEqual((ledger.products["Kettles\x1f3"].state, ledger.products["Kettles\x1f3"].site_price),
+                         (PASSED, "3.00"))
         lines: list[str] = []
         bot.print_night(night.note, made, ledger, lines.append)
         printed = "\n".join(lines)
-        self.assertIn("products cut 2", printed)
+        self.assertIn("products cut 1", printed)
         self.assertNotIn(".invalid", printed)
         self.assertNotIn("\x1f", printed)
 
