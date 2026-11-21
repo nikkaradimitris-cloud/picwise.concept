@@ -1,12 +1,117 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-21 (12:55 Athens, the daily session: the site's memory at night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-21 (13:50 Athens: a second opinion on the owner's plan of 21/11 and the work split by model; before it, 12:55, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
 a decision came about.
 
 ## Next conversation: start here
+
+- **FIRST (21/11, 13:50 Athens): a second opinion on the owner's plan of 21/11 (links, prices, photos,
+  sorting), by Claude Fable 5.2 in the PicWise Project: what was found, what was put to the owner, and the
+  work split by model. Records only: nothing built, nothing deployed, no decision of the owner changed.**
+  The memory fix of 12:55 (the next item) still waits for its «ανέβασε».
+  - **The owner's plan, as he sent it (it is in no other file).** The problems he saw: some buttons do not
+    lead to the shop; some prices differ from the shop's; some photos never load; common searches (printer,
+    tablet, laptop, drill, perfume, mattress, car tyres) show cheap accessories or parts first. His
+    decisions: «Ποιότητα πάνω από ποσότητα. Όποιο προϊόν δεν περνά τον έλεγχο κόβεται, και όποιο κατάστημα
+    δεν δέχεται το bot βγαίνει ολόκληρο. Τη θέση τους μέσα στο όριο των 12.000 την παίρνουν προϊόντα που
+    πέρασαν τον έλεγχο»; «Το AI ρωτιέται μία φορά για την κατηγορία κάθε προϊόντος. Όποιο προϊόν δεν μπαίνει
+    σε κατηγορία βγαίνει»; «Δεν γίνεται σκανάρισμα ούτε μέτρηση πριν: φτιάχνουμε τους μηχανισμούς και τους
+    ανεβάζουμε. Δεν υπάρχει ημερήσιο όριο κόστους, μόνο ένα φρένο για λάθη»; «Δεν πατιούνται ποτέ αυτόματα
+    τα links του Awin, για να μη γίνονται ψεύτικα κλικ. Η διεύθυνση του καταστήματος διαβάζεται μέσα από
+    το link». Its steps: (1) many bots, shared by shop; a Shopify shop's whole catalogue read (barcode,
+    price and stock of each size); (2) link: the shop's page opens and is the same product (EAN, MPN,
+    SKU); the shop's Awin programme active; (3) photo: fails for any reason; on the site a card is hidden
+    when its photo has not come in 10 s; (4) price: that of the same size or colour, found by its code,
+    read by code and by the AI only where code cannot; the button opens the size the card shows, where it
+    can; (5) category: one question to the AI; no category, out; (6) the failed removed; a night that cuts
+    unusually many stops the removal; (7) each night the new products checked before they enter, and some
+    old ones again; (8) a new question to the AI for every product, «είναι το ίδιο το προϊόν ή αξεσουάρ,
+    ανταλλακτικό ή αναλώσιμο;», the cheapest of each kind first, accessories a choice of their own, about
+    $25 once; (9) a quality meter: the same 40 searches each day; (10) questions in the search («Men's or
+    women's?» for watches, «Car or motorbike?» for tyres), accessories a choice after the products;
+    (11) the brands' list; (12) a daily email with the checks' numbers, the quality and the cost; (13) a
+    picture to the owner before anything a visitor sees changes.
+  - **Found.** Read in the code and in the night's public note (`/prepared.json`, prepared 04:35:03 UTC,
+    read about 11:15 UTC with the session's fetch tool, in parts of 100,000 characters each summarised by
+    that tool; the session's shell does not reach the site): **confirm a number on the server
+    (`server-shops.yml`) before building on it.**
+    1. **The shops' bot has read no shop since 19/11.** `shop_catalogues.shops`: 50 "read", 49 of them
+       with `read_at` 2026-11-19T03:40 (Fila UK, Susan Caplan, MonsterPiercing, Finediam...); 88 "no
+       address", 86 of them `read_at` 2026-11-21T03:40 (Tooled Up, GamingKit, PCHUB.UK, Back to the
+       Office, Tirendo UK, Tyres UK, Plusshop UK, Bazta UK, Aosom UK, MoreThisWay, TV Cables...); four
+       "robots.txt 423", FLOWERFIX "catalogue 403". In the code: `shop_catalogue_test.feed_copy` returns
+       the newest single `picwise_awin_feed_*.bin`, and since both links (19/11 evening) the cache holds
+       one per link (`awin_adapter._feed_cache_path`); the newest would be the second link's, whose links
+       are Awin's `pclick.php?p=...`, and `feed_intake._shop_address` gives "" for those (its own
+       docstring). A second-link row's own address is in its column `merchant_deep_link`, which the
+       prepared file keeps. `shop_catalogue.STOCK_DAYS` is 3: the readings of 19/11 count until the night
+       of 22/11; **from 23/11 no shop's site decides any product's stock.**
+    2. The shops the bot does not read hold over 90% of the 389,735 kept products (`by_shop`): InStock UK
+       102,242 (26%; never asked, owner 26/10), the "no address" shops about 248,000 (64%; counted over
+       the 40 largest shops). Four shops hold 68%: InStock UK, Tooled Up 68,506, GamingKit 48,124 and
+       PCHUB.UK 47,915 (about 41,600 of each of the last two also at another shop).
+    3. `kinds.products` 125,093; `no_kind` 264,642 (68%), found by their words only. The plan leaves them.
+    4. Why the first cards go wrong: the order is cheapest first and a part or an accessory is the
+       cheapest, so a kind's few misread products all rise to its first cards (80.4% right on 20/11:
+       first link 92.3%, second 71.9%). Step 8 of the plan aims there, rightly.
+    5. The button: `/out/feed` answers "This option is no longer available" for a product no longer in
+       the catalogue (a favourite, an old page). It finds the product by its id alone
+       (`state._PREPARED_STATE["by_id"]`) while the memory keys a product by shop and id: whether two
+       shops share an id was **not measured**. And it leaves through the Awin link, which no bot may
+       follow: what breaks there, no check of the shops' pages sees.
+    6. Read on the web on 21/11, to check at the source before building: Shopify's public
+       `/products.json` carries no barcode (a product's own `/products/<handle>.js` does, with prices in
+       the visitor's currency), so a barcode costs a request per product, 28,800 a day per shop at 3 s
+       (Tooled Up's kept products 2.4 days, InStock UK's 3.6). Awin's Product Feed List Download gives
+       each feed's last update and joined status; it can list feeds of advertisers that let publishers
+       promote them before joining; the Publisher API's programmes take `relationship=joined`.
+    7. `docs/PICWISE_SERVER_ARCHITECTURE.md`, section 3 (23/10), already designs this bot: JSON-LD first,
+       a blocked or unreadable page counting neither for nor against, 8 s apart, a reliability score per
+       shop. The plan's "a shop that does not accept the bot goes out" and "fails for any reason" differ
+       from it.
+  - **Put to the owner, none decided: his decisions above stand until he changes them.** Three verdicts
+    (passed, failed, not known: blocked, slow, unreadable), cutting only on "failed". A ledger of checks per
+    product (shop and id: what was checked, when, what was found, when again, how it comes back), read by
+    the cap. Two or three nights with the cutting off: the built mechanism reports what it would cut, by
+    shop and reason, then his «ανέβασε». A brake per shop and per kind, not only in all. A photo cut at once
+    only on 404 or 410, else after two or three failures on different nights; the page's 10 s counted
+    from when the photo starts to load (the cards past the first row are `loading="lazy"`). A shop that
+    blocks the bot reported to him and written to through Awin, not taken out by itself. The shop's own
+    price shown when its page states it clearly, instead of cutting. The AI asked "once per version of the
+    question". Where the AI reads a price, it learns once per shop where the shop writes it, under a brake
+    in dollars. The accessory question asked for the kind («είναι αυτό drill το ίδιο;»:
+    `audit_search.KIND_PROMPT` is that question), never in general (ink cartridges, phone cases and drill
+    bits are kinds of the site); a kind's search shows only the "yes"; each night for the cheapest 24 of
+    each kind and the Recommended (about 7,000 products), with a stronger model; where a title names a
+    kind and the AI's Google line disagrees, that question decides (the about 1,900 real products hidden,
+    20/11). A price far below the kind's others as a sign to ask again, never a price worked out. A meter
+    judged by another, stronger model (Haiku judges today what Haiku would filter), over every kind and
+    the visitors' own searches.
+  - **The work split by model** (owner, 13:37: «Είναι καλύτερα να αναπτύξεις εσύ τις διορθώσεις ή ... το
+    opus 5.5 που έχει μικρότερη κατανάλωση?»; answered: Opus 5.5 builds, Fable 5.2 for the hard points;
+    13:40: «Κάνε αυτό που λες... σημείωσε τις εργασίες που πρέπει να αναλάβει το fable έτσι ώστε να αλλάξω
+    το μοντέλο»). **A session on another model that reaches a task marked FABLE stops and tells the owner,
+    in Greek, to change the model to Fable 5.2 first; after it, back to Opus 5.5.** The order proposed:
+    1. OPUS: the memory fix's «ανέβασε» (next item); **the bot reads both links' copies and takes a
+       second-link row's address from `merchant_deep_link`** (urgent: 23/11); InStock UK put to the owner
+       (asked a product at a time, left unchecked, or out).
+    2. OPUS: an hour's look, no scan, at the buttons, prices and photos the owner saw fail: ours, Awin's
+       or the shop's; the ids two shops share, counted.
+    3. OPUS: what needs no bot: Awin's feed list and programmes (joined, last update); the photo's limit
+       on the page; a button that meets no dead end (a picture to the owner first; the wording is his).
+    4. **FABLE: the checks' rules:** the verdicts, what cuts at once and what after how many failures, the
+       brakes, how a product or a shop comes back, what the cap reads; each point that touches a decision
+       of the owner's put to him.
+    5. OPUS: the ledger and the per-shop bots, built to those rules; the nights with the cutting off, if
+       the owner agrees.
+    6. **FABLE: the question "is it the kind itself":** its gate, the rescue of the hidden real products,
+       the independent meter.
+    7. **FABLE: a look before each «ανέβασε» of a change that cuts products.**
+    8. OPUS: the search's questions (step 10) and the brands' list (step 11).
+    9. **FABLE, later:** what becomes of the 264,642 products of no kind.
 
 - **FIRST (21/11, 12:55 Athens, the daily session): the site's memory at night over the limit; a fix built,
   NOT deployed, put to the owner.** The night passed (`/prepared.json` read 09:43 UTC: prepared 04:35:03,
