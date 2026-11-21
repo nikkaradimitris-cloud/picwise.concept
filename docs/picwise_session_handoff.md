@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-21 (15:05 Athens: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-21 (15:45 Athens: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,7 +8,19 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (21/11, 15:05 Athens): task 1 of the work split by model (OPUS, the next item) DONE and DEPLOYED
+- **FIRST (21/11, 15:45 Athens): task 2 of the work split by model (OPUS) DONE: an hour's look at the
+  buttons, prices and photos of 95 first cards of the owner's own searches; read-only** (PROGRESS.md, 21/11
+  15:45; `deployment/server/look_cards.py`, `server-look-cards.yml` on `claude/look-cards-2026-11-21`, run
+  44909213170). No id shared by two products (389,735 of each); all 95 buttons find their own product and
+  lead to an Awin link (59 `pclick.php`, 36 `cread.php`); all 95 photos load in under 1 s; prices: 63 of
+  69 read the same (InStock UK +9% again; pence at PCHUB.UK; Back to the Office -£1); 4 shown while the
+  shop's site says sold out (PCHUB.UK 2, MoreThisWay 1, InStock UK 1); 22 pages no machine reads (Tooled Up,
+  Plusshop UK, Tyres UK, Tirendo UK, MoreThisWay); Aosom UK's robots.txt 403 to the bot. **Next, task 3
+  (OPUS):** Awin's programmes (joined, closed, last update): a button that fails past our side is Awin's;
+  and `fetch_offers.py` reads only the newest copy of the feed (the first link's shops' offers not fetched
+  since 20/11; fix with both copies, as the bot). Put to the owner: his 5 favourites, if they are the
+  products that failed.
+- **(21/11, 15:05 Athens): task 1 of the work split by model (OPUS, the next item) DONE and DEPLOYED
   on the owner's «Ανέβασε και τα δύο»: the shops' bot reads both Awin links again; a second-link row's own
   address; the memory fix. InStock UK looked at: it accepts the bot.** (owner: «PicWise: συνέχισε από το
   handoff, εργασία 1»; PROGRESS.md, 21/11 14:50 and 15:05.)
@@ -148,7 +160,8 @@ a decision came about.
        (asked a product at a time, left unchecked, or out). **Done 21/11: built, deployed on the owner's
        «Ανέβασε και τα δύο», InStock UK looked at (the first item).**
     2. OPUS: an hour's look, no scan, at the buttons, prices and photos the owner saw fail: ours, Awin's
-       or the shop's; the ids two shops share, counted.
+       or the shop's; the ids two shops share, counted. **Done 21/11 15:45 (the first item): no id shared; our side of every
+       button sound; photos load; prices mostly the shop's.**
     3. OPUS: what needs no bot: Awin's feed list and programmes (joined, last update); the photo's limit
        on the page; a button that meets no dead end (a picture to the owner first; the wording is his).
     4. **FABLE: the checks' rules:** the verdicts, what cuts at once and what after how many failures, the
