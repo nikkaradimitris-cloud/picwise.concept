@@ -282,8 +282,11 @@ class DeployedSurfaceStockTruthTests(unittest.TestCase):
             # The CTA says where it goes (CTA_AND_REDIRECT_SPEC: do not mask destination):
             # the shop itself.
             self.assertIn("View at Fixture Store One", card["text"])
-        status, _headers, _body = self._get("/out/feed", {"pid": "k1", "q": "kettle", "rec": "0"})
-        self.assertEqual(status, "200 OK")  # the "no longer available" page, not a redirect
+        status, headers, _body = self._get("/out/feed", {"pid": "k1", "q": "kettle", "rec": "0"})
+        # Never to the shop: since 2026-11-21 to the search's current choices, told why
+        # (owner: «Οι τωρινές επιλογές»); until then a "no longer available" page.
+        self.assertEqual(status, "302 Found")
+        self.assertEqual(headers.get("Location"), "/search?q=kettle&gone=1")
 
     def test_a_feed_that_says_out_of_stock_on_every_row_shows_nothing(self) -> None:
         self._serve(

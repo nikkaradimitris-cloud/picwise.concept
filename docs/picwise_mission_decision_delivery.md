@@ -67,7 +67,11 @@ than invented values — `session_id` is `not_connected`, and `conversion_value`
 `revenue_value` are `not_applicable`. No revenue or conversion is ever recorded here.
 
 A refused click renders a plain "this option is no longer available" page with a route
-back to results. It does not fabricate a reason.
+back to results. It does not fabricate a reason. Since 2026-11-21 (owner: «Οι τωρινές
+επιλογές», shown a picture), a refused click that carries its search lands on that search's
+current results instead, with one line above them: "The product you chose is no longer
+available. Here are the current choices for “…”." (`app.PRODUCT_GONE_NOTE`); the page above
+is kept for a click that carries none.
 
 ## 4. Stale search runtime artifact
 

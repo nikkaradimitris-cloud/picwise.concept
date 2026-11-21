@@ -215,10 +215,14 @@ class PicwiseLocalApp:
         assist_refresh: bool = False,
         min_price: float | None = None,
         max_price: float | None = None,
+        product_gone: bool = False,
     ) -> str:
         """The search page. `shown` is how many products "More" has opened the page to;
         `min_price` the price the buyer chose on the price bar (owner, 2026-11-12), and
         `max_price` the price the bar ends at (owner, 2026-11-15: «από έως»).
+        `product_gone`: the buyer comes from a product's button whose product is no longer
+        there (`routes`, `/out/feed`): one line above the results says so
+        (`PRODUCT_GONE_NOTE`).
 
         Not `indexable` unless it is the home page without a search: Google is told not
         to index the site's own search (owner, 2026-10-23).
@@ -269,6 +273,8 @@ class PicwiseLocalApp:
             html = _inject_did_you_mean(html, resolution)
         elif SEARCH_IN_ENGLISH_REASON in tuple(getattr(resolution, "reason_codes", ()) or ()):
             html = _inject_search_in_english(html)
+        if product_gone and not is_empty_search_query(query):
+            html = _inject_product_gone(html, str(getattr(resolution, "display_query", "") or query))
         if is_empty_search_query(query):
             schedule_search_warmup_if_needed()
         return html
@@ -832,6 +838,28 @@ def _replace_disclaimer(html: str, replacement: str) -> str:
     if end == -1:
         return html
     return html[:start] + replacement + html[end + 4 :]
+
+
+# The line above a search's results when the buyer comes from a product's button whose
+# product is no longer there (owner, 2026-11-21, shown it in English and in Greek: «Οι
+# τωρινές επιλογές»: «Το προϊόν που διάλεξες δεν είναι πια διαθέσιμο. Αυτές είναι οι
+# τωρινές επιλογές για “...”.»). Until then the button met a page of its own, "This option
+# is no longer available", with only a button back.
+PRODUCT_GONE_NOTE = "The product you chose is no longer available."
+PRODUCT_GONE_CHOICES = "Here are the current choices for \u201c{query}\u201d."
+
+
+def _inject_product_gone(html: str, query: str) -> str:
+    """The line that says why the buyer sees this search's results, above them; a page
+    with no results to show is left as it is."""
+    head = '<div class="pw-results-head">'
+    if head not in html:
+        return html
+    note = (
+        f'<p class="pw-gone-note" role="status"><strong>{escape(PRODUCT_GONE_NOTE)}</strong> '
+        f"{escape(PRODUCT_GONE_CHOICES.format(query=' '.join(query.split())))}</p>"
+    )
+    return html.replace(head, note + head, 1)
 
 
 def _inject_did_you_mean(html: str, resolution: Any) -> str:

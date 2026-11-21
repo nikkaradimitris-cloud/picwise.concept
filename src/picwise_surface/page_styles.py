@@ -92,6 +92,10 @@ _PAGE_STYLES = (
     # stayed in its place, unseen, an empty place between the cards (owner, 2026-11-12:
     # «κάποιες φορές συμβενει κενό ανάμεσα στις κάρτες κακή στοίχιση»).
     ".pw-card.pw-no-photo{display:none!important;}"
+    # The line above the results when a product's button found its product gone (owner,
+    # 2026-11-21): as in the picture shown to him.
+    ".pw-gone-note{margin:0 0 14px;padding:12px 14px;border:1px solid #dbe8fb;border-radius:12px;"
+    "background:#f3f7ff;color:#163256;font-size:15px;line-height:1.45;}"
     ".pw-card-body{display:flex;flex-direction:column;flex:1;min-width:0;}"
     # Heights a line of words sets are floors, not ceilings: a phone or tablet set to larger
     # text grows them instead of cutting the words (2026-11-15: the owner's phone showed a

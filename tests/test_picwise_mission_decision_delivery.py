@@ -181,16 +181,20 @@ class TrackedRedirectTests(_FixtureFeedTestCase):
             self.assertEqual(event["conversion_value"], "not_applicable")
             self.assertEqual(event["session_id"], "not_connected")
 
+    # A refused click never goes to the shop. Since 2026-11-21 (owner: «Οι τωρινές
+    # επιλογές», of a picture of the old page and of the search's current results with one
+    # line above them) it lands on that search's choices as they are now, told why, rather
+    # than on a page of its own ("This option is no longer available"), which is kept for a
+    # click that carries no search (`tests/test_picwise_button_no_dead_end.py`).
     def test_unavailable_product_is_refused_instead_of_redirected(self) -> None:
         for product_id in ("fx-laptop-oos", "fx-laptop-eol"):
             with self.subTest(product_id=product_id):
                 _APP.clear_feed_outbound_click_events()
-                status, headers, body = _call(
+                status, headers, _body = _call(
                     "/out/feed", f"pid={product_id}&q=laptop&src=search&rec=0"
                 )
-                self.assertTrue(status.startswith("200"), status)
-                self.assertIsNone(headers.get("Location"))
-                self.assertIn("no longer available", body)
+                self.assertTrue(status.startswith("302"), status)
+                self.assertEqual(headers.get("Location"), "/search?q=laptop&gone=1")
                 names = [
                     event["event_name"]
                     for event in _APP.get_feed_outbound_click_events()
@@ -198,15 +202,20 @@ class TrackedRedirectTests(_FixtureFeedTestCase):
                 self.assertEqual(names, ["redirect_failure"])
 
     def test_unknown_product_id_is_refused(self) -> None:
-        status, headers, body = _call("/out/feed", "pid=not-a-real-id&q=laptop")
-        self.assertTrue(status.startswith("200"), status)
-        self.assertIsNone(headers.get("Location"))
-        self.assertIn("no longer available", body)
+        status, headers, _body = _call("/out/feed", "pid=not-a-real-id&q=laptop")
+        self.assertTrue(status.startswith("302"), status)
+        self.assertEqual(headers.get("Location"), "/search?q=laptop&gone=1")
 
     def test_empty_product_id_is_refused(self) -> None:
         status, headers, _body = _call("/out/feed", "q=laptop")
+        self.assertTrue(status.startswith("302"), status)
+        self.assertEqual(headers.get("Location"), "/search?q=laptop&gone=1")
+
+    def test_a_refused_click_with_no_search_keeps_its_own_page(self) -> None:
+        status, headers, body = _call("/out/feed", "pid=not-a-real-id")
         self.assertTrue(status.startswith("200"), status)
         self.assertIsNone(headers.get("Location"))
+        self.assertIn("no longer available", body)
 
 
 class ImpressionTrackingTests(_FixtureFeedTestCase):

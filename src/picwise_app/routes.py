@@ -225,6 +225,7 @@ def answer(environ: dict[str, object], start_response: StartResponse, local_app:
             assist_refresh=params.get("assist", [""])[0] == "1",
             min_price=parse_min_price(params.get("min", [""])[0]),
             max_price=parse_min_price(params.get("max", [""])[0]),
+            product_gone=params.get("gone", [""])[0] == "1",
         )
         body = html.encode("utf-8")
         return _response("200 OK", "text/html; charset=utf-8", body, start_response)
@@ -262,7 +263,23 @@ def answer(environ: dict[str, object], start_response: StartResponse, local_app:
                 event_name="redirect_failure",
             )
             safe_query = quote(str(query or "").strip(), safe="")
-            back_href = f"/search?q={safe_query}" if safe_query else "/"
+            if safe_query:
+                # No dead end (owner, 2026-11-21, of a picture of this page and of the
+                # search's current results with one line above them: «Οι τωρινές
+                # επιλογές»): the buyer lands on the same search's choices as they are now,
+                # told in one line why (`app.PRODUCT_GONE_NOTE`). Never the product's shop.
+                start_response(
+                    "302 Found",
+                    [
+                        ("Content-Type", "text/plain; charset=utf-8"),
+                        ("Content-Length", "0"),
+                        ("Location", f"/search?q={safe_query}&gone=1"),
+                        ("Cache-Control", "no-store"),
+                        *SECURITY_HEADERS,
+                    ],
+                )
+                return [b""]
+            back_href = "/"
             html = (
                 "<!doctype html>"
                 '<html lang="en"><head><meta charset="utf-8">'
