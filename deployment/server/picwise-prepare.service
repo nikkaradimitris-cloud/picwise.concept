@@ -4,8 +4,8 @@
 # Installed by deployment/server/deploy.sh.
 [Unit]
 Description=PicWise: prepare the catalogue from the feed
-# A round of the shops' catalogues still running is waited for: it is read here.
-After=network-online.target picwise-shops.service
+# A round of the shops' catalogues, or of the checks, still running is waited for: both are read here.
+After=network-online.target picwise-shops.service picwise-checks.service
 Wants=network-online.target
 
 [Service]
@@ -21,6 +21,9 @@ Environment=AWIN_FEED_MAX_BYTES=2147483648
 # What the shops' own catalogues say, written by picwise-shops.service
 # (`picwise_providers.shop_catalogue`).
 Environment=PICWISE_SHOP_CATALOGUES=/srv/picwise/shared/shops/catalogues.json.gz
+# What the checks decided (docs/PICWISE_CHECKS_RULES.md), applied behind data/checks_switch.json;
+# the rows the checks' bot asks next are written beside it.
+Environment=PICWISE_CHECKS_DECISIONS=/srv/picwise/shared/checks/decisions.json.gz
 # The cap's two limits (owner, 2026-11-19: changeable, to open as the server grows):
 # no category over this share, and at most this many products a category.
 Environment=PICWISE_CAP_SHARE=0.15

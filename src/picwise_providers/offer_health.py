@@ -559,6 +559,10 @@ def evaluate_product_eligibility(
         reason_codes.append("missing_currency")
     if not _has_product_type_or_category_evidence(product):
         reason_codes.append("missing_product_type_or_category_evidence")
+    # The checks cut it, or its shop is out (owner, 2026-11-21; `checks_applied`, written
+    # only behind the checks' switch).
+    if str((product.raw if isinstance(product.raw, Mapping) else {}).get("checks_cut") or "").strip():
+        reason_codes.append("checks_failed")
     # A description is not required (owner, 2026-10-18, replacing the 2026-10-12 rule
     # that hid every product without one, and so whole kinds such as televisions): a
     # product whose shop sends none is shown, and its card says so

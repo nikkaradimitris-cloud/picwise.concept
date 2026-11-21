@@ -548,7 +548,7 @@ class PrepareToolTests(_PreparedMixin, unittest.TestCase):
         self.assertEqual(
             set(note),
             {"prepared", "prepared_at", "products", "shops", "freshness", "intake", "intake_change", "kinds",
-             "title_alone", "shop_catalogues", "balance", "google_pool", "written_at"},
+             "title_alone", "shop_catalogues", "balance", "google_pool", "written_at", "checks"},
         )
         # No build before this one to compare each shop's feed with (2026-11-10;
         # `tests/test_picwise_feed_shrink_note.py`).

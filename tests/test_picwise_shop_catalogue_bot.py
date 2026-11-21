@@ -5,7 +5,7 @@ the second being the bot for the 55 shops other than InStock UK: each night afte
 feed, per shop its robots.txt, then its Shopify catalogue (250 products a request, at
 most 200 requests a shop a round), the shop's own type and each product's stock, kept on
 the server, never in Supabase; never an Awin link. Pinned here: which shops are asked
-(the note's, and the ones the file knows; never InStock UK or a left-out shop), only
+(the note's, and the ones the file knows; never a left-out shop; InStock UK since 21/11), only
 what robots.txt allows, the pause, the cap a round and the round after going on where
 it stopped, what is kept of each product (only the feed's products; forgotten after
 `KEEP_DAYS`), a file the preparation reads, and no address printed.
@@ -173,20 +173,22 @@ class RoundTests(unittest.TestCase):
         )
         for url in shops.asked:
             self.assertNotIn("awin", url)
-            self.assertNotIn("instock", url)
             self.assertNotIn("divine", url)
+        # InStock UK is asked as every shop since the owner's «Ναι, να ελέγχεται» (2026-11-21).
+        self.assertIn("https://instock.example.invalid/robots.txt", shops.asked)
         entries = _file(folder)["shops"]
         self.assertEqual(entries["Fixture Locked Shop"]["status"], "robots.txt disallows the catalogue")
         self.assertEqual(entries["Fixture Plain Shop"]["status"], "catalogue 404")
         self.assertEqual(entries["Fixture Awin Shop"]["status"], "no address")
-        self.assertNotIn("InStock UK", entries)
+        self.assertIn("InStock UK", entries)
         self.assertNotIn("So Divine", entries)
 
     def test_the_pause_or_the_crawl_delay_before_each_page(self) -> None:
         folder = _setup(self)
         shops = _Shops(_answers())
         _round(folder, shops)
-        self.assertEqual(shops.slept, [3.0, 3.0, 3.0, 3.0])
+        # One more pause since 21/11: InStock UK's catalogue asked after its robots.txt.
+        self.assertEqual(shops.slept, [3.0, 3.0, 3.0, 3.0, 3.0])
         folder = _setup(self)
         shops = _Shops(_answers(robots=b"User-agent: *\nCrawl-delay: 5\n"))
         _round(folder, shops)

@@ -1,0 +1,13 @@
+# Every evening, so that the checks end (03:05 UTC, the bot's --until) before the updates'
+# reboot window (03:30 UTC), the shops' catalogues (03:40) and the preparation (04:17), which
+# reads what they decided. Not caught up after a stop: a late start would run into the day.
+# Installed by deployment/server/deploy.sh.
+[Unit]
+Description=PicWise: the checks of the products every evening
+
+[Timer]
+OnCalendar=*-*-* 20:30:00 UTC
+Persistent=false
+
+[Install]
+WantedBy=timers.target

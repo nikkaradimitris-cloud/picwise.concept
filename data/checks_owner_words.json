@@ -1,0 +1,6 @@
+{
+  "_about": "The owner's words the checks' brakes wait for (docs/PICWISE_CHECKS_RULES.md): `cut_held_shops`, the shops whose products held for the owner (7.2: a shop with fewer than 20 passes on record) he said to cut («κόψε»), each with its date in `words`; `awin_reading_let_through`, true for one night when he lets through a reading of Awin that waits (5.6.3: more than 3 shops, or over 5% of the products, out in one night). Written only on his word, and set back after the night that used it.",
+  "cut_held_shops": [],
+  "awin_reading_let_through": false,
+  "words": []
+}

@@ -93,6 +93,13 @@ _SCHEMA = (
         kept INTEGER NOT NULL,
         PRIMARY KEY (shop, night)
     )""",
+    # The products whose price is their shop's own page's (`checks_applied`): a price
+    # changing its source, feed to site or back, starts its history again (the checks'
+    # rules 5.3.5): a change of source is never told as a change of price.
+    """CREATE TABLE IF NOT EXISTS price_sources (
+        key TEXT PRIMARY KEY,
+        source TEXT NOT NULL
+    )""",
     """CREATE TABLE IF NOT EXISTS nights (
         night TEXT PRIMARY KEY,
         prepared_at TEXT NOT NULL,
@@ -244,6 +251,34 @@ def remember_night(
                 db.execute(
                     "INSERT OR IGNORE INTO meta (name, value) VALUES (?, ?)", (SALE_PRICES_SINCE, night)
                 )
+            # A price whose source changed tonight, its feed's or its shop's own page's (the
+            # checks' rules 5.3.5), starts its history again, as a sale price did on its first
+            # night.
+            db.execute("CREATE TEMP TABLE tonight_sources (key TEXT PRIMARY KEY, site INTEGER)")
+            db.executemany(
+                "INSERT OR REPLACE INTO tonight_sources VALUES (?, ?)",
+                [
+                    (product_key(product),
+                     1 if (product.raw if isinstance(product.raw, Mapping) else {}).get("price_source") == "shop site"
+                     else 0)
+                    for product in products
+                ],
+            )
+            switched = [
+                row[0]
+                for row in db.execute(
+                    """SELECT t.key FROM tonight_sources t JOIN products p ON p.key = t.key
+                       LEFT JOIN price_sources s ON s.key = t.key
+                       WHERE t.site != (s.key IS NOT NULL)"""
+                )
+            ]
+            db.executemany("DELETE FROM prices WHERE key = ? AND night < ?", [(key, night) for key in switched])
+            db.execute(
+                "INSERT OR IGNORE INTO price_sources (key, source) SELECT key, 'shop site' FROM tonight_sources WHERE site = 1"
+            )
+            db.execute("DELETE FROM price_sources WHERE key IN (SELECT key FROM tonight_sources WHERE site = 0)")
+            already = set(restarted)
+            restarted = restarted + [key for key in switched if key not in already]
             # A price is written the night a product is first seen and each night it changes
             # (a second preparation of the night that reads another price replaces the night's).
             db.execute(

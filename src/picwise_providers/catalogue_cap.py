@@ -52,7 +52,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Collection, Mapping, Sequence
+from typing import Any, Callable, Collection, Mapping, Sequence
 
 from .catalogue_balance import CAP_SHARE, NO_SHOP, _narrowest_kind, _shelf_groups, capped_size
 from .contracts import FeedAvailabilityContext, ProviderProduct
@@ -93,6 +93,11 @@ class CapResult:
     # Per category over the cap: the lowest, the middle and the highest price, of all
     # its products and of those kept.
     prices: dict[str, dict[str, tuple[float, float, float] | None]] = field(default_factory=dict)
+    # The checks' gate (`checks_applied.may_enter`; the checks' rules 9.4): the products
+    # not kept the night before that would have taken a place but have not passed their
+    # checks, and of them the candidates the bot asks next (indices into the products).
+    held_by_checks: int = 0
+    candidates: tuple[int, ...] = ()
 
     @property
     def kept(self) -> int:
@@ -225,13 +230,27 @@ def cap_catalogue(
     kept_before: Collection[str] = frozenset(),
     share: float = CAP_SHARE,
     category_max: int | None = None,
+    may_enter: Callable[[ProviderProduct], bool] | None = None,
 ) -> CapResult:
     """Which of `products` (those a card can show, `kinds` each one's kinds) a cap of
     `share` a category keeps (module docstring); `kept_before` holds the row keys the
     previous night kept. `category_max`, when given, is the most a category keeps
     whatever the share allows: the point where a category counts as full (owner,
-    2026-11-19), so the server's room goes to filling the other categories evenly."""
+    2026-11-19), so the server's room goes to filling the other categories evenly.
+
+    `may_enter`, when given, is the checks' gate (the checks' rules 9.4; owner,
+    2026-11-21: «Τη θέση τους μέσα στο όριο των 12.000 την παίρνουν προϊόντα που πέρασαν
+    τον έλεγχο»): a product not kept the night before takes a place only when it says so;
+    the ones it holds back that the cap would choose next, one and a quarter times the
+    places left open and at least 4 a kind (every one, in a category under its size), are
+    the candidates the checks' bot asks next."""
     keys = [row_key(product) for product in products]
+    before = frozenset(kept_before)
+    waiting = [
+        may_enter is not None and keys[index] not in before and not may_enter(product)
+        for index, product in enumerate(products)
+    ]
+    candidates: set[int] = set()
     categories = [category_of(product) for product in products]
     parts = joined_parts(categories, [part_of(product, product_kinds) for product, product_kinds in zip(products, kinds)])
     sizes = Counter(categories)
@@ -282,7 +301,6 @@ def cap_catalogue(
             (amount is None, amount if amount is not None else 0.0, keys[index])
             for index, amount in enumerate(amounts)
         ]
-        before = frozenset(kept_before)
         for category, indices in sorted(members.items()):
             by_part: dict[str, list[int]] = defaultdict(list)
             for index in indices:
@@ -295,8 +313,12 @@ def cap_catalogue(
                 if len(earlier) >= quota:
                     picked = _pick(earlier, quota, rank, order)
                 else:
-                    later = [index for index in found if keys[index] not in before]
+                    later = [index for index in found if keys[index] not in before and not waiting[index]]
                     picked = earlier + _pick(later, quota - len(earlier), rank, order)
+                    open_places = quota - len(picked)
+                    held = [index for index in found if waiting[index]]
+                    if open_places > 0 and held:
+                        candidates.update(_pick(held, max(4, -(-5 * open_places // 4)), rank, order))
                 chosen.update(picked)
             for index in indices:
                 keep[index] = index in chosen
@@ -311,6 +333,14 @@ def cap_catalogue(
                 "all": _price_summary([amounts[index] for index in indices if amounts[index] is not None]),
                 "kept": _price_summary([amounts[index] for index in chosen if amounts[index] is not None]),
             }
+
+    # A category under its size keeps every product it has, but for those the checks'
+    # gate holds back: all of them are the next ones it would choose.
+    for index, is_waiting in enumerate(waiting):
+        if is_waiting and categories[index] not in over:
+            keep[index] = False
+            candidates.add(index)
+    held_by_checks = sum(1 for index, is_waiting in enumerate(waiting) if is_waiting and not keep[index])
 
     by_category = {name: (count, 0) for name, count in sizes.items()}
     by_shop: dict[str, tuple[int, int]] = {}
@@ -332,6 +362,8 @@ def cap_catalogue(
         kept_from_before=from_before,
         category_max=category_max if category_max and category_max > 0 else None,
         prices=prices,
+        held_by_checks=held_by_checks,
+        candidates=tuple(sorted(candidates)),
     )
 
 
@@ -356,6 +388,8 @@ def cap_summary(result: CapResult, *, listed: int = 10) -> dict[str, Any]:
         "kept_in_several_shops": result.kept_in_several_shops,
         "kept_from_before": result.kept_from_before,
         "prices": result.prices,
+        "held_by_checks": result.held_by_checks,
+        "candidates": len(result.candidates),
     }
 
 

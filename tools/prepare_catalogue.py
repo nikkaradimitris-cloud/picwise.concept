@@ -106,6 +106,7 @@ def main(argv: list[str] | None = None) -> int:
         _write_static_note(args.static_dir, {"prepared": False, "reason": "feed_not_readable"})
         return 0 if args.keep_going else 1
     pool = capping.write_pool(prepared)
+    checks = _checks(capping)
     print(
         f"prepare_catalogue: {prepared.feed_status.product_count} rows, "
         f"{len(prepared.products)} products in the search "
@@ -188,6 +189,7 @@ def main(argv: list[str] | None = None) -> int:
                 "shop_catalogues": _shop_catalogues(),
                 "balance": _balance(prepared),
                 "google_pool": pool,
+                "checks": checks,
                 **({"memory": memory} if memory is not None else {}),
                 **({"price_notes": notes} if notes is not None else {}),
             },
@@ -206,21 +208,49 @@ class _Cap:
         self.out = out
         self.result = None
         self.error = ""
+        # What the checks' bot asks next (the checks' rules 9.4, 8.1): rows, never products.
+        self.candidates: dict[str, object] | None = None
 
     def __call__(self, products, kinds, feed_ctx):
         try:
+            from picwise_providers import checks_applied
             from picwise_providers.catalogue_balance import cap_limits
-            from picwise_providers.catalogue_cap import cap_catalogue, google_pool_path, read_google_pool
+            from picwise_providers.catalogue_cap import cap_catalogue, google_pool_path, read_google_pool, row_key
 
             share, category_max = cap_limits()
+            kept_before = read_google_pool(google_pool_path(self.out))
+            gate = checks_applied.may_enter if checks_applied.gate_on() else None
+            if gate is not None:
+                kept_before = frozenset(kept_before) | checks_applied.returning_row_keys(products, row_key)
             self.result = cap_catalogue(
-                products, kinds, feed_ctx=feed_ctx, kept_before=read_google_pool(google_pool_path(self.out)),
-                share=share, category_max=category_max,
+                products, kinds, feed_ctx=feed_ctx, kept_before=kept_before,
+                share=share, category_max=category_max, may_enter=gate,
             )
+            if gate is not None:
+                from picwise_checks.rows import row_of, row_record
+
+                self.candidates = checks_applied.candidates_document(
+                    [products[index] for index in self.result.candidates], checks_applied.take_cut_products(),
+                    row_record, row_of,
+                )
         except Exception as error:
             self.result, self.error = None, _where(error)
             return None
         return self.result.keep
+
+    def write_candidates(self) -> dict[str, object] | None:
+        """The rows the checks' bot asks next, beside the decisions it wrote; what was written."""
+        if self.candidates is None:
+            return None
+        try:
+            from picwise_checks.ledger import CANDIDATES_NAME, _write_gzip_json
+            from picwise_providers.checks_applied import DECISIONS_ENV
+
+            folder = Path(str(os.environ.get(DECISIONS_ENV) or "")).parent
+            _write_gzip_json(self.candidates, folder / CANDIDATES_NAME)
+        except Exception as error:
+            return {"error": _where(error)}
+        return {"candidates": len(self.candidates["candidates"]), "rows": len(self.candidates["rows"])}
 
     def write_pool(self, prepared) -> dict[str, object]:
         """Keep the pool beside the prepared file for the next night; what it holds."""
@@ -241,6 +271,28 @@ class _Cap:
             "kept_from_before": result.kept_from_before,
             "over": sorted(result.inside),
         }
+
+
+def _checks(capping: _Cap) -> dict[str, object]:
+    """What the checks' decisions did tonight (`picwise_providers.checks_applied`): counts
+    and shop names only; printed and kept in the night's note."""
+    from picwise_providers.checks_applied import last_checks_note
+
+    note = last_checks_note() or {"applied": False, "why": "not read"}
+    written = capping.write_candidates()
+    result = capping.result
+    if note.get("applied"):
+        print(
+            f"prepare_catalogue: the checks of {note.get('night')}: {len(note.get('shops_out') or {})} shops out "
+            f"({note.get('products_of_shops_out', 0):,} products), {note.get('cut', 0):,} products cut, "
+            f"{note.get('price_from_site', 0):,} at the price of the shop's own page; held back by the cap's gate "
+            f"{getattr(result, 'held_by_checks', 0):,}, candidates {len(getattr(result, 'candidates', ()) or ()):,}"
+            + (f"; the bot's rows not written ({written['error']})" if written and "error" in written else "")
+        )
+    else:
+        print(f"prepare_catalogue: the checks not applied ({note.get('why')})")
+    return {**note, "held_by_the_gate": getattr(result, "held_by_checks", 0),
+            "candidates": len(getattr(result, "candidates", ()) or ()), "written": written}
 
 
 def _freshness(prepared) -> dict[str, object]:

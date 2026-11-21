@@ -19,6 +19,17 @@ others after two weeks. Only HTTP 404 and 410 call a photo gone; a photo that co
 read (no answer, refused, a server error, too many asks) is asked again the next night,
 never called gone. What each address answered is kept in a small database.
 
+With the checks' switch on (`data/checks_switch.json`; the checks' rules 5.4, owner,
+2026-11-21: «Αμέσως, για κάθε λόγο»), any failure leaves the photo's products out that
+night: no answer or a server error (asked once more at the end of the run), an answer
+that is no image, an empty one, a refusal; a 429 is our own pace and not a failure, and a
+shop whose photo host refuses at least 9 in 10 of 20 photos asked has them not checked.
+The brakes of the rules' 7.2 and 7.4 hold, by the same numbers: a shop whose new
+failures pass a quarter of its photos decided (at least 20) has them held one night and
+asked first (until the owner's word where it has fewer than 20 photos read on record),
+and a night whose new failures would leave out over a tenth of the products cuts none.
+A failure other than 404 and 410 is asked again the next night.
+
 Written: the addresses of the catalogue's photos that are gone, one JSON file, replaced
 whole (`picwise_providers.product_photos` reads it for the site). Printed: counts, and the
 shops with the most gone photos; no address. Exits 0, or 1 when the catalogue cannot be
@@ -73,11 +84,38 @@ def _connection(cache: dict[tuple[str, str], http.client.HTTPConnection], scheme
     return connection
 
 
-class Asker:
-    """Asks for photos over connections kept open, one set per thread."""
+# With the checks' switch on, a 200 that is no image is read as 415 and an empty one as
+# 204 (their HTTP meanings), so that the night's answers stay one number each.
+NOT_AN_IMAGE = 415
+EMPTY = 204
+# The checks' rules 5.4 and 7.2 (`picwise_checks.brakes`), for photos.
+REFUSED_SHARE = 0.9
+REFUSED_MIN = 20
+SHOP_MIN_DECIDED = 20
+SHOP_NEW_FAILURES_SHARE = 0.25
+SHOP_MIN_PASSES = 20
+NIGHT_NEW_CUTS_SHARE = 0.10
+OWNER_WORDS = Path(__file__).resolve().parents[2] / "data" / "checks_owner_words.json"
 
-    def __init__(self) -> None:
+
+def checks_switch_on() -> bool:
+    """The checks' switch (`picwise_providers.checks_applied`, the checks' rules 7.7)."""
+    root = Path(__file__).resolve().parents[2]
+    for folder in (root, root / "src"):
+        if str(folder) not in sys.path:
+            sys.path.insert(0, str(folder))
+    from picwise_providers.checks_applied import checks_switch_on as switch_on
+
+    return switch_on()
+
+
+class Asker:
+    """Asks for photos over connections kept open, one set per thread. `strict` (the
+    checks' switch on): a 200 that is no image answers 415, an empty one 204."""
+
+    def __init__(self, *, strict: bool = False) -> None:
         self._local = threading.local()
+        self.strict = strict
 
     def _cache(self) -> dict[tuple[str, str], http.client.HTTPConnection]:
         cache = getattr(self._local, "cache", None)
@@ -102,6 +140,8 @@ class Asker:
                 response = connection.getresponse()
                 response.read()
                 location = response.getheader("Location") or ""
+                self._local.kind = (response.getheader("Content-Type") or "").split(";")[0].strip().lower()
+                self._local.length = response.getheader("Content-Length")
                 if response.getheader("Connection", "").lower() == "close":
                     connection.close()
                     cache.pop((scheme, parts.netloc), None)
@@ -135,19 +175,37 @@ class Asker:
                 # A server that refuses HEAD is asked for one byte instead.
                 if method == "HEAD" and status in (403, 405, 501):
                     continue
-                return status
-            return status
+                return self._strictly(status, method)
+            return self._strictly(status, "GET")
         except (ValueError, http.client.HTTPException, OSError):
             return 0
 
+    def _strictly(self, status: int, method: str) -> int:
+        if not self.strict or status != 200:
+            return status
+        kind = getattr(self._local, "kind", "")
+        if kind and not kind.startswith("image/") and kind != "application/octet-stream":
+            return NOT_AN_IMAGE
+        if method == "HEAD" and str(getattr(self._local, "length", None) or "").strip() == "0":
+            return EMPTY
+        return status
 
-def state_of(status: int) -> str:
-    """"ok", "gone", or "unread" for an answer: only a link to nothing is gone."""
+
+def state_of(status: int, *, strict: bool = False) -> str:
+    """"ok", "gone", or "unread" for an answer: only a link to nothing is gone. `strict`
+    (the checks' switch on, rules 5.4): any other failure is "failed", a refusal
+    "refused" (judged with its shop's other photos), a 429 "unread"."""
     if status in GONE_STATUSES:
         return "gone"
-    if 200 <= status < 300:
+    if not strict:
+        return "ok" if 200 <= status < 300 else "unread"
+    if 200 <= status < 300 and status != EMPTY:
         return "ok"
-    return "unread"
+    if status == 429:
+        return "unread"
+    if status in (401, 403):
+        return "refused"
+    return "failed"
 
 
 def open_db(path: Path) -> sqlite3.Connection:
@@ -174,7 +232,9 @@ def due(urls: Iterable[str], seen: dict[str, tuple[str, int]], now: int) -> list
             order.append((0, 0, url))
             continue
         state, asked = record
-        if state == "unread" and now - asked >= AGAIN_UNREAD:
+        if state in ("held", "held for the owner"):
+            order.append((0, asked, url))
+        elif state in ("unread", "failed") and now - asked >= AGAIN_UNREAD:
             order.append((1, asked, url))
         elif state == "gone" and now - asked >= AGAIN_GONE:
             order.append((2, asked, url))
@@ -253,18 +313,84 @@ def write(document: dict, out: Path) -> None:
         raise
 
 
+def owner_cut_shops(path: Path = OWNER_WORDS) -> set[str]:
+    """The shops whose held products the owner said to cut («κόψε»; the checks' rules 7.2)."""
+    try:
+        return {str(name) for name in json.loads(path.read_text(encoding="utf-8")).get("cut_held_shops", [])}
+    except (OSError, ValueError, AttributeError):
+        return set()
+
+
+def strict_states(photos: dict[str, tuple[str, int]], answers: dict[str, int], before: dict[str, tuple[str, int]],
+                  *, owner_cut: set[str] = frozenset()) -> tuple[dict[str, str], dict[str, object]]:
+    """Tonight's states with the checks' switch on (module docstring), and what the brakes did."""
+    states = {url: state_of(status, strict=True) for url, status in answers.items()}
+    shop_of = {url: photos.get(url, ("", 0))[0] or "-" for url in answers}
+    asked: Counter = Counter(shop_of.values())
+    refused: Counter = Counter(shop_of[url] for url, state in states.items() if state == "refused")
+    hosts_refusing = {shop for shop, count in refused.items()
+                      if asked[shop] >= REFUSED_MIN and count >= REFUSED_SHARE * asked[shop]}
+    for url, state in states.items():
+        if state == "refused":
+            states[url] = "unread" if shop_of[url] in hosts_refusing else "failed"
+    passes_on_record: Counter = Counter(photos.get(url, ("", 0))[0] or "-" for url, (state, _asked) in before.items()
+                                        if state == "ok" and url in photos)
+    decided: Counter = Counter()
+    new_failures: dict[str, list[str]] = {}
+    for url, state in states.items():
+        if state in ("ok", "failed", "gone"):
+            decided[shop_of[url]] += 1
+        was = before.get(url, ("", 0))[0]
+        if state in ("failed", "gone") and was not in ("failed", "gone", "held", "held for the owner"):
+            new_failures.setdefault(shop_of[url], []).append(url)
+        elif state in ("failed", "gone") and was == "held for the owner" and shop_of[url] not in owner_cut:
+            states[url] = "held for the owner"
+    braked: list[str] = []
+    for shop, urls in new_failures.items():
+        if decided[shop] >= SHOP_MIN_DECIDED and len(urls) > SHOP_NEW_FAILURES_SHARE * decided[shop]:
+            braked.append(shop)
+            held = "held" if passes_on_record[shop] >= SHOP_MIN_PASSES else "held for the owner"
+            for url in urls:
+                states[url] = held
+    products = sum(count for _shop, count in photos.values())
+    cut_products = sum(photos.get(url, ("", 0))[1] for urls in new_failures.values() for url in urls
+                       if states[url] in ("failed", "gone"))
+    night_brake = products > 0 and cut_products > NIGHT_NEW_CUTS_SHARE * products
+    if night_brake:
+        for urls in new_failures.values():
+            for url in urls:
+                if states[url] in ("failed", "gone"):
+                    states[url] = "held"
+    return states, {"hosts_refusing": sorted(hosts_refusing), "braked_shops": sorted(braked),
+                    "night_brake": night_brake}
+
+
 def run(photos: dict[str, tuple[str, int]], db: sqlite3.Connection, out: Path, fetch: Fetch, *,
-        workers: int = WORKERS, budget_seconds: float = 3600.0, now: datetime | None = None) -> list[str]:
-    """Ask tonight's addresses, keep their answers, write the gone ones; the lines to print."""
+        workers: int = WORKERS, budget_seconds: float = 3600.0, now: datetime | None = None,
+        strict: bool = False, clock: Callable[[], float] = time.monotonic) -> list[str]:
+    """Ask tonight's addresses, keep their answers, write the gone ones; the lines to print.
+    `strict`: the checks' switch is on (module docstring)."""
     moment = now or datetime.now(timezone.utc)
     stamp = int(moment.timestamp())
     seen = known(db)
+    before = dict(seen)
     tonight = due(photos, seen, stamp)
-    answers = ask_all(tonight, fetch, workers=workers, budget_seconds=budget_seconds)
+    started = clock()
+    answers = ask_all(tonight, fetch, workers=workers, budget_seconds=budget_seconds, clock=clock)
+    brakes: dict[str, object] = {}
+    if strict:
+        # No answer or a server error: asked once more at the end of the run (rules 5.4).
+        again = [url for url, status in answers.items() if status == 0 or 500 <= status < 600]
+        left = budget_seconds - (clock() - started)
+        if again and left > 0:
+            answers.update(ask_all(again, fetch, workers=workers, budget_seconds=left, clock=clock))
+        tonight_states, brakes = strict_states(photos, answers, before, owner_cut=owner_cut_shops())
+    else:
+        tonight_states = {url: state_of(status) for url, status in answers.items()}
     states = Counter()
     rows = []
     for url, status in answers.items():
-        state = state_of(status)
+        state = tonight_states[url]
         states[state] += 1
         rows.append((url, state, status, stamp))
         seen[url] = (state, stamp)
@@ -283,7 +409,8 @@ def run(photos: dict[str, tuple[str, int]], db: sqlite3.Connection, out: Path, f
             "DELETE FROM photo WHERE asked < ? AND url NOT IN (SELECT url FROM current)",
             (stamp - FORGET_AFTER,),
         )
-    gone = sorted(url for url in photos if seen.get(url, ("", 0))[0] == "gone")
+    leave_out = ("gone", "failed") if strict else ("gone",)
+    gone = sorted(url for url in photos if seen.get(url, ("", 0))[0] in leave_out)
     never = sum(1 for url in photos if url not in seen)
     write({"checked_at": moment.isoformat(timespec="seconds"), "photos": len(photos), "gone": gone}, out)
     gone_products = sum(photos[url][1] for url in gone)
@@ -291,9 +418,19 @@ def run(photos: dict[str, tuple[str, int]], db: sqlite3.Connection, out: Path, f
     lines = [
         f"photos: {len(photos):,} in the catalogue, of {products:,} products; asked tonight "
         f"{len(answers):,} of the {len(tonight):,} due (read {states['ok']:,}, gone {states['gone']:,}, "
-        f"could not be read {states['unread']:,}); never asked yet {never:,}",
-        f"photos gone: {len(gone):,}, of {gone_products:,} products, left out of the site",
+        f"could not be read {states['unread']:,}"
+        + (f", failed {states['failed']:,}, held {states['held'] + states['held for the owner']:,}" if strict else "")
+        + f"); never asked yet {never:,}",
+        f"photos gone: {len(gone):,}, of {gone_products:,} products, left out of the site"
+        + (" (any failure: the checks' switch is on)" if strict else ""),
     ]
+    if brakes.get("night_brake"):
+        lines.append("photos: THE NIGHT'S BRAKE: over a tenth of the products would go; no new photo cut tonight")
+    if brakes.get("braked_shops"):
+        lines.append("photos: shops braked (held one night): " + ", ".join(brakes["braked_shops"]))
+    if brakes.get("hosts_refusing"):
+        lines.append("photos: shops whose photo host refuses the check (not checked): "
+                     + ", ".join(brakes["hosts_refusing"]))
     per_shop: Counter = Counter()
     for url in gone:
         per_shop[photos[url][0] or "-"] += photos[url][1]
@@ -316,9 +453,10 @@ def main(argv: list[str] | None = None, *, fetch: Fetch | None = None) -> int:
         print(f"photos: not checked ({error}); the last file kept")
         return 1
     db = open_db(args.db)
+    strict = checks_switch_on()
     try:
-        lines = run(photos, db, args.out, fetch or Asker(), workers=args.workers,
-                    budget_seconds=max(0.0, args.budget_minutes) * 60)
+        lines = run(photos, db, args.out, fetch or Asker(strict=strict), workers=args.workers,
+                    budget_seconds=max(0.0, args.budget_minutes) * 60, strict=strict)
     finally:
         db.close()
     for line in lines:

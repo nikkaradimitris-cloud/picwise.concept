@@ -70,7 +70,8 @@ class ShopSiteStockTests(unittest.TestCase):
 
 
 class BotAsksEveryShopTests(unittest.TestCase):
-    def test_every_shop_the_note_names_but_instock_uk_and_the_left_out(self) -> None:
+    def test_every_shop_the_note_names_but_the_left_out(self) -> None:
+        # InStock UK too since the owner's «Ναι, να ελέγχεται» (2026-11-21; never asked before).
         spec = importlib.util.spec_from_file_location("shop_catalogue_bot_under_test", ROOT / "deployment" / "bot" / "shop_catalogue_bot.py")
         bot = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = bot
@@ -91,7 +92,7 @@ class BotAsksEveryShopTests(unittest.TestCase):
         path.write_text(json.dumps(note), encoding="utf-8")
         self.assertEqual(
             bot.shops_to_ask(str(path), {"Fixture Known Shop": {}}),
-            ["Fixture Full Shop", "Fixture Known Shop", "Fixture Silent Shop"],
+            ["Fixture Full Shop", "Fixture Known Shop", "Fixture Silent Shop", "InStock UK"],
         )
 
 

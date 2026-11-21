@@ -538,3 +538,38 @@ email carries the same numbers in Greek (his plan, step 12).
 - Logs are public: counts and shop names only; no address, id, key, token or server name.
 - Nothing is deployed without the owner's «ανέβασε», after the look of task 7. That look
   is of the same day: it is not nights of report only (2.2, 4).
+
+## 15. Built (task 5, 21/11): what the code settles that these rules left open
+
+Built on the work branch, **not deployed**; `data/checks_switch.json` stays `false` until the
+look of task 7, and the deployment the owner approves turns it `true`, so that the checks cut
+from their first night live (2.2, 4). Where the code had to settle a point:
+
+1. A redirect to another site is not followed (4.1) and is `not checked`; it counts with the
+   refusals for whether the shop can be checked (5.6.2).
+2. An answer no table names (a 400, a 405, a redirect with no address) is `not checked`, never a
+   cut: such a product passes nothing either, so after its shop's first round it is not shown
+   (9.3).
+3. The round: 20:30 to 03:05 UTC (before the updates' reboot window of 03:30, the shops' bot of
+   03:40 and the preparation of 04:17); a round started by hand stops after 8 hours. Its night is
+   the morning's date, the preparation's.
+4. A Shopify shop: its catalogue up to 100 pages of 250 (25,000 products); a product past them,
+   or missing from a catalogue read whole, by its own `/products/<name>.js` (one request, which
+   also gives each variant's barcode). Collections are not read by the checks.
+5. The photo: a 200 that is no image is read as 415, an empty one as 204 (their HTTP meanings).
+   The photo check runs apart (04:40), so its brakes are counted inside it: a shop's night (7.2)
+   by its photos, and the night's (7.4) by the products new photo failures would leave out.
+6. A shop out because it cannot be checked is asked each night by up to 5 of its pages (5.6.2):
+   the preparation names 20 of its rows for the bot.
+7. A reading of Awin is whole or none: if one of its five lists does not answer, the last reading
+   stands (a list missing would put its shops "in no list").
+8. Not built yet: the shop's recipe by the AI (4.5.3), the category (5.5), the night's numbers in
+   the owner's daily email (11). Without the recipe a shop whose pages no reader reads leaves on
+   its day 15 (5.6.2): on 21/11 Tooled Up (68,508), Plusshop UK, Tyres UK, Tirendo UK, MoreThisWay.
+
+Where: `src/picwise_checks` (verdicts, brakes, the ledger, the page reader, rows), the bot
+`deployment/bot/shop_checks_bot.py` (`picwise-checks.service`, `.timer`), the preparation's side
+`src/picwise_providers/checks_applied.py` (with `offer_health`, the cap's gate in
+`catalogue_cap`, the price's source in `catalogue_memory`), the photos in
+`deployment/server/check_photos.py`; a look on the server, read-only:
+`.github/workflows/server-checks-look.yml`.

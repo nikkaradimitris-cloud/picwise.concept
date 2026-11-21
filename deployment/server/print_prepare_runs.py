@@ -32,6 +32,10 @@ SITE_READINESS = "http://127.0.0.1:8016/private-beta-readiness"
 
 _RUN_STARTS = re.compile(r"Starting (?:picwise-prepare\.service|PicWise: prepare)")
 BOT_UNIT = "picwise-shops.service"
+# The checks' bot (deployment/bot/shop_checks_bot.py): its lines are counts and shop names
+# only, so the last of them are printed as they are.
+CHECKS_UNIT = "picwise-checks.service"
+CHECKS_LINES = 150
 _BOT_RUN_STARTS = re.compile(r"Starting (?:picwise-shops\.service|PicWise: ask the shops)")
 _BOT_WORTH_A_LINE = re.compile(r"^(?:the feed's cop|no copy of the feed|in all:|the round failed)|Consumed|Failed|killed")
 # A shop's own line, "== <shop>: <how it ended>; <n> requests, ...": a shop's name may hold
@@ -201,6 +205,12 @@ def main(argv: Sequence[str] | None = None, *, runner: Run = run, secrets: Seque
     say(f"== {BOT_UNIT}, the shops' bot (03:40 UTC): each night's own lines")
     bot = runner(["journalctl", "-u", BOT_UNIT, "-o", "short-iso", "--no-pager", "--since", args.since])
     for line in bot_nights(bot.splitlines()) or ["(none)"]:
+        say(line)
+
+    say()
+    say(f"== {CHECKS_UNIT}, the checks (20:30 to 03:05 UTC): the last {CHECKS_LINES} lines")
+    checks = runner(["journalctl", "-u", CHECKS_UNIT, "-o", "short-iso", "--no-pager", "--since", args.since])
+    for line in checks.splitlines()[-CHECKS_LINES:] or ["(none)"]:
         say(line)
 
     say()

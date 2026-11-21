@@ -322,6 +322,8 @@ class ShopNight:
     robots: str = "allowed"  # "allowed", "disallowed", "refused" (401, 403)
     crawl_delay: float | None = None
     requests: int = 0
+    # The requests that got any answer at all (an HTTP status, a refusal too): 7.1.
+    answers: int = 0
     refused: int = 0
     pages_200: int = 0
     pages_read: int = 0

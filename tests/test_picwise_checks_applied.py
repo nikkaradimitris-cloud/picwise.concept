@@ -1,0 +1,172 @@
+"""The checks' decisions in the preparation (`picwise_providers.checks_applied`, the cap's
+gate in `catalogue_cap`, the price's source in `catalogue_memory`; the checks' rules 5.3,
+6, 7.7, 8.2 and 9).
+
+Pinned: with the switch off nothing is applied; with it on a product cut or of a shop
+out is no product a card can show; a proven page reader's stock is the shop's word; the
+page's price is the card's price, the feed's sale columns let go and its history started
+again; decisions over 2 nights old are not applied; the cap lets a product not shown the
+night before take a place only once its checks passed and names the others as
+candidates; a product back within 7 nights counts as kept the night before.
+
+Every row is local test data: fictional shops and brands, `.invalid` hosts.
+"""
+from __future__ import annotations
+
+import gzip
+import json
+import os
+import sqlite3
+import sys
+import tempfile
+import unittest
+from datetime import date, datetime, timezone
+from pathlib import Path
+from unittest import mock
+
+ROOT = Path(__file__).resolve().parents[1]
+for path in (ROOT, ROOT / "src"):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
+
+from picwise_providers import checks_applied as applied  # noqa: E402
+from picwise_providers.catalogue_cap import cap_catalogue, row_key  # noqa: E402
+from picwise_providers.catalogue_memory import product_key, remember_night  # noqa: E402
+from picwise_providers.contracts import ProviderProduct  # noqa: E402
+from picwise_providers.offer_health import build_feed_availability_context, evaluate_product_eligibility  # noqa: E402
+
+TODAY = date(2026, 12, 2)
+
+
+def _product(number: int, *, shop: str = "Kettles", price: str = "24.99", category: str = "Home & Garden > Kitchen",
+             raw: dict | None = None) -> ProviderProduct:
+    return ProviderProduct(
+        provider_key="awin", provider_product_id=f"row-{number}", title=f"Zentra Kettle {number}", brand="Zentra",
+        category_text=category, product_url=f"https://{shop.lower()}.invalid/p/{number}",
+        image_url=f"https://{shop.lower()}.invalid/i/{number}.jpg", price_text=price, availability_text="in stock",
+        currency="GBP", raw={"merchant_name": shop, "availability": "in stock", **(raw or {})},
+    )
+
+
+def _decisions(**parts) -> dict:
+    return {"format": applied.DECISIONS_FORMAT, "version": 1, "night": "2026-12-01", "shops_out": {}, "cut": {},
+            "enter": [], "prices": {}, "stock": {}, "returning": [], **parts}
+
+
+class Rules77TheSwitchTests(unittest.TestCase):
+    def setUp(self) -> None:
+        applied.reset_for_tests()
+
+    def test_the_switch_is_off_until_the_look_of_task_7(self) -> None:
+        self.assertFalse(applied.checks_switch_on())
+
+    def test_with_the_switch_off_nothing_is_applied_or_gated(self) -> None:
+        products = (_product(1),)
+        decisions = _decisions(cut={product_key(products[0]): "gone"})
+        self.assertEqual(applied.apply_checks(products, decisions=decisions, switch=False), products)
+        self.assertFalse(applied.gate_on())
+        self.assertTrue(applied.may_enter(products[0]))
+
+    def test_decisions_over_two_nights_old_are_not_applied(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "decisions.json.gz"
+            with gzip.open(path, "wt", encoding="utf-8") as handle:
+                json.dump(_decisions(), handle)
+            self.assertEqual(applied.load_decisions(path, today=TODAY)[1], "read")
+            self.assertIsNone(applied.load_decisions(path, today=date(2026, 12, 4))[0])
+            self.assertIsNone(applied.load_decisions(Path(folder) / "none.json.gz", today=TODAY)[0])
+
+
+class Rules6WhatIsCutTests(unittest.TestCase):
+    def setUp(self) -> None:
+        applied.reset_for_tests()
+
+    def test_a_cut_product_and_a_shop_out_are_no_product_a_card_can_show(self) -> None:
+        products = (_product(1), _product(2), _product(3, shop="Toasters"))
+        decisions = _decisions(cut={product_key(products[0]): "gone"}, shops_out={"Toasters": "Awin: rejected"})
+        result = applied.apply_checks(products, decisions=decisions, switch=True)
+        context = build_feed_availability_context(result)
+        eligible = [evaluate_product_eligibility(product, feed_ctx=context) for product in result]
+        self.assertEqual([item.card_eligible for item in eligible], [False, True, False])
+        self.assertIn("checks_failed", eligible[0].reason_codes)
+        note = applied.last_checks_note()
+        self.assertEqual((note["cut"], note["products_of_shops_out"]), (1, 1))
+        self.assertEqual(len(applied.take_cut_products()), 2)
+        self.assertEqual(applied.take_cut_products(), [])
+
+    def test_5_2_a_proven_page_readers_stock(self) -> None:
+        products = (_product(1),)
+        result = applied.apply_checks(products, decisions=_decisions(stock={product_key(products[0]): ["sold out", "x"]}),
+                                      switch=True)
+        context = build_feed_availability_context(result)
+        self.assertFalse(evaluate_product_eligibility(result[0], feed_ctx=context).card_eligible)
+
+    def test_5_3_the_pages_price_is_the_cards_price(self) -> None:
+        products = (_product(1, price="19.99", raw={"sale_price": "19.99 GBP", "sale_price_effective_date": "x"}),)
+        result = applied.apply_checks(products, decisions=_decisions(prices={product_key(products[0]): ["21.79", "x"]}),
+                                      switch=True)
+        self.assertEqual(result[0].price_text, "21.79")
+        self.assertEqual(result[0].raw[applied.PRICE_SOURCE_COLUMN], applied.SHOP_SITE)
+        self.assertNotIn("sale_price", result[0].raw)
+
+
+class Rules9TheCapsGateTests(unittest.TestCase):
+    def setUp(self) -> None:
+        applied.reset_for_tests()
+
+    def test_9_4_a_new_product_takes_a_place_only_once_passed(self) -> None:
+        products = tuple(_product(number) for number in range(6))
+        passed = product_key(products[1])
+        applied.apply_checks(products, decisions=_decisions(enter=[passed]), switch=True)
+        context = build_feed_availability_context(products)
+        kinds = [frozenset({"kettle"}) for _product_ in products]
+        before = {row_key(products[0])}
+        result = cap_catalogue(products, kinds, feed_ctx=context, kept_before=before, may_enter=applied.may_enter)
+        self.assertEqual(result.keep, (True, True, False, False, False, False))
+        self.assertEqual(result.candidates, (2, 3, 4, 5))
+        self.assertEqual(result.held_by_checks, 4)
+        free = cap_catalogue(products, kinds, feed_ctx=context, kept_before=before)
+        self.assertTrue(all(free.keep))
+        self.assertEqual(free.candidates, ())
+
+    def test_9_4_in_a_full_category_the_next_ones_by_the_caps_order(self) -> None:
+        full = tuple(_product(number, category="Home & Garden > Kitchen") for number in range(40))
+        others = tuple(_product(100 + number, category=f"Toys > Kind{number}") for number in range(20))
+        products = full + others
+        applied.apply_checks(products, decisions=_decisions(), switch=True)
+        context = build_feed_availability_context(products)
+        kinds = [frozenset({"kettle"}) for _product_ in products]
+        before = {row_key(product) for product in full[:10]} | {row_key(product) for product in others}
+        result = cap_catalogue(products, kinds, feed_ctx=context, kept_before=before, may_enter=applied.may_enter,
+                               share=0.15)
+        kept_full = sum(result.keep[:40])
+        self.assertEqual(kept_full, 10)
+        self.assertGreaterEqual(len(result.candidates), 4)
+        self.assertTrue(all(index < 40 for index in result.candidates))
+
+    def test_8_2_a_product_back_within_seven_nights_counts_as_kept_the_night_before(self) -> None:
+        products = (_product(1), _product(2))
+        applied.apply_checks(products, decisions=_decisions(returning=[product_key(products[0])]), switch=True)
+        self.assertEqual(applied.returning_row_keys(products, row_key), frozenset({row_key(products[0])}))
+
+
+class Rules535ThePricesHistoryTests(unittest.TestCase):
+    def test_a_change_of_source_starts_the_history_again(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "memory.sqlite"
+            night = datetime(2026, 12, 1, 4, 30, tzinfo=timezone.utc)
+            remember_night(path, [_product(1, price="19.99")], prepared_at=night)
+            site = _product(1, price="21.79", raw={applied.PRICE_SOURCE_COLUMN: applied.SHOP_SITE})
+            summary = remember_night(path, [site], prepared_at=night.replace(day=2))
+            self.assertEqual(summary["history_restarted_tonight"], 1)
+            with sqlite3.connect(str(path)) as db:
+                prices = db.execute("SELECT night, price_pence FROM prices ORDER BY night").fetchall()
+                self.assertEqual(prices, [("2026-12-02", 2179)])
+            again = remember_night(path, [site], prepared_at=night.replace(day=3))
+            self.assertEqual(again["history_restarted_tonight"], 0)
+            back = remember_night(path, [_product(1, price="21.79")], prepared_at=night.replace(day=4))
+            self.assertEqual(back["history_restarted_tonight"], 1)
+
+
+if __name__ == "__main__":
+    unittest.main()

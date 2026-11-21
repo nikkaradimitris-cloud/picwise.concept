@@ -1,0 +1,42 @@
+# Asks every product of the catalogue on its shop's own site, every evening, and keeps what
+# it found in /srv/picwise/shared/checks, never in Supabase or the repository: the ledger, the
+# decisions the preparation reads (picwise-prepare.service), the rows it asks next, the
+# night's note (deployment/bot/shop_checks_bot.py; the checks' rules,
+# docs/PICWISE_CHECKS_RULES.md; owner, 2026-11-21: «Ποιότητα πάνω από ποσότητα»).
+# Run by picwise-checks.timer; installed by deployment/server/deploy.sh.
+[Unit]
+Description=PicWise: the checks of the products on their shops' own sites
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=picwise
+Group=picwise
+WorkingDirectory=/srv/picwise/current
+# Awin's API token and feed links, for its programmes and feed list (never a click).
+EnvironmentFile=-/etc/picwise/picwise.env
+Environment=PYTHONPATH=/srv/picwise/current/src
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/bin/python3 deployment/bot/shop_checks_bot.py
+TimeoutStartSec=9h
+Nice=10
+MemoryHigh=4G
+MemoryMax=5G
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/picwise/shared
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=

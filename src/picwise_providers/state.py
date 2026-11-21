@@ -37,6 +37,7 @@ from .offer_health import (
     offer_validity_reason_codes,
 )
 from .product_photos import gone_photos, gone_photos_key, photo_is_gone
+from .checks_applied import apply_checks
 from .prepared_catalogue import (
     PreparedCatalogue,
     check_prepared_catalogue,
@@ -252,6 +253,8 @@ def _resolve_provider_feed_pipeline_uncached(
     # What the shops' own catalogues and the rows' barcodes say, before any row is
     # judged (`shop_catalogue.py`, owner, 2026-10-26).
     parse_result = replace(parse_result, products=apply_shop_catalogues(parse_result.products))
+    # What the checks decided, behind their switch (`checks_applied.py`, owner, 2026-11-21).
+    parse_result = replace(parse_result, products=apply_checks(parse_result.products))
     feed_availability_context = build_feed_availability_context(parse_result.products)
     eligibility_results = tuple(
         _enrich_provider_eligibility_result(product, feed_ctx=feed_availability_context)

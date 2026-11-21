@@ -1,0 +1,205 @@
+"""The checks' bot asks each shop as the rules say, and only fetches
+(`deployment/bot/shop_checks_bot.py`; `docs/PICWISE_CHECKS_RULES.md`, section 4).
+
+Pinned: only the shop's own address, its robots.txt first (a refusal, a disallow, a
+crawl-delay over 60 s each end the shop's night); one request at a time, at least 3 s
+apart; a Shopify shop read by its catalogue and a product missing from a catalogue read
+whole asked at its `.js`; any other shop by each product's page; a product that did not
+answer asked once more at the end of the round; a 429 ends the shop's night; a challenge
+page is a refusal; nothing asked past the deadline; a row on another site not asked; and
+a night run end to end into the ledger and the decisions.
+
+Every shop is fictional, on `.invalid` hosts; the fetch is a local stand-in: nothing is
+opened.
+"""
+from __future__ import annotations
+
+import json
+import sys
+import unittest
+from datetime import date
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+for path in (ROOT, ROOT / "src", ROOT / "deployment" / "bot", ROOT / "deployment" / "server"):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
+
+import shop_checks_bot as bot  # noqa: E402
+
+from picwise_checks import ledger as L  # noqa: E402
+from picwise_checks.verdicts import FAILED, GONE, NO_ANSWER, NOT_CHECKED, PASSED, Row  # noqa: E402
+
+PRODUCT_PAGE = (
+    '<script type="application/ld+json">{"@type": "Product", "name": "Zentra Kettle", "sku": "ZK-1", '
+    '"offers": {"@type": "Offer", "price": "%s", "priceCurrency": "GBP", "availability": "InStock"}}</script>'
+)
+
+
+class Shop:
+    """A fictional shop: answers by path; records what was asked and the clock."""
+
+    def __init__(self, answers: dict, *, clock_step: float = 0.0) -> None:
+        self.answers = answers
+        self.asked: list[str] = []
+        self.now = 0.0
+        self.sleeps: list[float] = []
+        self.step = clock_step
+
+    def fetch(self, url: str, limit: int) -> bot.Answer:
+        path = url.split(".invalid", 1)[1]
+        self.asked.append(path)
+        self.now += self.step
+        answer = self.answers.get(path, bot.Answer(404))
+        if isinstance(answer, list):
+            return answer.pop(0) if len(answer) > 1 else answer[0]
+        return answer
+
+    def sleep(self, seconds: float) -> None:
+        self.sleeps.append(seconds)
+        self.now += seconds
+
+    def clock(self) -> float:
+        return self.now
+
+
+def _row(number: int, *, host: str = "kettles.invalid", path: str | None = None, price: float = 24.99,
+         handle: str = "") -> Row:
+    address = f"https://{host}{path or f'/p/{number}'}"
+    return Row(key=f"Kettles\x1f{number}", shop="Kettles", product_id=str(number), address=address,
+               title="Zentra Kettle", price=price, skus=frozenset({"ZK-1"}), handle=handle)
+
+
+def _ask(shop: Shop, rows: list[Row], *, deadline: float = 10_000.0) -> bot.ShopResult:
+    return bot.ask_shop(rows, fetch=shop.fetch, sleep=shop.sleep, clock=shop.clock, deadline=deadline)
+
+
+class Rules4HowAShopIsAskedTests(unittest.TestCase):
+    def test_a_product_page_read_and_three_seconds_between_requests(self) -> None:
+        shop = Shop({"/robots.txt": bot.Answer(404), "/products.json?limit=250&page=1": bot.Answer(404),
+                     "/p/1": bot.Answer(200, "text/html", (PRODUCT_PAGE % "24.99").encode(),
+                                        final_url="https://kettles.invalid/p/1"),
+                     "/p/2": bot.Answer(404)})
+        result = _ask(shop, [_row(1), _row(2)])
+        self.assertEqual(shop.asked, ["/robots.txt", "/products.json?limit=250&page=1", "/p/1", "/p/2"])
+        self.assertTrue(all(seconds >= 3.0 for seconds in shop.sleeps))
+        self.assertEqual(len(shop.sleeps), 3)
+        self.assertTrue(result.answers["Kettles\x1f1"].read.found)
+        readings = bot.judge({row.key: row for row in (_row(1), _row(2))}, result)
+        self.assertEqual(readings["Kettles\x1f1"].page.state, PASSED)
+        self.assertEqual(readings["Kettles\x1f1"].site_price, 24.99)
+        self.assertEqual(readings["Kettles\x1f2"].page.reason, GONE)
+
+    def test_robots_refused_disallowed_or_too_slow_end_the_shops_night(self) -> None:
+        refused = _ask(Shop({"/robots.txt": bot.Answer(403)}), [_row(1)])
+        self.assertEqual((refused.night.robots, refused.night.refused), ("refused", 1))
+        shop = Shop({"/robots.txt": bot.Answer(200, "text/plain", b"User-agent: *\nDisallow: /p/\n")})
+        disallowed = _ask(shop, [_row(1)])
+        self.assertEqual(disallowed.night.robots, "disallowed")
+        self.assertEqual(shop.asked, ["/robots.txt"])
+        slow = _ask(Shop({"/robots.txt": bot.Answer(200, "text/plain", b"User-agent: *\nCrawl-delay: 61\n")}), [_row(1)])
+        self.assertEqual(slow.night.crawl_delay, 61.0)
+        self.assertEqual(slow.answers, {})
+
+    def test_an_awin_address_alone_is_no_address_of_its_own(self) -> None:
+        result = _ask(Shop({}), [_row(1, host="www.awin1.invalid")])
+        self.assertFalse(result.night.own_address)
+
+    def test_a_shopify_catalogue_read_whole_and_a_missing_product_asked_at_its_js(self) -> None:
+        catalogue = {"products": [{"handle": "zentra-kettle", "title": "Zentra Kettle",
+                                   "variants": [{"id": 111, "sku": "ZK-1", "price": "24.99", "available": True}]}]}
+        shop = Shop({"/robots.txt": bot.Answer(404),
+                     "/products.json?limit=250&page=1": bot.Answer(200, "application/json", json.dumps(catalogue).encode()),
+                     "/products/old-kettle.js": bot.Answer(404)})
+        rows = [_row(1, path="/products/zentra-kettle", handle="zentra-kettle"),
+                _row(2, path="/products/old-kettle", handle="old-kettle")]
+        result = _ask(shop, rows)
+        self.assertTrue(result.night.catalogue_read)
+        self.assertEqual(shop.asked, ["/robots.txt", "/products.json?limit=250&page=1", "/products/old-kettle.js"])
+        readings = bot.judge({row.key: row for row in rows}, result)
+        self.assertEqual(readings["Kettles\x1f1"].page.state, PASSED)
+        self.assertEqual(readings["Kettles\x1f1"].site_price, 24.99)
+        self.assertEqual(readings["Kettles\x1f2"].page.reason, GONE)
+
+    def test_no_answer_is_asked_once_more_at_the_end(self) -> None:
+        page = bot.Answer(200, "text/html", (PRODUCT_PAGE % "24.99").encode(), final_url="https://kettles.invalid/p/1")
+        shop = Shop({"/robots.txt": bot.Answer(404), "/p/1": [bot.Answer(error="timeout"), page],
+                     "/p/2": [bot.Answer(503), bot.Answer(503)]})
+        result = _ask(shop, [_row(1), _row(2)])
+        self.assertEqual(shop.asked.count("/p/1"), 2)
+        readings = bot.judge({row.key: row for row in (_row(1), _row(2))}, result)
+        self.assertEqual(readings["Kettles\x1f1"].page.state, PASSED)
+        self.assertEqual(readings["Kettles\x1f2"].page.reason, NO_ANSWER)
+
+    def test_a_429_ends_the_shops_night_and_a_challenge_is_a_refusal(self) -> None:
+        shop = Shop({"/robots.txt": bot.Answer(404), "/p/1": bot.Answer(429), "/p/2": bot.Answer(200)})
+        result = _ask(shop, [_row(1), _row(2)])
+        self.assertNotIn("/p/2", shop.asked)
+        self.assertIn("429", result.stopped)
+        challenge = bot.Answer(503, "text/html", b"<html><title>Just a moment...</title>cf-chl-bypass</html>")
+        refused = _ask(Shop({"/robots.txt": bot.Answer(404), "/p/1": challenge}), [_row(1)])
+        self.assertEqual(refused.night.refused, 1)
+        readings = bot.judge({"Kettles\x1f1": _row(1)}, refused)
+        self.assertEqual(readings["Kettles\x1f1"].page.state, NOT_CHECKED)
+
+    def test_nothing_is_asked_past_the_deadline(self) -> None:
+        shop = Shop({"/robots.txt": bot.Answer(404)}, clock_step=10.0)
+        result = _ask(shop, [_row(number) for number in range(10)], deadline=40.0)
+        self.assertLess(len(result.answers), 10)
+        self.assertTrue(all(answer for answer in result.answers))
+
+    def test_a_row_on_another_site_is_not_asked(self) -> None:
+        shop = Shop({"/robots.txt": bot.Answer(404)})
+        rows = [_row(1), _row(2), _row(3, host="elsewhere.invalid")]
+        result = _ask(shop, rows)
+        self.assertTrue(result.answers["Kettles\x1f3"].elsewhere)
+        self.assertEqual(shop.asked.count("/p/3"), 0)
+
+
+class ANightEndToEndTests(unittest.TestCase):
+    def test_a_night_into_the_ledger_and_the_decisions(self) -> None:
+        rows = {row.key: row for row in (_row(1), _row(2), _row(3, price=10.0))}
+        filler = {f"Filler\x1f{n}": Row(key=f"Filler\x1f{n}", shop="Filler", product_id=f"f{n}",
+                                        address=f"https://filler.invalid/p/{n}") for n in range(200)}
+        everything = {**rows, **filler}
+        page = (PRODUCT_PAGE % "24.99").encode()
+        answers = {"/robots.txt": bot.Answer(404), "/p/1": bot.Answer(200, "text/html", page),
+                   "/p/2": bot.Answer(410), "/p/3": bot.Answer(200, "text/html", (PRODUCT_PAGE % "3.00").encode())}
+        shop = Shop(answers)
+        ledger = L.Ledger()
+        night, made = bot.run(everything, shown=set(everything), parts={}, shared_ids=set(), candidates=[],
+                              ledger=ledger, night=date(2026, 12, 1), fetch=shop.fetch, sleep=shop.sleep,
+                              clock=shop.clock, deadline=1e9, workers=1, pause=3.0, awin=None, feeds={},
+                              owner_cut_shops=[], owner_awin_word=False, say=lambda _line: None)
+        self.assertEqual(made["cut"], {"Kettles\x1f2": GONE, "Kettles\x1f3": "price far apart"})
+        self.assertEqual(ledger.products["Kettles\x1f1"].state, PASSED)
+        self.assertEqual(ledger.products["Kettles\x1f3"].state, FAILED)
+        lines: list[str] = []
+        bot.print_night(night.note, made, ledger, lines.append)
+        printed = "\n".join(lines)
+        self.assertIn("products cut 2", printed)
+        self.assertNotIn(".invalid", printed)
+        self.assertNotIn("\x1f", printed)
+
+
+class RowsTests(unittest.TestCase):
+    def test_a_row_of_the_second_link_takes_its_own_address(self) -> None:
+        from picwise_providers.contracts import ProviderProduct
+
+        product = ProviderProduct(
+            provider_key="awin", provider_product_id="123", title="Zentra Kettle", brand="Zentra", category_text="",
+            product_url="https://www.awin1.com/pclick.php?p=1&a=2&m=7", image_url="https://img.invalid/k.jpg",
+            price_text="24.99", availability_text="in stock", currency="GBP",
+            raw={"merchant_name": "Kettles", "merchant_deep_link": "https://kettles.invalid/products/zk?variant=9",
+                 "ean": "5012345678900", "mpn": "ZK1", "merchant_product_id": "ZK-1"},
+        )
+        row = bot.row_of(product)
+        self.assertEqual(row.address, "https://kettles.invalid/products/zk?variant=9")
+        self.assertEqual((row.handle, row.variant), ("zk", "9"))
+        self.assertEqual((row.gtin, row.mpn, row.price, row.feed_stock), ("05012345678900", "ZK1", 24.99, "in stock"))
+        self.assertIn("ZK-1", row.skus)
+        self.assertEqual(bot.row_from_record(bot.row_record(row)), row)
+
+
+if __name__ == "__main__":
+    unittest.main()

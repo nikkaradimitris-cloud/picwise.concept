@@ -45,7 +45,8 @@ def _answered(rows: dict[str, Row]) -> dict[str, ShopNight]:
     shops: dict[str, int] = {}
     for row in rows.values():
         shops[row.shop] = shops.get(row.shop, 0) + 1
-    return {shop: ShopNight(requests=count, pages_200=count, pages_read=count) for shop, count in shops.items()}
+    return {shop: ShopNight(requests=count, answers=count, pages_200=count, pages_read=count)
+            for shop, count in shops.items()}
 
 
 # A catalogue of 2,000 products shown and not asked, so that a few cuts are not a tenth of
@@ -168,8 +169,9 @@ class Rules7BrakesTests(unittest.TestCase):
 
     def test_7_1_a_round_most_shops_did_not_answer_records_nothing(self) -> None:
         ledger, rows = L.Ledger(), _rows("Alpha", 3)
-        shops = {"Alpha": ShopNight(requests=3, refused=3), "Beta": ShopNight(requests=2, refused=2),
-                 "Gamma": ShopNight(requests=5, pages_200=5, pages_read=5)}
+        # Two of three shops gave no answer at all (timeouts): fewer than half answered.
+        shops = {"Alpha": ShopNight(requests=3), "Beta": ShopNight(requests=2),
+                 "Gamma": ShopNight(requests=5, answers=5, pages_200=5, pages_read=5)}
         result = _night(ledger, NIGHT, rows, {key: Verdict(FAILED, GONE) for key in rows}, shops=shops)
         self.assertTrue(result.note["ours"])
         self.assertEqual(ledger.products, {})
@@ -178,8 +180,8 @@ class Rules7BrakesTests(unittest.TestCase):
 class Rules56ShopsTests(unittest.TestCase):
     def test_5_6_2_out_on_day_fifteen_back_when_read_afresh_after_seven(self) -> None:
         ledger, rows = L.Ledger(), _rows("Alpha", 1)
-        blocked = {"Alpha": ShopNight(requests=5, refused=5)}
-        other = {"Beta": ShopNight(requests=1, pages_200=1, pages_read=1)}
+        blocked = {"Alpha": ShopNight(requests=5, answers=5, refused=5)}
+        other = {"Beta": ShopNight(requests=1, answers=1, pages_200=1, pages_read=1)}
         for day in range(14):
             _night(ledger, NIGHT + timedelta(days=day), rows, {}, shops={**blocked, **other})
         self.assertEqual((ledger.shops["Alpha"].days, ledger.shops["Alpha"].out), (14, ""))
@@ -187,7 +189,7 @@ class Rules56ShopsTests(unittest.TestCase):
         self.assertEqual(ledger.shops["Alpha"].out, "cannot be checked: refuses the bot")
         made = L.decisions(ledger, NIGHT + timedelta(days=14), rows, shown=rows.keys())
         self.assertEqual(made["shops_out"], {"Alpha": "cannot be checked: refuses the bot"})
-        read = {"Alpha": ShopNight(requests=1, pages_200=1, pages_read=1), **other}
+        read = {"Alpha": ShopNight(requests=1, answers=1, pages_200=1, pages_read=1), **other}
         _night(ledger, NIGHT + timedelta(days=15), rows, {}, shops=read)
         self.assertEqual((ledger.shops["Alpha"].out, ledger.shops["Alpha"].days), ("", 15))
         _night(ledger, NIGHT + timedelta(days=16), rows, {}, shops={**blocked, **other})
@@ -277,7 +279,7 @@ class Rules53And52ProvenReaderTests(unittest.TestCase):
             feed = rows[key].price
             readings[key] = L.Reading(page=OK, site_price=feed if index < same else round(feed * 1.09, 2), tie="code",
                                       stock="in stock" if index < same else "sold out")
-        shops = {"Alpha": ShopNight(requests=20, pages_200=20, pages_read=20)} if reader_pages else \
+        shops = {"Alpha": ShopNight(requests=20, answers=20, pages_200=20, pages_read=20)} if reader_pages else \
             {"Alpha": ShopNight(catalogue_read=True)}
         _night(ledger, NIGHT, rows, readings, shops=shops)
         return ledger, rows

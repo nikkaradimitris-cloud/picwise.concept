@@ -64,6 +64,8 @@ OUT_ON_DAY = 15
 FRESH_AFTER_CHECKED = 7
 # 5.2: a reading of the shop's own site decides stock for 3 days.
 STOCK_DAYS = 3
+# 5.6.2: a shop out because it could not be checked is asked each night by up to 5 pages.
+RETRY_PAGES = 5
 # 10.4 and 10.5.
 CHEAPEST_FIRST = 24
 OLD_PASS_FIRST = 14
@@ -308,7 +310,7 @@ def record_night(
     note: dict[str, Any] = {"night": tonight, "shops_asked": len(shop_nights)}
 
     # 7.1: a round most shops did not answer is ours, and records nothing.
-    answered = sum(1 for item in shop_nights.values() if item.catalogue_read or item.requests > item.refused)
+    answered = sum(1 for item in shop_nights.values() if item.catalogue_read or item.answers)
     if brakes.round_is_ours(len(shop_nights), answered):
         note["ours"] = True
         ledger.nights.append({"night": tonight, "ours": True, "night_brake": False})
@@ -609,6 +611,11 @@ def asking_order(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown:
                 shop_tiers[4 if old else 5].append(((product.asked, key), key))
         elif key in candidates:
             shop_tiers[2].append(((0, key), key))
+        elif (ledger.shops.get(row.shop) or Shop()).out.startswith("cannot be checked"):
+            # A shop out because it could not be checked is asked again each night by a
+            # few of its pages (5.6.2).
+            if sum(1 for rank, _asked in shop_tiers[2] if rank[0] == 1) < RETRY_PAGES:
+                shop_tiers[2].append(((1, key), key))
     for (shop_name, _part), keys in sorted(never.items()):
         priced = sorted(keys, key=lambda key: (rows[key].price is None, rows[key].price or 0.0, key))
         first = priced[:CHEAPEST_FIRST]

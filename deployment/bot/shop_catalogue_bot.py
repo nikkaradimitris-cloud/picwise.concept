@@ -68,8 +68,10 @@ BUDGET = 25.0
 WORKERS = 4
 # A product not seen for this many days is forgotten.
 KEEP_DAYS = 30
-# Shops never asked (owner, 2026-10-26), as `eligibility.shop_key` reads a name.
-LEFT_ALONE = frozenset({"instock uk"})
+# Shops never asked, as `eligibility.shop_key` reads a name. InStock UK was (owner,
+# 2026-10-26) until the owner's «Ναι, να ελέγχεται» (2026-11-21, the checks' rules 2.2):
+# it is asked as every shop.
+LEFT_ALONE: frozenset[str] = frozenset()
 # A collection said to hold more products than Shopify pages (100 pages of 250) is left
 # for the catalogue itself, as is "all", every product's (owner's «Ναι», 26/10: read a
 # large catalogue by its collections).

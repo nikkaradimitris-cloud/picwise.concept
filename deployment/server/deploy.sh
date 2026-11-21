@@ -39,7 +39,7 @@ id picwise > /dev/null 2>&1 || useradd --system --user-group --home-dir "$APP" -
   --shell /usr/sbin/nologin picwise
 install -d -o root -g root -m 755 "$APP" "$APP/releases" "$APP/venvs"
 install -d -o picwise -g picwise -m 750 "$SHARED" "$SHARED/prepared" "$SHARED/public" "$SHARED/cache" \
-  "$SHARED/shops" "$SHARED/offers" "$SHARED/photos" "$SHARED/searches"
+  "$SHARED/shops" "$SHARED/offers" "$SHARED/photos" "$SHARED/searches" "$SHARED/checks"
 install -d -o root -g picwise -m 750 /etc/picwise
 # The AI layer's service, under a user of its own that never reads the site's files or
 # secrets; the site joins its group to share /srv/picwise/assist with it. Its jobs/ folder
@@ -128,6 +128,10 @@ for unit in picwise-web.service picwise-prepare.service picwise-prepare.timer pi
   picwise-shops.timer picwise-photos.service picwise-photos.timer picwise-offers.service picwise-offers.timer; do
   install -m 644 "$RELEASE/deployment/server/$unit" /etc/systemd/system/
 done
+# The checks of every product on its shop's own site (docs/PICWISE_CHECKS_RULES.md).
+for unit in picwise-checks.service picwise-checks.timer; do
+  install -m 644 "$RELEASE/deployment/server/$unit" /etc/systemd/system/
+done
 # The AI layer's services, started below only with its key.
 install -m 644 "$RELEASE/deployment/server/picwise-assist.service" /etc/systemd/system/
 for unit in picwise-families.service picwise-family-jobs.service picwise-family-jobs.timer; do
@@ -179,7 +183,8 @@ case "$STATE" in
     # The units the step "== services" put in place, each as the release the site runs has it.
     UNITS="picwise-web.service picwise-prepare.service picwise-prepare.timer picwise-shops.service
       picwise-shops.timer picwise-photos.service picwise-photos.timer picwise-offers.service picwise-offers.timer
-      picwise-assist.service picwise-families.service picwise-family-jobs.service picwise-family-jobs.timer"
+      picwise-assist.service picwise-families.service picwise-family-jobs.service picwise-family-jobs.timer
+      picwise-checks.service picwise-checks.timer"
     if [ -n "$PREVIOUS" ] && [ -d "$APP/$PREVIOUS" ] && [ "$(readlink -f "$APP/$PREVIOUS")" != "$RELEASE" ]; then
       ln -sfn "$PREVIOUS" "$APP/current.new"
       mv -T "$APP/current.new" "$APP/current"
@@ -199,6 +204,10 @@ systemctl enable --now picwise-prepare.timer
 # The shops' catalogues each night before the preparation (owner, 2026-10-26); a
 # deployment never asks them itself.
 systemctl enable --now picwise-shops.timer
+# The checks of every product on its shop's own site, each evening (the checks' rules; owner,
+# 2026-11-21); a deployment never runs them itself. What they decided is applied only behind
+# data/checks_switch.json.
+systemctl enable --now picwise-checks.timer
 
 echo "== the offers of PicWise's shops (Awin), fetched once now and every night"
 # Owner, 2026-11-01: «Οκ να φέρνει τις προσφορές των δικών μας καταστημάτων». Served to no
