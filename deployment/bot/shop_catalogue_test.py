@@ -240,6 +240,31 @@ def feed_copy(cache_dir: str) -> str | None:
     return max(copies, key=os.path.getmtime) if copies else None
 
 
+# Since 2026-11-19 the feed comes from two Awin links (`awin_adapter.SECOND_FEED_URL_ENV`),
+# each downloaded by the same preparation, minutes apart, to a copy of its own named from
+# its link (`awin_adapter._feed_cache_path`). A copy written longer than this before the
+# newest is of a link no longer read (its key changed) and is left; one whose link failed
+# to download is still read by the preparation for up to 24 hours
+# (`awin_adapter._DEFAULT_FEED_MAX_STALE_SECONDS`), so it is kept.
+COPIES_APART_HOURS = 30.0
+
+
+def feed_copies(cache_dir: str) -> list[str]:
+    """Every copy of the feed the preparation downloaded, one per Awin link, the newest
+    first: those written within `COPIES_APART_HOURS` of the newest (never a partial one).
+    The nightly bot read only the newest (`feed_copy`) until 21/11: the second link's, so
+    from 20/11 it asked none of the first link's shops (the second opinion of 21/11)."""
+    copies = glob.glob(os.path.join(cache_dir, "picwise_awin_feed_*.bin"))
+    if not copies:
+        return []
+    written = {path: os.path.getmtime(path) for path in copies}
+    newest = max(written.values())
+    return sorted(
+        (path for path in copies if newest - written[path] <= COPIES_APART_HOURS * 3600),
+        key=lambda path: (-written[path], path),
+    )
+
+
 def product_name(path: str) -> str:
     """The product's name in a Shopify-like address: what follows its last "products"."""
     segments = [unquote(segment) for segment in path.split("/") if segment]
