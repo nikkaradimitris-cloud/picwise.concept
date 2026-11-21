@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-21 (14:50 Athens: task 1 of the work split by model, the shops' bot and both links, built, put to the owner; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-21 (15:05 Athens: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,10 +8,23 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (21/11, 14:50 Athens): task 1 of the work split by model (OPUS, the next item): the shops' bot
-  reads both Awin links again; a second-link row's own address; the memory fix's deployment corrected.
-  Built and tested, NOT deployed: two deployments put to the owner, one after the other, with InStock UK.**
-  (owner: «PicWise: συνέχισε από το handoff, εργασία 1»; PROGRESS.md, 21/11 14:50.)
+- **FIRST (21/11, 15:05 Athens): task 1 of the work split by model (OPUS, the next item) DONE and DEPLOYED
+  on the owner's «Ανέβασε και τα δύο»: the shops' bot reads both Awin links again; a second-link row's own
+  address; the memory fix. InStock UK looked at: it accepts the bot.** (owner: «PicWise: συνέχισε από το
+  handoff, εργασία 1»; PROGRESS.md, 21/11 14:50 and 15:05.)
+  - **Deployed:** `11cd5ab` (run 44903940464, no preparation, the site 4,535 MB after its restart), then
+    `3701751` (run 44904192982: prepared beside the fresh site, peak 14.9 GB, 28.6 min; the site 4,488 MB;
+    15 of 15 pages, 12 of 12 searches the same). The site runs `3701751`; the work branch is ahead of it by
+    the InStock UK look and records only (inert on the site).
+  - **To read next:** the bot's first round with both links, 22/11 03:40 UTC (`prepare-runs.yml` by hand,
+    `since=-30h`: copies 2, shops with an address, requests, ends; first the 19/11 shops, then the rest by
+    size, the large second-link shops over several rounds); the site's memory the morning after the
+    night's swap (the memory fix: 8.3 GB the morning of 21/11 without it).
+  - **InStock UK** (run 44904597222, `shop_product_test.py`): robots.txt read, its Shopify catalogue
+    answers (500 on 26/10); of 12 products 11 the same product and in stock on its site, 1 gone (404);
+    price: 5 the same, 5 about 9% dearer on its site (cause not known), 1 another variant. Put to the
+    owner: it accepts the bot; how to check about 930,000 feed rows (Shopify pages 25,000) belongs to
+    the checks' rules (task 4, FABLE).
   - **Confirmed on the server** (`prepare-runs.yml` by hand, run 44901697947; `print_prepare_runs.py` now
     prints the bot's own lines a night, counts only): 19/11 the first link's copy (1,681,066 rows), 82 shops
     asked, 498 requests, the file 149,495 products; 20/11 and 21/11 the second link's copy only (~1,446,000
@@ -34,7 +47,7 @@ a decision came about.
     13.9 GB available (11:55 UTC, run 44901351119) and a preparation's peak of 14.3 GB, that preparation would
     likely be killed for memory (20/11 08:56); remedy 1 would keep the site as it is. Tonight's 04:17 faces
     the same sum unless the site is restarted before it.
-  - **Put to the owner:** (1) `11cd5ab` to `ccr-1361f1a7-dcpo60` (3-5 minutes, no preparation; the site
+  - **Put to the owner (14:50; both chosen and deployed, above):** (1) `11cd5ab` to `ccr-1361f1a7-dcpo60` (3-5 minutes, no preparation; the site
     restarts with fresh workers, about 5 GB); (2) right after it, the work line's head (the memory fix and
     the second link's readings: prepares, beside a fresh site, as on 20/11 12:16 and 20:49, both fast-forwards.
     And InStock UK (about 100,000 products, a quarter; never asked by the bot, owner 26/10): a look at a few
@@ -132,8 +145,8 @@ a decision came about.
     in Greek, to change the model to Fable 5.2 first; after it, back to Opus 5.5.** The order proposed:
     1. OPUS: the memory fix's «ανέβασε» (next item); **the bot reads both links' copies and takes a
        second-link row's address from `merchant_deep_link`** (urgent: 23/11); InStock UK put to the owner
-       (asked a product at a time, left unchecked, or out). **Built 21/11 14:50, not deployed, all three put
-       to the owner (the item above).**
+       (asked a product at a time, left unchecked, or out). **Done 21/11: built, deployed on the owner's
+       «Ανέβασε και τα δύο», InStock UK looked at (the first item).**
     2. OPUS: an hour's look, no scan, at the buttons, prices and photos the owner saw fail: ours, Awin's
        or the shop's; the ids two shops share, counted.
     3. OPUS: what needs no bot: Awin's feed list and programmes (joined, last update); the photo's limit
@@ -165,7 +178,7 @@ a decision came about.
   prepared file of 12,000 fictional products, three nights: 80 MB without, 75 MB with (start 64). The model does
   not reproduce the server's growth (+43%), so the real gain is known only on the site. Put to the owner: put it
   on the site (a deployment of about 3-5 minutes, the catalogue not prepared again: **wrong, corrected 21/11
-  14:50: `state.py` is under the fingerprint's packages, so it prepares again, the first item**), and, if the memory stays
+  14:50: `state.py` is under the fingerprint's packages, so it prepares again, the first item; deployed 21/11 12:48 UTC as `3701751`**), and, if the memory stays
   high, the stronger remedy that needs the owner (restart the site before the night's preparation; or two
   workers, remedy 3, refused on 20/11). Still waiting: the daily limit of the nightly scan (asked 20/11 23:55).
 
