@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (01:10 Athens: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -12,10 +12,16 @@ a decision came about.
   work branch; NOT deployed; `data/checks_switch.json` false** (owner, 21/11 22:26: «Ωραία ανέβασε το και συνέχισε και
   θύμισέ μου μετά να κάνω τους ελέγχους»; PROGRESS.md, 22/11 01:10). Before it, 22:28: **the button with no dead end
   DEPLOYED** (run 44946418723, release `20261121T202811Z-00f7078`, not prepared again).
-  - **What is built** (`f42bffa`, `e2a1b9e`, `9c12678`, `5d659de`, `0f9c9db`, `f759344`; the rules' section 15 says
+  - **Changed on the owner's word, 22/11 00:13-00:35** («15 μέρες θα βλέπουνε οι χρήστες σαββούρα είναι πάρα πολύ!»;
+    asked, «Σε 3 μέρες», «Ναι, όλη μέρα», «Όχι, όλα μαζί στο τέλος»; `dd470fb`): a shop that cannot be checked leaves
+    on its day 4 (not 15) and a shop's first round ends after 3 days at most (not 14), so that no product stays
+    unchecked over 3 days; the bot asks all day, 05:30 to 03:05 UTC, each answer kept as it comes, a round stopped
+    (a deployment that prepares, a reboot) going on from where it was; **the bot is NOT deployed ahead of the rest:
+    everything goes on the site together, at the end.**
+  - **What is built** (`f42bffa`, `e2a1b9e`, `9c12678`, `5d659de`, `0f9c9db`, `f759344`, `dd470fb`; the rules' section 15 says
     where and the points the code settled): `src/picwise_checks` (verdicts, brakes, ledger, page reader, rows); the bot
-    `deployment/bot/shop_checks_bot.py` (`picwise-checks.service`/`.timer`, 20:30 to 03:05 UTC; installed and its timer
-    enabled by `deploy.sh`); the preparation's side `picwise_providers.checks_applied` behind the switch (frozen with the
+    `deployment/bot/shop_checks_bot.py` (`picwise-checks.service`/`.timer`, all day, 05:30 to 03:05 UTC; installed and
+    its timer enabled by `deploy.sh`, which also stops the round while it prepares and starts it again after); the preparation's side `picwise_providers.checks_applied` behind the switch (frozen with the
     code, so turning it prepares again), the cap's gate and candidates, the price's source in the memory; the photos'
     any failure in `check_photos.py` behind the switch; InStock UK asked by the shops' bot; a read-only look,
     `.github/workflows/server-checks-look.yml` (push a new `# Run:` line to `claude/checks-look`).
@@ -25,8 +31,8 @@ a decision came about.
     Plusshop UK, Elixir Garden Supplies, Luxe Mattress Affiliation (pages not read), Juicy Couture UK (no address);
     GamingKit, Webbs Motorcycles, Pro-Camera refuse product pages; **Dean Morris Cards 10 of 10 gone** (a live night holds
     it for the owner: fewer than 20 passes); usmile in no Awin list.
-  - **The rest of task 5 (OPUS):** (1) the shop's recipe by the AI (rules 4.5.3), needed within 14 nights of the first
-    live night or Bazta UK (12,159), Plusshop UK (13,110), Elixir, Luxe Mattress leave whole; (2) the category (5.5,
+  - **The rest of task 5 (OPUS):** (1) the shop's recipe by the AI (rules 4.5.3), needed BEFORE the checks go live, or
+    Bazta UK (12,159), Plusshop UK (13,110), Luxe Mattress (5,761), Elixir leave whole on their day 4 (3 days); (2) the category (5.5,
     `ai_shelves`' answers: "no line fits", refused or a slip cut); (3) the night's numbers in the owner's daily email.
     **Then task 7 (FABLE):** a look with a bigger sample, and the deployment that turns the switch true (the owner's
     answer 4: no nights of report only). Until then never push the work branch to the site's for anything else without
