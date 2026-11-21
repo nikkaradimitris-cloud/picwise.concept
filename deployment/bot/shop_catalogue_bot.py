@@ -8,10 +8,14 @@ Run by picwise-shops.service (picwise-shops.timer, 03:40 UTC, before the prepara
 04:17), as the site's user, with the site's code on PYTHONPATH. It reads the public note
 (`prepared.json`) for the shops with rows a search could show but for a category, adds
 the shops its file already knows, so a shop whose rows it gave a category is asked
-again, and reads the feed's newest copy in the download cache (no key needed) for each
-shop's address and the product names in its product addresses. Not InStock UK (the
-owner, 2026-10-26: it takes part only with the rows it has right; its catalogue answered
-500), and not a shop the owner left out (`eligibility.LEFT_OUT_SHOPS`).
+again, and reads the feed's copies in the download cache (no key needed), one per Awin
+link (`look.feed_copies`; until 21/11 only the newest, so from 20/11 the first link's
+shops were asked no more), for each shop's address and the product names in its product
+addresses. A row of the second link (Awin's own format) links through Awin's
+"pclick.php", which carries no address: its shop's own address is the row's
+`merchant_deep_link` (`own_address`). Not InStock UK (the owner, 2026-10-26: it takes
+part only with the rows it has right; its catalogue answered 500), and not a shop the
+owner left out (`eligibility.LEFT_OUT_SHOPS`).
 
 Then, a few shops at a time and one request at a time per shop: its robots.txt, and only
 what that allows, 3 seconds apart or its crawl-delay when longer: the pages of its
@@ -115,10 +119,25 @@ def _every_shop_in_note(note_path: str) -> set[str]:
     }
 
 
-def read_feed(path: str, wanted: set[str]) -> tuple[dict[str, FeedShop], int]:
-    """Each wanted shop's rows, hosts and product names from the feed's copy, read as the
-    preparation reads it (UTF-8, else Latin-1); and the rows read."""
+def own_address(product_url: str, raw: Mapping[str, Any]) -> str:
+    """The shop's own address of a feed row, read as text, never opened: the one its link
+    carries (`feed_intake._shop_address`), else the row's own `merchant_deep_link`. A row
+    of the second Awin link (Awin's own format, since 2026-11-19) links through Awin's
+    "pclick.php", which carries none, and gives its shop's address in that column; "" when
+    neither gives an address."""
     from picwise_providers.feed_intake import _shop_address
+
+    address = _shop_address(product_url)
+    if address:
+        return address
+    own = _shop_address(str(raw.get("merchant_deep_link") or ""))
+    parts = urlsplit(own)
+    return own if parts.scheme.lower() in ("http", "https") and parts.netloc else ""
+
+
+def read_feed(path: str, wanted: set[str]) -> tuple[dict[str, FeedShop], int]:
+    """Each wanted shop's rows, hosts and product names from one copy of the feed, read as
+    the preparation reads it (UTF-8, else Latin-1); and the rows read."""
     from picwise_providers.normalization import normalize_feed_row_to_provider_product
     from picwise_providers.shop_catalogue import product_address_name, shop_name
 
@@ -136,16 +155,36 @@ def read_feed(path: str, wanted: set[str]) -> tuple[dict[str, FeedShop], int]:
                     continue
                 shop = shops.setdefault(name, FeedShop(name))
                 shop.rows += 1
-                host = urlsplit(_shop_address(product.product_url)).netloc.lower()
+                address = own_address(product.product_url, raw)
+                host = urlsplit(address).netloc.lower()
                 if host:
                     shop.hosts[host] += 1
-                handle, _variant = product_address_name(product.product_url)
+                handle, _variant = product_address_name(address)
                 if handle:
                     shop.names.add(handle)
             return shops, read
         except UnicodeDecodeError:
             continue
     return {}, 0
+
+
+def read_feeds(paths: list[str], wanted: set[str]) -> tuple[dict[str, FeedShop], int]:
+    """Each wanted shop's rows, hosts and product names from every copy of the feed, one
+    per Awin link; a shop in both is read from both. And the rows read in all."""
+    shops: dict[str, FeedShop] = {}
+    read = 0
+    for path in paths:
+        found, rows = read_feed(path, wanted)
+        read += rows
+        for name, part in found.items():
+            shop = shops.get(name)
+            if shop is None:
+                shops[name] = part
+                continue
+            shop.rows += part.rows
+            shop.hosts.update(part.hosts)
+            shop.names |= part.names
+    return shops, read
 
 
 def _product_entry(product: Mapping[str, Any], today: str) -> list[Any]:
@@ -254,6 +293,11 @@ def ask_shop(shop: FeedShop, entry: Mapping[str, Any], *, scheme: str = "https",
             result[key] = entry[key]
     if clock() >= deadline:
         result["status"] = "not asked, out of time"
+        # It keeps the time it was last read, so that the next round asks it before the
+        # shops read in this one (`run_round`, the shops read longest ago first). Until
+        # 21/11 it took this round's time: with every shop read alike, the largest went
+        # first every night and the last were never asked (138 shops since both links).
+        result["read_at"] = str(entry.get("read_at") or "")
         return result
     if not shop.hosts:
         result["status"] = "no address"
@@ -401,13 +445,14 @@ def run_round(*, note: str, cache_dir: str, catalogues: str, scheme: str = "http
     data = load(catalogues)
     known: dict[str, Any] = dict(data.get("shops") or {})
     wanted = shops_to_ask(note, known)
-    copy = look.feed_copy(cache_dir)
-    if copy is None:
+    copies = look.feed_copies(cache_dir)
+    if not copies:
         print("no copy of the feed in the download cache: nothing asked")
         return 0
-    feed, read = read_feed(copy, set(wanted))
+    feed, read = read_feeds(copies, set(wanted))
     print(
-        f"the feed's copy: {read:,} rows read; {len(wanted)} shops to ask, {len(feed)} of them in it; "
+        f"the feed's copies: {len(copies)}, {read:,} rows read; {len(wanted)} shops to ask, {len(feed)} of them in them, "
+        f"{sum(1 for shop in feed.values() if shop.hosts)} with an address; "
         f"asked as {USER_AGENT}, {pause:g} s apart or a shop's crawl-delay, at most {max_requests} requests a shop"
     )
     # The shops never read first, then those read longest ago.
