@@ -733,6 +733,40 @@ def _put_in_place(prepared: PreparedCatalogue, *, file_key: Any = None, check: A
         forget_search_indexes(before[1].fields, before[1].new_fields)
 
 
+# What a look of the keeper's builds: a catalogue read or built beside the one it replaces.
+_BUILT = frozenset({"loaded", "changed", "rebuilt"})
+
+
+def give_memory_back() -> bool:
+    """Hand back to the server the memory a catalogue left behind (health check, 21/11:
+    the site's three workers 5.8 GB fresh after the deployment of 20/11 21:20, 8.3 GB the
+    next morning, the night's file and the new day's catalogue each built beside the
+    one before; with the night's preparation, 14.3 GB, 22.5 GB of the server's 22.9).
+
+    No catalogue stays referenced once replaced (pinned by the keeper's tests), but
+    Python and the C library keep the pages it was freed from, so a worker's memory stays
+    at the peak of holding both, about twice one. A full collection frees what only a
+    cycle holds; then glibc's `malloc_trim(0)` returns the free pages of its heaps
+    (measured on a model of the catalogue: 1,669 MB with both, 1,260 MB once the old was
+    dropped, 914 MB after it; one alone 825 MB). Once a night and at the day's change, in
+    the keeper's thread, never on a request. False where there is no glibc (a test on
+    another system, a serverless host): nothing is done there."""
+    import ctypes
+    import ctypes.util
+    import gc
+
+    gc.collect()
+    try:
+        libc = ctypes.CDLL(ctypes.util.find_library("c") or "libc.so.6")
+        trim = libc.malloc_trim
+    except (OSError, AttributeError):
+        return False
+    trim.argtypes = [ctypes.c_size_t]
+    trim.restype = ctypes.c_int
+    trim(0)
+    return True
+
+
 def keep_prepared_catalogue_loaded(
     *, every_seconds: float = 10.0, once_loaded: Callable[[], object] | None = None
 ) -> threading.Event | None:
@@ -752,7 +786,11 @@ def keep_prepared_catalogue_loaded(
         waiting = once_loaded
         while not stop.is_set():
             try:
-                refresh_prepared_catalogue()
+                done = refresh_prepared_catalogue()
+                if done in _BUILT:
+                    # Here, once the look has returned: its frame no longer holds the
+                    # catalogue left behind.
+                    give_memory_back()
                 if waiting is not None and _PREPARED_STATE.get("catalogue") is not None:
                     waiting, call = None, waiting
                     call()

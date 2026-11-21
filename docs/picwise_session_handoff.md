@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-20 (23:30 Athens, after the deployment of the kinds' lists).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-21 (12:55 Athens, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,7 +8,26 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (20/11, 23:30 Athens): DEPLOYED on the owner's «Ανέβασε»: the kinds' lists, their rule and the AI's
+- **FIRST (21/11, 12:55 Athens, the daily session): the site's memory at night over the limit; a fix built,
+  NOT deployed, put to the owner.** The night passed (`/prepared.json` read 09:43 UTC: prepared 04:35:03,
+  389,735 products, 135 shops, no shop gone, shrunk or new). `server-health.yml` by hand (run 44890957471, 09:44
+  UTC): **over the limit: the site and the preparation together need 22.5 GB** (limit 20, server 22.9): the
+  site 8.3 GB (5,833 MB after the deployment of 20/11 21:20), the night's preparation peak 14.3 GB, 27.9 min;
+  13.9 GB available now; every search's server part under 0.6 s; disk 189 GB free; AI yesterday $0.00. Every
+  night since both links (19/11) the site had been restarted by a deployment the day before; tonight (22/11
+  04:17 UTC) is the first with swollen workers, as on 20/11 08:56 (workers ~2.9 GB each + a preparation of 14 GB:
+  out of memory). The cause looked for: no catalogue stays referenced once replaced (a new test, weakrefs);
+  Python and glibc keep the pages the old one was freed from. **The fix** (`state.give_memory_back`, called by
+  the keeper after a look that loaded, changed or rebuilt the catalogue: `gc.collect()` then glibc's
+  `malloc_trim(0)`; tests `MemoryGivenBackTests`, 3): measured only on models, offline: a model of mixed sizes
+  1,669 MB with both, 1,260 MB once the old was dropped, 914 MB after (one alone 825); the keeper itself on a
+  prepared file of 12,000 fictional products, three nights: 80 MB without, 75 MB with (start 64). The model does
+  not reproduce the server's growth (+43%), so the real gain is known only on the site. Put to the owner: put it
+  on the site (a deployment of about 3-5 minutes, the catalogue not prepared again), and, if the memory stays
+  high, the stronger remedy that needs the owner (restart the site before the night's preparation; or two
+  workers, remedy 3, refused on 20/11). Still waiting: the daily limit of the nightly scan (asked 20/11 23:55).
+
+- **20/11, 23:30 Athens: DEPLOYED on the owner's «Ανέβασε»: the kinds' lists, their rule and the AI's
   answers asked again** (PROGRESS.md, 20/11 20:40, 21:35, 22:25 and 23:30). `e383e7c` on the site (run
   44814871339, release `20261120T205008Z-e383e7c`, prepared 21:09:04 UTC: 389,679 products, 135 shops; site since
   21:20:29 UTC). Read live (run 44819927760, `claude/live-check-2026-11-20`): "boots" and "watches" right, no cables

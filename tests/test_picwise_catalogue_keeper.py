@@ -274,5 +274,60 @@ class TheKeepersThreadTests(_KeeperMixin, unittest.TestCase):
         self.assertTrue(state._keeper_on())
 
 
+
+class MemoryGivenBackTests(_KeeperMixin, unittest.TestCase):
+    """Health check, 21/11: the site's workers 5.8 GB fresh, 8.3 GB the next morning.
+    The catalogue left behind is no longer referenced, and its pages go back to the
+    server once a look of the keeper's has built one beside it (`state.give_memory_back`)."""
+
+    def test_the_catalogue_left_behind_is_referenced_by_nothing(self) -> None:
+        import gc
+        import weakref
+
+        self._start()
+        self.assertEqual(refresh_prepared_catalogue(), "loaded")
+        old_catalogue = weakref.ref(state._PREPARED_STATE["catalogue"][1])
+        old_prepared = weakref.ref(state._PREPARED_STATE["prepared"])
+        self._new_file(_feed_rows() + ANewFileTests._WITH_A_CHEAPER_KETTLE)
+        self.assertEqual(refresh_prepared_catalogue(), "changed")
+        gc.collect()
+        self.assertIsNone(old_catalogue())
+        self.assertIsNone(old_prepared())
+
+    def test_the_keeper_gives_memory_back_after_a_build_and_only_then(self) -> None:
+        self._write_feed(_feed_rows())
+        self._prepare()
+        self._answer_from_prepared()
+        looks = iter(["loaded", "current", "current", "changed", "current", "rebuilt"])
+        given: list[str] = []
+        last: list[str] = []
+        done = threading.Event()
+
+        def refresh() -> str:
+            try:
+                last[:] = [next(looks)]
+            except StopIteration:
+                done.set()
+                last[:] = ["current"]
+            return last[0]
+
+        with patch.object(state, "refresh_prepared_catalogue", side_effect=refresh), \
+                patch.object(state, "give_memory_back", side_effect=lambda: given.append(last[0]) or True):
+            stop = keep_prepared_catalogue_loaded(every_seconds=0.01)
+            self.assertIsNotNone(stop)
+            self.assertTrue(done.wait(10))
+            stop.set()
+            state._KEEPER["thread"].join(timeout=10)
+        self.assertEqual(given, ["loaded", "changed", "rebuilt"])
+
+    def test_giving_memory_back_is_safe_where_there_is_no_glibc(self) -> None:
+        import ctypes
+
+        with patch.object(ctypes, "CDLL", side_effect=OSError("no libc here")):
+            self.assertFalse(state.give_memory_back())
+        if sys.platform.startswith("linux"):
+            self.assertTrue(state.give_memory_back())
+
+
 if __name__ == "__main__":
     unittest.main()
