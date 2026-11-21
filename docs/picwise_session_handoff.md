@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-21 (13:50 Athens: a second opinion on the owner's plan of 21/11 and the work split by model; before it, 12:55, the daily session: the site's memory at night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-21 (14:50 Athens: task 1 of the work split by model, the shops' bot and both links, built, put to the owner; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,7 +8,42 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (21/11, 13:50 Athens): a second opinion on the owner's plan of 21/11 (links, prices, photos,
+- **FIRST (21/11, 14:50 Athens): task 1 of the work split by model (OPUS, the next item): the shops' bot
+  reads both Awin links again; a second-link row's own address; the memory fix's deployment corrected.
+  Built and tested, NOT deployed: two deployments put to the owner, one after the other, with InStock UK.**
+  (owner: «PicWise: συνέχισε από το handoff, εργασία 1»; PROGRESS.md, 21/11 14:50.)
+  - **Confirmed on the server** (`prepare-runs.yml` by hand, run 44901697947; `print_prepare_runs.py` now
+    prints the bot's own lines a night, counts only): 19/11 the first link's copy (1,681,066 rows), 82 shops
+    asked, 498 requests, the file 149,495 products; 20/11 and 21/11 the second link's copy only (~1,446,000
+    rows, 413 MB, written 96 s after the first's 248 MB), 87 and 86 shops, **0 requests, all "no address"**,
+    and the file **149,495 -> 28,135 products on 20/11**: a shop in both links met only `pclick.php` links in
+    the second copy and kept none of its products. So those shops' readings were gone from 20/11, the
+    others' from 23/11. The cache also holds a copy of 25/10 (367 KB): left by the new rule.
+  - **Built.** `11cd5ab` on the live `e383e7c` (branch `claude/bot-two-feeds-site-2026-11-21`), nothing under
+    `src/`, so the prepared file's fingerprint stays the live one (`2f1a4bbf33bc`) and its deployment alone
+    does not prepare: every copy written within 30 h of the newest read (`shop_catalogue_test.feed_copies`),
+    a shop in both from both; a row's own address its link's, else its `merchant_deep_link`; a shop not asked
+    for lack of time keeps its `read_at` (until now every shop took the round's time, so with 145 shops the
+    largest went first every night and the last were never asked). Then on the work line (merge `341a9d8`)
+    `c87ba01`: `shop_catalogue.own_address`, read by the bot and by `apply_shop_catalogues`, so a second-link
+    row meets its shop's reading ("sold out" holds it, also one variant; "in stock" stands; no address, the
+    feed decides). Tests `test_picwise_shop_bot_two_feeds` (8), `test_picwise_shop_catalogue_second_link` (2).
+  - **Corrected: the memory fix `8b12ae3` prepares the catalogue again** (it changes
+    `src/picwise_providers/state.py`, which the code fingerprint reads: `acd77199db6c` against the live
+    `2f1a4bbf33bc`), about 25-30 minutes, not the 3-5 the daily session wrote. With the site at 8.3 GB and
+    13.9 GB available (11:55 UTC, run 44901351119) and a preparation's peak of 14.3 GB, that preparation would
+    likely be killed for memory (20/11 08:56); remedy 1 would keep the site as it is. Tonight's 04:17 faces
+    the same sum unless the site is restarted before it.
+  - **Put to the owner:** (1) `11cd5ab` to `ccr-1361f1a7-dcpo60` (3-5 minutes, no preparation; the site
+    restarts with fresh workers, about 5 GB); (2) right after it, the work line's head (the memory fix and
+    the second link's readings: prepares, beside a fresh site, as on 20/11 12:16 and 20:49, both fast-forwards.
+    And InStock UK (about 100,000 products, a quarter; never asked by the bot, owner 26/10): a look at a few
+    products first, a product at a time (about 3.5 days a round at 3 s), left unchecked, or out.
+  - **After a deployment:** the bot's first round with the fix is 22/11 03:40 UTC; read it with
+    `prepare-runs.yml` (by hand, `since=-30h`): how many copies, shops with an address, requests, ends.
+    First the 19/11 shops (the oldest `read_at`), then the rest by size; the large ones (Tooled Up,
+    GamingKit, PCHUB.UK) need several rounds at 200 requests a round.
+- **(21/11, 13:50 Athens): a second opinion on the owner's plan of 21/11 (links, prices, photos,
   sorting), by Claude Fable 5.2 in the PicWise Project: what was found, what was put to the owner, and the
   work split by model. Records only: nothing built, nothing deployed, no decision of the owner changed.**
   The memory fix of 12:55 (the next item) still waits for its «ανέβασε».
@@ -97,7 +132,8 @@ a decision came about.
     in Greek, to change the model to Fable 5.2 first; after it, back to Opus 5.5.** The order proposed:
     1. OPUS: the memory fix's «ανέβασε» (next item); **the bot reads both links' copies and takes a
        second-link row's address from `merchant_deep_link`** (urgent: 23/11); InStock UK put to the owner
-       (asked a product at a time, left unchecked, or out).
+       (asked a product at a time, left unchecked, or out). **Built 21/11 14:50, not deployed, all three put
+       to the owner (the item above).**
     2. OPUS: an hour's look, no scan, at the buttons, prices and photos the owner saw fail: ours, Awin's
        or the shop's; the ids two shops share, counted.
     3. OPUS: what needs no bot: Awin's feed list and programmes (joined, last update); the photo's limit
@@ -128,7 +164,8 @@ a decision came about.
   1,669 MB with both, 1,260 MB once the old was dropped, 914 MB after (one alone 825); the keeper itself on a
   prepared file of 12,000 fictional products, three nights: 80 MB without, 75 MB with (start 64). The model does
   not reproduce the server's growth (+43%), so the real gain is known only on the site. Put to the owner: put it
-  on the site (a deployment of about 3-5 minutes, the catalogue not prepared again), and, if the memory stays
+  on the site (a deployment of about 3-5 minutes, the catalogue not prepared again: **wrong, corrected 21/11
+  14:50: `state.py` is under the fingerprint's packages, so it prepares again, the first item**), and, if the memory stays
   high, the stronger remedy that needs the owner (restart the site before the night's preparation; or two
   workers, remedy 3, refused on 20/11). Still waiting: the daily limit of the nightly scan (asked 20/11 23:55).
 
