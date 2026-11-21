@@ -1,0 +1,540 @@
+# PicWise: the checks' rules
+
+Written 2026-11-21 (evening, Athens) as task 4 of the work split by model (Claude Fable
+5.2; `docs/picwise_session_handoff.md`). **Rules only: nothing here is built, nothing is
+deployed, nothing on the site has changed.** They are built in task 5 and looked at before
+their «ανέβασε» in task 7. Until that deployment the site's rules are the ones
+`PROJECT_RULES.md` gives as in force today.
+
+Each rule names whose it is:
+
+- **Owner**: his words, with the day.
+- **Proposed**: written here so that his decisions work, told to him on 21/11, his yes
+  still to come (section 13 lists them). A proposed rule is built as written and is his to
+  change.
+
+## Σύνοψη για τον ιδιοκτήτη
+
+- Κάθε προϊόν ελέγχεται στο site του καταστήματός του: ανοίγει η σελίδα του, έχει απόθεμα,
+  ποια τιμή γράφει, φορτώνει η φωτογραφία του. Το link της Awin δεν πατιέται ποτέ.
+- Ό,τι αποτύχει κόβεται το ίδιο βράδυ, για οποιονδήποτε λόγο (απόφασή σου, 21/11).
+  Ξαναρωτιέται το επόμενο βράδυ και γυρίζει μόλις περάσει.
+- Όταν η σελίδα του καταστήματος γράφει άλλη τιμή, η κάρτα δείχνει την τιμή της σελίδας
+  (απόφασή σου). Πρώτα ο αναγνώστης αποδεικνύει ότι διαβάζει σωστά το κατάστημα: πρέπει να
+  συμφωνεί με το feed στα περισσότερα προϊόντα του.
+- Κατάστημα που δεν μπορεί να ελεγχθεί (μπλοκάρει το bot, ή η σελίδα του δεν διαβάζεται)
+  έχει 14 μέρες. Μετά βγαίνει ολόκληρο και γυρίζει μόλις ελεγχθεί (απόφασή σου).
+- Κατάστημα που απορρίπτει την αίτηση στην Awin βγαίνει (απόφασή σου). Όσα δεν έχουν
+  απαντήσει ακόμα μένουν.
+- Το InStock UK ελέγχεται όπως όλα τα καταστήματα (απόφασή σου).
+- Δεν υπάρχουν δοκιμαστικά βράδια: ο έλεγχος κόβει από το πρώτο βράδυ (απόφασή σου). Γι'
+  αυτό το φρένο είναι αυστηρό. Όταν ένα κατάστημα πάει να χάσει σε ένα βράδυ πάνω από το
+  1/4 όσων ελέγχθηκαν, τα κοψίματά του περιμένουν δεύτερη ματιά. Όταν το ίδιο συμβεί σε
+  πολλά καταστήματα μαζί, εκείνο το βράδυ δεν κόβεται τίποτα. Και ένας διακόπτης φέρνει
+  πίσω όλα τα προϊόντα, με τη λέξη σου.
+- Νέο προϊόν μπαίνει μόνο αφού περάσει τον έλεγχο. Τη θέση όσων κόπηκαν την παίρνουν
+  προϊόντα που πέρασαν.
+
+## 1. What the checks are for, and what they rest on
+
+The owner, 21/11: some buttons do not lead to the shop, some prices differ from the shop's,
+some photos never load; he cannot know the whole feed or every shop, so the check must
+remove what fails, not count it. What was measured the same day, on the server, read-only:
+
+- **The site's own side of the button is sound.** 389,735 products, 389,735 ids, none
+  shared; all 95 first cards of his own 24 searches find their product and leave through
+  an Awin link (run 44909213170). What Awin does with the click no machine may see.
+- **Shops' pages**, of those 95: 57 the same product in stock; 6 the same product named
+  with its size or colour; 4 sold out on the shop's site while shown; 22 with no product a
+  machine reads (Tooled Up, Plusshop UK, Tyres UK, Tirendo UK, MoreThisWay); Aosom UK's
+  robots.txt answers 403 to the bot.
+- **Prices**, 69 read: 63 the same; pennies apart at PCHUB.UK, £1 at Back to the Office,
+  +9% at InStock UK, another size at Starlight Beds. InStock UK alone (run 44904597222): of
+  12 products 1 gone (404); of 11 found, 5 the same price, 5 dearer on its site by the
+  same 9%, 1 another variant.
+- **Photos**: all 95 load in under a second. The night's check holds 6,599 gone (404, 410).
+- **Awin** (runs 44914493498, 44914719475): the account is joined to 8 of the catalogue's
+  160 shops (16.9% of the products), not joined to 150 (83.1%), 2 in no list; no shop of
+  the catalogue is rejected or pending today; 35 shops' feeds were last imported over 7
+  days ago (12,684 products).
+
+Three things no check here ever does (owner's standing rules): press an Awin link or the
+site's own `/out/...`; claim that a click was tracked or a commission earned; print or keep
+in a public place an address, a feed link, a key or a server name.
+
+## 2. The owner's decisions
+
+### 2.1 His plan of 21/11 (kept whole in the handoff)
+
+- «Ποιότητα πάνω από ποσότητα. Όποιο προϊόν δεν περνά τον έλεγχο κόβεται, και όποιο
+  κατάστημα δεν δέχεται το bot βγαίνει ολόκληρο. Τη θέση τους μέσα στο όριο των 12.000 την
+  παίρνουν προϊόντα που πέρασαν τον έλεγχο.»
+- «Το AI ρωτιέται μία φορά για την κατηγορία κάθε προϊόντος. Όποιο προϊόν δεν μπαίνει σε
+  κατηγορία βγαίνει.»
+- «Δεν γίνεται σκανάρισμα ούτε μέτρηση πριν: φτιάχνουμε τους μηχανισμούς και τους
+  ανεβάζουμε. Δεν υπάρχει ημερήσιο όριο κόστους, μόνο ένα φρένο για λάθη.»
+- «Δεν πατιούνται ποτέ αυτόματα τα links του Awin, για να μη γίνονται ψεύτικα κλικ. Η
+  διεύθυνση του καταστήματος διαβάζεται μέσα από το link.»
+- Every product's link checked first, then each new product before it enters, and some old
+  ones again each night; a night that cuts unusually many stops the removal; the checks use
+  the barcode and every other code that names a product.
+- 21/11, 16:51, of the 150 shops the account is not joined to: «Θα κάνουμε αιτήματα να
+  δούμε ποια από αυτά θα μας εγκρίνουν».
+
+### 2.2 His six answers of 21/11 (evening), each to a question that put his first word beside another
+
+1. A shop the bot cannot check (it blocks the bot, or its page is not read by a machine):
+   **«Προθεσμία 14 μέρες»**. He writes to a shop that blocks through Awin; a way to read
+   an unread page is made; still unchecked after 14 days, it leaves whole and comes back
+   once checked. (His first word: out at once.)
+2. A page's price other than the card's: **«Δείχνουμε την τιμή της σελίδας»**. (His first
+   word: the product is cut.)
+3. A page or a photo that does not answer one night: **«Αμέσως, για κάθε λόγο»**: the
+   product is cut that night. (Proposed and not taken: on the third night in a row.)
+4. Three first nights of report only: **«Όχι, κόβει από το πρώτο βράδυ»**. (Proposed and
+   not taken: three nights that say what they would cut.)
+5. InStock UK, never asked by the bot since 26/10: **«Ναι, να ελέγχεται»**, as every shop.
+6. A shop that rejects the account's application at Awin: **«Βγαίνουν»**, its products
+   leave.
+
+Answers 3 and 4 leave one safeguard, the one he named: the brake (section 7). It is
+written to carry that weight.
+
+## 3. Words
+
+- **Product**: one row of a feed, known from night to night by its shop and its id
+  (`catalogue_memory.product_key`). A card may join several rows of one product page
+  (`search_selection._join_variants`); each row is checked for itself.
+- **Check**: one question about one product on one night: its page, its stock, its price,
+  its photo, its category. A shop has its own: can it be checked, Awin, its feed's age.
+- **Verdict**: `passed`; `failed`, with its reason; or `not checked` (never asked yet, or
+  its shop cannot be checked).
+- **Decided**: a check that ended `passed` or `failed`.
+- **Cut**: a failed product is no product a card can show: not shown, counted, recommended
+  or kept by the cap. **At once** means from the catalogue prepared that same night (the
+  checks end before the preparation of 04:17 UTC); for a photo, from the list the site
+  reads within a minute of the night's photo check.
+- **Held**: failed, but kept as it was by a brake until a second look.
+- **Night**: one round of checks, ending before a night's preparation.
+
+## 4. How a shop is asked
+
+1. **Only the shop's own address**, read as text from the row
+   (`shop_catalogue.own_address`: the address its Awin link carries, else its
+   `merchant_deep_link`). Never an Awin link, never the site's `/out/...` (owner). A
+   redirect to another site is not followed.
+2. **Its robots.txt first**, each night; only what that allows; its crawl-delay when
+   longer than the bot's own pause, up to 60 s.
+3. **One request at a time a shop, 3 seconds apart**, many shops at once, under the bot's
+   own name (`PicWiseBot/…`, with the site's address). A 429, or a 503 that says when to
+   come back, ends that shop's night: what was not asked is not failed.
+4. **Never around a block**: no other name, no changing addresses, no CAPTCHA solved.
+5. **Readers, the cheapest first:**
+   1. *Shopify's catalogue* (`/products.json`, 250 products a request; by collections
+      over 25,000): per product that it is there and its type; per variant its id, SKU,
+      price and whether it can be bought. A product's own `.js` (one request) adds each
+      variant's barcode, asked only where a code is needed.
+   2. *The product's page, as HTML*: its schema.org Product and Offer (JSON-LD, then
+      microdata), then the `product:` and `og:` tags: availability, price, currency, SKU,
+      GTIN, MPN.
+   3. *A shop's recipe*: where 1 and 2 read nothing on a shop's pages, the AI is asked
+      once for that shop where its HTML writes the price, the stock and the codes; code
+      then reads by the recipe, and the AI is asked again only when the recipe stops
+      reading (owner's plan, step 4: by code, by the AI only where code cannot).
+   4. Nothing else: no page drawn in a browser, no guess from words such as "Add to
+      basket". A shop none of these reads cannot be checked (5.6).
+6. **The codes** (owner, 21/11: the barcode and every code that names a product): a GTIN
+   whose check digit agrees (`product_identity.valid_gtin`), a brand with its part number
+   (`product_identity.same_product_key`), a shop's own SKU, a Shopify variant's id. Like
+   is compared with like only. An IMEI is one handset's own number, not a product's: no
+   feed and no shop page gives one.
+7. **The server's room**: the checks stop before the preparation starts and never run
+   beside it (the server has 22.9 GB; the preparation peaks at 14.9 GB, the site at up to
+   8.3 GB). The round of the largest shop asked a page at a time must fit in 14 nights:
+   Tooled Up's 68,508 pages at 3 s are about 57 hours, a little over 4 hours a night.
+
+## 5. The verdicts
+
+### 5.1 The page (the button's far end)
+
+| What the shop's site answers at the product's own address | Verdict | Reason |
+|---|---|---|
+| 200 with the product read on it; or, in a Shopify shop, the product found in the catalogue read that night | passed | |
+| 404 or 410 | failed | `gone` |
+| nothing: a timeout, a connection refused or reset, a 5xx; asked once more at the end of the shop's round | failed | `no answer` |
+| a redirect to the home page, a category, a collection or a search; or to another product whose codes differ or, with no code on both sides, whose title is not alike | failed | `moved` |
+| 200 with no product on it, in a shop whose reader reads at least 9 in 10 of its other pages that night | failed | `not a product page` |
+| the page gives a GTIN for every one of its variants and the row's own valid GTIN is none of them | failed | `another product` |
+| on our own side: the product's id is one another product of the catalogue shares (the site's button finds a product by its id alone; none on 21/11) | failed | `id shared` |
+| 401, 403, 429, a challenge or CAPTCHA page; robots.txt says no; no reader reads the shop | not checked | the shop's matter (5.6) |
+
+- A product missing from a Shopify catalogue read whole is asked at its own address
+  before it is called gone.
+- **A title alone never fails a product** at its own address: 6 of the 95 cards of 21/11
+  had a title under 60% alike and were the same product (a size or a colour in the name).
+  A title is compared only after a redirect to another product's address.
+- A redirect to another address of the same product (the shop renamed it; the codes or the
+  variant's id agree) is passed.
+- What agreed is kept with the verdict: `by variant id`, `by code`, or `by address` (there
+  was nothing to compare).
+
+### 5.2 Stock
+
+Owner, 2026-11-12 (`PROJECT_RULES.md` §5), unchanged: the shop's own site, read within the
+last 3 days, decides a product's stock before the feed, either way; with no reading of the
+last 3 days the feed decides. Added here:
+
+- In stock is a state that lets the buyer order now for delivery. Out of stock, sold out,
+  discontinued, pre-order, back-order and "in store only" are not in stock, where a page
+  says so (Proposed, as the bot's design of 23/10 had it,
+  `docs/PICWISE_SERVER_ARCHITECTURE.md` 3.5; Shopify's catalogue says only whether a
+  variant can be bought).
+- A product hidden on the site's "sold out" comes back the night the site says in stock.
+  It is no failure and trips no brake of section 7.2.
+- A product the site called sold out while its feed calls it in stock is asked again
+  within the 3 days, before the reading lapses, so that it does not come back on the
+  feed's word between two readings (Proposed).
+- A reader other than Shopify's catalogue proves itself in a shop first (7.5).
+
+### 5.3 Price
+
+Owner, 21/11: **«Δείχνουμε την τιμή της σελίδας»**. No price is worked out: the page's
+price is the shop's own, as the feed's is.
+
+1. **A reading belongs to a row only when it is tied to it.** In a Shopify shop: the
+   variant the row's address names, else the variant whose SKU or barcode is the row's,
+   else the product's one price (one variant, or every variant at one price). On a page:
+   the offer whose SKU, GTIN or MPN is the row's, else the page's one price when the feed
+   has one row for that address or all its rows for it at one price. In pounds only.
+2. **A reading not tied changes nothing**: the row keeps its feed's price and is not
+   failed. A product with sizes shows, on its page, the price of the size the shop puts
+   first (Starlight Beds, 21/11: £84.99 on the card for one size, £54.99 on the page for
+   its smallest).
+3. **A tied reading other than the feed's price is the card's price** (the feed's price
+   being the one the card shows today: its sale price where one is in force,
+   `normalization.sale_price_in_force`), read as the shop's own price by everything that
+   reads a price: the order, "More", the counter, "Lowest price", the price bar, the
+   Recommended, the one shop shown for a product several sell.
+4. **It stands until the product's next reading.** When the feed's price for the row
+   changes, the reading is old: the row is asked again before any product never asked
+   (section 10) and shows its feed's new price until then.
+5. **The price's history starts again the night a row's price changes its source** (feed
+   to site, or back), as it did the night sale prices were first read (`catalogue_memory`,
+   `sale_prices_read_from`): no ▲ or ▼ is told for a change of source (`PROJECT_RULES.md`
+   §4: no fake savings). (Proposed.)
+6. **The reader proves itself in a shop before it changes a price there, and a price far
+   apart is no price** (7.5). (Proposed.)
+
+### 5.4 The photo
+
+Owner, 21/11: **«Αμέσως, για κάθε λόγο»**. Until these rules are deployed the rule of
+2026-11-01 stands: only 404 and 410 call a photo gone.
+
+- passed: 200 with an image and a body.
+- failed, that night: 404, 410; no answer or a 5xx (asked once more at the end of the
+  night's run); an answer that is no image; an empty one. The product is cut by the list
+  the site reads (`product_photos`), as today.
+- A 429 is our own pace: asked again later in the run, more slowly; still 429, not asked,
+  not failed.
+- Refused (401, 403) on at least 9 in 10 of a shop's photos asked that night (at least
+  20): the shop's photo host refuses the checker, which is not each photo's failure. Those
+  photos are `not checked`, the shop is named in the report, and nothing of it is cut for
+  that: in the visitor's browser a card whose photo fails, or has not come 10 s after it is
+  in view, is never seen (deployed 21/11), so the browser is the judge. The owner's answer
+  on a shop that cannot be checked was about its pages; whether a shop whose photos alone
+  cannot be checked leaves is his to say (section 13). A refusal on fewer photos is a
+  failure like any other.
+- Asked again: the next night after any failure but 404 and 410; those after 7 days (as
+  today). A photo that answers again is back on the next list.
+
+### 5.5 The category
+
+Owner, 21/11: the AI is asked once for each product's category; a product that gets none
+is out, never forced in.
+
+- passed: the AI gave the product a line of Google's taxonomy (`ai_shelves`); a line it
+  gives when it slips (`SLIP_LINES`) is no line.
+- failed, `no category`: "no line fits", refused, or a slip. Cut.
+- Asked once for the product's own words (`picwise_ai.shelves.ask_key`: its title less
+  sizes and colours, its brand, its shop's category words). A product whose words change
+  is a new question. All are asked again only when the question itself changes (its
+  wording, the taxonomy, the model), which is a new version of it (Proposed: «μία φορά»
+  read as once for each question).
+- not asked yet: a new product waits for its answer (section 9); one the catalogue already
+  holds stays until asked.
+- **A product with a line but no PicWise kind is not cut here**: the 264,642 products of
+  no kind are task 9.
+- How many products have no line today is not known: read in the look before the
+  «ανέβασε» (task 7).
+
+### 5.6 The shop
+
+1. **Left out by the owner** (`eligibility.LEFT_OUT_SHOPS`): as today; only his word.
+2. **A shop that cannot be checked** (owner, 21/11: 14 days). It is so on a night when: its
+   rows give no address of its own (an Awin link alone, which is never pressed); or its
+   robots.txt disallows its product pages or answers 401 or 403; or it asks for a
+   crawl-delay over 60 s; or at least 9 in 10 of the round's requests to it are refused
+   (401, 403, 429, a challenge page); or no reader reads a product on at least 9 in 10 of
+   its pages that answer 200 (at least 10 asked).
+   - Day 1 is the first such night. The next morning's report names the shop and why, with
+     a letter for the owner to send it through Awin when it refuses the bot (the bot's
+     name, what it reads, its pace); for an unread page a recipe is made (4.5.3).
+   - Meanwhile its products stay as they are and none new enters.
+   - On day 15, still so: every product of it is cut (`shop cannot be checked`).
+   - Each night it is asked again (its robots.txt, then up to 5 of its pages). The first
+     night a product is read on it, its count ends; if it was out, its products come back
+     as they pass, as new products do.
+   - The count starts afresh only after 7 nights in a row of being checked; a shop that
+     falls back sooner goes on from the day it had reached. (Proposed.)
+   - Today: Aosom UK refuses (10,052 products; the account is joined to it); Tooled Up
+     (68,508), Plusshop UK, Tyres UK, Tirendo UK and MoreThisWay showed pages no reader
+     reads. Their days count from the first night of the built checks.
+3. **Awin**, read each night from its API (as `deployment/server/print_programmes.py`
+   reads it), never by a click:
+   - joined: in.
+   - rejected: out from that night (owner, 21/11: «Βγαίνουν»); back the night it is joined.
+   - suspended, or in none of Awin's lists (a programme closed): out likewise (Proposed:
+     the same reason, no partnership; 2 shops, 28 products on 21/11).
+   - not joined, or pending: in (owner, 21/11, 16:51: the applications first). What a
+     visitor meets behind the button of a shop the account is not joined to is not known
+     (section 13, 1).
+   - Awin's link status `offline` (advertisers upgraded from ShareASale): Awin sends the
+     shop's links to the publisher's fallback address, or to its page "This link is
+     inactive". The shop is out while offline, back the night it is online (Proposed: the
+     button would not reach the shop). The owner sets a fallback address in his Awin
+     profile.
+   - A night Awin's API does not answer changes nothing: the last reading stands, and
+     after 7 such nights the report says so.
+   - A reading of Awin (relationships, link status, the feeds' ages) that would put out,
+     in one night, more than 3 shops, or shops holding over 5% of the products shown,
+     changes nothing that night: it is reported, and waits for the owner's word (Proposed:
+     an answer of Awin's cut short must not empty the site; several rejections arriving
+     together are one word of his).
+4. **Its feed's age** (Proposed): Awin's feed list gives each feed's last import. Over 7
+   days old, the feed's word on stock and price is old: a product of it is shown only with
+   a reading of its shop's own site of the last 3 nights. From the end of the shop's first
+   round (9.3). A feed the list does not show has no known age and is not judged by it. On
+   21/11: 35 shops, 12,684 products (MoreThisWay since 16/09).
+
+## 6. What is cut, and when
+
+| What | When | Whose |
+|---|---|---|
+| A page that fails, for any reason (5.1) | that night | Owner, 21/11 |
+| A photo that fails, for any reason (5.4) | that night | Owner, 21/11 |
+| A product with no category (5.5) | that night | Owner, 21/11 |
+| A product sold out on its shop's site (5.2) | that night, hidden as out of stock | Owner, 12/11 |
+| A price far apart (7.5) | that night | Proposed |
+| A shop rejected at Awin | that night | Owner, 21/11 |
+| A shop suspended, closed or offline at Awin | that night | Proposed |
+| A shop that cannot be checked | on its day 15 | Owner, 21/11 |
+| A product of an old feed with no fresh reading of its shop | from the end of its shop's first round | Proposed |
+| A new product never asked | it does not enter | Owner, 21/11 |
+
+Not cut: a price that differs (the page's price is shown); a price not tied to its row; a
+title unlike the page's; a product of a shop not joined or pending at Awin; a product with
+a category and no PicWise kind; a product asked of a shop that refused that night.
+
+## 7. The brakes
+
+Owner, 21/11: «μόνο ένα φρένο για λάθη»; a night that cuts unusually many stops the
+removal; no nights of report only. So the brake is what stands between a fault of ours and
+the catalogue. Its numbers are Proposed.
+
+### 7.1 What is no failure
+
+- A refusal (401, 403, 429, a challenge) is the shop's matter (5.6), never a product's
+  failure.
+- A product not asked is not failed.
+- **A round that is ours to blame records nothing**: when fewer than half of the shops
+  asked in a round gave any answer at all, the fault is on our side (the server's
+  network). The report says so first.
+
+### 7.2 A shop's night
+
+Of a shop's products decided on a night (at least 20), when more than a quarter fail that
+were not failed the night before, the shop's brake holds: those products are `held`, kept
+as they were, and asked again the next night before anything else.
+
+- What fails again is cut on that second night; what passes, passes.
+- **Only where the shop has at least 20 passes on record**, that night or before: they
+  show that the reader reads that shop. A shop with fewer stays held until a look finds
+  whose the failures are, and the owner's word on it («κόψε»): nothing yet shows that
+  what failed there is the shop's and not ours.
+- Photos are counted apart, by the same numbers.
+
+### 7.3 A kind's night
+
+When a night's new cuts would take more than a quarter of the products a kind shows (a
+part as the cap reads it, `catalogue_cap.part_of`, with at least 40 shown), that kind's new
+cuts are held one night and asked again first; what fails again is cut. A search keeps its
+products while a second look runs.
+
+### 7.4 The whole night
+
+When the brake of 7.2 holds for more than a third of the shops decided that night (at
+least 6 shops), or the night's new cuts pass 10% of the products shown, **nothing new is
+cut that night**, by any check: all of it is held, the report says so first, and the next
+night asks the held again. Two such nights running, the cutting stays stopped until a look
+and the owner's word. A shop that leaves whole under 5.6 is not counted here: its day 15
+is in the report days before, and Awin's readings have their own stop (5.6.3).
+
+### 7.5 A reader proves itself; a price far apart
+
+- In a shop, a reader's word on price, and on stock for a reader other than Shopify's
+  catalogue, changes the site only once it is proven there: of its tied readings of the
+  last 7 nights (at least 20), at least 7 in 10 say what the feed says (the price to the
+  penny; the same stock). A reader that reads the right place agrees with the feed on most
+  products; only then may it overrule the feed on the rest.
+- Not proven: the feed's price and stock stand for that shop. The report gives the share
+  that agrees and the commonest ratio between the two prices (1.2 is VAT; 100 is pence;
+  1.09 is InStock UK's on 21/11, 5 of 10). A look names the cause and the shop is then set
+  by hand, in a list kept in the repo with its date and reason (as
+  `shop_words.LEARNED_TYPES` is): the site's prices stand there, or the reader is mended.
+- **Far apart**: a tied reading under half of the feed's price or over twice it is no
+  price to show. The product is failed, `price far apart`, cut that night and asked again
+  the next: one of the shop's two words is badly wrong.
+
+### 7.6 The AI's cost
+
+Owner: no daily limit of cost, a brake for errors. The checks' own calls to the AI (the
+shops' recipes, the category of new products) stop for the night at $10, far above a
+night's need (a recipe is a few calls a shop, once): a stop for a loop gone wrong, not a
+budget. Reaching it is reported.
+
+### 7.7 The switch
+
+One setting on the server turns every cut of these rules off: the preparation reads no
+verdict, the photo list holds only 404 and 410 as before, the cards' prices are the
+feed's. It is turned on the owner's word; the catalogue is whole again from the next
+preparation. The checks go on asking and recording meanwhile. From the deployment of the
+checks the switch is on: they cut from their first night (owner, 21/11).
+
+## 8. Coming back
+
+1. **A failed product is asked again**: the next night and the two after; then every 7
+   nights while the feed lists it. `gone` and `another product`: after 7 nights, then
+   every 30. Any failed product: the next night after its feed row changes its address,
+   its photo's address or its price.
+2. **The night its failed check passes, the failure ends.** It is a product a card can
+   show again and takes a place by the cap's rules. One that passes again within 7 nights
+   of its cut counts for the cap as kept the night before, so that one bad night does not
+   cost a product its place (Proposed).
+3. **Stock**: the night the shop's site says in stock; with no reading of the last 3 days,
+   the feed (5.2).
+4. **The category**: 5.5. **A shop**: 5.6.
+
+## 9. What the cap reads
+
+Owner, 21/11: «Τη θέση τους μέσα στο όριο των 12.000 την παίρνουν προϊόντα που πέρασαν τον
+έλεγχο»; a new product is checked before it enters.
+
+1. **A product a card can show** (today `offer_health.evaluate_product_eligibility`: in
+   stock, a price, an image, a readable currency, a type or category) must also: be of a
+   shop that is in (5.6); have no failed check; carry its category (5.5); and, once its
+   shop's first round is over (3 below), have its page passed within the last 30 nights.
+2. **The cap's own rules stand**: 15% a category, 12,000 at most, the night before's
+   first, a fair share for each kind, the clean ones first, each tier spread over its
+   prices (`catalogue_cap`). The share and the sizes are worked out from the products of 1:
+   a failed product counts nowhere.
+3. **The first round.** The products the catalogue holds the night the checks start were
+   never asked: they stay as they are until asked. A shop's first round is over the night
+   every product it has in the catalogue has been asked once, or 14 nights after its first
+   night, whichever comes first. From then a product of it never asked, or not passed in 30
+   nights, is not shown until it is.
+4. **A place left free goes only to a product whose checks passed.** A product never asked
+   takes no place: the cap names it a candidate. For each kind with places open, the
+   products it would choose next by its own order, one and a quarter times the places open
+   and at least 4; the bots ask them the next night (section 10); those that pass take the
+   places at that night's preparation.
+5. **A product cut leaves the cap's memory of the night before**, save as 8.2 says.
+
+## 10. The order of asking
+
+In a shop, within its night:
+
+1. the products held by a brake, and the failed ones due again (section 8);
+2. the shown products whose feed row changed its price, its address or its photo's address
+   since their last check; and the ones hidden on the site's "sold out" whose reading is
+   3 days old;
+3. the cap's candidates (9.4);
+4. the shown products never asked, those a visitor sees first: of each kind the 24
+   cheapest and the Recommended, then the rest, the cheapest first;
+5. the shown products asked longest ago. One whose last pass is over 14 nights old comes
+   before the rest of this step.
+
+A Shopify catalogue read whole serves all five at once. Among shops, when there is not
+room for all in a night: those the account is joined to at Awin first, then pending, then
+the rest, so that work is not done twice on a shop that may leave (owner, 21/11: «...θα
+πρέπει να ξαναπεράσουμε από την ίδια διαδικασία»).
+
+## 11. What is remembered and what is reported
+
+**The ledger**, on the server beside the catalogue's memory, never in the repo or in a
+public place:
+
+- per product (its shop and id; also its product's name in its own address, so that a row
+  whose id changes takes the checks of its address): for each check its verdict, its
+  reason, when it was asked, how many nights it has failed, when it is due again; what
+  agreed (5.1); the site's price read and the feed's price that night;
+- per shop: its reader and whether it is proven; whether it can be checked, and its day;
+  its brake's state; Awin's relationship and link status; its feed's last import; the
+  night's counts;
+- per night: what each brake held and why.
+
+**The night's public note** (counts and shop names only: never an address, an id or a
+key): per check, asked, passed and failed by reason; cut that night, back that night, held
+and by which brake; the shops that cannot be checked and their day; the shops out and why;
+prices tied, the same, other, shown from the site; per shop not proven, the share that
+agrees and the commonest ratio; each shop's oldest check; the AI's cost. The owner's daily
+email carries the same numbers in Greek (his plan, step 12).
+
+## 12. What changes in the standing texts when this is built
+
+- `PROJECT_RULES.md` §2, the photo: "only a link to nothing (HTTP 404, 410) is gone"
+  becomes any failure (5.4). §5: beside the stock rule, the price of the shop's own page
+  (5.3) and the checks (noted there on 21/11 as decided and not yet in force).
+- `docs/PICWISE_DECISION_CONTRACT.md`: "What a product must carry to be shown" (the photo;
+  a page that passes; a category); "The shop's own price" (the page's price).
+- `deployment/bot/shop_catalogue_bot.py`: `LEFT_ALONE` no longer holds InStock UK (owner,
+  21/11). `deployment/server/check_photos.py`: what calls a photo gone.
+- `docs/PICWISE_SERVER_ARCHITECTURE.md`, section 3 (the bot designed on 23/10: a sample a
+  night, a reliability score, a blocked page counting neither for nor against): these
+  rules stand where the two differ.
+
+## 13. Open: the owner's to say
+
+1. **What a visitor meets behind the button of a shop the account is not joined to** (150
+   shops, 83.1% of the products). No machine may press it. One tap of the owner's own on
+   such a button tells.
+2. **Proposed, his yes to come** (each built as written until he says otherwise): a feed
+   over 7 days old (5.6.4); a shop suspended, closed or offline at Awin, and the stop on a
+   reading of Awin that would put out many shops at once (5.6.3); a shop's 14 days
+   starting afresh only after 7 nights checked (5.6.2); the category asked again only when
+   the question changes (5.5); the brakes' numbers (7.2 to 7.4, 7.6); a reader proves
+   itself and a price far apart (7.5); the price's history starting again on a change of
+   source (5.3.5); a sold-out reading asked again before it lapses, and pre-order or
+   back-order read as not in stock (5.2); a product back within 7 nights keeps its place
+   (8.2).
+3. **A code read on a shop's site standing in for one the feed lacks**, so that one
+   product in several shops is joined into one card (`same_product_key`): kept in the
+   ledger, put to him with numbers once the ledger has them.
+4. **The share of a shop's products that pass**: reported only; what it does is his to
+   say (open since the design of 23/10).
+5. **A page of the site about the bot** (what it reads, how a shop asks to be left
+   alone): a text visitors read, so his words and a picture first.
+6. **A reader that draws the page in a browser**, for shops whose pages no HTML reader
+   reads: not in these rules; such a shop cannot be checked (5.6.2).
+7. **A shop whose photo host refuses the checker** while its pages are read (5.4):
+   reported, nothing cut; whether it leaves is his to say, with the report's numbers.
+
+## 14. For the builder (task 5)
+
+- Verdicts and brakes are code without a network: one function per table of section 5 and
+  per brake of section 7, each row and each number pinned by a test named after its
+  section here. The bots only fetch; what an answer means is decided there.
+- The preparation reads the ledger behind the one setting of 7.7. The photo check, the
+  cap's candidates and the night's note read the same ledger.
+- Logs are public: counts and shop names only; no address, id, key, token or server name.
+- Nothing is deployed without the owner's «ανέβασε», after the look of task 7. That look
+  is of the same day: it is not nights of report only (2.2, 4).

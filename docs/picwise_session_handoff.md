@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-21 (17:15 Athens: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-21 (20:35 Athens: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,7 +8,38 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (21/11, 17:15 Athens): task 3 of the work split by model (OPUS) DONE** (PROGRESS.md, 21/11 17:15).
+- **FIRST (21/11, 20:35 Athens): task 4 of the work split by model (FABLE) DONE: the checks' rules
+  written, `docs/PICWISE_CHECKS_RULES.md`. Records only: nothing built, nothing deployed.** (owner, 17:22,
+  the model set to Fable 5.2: «Ωραία το έβαλα ξεκίνα»; PROGRESS.md, 21/11 20:35.)
+  - **Put to the owner, his first word beside each; his answers:** a shop the bot cannot check (it blocks
+    the bot, or no machine reads its page): **«Προθεσμία 14 μέρες»**, then out whole until it can be; a
+    page's price other than the card's: **«Δείχνουμε την τιμή της σελίδας»**; a page or a photo that does
+    not answer one night: **«Αμέσως, για κάθε λόγο»** (proposed and not taken: the third night in a row);
+    three first nights of report only: **«Όχι, κόβει από το πρώτο βράδυ»**; InStock UK: **«Ναι, να
+    ελέγχεται»**; a shop that rejects the application at Awin: **«Βγαίνουν»**. Noted in `PROJECT_RULES.md`
+    §5 as decided and **not in force until built and deployed**.
+  - **The rules:** the verdicts of each check (the page, stock, price, photo, category, the shop); what is
+    cut that night; the brakes, which carry the weight since nothing is reported first (a shop's night:
+    over a quarter of at least 20 decided are held for a second look, and cut only where the shop has 20
+    passes on record, else a look and the owner's word; a kind's night; the whole night: a third of the
+    shops or 10% of the products, nothing cut; a round most shops do not answer records nothing; a reader
+    proves itself in a shop, 7 in 10 of 20 readings agreeing with the feed, before its price or stock
+    counts; a reading of Awin that would put out many shops waits for his word; one setting turns every cut
+    off); coming back; what the cap reads (a place only to a product that passed, candidates named by the
+    cap, the first round of 14 nights at most); the order of asking; the ledger and the night's note; the
+    texts to change when built.
+  - **Proposed, his yes to come** (the rules' section 13; told to him in the closing message): a product of
+    a feed over 7 days old shown only with a reading of its shop of the last 3 nights; a shop suspended,
+    closed or offline at Awin out; the brakes' numbers; the category asked again only when the question
+    changes; the rest listed there. **Open, his:** what a visitor meets behind the button of a shop the
+    account is not joined to (150 shops, 83.1%): one tap of his own on such a button tells.
+  - **Next by the split: task 5 is OPUS** (the ledger and the per-shop bots, built to these rules; its
+    section 14 is for the builder): the owner switches back to Opus 5.5. Task 7 (FABLE) is the look before
+    the «ανέβασε» of the built checks: of the same day, not nights of report only. **Still waiting for
+    «ανέβασε»:** the button with no dead end (`e82387c` and `2820dd2`; GitHub's "Tests" green on `2820dd2`,
+    run 44917717324). To read on 22/11: the bot's first round with both links, the site's memory after the
+    night.
+- **(21/11, 17:15 Athens): task 3 of the work split by model (OPUS) DONE** (PROGRESS.md, 21/11 17:15).
   **Awin:** the account is joined to 12 programmes; of the catalogue's 160 shops 150 are not joined (83.1% of
   the site's products: InStock UK, Tooled Up, GamingKit, Plusshop UK, Bazta UK...), 8 joined (16.9%); 35
   shops' feeds last imported over 7 days ago (12,684 products). The owner (16:51): «Θα κάνουμε αιτήματα να
@@ -183,7 +214,8 @@ a decision came about.
        150 of 160 shops not); offers and the photo's limit deployed; the button built, waits for «ανέβασε».**
     4. **FABLE: the checks' rules:** the verdicts, what cuts at once and what after how many failures, the
        brakes, how a product or a shop comes back, what the cap reads; each point that touches a decision
-       of the owner's put to him.
+       of the owner's put to him. **Done 21/11 20:35 (the first item):
+       `docs/PICWISE_CHECKS_RULES.md`; six points put to him and answered.**
     5. OPUS: the ledger and the per-shop bots, built to those rules; the nights with the cutting off, if
        the owner agrees.
     6. **FABLE: the question "is it the kind itself":** its gate, the rescue of the hidden real products,
