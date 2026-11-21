@@ -111,7 +111,10 @@ class EveryAnswerTests(_NoFeedMixin, unittest.TestCase):
             ("/sitemap.xml", "", "GET", "404 Not Found"),
             ("/assets/picwise/favicon.svg", "", "GET", "200 OK"),
             ("/no-such-page", "", "GET", "404 Not Found"),
-            ("/out/feed", "pid=no-such-product&q=kettle", "GET", "200 OK"),
+            # A refused click with its search goes to that search's current choices (owner,
+            # 2026-11-21: «Οι τωρινές επιλογές»); with none, to a page of its own.
+            ("/out/feed", "pid=no-such-product&q=kettle", "GET", "302 Found"),
+            ("/out/feed", "pid=no-such-product", "GET", "200 OK"),
             ("/search", "q=kettle", "POST", "405 Method Not Allowed"),
         )
         for path, query, method, expected in answers:
