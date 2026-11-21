@@ -34,6 +34,9 @@ _RUN_STARTS = re.compile(r"Starting (?:picwise-prepare\.service|PicWise: prepare
 BOT_UNIT = "picwise-shops.service"
 _BOT_RUN_STARTS = re.compile(r"Starting (?:picwise-shops\.service|PicWise: ask the shops)")
 _BOT_WORTH_A_LINE = re.compile(r"^(?:the feed's cop|no copy of the feed|in all:|the round failed)|Consumed|Failed|killed")
+# A shop's own line, "== <shop>: <how it ended>; <n> requests, ...": a shop's name may hold
+# ": " itself, so the end is what follows the last one before its requests.
+_BOT_SHOP_LINE = re.compile(r"^== .+: (.+?); [\d,]+ requests")
 _WORTH_A_LINE = re.compile(
     r"prepare_catalogue|Traceback|Error|error|fail|Fail|[Kk]illed|oom|OOM|[Mm]emory|Main process|"
     r"Consumed|Suppressed|Deactivated|Finished|exited|status="
@@ -131,8 +134,8 @@ def bot_nights(lines: Sequence[str]) -> list[str]:
         if _BOT_RUN_STARTS.search(line):
             close()
             chosen.append(line)
-        elif said.startswith("== ") and ": " in said[3:]:
-            ends[said[3:].split(": ", 1)[1].split(";", 1)[0].strip()] += 1
+        elif _BOT_SHOP_LINE.match(said):
+            ends[_BOT_SHOP_LINE.match(said).group(1).split(";", 1)[0].strip()] += 1
         elif _BOT_WORTH_A_LINE.search(said):
             chosen.append(line)
     close()
