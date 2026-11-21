@@ -52,6 +52,8 @@ CACHE_DIR = "/srv/picwise/shared/cache"
 NOTE = "/srv/picwise/shared/public/prepared.json"
 COPIES_APART_HOURS = 30.0
 SHOPS_LISTED = 200
+# A feed Awin last imported longer ago than this is told apart: its prices and stock may be old.
+STALE_DAYS = 7
 _GZIP_MAGIC = b"\x1f\x8b"
 _KEY = re.compile(r"/apikey/([^/?#]+)")
 _LINK = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://\S+")
@@ -220,6 +222,9 @@ def report(shops: Mapping[str, str], products: Mapping[str, int], listed: Mappin
             "id": ident, "name": name, "products": products.get(" ".join(name.split()).casefold(), 0),
             "relationship": programme.get("relationship") or "in no list",
             "status": str(programme.get("status") or "-"),
+            # Awin's own word on whether its links track now ("Online"/"Offline": an advertiser
+            # whose balance ran out sends every click to a fallback address).
+            "link": str(programme.get("linkStatus") or "-"),
             "membership": ", ".join(sorted({_column(row, "Membership Status", "membership_status") or "-"
                                             for row in own_feeds})) or "no feed listed",
             "imported": imported[0] if imported and imported[0] else "-",
@@ -232,11 +237,25 @@ def report(shops: Mapping[str, str], products: Mapping[str, int], listed: Mappin
         by_relationship[row["relationship"]].append(row)
     for relationship, members in sorted(by_relationship.items(), key=lambda item: -sum(r["products"] for r in item[1])):
         held = sum(row["products"] for row in members)
-        say(f"  {relationship}: {len(members)} shops, {held:,} products ({100 * held / total:.1f}%)")
-    say(f"{'products':>9}  {'relationship':<12} {'status':<10} {'feed':<22} {'last imported':<20} shop (advertiser id)")
+        links = Counter(row["link"] for row in members)
+        say(f"  {relationship}: {len(members)} shops, {held:,} products ({100 * held / total:.1f}%); its links: "
+            + ", ".join(f"{link} {count}" for link, count in links.most_common()))
+    stale = [row for row in rows if row["imported"] != "-" and _age_days(row["imported"], now) > STALE_DAYS]
+    say(f"shops whose newest feed Awin last imported over {STALE_DAYS} days ago: {len(stale)}, "
+        f"{sum(row['products'] for row in stale):,} products on the site")
+    say(f"{'products':>9}  {'relationship':<12} {'links':<8} {'feed':<22} {'last imported':<20} shop (advertiser id)")
     for row in rows[:SHOPS_LISTED]:
-        say(f"{row['products']:>9,}  {row['relationship']:<12} {row['status'][:10]:<10} {row['membership'][:22]:<22} "
+        say(f"{row['products']:>9,}  {row['relationship']:<12} {row['link'][:8]:<8} {row['membership'][:22]:<22} "
             f"{row['imported'][:20]:<20} {row['name']} ({row['id']})")
+
+
+def _age_days(stamp: str, now: datetime) -> float:
+    """Days since an Awin date ("2026-11-21 14:07:16", UTC), or 0 when it is not one."""
+    try:
+        when = datetime.strptime(stamp[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return 0.0
+    return (now - when).total_seconds() / 86400
 
 
 def main(*, get: Get = _get, sleep: Callable[[float], None] = time.sleep, environ: Mapping[str, str] = os.environ,

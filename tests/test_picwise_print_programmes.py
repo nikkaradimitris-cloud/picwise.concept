@@ -20,6 +20,7 @@ import tempfile
 import time
 import unittest
 from contextlib import redirect_stdout
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -61,7 +62,8 @@ def _answers() -> dict[str, tuple[int, bytes]]:
         programmes.ACCOUNTS_API: (200, json.dumps({"accounts": [{"accountId": PUBLISHER, "accountType": "publisher"}]}).encode()),
         api.format(publisher=PUBLISHER, relationship="joined"): listing({"id": 101, "name": "Kettle Shop", "status": "Active"}),
         api.format(publisher=PUBLISHER, relationship="pending"): listing(),
-        api.format(publisher=PUBLISHER, relationship="notjoined"): listing({"id": 202, "name": "Tool Shop", "status": "Active"}),
+        api.format(publisher=PUBLISHER, relationship="notjoined"): listing({"id": 202, "name": "Tool Shop", "status": "Active",
+                                                                            "linkStatus": "Offline"}),
         api.format(publisher=PUBLISHER, relationship="suspended"): listing(),
         api.format(publisher=PUBLISHER, relationship="rejected"): (401, b'{"error":"unauthorised"}'),
         programmes.FEED_LIST.format(key=KEY): (200, feed_list.getvalue().encode()),
@@ -93,7 +95,8 @@ class ProgrammesTests(unittest.TestCase):
         out = io.StringIO()
         with redirect_stdout(out):
             code = programmes.main(get=self.get, sleep=lambda seconds: None, environ=environ,
-                                   cache_dir=str(self.folder / "cache"), note=str(self.folder / "prepared.json"))
+                                   cache_dir=str(self.folder / "cache"), note=str(self.folder / "prepared.json"),
+                                   now=datetime(2026, 11, 21, 15, 0, tzinfo=timezone.utc))
         self.assertEqual(code, 0)
         return out.getvalue()
 
@@ -105,9 +108,10 @@ class ProgrammesTests(unittest.TestCase):
         self.assertIn("programmes, rejected: Awin answered 401", text)
         self.assertIn("the feed list: 2 feeds of 2 advertisers; membership: active 1, not joined 1", text)
         self.assertIn("the catalogue's shops: 3 advertisers in the feed's copies, 1,000 products on the site", text)
-        self.assertIn("  notjoined: 1 shops, 600 products (60.0%)", text)
-        self.assertIn("  joined: 1 shops, 300 products (30.0%)", text)
+        self.assertIn("  notjoined: 1 shops, 600 products (60.0%); its links: Offline 1", text)
+        self.assertIn("  joined: 1 shops, 300 products (30.0%); its links: - 1", text)
         self.assertIn("  in no list: 1 shops, 100 products (10.0%)", text)
+        self.assertIn("shops whose newest feed Awin last imported over 7 days ago: 0, 0 products on the site", text)
         lines = [line for line in text.splitlines() if line.endswith(")") and "(" in line and line[:9].strip()[:1].isdigit()]
         self.assertEqual(len(lines), 3)
         self.assertIn("notjoined", lines[0])

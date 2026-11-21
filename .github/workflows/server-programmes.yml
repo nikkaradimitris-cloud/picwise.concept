@@ -9,7 +9,7 @@
 # public and so is this log: the server's names and addresses are masked here; the script
 # masks the token, the key, the account's id and every link before a line is printed.
 #
-# Run: 2026-11-21 16:45 Athens, the first look (to run again, change this line and push).
+# Run: 2026-11-21 17:05 Athens, again with the links' status and the old feeds (to run again, change this line and push).
 name: Server Awin programmes (read-only)
 on:
   push:
