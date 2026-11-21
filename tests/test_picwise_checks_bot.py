@@ -156,6 +156,48 @@ class Rules4HowAShopIsAskedTests(unittest.TestCase):
         self.assertEqual(shop.asked.count("/p/3"), 0)
 
 
+class AllDayRoundTests(unittest.TestCase):
+    """Owner, 2026-11-22: «Ναι, όλη μέρα»: a round from 05:30 to 03:05 UTC, kept as it goes."""
+
+    def test_the_quiet_hours_and_the_nights_date(self) -> None:
+        from datetime import datetime, timezone
+
+        def at(hour: int, minute: int = 0, day: int = 22):
+            return datetime(2026, 11, day, hour, minute, tzinfo=timezone.utc)
+
+        self.assertTrue(bot.quiet(at(3, 5), bot.UNTIL, bot.QUIET_UNTIL))
+        self.assertTrue(bot.quiet(at(4, 17), bot.UNTIL, bot.QUIET_UNTIL))
+        self.assertFalse(bot.quiet(at(5, 30), bot.UNTIL, bot.QUIET_UNTIL))
+        self.assertFalse(bot.quiet(at(3, 4), bot.UNTIL, bot.QUIET_UNTIL))
+        self.assertEqual(bot._deadline(at(5, 30), bot.UNTIL), at(3, 5, day=23))
+        self.assertEqual(bot._deadline(at(22), bot.UNTIL), at(3, 5, day=23))
+        self.assertEqual(bot._deadline(at(1), bot.UNTIL), at(3, 5))
+
+    def test_answers_kept_as_they_come_and_a_round_started_again_goes_on(self) -> None:
+        import tempfile
+
+        page = bot.Answer(200, "text/html", (PRODUCT_PAGE % "24.99").encode(), final_url="https://kettles.invalid/p/1")
+        with tempfile.TemporaryDirectory() as folder:
+            tonight = bot.Tonight(Path(folder) / bot.TONIGHT.format(night="2026-11-23"))
+            first = Shop({"/robots.txt": bot.Answer(404), "/p/1": page, "/p/2": bot.Answer(404)})
+            _ask_kept = bot.ask_shop([_row(1), _row(2)], fetch=first.fetch, sleep=first.sleep, clock=first.clock,
+                                     deadline=10_000.0, done={}, keep=tonight.keep)
+            kept = tonight.load()
+            self.assertEqual(set(kept), {"Kettles\x1f1", "Kettles\x1f2"})
+            self.assertEqual(kept["Kettles\x1f1"].read.offers[0].price, 24.99)
+            self.assertEqual(kept["Kettles\x1f2"].status, 404)
+            again = Shop({"/robots.txt": bot.Answer(404), "/p/3": bot.Answer(410)})
+            result = bot.ask_shop([_row(1), _row(2), _row(3)], fetch=again.fetch, sleep=again.sleep,
+                                  clock=again.clock, deadline=10_000.0, done=kept, keep=tonight.keep)
+            self.assertNotIn("/p/1", again.asked)
+            self.assertNotIn("/p/2", again.asked)
+            self.assertEqual(set(result.answers), {"Kettles\x1f1", "Kettles\x1f2", "Kettles\x1f3"})
+            self.assertEqual(result.night.pages_read, 1)
+            self.assertEqual(len(tonight.load()), 3)
+            tonight.forget()
+            self.assertEqual(tonight.load(), {})
+
+
 class ANightEndToEndTests(unittest.TestCase):
     def test_a_night_into_the_ledger_and_the_decisions(self) -> None:
         rows = {row.key: row for row in (_row(1), _row(2), _row(3, price=10.0))}

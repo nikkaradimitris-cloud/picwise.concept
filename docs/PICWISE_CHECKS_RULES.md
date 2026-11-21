@@ -23,7 +23,9 @@ Each rule names whose it is:
   (απόφασή σου). Πρώτα ο αναγνώστης αποδεικνύει ότι διαβάζει σωστά το κατάστημα: πρέπει να
   συμφωνεί με το feed στα περισσότερα προϊόντα του.
 - Κατάστημα που δεν μπορεί να ελεγχθεί (μπλοκάρει το bot, ή η σελίδα του δεν διαβάζεται)
-  έχει 14 μέρες. Μετά βγαίνει ολόκληρο και γυρίζει μόλις ελεγχθεί (απόφασή σου).
+  έχει 3 μέρες. Μετά βγαίνει ολόκληρο και γυρίζει μόλις ελεγχθεί (απόφασή σου, 22/11· στις
+  21/11 ήταν 14 μέρες). Το bot ελέγχει όλη μέρα (απόφασή σου, 22/11), ώστε κανένα προϊόν να
+  μη μένει ανέλεγκτο πάνω από 3 μέρες.
 - Κατάστημα που απορρίπτει την αίτηση στην Awin βγαίνει (απόφασή σου). Όσα δεν έχουν
   απαντήσει ακόμα μένουν.
 - Το InStock UK ελέγχεται όπως όλα τα καταστήματα (απόφασή σου).
@@ -86,7 +88,11 @@ in a public place an address, a feed link, a key or a server name.
 1. A shop the bot cannot check (it blocks the bot, or its page is not read by a machine):
    **«Προθεσμία 14 μέρες»**. He writes to a shop that blocks through Awin; a way to read
    an unread page is made; still unchecked after 14 days, it leaves whole and comes back
-   once checked. (His first word: out at once.)
+   once checked. (His first word: out at once.) **Changed 22/11** (00:13: «15 μέρες θα
+   βλέπουνε οι χρήστες σαββούρα είναι πάρα πολύ!»; then, asked: out from the first night,
+   or in 3 days): **«Σε 3 μέρες»**, and the bot asks all day (**«Ναι, όλη μέρα»**), and
+   nothing goes on the site before the end (**«Όχι, όλα μαζί στο τέλος»**: the bot is not
+   deployed ahead of the rest).
 2. A page's price other than the card's: **«Δείχνουμε την τιμή της σελίδας»**. (His first
    word: the product is cut.)
 3. A page or a photo that does not answer one night: **«Αμέσως, για κάθε λόγο»**: the
@@ -150,8 +156,9 @@ written to carry that weight.
    feed and no shop page gives one.
 7. **The server's room**: the checks stop before the preparation starts and never run
    beside it (the server has 22.9 GB; the preparation peaks at 14.9 GB, the site at up to
-   8.3 GB). The round of the largest shop asked a page at a time must fit in 14 nights:
-   Tooled Up's 68,508 pages at 3 s are about 57 hours, a little over 4 hours a night.
+   8.3 GB). The bot asks all day (owner, 22/11), from 05:30 to 03:05 UTC: the round of the
+   largest shop asked a page at a time fits in 3 days (Tooled Up's 68,508 pages at 3 s are
+   about 57 hours; InStock UK's products past its catalogue's 25,000, about 64).
 
 ## 5. The verdicts
 
@@ -270,7 +277,7 @@ is out, never forced in.
 ### 5.6 The shop
 
 1. **Left out by the owner** (`eligibility.LEFT_OUT_SHOPS`): as today; only his word.
-2. **A shop that cannot be checked** (owner, 21/11: 14 days). It is so on a night when: its
+2. **A shop that cannot be checked** (owner, 22/11: 3 days; 14 on 21/11). It is so on a night when: its
    rows give no address of its own (an Awin link alone, which is never pressed); or its
    robots.txt disallows its product pages or answers 401 or 403; or it asks for a
    crawl-delay over 60 s; or at least 9 in 10 of the round's requests to it are refused
@@ -280,7 +287,7 @@ is out, never forced in.
      a letter for the owner to send it through Awin when it refuses the bot (the bot's
      name, what it reads, its pace); for an unread page a recipe is made (4.5.3).
    - Meanwhile its products stay as they are and none new enters.
-   - On day 15, still so: every product of it is cut (`shop cannot be checked`).
+   - On day 4, still so: every product of it is cut (`shop cannot be checked`).
    - Each night it is asked again (its robots.txt, then up to 5 of its pages). The first
      night a product is read on it, its count ends; if it was out, its products come back
      as they pass, as new products do.
@@ -327,7 +334,7 @@ is out, never forced in.
 | A price far apart (7.5) | that night | Proposed |
 | A shop rejected at Awin | that night | Owner, 21/11 |
 | A shop suspended, closed or offline at Awin | that night | Proposed |
-| A shop that cannot be checked | on its day 15 | Owner, 21/11 |
+| A shop that cannot be checked | on its day 4 | Owner, 22/11 |
 | A product of an old feed with no fresh reading of its shop | from the end of its shop's first round | Proposed |
 | A new product never asked | it does not enter | Owner, 21/11 |
 
@@ -376,7 +383,7 @@ When the brake of 7.2 holds for more than a third of the shops decided that nigh
 least 6 shops), or the night's new cuts pass 10% of the products shown, **nothing new is
 cut that night**, by any check: all of it is held, the report says so first, and the next
 night asks the held again. Two such nights running, the cutting stays stopped until a look
-and the owner's word. A shop that leaves whole under 5.6 is not counted here: its day 15
+and the owner's word. A shop that leaves whole under 5.6 is not counted here: its day 4
 is in the report days before, and Awin's readings have their own stop (5.6.3).
 
 ### 7.5 A reader proves itself; a price far apart
@@ -439,7 +446,7 @@ Owner, 21/11: «Τη θέση τους μέσα στο όριο των 12.000 τ
    a failed product counts nowhere.
 3. **The first round.** The products the catalogue holds the night the checks start were
    never asked: they stay as they are until asked. A shop's first round is over the night
-   every product it has in the catalogue has been asked once, or 14 nights after its first
+   every product it has in the catalogue has been asked once, or 3 days after its first
    night, whichever comes first. From then a product of it never asked, or not passed in 30
    nights, is not shown until it is.
 4. **A place left free goes only to a product whose checks passed.** A product never asked
@@ -509,7 +516,7 @@ email carries the same numbers in Greek (his plan, step 12).
    such a button tells.
 2. **Proposed, his yes to come** (each built as written until he says otherwise): a feed
    over 7 days old (5.6.4); a shop suspended, closed or offline at Awin, and the stop on a
-   reading of Awin that would put out many shops at once (5.6.3); a shop's 14 days
+   reading of Awin that would put out many shops at once (5.6.3); a shop's 3 days
    starting afresh only after 7 nights checked (5.6.2); the category asked again only when
    the question changes (5.5); the brakes' numbers (7.2 to 7.4, 7.6); a reader proves
    itself and a price far apart (7.5); the price's history starting again on a change of
@@ -550,9 +557,12 @@ from their first night live (2.2, 4). Where the code had to settle a point:
 2. An answer no table names (a 400, a 405, a redirect with no address) is `not checked`, never a
    cut: such a product passes nothing either, so after its shop's first round it is not shown
    (9.3).
-3. The round: 20:30 to 03:05 UTC (before the updates' reboot window of 03:30, the shops' bot of
-   03:40 and the preparation of 04:17); a round started by hand stops after 8 hours. Its night is
-   the morning's date, the preparation's.
+3. The round: all day (owner, 22/11), 05:30 to 03:05 UTC (before the updates' reboot window of
+   03:30, the shops' bot of 03:40 and the preparation of 04:17; between 03:05 and 05:30 a round
+   started asks nothing); its night is the morning's date, the preparation's. Each answer is kept
+   as it comes (`tonight-<night>.jsonl`): a deployment that prepares the catalogue stops the round
+   for the server's memory and starts it again after, and it goes on from where it was; a night
+   recorded already is not asked again.
 4. A Shopify shop: its catalogue up to 100 pages of 250 (25,000 products); a product past them,
    or missing from a catalogue read whole, by its own `/products/<name>.js` (one request, which
    also gives each variant's barcode). Collections are not read by the checks.
@@ -574,12 +584,13 @@ from their first night live (2.2, 4). Where the code had to settle a point:
    "&amp;", accents, case and spaces read alike. The look of 21/11 had two names written
    otherwise read as "in no list"; the stop of 5.6.3 held them (5,158 products).
 10. A shop's first round (9.3) ends when every product it shows has been decided once, passed or
-    failed, or after 14 nights: a product the shop refused was not checked, so a shop that refuses
-    keeps the 14 nights of 5.6.2 (in the look of 21/11 a shop of 4 products, all refused, would
+    failed, or after 3 days: a product the shop refused was not checked, so a shop that refuses
+    keeps the 3 days of 5.6.2 (in the look of 21/11 a shop of 4 products, all refused, would
     have ended its round, and lost them, on its first night).
 11. Not built yet: the shop's recipe by the AI (4.5.3), the category (5.5), the night's numbers in
    the owner's daily email (11). Without the recipe a shop whose pages no reader reads leaves on
-   its day 15 (5.6.2): on 21/11 Tooled Up (68,508), Plusshop UK, Tyres UK, Tirendo UK, MoreThisWay.
+   its day 4 (5.6.2): in the looks of 22/11 Bazta UK (12,159), Plusshop UK (13,110), Luxe Mattress
+   Affiliation (5,761), Elixir Garden Supplies (Tooled Up, unread on 21/11, is read now).
 
 Where: `src/picwise_checks` (verdicts, brakes, the ledger, the page reader, rows), the bot
 `deployment/bot/shop_checks_bot.py` (`picwise-checks.service`, `.timer`), the preparation's side

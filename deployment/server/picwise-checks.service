@@ -1,4 +1,4 @@
-# Asks every product of the catalogue on its shop's own site, every evening, and keeps what
+# Asks every product of the catalogue on its shop's own site, all day, and keeps what
 # it found in /srv/picwise/shared/checks, never in Supabase or the repository: the ledger, the
 # decisions the preparation reads (picwise-prepare.service), the rows it asks next, the
 # night's note (deployment/bot/shop_checks_bot.py; the checks' rules,
@@ -19,7 +19,7 @@ EnvironmentFile=-/etc/picwise/picwise.env
 Environment=PYTHONPATH=/srv/picwise/current/src
 Environment=PYTHONDONTWRITEBYTECODE=1
 ExecStart=/usr/bin/python3 deployment/bot/shop_checks_bot.py
-TimeoutStartSec=9h
+TimeoutStartSec=23h
 Nice=10
 MemoryHigh=4G
 MemoryMax=5G

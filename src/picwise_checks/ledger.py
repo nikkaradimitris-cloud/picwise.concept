@@ -58,11 +58,14 @@ GONE_FIRST = 7
 GONE_EVERY = 30
 # 8.2: a product that passes again within 7 nights of its cut keeps its place.
 KEEPS_PLACE_NIGHTS = 7
-# 9.1 and 9.3.
+# 9.1 and 9.3. The first round ends after 3 days at most (owner, 2026-11-22: «15 μέρες θα
+# βλέπουνε οι χρήστες σαββούρα είναι πάρα πολύ!», then «Σε 3 μέρες»): a product not checked
+# by then is not shown, as a shop that cannot be checked leaves on its day 4.
 PASS_VALID_NIGHTS = 30
-FIRST_ROUND_NIGHTS = 14
-# 5.6.2.
-OUT_ON_DAY = 15
+FIRST_ROUND_NIGHTS = 4
+# 5.6.2: a shop that cannot be checked leaves on its day 4, after 3 days (owner, 2026-11-22:
+# «Σε 3 μέρες», instead of the 14 of 21/11).
+OUT_ON_DAY = 4
 FRESH_AFTER_CHECKED = 7
 # 5.2: a reading of the shop's own site decides stock for 3 days.
 STOCK_DAYS = 3

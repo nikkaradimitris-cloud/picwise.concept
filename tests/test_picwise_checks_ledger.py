@@ -188,23 +188,24 @@ class Rules7BrakesTests(unittest.TestCase):
 
 
 class Rules56ShopsTests(unittest.TestCase):
-    def test_5_6_2_out_on_day_fifteen_back_when_read_afresh_after_seven(self) -> None:
+    def test_5_6_2_out_on_day_four_back_when_read_afresh_after_seven(self) -> None:
+        # Owner, 2026-11-22: «Σε 3 μέρες» (the 14 days of 21/11 were too many).
         ledger, rows = L.Ledger(), _rows("Alpha", 1)
         blocked = {"Alpha": ShopNight(requests=5, answers=5, refused=5)}
         other = {"Beta": ShopNight(requests=1, answers=1, pages_200=1, pages_read=1)}
-        for day in range(14):
+        for day in range(3):
             _night(ledger, NIGHT + timedelta(days=day), rows, {}, shops={**blocked, **other})
-        self.assertEqual((ledger.shops["Alpha"].days, ledger.shops["Alpha"].out), (14, ""))
-        _night(ledger, NIGHT + timedelta(days=14), rows, {}, shops={**blocked, **other})
+        self.assertEqual((ledger.shops["Alpha"].days, ledger.shops["Alpha"].out), (3, ""))
+        _night(ledger, NIGHT + timedelta(days=3), rows, {}, shops={**blocked, **other})
         self.assertEqual(ledger.shops["Alpha"].out, "cannot be checked: refuses the bot")
-        made = L.decisions(ledger, NIGHT + timedelta(days=14), rows, shown=rows.keys())
+        made = L.decisions(ledger, NIGHT + timedelta(days=3), rows, shown=rows.keys())
         self.assertEqual(made["shops_out"], {"Alpha": "cannot be checked: refuses the bot"})
         read = {"Alpha": ShopNight(requests=1, answers=1, pages_200=1, pages_read=1), **other}
-        _night(ledger, NIGHT + timedelta(days=15), rows, {}, shops=read)
-        self.assertEqual((ledger.shops["Alpha"].out, ledger.shops["Alpha"].days), ("", 15))
-        _night(ledger, NIGHT + timedelta(days=16), rows, {}, shops={**blocked, **other})
-        self.assertEqual(ledger.shops["Alpha"].days, 16)
-        for day in range(17, 24):
+        _night(ledger, NIGHT + timedelta(days=4), rows, {}, shops=read)
+        self.assertEqual((ledger.shops["Alpha"].out, ledger.shops["Alpha"].days), ("", 4))
+        _night(ledger, NIGHT + timedelta(days=5), rows, {}, shops={**blocked, **other})
+        self.assertEqual((ledger.shops["Alpha"].days, ledger.shops["Alpha"].out), (5, "cannot be checked: refuses the bot"))
+        for day in range(6, 13):
             _night(ledger, NIGHT + timedelta(days=day), rows, {}, shops=read)
         self.assertEqual(ledger.shops["Alpha"].days, 0)
 
@@ -263,25 +264,27 @@ class Rules56ShopsTests(unittest.TestCase):
 
 
 class Rules9WhatTheCapReadsTests(unittest.TestCase):
-    def test_9_3_the_first_round_is_over_when_all_are_asked_or_after_fourteen_nights(self) -> None:
+    def test_9_3_the_first_round_is_over_when_all_are_decided_or_after_three_days(self) -> None:
         ledger, rows = L.Ledger(), _rows("Alpha", 3)
         keys = list(rows)
         _night(ledger, NIGHT, rows, {keys[0]: OK})
         self.assertEqual(ledger.shops["Alpha"].round_over, "")
         self.assertEqual(L.decisions(ledger, NIGHT, rows, shown=rows.keys())["cut"], {})
-        _night(ledger, NIGHT + timedelta(days=13), rows, {keys[1]: OK})
-        self.assertEqual(ledger.shops["Alpha"].round_over, (NIGHT + timedelta(days=13)).isoformat())
-        made = L.decisions(ledger, NIGHT + timedelta(days=13), rows, shown=rows.keys())
+        _night(ledger, NIGHT + timedelta(days=2), rows, {keys[1]: OK})
+        self.assertEqual(ledger.shops["Alpha"].round_over, "")
+        _night(ledger, NIGHT + timedelta(days=3), rows, {})
+        self.assertEqual(ledger.shops["Alpha"].round_over, (NIGHT + timedelta(days=3)).isoformat())
+        made = L.decisions(ledger, NIGHT + timedelta(days=3), rows, shown=rows.keys())
         self.assertEqual(made["cut"], {keys[2]: "never checked"})
 
-    def test_9_3_a_shop_whose_products_were_refused_keeps_its_fourteen_nights(self) -> None:
+    def test_9_3_a_shop_whose_products_were_refused_keeps_its_three_days(self) -> None:
         ledger, rows = L.Ledger(), _rows("Alpha", 4)
         refused = {key: Verdict(NOT_CHECKED, REFUSED) for key in rows}
         _night(ledger, NIGHT, rows, refused)
         self.assertEqual(ledger.shops["Alpha"].round_over, "")
         self.assertEqual(L.decisions(ledger, NIGHT, rows, shown=rows.keys())["cut"], {})
-        _night(ledger, NIGHT + timedelta(days=13), rows, refused)
-        made = L.decisions(ledger, NIGHT + timedelta(days=13), rows, shown=rows.keys())
+        _night(ledger, NIGHT + timedelta(days=3), rows, refused)
+        made = L.decisions(ledger, NIGHT + timedelta(days=3), rows, shown=rows.keys())
         self.assertEqual(set(made["cut"].values()), {"never checked"})
 
     def test_9_3_not_passed_in_thirty_nights(self) -> None:

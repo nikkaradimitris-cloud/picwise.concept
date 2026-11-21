@@ -5,9 +5,13 @@
 
 The checks' rules (`docs/PICWISE_CHECKS_RULES.md`; owner, 2026-11-21: «Ποιότητα πάνω από
 ποσότητα. Όποιο προϊόν δεν περνά τον έλεγχο κόβεται...» and his six answers). Run by
-picwise-checks.service every evening (20:30 UTC), until `--until` (03:05 UTC: before the
-updates' reboot window of 03:30 and the preparation of 04:17, which reads what it
-writes). Code that only fetches (rules 14): what an answer means is
+picwise-checks.service all day (owner, 2026-11-22: «Ναι, όλη μέρα»): from 05:30 UTC until
+`--until` (03:05 UTC the next day: before the updates' reboot window of 03:30 and the
+preparation of 04:17, which reads what it writes); started between those two it asks
+nothing. Each answer is kept as it comes (`tonight-<night>.jsonl`), so that a round stopped
+(by a deployment that prepares the catalogue, or a reboot) goes on from where it was when
+started again; a night recorded already is not asked again. Code that only fetches
+(rules 14): what an answer means is
 `picwise_checks.verdicts`; what the night does to each product and shop,
 `picwise_checks.ledger`.
 
@@ -58,7 +62,7 @@ import shop_catalogue_test as look  # noqa: E402
 
 from picwise_checks import ledger as L  # noqa: E402
 from picwise_checks.rows import row_from_record, row_of, row_record  # noqa: E402,F401
-from picwise_checks.page_reader import NOTHING, PageRead, read_page, read_shopify_product  # noqa: E402
+from picwise_checks.page_reader import NOTHING, Offer, PageRead, read_page, read_shopify_product  # noqa: E402
 from picwise_checks.verdicts import (  # noqa: E402
     PageAnswer, Row, ShopNight, address_parts, page_verdict, shop_reads_pages, stock_reading, tie,
 )
@@ -77,7 +81,11 @@ LISTING_SIZE = 250
 LISTING_PAGES = 100
 WORKERS = 48
 UNTIL = "03:05"
-MAX_HOURS = 8
+# Between `UNTIL` and this the preparation (04:17) and the photos' check (04:40) run: a
+# round started then asks nothing.
+QUIET_UNTIL = "05:30"
+MAX_HOURS = 22
+TONIGHT = "tonight-{night}.jsonl"
 NOTE_NAME = "note.json"
 OWNER_WORDS = ROOT / "data" / "checks_owner_words.json"
 # What a challenge page writes (a refusal that answers 200, 403 or 503).
@@ -191,15 +199,40 @@ def _base_of(rows: Iterable[Row]) -> tuple[str, str]:
     return (scheme if scheme in ("http", "https") else "https"), host
 
 
+def _count(counts: Counter, answer: PageAnswer) -> None:
+    """What one product's answer adds to its shop's night (5.6.2)."""
+    if answer.in_catalogue:
+        return
+    counts["requests"] += 1
+    counts["answers"] += bool(answer.status)
+    if answer.status in (401, 403, 429) or answer.challenge or answer.elsewhere:
+        counts["refused"] += 1
+    if answer.status == 200 and not answer.challenge:
+        counts["pages_200"] += 1
+        counts["pages_read"] += answer.read.found
+
+
+def _counted(answer: PageAnswer) -> Counter:
+    counts: Counter = Counter()
+    _count(counts, answer)
+    return counts
+
+
 def ask_shop(rows: list[Row], *, fetch: Fetch, sleep: Callable[[float], None], clock: Callable[[], float],
-             deadline: float, pause: float = PAUSE) -> ShopResult:
+             deadline: float, pause: float = PAUSE, done: Mapping[str, PageAnswer] | None = None,
+             keep: Callable[[str, PageAnswer], None] | None = None) -> ShopResult:
     """One shop's night (module docstring): its robots.txt, its catalogue when it is a
-    Shopify shop, then its products in the order given, until the deadline."""
+    Shopify shop, then its products in the order given, until the deadline. `done`: the
+    answers this night kept already (a round started again), not asked again; `keep`: told
+    each new answer as it comes."""
+    done = dict(done or {})
     scheme, host = _base_of(rows)
     if not host or "awin" in host:
         return ShopResult(ShopNight(own_address=False))
     base = f"{scheme}://{host}"
     counts = Counter()
+    for answer in done.values():
+        _count(counts, answer)
     state = {"last": None, "stopped": ""}
 
     def ask(path: str, limit: int, rules: list, wait: float) -> Answer | None:
@@ -210,11 +243,6 @@ def ask_shop(rows: list[Row], *, fetch: Fetch, sleep: Callable[[float], None], c
             sleep(max(0.0, wait - (clock() - state["last"])))
         answer = fetch(base + path, limit)
         state["last"] = clock()
-        counts["requests"] += 1
-        counts["answers"] += bool(answer.status)
-        challenge = is_challenge(answer)
-        if answer.status in (401, 403, 429) or challenge or answer.elsewhere:
-            counts["refused"] += 1
         if answer.status == 429 or (answer.status == 503 and answer.retry_after):
             state["stopped"] = f"{answer.status}: asked to come back later"
         return answer
@@ -223,6 +251,17 @@ def ask_shop(rows: list[Row], *, fetch: Fetch, sleep: Callable[[float], None], c
     state["last"] = clock()
     counts["requests"] += 1
     counts["answers"] += bool(robots.status)
+
+    def ask_counted(path: str, limit: int, rules: list, wait: float) -> Answer | None:
+        """A request that is no product's own (the catalogue's pages), counted here."""
+        answer = ask(path, limit, rules, wait)
+        if answer is not None:
+            counts["requests"] += 1
+            counts["answers"] += bool(answer.status)
+            if answer.status in (401, 403, 429) or is_challenge(answer) or answer.elsewhere:
+                counts["refused"] += 1
+        return answer
+
     if robots.status == 200:
         rules, delay = look.robots_rules(_text(robots))
     elif robots.status in (404, 410):
@@ -241,7 +280,7 @@ def ask_shop(rows: list[Row], *, fetch: Fetch, sleep: Callable[[float], None], c
     answers: dict[str, PageAnswer] = {}
     catalogue: dict[str, PageRead] = {}
     whole = False
-    listing = ask(f"/products.json?limit={LISTING_SIZE}&page=1", JSON_BYTES, rules, wait)
+    listing = ask_counted(f"/products.json?limit={LISTING_SIZE}&page=1", JSON_BYTES, rules, wait)
     data = _json(listing) if listing else None
     shopify = isinstance(data, dict) and isinstance(data.get("products"), list)
     if shopify:
@@ -259,7 +298,7 @@ def ask_shop(rows: list[Row], *, fetch: Fetch, sleep: Callable[[float], None], c
             page += 1
             if page > LISTING_PAGES:
                 break
-            answer = ask(f"/products.json?limit={LISTING_SIZE}&page={page}", JSON_BYTES, rules, wait)
+            answer = ask_counted(f"/products.json?limit={LISTING_SIZE}&page={page}", JSON_BYTES, rules, wait)
             data = _json(answer) if answer else None
 
     def page_of(row: Row) -> PageAnswer | None:
@@ -285,26 +324,34 @@ def ask_shop(rows: list[Row], *, fetch: Fetch, sleep: Callable[[float], None], c
             final = answer.final_url or row.address
             redirected = address_parts(final) != address_parts(row.address)
             read = read_page(_text(answer)) if answer.status == 200 else NOTHING
-        challenge = is_challenge(answer)
-        if answer.status == 200 and not challenge:
-            counts["pages_200"] += 1
-            counts["pages_read"] += read.found
         return PageAnswer(status=answer.status, error=answer.error, final_url=final, redirected=redirected,
-                          elsewhere=answer.elsewhere, challenge=challenge, read=read)
+                          elsewhere=answer.elsewhere, challenge=is_challenge(answer), read=read)
 
+    def take(row: Row, answer: PageAnswer, *, again_of: PageAnswer | None = None) -> None:
+        if again_of is not None:
+            # The answer asked again replaces the first in the shop's counts too.
+            counts.subtract({name: value for name, value in _counted(again_of).items()})
+        answers[row.key] = answer
+        _count(counts, answer)
+        if keep is not None:
+            keep(row.key, answer)
+
+    answers.update(done)
     again: list[Row] = []
     for row in rows:
+        if row.key in done:
+            continue
         if state["stopped"] or clock() >= deadline:
             break
         if shopify and row.handle and row.handle.lower() in catalogue:
-            answers[row.key] = PageAnswer(status=200, in_catalogue=True, read=catalogue[row.handle.lower()])
+            take(row, PageAnswer(status=200, in_catalogue=True, read=catalogue[row.handle.lower()]))
             continue
         if not look.robots_allows(rules, urlsplit(row.address).path or "/"):
             continue
         answer = page_of(row)
         if answer is None:
             continue
-        answers[row.key] = answer
+        take(row, answer)
         # A challenge page is a refusal, not a page that did not answer.
         if not answer.elsewhere and not answer.challenge and (answer.status == 0 or 500 <= answer.status < 600):
             again.append(row)
@@ -314,7 +361,7 @@ def ask_shop(rows: list[Row], *, fetch: Fetch, sleep: Callable[[float], None], c
             break
         answer = page_of(row)
         if answer is not None:
-            answers[row.key] = answer
+            take(row, answer, again_of=answers[row.key])
     night = ShopNight(requests=counts["requests"], answers=counts["answers"], refused=counts["refused"],
                       pages_200=counts["pages_200"], pages_read=counts["pages_read"], catalogue_read=shopify,
                       crawl_delay=delay)
@@ -327,6 +374,67 @@ def prices_by_page(rows: Iterable[Row]) -> dict[tuple[str, str], set]:
     for row in rows:
         by_page[address_parts(row.address)].add(row.price)
     return by_page
+
+
+def answer_record(answer: PageAnswer) -> dict[str, Any]:
+    """One answer as tonight's file keeps it (on the server, never in a public place)."""
+    read = answer.read
+    return {
+        "s": answer.status, "e": answer.error, "f": answer.final_url, "r": answer.redirected,
+        "x": answer.elsewhere, "c": answer.challenge, "k": answer.in_catalogue,
+        "p": None if not read.found else [
+            read.how, read.name,
+            [[o.price, o.currency, o.availability, o.sku, o.gtin, o.mpn, o.variant] for o in read.offers],
+            sorted(read.gtins), sorted(read.skus), sorted(read.mpns), read.canonical,
+        ],
+    }
+
+
+def answer_from_record(record: Mapping[str, Any]) -> PageAnswer:
+    page = record.get("p")
+    read = NOTHING
+    if page:
+        how, name, offers, gtins, skus, mpns, canonical = page
+        read = PageRead(how=how, name=name, offers=tuple(Offer(*offer) for offer in offers), gtins=frozenset(gtins),
+                        skus=frozenset(skus), mpns=frozenset(mpns), canonical=canonical)
+    return PageAnswer(status=record.get("s", 0), error=record.get("e", ""), final_url=record.get("f", ""),
+                      redirected=bool(record.get("r")), elsewhere=bool(record.get("x")),
+                      challenge=bool(record.get("c")), in_catalogue=bool(record.get("k")), read=read)
+
+
+class Tonight:
+    """The night's answers, one line each as they come, so that a round stopped goes on
+    from where it was (module docstring)."""
+
+    def __init__(self, path: Path | None) -> None:
+        self.path = path
+        self.lock = threading.Lock()
+
+    def load(self) -> dict[str, PageAnswer]:
+        found: dict[str, PageAnswer] = {}
+        if self.path is None or not self.path.exists():
+            return found
+        with self.path.open(encoding="utf-8") as handle:
+            for line in handle:
+                try:
+                    record = json.loads(line)
+                    found[str(record["key"])] = answer_from_record(record)
+                except (ValueError, KeyError, TypeError):
+                    continue  # a line cut short by a stop
+        return found
+
+    def keep(self, key: str, answer: PageAnswer) -> None:
+        if self.path is None:
+            return
+        line = json.dumps({"key": key, **answer_record(answer)}, separators=(",", ":")) + "\n"
+        with self.lock, self.path.open("a", encoding="utf-8") as handle:
+            handle.write(line)
+
+    def forget(self) -> None:
+        if self.path is None:
+            return
+        for old in self.path.parent.glob(TONIGHT.format(night="*")):
+            old.unlink(missing_ok=True)
 
 
 def judge(rows: Mapping[str, Row], result: ShopResult, *, shared_ids: Iterable[str] = (),
@@ -462,6 +570,16 @@ def read_awin(environ: Mapping[str, str], *, cache_dir: str, say: Callable[[str]
 # ---- the night ---------------------------------------------------------------------
 
 
+def quiet(moment: datetime, until: str, quiet_until: str) -> bool:
+    """Whether `moment` falls in the hours kept for the preparation and the photos."""
+    def minutes(text: str) -> int:
+        hours, mins = (int(part) for part in text.split(":"))
+        return hours * 60 + mins
+
+    now = moment.hour * 60 + moment.minute
+    return minutes(until) <= now < minutes(quiet_until)
+
+
 def _deadline(start: datetime, until: str) -> datetime:
     hours, minutes = (int(part) for part in until.split(":"))
     end = start.replace(hour=hours, minute=minutes, second=0, microsecond=0)
@@ -473,19 +591,24 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
         clock: Callable[[], float], deadline: float, workers: int, pause: float,
         awin: Mapping[str, tuple[str | None, str]] | None, feeds: Mapping[str, date | None],
         owner_cut_shops: list[str], owner_awin_word: bool, say: Callable[[str], None],
-        sample: int = 0) -> tuple[L.Night, dict]:
+        sample: int = 0, tonight: Tonight | None = None) -> tuple[L.Night, dict]:
     """Ask every shop its products in the rules' order; record the night; the decisions.
-    `sample`: a look, at most this many products a shop."""
+    `sample`: a look, at most this many products a shop; `tonight`: the night's answers
+    kept as they come, those kept already not asked again."""
+    tonight = tonight or Tonight(None)
     order = L.asking_order(ledger, night, rows, shown=shown, candidates=candidates, parts=parts)
     if sample > 0:
         order = {shop: keys[:sample] for shop, keys in order.items()}
-    say(f"to ask: {sum(len(keys) for keys in order.values()):,} products of {len(order)} shops")
+    kept = tonight.load()
+    say(f"to ask: {sum(len(keys) for keys in order.values()):,} products of {len(order)} shops"
+        + (f"; {len(kept):,} answered already tonight (the round goes on)" if kept else ""))
     results: dict[str, ShopResult] = {}
     lock = threading.Lock()
 
     def one(shop: str) -> None:
+        done = {key: kept[key] for key in order[shop] if key in kept}
         result = ask_shop([rows[key] for key in order[shop]], fetch=fetch, sleep=sleep, clock=clock,
-                          deadline=deadline, pause=pause)
+                          deadline=deadline, pause=pause, done=done, keep=tonight.keep)
         with lock:
             results[shop] = result
 
@@ -566,12 +689,15 @@ def main(argv: list[str] | None = None, *, fetch: Fetch = fetch, sleep: Callable
         pass
     say = print
     start = now or datetime.now(timezone.utc)
-    night = (start + timedelta(hours=12)).date()
-    # Never past `--until`, and never over 8 hours: a round started by hand in the day ends
-    # before the evening's.
+    if quiet(start, args.until, QUIET_UNTIL):
+        say(f"the checks: between {args.until} and {QUIET_UNTIL} UTC the preparation and the photos run; nothing asked")
+        return 0
+    # Never past `--until`, never over 22 hours; the night is the morning the preparation
+    # reads it.
     ends = min(_deadline(start, args.until), start + timedelta(hours=MAX_HOURS))
     if args.minutes > 0:
         ends = min(ends, start + timedelta(minutes=args.minutes))
+    night = _deadline(start, args.until).date()
     deadline = clock() + (ends - start).total_seconds()
     try:
         rows, parts, shared_ids = rows_from_catalogue(args.catalogue)
@@ -583,6 +709,10 @@ def main(argv: list[str] | None = None, *, fetch: Fetch = fetch, sleep: Callable
     for key, row in extra.items():
         rows.setdefault(key, row)
     ledger = L.load(args.checks / L.LEDGER_NAME)
+    if not args.dry and any(entry.get("night") == night.isoformat() for entry in ledger.nights):
+        say(f"the night of {night} is recorded already: nothing asked")
+        return 0
+    tonight = Tonight(None if args.dry else args.checks / TONIGHT.format(night=night))
     say(f"the night of {night}: {len(shown):,} products shown, {len(candidates):,} candidates, "
         f"{len(extra) - len(candidates):,} cut ones the feed still lists; ids shared {len(shared_ids)}")
     awin, feeds = read_awin(environ, cache_dir=args.cache, say=say)
@@ -590,13 +720,14 @@ def main(argv: list[str] | None = None, *, fetch: Fetch = fetch, sleep: Callable
     result, made = run(rows, shown=shown, parts=parts, shared_ids=shared_ids, candidates=candidates, ledger=ledger,
                        night=night, fetch=fetch, sleep=sleep, clock=clock, deadline=deadline, workers=args.workers,
                        pause=args.pause, awin=awin, feeds=feeds, owner_cut_shops=cut_shops,
-                       owner_awin_word=awin_word, say=say, sample=args.sample)
+                       owner_awin_word=awin_word, say=say, sample=args.sample, tonight=tonight)
     if args.dry:
         say("a look (--dry): nothing written")
     else:
         L.save(ledger, args.checks / L.LEDGER_NAME)
         L.write_decisions(made, args.checks / L.DECISIONS_NAME)
         (args.checks / NOTE_NAME).write_text(json.dumps(result.note, indent=1, sort_keys=True), encoding="utf-8")
+        tonight.forget()
     print_night(result.note, made, ledger, say)
     if args.dry:
         print_look(result.note, ledger, say)

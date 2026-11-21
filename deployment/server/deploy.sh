@@ -159,6 +159,9 @@ if [ -n "$PREVIOUS" ] && [ -d "$APP/$PREVIOUS" ] \
   case "$BEFORE" in fresh*) PREPARE=no ;; esac
 fi
 if [ "$PREPARE" = yes ]; then
+  # The checks' round (all day) stops while the catalogue is prepared, for the server's
+  # memory; its answers are kept, and it goes on after the site restarts (below).
+  systemctl stop picwise-checks.service 2> /dev/null || true
   systemctl start picwise-prepare.service || echo "preparing failed; the site keeps the last prepared file (30 h)"
   # The summary line, the peak memory and length, and systemd's own line, of this run.
   journalctl -u picwise-prepare.service -n 20 -o cat --no-pager --since "-65min" \
@@ -204,9 +207,8 @@ systemctl enable --now picwise-prepare.timer
 # The shops' catalogues each night before the preparation (owner, 2026-10-26); a
 # deployment never asks them itself.
 systemctl enable --now picwise-shops.timer
-# The checks of every product on its shop's own site, each evening (the checks' rules; owner,
-# 2026-11-21); a deployment never runs them itself. What they decided is applied only behind
-# data/checks_switch.json.
+# The checks of every product on its shop's own site, all day (the checks' rules; owner,
+# 2026-11-21 and 2026-11-22). What they decided is applied only behind data/checks_switch.json.
 systemctl enable --now picwise-checks.timer
 
 echo "== the offers of PicWise's shops (Awin), fetched once now and every night"
@@ -243,6 +245,9 @@ if [ "$healthy" != yes ]; then
 fi
 curl -fsS -m 5 "$HEALTH_URL"
 echo
+# The checks' round goes on (it asks nothing between 03:05 and 05:30 UTC, nor on a night
+# recorded already); started in the background, a round already running is left as it is.
+systemctl start --no-block picwise-checks.service 2> /dev/null || echo "the checks' round did not start; the timer starts the next"
 
 echo "== the AI layer's service"
 # Only with its key; at most one euro a day (owner, 2026-11-06), kept as $1.00. A service

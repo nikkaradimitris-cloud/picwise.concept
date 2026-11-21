@@ -1,12 +1,13 @@
-# Every evening, so that the checks end (03:05 UTC, the bot's --until) before the updates'
-# reboot window (03:30 UTC), the shops' catalogues (03:40) and the preparation (04:17), which
-# reads what they decided. Not caught up after a stop: a late start would run into the day.
-# Installed by deployment/server/deploy.sh.
+# Every day at 05:30 UTC, after the preparation (04:17) and the photos' check (04:40): the
+# checks then ask all day, until 03:05 UTC the next day (owner, 2026-11-22: «Ναι, όλη μέρα»),
+# before the updates' reboot window (03:30) and the next preparation, which reads what they
+# decided. Not caught up after a stop: a deployment starts the round again itself, and the
+# round goes on from the answers it kept. Installed by deployment/server/deploy.sh.
 [Unit]
-Description=PicWise: the checks of the products every evening
+Description=PicWise: the checks of the products, all day
 
 [Timer]
-OnCalendar=*-*-* 20:30:00 UTC
+OnCalendar=*-*-* 05:30:00 UTC
 Persistent=false
 
 [Install]
