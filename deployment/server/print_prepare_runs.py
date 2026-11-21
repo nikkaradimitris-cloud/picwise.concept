@@ -19,6 +19,7 @@ import argparse
 import json
 import re
 import subprocess
+from collections import Counter
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
@@ -30,6 +31,9 @@ LINES_A_RUN = 120
 SITE_READINESS = "http://127.0.0.1:8016/private-beta-readiness"
 
 _RUN_STARTS = re.compile(r"Starting (?:picwise-prepare\.service|PicWise: prepare)")
+BOT_UNIT = "picwise-shops.service"
+_BOT_RUN_STARTS = re.compile(r"Starting (?:picwise-shops\.service|PicWise: ask the shops)")
+_BOT_WORTH_A_LINE = re.compile(r"^(?:the feed's cop|no copy of the feed|in all:|the round failed)|Consumed|Failed|killed")
 _WORTH_A_LINE = re.compile(
     r"prepare_catalogue|Traceback|Error|error|fail|Fail|[Kk]illed|oom|OOM|[Mm]emory|Main process|"
     r"Consumed|Suppressed|Deactivated|Finished|exited|status="
@@ -109,6 +113,32 @@ def lines_of_a_run(lines: Sequence[str]) -> list[str]:
     return chosen
 
 
+def bot_nights(lines: Sequence[str]) -> list[str]:
+    """What the shops' bot said each night (`picwise-shops.service`, 21/11: the second
+    opinion of that day read in the night's note that it had read no shop since 19/11):
+    its own summary lines, and how many shops ended each way ("read", "no address", ...).
+    The bot prints shop names and counts, never an address; only counts are kept here."""
+    chosen: list[str] = []
+    ends: Counter = Counter()
+
+    def close() -> None:
+        if ends:
+            chosen.append("   shops: " + "; ".join(f"{end} {count}" for end, count in ends.most_common()))
+            ends.clear()
+
+    for line in lines:
+        said = line.split(": ", 1)[1] if ": " in line else line
+        if _BOT_RUN_STARTS.search(line):
+            close()
+            chosen.append(line)
+        elif said.startswith("== ") and ": " in said[3:]:
+            ends[said[3:].split(": ", 1)[1].split(";", 1)[0].strip()] += 1
+        elif _BOT_WORTH_A_LINE.search(said):
+            chosen.append(line)
+    close()
+    return chosen
+
+
 def kernel_memory_lines(lines: Sequence[str]) -> list[str]:
     """The kernel's lines about memory; within each out-of-memory kill, from "invoked
     oom-killer" to "Killed process", also its totals and each process holding more than
@@ -163,6 +193,12 @@ def main(argv: Sequence[str] | None = None, *, runner: Run = run, secrets: Seque
             ]
         ).strip()
     )
+
+    say()
+    say(f"== {BOT_UNIT}, the shops' bot (03:40 UTC): each night's own lines")
+    bot = runner(["journalctl", "-u", BOT_UNIT, "-o", "short-iso", "--no-pager", "--since", args.since])
+    for line in bot_nights(bot.splitlines()) or ["(none)"]:
+        say(line)
 
     say()
     say("== the kernel's lines about memory")

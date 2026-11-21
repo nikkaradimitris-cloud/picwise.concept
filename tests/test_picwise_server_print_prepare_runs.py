@@ -128,6 +128,29 @@ class KernelTests(unittest.TestCase):
         self.assertNotIn(" later", text)  # a row after the kill's end is no row of it
 
 
+BOT_JOURNAL = """2026-11-20T03:40:00+0000 host-a systemd[1]: Starting picwise-shops.service - PicWise: ask the shops for their catalogues (type and stock)...
+2026-11-20T03:44:10+0000 host-a python3[300]: the feed's copy: 1,001,234 rows read; 137 shops to ask, 88 of them in it; asked as PicWiseBot/0.1 (+https://picwise.subby.cloud), 3 s apart or a shop's crawl-delay, at most 200 requests a shop
+2026-11-20T03:44:11+0000 host-a python3[300]: == Fixture Tools: no address; 0 requests, 0 pages, 0 of its 5,000 products seen now, 0 known
+2026-11-20T03:44:11+0000 host-a python3[300]: == Fixture Cables: no address; 0 requests, 0 pages, 0 of its 900 products seen now, 0 known
+2026-11-20T03:50:00+0000 host-a python3[300]: == Fixture Rings: read to the shop's page limit; its collections read to 3 of 9, out of time; 120 requests, 100 pages, 2,000 of its 2,600 products seen now, 2,600 known
+2026-11-20T03:50:01+0000 host-a python3[300]: in all: 88 shops asked, 120 requests; the file knows 137 shops, 210,000 products (150,000 with a type, 20,000 sold out)
+2026-11-20T03:50:02+0000 host-a systemd[1]: picwise-shops.service: Consumed 4min 2.100s CPU time.
+"""
+
+
+class BotNightsTests(unittest.TestCase):
+    def test_each_night_its_summary_lines_and_how_its_shops_ended(self) -> None:
+        nights = runs.bot_nights(BOT_JOURNAL.splitlines())
+        self.assertEqual(len(nights), 5)
+        self.assertIn("Starting picwise-shops.service", nights[0])
+        self.assertIn("the feed's copy: 1,001,234 rows read; 137 shops to ask, 88 of them in it", nights[1])
+        self.assertIn("in all: 88 shops asked", nights[2])
+        self.assertIn("Consumed 4min", nights[3])
+        self.assertEqual(nights[4], "   shops: no address 2; read to the shop's page limit 1")
+        # Counts only: no shop's own line, so no shop's name reaches the report.
+        self.assertNotIn("Fixture", "\n".join(nights))
+
+
 class MainTests(unittest.TestCase):
     def test_the_report_names_each_run_and_prints_nothing_secret(self) -> None:
         out = io.StringIO()
