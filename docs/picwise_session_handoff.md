@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,7 +8,33 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (22/11, 01:10 Athens): task 5 of the work split by model (OPUS): the checks BUILT IN LARGE PART on the
+- **FIRST (22/11, 06:10 Athens): task 5 (OPUS) DONE but one part, on the work branch; NOT deployed; the switch false.**
+  (PROGRESS.md, 22/11 06:10.) Built since 01:10: the walls told from pages (`21953a1`, `85d9fc7`), the night's numbers
+  in the daily email and the letter (`0fe6829`), the category (`e8c044e`); read-only looks on the server.
+  - **The looks of 22/11** (runs 44971761757, 44972305197, 44973108097, 44973503931): GamingKit (48,126) and Webbs
+    Motorcycles (940) were read as refusals because of a reCAPTCHA box and Cloudflare's script on their ordinary pages:
+    fixed, 20 of 20 pass. **Plusshop UK (13,110) and Bazta UK (12,159) put Anubis (a proof of work) before every page;
+    Elixir Garden Supplies (76) and Luxe Mattress Affiliation (5,761) a "One moment, please..." wall** (one Luxe page in
+    ten came from Cloudflare's cache): refusals, never got around (rules 4.4), so they leave on their day 4 unless they
+    let the bot through: the letter `docs/PICWISE_CHECKS_LETTER.md` (paragraph A), for the owner to send through Awin.
+    Pro-Camera (433): Magento pages, the price only as words: the only shop the AI's recipe (4.5.3) would serve.
+  - **The category (5.5)** in the preparation behind the switch: no line ("no line fits", refused twice, a slip) cut,
+    not asked stays if shown and waits if new; its brake at 10%; `picwise-shelves` (05:20 UTC, the AI layer's user and
+    key, $10 a night at most) asks each morning what the preparation names (`jobs/shelves.jsonl.gz`). **The look of
+    22/11** (run 44975588752, the file prepared 21/11 12:48 UTC, 389,735 shown): a line 345,138 (88.6%), not asked yet
+    31,256 (8.0%, asked the morning after the deployment), no line fits 7,919, refused twice 5,324, a slip 98: **13,341
+    (3.4%) would be cut as "no category"** (InStock UK 3,263, Tooled Up 2,225, GamingKit 1,951, PCHUB.UK 1,928).
+  - **The daily email:** the morning's health run prints the checks' night and limits (`print_health.look_at_checks`;
+    it runs `main`'s code, so from the deployment's merge); `docs/PICWISE_DAILY_WORK.md` says to put one line of the
+    checks' numbers in the email, the letter on a shop's day 1, «βγαίνει αύριο» on its day 3. Until the deployment the
+    health run prints no "checks" line and the email says nothing of them.
+  - **Open, the owner's:** build the AI's recipe (4.5.3) for Pro-Camera's 433 products, or let it leave on its day 4
+    (asked 22/11 06:10, recommended: not now). **Then task 7 (FABLE):** the look before the «ανέβασε» and the
+    deployment that turns `data/checks_switch.json` true; everything together (owner, 22/11). The deployment prepares
+    again (the fingerprint changed) and installs 17 units; `picwise-shelves.timer` only with the AI's key.
+  - **Reminder owed at the end of each work:** the two proposals that wait for his yes (a feed over 7 days old; a shop
+    closed, suspended or offline at Awin).
+- **(22/11, 01:10 Athens): task 5 of the work split by model (OPUS): the checks BUILT IN LARGE PART on the
   work branch; NOT deployed; `data/checks_switch.json` false** (owner, 21/11 22:26: «Ωραία ανέβασε το και συνέχισε και
   θύμισέ μου μετά να κάνω τους ελέγχους»; PROGRESS.md, 22/11 01:10). Before it, 22:28: **the button with no dead end
   DEPLOYED** (run 44946418723, release `20261121T202811Z-00f7078`, not prepared again).
