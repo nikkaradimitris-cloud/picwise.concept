@@ -61,11 +61,15 @@ def _configured_path() -> Path | None:
     return Path(configured) if configured else None
 
 
-def read_answers(path: Path) -> dict[str, str]:
-    """The AI's lines by key, from the scan's answers file: only the lines given ("" for
-    "no line fits", refusals and lines that are not answers left out). Empty when the
-    file cannot be read: the catalogue is then prepared as without it."""
+# A product the AI refused or did not answer is asked so many times in all
+# (`deployment/server/scan_shelves.py`, `MOST_TRIES`); then it is refused for good: no line,
+# which the checks read as no category (the checks' rules, 5.5).
+MOST_TRIES = 2
+
+
+def _read_file(path: Path) -> tuple[dict[str, str], frozenset[str]]:
     found: dict[str, str] = {}
+    refused: set[str] = set()
     try:
         with gzip.open(path, "rt", encoding="utf-8") as handle:
             for text in handle:
@@ -78,9 +82,28 @@ def read_answers(path: Path) -> dict[str, str]:
                 key, line = record.get("k"), record.get("line")
                 if isinstance(key, str) and isinstance(line, str):
                     found[key] = sys.intern(line)
+                elif isinstance(key, str) and line is None and "line" in record:
+                    try:
+                        tries = int(record.get("tries") or 0)
+                    except (TypeError, ValueError):
+                        tries = 0
+                    if tries >= MOST_TRIES:
+                        refused.add(key)
     except (OSError, EOFError, gzip.BadGzipFile):
-        return {}
-    return found
+        return {}, frozenset()
+    return found, frozenset(refused)
+
+
+def read_answers(path: Path) -> dict[str, str]:
+    """The AI's lines by key, from the scan's answers file: only the lines given ("" for
+    "no line fits", refusals and lines that are not answers left out). Empty when the
+    file cannot be read: the catalogue is then prepared as without it."""
+    return _read_file(path)[0]
+
+
+def read_refused(path: Path) -> frozenset[str]:
+    """The keys the AI refused, or did not answer, `MOST_TRIES` times: asked no more."""
+    return _read_file(path)[1]
 
 
 def answers() -> dict[str, str]:
@@ -98,11 +121,33 @@ def answers() -> dict[str, str]:
         except OSError:
             stamp = None
         if _LOADED.get("path") != str(path) or _LOADED.get("stamp") != stamp:
-            _LOADED["answers"] = read_answers(path) if stamp is not None else {}
+            _LOADED["answers"], _LOADED["refused"] = _read_file(path) if stamp is not None else ({}, frozenset())
             _LOADED["stamp"] = stamp
             _LOADED["path"] = str(path)
         _LOADED["checked"] = now
         return _LOADED["answers"]
+
+
+def refused_keys() -> frozenset[str]:
+    """The configured file's keys refused for good (`read_refused`), read with `answers`."""
+    answers()
+    with _LOCK:
+        return _LOADED.get("refused") or frozenset()
+
+
+def category_state(title: str, brand: str, raw: Any) -> str:
+    """The checks' rules, 5.5: "line" (the AI gave a line of Google's taxonomy that is no
+    slip), "none" ("no line fits", refused for good, or a slip: no category), "unasked"
+    (no answer yet, or refused fewer than `MOST_TRIES` times), or "" with no answers file
+    at all, which decides nothing."""
+    table = answers()
+    if not table:
+        return ""
+    key = key_of(title, brand, raw)
+    line = table.get(key)
+    if line is None:
+        return "none" if key in refused_keys() else "unasked"
+    return "line" if line and not is_slip(line) else "none"
 
 
 def reset() -> None:

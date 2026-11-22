@@ -36,6 +36,11 @@ Each rule names whose it is:
   πίσω όλα τα προϊόντα, με τη λέξη σου.
 - Νέο προϊόν μπαίνει μόνο αφού περάσει τον έλεγχο. Τη θέση όσων κόπηκαν την παίρνουν
   προϊόντα που πέρασαν.
+- Το AI δίνει σε κάθε προϊόν κατηγορία μία φορά. Όποιο δεν μπαίνει σε κατηγορία βγαίνει, και
+  νέο προϊόν μπαίνει μόνο αφού πάρει κατηγορία (απόφασή σου, 21/11).
+- Κατάστημα με «φράχτη» για ρομπότ δεν το παρακάμπτουμε. Σου ετοιμάζεται ένα γράμμα για να του
+  το στείλεις μέσω Awin, ώστε να αφήσει το bot μας.
+- Κάθε μέρα το email σου έχει μία γραμμή με τους αριθμούς των ελέγχων.
 
 ## 1. What the checks are for, and what they rest on
 
@@ -588,14 +593,40 @@ from their first night live (2.2, 4). Where the code had to settle a point:
     failed, or after 3 days: a product the shop refused was not checked, so a shop that refuses
     keeps the 3 days of 5.6.2 (in the look of 21/11 a shop of 4 products, all refused, would
     have ended its round, and lost them, on its first night).
-11. Not built yet: the shop's recipe by the AI (4.5.3), the category (5.5), the night's numbers in
-   the owner's daily email (11). Without the recipe a shop whose pages no reader reads leaves on
-   its day 4 (5.6.2): in the looks of 22/11 Bazta UK (12,159), Plusshop UK (13,110), Luxe Mattress
-   Affiliation (5,761), Elixir Garden Supplies (Tooled Up, unread on 21/11, is read now).
+11. Not built yet: the shop's recipe by the AI (4.5.3). Without it a shop whose pages no reader
+    reads leaves on its day 4 (5.6.2). The looks on the server of 22/11 (runs 44971761757,
+    44972305197, 44973108097, 44973503931) left one such shop: Pro-Camera (433 products; Magento,
+    its price written only as words on the page).
+12. A challenge page (4.4, 5.6.2) is told by what only a challenge writes: a 403, 429 or 503, or a
+    200 under 100 KB, with an interstitial's own signs (Cloudflare's challenge, PerimeterX,
+    Imperva's incident page, DataDome, SiteGround's and Sucuri's walls, Anubis, "One moment,
+    please..."), and never a page a product was read on. A reCAPTCHA box or Cloudflare's script sit
+    on ordinary pages too: until 22/11 they made GamingKit's (48,126) and Webbs Motorcycles' (940)
+    whole, readable pages count as refusals; now both pass (20 of 20 in the look). A wall that
+    makes a browser work or wait before the page is a refusal, never got around: Anubis on Plusshop
+    UK (13,110) and Bazta UK (12,159), "One moment, please..." on Elixir Garden Supplies (76) and
+    Luxe Mattress Affiliation (5,761; one of its pages in ten came from Cloudflare's cache, unwalled).
+    They cannot be checked unless they let the bot through: the letter of
+    `docs/PICWISE_CHECKS_LETTER.md`.
+13. The page reader reads Magento's own price box last (`text/x-magento-init`, `priceConfig`): its
+    price, of one product only; never its stock, which Magento writes as words (4.5.4).
+14. The category (5.5) is applied by the preparation, not counted by the bot: a product the AI gave
+    no line ("no line fits", refused twice, a slip) is cut (`no category`); one not asked yet stays
+    if shown and waits if new (the cap's gate). Its brake, for an answers file gone wrong: more cut
+    so in one night than 10% of the products (7.4's share), none is, and the health run says so.
+    The products shown or next for the cap with no answer are named each night
+    (`jobs/shelves.jsonl.gz`), and `picwise-shelves` (05:20 UTC, the AI layer's user and key)
+    asks them as the scan of 20/11 asked every product, stopping at the night's $10 (7.6). The
+    scan of 20/11: 4,449 keys "no line fits" and 2,163 refused twice of 203,097 (3.3%).
+15. The night's numbers (11): the bot's note goes into the public note (`checks.bot`) beside what
+    the preparation applied; the morning's health run prints them with their limits;
+    `docs/PICWISE_DAILY_WORK.md` puts one line of them in the owner's daily email, and on a shop's
+    day 1 the letter for it, on its day 3 «βγαίνει αύριο».
 
 Where: `src/picwise_checks` (verdicts, brakes, the ledger, the page reader, rows), the bot
 `deployment/bot/shop_checks_bot.py` (`picwise-checks.service`, `.timer`), the preparation's side
 `src/picwise_providers/checks_applied.py` (with `offer_health`, the cap's gate in
 `catalogue_cap`, the price's source in `catalogue_memory`), the photos in
-`deployment/server/check_photos.py`; a look on the server, read-only:
-`.github/workflows/server-checks-look.yml`.
+`deployment/server/check_photos.py`, the category's morning in `deployment/server/shelves_service.py`
+(`picwise-shelves.service`, `.timer`); looks on the server, read-only:
+`.github/workflows/server-checks-look.yml`, `.github/workflows/server-look-unread.yml`.

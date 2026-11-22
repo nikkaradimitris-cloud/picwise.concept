@@ -33,6 +33,9 @@ Environment=PICWISE_CAP_CATEGORY_MAX=12000
 # the second link's rows read it as their Google line, and every product's kind is read
 # against it (`picwise_providers.ai_shelves`). Without the file, nothing changes.
 Environment=PICWISE_AI_SHELVES_FILE=/srv/picwise/assist/shelves/answers.jsonl.gz
+# The products the AI is asked the category of next (the checks' rules 5.5), for
+# picwise-shelves.service; the folder is the site's to write and the AI layer's to read.
+Environment=PICWISE_SHELF_JOBS=/srv/picwise/assist/shelves/jobs
 Environment=PYTHONDONTWRITEBYTECODE=1
 # GNU time adds one line with the run's peak memory and length, for sizing the server.
 ExecStart=/usr/bin/time -f "prepare_catalogue: peak memory %%M KB, %%e s" /usr/bin/python3 \
@@ -55,6 +58,7 @@ PrivateDevices=yes
 ProtectSystem=strict
 ProtectHome=yes
 ReadWritePaths=/srv/picwise/shared
+ReadWritePaths=-/srv/picwise/assist/shelves/jobs
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectKernelLogs=yes

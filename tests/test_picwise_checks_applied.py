@@ -107,6 +107,91 @@ class Rules11TheNightsNoteTests(unittest.TestCase):
         self.assertNotIn("bot", applied.last_checks_note())
 
 
+def _named(number: int, **parts) -> ProviderProduct:
+    """A product whose title asks the AI its own question (a title's numbers are left out of it)."""
+    word = "".join("abcdefghij"[int(digit)] for digit in str(number))
+    product = _product(number, **parts)
+    return ProviderProduct(**{**product.__dict__, "title": f"Zentra Kettle Model {word.capitalize()}x"})
+
+
+class Rules55TheCategoryTests(unittest.TestCase):
+    def setUp(self) -> None:
+        from picwise_providers import ai_shelves
+
+        self.ai_shelves = ai_shelves
+        applied.reset_for_tests()
+        ai_shelves.reset()
+        self.addCleanup(ai_shelves.reset)
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.folder = Path(folder.name)
+        self.answers = self.folder / "answers.jsonl.gz"
+        patch = mock.patch.dict(os.environ, {ai_shelves.AI_SHELVES_FILE_ENV: str(self.answers)})
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def key(self, product: ProviderProduct) -> str:
+        return self.ai_shelves.key_of(product.title, product.brand, product.raw)
+
+    def write(self, records: list[dict]) -> None:
+        with gzip.open(self.answers, "wt", encoding="utf-8") as handle:
+            for record in records:
+                handle.write(json.dumps(record) + "\n")
+        self.ai_shelves.reset()
+
+    def test_no_line_refused_for_good_or_a_slip_is_cut_a_line_passes_not_asked_stays(self) -> None:
+        products = tuple(_named(number) for number in range(1, 31))
+        self.assertEqual(len({self.key(product) for product in products}), 30)
+        kettles = "Home & Garden > Kitchen & Dining > Kitchen Appliances > Electric Kettles"
+        records = [{"k": self.key(product), "line": kettles, "tries": 0} for product in products[5:]]
+        records += [{"k": self.key(products[0]), "line": "", "tries": 0},
+                    {"k": self.key(products[1]), "line": None, "tries": 2},
+                    {"k": self.key(products[2]), "line": "Animals & Pet Supplies", "tries": 0},
+                    {"k": self.key(products[3]), "line": None, "tries": 1}]
+        self.write(records)
+        done = applied.apply_checks(products, decisions=_decisions(), switch=True)
+        cut = {product.title for product in done if product.raw.get(applied.CHECKS_COLUMN) == applied.NO_CATEGORY}
+        self.assertEqual(cut, {products[0].title, products[1].title, products[2].title})
+        note = applied.last_checks_note()
+        self.assertEqual(note["category"], {"answers": True, "no_category": 3, "held_by_its_brake": False,
+                                            "not_asked_yet": 2})
+        self.assertEqual(note["cut_by_reason"], {applied.NO_CATEGORY: 3})
+        # A product shown stays until asked; a new one waits for its answer, as for its checks.
+        context = build_feed_availability_context(done)
+        self.assertEqual([evaluate_product_eligibility(product, feed_ctx=context).card_eligible for product in done[:6]],
+                         [False, False, False, True, True, True])
+        enter = [product_key(product) for product in products]
+        applied.apply_checks(products, decisions=_decisions(enter=enter), switch=True)
+        self.assertEqual([applied.may_enter(product) for product in products[:6]],
+                         [False, False, False, False, False, True])
+        # Named for the AI: the ones not asked yet (refused once is asked once more), one item a question.
+        items = applied.shelf_items(products)
+        self.assertEqual(sorted(item["k"] for item in items), sorted([self.key(products[3]), self.key(products[4])]))
+        self.assertEqual(items[0]["shop"], "Kettles")
+        written = applied.write_shelf_job(items, self.folder)
+        self.assertEqual(written, {"keys": 2, "products": 2})
+        with gzip.open(self.folder / applied.SHELF_JOBS_NAME, "rt", encoding="utf-8") as handle:
+            self.assertEqual(len(handle.read().splitlines()), 2)
+
+    def test_too_many_with_no_category_in_one_night_none_is_cut(self) -> None:
+        products = tuple(_named(number) for number in range(1, 21))
+        self.write([{"k": self.key(product), "line": "", "tries": 0} for product in products[:3]]
+                   + [{"k": self.key(product), "line": "Electronics > Electronics Accessories > Cables", "tries": 0}
+                      for product in products[3:]])
+        done = applied.apply_checks(products, decisions=_decisions(), switch=True)
+        self.assertFalse(any(applied.CHECKS_COLUMN in product.raw for product in done))
+        self.assertTrue(applied.last_checks_note()["category"]["held_by_its_brake"])
+        # Held, not let in: a new product with no category still waits.
+        self.assertFalse(applied.may_enter(products[0]))
+
+    def test_no_answers_file_decides_nothing(self) -> None:
+        products = tuple(_named(number) for number in range(1, 4))
+        done = applied.apply_checks(products, decisions=_decisions(enter=[product_key(p) for p in products]), switch=True)
+        self.assertFalse(any(applied.CHECKS_COLUMN in product.raw for product in done))
+        self.assertTrue(all(applied.may_enter(product) for product in products))
+        self.assertEqual(applied.shelf_items(products), [])
+
+
 class Rules6WhatIsCutTests(unittest.TestCase):
     def setUp(self) -> None:
         applied.reset_for_tests()

@@ -19,7 +19,14 @@ prepares the catalogue again, so the whole catalogue is back within one preparat
 - the cap lets a product not shown the night before take a place only when its checks
   passed (`may_enter`), counts a product back within 7 nights as kept the night before
   (`returning_row_keys`), and names the next ones for the bot (`candidates` written by
-  `tools/prepare_catalogue.py`).
+  `tools/prepare_catalogue.py`);
+- the category (rules 5.5; owner, 21/11: «Το AI ρωτιέται μία φορά για την κατηγορία κάθε
+  προϊόντος. Όποιο προϊόν δεν μπαίνει σε κατηγορία βγαίνει»): a product the AI gave no line
+  of Google's taxonomy ("no line fits", refused for good, or a slip:
+  `ai_shelves.category_state`) is cut (`NO_CATEGORY`); one not asked yet stays if shown and
+  waits if new; the ones shown or next for the cap with no answer are named for the AI
+  (`shelf_items`, the job `picwise-shelves` answers before the next night). More cut so in
+  one night than `CATEGORY_BRAKE_SHARE` of the products: none, and the note says so.
 
 With the switch off, no decisions file (`PICWISE_CHECKS_DECISIONS` unset or nothing
 there), or one more than 2 nights old, nothing is applied and nothing gated: the
@@ -55,6 +62,18 @@ _SHOPS_LISTED = 30
 # A shop out is asked again each night by a few of its pages (rules 5.6.2): the rows of
 # it the preparation names for the bot.
 ROWS_OF_A_SHOP_OUT = 20
+
+# The category (rules 5.5): the reason of a product cut for it; more of them in one night than
+# this share of the products and none is cut, for the owner's word (the whole night's brake
+# of 7.4, its 10%, for the check the bot does not count: an answers file gone wrong must not
+# empty the site).
+NO_CATEGORY = "no category"
+CATEGORY_BRAKE_SHARE = 0.10
+# The products the AI is asked about the next morning (`deployment/server/shelves_service.py`).
+SHELF_JOBS_ENV = "PICWISE_SHELF_JOBS"
+SHELF_JOBS_NAME = "shelves.jsonl.gz"
+_DESCRIPTION_KEYS = ("description", "product_short_description", "short_description")
+_ABOUT_CHARS = 400
 
 # The bot's note of its night (rules 11), beside the decisions; the keys put in the public note.
 BOT_NOTE_NAME = "note.json"
@@ -152,6 +171,11 @@ def apply_checks(
         if bot is not None:
             _LAST_NOTE["bot"] = bot
         return tuple(products)
+    from . import ai_shelves
+
+    categories = bool(ai_shelves.answers())
+    no_category: list[int] = []
+    waiting: set[str] = set()
     shops_out: Mapping[str, str] = decisions.get("shops_out") or {}
     cut: Mapping[str, str] = decisions.get("cut") or {}
     stock: Mapping[str, list] = decisions.get("stock") or {}
@@ -181,6 +205,11 @@ def apply_checks(
                 cut_by_shop[shop] += 1
                 reasons[str(cut[key] or "failed")] += 1
             else:
+                state = ai_shelves.category_state(product.title, product.brand, product.raw) if categories else ""
+                if state == "none":
+                    no_category.append(index)
+                elif state == "unasked":
+                    waiting.add(key)
                 if key in stock:
                     raw["shop_stock"] = str(stock[key][0])
                     counts["stock_" + str(stock[key][0]).replace(" ", "_")] += 1
@@ -196,7 +225,19 @@ def apply_checks(
         result[index] = replace(product, raw=raw)
         if CHECKS_COLUMN in raw:
             marked.append(result[index])
-    _ACTIVE = {"enter": frozenset(decisions.get("enter") or ()), "returning": frozenset(decisions.get("returning") or ())}
+    category_brake = len(no_category) > CATEGORY_BRAKE_SHARE * max(1, len(result))
+    not_entering = {_key(result[index]) for index in no_category} | waiting
+    if not category_brake:
+        for index in no_category:
+            product = result[index]
+            raw = dict(product.raw) if isinstance(product.raw, Mapping) else {}
+            raw[CHECKS_COLUMN] = NO_CATEGORY
+            result[index] = replace(product, raw=raw)
+            counts["cut"] += 1
+            reasons[NO_CATEGORY] += 1
+            cut_by_shop[_shop(product)] += 1
+    _ACTIVE = {"enter": frozenset(decisions.get("enter") or ()), "returning": frozenset(decisions.get("returning") or ()),
+               "not_entering": frozenset(not_entering), "waiting": frozenset(waiting)}
     _LAST_CUT = marked
     _LAST_NOTE = {
         "applied": True,
@@ -208,6 +249,8 @@ def apply_checks(
         "cut_by_shop": [{"shop": name, "cut": count} for name, count in cut_by_shop.most_common(_SHOPS_LISTED)],
         "price_from_site": counts["price_from_site"],
         "stock_from_page": {name[6:]: count for name, count in counts.items() if name.startswith("stock_")},
+        "category": {"answers": categories, "no_category": len(no_category), "held_by_its_brake": category_brake,
+                     "not_asked_yet": len(waiting)},
     }
     if bot is not None:
         _LAST_NOTE["bot"] = bot
@@ -221,8 +264,56 @@ def gate_on() -> bool:
 
 def may_enter(product: ProviderProduct) -> bool:
     """9.4: a product not shown the night before may take a place only when its checks
-    passed; every product may while the gate is off."""
-    return _ACTIVE is None or _key(product) in _ACTIVE["enter"]
+    passed and the AI gave it a category (5.5); every product may while the gate is off."""
+    if _ACTIVE is None:
+        return True
+    key = _key(product)
+    return key in _ACTIVE["enter"] and key not in _ACTIVE["not_entering"]
+
+
+def shelf_items(products: Sequence[ProviderProduct]) -> list[dict[str, Any]]:
+    """5.5: of the products given (those the cap keeps and the next ones it would take),
+    the ones the AI has not answered yet, one item a question (`ai_shelves.key_of`), as the
+    scan shows a product (`deployment/server/scan_shelves.py`), the most products first."""
+    if _ACTIVE is None or not _ACTIVE.get("waiting"):
+        return []
+    from picwise_ai.shelves import shop_words
+
+    from .ai_shelves import key_of
+
+    waiting = _ACTIVE["waiting"]
+    items: dict[str, dict[str, Any]] = {}
+    for product in products:
+        if _key(product) not in waiting:
+            continue
+        raw = product.raw if isinstance(product.raw, Mapping) else {}
+        asked = key_of(product.title, product.brand, raw)
+        item = items.get(asked)
+        if item is None:
+            about = next((" ".join(str(raw.get(name)).split()) for name in _DESCRIPTION_KEYS
+                          if str(raw.get(name) or "").strip()), "")
+            item = items[asked] = {"k": asked, "title": " ".join(str(product.title or "").split()),
+                                   "brand": str(product.brand or ""), "price": str(product.price_text or ""),
+                                   "category": shop_words(raw), "about": about[:_ABOUT_CHARS], "shop": _shop(product),
+                                   "products": 0}
+        item["products"] += 1
+    return sorted(items.values(), key=lambda item: (-item["products"], item["k"]))
+
+
+def write_shelf_job(items: Sequence[Mapping[str, Any]], folder: str | os.PathLike[str] | None = None) -> dict[str, Any] | None:
+    """The products the AI is asked about next (`shelf_items`), one JSON a line, written
+    whole and then put in place, in the folder `SHELF_JOBS_ENV` names (shared with
+    picwise-shelves); None with no folder named."""
+    configured = folder if folder is not None else str(os.environ.get(SHELF_JOBS_ENV) or "").strip()
+    if not configured:
+        return None
+    target = Path(configured) / SHELF_JOBS_NAME
+    temporary = target.with_name(target.name + ".part")
+    with gzip.open(temporary, "wt", encoding="utf-8") as handle:
+        for item in items:
+            handle.write(json.dumps(item, ensure_ascii=False, separators=(",", ":")) + "\n")
+    os.replace(temporary, target)
+    return {"keys": len(items), "products": sum(int(item.get("products") or 0) for item in items)}
 
 
 def returning_row_keys(products: Sequence[ProviderProduct], row_key: Any) -> frozenset[str]:

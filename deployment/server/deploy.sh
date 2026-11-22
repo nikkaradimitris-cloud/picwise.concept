@@ -113,11 +113,15 @@ if [ -n "$ASSIST_ENV_FILE" ] && [ -s "$ASSIST_ENV_FILE" ] && grep -q '^ANTHROPIC
   install -d -o picwise -g picwise-assist -m 2750 "$ASSIST/drafts"
   install -d -o picwise -g picwise-assist -m 2770 "$ASSIST/jobs"
   install -d -o picwise -g picwise-assist -m 2770 "$ASSIST/families/jobs"
+  # The category of the products not asked yet (the checks' rules 5.5): the preparation
+  # names them in shelves/jobs, picwise-shelves answers in shelves (its answers file).
+  install -d -o picwise-assist -g picwise-assist -m 2750 "$ASSIST/shelves"
+  install -d -o picwise -g picwise-assist -m 2770 "$ASSIST/shelves/jobs"
   ASSIST_ON=yes
   echo "Anthropic key: set"
 else
   rm -f /etc/picwise/assist.env
-  rm -rf -- "${ASSIST:?}/jobs" "${ASSIST:?}/drafts" "${ASSIST:?}/families/jobs"
+  rm -rf -- "${ASSIST:?}/jobs" "${ASSIST:?}/drafts" "${ASSIST:?}/families/jobs" "${ASSIST:?}/shelves/jobs"
   ASSIST_ON=no
   echo "Anthropic key: not set; the site writes no job"
 fi
@@ -134,7 +138,8 @@ for unit in picwise-checks.service picwise-checks.timer; do
 done
 # The AI layer's services, started below only with its key.
 install -m 644 "$RELEASE/deployment/server/picwise-assist.service" /etc/systemd/system/
-for unit in picwise-families.service picwise-family-jobs.service picwise-family-jobs.timer; do
+for unit in picwise-families.service picwise-family-jobs.service picwise-family-jobs.timer \
+  picwise-shelves.service picwise-shelves.timer; do
   install -m 644 "$RELEASE/deployment/server/$unit" /etc/systemd/system/
 done
 systemctl daemon-reload
@@ -187,7 +192,7 @@ case "$STATE" in
     UNITS="picwise-web.service picwise-prepare.service picwise-prepare.timer picwise-shops.service
       picwise-shops.timer picwise-photos.service picwise-photos.timer picwise-offers.service picwise-offers.timer
       picwise-assist.service picwise-families.service picwise-family-jobs.service picwise-family-jobs.timer
-      picwise-checks.service picwise-checks.timer"
+      picwise-checks.service picwise-checks.timer picwise-shelves.service picwise-shelves.timer"
     if [ -n "$PREVIOUS" ] && [ -d "$APP/$PREVIOUS" ] && [ "$(readlink -f "$APP/$PREVIOUS")" != "$RELEASE" ]; then
       ln -sfn "$PREVIOUS" "$APP/current.new"
       mv -T "$APP/current.new" "$APP/current"
@@ -266,9 +271,12 @@ if [ "$ASSIST_ON" = yes ]; then
   systemctl start --no-block picwise-family-jobs.service || echo "the families' sets were not written now"
   systemctl enable --now picwise-family-jobs.timer
   echo "families: $(systemctl is-active picwise-families.service || true)"
+  # The category of the products not asked yet, each morning after the preparation (the
+  # checks' rules 5.5); never started by a deployment itself.
+  systemctl enable --now picwise-shelves.timer
 else
   systemctl disable --now picwise-assist.service > /dev/null 2>&1 || true
-  systemctl disable --now picwise-families.service picwise-family-jobs.timer > /dev/null 2>&1 || true
+  systemctl disable --now picwise-families.service picwise-family-jobs.timer picwise-shelves.timer > /dev/null 2>&1 || true
   echo "assist: off, no key"
 fi
 

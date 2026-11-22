@@ -1,0 +1,9 @@
+[Unit]
+Description=PicWise: the AI's category of the products not asked yet, every morning after the preparation
+
+[Timer]
+OnCalendar=*-*-* 05:20:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

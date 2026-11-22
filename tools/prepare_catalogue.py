@@ -210,6 +210,8 @@ class _Cap:
         self.error = ""
         # What the checks' bot asks next (the checks' rules 9.4, 8.1): rows, never products.
         self.candidates: dict[str, object] | None = None
+        # What the AI is asked next (the checks' rules 5.5): the products kept or next with no category yet.
+        self.shelf: list[dict[str, object]] = []
 
     def __call__(self, products, kinds, feed_ctx):
         try:
@@ -229,9 +231,12 @@ class _Cap:
             if gate is not None:
                 from picwise_checks.rows import row_of, row_record
 
+                next_ones = [products[index] for index in self.result.candidates]
                 self.candidates = checks_applied.candidates_document(
-                    [products[index] for index in self.result.candidates], checks_applied.take_cut_products(),
-                    row_record, row_of,
+                    next_ones, checks_applied.take_cut_products(), row_record, row_of,
+                )
+                self.shelf = checks_applied.shelf_items(
+                    [product for product, kept in zip(products, self.result.keep) if kept] + next_ones
                 )
         except Exception as error:
             self.result, self.error = None, _where(error)
@@ -250,7 +255,16 @@ class _Cap:
             _write_gzip_json(self.candidates, folder / CANDIDATES_NAME)
         except Exception as error:
             return {"error": _where(error)}
-        return {"candidates": len(self.candidates["candidates"]), "rows": len(self.candidates["rows"])}
+        written: dict[str, object] = {"candidates": len(self.candidates["candidates"]), "rows": len(self.candidates["rows"])}
+        try:
+            from picwise_providers.checks_applied import write_shelf_job
+
+            shelf = write_shelf_job(self.shelf)
+            if shelf is not None:
+                written["for_the_ai"] = shelf
+        except Exception as error:
+            written["for_the_ai"] = {"error": _where(error)}
+        return written
 
     def write_pool(self, prepared) -> dict[str, object]:
         """Keep the pool beside the prepared file for the next night; what it holds."""
@@ -288,6 +302,14 @@ def _checks(capping: _Cap) -> dict[str, object]:
             f"{note.get('price_from_site', 0):,} at the price of the shop's own page; held back by the cap's gate "
             f"{getattr(result, 'held_by_checks', 0):,}, candidates {len(getattr(result, 'candidates', ()) or ()):,}"
             + (f"; the bot's rows not written ({written['error']})" if written and "error" in written else "")
+        )
+        category = note.get("category") or {}
+        print(
+            f"prepare_catalogue: the category (5.5): {category.get('no_category', 0):,} products with none"
+            + (" (HELD by its brake: none cut)" if category.get("held_by_its_brake") else " (cut)")
+            + f", {category.get('not_asked_yet', 0):,} not asked yet"
+            + (f"; for the AI next: {written['for_the_ai']}" if written and written.get("for_the_ai") else "")
+            + ("" if category.get("answers") else "; no answers file: nothing decided")
         )
     else:
         print(f"prepare_catalogue: the checks not applied ({note.get('why')})")

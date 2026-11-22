@@ -81,6 +81,7 @@ class HealthTests(unittest.TestCase):
             mock.patch.object(print_health, "PHOTOS_FILE", self.photos),
             mock.patch.object(print_health, "SPEND_DIR", self.spend),
             mock.patch.object(print_health, "CHECKS_NOTE", self.folder / "checks-note.json"),
+            mock.patch.object(print_health, "SHELVES_NOTE", self.folder / "shelves-night.json"),
             mock.patch.object(print_health, "site_memory_gb", lambda *a, **k: 4.0),
             mock.patch.object(print_health, "memory_available_gb", lambda *a, **k: (23.4, 15.2)),
         ]
@@ -147,6 +148,31 @@ class HealthTests(unittest.TestCase):
         self.write(self.folder / "checks-note.json", {"night": "2026-11-22", "shops_asked": 151, "ours": True})
         self.assertIn("over the limit: the checks' round was ours: fewer than half of the shops answered (rules 7.1)",
                       self.over(self.printed()))
+
+    def test_the_category_its_brake_and_the_ais_night_are_told(self) -> None:
+        self.write(self.folder / "checks-note.json", {"night": "2026-11-22", "shops_asked": 151, "decided": 10,
+                                                      "passed": 10, "failed": {}})
+        note = json.loads(self.note.read_text())
+        self.write(self.note, {**note, "checks": {"applied": True, "shops_out": {}, "cut": 4100,
+                                                  "category": {"answers": True, "no_category": 4093,
+                                                               "held_by_its_brake": False, "not_asked_yet": 812}}})
+        self.write(self.folder / "shelves-night.json", {"night": "2026-11-22", "asked": 812, "answered": 790,
+                                                        "no_line_fits": 21, "refused": 0, "left": 22,
+                                                        "cost_usd": 0.06, "stopped": ""})
+        lines = self.printed()
+        self.assertEqual(lines[-1], "within every limit")
+        self.assertIn("checks, the category: 4,093 products with none, 812 not asked yet", lines)
+        self.assertIn("checks, the AI's categories on 2026-11-22: 812 asked, 790 answered (21 no line fits), "
+                      "0 refused, 22 left; $0.06", lines)
+        self.write(self.note, {**note, "checks": {"applied": True, "category": {"no_category": 90000,
+                                                                               "held_by_its_brake": True}}})
+        self.write(self.folder / "shelves-night.json", {"night": "2026-11-22", "asked": 9000, "cost_usd": 9.98,
+                                                        "stopped": "the budget of $10.00 would be passed"})
+        over = self.over(self.printed())
+        self.assertIn("over the limit: the category's brake held: too many products with none in one night, none cut "
+                      "(rules 5.5, 7.4)", over)
+        self.assertIn("over the limit: the AI's categories stopped at the night's brake of $10 "
+                      "(the budget of $10.00 would be passed)", over)
 
     def test_offers_not_fetched_for_days_and_a_failed_fetch_are_told(self) -> None:
         self.write(self.offers, {"fetched_at": "2026-11-03T05:05:10+00:00", "shops_in_feed": 78, "shops": {}})

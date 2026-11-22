@@ -49,6 +49,8 @@ OFFERS_FILE = SHARED / "offers" / "offers.json"
 PHOTOS_FILE = SHARED / "photos" / "gone.json"
 SPEND_DIR = Path("/srv/picwise/assist/spend")
 CHECKS_NOTE = SHARED / "checks" / "note.json"
+# The AI's category of the products not asked yet (the checks' rules 5.5, 7.6), its morning's note.
+SHELVES_NOTE = Path("/srv/picwise/assist/shelves/night.json")
 # The checks' rules, 5.6.2 (owner, 22/11: «Σε 3 μέρες»): a shop that cannot be checked leaves on its day 4.
 CHECKS_OUT_ON_DAY = 4
 SITE_USER = "picwise"
@@ -286,8 +288,21 @@ def look_at_checks(check: Health, runner: Run) -> None:
                   f"{int(applied.get('price_from_site') or 0):,} at the price of the shop's own page")
     elif applied:
         check.say(f"checks applied by the preparation: none ({applied.get('why')})")
-    if note.get("ai_cost_usd") is not None:
-        check.say(f"checks, the AI tonight: ${float(note.get('ai_cost_usd') or 0):.2f}")
+    category = applied.get("category") if isinstance(applied.get("category"), dict) else {}
+    if category:
+        check.say(f"checks, the category: {int(category.get('no_category') or 0):,} products with none"
+                  + (" HELD by its brake" if category.get("held_by_its_brake") else "")
+                  + f", {int(category.get('not_asked_yet') or 0):,} not asked yet")
+    check.limit(bool(category.get("held_by_its_brake")),
+                "the category's brake held: too many products with none in one night, none cut (rules 5.5, 7.4)")
+    shelves = read_json(SHELVES_NOTE)
+    if shelves is not None:
+        stopped = str(shelves.get("stopped") or "")
+        check.say(f"checks, the AI's categories on {shelves.get('night')}: {int(shelves.get('asked') or 0):,} asked, "
+                  f"{int(shelves.get('answered') or 0):,} answered ({int(shelves.get('no_line_fits') or 0):,} no line "
+                  f"fits), {int(shelves.get('refused') or 0):,} refused, {int(shelves.get('left') or 0):,} left; "
+                  f"${float(shelves.get('cost_usd') or 0):.2f}" + (f"; stopped: {stopped}" if stopped else ""))
+        check.limit("budget" in stopped, f"the AI's categories stopped at the night's brake of $10 ({stopped})")
 
 
 def site_memory_gb(proc: Path = Path("/proc"), user: str = SITE_USER) -> float:
