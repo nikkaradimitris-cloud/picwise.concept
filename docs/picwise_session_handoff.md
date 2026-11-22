@@ -58,6 +58,14 @@ a decision came about.
     CREW, Natkina, WAU, MOH, Optimum Nutrition UK, Webbs Motorcycles): the feed's prices stand, a look names each
     cause (7.5; told to the owner: InStock UK's prices are not mended yet); the bot reads pages on one processor
     (with every shop asked at once a request takes twice as long, the first hours of each day).
+  - **After the deployment, read on the server** (`server-health.yml` by hand on the site's branch, run
+    45018828879, 11:46 UTC): the site active on `b1656a4`, every page 200, the searches' server part 0.14 to 0.65 s;
+    "checks: no night recorded yet; the last round: success" (the round is running; the line fills on 23/11). **The
+    health run's "memory of the site" counts every process of the site's user, so by day it now holds the bot's 2.2
+    GB too (7.0 GB, and "over the limit: the site and the preparation together need 21.4 GB")**: at night the bot
+    has ended (03:05 UTC) before the preparation (04:17), so the night's sum is the site's alone with the
+    preparation's 15.1 GB, as before (21.8 GB on 22/11, of the server's 22.9: the standing limit, the owner means
+    to take a larger server).
   - **Owed:** the Greek page of the rules in the Project's docs (`claude/PicWise-kanones-elegchon.md`) still says
     that the two Proposed rules wait for his yes: bring it in step (his yes of 22/11 to both; Dean Morris Cards).
     `main` is at `b6915e3` (19/11): bringing it level with the site is the owner's yes (it builds the Vercel backup).
