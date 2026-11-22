@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (10:30 Athens: task 7 begun, the look's first finding, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,7 +8,41 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (22/11, 10:18 Athens): task 5 (OPUS) DONE, on the work branch; NOT deployed; the switch false. Next: task 7 (FABLE).**
+- **FIRST (22/11, 10:30 Athens): task 7 (FABLE, Claude Fable 5.2) BEGUN and NOT finished: the look before the
+  «ανέβασε» of the checks. Nothing built, nothing deployed, the switch false.** The owner, 10:28: «Πάμε να συνεχίσουμε
+  σε άλλη συζήτηση εδώ είναι τεράστια και το κόστος πάρα πολύ»: go on from here, on Fable 5.2, in a new conversation.
+  Read so far: the rules, `verdicts.py`, `brakes.py`, `ledger.py`, `checks_applied.py`, `deploy.sh`. **Not read yet:**
+  `deployment/bot/shop_checks_bot.py`, `check_photos.py` (its strict mode), `state.py` (where `apply_checks` sits), the
+  cap's gate. **Not done yet:** the server's state today (`server-health.yml` by hand: the site's memory after the
+  night; `prepare-runs.yml`, `since=-30h`: the shops' bot's first round with both links), the bigger look, the report.
+  - **Found, confirmed by a run of the ledger's own code (must be mended before the «ανέβασε»):** a product cut as
+    "never checked" on its shop's day 4 (also "not passed in 30 nights", "old feed, no fresh reading") **is never asked
+    again**: `checks_applied` marks it cut like a failed one, so it is no product a card can show, never reaches the
+    cap, is never a candidate, and `ledger.asking_order` asks a row not shown only when it is failed and due, a
+    candidate, or of a shop out. The rules (9.3, 9.4) say it is not shown *until it is* checked, the cap naming it a
+    candidate. A way: such a product is not marked cut; it leaves the cap's memory of the night before and waits at the
+    gate (`may_enter` false), so the cap names the next ones as candidates; or `asking_order` asks the cut rows never
+    decided. With a test that walks the whole way (cut on day 4, asked, passed, back).
+  - **Read, to be checked and settled:** (a) **the pace**: one request at a time a shop, 3 s apart *plus each answer's
+    time*; Tooled Up 68,508 pages, InStock UK about 77,000 products past its catalogue's 25,000, GamingKit 48,126: a
+    timed look (`--sample 300 --minutes 25` on a few large shops) gives requests an hour a shop, so how many products
+    would be "never checked" on day 4; (b) **the category's brake** (`checks_applied.CATEGORY_BRAKE_SHARE`) divides by
+    every row `apply_checks` is given (the whole intake), not by the products shown: weaker than "10% of the products";
+    better the share with none among the rows the AI answered; (c) **the two proposals that wait for his yes are built
+    as written and would go live with the deployment**: a shop in no Awin list, suspended or offline out (usmile), and
+    a feed over 7 days old (35 shops, 12,684 products on 21/11): either two flags in `data/checks_owner_words.json`,
+    off until his yes (only "rejected" is his word), or his answer with the «ανέβασε»; (d) **the strict photo check
+    starts at the deployment itself** (`deploy.sh` starts `picwise-photos.service`; with the switch true any failure is
+    cut within the hour, behind its own brakes): count first what it would cut; `verdicts.photo_verdict` reads a
+    content type that is neither `image/` nor `application/octet-stream` as no image (S3's default is
+    `binary/octet-stream`): see how `check_photos.py` itself tells an image; (e) Dean Morris Cards (869 products): 10
+    of 10 gone in the look; on a live night held for the owner (fewer than 20 passes): ask him with a bigger sample;
+    (f) `ledger._shop_night`'s docstring still says day 15 (the code: day 4).
+  - **The deployment, when he says «ανέβασε»:** a fast-forward of `ccr-1361f1a7-dcpo60` (at `00f7078`, an ancestor of
+    the work branch) to the commit that sets `data/checks_switch.json` true; it prepares again (about 28 min, peak
+    about 14.9 GB: read the site's memory first), installs 17 units; the bot's first night is the next morning's.
+    Everything together (owner, 22/11). Then the reminder of the two proposals, if not answered with it.
+- **(22/11, 10:18 Athens): task 5 (OPUS) DONE, on the work branch; NOT deployed; the switch false. Next: task 7 (FABLE).**
   (PROGRESS.md, 22/11 06:10.) Built since 01:10: the walls told from pages (`21953a1`, `85d9fc7`), the night's numbers
   in the daily email and the letter (`0fe6829`), the category (`e8c044e`); read-only looks on the server.
   - **The looks of 22/11** (runs 44971761757, 44972305197, 44973108097, 44973503931): GamingKit (48,126) and Webbs
