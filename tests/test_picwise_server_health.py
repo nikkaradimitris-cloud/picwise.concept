@@ -80,6 +80,7 @@ class HealthTests(unittest.TestCase):
             mock.patch.object(print_health, "OFFERS_FILE", self.offers),
             mock.patch.object(print_health, "PHOTOS_FILE", self.photos),
             mock.patch.object(print_health, "SPEND_DIR", self.spend),
+            mock.patch.object(print_health, "CHECKS_NOTE", self.folder / "checks-note.json"),
             mock.patch.object(print_health, "site_memory_gb", lambda *a, **k: 4.0),
             mock.patch.object(print_health, "memory_available_gb", lambda *a, **k: (23.4, 15.2)),
         ]
@@ -113,6 +114,39 @@ class HealthTests(unittest.TestCase):
         self.assertIn("catalogue memory: 11 nights, 472 new tonight, 20 prices changed tonight, 489 gone since", text)
         self.assertIn("shops since the preparation before: gone 0; shrunk 0; new 0", text)
         self.assertIn("AI spend yesterday: $0.31 in 40 calls", text)
+
+    def test_the_checks_not_running_yet_change_nothing(self) -> None:
+        lines = self.printed()
+        self.assertIn("checks: no night recorded yet", lines)
+        self.assertEqual(lines[-1], "within every limit")
+
+    def test_the_checks_night_its_shops_that_cannot_be_checked_and_its_limits(self) -> None:
+        note = {"night": "2026-11-22", "shops_asked": 151, "decided": 3120, "passed": 3001,
+                "failed": {"gone": 101, "moved": 18}, "cut_tonight": 119, "back_tonight": 4, "held": {},
+                "braked_shops": [], "night_brake": False, "stopped": False,
+                "cannot_be_checked": {"Plusshop UK": ["refuses the bot", 1], "Aosom UK": ["robots.txt refused", 3]},
+                "awin": {"newly_out": [["usmile", "Awin: in no list"]], "waits": False, "products": 0}}
+        self.write(self.folder / "checks-note.json", note)
+        lines = self.printed()
+        self.assertEqual(lines[-1], "within every limit")
+        self.assertIn("checks, the night of 2026-11-22: 151 shops asked; the last round: unknown", lines)
+        self.assertIn("checks: decided 3,120, passed 3,001, failed 119 (gone 101, moved 18); cut tonight 119, back 4", lines)
+        self.assertIn("checks, cannot be checked: Aosom UK: robots.txt refused, day 3; leaves tomorrow", lines)
+        self.assertIn("checks, cannot be checked: Plusshop UK: refuses the bot, day 1; leaves on day 4", lines)
+        self.assertIn("checks, out by Awin's reading tonight: usmile (Awin: in no list)", lines)
+        # A brake that held, the cutting stopped, an Awin reading that waits, an old night: limits.
+        self.write(self.folder / "checks-note.json", {**note, "night": "2026-11-19", "braked_shops": ["Kettles"],
+                                                      "night_brake": True, "stopped": True,
+                                                      "awin": {"newly_out": [], "waits": True, "products": 20511}})
+        over = self.over(self.printed())
+        self.assertIn("over the limit: a shop's brake held the checks' cuts: Kettles (rules 7.2)", over)
+        self.assertIn("over the limit: the whole night's brake held: nothing new cut (rules 7.4)", over)
+        self.assertIn("over the limit: the checks' cutting stopped until the owner's word (rules 7.4)", over)
+        self.assertIn("over the limit: a reading of Awin that would put many shops out waits for the owner's word (rules 5.6.3)", over)
+        self.assertIn("over the limit: the checks recorded no night since 2026-11-19", over)
+        self.write(self.folder / "checks-note.json", {"night": "2026-11-22", "shops_asked": 151, "ours": True})
+        self.assertIn("over the limit: the checks' round was ours: fewer than half of the shops answered (rules 7.1)",
+                      self.over(self.printed()))
 
     def test_offers_not_fetched_for_days_and_a_failed_fetch_are_told(self) -> None:
         self.write(self.offers, {"fetched_at": "2026-11-03T05:05:10+00:00", "shops_in_feed": 78, "shops": {}})

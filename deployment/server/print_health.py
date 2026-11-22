@@ -23,7 +23,12 @@ limit". The daily report tells only those (docs/PICWISE_DAILY_WORK.md):
   run at night), or less than `MIN_AVAILABLE_GB` of memory available now;
 - the preparation took more than `MAX_PREPARE_MINUTES`;
 - less than `MIN_FREE_DISK_GB` of disk free;
-- yesterday's AI spend at the day's cap (the service then asks nothing more that day).
+- yesterday's AI spend at the day's cap (the service then asks nothing more that day);
+- the shops' checks (`docs/PICWISE_CHECKS_RULES.md`, 7 and 11), once they run: their last
+  round failed; no night recorded for more than a day; a round most shops did not answer;
+  a brake that held the cuts (a shop's, the whole night's, the cutting stopped); a reading
+  of Awin that waits for the owner's word. The shops that cannot be checked are printed
+  with their day (on day 4 a shop leaves): for the report, not a limit.
 
 The standard library only: the server's own python3 runs it, outside the site's packages.
 """
@@ -43,6 +48,9 @@ PREPARED_NOTE = SHARED / "public" / "prepared.json"
 OFFERS_FILE = SHARED / "offers" / "offers.json"
 PHOTOS_FILE = SHARED / "photos" / "gone.json"
 SPEND_DIR = Path("/srv/picwise/assist/spend")
+CHECKS_NOTE = SHARED / "checks" / "note.json"
+# The checks' rules, 5.6.2 (owner, 22/11: «Σε 3 μέρες»): a shop that cannot be checked leaves on its day 4.
+CHECKS_OUT_ON_DAY = 4
 SITE_USER = "picwise"
 
 MAX_AGE_HOURS = 30.0
@@ -220,6 +228,68 @@ def look_at_photos(check: Health, runner: Run) -> None:
     check.limit(result not in ("success", "unknown"), f"the last check of the photos ended: {result}")
 
 
+def _counts(counts: object) -> str:
+    return ", ".join(f"{name} {count:,}" for name, count in sorted((counts or {}).items())) if isinstance(counts, dict) else ""
+
+
+def look_at_checks(check: Health, runner: Run) -> None:
+    """The shops' checks: the bot's note of its night (`CHECKS_NOTE`, counts and shop names
+    only) and what the preparation applied of it (the public note's `checks`)."""
+    prepared = read_json(PREPARED_NOTE) or {}
+    applied = prepared.get("checks") if isinstance(prepared.get("checks"), dict) else {}
+    note = read_json(CHECKS_NOTE)
+    result = last_result("picwise-checks.service", runner)
+    if note is None:
+        check.say("checks: no night recorded yet" + (f"; the last round: {result}" if result != "unknown" else ""))
+        check.limit(result not in ("success", "unknown", ""), f"the checks' last round ended: {result}")
+        return
+    night = str(note.get("night") or "")
+    try:
+        late = (check.now.date() - datetime.fromisoformat(night).date()).days
+    except ValueError:
+        late = None
+    check.say(f"checks, the night of {night or 'no date'}: {note.get('shops_asked', 0)} shops asked; the last round: {result}")
+    check.limit(result not in ("success", "unknown", ""), f"the checks' last round ended: {result}")
+    check.limit(late is None or late > 1, f"the checks recorded no night since {night or 'ever'}")
+    if note.get("ours"):
+        check.say("checks: the round was ours, fewer than half of the shops answered at all; nothing recorded")
+        check.limit(True, "the checks' round was ours: fewer than half of the shops answered (rules 7.1)")
+        return
+    failed = note.get("failed") if isinstance(note.get("failed"), dict) else {}
+    check.say(f"checks: decided {note.get('decided', 0):,}, passed {note.get('passed', 0):,}, "
+              f"failed {sum(failed.values()):,}" + (f" ({_counts(failed)})" if failed else "")
+              + f"; cut tonight {note.get('cut_tonight', 0):,}, back {note.get('back_tonight', 0):,}"
+              + (f"; held: {_counts(note.get('held'))}" if note.get("held") else ""))
+    braked = [str(name) for name in note.get("braked_shops") or []]
+    if braked:
+        check.say("checks, a shop's brake held its cuts: " + ", ".join(braked))
+    check.limit(bool(braked), "a shop's brake held the checks' cuts: " + ", ".join(braked) + " (rules 7.2)")
+    check.limit(bool(note.get("night_brake")), "the whole night's brake held: nothing new cut (rules 7.4)")
+    check.limit(bool(note.get("stopped")), "the checks' cutting stopped until the owner's word (rules 7.4)")
+    cannot = note.get("cannot_be_checked") if isinstance(note.get("cannot_be_checked"), dict) else {}
+    for name, entry in sorted(cannot.items()):
+        why, day = (list(entry) + ["", 0])[:2] if isinstance(entry, (list, tuple)) else (str(entry), 0)
+        day = int(day or 0)
+        leaves = ("; leaves tomorrow" if day == CHECKS_OUT_ON_DAY - 1
+                  else "; out" if day >= CHECKS_OUT_ON_DAY else f"; leaves on day {CHECKS_OUT_ON_DAY}")
+        check.say(f"checks, cannot be checked: {name}: {why}, day {day}{leaves}")
+    awin = note.get("awin") if isinstance(note.get("awin"), dict) else {}
+    newly = [f"{entry[0]} ({entry[1]})" for entry in awin.get("newly_out") or [] if isinstance(entry, (list, tuple)) and len(entry) > 1]
+    if newly:
+        check.say("checks, out by Awin's reading tonight: " + ", ".join(newly))
+    if awin.get("waits"):
+        check.say(f"checks, a reading of Awin waits for the owner's word: {int(awin.get('products') or 0):,} products")
+    check.limit(bool(awin.get("waits")), "a reading of Awin that would put many shops out waits for the owner's word (rules 5.6.3)")
+    if applied.get("applied"):
+        check.say(f"checks applied by the preparation: {len(applied.get('shops_out') or {})} shops out "
+                  f"({int(applied.get('products_of_shops_out') or 0):,} products), {int(applied.get('cut') or 0):,} products cut, "
+                  f"{int(applied.get('price_from_site') or 0):,} at the price of the shop's own page")
+    elif applied:
+        check.say(f"checks applied by the preparation: none ({applied.get('why')})")
+    if note.get("ai_cost_usd") is not None:
+        check.say(f"checks, the AI tonight: ${float(note.get('ai_cost_usd') or 0):.2f}")
+
+
 def site_memory_gb(proc: Path = Path("/proc"), user: str = SITE_USER) -> float:
     """What the site's processes hold in memory (the user it runs as)."""
     try:
@@ -287,6 +357,7 @@ def main(*, now: datetime | None = None, runner: Run = run) -> int:
     peak_gb = look_at_preparation(check, runner)
     look_at_offers(check, runner)
     look_at_photos(check, runner)
+    look_at_checks(check, runner)
     look_at_resources(check, peak_gb)
     look_at_ai(check)
     for line in check.lines:

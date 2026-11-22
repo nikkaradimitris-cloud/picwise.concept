@@ -65,6 +65,16 @@ by email and to their phone. The owner answers in that session, once a day.
    a search whose server's part is over 1 s also when asked again, passes the limit of
    speed. Each limit passed goes first in the report, one line each, in plain words; the
    rest of the log is told only on Sundays. When the run failed, the report says so first.
+   **The shops' checks** (`docs/PICWISE_CHECKS_RULES.md`, section 11; the owner's plan
+   of 21/11, step 12: «a daily email with the checks' numbers»): from their deployment
+   (task 7; until then the health run says "checks: no night recorded yet", and the report
+   says nothing of them), the same run prints the bot's night, lines that start "checks":
+   what was decided, passed and failed by reason, cut and back; the brakes; the shops that
+   cannot be checked, with their day (on day 4 a shop leaves); the shops out by Awin's
+   reading. Its limits (a failed round, no night for over a day, a round that was ours, a
+   brake that held, an Awin reading that waits for the owner's word) go first, like every
+   limit. The public note (`/prepared.json`, its `checks`) says what the preparation applied
+   of it, and carries the bot's note too (`checks.bot`), for a day the run cannot be read.
    **Whether the Sunday tidy-up of the branches ran** (owner, 2026-11-16: «Θέλω να
    λαμβάνω ενημέρωση να συμπεριλάβεις την αυτόματη εργασία»): on a Sunday, and on the
    first day after one whose session did not report it, read the last run of
@@ -93,6 +103,15 @@ by email and to their phone. The owner answers in that session, once a day.
    - **Any other day:** what was done; the numbers before and after; what is proposed to
      go on the site, ending with «Να το ανεβάσω;»; the questions that need the owner, each
      one line; what comes next.
+   - **The checks, every day they run** (owner's plan, step 12), after the problems, two
+     lines at most: how many products were checked, passed and cut, and why («Έλεγχοι:
+     3.120 προϊόντα, πέρασαν 3.001, κόπηκαν 119: 101 δεν υπάρχουν πια, 18 άλλαξαν
+     σελίδα»), the AI's cost when there was one. Then, one line each: a shop that cannot be
+     checked, on its day 1, with why in plain words and the letter of
+     `docs/PICWISE_CHECKS_LETTER.md` filled in for it, for the owner to send through Awin
+     (none for "its pages are not read"); on its day 3, «βγαίνει αύριο»; a shop out by
+     Awin's reading. On a quiet day the email is «Όλα εντάξει.» and the one line of the
+     checks' numbers (the plan of 21/11, step 12, asks for them every day).
    - **On Sundays, the week's summary** in place of the day's report, after the day's
      problems (owner, 2026-11-16: «Εβδομαδιαία σύνοψη Κυριακής: Τι έγινε την εβδομάδα,
      κατάλογος, τιμές (▼/▲), αναζητήσεις επισκεπτών (συχνές και χωρίς αποτέλεσμα),

@@ -77,6 +77,36 @@ class Rules77TheSwitchTests(unittest.TestCase):
             self.assertIsNone(applied.load_decisions(Path(folder) / "none.json.gz", today=TODAY)[0])
 
 
+class Rules11TheNightsNoteTests(unittest.TestCase):
+    def setUp(self) -> None:
+        applied.reset_for_tests()
+
+    def test_the_bots_note_goes_in_the_public_note_switch_on_or_off_its_public_keys_only(self) -> None:
+        bot = {"night": "2026-12-01", "decided": 40, "passed": 37, "failed": {"gone": 3},
+               "cannot_be_checked": {"Kettles": ["refuses the bot", 1]}, "asked_by_shop": {"Kettles": [12, 10, ""]},
+               "prices_tied": {"Kettles": [10, 9]}}
+        with tempfile.TemporaryDirectory() as folder:
+            decisions = Path(folder) / "decisions.json.gz"
+            (Path(folder) / applied.BOT_NOTE_NAME).write_text(json.dumps(bot), encoding="utf-8")
+            with mock.patch.dict(os.environ, {applied.DECISIONS_ENV: str(decisions)}):
+                applied.apply_checks((_product(1),), switch=False)
+                off = applied.last_checks_note()
+                applied.apply_checks((_product(1),), decisions=_decisions(), switch=True)
+                on = applied.last_checks_note()
+        for note in (off, on):
+            self.assertEqual(note["bot"]["cannot_be_checked"], {"Kettles": ["refuses the bot", 1]})
+            self.assertEqual((note["bot"]["decided"], note["bot"]["failed"]), (40, {"gone": 3}))
+            self.assertNotIn("asked_by_shop", note["bot"])
+        self.assertFalse(off["applied"])
+        self.assertTrue(on["applied"])
+
+    def test_no_note_of_the_bot_no_bot_key(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            with mock.patch.dict(os.environ, {applied.DECISIONS_ENV: str(Path(folder) / "decisions.json.gz")}):
+                applied.apply_checks((_product(1),), switch=False)
+        self.assertNotIn("bot", applied.last_checks_note())
+
+
 class Rules6WhatIsCutTests(unittest.TestCase):
     def setUp(self) -> None:
         applied.reset_for_tests()

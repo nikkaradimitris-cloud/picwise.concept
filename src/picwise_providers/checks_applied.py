@@ -25,6 +25,9 @@ With the switch off, no decisions file (`PICWISE_CHECKS_DECISIONS` unset or noth
 there), or one more than 2 nights old, nothing is applied and nothing gated: the
 catalogue is as it was before the checks. What was applied is counted for the night's
 public note (`last_checks_note`): counts and shop names only, never an id or an address.
+With it, switch on or off, goes the bot's own note of its night (`bot`, the file `note.json`
+beside the decisions; rules 11): what it asked, decided and cut, the brakes, the shops that
+cannot be checked and their day, Awin's reading; for the owner's daily email.
 """
 from __future__ import annotations
 
@@ -52,6 +55,11 @@ _SHOPS_LISTED = 30
 # A shop out is asked again each night by a few of its pages (rules 5.6.2): the rows of
 # it the preparation names for the bot.
 ROWS_OF_A_SHOP_OUT = 20
+
+# The bot's note of its night (rules 11), beside the decisions; the keys put in the public note.
+BOT_NOTE_NAME = "note.json"
+BOT_NOTE_KEYS = ("night", "shops_asked", "ours", "decided", "passed", "failed", "cut_tonight", "back_tonight",
+                 "held", "braked_shops", "night_brake", "stopped", "cannot_be_checked", "awin", "ai_cost_usd")
 
 _ACTIVE: dict[str, Any] | None = None
 _LAST_NOTE: dict[str, Any] | None = None
@@ -109,6 +117,21 @@ def load_decisions(path: str | os.PathLike[str] | None = None, *, today: date | 
     return document, "read"
 
 
+def read_bot_note(path: str | os.PathLike[str] | None = None) -> dict[str, Any] | None:
+    """The bot's note of its last night (rules 11), beside the decisions file: its public
+    keys only (`BOT_NOTE_KEYS`: counts and shop names). None when there is none."""
+    configured = path if path is not None else str(os.environ.get(DECISIONS_ENV) or "").strip()
+    if not configured:
+        return None
+    try:
+        note = json.loads(Path(configured).with_name(BOT_NOTE_NAME).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(note, dict):
+        return None
+    return {key: note[key] for key in BOT_NOTE_KEYS if key in note}
+
+
 def apply_checks(
     products: Sequence[ProviderProduct],
     *,
@@ -122,9 +145,12 @@ def apply_checks(
     status = "given"
     if decisions is None and switch:
         decisions, status = load_decisions(today=today)
+    bot = read_bot_note()
     if not switch or decisions is None:
         _ACTIVE, _LAST_CUT = None, []
         _LAST_NOTE = {"applied": False, "why": "the switch is off" if not switch else status}
+        if bot is not None:
+            _LAST_NOTE["bot"] = bot
         return tuple(products)
     shops_out: Mapping[str, str] = decisions.get("shops_out") or {}
     cut: Mapping[str, str] = decisions.get("cut") or {}
@@ -183,6 +209,8 @@ def apply_checks(
         "price_from_site": counts["price_from_site"],
         "stock_from_page": {name[6:]: count for name, count in counts.items() if name.startswith("stock_")},
     }
+    if bot is not None:
+        _LAST_NOTE["bot"] = bot
     return tuple(result)
 
 
