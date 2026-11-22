@@ -49,15 +49,15 @@ Each rule names whose it is:
 - Κατάστημα με «φράχτη» για ρομπότ δεν το παρακάμπτουμε. Σου ετοιμάζεται ένα γράμμα για να του
   το στείλεις μέσω Awin, ώστε να αφήσει το bot μας.
 - Κάθε μέρα το email σου έχει μία γραμμή με τους αριθμούς των ελέγχων.
-- **Πλαφόν ανά κατάστημα (απόφασή σου, 22/11· δεν έχει χτιστεί).** Ένα πλαφόν, ίδιο για
-  όλα: κάθε κατάστημα κρατά το πολύ 20.000 προϊόντα. Δεν μπαίνει ξεχωριστό νούμερο ανά
-  κατάστημα· ό,τι επιτρέπει ο ρυθμός κάθε καταστήματος φαίνεται μόνο του, γιατί δείχνονται
-  μόνο όσα έχει σκανάρει το bot («μόνο όσα έχουν σκανναριστεί περνάνε»). Σήμερα αγγίζει 4
-  καταστήματα και κόβει 186.900 προϊόντα: ο κατάλογος πάει από 398.957 σε 212.057. Ποια
-  προϊόντα κρατά ένα κατάστημα (η λέξη σου, 22/11: «Με τις 3 αλλαγές»): πρώτα τα είδη με τα
-  λίγα προϊόντα· μετά ό,τι πουλά φθηνότερα από όσα δείχνει το site· μετά τα υπόλοιπα, πρώτα
-  όσα έχουν είδος· ό,τι το κρατά φθηνότερα άλλο κατάστημα μπαίνει τελευταίο. Ο κανόνας:
-  ενότητα 19.
+- **Πόσα προϊόντα δείχνει ένα κατάστημα (απόφασή σου, 22/11· δεν έχει χτιστεί).** Ό,τι
+  προλαβαίνει να σκανάρει το bot σε ένα κατάστημα περνάει στο site: σε ένα 15.000, σε άλλο
+  5.000. Ανώτατο όριο 20.000, για κατάστημα που απαντά γρήγορα. Δεν μπαίνει ξεχωριστό
+  πλαφόν ανά κατάστημα («μόνο όσα έχουν σκανναριστεί περνάνε»· «τελειώσαμε με αυτό»). Σήμερα
+  πάνω από 20.000 έχουν 4 καταστήματα: κόβονται τουλάχιστον 186.900 προϊόντα. Ποια προϊόντα
+  κρατά ένα κατάστημα (η λέξη σου, 22/11: «Με τις 3 αλλαγές»): πρώτα τα είδη με τα λίγα
+  προϊόντα· μετά ό,τι πουλά φθηνότερα από όσα δείχνει το site· μετά τα υπόλοιπα, πρώτα όσα
+  έχουν είδος· ό,τι το κρατά φθηνότερα άλλο κατάστημα μπαίνει τελευταίο. Το bot φτιάχνεται
+  να δουλεύει σε περισσότερους επεξεργαστές μαζί («Ναι, μαζί»). Ο κανόνας: ενότητα 19.
 
 ## 1. What the checks are for, and what they rest on
 
@@ -768,11 +768,11 @@ about 285,000 at its lowest, on day 4, then filling again with checked products)
    many products wait for it (`not shown until checked`, by reason).
 
 
-## 19. The cap per shop (owner, 22/11, 15:51 to 16:03 Athens): decided, NOT BUILT
+## 19. How many of a shop's products pass: what the bot scans, 20,000 the most (owner, 22/11): decided, NOT BUILT
 
 Written 22/11 (17:10 Athens) by Claude Fable 5.2, after a look with its numbers (19.2), and
-**corrected the same day (17:25) on the owner's word of 17:08: the cap is one, 20,000 for
-every shop; no cap is worked out for each shop from its pace** (19.3). The build is OPUS's by
+**corrected the same day (17:35) on the owner's words of 17:08 and 17:21: what the bot scans
+of a shop passes to the site, 20,000 the most; no cap is set for each shop** (19.3). The build is OPUS's by
 the work split; a look before its «ανέβασε» is FABLE's, since it cuts products. Each rule
 names whose it is, as everywhere in this file.
 
@@ -803,14 +803,22 @@ large shop takes days by the pace rule (4.3, 4.7):
   και εξαρτάται και από τον όγκο που μπορεί να σκανάρει το bot αυτό που επιτρέπει δηλαδή το
   κάθε κατάστημα το πλαφόν είναι ένα και είναι 20.000 προϊόντα.. δεν μπαίνει πλαφών για το
   κάθε κατάστημα.. μπαίνει κανόνας μόνο όσα έχουν σκανναριστεί περνάνε»**.
+- 17:21, the rule having been written back to him as one cap of 20,000 for every shop:
+  **«Δεν υπάρχει διαφορετικό πλαφών ανά ανακατάστημα... Το πώς μπορεί να επιτρέπει ένα
+  κατάστημα μπορεί να σκανάρει 15.000 προϊόντα σε ένα άλλο 20 και σε ένα άλλο 5 αυτά περνάνε
+  στο site μέγιστο όριο αν το κατάστημα απαντά σύντομα κι αν επιτρέπει πολλούς ελέγχου το
+  δευτερόλεπτο είναι τα 20.000... τελειώσαμε με αυτό..»**.
+- 17:16, while the look was run once more with one cap: «Για ποιο λόγο μετράς δεν μας
+  ενδιαφέρει κάτι τέτοιο». Nothing more is measured of it before the look of 19.7.
 
 ### 19.2 What the look measured (22/11, read-only, no AI)
 
 `deployment/server/look_shop_cap.py` on a copy of the server's catalogue of 22/11 11:26 UTC:
-the 398,957 products the category cap keeps, of 135 shops; a cap of 20,000 for every shop
-(run 45036794087; the runs before it, 45034692763 and 45035123154, counted a cap by each
-shop's pace, as the rule was first read: 197,740 cut, and the numbers the owner was asked
-the order with, 19.4).
+the 398,957 products the category cap keeps, of 135 shops; with 20,000 of every shop, the
+most that can pass (run 45036794087). The runs before it, 45034692763 and 45035123154, took
+of each shop what the bot would scan of it in a day at the pace the morning's look measured
+for it alone (20,000, 18,951, 18,069, 12,140): 197,740 cut, and the numbers the owner was
+asked the order with (19.4).
 
 | shop | products | cut | a code another shop sells too | cheapest here | dearer here | with a kind |
 |---|---|---|---|---|---|---|
@@ -819,10 +827,10 @@ the order with, 19.4).
 | GamingKit | 48,191 | 28,191 | 43,634 | 0 | 43,634 | 17,455 |
 | PCHUB.UK | 47,982 | 27,982 | 43,446 | 33,373 | 10,073 | 17,090 |
 
-- **Four shops are over the cap, and no other**: the next largest, Plusshop UK, holds
-  13,095. **186,900 products are cut; 212,057 stay.** (The estimate given to him at 15:51:
-  about 190,000.) Those four hold 266,900 of the catalogue's 398,957 products today: two in
-  three.
+- **Four shops are over 20,000, and no other**: the next largest, Plusshop UK, holds 13,095.
+  **At least 186,900 products are cut; at most 212,057 stay** (more are cut where the bot
+  scans fewer than 20,000 of a shop in a day). (The estimate given to him at 15:51: about
+  190,000.) Those four hold 266,900 of the catalogue's 398,957 products today: two in three.
 - **GamingKit and PCHUB.UK sell the same 43,500 products. PCHUB.UK is the cheaper on 33,373;
   GamingKit is the cheapest on none**: nine in ten of its products are sold cheaper by
   another shop.
@@ -846,19 +854,25 @@ the order with, 19.4).
 What the look could not measure: the cap's effect before the category cap (it read the
 products the category cap had already chosen, not the 1.6 million rows a card can show).
 
-### 19.3 The cap's size
+### 19.3 How many of a shop's products pass
 
-**Owner** (22/11, 16:00 and 17:08). **One cap: a shop keeps at most 20,000 products. It is
-the same for every shop, and for every shop that comes in. No cap is worked out for each
-shop**: not from its pace, not from the bot's nights.
+**Owner** (22/11: 16:00, 17:08, 17:21). **What the bot scans of a shop passes to the site:
+as many as the shop lets it scan, 15,000 in one, 5,000 in another. The most, for a shop that
+answers fast and allows many checks, is 20,000. No cap is set for each shop.** «Μπαίνει
+κανόνας μόνο όσα έχουν σκανναριστεί περνάνε». «Τελειώσαμε με αυτό.»
 
-What each shop's pace allows shows by itself, by the rule he names, **«μόνο όσα έχουν
-σκανναριστεί περνάνε»**: of a shop's products, only the ones the bot has checked are shown.
-That is the checks' own rule as it stands (9.1: a page passed within the last 30 nights; 9.3:
-a product never asked by its shop's day 4 is not shown until it is; 9.4: a place goes only to
-a product whose checks passed). So a shop the bot asks slowly shows fewer of its 20,000 for
-the days its first round takes, and all of them once each has been asked and has passed.
-Nothing is measured to set a cap, and no cap moves from night to night.
+**Proposed, so that it holds steady; for the builder, and his to change:**
+
+1. **Scanned** is checked and passed in the bot's last day of asking the shop. A pass counts
+   for two nights, so that one bad day does not empty a shop. (9.1 counts a pass for 30
+   nights today: with that, a shop the bot scans 5,000 a day of would pile up to 20,000 over
+   four days, each product checked once in four days, which is not what he says.)
+2. **Each day the bot asks a shop's shown products again first**, in the order of 19.4, and
+   new ones only in the time left. So a shop settles at what it lets the bot scan in a day,
+   and its products do not take turns on the site.
+3. **The bot asks of a shop only its first 20,000 by the order of 19.4.**
+
+Nothing is worked out to set a number for a shop: the number is what was scanned.
 
 ### 19.4 Which products a capped shop keeps
 
@@ -896,18 +910,17 @@ e. **The night before's first** (owner, 27/10, for the category cap: «κοιτ�
 f. **The first night**: a capped shop's products that have passed their check come before
    the ones never asked, inside each step: the bot's work until then is not thrown away.
 
-### 19.5 The bot over several processes: not needed for the cap
+### 19.5 The bot over several processes, built with it
 
-The look of 22/11: asked alone, GamingKit answers in 4.3 seconds a request; with every shop
-asked at once, in 10: the bot reads the pages on one processor (section 17).
+**Owner, 22/11 (17:15 Athens), asked whether the bot should be made to work on several
+processors together with this: «Ναι, μαζί».**
 
-**The owner said «Ναι, μαζί» at 17:15, when asked whether the bot should be made to work on
-several processors together with the cap. He was asked on the first reading of the rule, in
-which a slower bot made each shop's cap smaller. With one cap of 20,000 that reason is gone:
-the bot's speed does not change what a shop keeps.** What it still gives: a shop's 20,000
-are checked sooner and oftener (GamingKit's in about a day, asked alone; in about two and a
-half as the bot is). So it is a step of its own, after the cap, his to say when; it is not
-part of the cap's build.
+Why it is needed: what the bot scans of a shop is what passes (19.3), so the bot's own
+slowness would hold a shop's products back. The look of 22/11: asked alone, GamingKit answers
+in 4.3 seconds a request, about 18,000 a day; with every shop asked at once, in 10, about
+7,800 a day: the bot reads the pages on one processor (section 17). (At 17:25 this section
+said it was no longer needed, the rule then read as a cap that does not depend on the bot;
+his word of 17:21 puts it back.)
 
 ### 19.6 Beside the other rules
 
@@ -924,17 +937,19 @@ part of the cap's build.
    asked within a day: "passed within the last 30 nights" (9.1) can then be made shorter;
    that is another rule, his to say, not this one.
 4. **A shop that cannot be checked** (5.6) is out on its day 4, as before.
-5. **A new shop**: its candidates are the first 20,000 by the order; what passes enters.
+5. **A new shop**: the bot asks its first 20,000 by the order; what it scans and passes enters.
+6. **9.1's 30 nights** become the two nights of 19.3.1 for every shop: a look before the
+   «ανέβασε» counts what that hides (19.7).
 
 ### 19.7 The brake, the switch, what is reported
 
 **Proposed.**
 
-1. **The first night cuts about 198,000 products, by his decision.** Its look, before the
-   «ανέβασε» (task 7's kind): the catalogue prepared on GitHub's runner with the cap; per
-   capped shop what stays by step and what goes; each kind before and after; the first cards
-   of the 40 searches before and after; the categories' sizes; the preparation's time and
-   memory.
+1. **The first night cuts at least 186,900 products, by his decision.** Its look, before the
+   «ανέβασε» (task 7's kind), the only measuring left (19.1, 17:16): the catalogue prepared
+   on GitHub's runner with the rule; per shop what the bot scanned and what passes; what
+   leaves by a pass over two nights old; each kind before and after; the first cards of the
+   40 searches before and after; the preparation's time and memory.
 2. **A switch** (`data/shop_cap_switch.json`, frozen with the code): false, no shop is
    capped, within one preparation.
 3. **The night's note** (`/prepared.json`), per shop over the cap: its products a card can
@@ -943,12 +958,13 @@ part of the cap's build.
 
 ### 19.8 Open: the owner's to say
 
-Answered on 22/11: one cap of 20,000 for every shop, and only what the bot has checked is
-shown (17:08, 19.3); the order, with the three changes (17:15, 19.4).
+Answered on 22/11: what the bot scans of a shop passes, 20,000 the most, no cap for each
+shop (17:08, 17:21; 19.3); the order, with the three changes (17:15; 19.4); the bot over
+several processes, built with it (17:15; 19.5). He asked for no more questions on it
+(«τελειώσαμε με αυτό»): what follows is built as written and shown to him in the look.
 
-1. The bot over several processes: a step of its own, when he says (19.5).
-2. A kind is thin under 100 products (19.4 a): proposed.
-3. The proposed rules of 19.4 d to f, 19.6 and 19.7, each his to change.
+1. A pass counts for two nights (19.3.1); a kind is thin under 100 products (19.4 a).
+2. The proposed rules of 19.3.2, 19.3.3, 19.4 d to f, 19.6 and 19.7.
 
 ### 19.9 For the builder
 
@@ -956,8 +972,9 @@ shown (17:08, 19.3); the order, with the three changes (17:15, 19.4).
   category cap's shares and spread (`catalogue_cap.fair_quotas`, `_spread`, `part_of`, its
   ranks of clean products, its memory of the night before and its gate, `may_enter`, with
   the candidates); the walk of nights through the ledger and the preparation's own cap
-  (`tests/test_picwise_checks_walk.py`): walk the shop's cap through it before anything
-  else. Nothing of the bot changes for the cap.
+  (`tests/test_picwise_checks_walk.py`): walk this rule through it before anything else. In
+  the bot: the order of asking (19.3.2, beside section 10), the first 20,000 of a shop
+  (19.3.3), several processes (19.5).
 - `look_shop_cap.py` tries the steps to count them (`measure`, `tried`): it is a look on
   399,000 products, not the build, and it does not know the night before or the checks.
 - The preparation holds 21.8 of the server's 22.9 GB at night. A shop's cap worked out
