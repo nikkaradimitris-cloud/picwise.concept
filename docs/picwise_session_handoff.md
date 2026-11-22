@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (13:45 Athens: THE CHECKS DEPLOYED on the owner's «Ανέβασε», the bot's first round running, read the night on 23/11; 11:50 Athens: task 7's look done, its findings mended, not deployed, waits for the owner's answers and his «ανέβασε»; 10:30 Athens: task 7 begun, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (15:05 Athens: Vercel's preview builds turned off, records only; 13:45 Athens: THE CHECKS DEPLOYED on the owner's «Ανέβασε», the bot's first round running, read the night on 23/11; 11:50 Athens: task 7's look done, its findings mended, not deployed, waits for the owner's answers and his «ανέβασε»; 10:30 Athens: task 7 begun, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -83,6 +83,9 @@ a decision came about.
   - **Owed:** the Greek page of the rules in the Project's docs (`claude/PicWise-kanones-elegchon.md`) still says
     that the two Proposed rules wait for his yes: bring it in step (his yes of 22/11 to both; Dean Morris Cards).
     `main` is at `b6915e3` (19/11): bringing it level with the site is the owner's yes (it builds the Vercel backup).
+- **(22/11, 15:05 Athens): Vercel's preview builds turned off on the owner's «Ναι»** (its email: Function Storage at
+  75% of the free 10 GB; 99 of 100 deployments in 25 hours were previews of session branches; PROGRESS.md, 22/11
+  15:05). Only `main` builds the backup now; a session's branch makes no Vercel deployment. Nothing to do.
 - **(22/11, 11:55 Athens, the daily session, Sunday): the week's summary sent; nothing changed.** Task 7 ran the same
   morning in the owner's own conversation on Fable 5.2 (the item below); this session, not on Fable, did none of it.
   Seen: the night's memory, the site and the preparation together, 21.1 GB, over the limit of 20 (22.5 on 21/11).
@@ -997,7 +1000,7 @@ a decision came about.
   a push of a revert commit, never a force push.
 - **`main`:** what is live plus its records, moved only on the owner's yes, by a
   fast-forward; brought level with the site and its records on 15/11 (it had been 88
-  commits behind since 09/11). A push to `main` makes Vercel build the backup. Pull request #23 (from `ccr-99b47f03-l8t4dj`) is the owner's; leave it.
+  commits behind since 09/11). A push to `main` makes Vercel build the backup; no other branch builds on Vercel (its preview builds turned off on 22/11, owner's «Ναι»). Pull request #23 (from `ccr-99b47f03-l8t4dj`) is the owner's; leave it.
 - **Tests:** `python tools/run_test_modules.py --skip-slow` (every module in its own
   process, about 6 minutes on 4 cores); `.github/workflows/tests.yml` runs it on each
   push of code, the two slow modules in a job of their own. Two modules fail as known
