@@ -11,7 +11,7 @@
 # file. The repository is public and so is this log: the server's names are masked; the bot
 # prints counts and shop names only, never an address, an id or a key.
 #
-# Run: 2026-11-22 10:55 Athens (task 7: the look before the «ανέβασε», every shop, 100 a shop, each shop its own worker) (to run again, change this line and push).
+# Run: 2026-11-22 11:10 Athens (task 7: the pace, the six largest shops asked a page at a time, for 20 minutes) (to run again, change this line and push).
 name: Server look at the checks (read-only)
 on:
   push:
@@ -89,8 +89,9 @@ jobs:
       - name: Run the checks' bot in its look mode, once
         if: steps.connect.outcome == 'success'
         run: |
-          python3 .github/scripts/bundle_checks.py --dry --sample 100 --minutes 18 --workers 140 \
-            > "$RUNNER_TEMP/checks_bundle.py"
+          python3 .github/scripts/bundle_checks.py --dry --sample 3000 --minutes 20 --workers 8 \
+            --shop "Tooled Up" --shop "InStock UK" --shop "GamingKit" --shop "PCHUB.UK" \
+            --shop "Tirendo UK" --shop "Tyres UK" > "$RUNNER_TEMP/checks_bundle.py"
           # In a unit of its own with its own limits: the prepared catalogue read once beside
           # the site (about 2 GB), the release's code on its path, Awin's token from the
           # server's secrets for its programmes (never printed), nothing writable under /srv.
