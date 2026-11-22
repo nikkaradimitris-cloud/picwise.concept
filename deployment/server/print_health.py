@@ -283,6 +283,13 @@ def look_at_checks(check: Health, runner: Run) -> None:
                 for entry in awin.get("would_be_out_if_proposed") or [] if isinstance(entry, (list, tuple)) and len(entry) > 2]
     if proposed:
         check.say("checks, not out while the Proposed rule waits for the owner's yes (rules 5.6.3): " + ", ".join(proposed))
+    old_feed = note.get("old_feed_would_wait") if isinstance(note.get("old_feed_would_wait"), dict) else {}
+    if old_feed.get("products"):
+        most = ", ".join(f"{entry[0]} {int(entry[1]):,}" for entry in old_feed.get("most") or []
+                         if isinstance(entry, (list, tuple)) and len(entry) > 1)
+        check.say(f"checks, the Proposed rule of a feed over 7 days old would not show {int(old_feed['products']):,} "
+                  f"products of {int(old_feed.get('shops') or 0)} shops (rules 5.6.4; waits for the owner's yes)"
+                  + (f": {most}" if most else ""))
     if awin.get("waits"):
         check.say(f"checks, a reading of Awin waits for the owner's word: {int(awin.get('products') or 0):,} products")
     check.limit(bool(awin.get("waits")), "a reading of Awin that would put many shops out waits for the owner's word (rules 5.6.3)")

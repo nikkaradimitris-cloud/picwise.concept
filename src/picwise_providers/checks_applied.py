@@ -87,7 +87,8 @@ _ABOUT_CHARS = 400
 # The bot's note of its night (rules 11), beside the decisions; the keys put in the public note.
 BOT_NOTE_NAME = "note.json"
 BOT_NOTE_KEYS = ("night", "shops_asked", "ours", "decided", "passed", "failed", "cut_tonight", "back_tonight",
-                 "held", "braked_shops", "night_brake", "stopped", "cannot_be_checked", "awin", "ai_cost_usd")
+                 "held", "braked_shops", "night_brake", "stopped", "cannot_be_checked", "awin", "ai_cost_usd",
+                 "old_feed_would_wait")
 
 _ACTIVE: dict[str, Any] | None = None
 _LAST_NOTE: dict[str, Any] | None = None

@@ -683,6 +683,14 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
                                   awin_closed_out=awin_closed_out)
     made = L.decisions(ledger, night, rows, shown=shown, candidates=candidates, came_back=night_result.came_back,
                        old_feed_rule=old_feed_rule)
+    if not old_feed_rule and not night_result.note.get("ours"):
+        # What the Proposed rule of a feed over 7 days old (5.6.4) would not show tonight, while
+        # it waits for the owner's yes: counted for him, changing nothing.
+        with_it = L.decisions(ledger, night, rows, shown=shown, candidates=candidates, old_feed_rule=True)["wait"]
+        would: Counter = Counter(rows[key].shop for key, why in with_it.items()
+                                 if why == "old feed, no fresh reading" and key not in made["wait"])
+        night_result.note["old_feed_would_wait"] = {"products": sum(would.values()), "shops": len(would),
+                                                    "most": [[shop, count] for shop, count in would.most_common(10)]}
     night_result.note["asked_by_shop"] = {shop: [result.night.requests, len(result.answers), result.stopped]
                                           for shop, result in sorted(results.items())}
     # How long each shop's asking took, and the crawl-delay it asks for: the bot's pace (rules 4.7).
@@ -720,6 +728,11 @@ def print_night(note: Mapping[str, Any], made: Mapping[str, Any], ledger: L.Ledg
         if awin.get("would_be_out_if_proposed"):
             say("Awin: not out, the Proposed rule waits for the owner's yes: "
                 + ", ".join(f"{name} ({reason[6:]}, {count:,} products)" for name, reason, count in awin["would_be_out_if_proposed"]))
+    old_feed = note.get("old_feed_would_wait") or {}
+    if old_feed.get("products"):
+        say(f"the Proposed rule of a feed over 7 days old (waits for the owner's yes) would not show "
+            f"{old_feed['products']:,} products of {old_feed['shops']} shops: "
+            + ", ".join(f"{shop} {count:,}" for shop, count in old_feed.get("most") or []))
     waits = Counter((made.get("wait") or {}).values())
     say(f"the decisions: shops out {len(made['shops_out'])}, products cut {len(made['cut']):,}, not shown until "
         f"checked {sum(waits.values()):,}"

@@ -127,13 +127,16 @@ class HealthTests(unittest.TestCase):
                 "braked_shops": [], "night_brake": False, "stopped": False,
                 "cannot_be_checked": {"Plusshop UK": ["refuses the bot", 1], "Aosom UK": ["robots.txt refused", 3]},
                 "awin": {"newly_out": [["usmile", "Awin: in no list"]], "waits": False, "products": 0,
-                         "would_be_out_if_proposed": [["Paused Shop", "Awin: suspended", 28]]}}
+                         "would_be_out_if_proposed": [["Paused Shop", "Awin: suspended", 28]]},
+                "old_feed_would_wait": {"products": 412, "shops": 3, "most": [["Old Feed Shop", 300], ["Another", 100]]}}
         self.write(self.folder / "checks-note.json", note)
         lines = self.printed()
         self.assertEqual(lines[-1], "within every limit")
         # Named, not out: the Proposed part of the rule waits for the owner's yes.
         self.assertIn("checks, not out while the Proposed rule waits for the owner's yes (rules 5.6.3): "
                       "Paused Shop (suspended, 28 products)", lines)
+        self.assertIn("checks, the Proposed rule of a feed over 7 days old would not show 412 products of 3 shops "
+                      "(rules 5.6.4; waits for the owner's yes): Old Feed Shop 300, Another 100", lines)
         self.assertIn("checks, the night of 2026-11-22: 151 shops asked; the last round: unknown", lines)
         self.assertIn("checks: decided 3,120, passed 3,001, failed 119 (gone 101, moved 18); cut tonight 119, back 4", lines)
         self.assertIn("checks, cannot be checked: Aosom UK: robots.txt refused, day 3; leaves tomorrow", lines)

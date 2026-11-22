@@ -275,6 +275,41 @@ class ANightEndToEndTests(unittest.TestCase):
         self.assertNotIn("\x1f", printed)
 
 
+class TheOldFeedRuleCountedWhileItWaitsTests(unittest.TestCase):
+    def test_what_the_rule_would_not_show_is_counted_and_nothing_changes(self) -> None:
+        # Rules 5.6.4, Proposed: a feed over 7 days old; a product of it with no reading of its
+        # shop's site of the last 3 nights. Off until the owner's yes: counted for him only.
+        rows = {f"Filler\x1f{n}": Row(key=f"Filler\x1f{n}", shop="Filler", product_id=f"f{n}",
+                                      address=f"https://filler.invalid/q/{n}") for n in range(200)}
+        rows.update({row.key: row for row in (_row(1), _row(2))})
+        priced = (PRODUCT_PAGE % "24.99").encode()
+        shop = Shop({"/robots.txt": bot.Answer(404), "/p/1": bot.Answer(200, "text/html", priced),
+                     "/p/2": bot.Answer(200, "text/html", priced)})
+        ledger = L.Ledger()
+        arguments = dict(shown=set(rows), parts={}, shared_ids=set(), candidates=[], ledger=ledger, fetch=shop.fetch,
+                         sleep=shop.sleep, clock=shop.clock, deadline=1e9, workers=1, pause=3.0, awin=None,
+                         feeds={"Kettles": date(2026, 11, 1)}, owner_cut_shops=[], owner_awin_word=False,
+                         say=lambda _line: None)
+        first, made = bot.run(rows, night=date(2026, 12, 1), **arguments)
+        self.assertTrue(ledger.shops["Kettles"].round_over)
+        self.assertEqual((made["wait"], first.note["old_feed_would_wait"]["products"]), ({}, 0))
+        # Four nights on its pages name the product but neither a price nor its stock: no reading.
+        bare = b'<script type="application/ld+json">{"@type": "Product", "name": "Zentra Kettle", "sku": "ZK-1"}</script>'
+        shop.answers.update({"/p/1": bot.Answer(200, "text/html", bare), "/p/2": bot.Answer(200, "text/html", bare)})
+        later, made = bot.run(rows, night=date(2026, 12, 5), **arguments)
+        self.assertEqual([ledger.products[key].state for key in ("Kettles\x1f1", "Kettles\x1f2")], [PASSED, PASSED])
+        self.assertEqual(made["wait"], {})
+        self.assertEqual(later.note["old_feed_would_wait"], {"products": 2, "shops": 1, "most": [["Kettles", 2]]})
+        lines: list[str] = []
+        bot.print_night(later.note, made, ledger, lines.append)
+        self.assertIn("the Proposed rule of a feed over 7 days old (waits for the owner's yes) would not show 2 products "
+                      "of 1 shops: Kettles 2", lines)
+        # With his yes they wait, and the count is no longer made.
+        with_yes, made = bot.run(rows, night=date(2026, 12, 6), old_feed_rule=True, **arguments)
+        self.assertEqual(set(made["wait"].values()), {"old feed, no fresh reading"})
+        self.assertNotIn("old_feed_would_wait", with_yes.note)
+
+
 class OwnersYesTests(unittest.TestCase):
     def test_the_two_proposed_rules_are_off_until_the_owners_yes(self) -> None:
         # Rules 13.2: a feed over 7 days old (5.6.4) and a shop suspended, closed or offline at
