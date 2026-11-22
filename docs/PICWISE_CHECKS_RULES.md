@@ -52,7 +52,11 @@ Each rule names whose it is:
 - **Πλαφόν ανά κατάστημα (απόφασή σου, 22/11· δεν έχει χτιστεί).** Κάθε κατάστημα κρατά όσα
   προϊόντα μπορεί να ελέγξει το bot σε μία μέρα με τον ρυθμό του καταστήματος, και ποτέ πάνω
   από 20.000. Σήμερα αγγίζει 4 καταστήματα και κόβει 197.740 προϊόντα: ο κατάλογος πάει από
-  398.957 σε 201.217. Ο κανόνας, τα νούμερα και ό,τι περιμένει τη λέξη σου: ενότητα 19.
+  398.957 σε 201.217. Ποια προϊόντα κρατά ένα κατάστημα (η λέξη σου, 22/11: «Με τις 3
+  αλλαγές»): πρώτα τα είδη με τα λίγα προϊόντα· μετά ό,τι πουλά φθηνότερα από όσα δείχνει το
+  site· μετά τα υπόλοιπα, πρώτα όσα έχουν είδος· ό,τι το κρατά φθηνότερα άλλο κατάστημα
+  μπαίνει τελευταίο. Το bot φτιάχνεται να δουλεύει σε περισσότερους επεξεργαστές μαζί με το
+  πλαφόν («Ναι, μαζί»). Ο κανόνας και τα νούμερα: ενότητα 19.
 
 ## 1. What the checks are for, and what they rest on
 
@@ -856,9 +860,13 @@ at once (19.5).
 
 ### 19.4 Which products a capped shop keeps
 
-**Owner**: the three steps of 19.1, in their order; 20,000 the most.
-
-**Proposed, from the look's numbers; his to say (19.8):**
+**Owner**: the three steps of 19.1; 20,000 the most. **And, 22/11 (17:15 Athens), asked with
+the look's numbers (as recorded, 71,972 of the 134,097 products with a kind stay and 90 kinds
+lose over half; with the three changes a, b and c, 104,718 stay and 21 kinds lose over
+half): «Με τις 3 αλλαγές».** So the order a shop over its cap keeps its products by is:
+first its products of the thin kinds (a); then what it sells cheapest of the offers the site
+keeps (b); then the rest, the products with a kind before those with none (c); last, and
+only when places are left, a product a cheaper shop keeps (b). d, e and f are **Proposed**.
 
 a. **The thin kinds first, as he first proposed.** A shop's products of a kind the whole
    catalogue holds fewer than 100 of are kept before anything else. They are 1,625 products
@@ -887,7 +895,9 @@ f. **The first night**: a capped shop's products that have passed their check co
 
 ### 19.5 Needed with it: the bot asks each shop at the shop's pace
 
-**Proposed.** The look of 22/11: asked alone, GamingKit answers in 4.3 seconds a request;
+**Owner, 22/11 (17:15 Athens), asked whether the bot should be made to work on several
+processors together with the cap, told that measured as it is the caps come out at about
+half: «Ναι, μαζί».** The look of 22/11: asked alone, GamingKit answers in 4.3 seconds a request;
 with every shop asked at once, in 10: the bot reads the pages on one processor (section 17).
 Measured so, a shop's day comes out at about half, and the caps with it: about 35,000 more
 products cut than the table of 19.2 says, and other shops may come under a cap, for our own
@@ -934,12 +944,12 @@ two are.
 
 ### 19.8 Open: the owner's to say
 
-1. **The order, as recorded or with 19.4 a, b and c.** As recorded: 71,972 of the 134,097
-   products with a kind stay, and 90 kinds lose over half. With them: 104,718 stay, and 21
-   kinds lose over half.
-2. **The bot over several processes, built with the cap** (19.5).
-3. The proposed numbers: a kind is thin under 100 products (19.4 a); the measure and its
+Answered on 22/11 (17:15 Athens): the order, with the three changes (19.4); the bot over
+several processes, built with the cap (19.5).
+
+1. The proposed numbers: a kind is thin under 100 products (19.4 a); the measure and its
    tenth (19.3); the brake's tenth (19.7).
+2. The proposed rules of 19.3.2 to 19.3.4, 19.4 d to f, 19.6 and 19.7, each his to change.
 
 ### 19.9 For the builder
 
