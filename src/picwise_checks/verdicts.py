@@ -293,7 +293,9 @@ def photo_verdict(status: int, content_type: str = "", length: int | None = None
     that night has them `not checked` instead (`photos_refused`)."""
     if 200 <= status < 300:
         kind = str(content_type or "").split(";")[0].strip().lower()
-        if kind and not kind.startswith("image/") and kind != "application/octet-stream":
+        # A bare binary type is a photo's too (a store's default for a file kept without a
+        # type is `binary/octet-stream`); `deployment/server/check_photos.image_type`.
+        if kind and not kind.startswith("image/") and kind not in ("application/octet-stream", "binary/octet-stream"):
             return Verdict(FAILED, NOT_AN_IMAGE)
         if length == 0:
             return Verdict(FAILED, EMPTY)
@@ -363,17 +365,22 @@ REJECTED = "rejected"
 SUSPENDED = "suspended"
 
 
-def awin_out(relationship: str | None, link_status: str = "") -> str:
+def awin_out(relationship: str | None, link_status: str = "", *, closed_too: bool = True) -> str:
     """Why Awin's reading puts a shop out, or "" when it stays in (rules 5.6.3).
-    `relationship` None: the shop is in none of Awin's lists (a programme closed)."""
+    `relationship` None: the shop is in none of Awin's lists (a programme closed).
+    A rejection is the owner's word (21/11: «Βγαίνουν»). The rest is Proposed (offline,
+    in no list, suspended): with `closed_too` false, while his yes to it is still to come,
+    only a rejection puts a shop out."""
+    word = None if relationship is None else str(relationship).strip().lower()
+    if word == REJECTED:
+        return "Awin: rejected"
+    if not closed_too:
+        return ""
     if str(link_status or "").strip().lower() == "offline":
         return "Awin: offline"
-    if relationship is None:
+    if word is None:
         return "Awin: in no list"
-    relationship = str(relationship).strip().lower()
-    if relationship == REJECTED:
-        return "Awin: rejected"
-    if relationship == SUSPENDED:
+    if word == SUSPENDED:
         return "Awin: suspended"
     return ""
 

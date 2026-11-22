@@ -279,6 +279,10 @@ def look_at_checks(check: Health, runner: Run) -> None:
     newly = [f"{entry[0]} ({entry[1]})" for entry in awin.get("newly_out") or [] if isinstance(entry, (list, tuple)) and len(entry) > 1]
     if newly:
         check.say("checks, out by Awin's reading tonight: " + ", ".join(newly))
+    proposed = [f"{entry[0]} ({str(entry[1]).replace('Awin: ', '')}, {int(entry[2] or 0):,} products)"
+                for entry in awin.get("would_be_out_if_proposed") or [] if isinstance(entry, (list, tuple)) and len(entry) > 2]
+    if proposed:
+        check.say("checks, not out while the Proposed rule waits for the owner's yes (rules 5.6.3): " + ", ".join(proposed))
     if awin.get("waits"):
         check.say(f"checks, a reading of Awin waits for the owner's word: {int(awin.get('products') or 0):,} products")
     check.limit(bool(awin.get("waits")), "a reading of Awin that would put many shops out waits for the owner's word (rules 5.6.3)")
@@ -286,6 +290,12 @@ def look_at_checks(check: Health, runner: Run) -> None:
         check.say(f"checks applied by the preparation: {len(applied.get('shops_out') or {})} shops out "
                   f"({int(applied.get('products_of_shops_out') or 0):,} products), {int(applied.get('cut') or 0):,} products cut, "
                   f"{int(applied.get('price_from_site') or 0):,} at the price of the shop's own page")
+        waiting = applied.get("not_shown_until_checked_by_reason")
+        if applied.get("not_shown_until_checked"):
+            check.say(f"checks, not shown until checked: {int(applied.get('not_shown_until_checked') or 0):,} products"
+                      + (f" ({_counts(waiting)})" if isinstance(waiting, dict) and waiting else "")
+                      + f"; at the cap's gate {int(applied.get('held_by_the_gate') or 0):,}, "
+                      f"named for the bot's next night {int(applied.get('candidates') or 0):,}")
     elif applied:
         check.say(f"checks applied by the preparation: none ({applied.get('why')})")
     category = applied.get("category") if isinstance(applied.get("category"), dict) else {}

@@ -223,7 +223,10 @@ class _Cap:
             kept_before = read_google_pool(google_pool_path(self.out))
             gate = checks_applied.may_enter if checks_applied.gate_on() else None
             if gate is not None:
-                kept_before = frozenset(kept_before) | checks_applied.returning_row_keys(products, row_key)
+                # Back within 7 nights of its cut: as kept the night before (the checks' rules 8.2);
+                # not shown until checked: out of the night before's, to wait at the gate (9.3, 9.5).
+                kept_before = (frozenset(kept_before) | checks_applied.returning_row_keys(products, row_key)) \
+                    - checks_applied.unchecked_row_keys(products, row_key)
             self.result = cap_catalogue(
                 products, kinds, feed_ctx=feed_ctx, kept_before=kept_before,
                 share=share, category_max=category_max, may_enter=gate,
@@ -299,6 +302,7 @@ def _checks(capping: _Cap) -> dict[str, object]:
         print(
             f"prepare_catalogue: the checks of {note.get('night')}: {len(note.get('shops_out') or {})} shops out "
             f"({note.get('products_of_shops_out', 0):,} products), {note.get('cut', 0):,} products cut, "
+            f"{note.get('not_shown_until_checked', 0):,} not shown until checked, "
             f"{note.get('price_from_site', 0):,} at the price of the shop's own page; held back by the cap's gate "
             f"{getattr(result, 'held_by_checks', 0):,}, candidates {len(getattr(result, 'candidates', ()) or ()):,}"
             + (f"; the bot's rows not written ({written['error']})" if written and "error" in written else "")

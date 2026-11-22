@@ -57,6 +57,45 @@ class StatesTests(unittest.TestCase):
         loose._local.kind, loose._local.length = "text/html", "900"
         self.assertEqual(loose._strictly(200, "HEAD"), 200)
 
+    def test_a_photos_type(self) -> None:
+        for kind in ("", "image/webp", "IMAGE/JPEG", "binary/octet-stream", "application/octet-stream; charset=binary"):
+            self.assertTrue(photos.image_type(kind), kind)
+        for kind in ("text/html", "text/html; charset=utf-8", "application/json", "text/plain"):
+            self.assertFalse(photos.image_type(kind), kind)
+
+    def test_only_what_a_get_says_calls_a_photo_no_image_or_empty(self) -> None:
+        class Host(photos.Asker):
+            """A photo's host: what it answers a HEAD and a GET of one byte (status, type, length)."""
+
+            def __init__(self, **answers) -> None:
+                super().__init__(strict=True)
+                self.answers, self.asked = answers, []
+
+            def _ask(self, method: str, url: str) -> tuple[int, str]:
+                self.asked.append(method)
+                status, self._local.kind, self._local.length = self.answers[method]
+                return status, ""
+
+        url = "https://img.invalid/k.jpg"
+        # A HEAD that names a page and no length, a GET that gives the photo's first byte: read.
+        host = Host(HEAD=(200, "text/html", "0"), GET=(206, "image/jpeg", "1"))
+        self.assertEqual((host(url), host.asked), (206, ["HEAD", "GET"]))
+        self.assertEqual(photos.state_of(206, strict=True), "ok")
+        # A page where the photo should be, said by the GET too: no image.
+        host = Host(HEAD=(200, "text/html", "900"), GET=(200, "text/html", "900"))
+        self.assertEqual((host(url), host.asked), (photos.NOT_AN_IMAGE, ["HEAD", "GET"]))
+        # Nothing there: no first byte to give, or a length of 0 on the GET.
+        self.assertEqual(Host(HEAD=(200, "image/jpeg", "0"), GET=(416, "", "0"))(url), photos.EMPTY)
+        self.assertEqual(Host(HEAD=(200, "image/jpeg", "0"), GET=(200, "image/jpeg", "0"))(url), photos.EMPTY)
+        # A photo kept without a type, and an ordinary one: one HEAD each.
+        for answer in ((200, "binary/octet-stream", "5000"), (200, "image/jpeg", "1234")):
+            host = Host(HEAD=answer)
+            self.assertEqual((host(url), host.asked), (200, ["HEAD"]))
+        # With the switch off nothing is read strictly.
+        loose = Host(HEAD=(200, "text/html", "0"))
+        loose.strict = False
+        self.assertEqual((loose(url), loose.asked), (200, ["HEAD"]))
+
 
 class BrakesTests(unittest.TestCase):
     def test_a_photo_host_that_refuses_nine_in_ten_is_not_checked(self) -> None:

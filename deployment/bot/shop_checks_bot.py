@@ -527,6 +527,19 @@ def owner_words(path: Path = OWNER_WORDS) -> tuple[list[str], bool]:
     return [str(name) for name in words.get("cut_held_shops", [])], bool(words.get("awin_reading_let_through"))
 
 
+def owner_yes(path: Path = OWNER_WORDS) -> dict[str, bool]:
+    """The owner's yes to the two Proposed rules that wait for it (rules 13.2; asked 21/11
+    to be reminded of them): `old_feed_rule`, a product of a feed over 7 days old shown
+    only with a reading of its shop's site of the last 3 nights (5.6.4); `awin_closed_out`,
+    a shop suspended, in no list or offline at Awin out (5.6.3). Each is off, and changes
+    nothing on the site, until the file says true on his word."""
+    try:
+        words = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        words = {}
+    return {name: words.get(name) is True for name in ("old_feed_rule", "awin_closed_out")}
+
+
 # ---- Awin --------------------------------------------------------------------------
 
 
@@ -610,7 +623,8 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
         clock: Callable[[], float], deadline: float, workers: int, pause: float,
         awin: Mapping[str, tuple[str | None, str]] | None, feeds: Mapping[str, date | None],
         owner_cut_shops: list[str], owner_awin_word: bool, say: Callable[[str], None],
-        sample: int = 0, tonight: Tonight | None = None, shops: frozenset[str] = frozenset()) -> tuple[L.Night, dict]:
+        sample: int = 0, tonight: Tonight | None = None, shops: frozenset[str] = frozenset(),
+        old_feed_rule: bool = False, awin_closed_out: bool = False) -> tuple[L.Night, dict]:
     """Ask every shop its products in the rules' order; record the night; the decisions.
     `sample`: a look, at most this many products a shop; `tonight`: the night's answers
     kept as they come, those kept already not asked again."""
@@ -643,8 +657,10 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
         readings.update(judge({key: rows[key] for key in result.answers}, result, shared_ids=shared_ids,
                               by_page=by_page))
     night_result = L.record_night(ledger, night, rows, readings, shop_nights, shown=shown, parts=parts, awin=awin,
-                                  feeds=feeds, owner_cut_shops=owner_cut_shops, owner_awin_word=owner_awin_word)
-    made = L.decisions(ledger, night, rows, shown=shown, candidates=candidates, came_back=night_result.came_back)
+                                  feeds=feeds, owner_cut_shops=owner_cut_shops, owner_awin_word=owner_awin_word,
+                                  awin_closed_out=awin_closed_out)
+    made = L.decisions(ledger, night, rows, shown=shown, candidates=candidates, came_back=night_result.came_back,
+                       old_feed_rule=old_feed_rule)
     night_result.note["asked_by_shop"] = {shop: [result.night.requests, len(result.answers), result.stopped]
                                           for shop, result in sorted(results.items())}
     return night_result, made
@@ -673,7 +689,14 @@ def print_night(note: Mapping[str, Any], made: Mapping[str, Any], ledger: L.Ledg
                 + ", ".join(awin["names_not_matched"]))
         say("Awin: newly out " + (", ".join(f"{name} ({reason})" for name, reason in awin["newly_out"]) or "none")
             + (f"; WAITS for the owner's word ({awin['products']:,} products)" if awin.get("waits") else ""))
-    say(f"the decisions: shops out {len(made['shops_out'])}, products cut {len(made['cut']):,}, may enter "
+        if awin.get("would_be_out_if_proposed"):
+            say("Awin: not out, the Proposed rule waits for the owner's yes: "
+                + ", ".join(f"{name} ({reason[6:]}, {count:,} products)" for name, reason, count in awin["would_be_out_if_proposed"]))
+    waits = Counter((made.get("wait") or {}).values())
+    say(f"the decisions: shops out {len(made['shops_out'])}, products cut {len(made['cut']):,}, not shown until "
+        f"checked {sum(waits.values()):,}"
+        + (" (" + ", ".join(f"{reason} {count:,}" for reason, count in sorted(waits.items())) + ")" if waits else "")
+        + ", may enter "
         f"{len(made['enter']):,}, the page's price {len(made['prices']):,}, the page's stock {len(made['stock']):,}, "
         f"keeping their place {len(made['returning']):,}")
     for name, reason in made["shops_out"].items():
@@ -739,11 +762,13 @@ def main(argv: list[str] | None = None, *, fetch: Fetch = fetch, sleep: Callable
         f"{len(extra) - len(candidates):,} cut ones the feed still lists; ids shared {len(shared_ids)}")
     awin, feeds = read_awin(environ, cache_dir=args.cache, say=say)
     cut_shops, awin_word = owner_words()
+    yes = owner_yes()
     result, made = run(rows, shown=shown, parts=parts, shared_ids=shared_ids, candidates=candidates, ledger=ledger,
                        night=night, fetch=fetch, sleep=sleep, clock=clock, deadline=deadline, workers=args.workers,
                        pause=args.pause, awin=awin, feeds=feeds, owner_cut_shops=cut_shops,
                        owner_awin_word=awin_word, say=say, sample=args.sample, tonight=tonight,
-                       shops=frozenset(args.shop) if args.dry else frozenset())
+                       shops=frozenset(args.shop) if args.dry else frozenset(),
+                       old_feed_rule=yes["old_feed_rule"], awin_closed_out=yes["awin_closed_out"])
     if args.dry:
         say("a look (--dry): nothing written")
     else:

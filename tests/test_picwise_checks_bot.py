@@ -244,6 +244,42 @@ class ANightEndToEndTests(unittest.TestCase):
         self.assertNotIn("\x1f", printed)
 
 
+class OwnersYesTests(unittest.TestCase):
+    def test_the_two_proposed_rules_are_off_until_the_owners_yes(self) -> None:
+        # Rules 13.2: a feed over 7 days old (5.6.4) and a shop suspended, closed or offline at
+        # Awin (5.6.3) wait for his yes (asked 21/11 to be reminded of them); the repo's file says no.
+        self.assertEqual(bot.owner_yes(), {"old_feed_rule": False, "awin_closed_out": False})
+        self.assertEqual(bot.owner_yes(ROOT / "data" / "none.json"), {"old_feed_rule": False, "awin_closed_out": False})
+
+    def test_his_yes_is_read_from_the_file_and_only_true_is_yes(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "words.json"
+            path.write_text(json.dumps({"old_feed_rule": True, "awin_closed_out": "yes"}), encoding="utf-8")
+            self.assertEqual(bot.owner_yes(path), {"old_feed_rule": True, "awin_closed_out": False})
+
+    def test_without_his_yes_a_suspended_shop_stays_and_is_named(self) -> None:
+        rows = {f"Filler\x1f{n}": Row(key=f"Filler\x1f{n}", shop="Filler", product_id=f"f{n}",
+                                      address=f"https://filler.invalid/p/{n}") for n in range(200)}
+        rows.update({row.key: row for row in (_row(1),)})
+        shop = Shop({"/robots.txt": bot.Answer(404)})
+        arguments = dict(shown=set(rows), parts={}, shared_ids=set(), candidates=[], night=date(2026, 12, 1),
+                         fetch=shop.fetch, sleep=shop.sleep, clock=shop.clock, deadline=1e9, workers=1, pause=3.0,
+                         awin={"Kettles": ("suspended", ""), "Filler": ("joined", "")}, feeds={}, owner_cut_shops=[],
+                         owner_awin_word=False, say=lambda _line: None)
+        ledger = L.Ledger()
+        night, made = bot.run(rows, ledger=ledger, **arguments)
+        self.assertEqual(made["shops_out"], {})
+        lines: list[str] = []
+        bot.print_night(night.note, made, ledger, lines.append)
+        self.assertIn("Awin: not out, the Proposed rule waits for the owner's yes: Kettles (suspended, 1 products)",
+                      "\n".join(lines))
+        with_yes = L.Ledger()
+        _night, made = bot.run(rows, ledger=with_yes, awin_closed_out=True, **arguments)
+        self.assertEqual(made["shops_out"], {"Kettles": "Awin: suspended"})
+
+
 class RowsTests(unittest.TestCase):
     def test_a_row_of_the_second_link_takes_its_own_address(self) -> None:
         from picwise_providers.contracts import ProviderProduct

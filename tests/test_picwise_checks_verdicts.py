@@ -187,6 +187,9 @@ class Rules52StockTests(unittest.TestCase):
 class Rules54PhotoTests(unittest.TestCase):
     def test_any_failure_fails_that_night(self) -> None:
         for status, kind, length, state in ((200, "image/jpeg", 1234, PASSED), (200, "", None, PASSED),
+                                            # A bare binary type is a photo's too (a store's default).
+                                            (200, "binary/octet-stream", 5000, PASSED),
+                                            (200, "application/octet-stream", 5000, PASSED),
                                             (200, "text/html", 900, FAILED), (200, "image/png", 0, FAILED),
                                             (404, "", None, FAILED), (410, "", None, FAILED), (0, "", None, FAILED),
                                             (503, "", None, FAILED), (403, "", None, FAILED), (400, "", None, FAILED),
@@ -233,6 +236,11 @@ class Rules56ShopTests(unittest.TestCase):
         self.assertEqual(awin_out("suspended"), "Awin: suspended")
         self.assertEqual(awin_out(None), "Awin: in no list")
         self.assertEqual(awin_out("joined", "offline"), "Awin: offline")
+        # Proposed but for a rejection (the owner, 21/11: «Βγαίνουν»): without his yes only that.
+        self.assertEqual(awin_out("rejected", closed_too=False), "Awin: rejected")
+        self.assertEqual(awin_out("rejected", "offline", closed_too=False), "Awin: rejected")
+        for relationship, link in ((None, ""), ("suspended", ""), ("joined", "offline"), ("notjoined", "offline")):
+            self.assertEqual(awin_out(relationship, link, closed_too=False), "")
 
     def test_rules_5_6_4_a_feed_over_seven_days_old(self) -> None:
         today = date(2026, 11, 30)

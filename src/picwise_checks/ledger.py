@@ -228,9 +228,10 @@ def due_after(reason: str, fails: int, night: date) -> date:
 
 
 def _shop_night(ledger: Ledger, name: str, night: date, tonight: ShopNight) -> tuple[bool, str]:
-    """5.6.2: a shop's day while it cannot be checked; out on day 15; back the first
-    night a product is read on it; the count afresh only after 7 nights checked in a
-    row, a shop that falls back sooner going on from the day it had reached."""
+    """5.6.2: a shop's day while it cannot be checked; out on day 4 (`OUT_ON_DAY`; owner,
+    2026-11-22: «Σε 3 μέρες»); back the first night a product is read on it; the count
+    afresh only after 7 nights checked in a row, a shop that falls back sooner going on
+    from the day it had reached."""
     shop = ledger.shop(name)
     shop.first_night = shop.first_night or _iso(night)
     checkable, why = shop_checkable(tonight)
@@ -260,14 +261,17 @@ def shop_name_key(name: str) -> str:
 
 
 def _awin(ledger: Ledger, awin: Mapping[str, tuple[str | None, str]], shown_by_shop: Mapping[str, int],
-          shown: int, owner_awin_word: bool) -> dict[str, Any]:
+          shown: int, owner_awin_word: bool, closed_out: bool = False) -> dict[str, Any]:
     """5.6.3: Awin's reading put on each shop of the catalogue; a reading that would put
     out many shops at once waits for the owner's word. A shop of the catalogue whose name
     the reading does not hold is not judged by it (built 21/11, after the look on the
     server, where two names written otherwise read as "in no list"): only a shop Awin's
-    reading names, in none of its lists, is."""
+    reading names, in none of its lists, is. `closed_out`: the Proposed part of the rule
+    (a shop suspended, in no list or offline is out too), only on the owner's yes; without
+    it only a rejection puts a shop out («Βγαίνουν»), and the others are named in the note."""
     by_key = {shop_name_key(name): value for name, value in awin.items()}
     newly: dict[str, str] = {}
+    proposed: dict[str, str] = {}
     unmatched = []
     for name in shown_by_shop:
         if shop_name_key(name) not in by_key:
@@ -276,7 +280,10 @@ def _awin(ledger: Ledger, awin: Mapping[str, tuple[str | None, str]], shown_by_s
         relationship, link = by_key[shop_name_key(name)]
         shop = ledger.shop(name)
         shop.awin, shop.link = relationship or "", link or ""
-        reason = awin_out(relationship, link)
+        reason = awin_out(relationship, link, closed_too=closed_out)
+        would = "" if reason else awin_out(relationship, link)
+        if would:
+            proposed[name] = would
         if reason and not shop.out:
             newly[name] = reason
         elif not reason and shop.out.startswith("Awin"):
@@ -287,7 +294,9 @@ def _awin(ledger: Ledger, awin: Mapping[str, tuple[str | None, str]], shown_by_s
         for name, reason in newly.items():
             ledger.shop(name).out = reason
     return {"newly_out": [[name, newly[name]] for name in sorted(newly)], "products": products_out, "waits": waits,
-            "names_not_matched": sorted(unmatched)}
+            "names_not_matched": sorted(unmatched),
+            # What the Proposed rule would put out, while it waits for the owner's yes.
+            "would_be_out_if_proposed": [[name, proposed[name], shown_by_shop.get(name, 0)] for name in sorted(proposed)]}
 
 
 @dataclass
@@ -312,6 +321,7 @@ def record_night(
     feeds: Mapping[str, date | None] | None = None,
     owner_cut_shops: Collection[str] = (),
     owner_awin_word: bool = False,
+    awin_closed_out: bool = False,
 ) -> Night:
     """One night's readings into the ledger, by the rules' order.
 
@@ -322,7 +332,9 @@ def record_night(
     (`catalogue_cap.part_of`); `awin`: Awin's relationship and link status per shop,
     None when its API did not answer; `feeds`: each shop's feed's last import;
     `owner_cut_shops`: the shops whose products held for the owner he said to cut
-    («κόψε»); `owner_awin_word`: his word on a reading of Awin that waits."""
+    («κόψε»); `owner_awin_word`: his word on a reading of Awin that waits;
+    `awin_closed_out`: his yes to the Proposed part of 5.6.3 (a shop suspended, in no list
+    or offline at Awin is out), off until he gives it."""
     tonight = _iso(night)
     parts = parts or {}
     shown = frozenset(shown)
@@ -345,7 +357,7 @@ def record_night(
             cannot[name] = why
     note["cannot_be_checked"] = {name: [why, ledger.shop(name).days] for name, why in sorted(cannot.items())}
     if awin is not None:
-        note["awin"] = _awin(ledger, awin, shown_by_shop, len(shown), owner_awin_word)
+        note["awin"] = _awin(ledger, awin, shown_by_shop, len(shown), owner_awin_word, awin_closed_out)
     for name, imported in (feeds or {}).items():
         ledger.shop(name).feed_import = _iso(imported) if imported else ""
 
@@ -489,7 +501,7 @@ def record_night(
             continue
         started = _day(shop.first_night)
         # Asked means decided once, passed or failed: a product the shop refused was not
-        # checked, so a shop that refuses keeps the 14 nights the owner gave it (5.6.2;
+        # checked, so a shop that refuses keeps the 3 days the owner gave it (5.6.2;
         # built 21/11 after the look, where a shop of 4 products all refused ended its round
         # on its first night).
         everyone_asked = all(key in ledger.products and _decided_once(ledger.products[key]) for key in keys)
@@ -536,15 +548,39 @@ def stock_proven(shop: Shop) -> bool:
     return brakes.reader_proven((tied, same) for _night, tied, same in shop.stock_proof)
 
 
+def not_shown_until_checked(product: Product | None, shop: Shop, night: date, *, old_feed_rule: bool = False) -> str:
+    """9.3 (and 5.6.4, Proposed): why a product may not be shown until the bot has asked
+    it, or "": never asked; not passed in 30 nights; with `old_feed_rule`, of a feed over
+    7 days old with no reading of its shop's own site of the last 3 nights. No check
+    failed: the product waits at the cap's gate as a new one does (9.4)."""
+    if product is None or not _decided_once(product):
+        return "never checked"
+    passed = _day(product.passed_on)
+    if passed is None or (night - passed).days >= PASS_VALID_NIGHTS:
+        return "not passed in 30 nights"
+    if old_feed_rule and feed_is_old(_day(shop.feed_import), night):
+        read = _day(product.price_on) or _day(product.stock_on)
+        if read is None or (night - read).days >= STOCK_DAYS:
+            return "old feed, no fresh reading"
+    return ""
+
+
 def decisions(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown: Collection[str],
-              candidates: Collection[str] = (), came_back: Iterable[str] = ()) -> dict[str, Any]:
+              candidates: Collection[str] = (), came_back: Iterable[str] = (),
+              old_feed_rule: bool = False) -> dict[str, Any]:
     """What the preparation reads (`picwise_providers.checks_applied`), rules 6 and 9:
 
     - `shops_out`: the shops out, and why (5.6);
-    - `cut`: the products a card may not show, and why: a failed check (5); once its
-      shop's first round is over, a shown product never asked or not passed in 30
-      nights (9.3), and one of an old feed with no reading of its shop's site of the last
-      3 nights (5.6.4);
+    - `cut`: the products a card may not show, and why: a failed check (5);
+    - `wait`: the shown products that are not shown until they are checked (9.3), once
+      their shop's first round is over: never asked, or not passed in 30 nights; and, with
+      `old_feed_rule` (5.6.4, Proposed: only on the owner's yes), one of an old feed with no
+      reading of its shop's site of the last 3 nights. No check of theirs failed, so they
+      are not cut: they leave the cap's memory of the night before and wait at its gate,
+      where the cap names the next ones as candidates and the bot asks those the next
+      night (9.4). Until 22/11 they were marked cut like a failed product, so that the cap
+      never saw them: the night after, the bot did not ask them, and a place of theirs
+      went to another product before they could be named for it (the look of task 7);
     - `enter`: the cap's candidates whose checks passed, the only products not shown
       last night that may take a place (9.4);
     - `prices`: the shop's own page's price, tied to its row, where the shop's reader is
@@ -554,6 +590,7 @@ def decisions(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown: Co
     shown = frozenset(shown)
     candidates = frozenset(candidates)
     cut: dict[str, str] = {}
+    wait: dict[str, str] = {}
     prices: dict[str, list[str]] = {}
     stock: dict[str, list[str]] = {}
     enter: list[str] = []
@@ -567,22 +604,13 @@ def decisions(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown: Co
             cut[key] = product.reason
             continue
         if key in shown and shop.round_over and (product is None or product.state != HELD):
-            passed = _day(product.passed_on) if product is not None else None
-            if product is None or not _decided_once(product):
-                cut[key] = "never checked"
+            why = not_shown_until_checked(product, shop, night, old_feed_rule=old_feed_rule)
+            if why:
+                wait[key] = why
                 continue
-            if passed is None or (night - passed).days >= PASS_VALID_NIGHTS:
-                cut[key] = "not passed in 30 nights"
-                continue
-            if feed_is_old(_day(shop.feed_import), night):
-                read = _day(product.price_on) or _day(product.stock_on)
-                if read is None or (night - read).days >= STOCK_DAYS:
-                    cut[key] = "old feed, no fresh reading"
-                    continue
-        if key in candidates and key not in shown and product is not None and product.state == PASSED:
-            passed = _day(product.passed_on)
-            if passed is not None and (night - passed).days < PASS_VALID_NIGHTS:
-                enter.append(key)
+        if key in candidates and key not in shown and product is not None and product.state == PASSED \
+                and not not_shown_until_checked(product, shop, night, old_feed_rule=old_feed_rule):
+            enter.append(key)
         if product is None:
             continue
         if proven(shop) and product.site_price and product.feed_price and row.price is not None \
@@ -599,6 +627,7 @@ def decisions(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown: Co
         "night": _iso(night),
         "shops_out": shops_out,
         "cut": dict(sorted(cut.items())),
+        "wait": dict(sorted(wait.items())),
         "enter": sorted(enter),
         "prices": dict(sorted(prices.items())),
         "stock": dict(sorted(stock.items())),

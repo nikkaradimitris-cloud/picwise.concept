@@ -7,7 +7,9 @@ out is no product a card can show; a proven page reader's stock is the shop's wo
 page's price is the card's price, the feed's sale columns let go and its history started
 again; decisions over 2 nights old are not applied; the cap lets a product not shown the
 night before take a place only once its checks passed and names the others as
-candidates; a product back within 7 nights counts as kept the night before.
+candidates; a product back within 7 nights counts as kept the night before; a product not
+shown until it is checked is not marked cut, leaves the cap's memory of the night before
+and waits at its gate; the category's brake counts among the rows the AI answered.
 
 Every row is local test data: fictional shops and brands, `.invalid` hosts.
 """
@@ -140,8 +142,8 @@ class Rules55TheCategoryTests(unittest.TestCase):
         self.ai_shelves.reset()
 
     def test_no_line_refused_for_good_or_a_slip_is_cut_a_line_passes_not_asked_stays(self) -> None:
-        products = tuple(_named(number) for number in range(1, 31))
-        self.assertEqual(len({self.key(product) for product in products}), 30)
+        products = tuple(_named(number) for number in range(1, 41))
+        self.assertEqual(len({self.key(product) for product in products}), 40)
         kettles = "Home & Garden > Kitchen & Dining > Kitchen Appliances > Electric Kettles"
         records = [{"k": self.key(product), "line": kettles, "tries": 0} for product in products[5:]]
         records += [{"k": self.key(products[0]), "line": "", "tries": 0},
@@ -154,7 +156,7 @@ class Rules55TheCategoryTests(unittest.TestCase):
         self.assertEqual(cut, {products[0].title, products[1].title, products[2].title})
         note = applied.last_checks_note()
         self.assertEqual(note["category"], {"answers": True, "no_category": 3, "held_by_its_brake": False,
-                                            "not_asked_yet": 2})
+                                            "not_asked_yet": 2, "with_a_line": 35})
         self.assertEqual(note["cut_by_reason"], {applied.NO_CATEGORY: 3})
         # A product shown stays until asked; a new one waits for its answer, as for its checks.
         context = build_feed_availability_context(done)
@@ -183,6 +185,19 @@ class Rules55TheCategoryTests(unittest.TestCase):
         self.assertTrue(applied.last_checks_note()["category"]["held_by_its_brake"])
         # Held, not let in: a new product with no category still waits.
         self.assertFalse(applied.may_enter(products[0]))
+
+    def test_its_brake_counts_among_the_rows_answered_not_among_every_row_of_the_feed(self) -> None:
+        # The feed has many rows for each product shown, most never asked: 3 with none of 20
+        # answered is over a tenth however many rows nobody asked stand beside them.
+        products = tuple(_named(number) for number in range(1, 321))
+        self.write([{"k": self.key(product), "line": "", "tries": 0} for product in products[:3]]
+                   + [{"k": self.key(product), "line": "Electronics > Electronics Accessories > Cables", "tries": 0}
+                      for product in products[3:20]])
+        done = applied.apply_checks(products, decisions=_decisions(), switch=True)
+        self.assertFalse(any(applied.CHECKS_COLUMN in product.raw for product in done))
+        category = applied.last_checks_note()["category"]
+        self.assertEqual((category["held_by_its_brake"], category["no_category"], category["with_a_line"],
+                          category["not_asked_yet"]), (True, 3, 17, 300))
 
     def test_no_answers_file_decides_nothing(self) -> None:
         products = tuple(_named(number) for number in range(1, 4))
@@ -228,6 +243,30 @@ class Rules6WhatIsCutTests(unittest.TestCase):
 class Rules9TheCapsGateTests(unittest.TestCase):
     def setUp(self) -> None:
         applied.reset_for_tests()
+
+    def test_9_3_not_shown_until_checked_is_not_cut_it_waits_at_the_gate_and_is_named_a_candidate(self) -> None:
+        products = tuple(_product(number) for number in range(4))
+        waiting = product_key(products[1])
+        decisions = _decisions(wait={waiting: "never checked"}, enter=[waiting])
+        done = applied.apply_checks(products, decisions=decisions, switch=True)
+        # No check failed: not marked, still a product a card could show, never passed to the bot as cut.
+        self.assertFalse(any(applied.CHECKS_COLUMN in product.raw for product in done))
+        context = build_feed_availability_context(done)
+        self.assertTrue(all(evaluate_product_eligibility(product, feed_ctx=context).card_eligible for product in done))
+        self.assertEqual(applied.take_cut_products(), [])
+        note = applied.last_checks_note()
+        self.assertEqual((note["cut"], note["not_shown_until_checked"], note["not_shown_until_checked_by_reason"]),
+                         (0, 1, {"never checked": 1}))
+        # Out of the night before's, and held at the gate whatever else says it may enter.
+        self.assertEqual(applied.unchecked_row_keys(done, row_key), frozenset({row_key(products[1])}))
+        self.assertFalse(applied.may_enter(done[1]))
+        before = frozenset(row_key(product) for product in products) - applied.unchecked_row_keys(done, row_key)
+        kinds = [frozenset({"kettle"}) for _product_ in done]
+        result = cap_catalogue(done, kinds, feed_ctx=context, kept_before=before, may_enter=applied.may_enter)
+        self.assertEqual(result.keep, (True, False, True, True))
+        self.assertEqual(result.candidates, (1,))
+        applied.apply_checks(products, decisions=_decisions(), switch=True)
+        self.assertEqual(applied.unchecked_row_keys(products, row_key), frozenset())
 
     def test_9_4_a_new_product_takes_a_place_only_once_passed(self) -> None:
         products = tuple(_product(number) for number in range(6))

@@ -24,6 +24,10 @@ With the checks' switch on (`data/checks_switch.json`; the checks' rules 5.4, ow
 night: no answer or a server error (asked once more at the end of the run), an answer
 that is no image, an empty one, a refusal; a 429 is our own pace and not a failure, and a
 shop whose photo host refuses at least 9 in 10 of 20 photos asked has them not checked.
+An answer is no image, or empty, only when a GET says so: a HEAD that says it is asked
+again with a GET of one byte (some hosts answer a HEAD with another type or no length),
+and a bare binary type is an image's (a store's default for a file kept without a type is
+`binary/octet-stream`; a browser shows such a photo). Built 22/11 after the look of task 7.
 The brakes of the rules' 7.2 and 7.4 hold, by the same numbers: a shop whose new
 failures pass a quarter of its photos decided (at least 20) has them held one night and
 asked first (until the owner's word where it has fewer than 20 photos read on record),
@@ -88,6 +92,15 @@ def _connection(cache: dict[tuple[str, str], http.client.HTTPConnection], scheme
 # 204 (their HTTP meanings), so that the night's answers stay one number each.
 NOT_AN_IMAGE = 415
 EMPTY = 204
+# The types a photo's host may give a photo besides `image/...`: none at all, or a bare
+# binary one. Anything else on a 200 (a page of text, most often) is no image.
+BINARY_TYPES = frozenset({"application/octet-stream", "binary/octet-stream"})
+
+
+def image_type(kind: str) -> bool:
+    """Whether a Content-Type may be a photo's (rules 5.4)."""
+    kind = str(kind or "").split(";")[0].strip().lower()
+    return not kind or kind.startswith("image/") or kind in BINARY_TYPES
 # The checks' rules 5.4 and 7.2 (`picwise_checks.brakes`), for photos.
 REFUSED_SHARE = 0.9
 REFUSED_MIN = 20
@@ -175,18 +188,27 @@ class Asker:
                 # A server that refuses HEAD is asked for one byte instead.
                 if method == "HEAD" and status in (403, 405, 501):
                     continue
-                return self._strictly(status, method)
+                answer = self._strictly(status, method)
+                # A HEAD's word that the photo is no image, or empty, is asked again with a
+                # GET of one byte: only what the GET says fails a photo.
+                if method == "HEAD" and answer in (NOT_AN_IMAGE, EMPTY):
+                    continue
+                return answer
             return self._strictly(status, "GET")
         except (ValueError, http.client.HTTPException, OSError):
             return 0
 
     def _strictly(self, status: int, method: str) -> int:
-        if not self.strict or status != 200:
+        if not self.strict:
             return status
-        kind = getattr(self._local, "kind", "")
-        if kind and not kind.startswith("image/") and kind != "application/octet-stream":
+        # No first byte to give (asked with `Range: bytes=0-0`): nothing is there.
+        if method == "GET" and status == 416:
+            return EMPTY
+        if status not in (200, 206):
+            return status
+        if not image_type(getattr(self._local, "kind", "")):
             return NOT_AN_IMAGE
-        if method == "HEAD" and str(getattr(self._local, "length", None) or "").strip() == "0":
+        if str(getattr(self._local, "length", None) or "").strip() == "0":
             return EMPTY
         return status
 
