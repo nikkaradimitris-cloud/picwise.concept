@@ -33,10 +33,11 @@ sys.path.insert(0, os.path.join(os.getcwd(), "deployment", "bot"))
 
 import shop_catalogue_test as look  # noqa: E402  (the release's own: robots.txt, the bot's name)
 
-SHOPS = ("Plusshop UK", "Bazta UK", "Luxe Mattress Affiliation", "Elixir Garden Supplies", "GamingKit",
-         "Webbs Motorcycles", "Pro-Camera", "Dean Morris Cards")
+# The second look (22/11 04:10 Athens): the shops whose pages the checks still do not read,
+# once a reCAPTCHA box no longer counted as a challenge.
+SHOPS = ("Plusshop UK", "Bazta UK", "Luxe Mattress Affiliation", "Elixir Garden Supplies", "Pro-Camera")
 PREPARED = "/srv/picwise/shared/prepared/catalogue.json.gz"
-PAGES = 3
+PAGES = 5
 PAUSE = 3.0
 BYTES = 4 * 1024 * 1024
 
@@ -76,8 +77,53 @@ PLATFORMS = {
     "Next.js": rb"/_next/static",
     "Nuxt": rb"/_nuxt/",
 }
-CHALLENGE = rb"(?i)cf-chl-|challenge-platform|just a moment\.\.\.|attention required|px-captcha|g-recaptcha|hcaptcha|_incapsula_|perimeterx|datadome"
+# A refusal dressed as a page: only what such a page writes (never a reCAPTCHA box or
+# Cloudflare's script, which sit on ordinary pages too; those are counted as boxes).
+INTERSTITIAL = {
+    "Cloudflare challenge": rb"_cf_chl_opt|cf-chl-bypass|<title>Just a moment|Attention Required! \| Cloudflare",
+    "PerimeterX block": rb"px-captcha",
+    "Incapsula block": rb"Incapsula incident ID|_Incapsula_Resource\?CWUDNSAI",
+    "DataDome block": rb"captcha-delivery\.com",
+    "SiteGround captcha": rb"sgcaptcha",
+    "Imunify360": rb"(?i)imunify360",
+    "Sucuri": rb"(?i)sucuri",
+    "Wordfence": rb"(?i)wordfence",
+    "DDoS-Guard": rb"(?i)ddos-guard",
+    "AWS WAF": rb"(?i)awswaf|aws-waf-token",
+    "Akamai": rb"bm-verify|_abck",
+    "Kasada": rb"KPSDK",
+    "F5": rb"TSPD|/TSbd/",
+    "BitNinja": rb"(?i)bitninja",
+    "Queue-it": rb"(?i)queue-it",
+    "Radware": rb"(?i)perfdrive|shieldsquare",
+}
+BOXES = {"reCAPTCHA box": rb"g-recaptcha|recaptcha/api\.js", "hCaptcha box": rb"hcaptcha",
+         "Cloudflare's script": rb"/cdn-cgi/challenge-platform/"}
 SCRIPT_ONLY = rb"(?i)enable javascript|javascript is (?:required|disabled)|<div id=[\"'](?:root|app|__next)[\"']>\s*</div>"
+SHELLS = {
+    "an empty app box": rb"(?i)<div\s+id=[\"']?(?:app|root|__nuxt|__next|main-app)[\"']?[^>]*>\s*</div>",
+    "Vue": rb"(?i)data-v-app|__vue|vue(?:\.runtime)?(?:\.min)?\.js|chunk-vendors",
+    "React": rb"(?i)data-reactroot|react-dom|__REACT",
+    "Angular": rb"(?i)ng-version|ng-app",
+    "webpack": rb"(?i)webpackJsonp|__webpack|/static/js/",
+    "Vite": rb"(?i)/assets/index-[a-z0-9_-]+\.js|vite",
+    "a framework's state": rb"__NEXT_DATA__|__NUXT__|__INITIAL_STATE__|__PRELOADED_STATE__|__APOLLO_STATE__",
+}
+API_HINTS = {"GraphQL": rb"(?i)graphql", "an /api/ path": rb"[\"'`]/api/", "an API's address": rb"(?i)api_?url|apibase|baseurl|api_host"}
+TITLE = re.compile(rb"<title[^>]*>(.*?)</title\s*>", re.I | re.S)
+TITLE_KINDS = (("says not found", rb"(?i)\b404\b|not found|no longer|unavailable|does ?n[o']t exist|oops|\berror\b"),
+               ("says a check", rb"(?i)just a moment|attention required|checking|verif|access denied|forbidden|blocked|captcha|security|robot"))
+PAGE_TYPE = re.compile(rb"[\"'](?:pageType|page_type|pagetype|pageCategory|ecomm_pagetype|template)[\"']\s*:\s*[\"']([A-Za-z0-9_ .-]{1,30})[\"']")
+PAGE_TYPES = {"product", "productpage", "product_page", "product-page", "pdp", "item", "product.liquid", "404",
+              "error", "notfound", "not_found", "page not found", "category", "collection", "home", "homepage",
+              "search", "searchresults", "cart", "other"}
+CANONICAL = re.compile(rb"<link\b[^>]*rel\s*=\s*[\"']?canonical[\"']?[^>]*>", re.I)
+HREF = re.compile(rb"href\s*=\s*[\"']([^\"']+)[\"']", re.I)
+SCRIPTS = re.compile(rb"<script\b", re.I)
+SCRIPT_FILES = re.compile(rb"<script\b[^>]*\bsrc\s*=", re.I)
+NOINDEX = re.compile(rb"<meta\b[^>]*name\s*=\s*[\"']?robots[\"']?[^>]*noindex", re.I)
+MAGENTO = {"data-price-amount": rb"data-price-amount\s*=", "finalPrice": rb"data-price-type\s*=\s*[\"']finalPrice",
+           "a price box": rb"data-price-box\s*=\s*[\"']?product-id-", "priceConfig with prices": rb"\"priceConfig\"[^<]{0,400}\"prices\""}
 JSON_LD = re.compile(rb"<script\b[^>]*application/ld\+json[^>]*>(.*?)</script\s*>", re.I | re.S)
 
 
@@ -128,6 +174,62 @@ def types_of(node, found: set[str]) -> None:
                 types_of(value, found)
 
 
+def visible_text(body: bytes) -> int:
+    """The size of the words a reader sees without running the page's script."""
+    text = re.sub(rb"(?is)<(script|style|noscript|template|svg)\b.*?</\1\s*>", b" ", body)
+    text = re.sub(rb"(?s)<!--.*?-->", b" ", text)
+    text = re.sub(rb"(?s)<[^>]+>", b" ", text)
+    return len(re.sub(rb"\s+", b" ", text).strip())
+
+
+def title_kind(body: bytes) -> str:
+    found = TITLE.search(body)
+    if not found:
+        return "none"
+    words = len(found.group(1).split())
+    for kind, pattern in TITLE_KINDS:
+        if re.search(pattern, found.group(1)):
+            return f"{kind} ({words} words)"
+    return f"other ({words} words)"
+
+
+def where_moved(asked: str, final: str) -> str:
+    path = urlsplit(final).path.rstrip("/")
+    if not path:
+        return "to the home page"
+    if re.search(r"(?i)search|catalogsearch|/collections?/|/category|/c/", path):
+        return "to a list or a search"
+    return "to another page" if path != urlsplit(asked).path.rstrip("/") else "to the same page"
+
+
+def deeper(body: bytes, asked: str) -> list[str]:
+    """The second look's signs: kinds and counts only."""
+    lines = []
+    walls = [name for name, pattern in INTERSTITIAL.items() if re.search(pattern, body)]
+    boxes = [name for name, pattern in BOXES.items() if re.search(pattern, body)]
+    lines.append(f"title: {title_kind(body)}; words seen without script {visible_text(body):,}; "
+                 f"scripts {len(SCRIPTS.findall(body))} (from files {len(SCRIPT_FILES.findall(body))})"
+                 + (f"; noindex" if NOINDEX.search(body) else ""))
+    canonical = CANONICAL.search(body)
+    if canonical:
+        href = HREF.search(canonical.group(0))
+        same = bool(href) and urlsplit(href.group(1).decode("utf-8", "replace")).path.rstrip("/") == urlsplit(asked).path.rstrip("/")
+        lines.append("canonical: " + ("its own address" if same else "another address"))
+    else:
+        lines.append("canonical: none")
+    kinds = sorted({value.decode("ascii", "replace").strip().lower() for value in PAGE_TYPE.findall(body)})
+    if kinds:
+        lines.append("page type in its data: " + ", ".join(kind if kind in PAGE_TYPES else "other" for kind in kinds))
+    shells = [name for name, pattern in SHELLS.items() if re.search(pattern, body)]
+    hints = [name for name, pattern in API_HINTS.items() if re.search(pattern, body)]
+    magento = [f"{name} {len(re.findall(pattern, body))}" for name, pattern in MAGENTO.items() if re.search(pattern, body)]
+    lines.append("a refusal's signs: " + (", ".join(walls) or "none") + "; boxes: " + (", ".join(boxes) or "none"))
+    lines.append("an app drawn by script: " + (", ".join(shells) or "-") + "; it asks: " + (", ".join(hints) or "-"))
+    if magento:
+        lines.append("Magento's price: " + ", ".join(magento))
+    return lines
+
+
 def describe(body: bytes) -> list[str]:
     lines = []
     blocks = JSON_LD.findall(body)
@@ -143,8 +245,7 @@ def describe(body: bytes) -> list[str]:
     lines.append("marks: " + (", ".join(marks) or "-"))
     platforms = [name for name, pattern in PLATFORMS.items() if re.search(pattern, body)]
     lines.append("built on: " + (", ".join(platforms) or "-")
-                 + ("; A CHALLENGE PAGE" if re.search(CHALLENGE, body) else "")
-                 + ("; drawn by script only" if re.search(SCRIPT_ONLY, body) else ""))
+                 + ("; asks for script" if re.search(SCRIPT_ONLY, body) else ""))
     return lines
 
 
@@ -186,8 +287,8 @@ def main(argv: list[str] | None = None) -> int:
             status, kind, body, final, error = fetch(address)
             moved = bool(final) and final.split("#")[0] != address.split("#")[0]
             print(f"page {number}: {status or error}; {kind.split(';')[0] or '-'}; {len(body):,} bytes"
-                  + ("; moved within the site" if moved else ""))
-            for line in describe(body):
+                  + (f"; moved {where_moved(address, final)}" if moved else ""))
+            for line in describe(body) + deeper(body, address):
                 print(f"  {line}")
     return 0
 

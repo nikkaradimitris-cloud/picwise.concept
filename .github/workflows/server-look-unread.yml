@@ -1,6 +1,6 @@
 # A look at why some shops' product pages are not read (the checks' rules 4.5 and 5.6.2; owner,
 # 2026-11-22: a shop that cannot be checked leaves on its day 4): what kind of product data
-# 3 product pages of each shop carry, never what they say. The work is
+# 5 product pages of each shop carry, never what they say. The work is
 # deployment/server/look_unread_pages.py, run on the server as the site's user with the release
 # in use; it changes nothing. Each shop asked at its own address only, its robots.txt first,
 # 3 s apart, under the checks' bot's name, never an Awin link.
@@ -8,7 +8,7 @@
 # On a push of its own branch that changes the script or this file. The repository is public
 # and so is this log: the server's names are masked; the script prints kinds and counts only.
 #
-# Run: 2026-11-22 03:40 Athens (to run again, change this line and push).
+# Run: 2026-11-22 04:10 Athens (the second look: 5 pages of the 5 shops still not read; to run again, change this line and push).
 name: Server look at the pages not read (read-only)
 on:
   push:

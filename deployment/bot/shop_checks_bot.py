@@ -93,7 +93,8 @@ OWNER_WORDS = ROOT / "data" / "checks_owner_words.json"
 # 22/11 (run 44971464930) found them on GamingKit's and Webbs Motorcycles' product pages,
 # whole and readable, which were read as challenges and so as refusals.
 CHALLENGE_SIGNS = (b"_cf_chl_opt", b"cf-chl-bypass", b"<title>Just a moment", b"Attention Required! | Cloudflare",
-                   b"px-captcha", b"_Incapsula_Resource", b"captcha-delivery.com")
+                   b"px-captcha", b"Incapsula incident ID", b"_Incapsula_Resource?CWUDNSAI", b"captcha-delivery.com",
+                   b"/.well-known/sgcaptcha", b"Sucuri WebSite Firewall")
 CHALLENGE_MAX_BYTES = 100_000
 SHOPS_LISTED = 60
 
