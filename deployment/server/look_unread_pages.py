@@ -25,6 +25,7 @@ import re
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -33,9 +34,10 @@ sys.path.insert(0, os.path.join(os.getcwd(), "deployment", "bot"))
 
 import shop_catalogue_test as look  # noqa: E402  (the release's own: robots.txt, the bot's name)
 
-# The second look (22/11 04:10 Athens): the shops whose pages the checks still do not read,
-# once a reCAPTCHA box no longer counted as a challenge.
+# The third look (22/11 04:30 Athens): the shops whose pages the checks still do not read;
+# a wall for robots or an app drawn by script, and Magento 1's price.
 SHOPS = ("Plusshop UK", "Bazta UK", "Luxe Mattress Affiliation", "Elixir Garden Supplies", "Pro-Camera")
+REST = 60.0  # a shop whose pages were all alike is asked once more, after this rest
 PREPARED = "/srv/picwise/shared/prepared/catalogue.json.gz"
 PAGES = 5
 PAUSE = 3.0
@@ -96,7 +98,42 @@ INTERSTITIAL = {
     "BitNinja": rb"(?i)bitninja",
     "Queue-it": rb"(?i)queue-it",
     "Radware": rb"(?i)perfdrive|shieldsquare",
+    "Cloudflare Turnstile": rb"challenges\.cloudflare\.com",
+    "Alibaba Cloud WAF": rb"acw_sc__v2|aliyun_waf|_waf_",
+    "Jiasule/Knownsec": rb"__jsl_clearance|jsl_clearance|__jsluid",
+    "SafeLine": rb"(?i)safeline",
+    "Anubis": rb"(?i)anubis",
+    "GeeTest": rb"(?i)geetest",
+    "Tencent captcha": rb"TCaptcha|turing\.captcha",
+    "Yunsuo/Safedog/360": rb"(?i)yunsuo|safedog|360wzws",
+    "Reblaze": rb"rbzid|rbzns",
+    "Qrator": rb"(?i)qrator",
+    "Myra": rb"(?i)myracloud",
+    "StackPath": rb"(?i)stackpath|sp_challenge",
+    "LiteSpeed": rb"(?i)lsrecaptcha|litespeed",
+    "Vercel checkpoint": rb"(?i)vercel",
+    "Bunny Shield": rb"(?i)bunny",
 }
+SERVERS = ("cloudflare", "nginx", "apache", "litespeed", "openresty", "tengine", "varnish", "cloudfront", "akamai",
+           "fastly", "microsoft-iis", "envoy", "caddy", "ddos-guard", "sucuri", "imunify", "aliyun", "tencent", "ovh",
+           "awselb", "gws", "vercel", "netlify", "bunny", "stackpath", "myra", "qrator", "safeline", "yunjiasu")
+VENDOR_HEADERS = ("cf-", "x-sucuri", "x-iinfo", "x-cdn", "x-amz-cf", "x-akamai", "akamai", "x-litespeed",
+                  "x-powered-by", "x-hcdn", "x-cache", "x-served-by", "x-vercel", "x-nf-", "x-waf", "x-ddos",
+                  "x-bunny", "x-sp-", "x-qrator", "x-safeline", "x-ac", "x-turbo", "x-hw", "x-frame", "eagleid",
+                  "x-swift", "x-via", "via", "x-request-id", "x-shop", "x-shopid", "x-shopify")
+WALL = {"sets a cookie by script": rb"document\.cookie\s*=", "reloads or moves": rb"location\.(?:reload|replace|assign)\s*\(|location(?:\.href)?\s*=[^=]",
+        "waits": rb"setTimeout\s*\(", "hidden script": rb"eval\s*\(|atob\s*\(|fromCharCode|\\x[0-9a-fA-F]{2}",
+        "a refresh tag": rb"(?i)<meta[^>]+http-equiv\s*=\s*[\"']?refresh", "a form": rb"(?i)<form\b", "a frame": rb"(?i)<iframe\b"}
+APP = {"asks for data": rb"fetch\s*\(|XMLHttpRequest|axios", "an /api/ path": rb"[\"'`]/api/", "GraphQL": rb"(?i)graphql",
+       "goods": rb"(?i)goods", "a product's detail": rb"(?i)product[_/-]?detail|productdetail|getproduct|/products?/"}
+WORDS = {"please wait": rb"(?i)please wait", "loading": rb"(?i)loading", "redirect": rb"(?i)redirect", "cookie": rb"(?i)cookie",
+         "browser": rb"(?i)browser", "human": rb"(?i)human", "robot": rb"(?i)\brobot|\bbot\b", "javascript": rb"(?i)javascript",
+         "moment": rb"(?i)moment", "verify": rb"(?i)verif", "security": rb"(?i)security", "access": rb"(?i)access",
+         "basket": rb"(?i)basket|cart", "price": rb"(?i)price|\xc2\xa3|&pound;|&#163;"}
+MAGENTO_ONE = {"Product.OptionsPrice": rb"Product\.OptionsPrice", "\"productPrice\"": rb"[\"']productPrice[\"']\s*:",
+               "product-price-": rb"id\s*=\s*[\"']product-price-", "class price": rb"class\s*=\s*[\"']price[\"']",
+               "\"final_price\"": rb"[\"']final_?price[\"']\s*:", "spConfig": rb"spConfig"}
+SCRIPT_SRC = re.compile(rb"<script\b[^>]*\bsrc\s*=\s*[\"']([^\"']+)[\"']", re.I)
 BOXES = {"reCAPTCHA box": rb"g-recaptcha|recaptcha/api\.js", "hCaptcha box": rb"hcaptcha",
          "Cloudflare's script": rb"/cdn-cgi/challenge-platform/"}
 SCRIPT_ONLY = rb"(?i)enable javascript|javascript is (?:required|disabled)|<div id=[\"'](?:root|app|__next)[\"']>\s*</div>"
@@ -141,16 +178,21 @@ class _SameSite(urllib.request.HTTPRedirectHandler):
 OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}), _SameSite())
 
 
+HEADERS: dict[str, list[tuple[str, str]]] = {}
+
+
 def fetch(url: str) -> tuple[int, str, bytes, str, str]:
     request = urllib.request.Request(url, headers={"User-Agent": look.USER_AGENT,
                                                    "Accept": "text/html,application/xhtml+xml;q=0.9,*/*;q=0.5",
                                                    "Accept-Language": "en-GB,en;q=0.8"})
     try:
         with OPENER.open(request, timeout=20) as response:
+            HEADERS[url] = list(response.headers.items())
             return response.status, response.headers.get("Content-Type", ""), response.read(BYTES), response.geturl(), ""
     except _Elsewhere:
         return 0, "", b"", "", "a redirect to another site"
     except urllib.error.HTTPError as error:
+        HEADERS[url] = list((error.headers or {}).items())
         try:
             body = error.read(256 * 1024)
         except OSError:
@@ -158,6 +200,26 @@ def fetch(url: str) -> tuple[int, str, bytes, str, str]:
         return error.code, (error.headers or {}).get("Content-Type", ""), body, url, ""
     except (urllib.error.URLError, OSError, ValueError) as error:
         return 0, "", b"", "", type(getattr(error, "reason", error)).__name__
+
+
+def headers_kinds(url: str) -> str:
+    """The answer's headers as kinds: the server's kind from a known list, the names of the
+    headers that hint at a vendor, the cookies set (counted). Never a value."""
+    pairs = HEADERS.get(url, [])
+    server = next((value for name, value in pairs if name.lower() == "server"), "")
+    kind = next((known for known in SERVERS if known in server.lower()), "other" if server else "none")
+    hints = sorted({name.lower() for name, _ in pairs if name.lower().startswith(VENDOR_HEADERS)})
+    cookies = sum(1 for name, _ in pairs if name.lower() == "set-cookie")
+    return f"server {kind}; cookies set {cookies}; headers: {', '.join(hints) or '-'}"
+
+
+def counted(table: dict[str, bytes], body: bytes) -> str:
+    return ", ".join(f"{name} {len(re.findall(pattern, body))}" for name, pattern in table.items() if re.search(pattern, body)) or "-"
+
+
+def visible(body: bytes) -> bytes:
+    text = re.sub(rb"(?is)<(script|style|noscript|template|svg)\b.*?</\1\s*>", b" ", body)
+    return re.sub(rb"(?s)<[^>]+>", b" ", re.sub(rb"(?s)<!--.*?-->", b" ", text))
 
 
 def types_of(node, found: set[str]) -> None:
@@ -227,7 +289,33 @@ def deeper(body: bytes, asked: str) -> list[str]:
     lines.append("an app drawn by script: " + (", ".join(shells) or "-") + "; it asks: " + (", ".join(hints) or "-"))
     if magento:
         lines.append("Magento's price: " + ", ".join(magento))
+    lines.append("the answer: " + headers_kinds(asked))
+    lines.append("a wall's ways: " + counted(WALL, body) + "; an app's ways: " + counted(APP, body))
+    lines.append("its words, seen without script: " + counted(WORDS, visible(body)))
+    lines.append("its words, in its script and tags: " + counted(WORDS, body))
+    magento_one = counted(MAGENTO_ONE, body)
+    if magento_one != "-":
+        lines.append("Magento 1's price: " + magento_one)
     return lines
+
+
+def script_look(name: str, address: str, body: bytes, rules) -> None:
+    """A shop whose pages were all alike: its one script file, read once as the page would
+    (as robots.txt allows, at its own address), for a wall's or an app's ways. Counts only."""
+    sources = [source.decode("utf-8", "replace") for source in SCRIPT_SRC.findall(body)]
+    own = [source for source in sources if not urlsplit(source).netloc
+           or look._site(urlsplit(source).netloc) == look._site(urlsplit(address).netloc)]
+    print(f"its script files: {len(sources)} (its own {len(own)})")
+    for number, source in enumerate(own[:2], start=1):
+        url = urllib.parse.urljoin(address, source)
+        if not look.robots_allows(rules, urlsplit(url).path or "/"):
+            print(f"script {number}: robots.txt does not allow it")
+            continue
+        time.sleep(PAUSE)
+        status, kind, script, _final, error = fetch(url)
+        print(f"script {number}: {status or error}; {kind.split(';')[0] or '-'}; {len(script):,} bytes")
+        print(f"  a wall's ways: {counted(WALL, script)}; an app's ways: {counted(APP, script)}")
+        print(f"  a refusal's signs: " + (", ".join(n for n, p in INTERSTITIAL.items() if re.search(p, script)) or "none"))
 
 
 def describe(body: bytes) -> list[str]:
@@ -282,14 +370,28 @@ def main(argv: list[str] | None = None) -> int:
         print(f"robots.txt: {status or error}; crawl-delay {delay}; "
               + ", ".join(f"page {n + 1} {'allowed' if look.robots_allows(rules, urlsplit(a).path or '/') else 'DISALLOWED'}"
                           for n, a in enumerate(addresses)))
+        sizes = []
+        first = b""
         for number, address in enumerate(addresses, start=1):
             time.sleep(PAUSE)
             status, kind, body, final, error = fetch(address)
             moved = bool(final) and final.split("#")[0] != address.split("#")[0]
+            sizes.append(len(body))
+            first = first or body
             print(f"page {number}: {status or error}; {kind.split(';')[0] or '-'}; {len(body):,} bytes"
                   + (f"; moved {where_moved(address, final)}" if moved else ""))
             for line in describe(body) + deeper(body, address):
                 print(f"  {line}")
+        alike = len(sizes) > 1 and max(sizes) - min(sizes) < 64 and max(sizes) < 64 * 1024
+        if alike:
+            print(f"all {len(sizes)} pages alike: once more after {REST:.0f} s of rest, and its script")
+            time.sleep(REST)
+            status, kind, body, final, error = fetch(addresses[0])
+            print(f"page 1 again: {status or error}; {len(body):,} bytes; "
+                  + ("the same kind of page" if abs(len(body) - sizes[0]) < 64 else "ANOTHER kind of page"))
+            for line in describe(body):
+                print(f"  {line}")
+            script_look(name, addresses[0], first, rules)
     return 0
 
 

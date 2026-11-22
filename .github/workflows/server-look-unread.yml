@@ -8,7 +8,7 @@
 # On a push of its own branch that changes the script or this file. The repository is public
 # and so is this log: the server's names are masked; the script prints kinds and counts only.
 #
-# Run: 2026-11-22 04:10 Athens (the second look: 5 pages of the 5 shops still not read; to run again, change this line and push).
+# Run: 2026-11-22 04:30 Athens (the third look: a wall or an app, Magento 1; to run again, change this line and push).
 name: Server look at the pages not read (read-only)
 on:
   push:
