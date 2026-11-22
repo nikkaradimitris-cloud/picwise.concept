@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (15:05 Athens: Vercel's preview builds turned off, records only; 13:45 Athens: THE CHECKS DEPLOYED on the owner's «Ανέβασε», the bot's first round running, read the night on 23/11; 11:50 Athens: task 7's look done, its findings mended, not deployed, waits for the owner's answers and his «ανέβασε»; 10:30 Athens: task 7 begun, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (15:51 Athens: the owner decided a cap per shop, records only; 15:05 Athens: Vercel's preview builds turned off, records only; 13:45 Athens: THE CHECKS DEPLOYED on the owner's «Ανέβασε», the bot's first round running, read the night on 23/11; 11:50 Athens: task 7's look done, its findings mended, not deployed, waits for the owner's answers and his «ανέβασε»; 10:30 Athens: task 7 begun, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -83,6 +83,19 @@ a decision came about.
   - **Owed:** the Greek page of the rules in the Project's docs (`claude/PicWise-kanones-elegchon.md`) still says
     that the two Proposed rules wait for his yes: bring it in step (his yes of 22/11 to both; Dean Morris Cards).
     `main` is at `b6915e3` (19/11): bringing it level with the site is the owner's yes (it builds the Vercel backup).
+- **(22/11, 15:51 Athens): THE OWNER DECIDED A CAP PER SHOP; not yet in the rules, not built** (PROGRESS.md, 22/11
+  15:51). **The rule as decided:** each shop, and every shop that comes in, keeps at most the products the bot can
+  check in one day at that shop's own measured pace (our 3 s, its answers' time, its crawl-delay), and never more
+  than 20,000 (owner: «...κάθε κατάστημα να έχει πλαφόν μέχρι 20.000 πού είναι ο αριθμός που μπορούμε να ελέγξουμε
+  στις 24 ώρες συνεχής λειτουργίας», then «Εφόσον αυτός ο κανόνας μπορεί να επαληθεύεται να θεσπιστεί ως σύστημα
+  λειτουργίας ... κάθε κατάστημα που θα μπαίνει μέσα πρέπει να τηρούμε τα όρια που επιτρέπει»). **Put to him, not
+  answered yet:** which products a shop over its cap keeps (proposed: a share of each kind spread over its prices,
+  the most complete first, as `catalogue_cap` does; not the cheapest, often accessories). **Proposed, needed for
+  the numbers to hold:** the bot over several processes (with every shop asked at once its one processor slows the
+  pace: GamingKit 4.3 to 10 s). **By the work split:** the rule's text (the checks' rules, `PROJECT_RULES.md`, its
+  place beside the cap's 15% a category and 12,000 at most, and the first round): FABLE; the build: OPUS; a look
+  before its «ανέβασε», since it cuts products (about 190,000 of the four largest shops, by the estimate given to
+  him): FABLE.
 - **(22/11, 15:05 Athens): Vercel's preview builds turned off on the owner's «Ναι»** (its email: Function Storage at
   75% of the free 10 GB; 99 of 100 deployments in 25 hours were previews of session branches; PROGRESS.md, 22/11
   15:05). Only `main` builds the backup now; a session's branch makes no Vercel deployment. Nothing to do.
