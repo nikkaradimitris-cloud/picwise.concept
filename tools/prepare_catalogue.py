@@ -31,9 +31,10 @@ how often a title alone gives the kind its shelf gives (`title_alone`), what the
 own catalogues and the rows' barcodes gave (`shop_catalogues`,
 `picwise_providers.shop_catalogue`), how the shown products spread and what a cap on a
 share would cut (`balance`, `picwise_providers.catalogue_balance`), how many the
-pool Google may be given from holds (`google_pool`), and which shops' feeds shrank or
-vanished since the build before (`intake_change`), never the feed's link nor a row's
-id.
+pool Google may be given from holds (`google_pool`), which shops' feeds shrank or
+vanished since the build before (`intake_change`), and what the answers to the question
+"is it the kind itself" did (`itself`, `picwise_providers.kind_itself`), never the feed's
+link nor a row's id.
 """
 from __future__ import annotations
 
@@ -107,6 +108,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if args.keep_going else 1
     pool = capping.write_pool(prepared)
     checks = _checks(capping)
+    itself = _itself(capping)
     print(
         f"prepare_catalogue: {prepared.feed_status.product_count} rows, "
         f"{len(prepared.products)} products in the search "
@@ -190,6 +192,7 @@ def main(argv: list[str] | None = None) -> int:
                 "balance": _balance(prepared),
                 "google_pool": pool,
                 "checks": checks,
+                "itself": itself,
                 **({"memory": memory} if memory is not None else {}),
                 **({"price_notes": notes} if notes is not None else {}),
             },
@@ -214,10 +217,23 @@ class _Cap:
         self.shelf: list[dict[str, object]] = []
         # Why the checks' gate did not stand tonight, when it did not.
         self.gate_off = ""
+        # What the AI is asked next of the question "is it the kind itself" (its rules 8.2):
+        # the questions that wait, of the products kept or next, and each kind's first cards;
+        # and what tonight's catalogue shows, for the next night's brakes (its rules 7).
+        self.itself: list[dict[str, object]] | None = None
+        self.itself_shown: dict[str, str] | None = None
+        self.itself_error = ""
+        self.itself_gate = False
+        try:
+            from picwise_providers import kind_itself
+
+            kind_itself.remember_at(kind_itself.shown_path(out))
+        except Exception as error:  # the brakes then have no night before to hold against
+            self.itself_error = _where(error)
 
     def __call__(self, products, kinds, feed_ctx):
         try:
-            from picwise_providers import checks_applied
+            from picwise_providers import checks_applied, kind_itself
             from picwise_providers.catalogue_balance import cap_limits
             from picwise_providers.catalogue_cap import cap_catalogue, google_pool_path, read_google_pool, row_key
 
@@ -230,6 +246,14 @@ class _Cap:
                 # only the products the checks name as not shown until checked.
                 gate = checks_applied.may_enter_without_memory
                 self.gate_off = "the night before's pool could not be read: only the products not checked are held back"
+            elif gate is not None and kind_itself.gate_on():
+                # A new product also waits for its answers to the question "is it the kind
+                # itself" (its rules, section 6), asked only of the few whose checks passed.
+                self.itself_gate = True
+
+                def gate(product, _checks=checks_applied.may_enter, _itself=kind_itself.may_enter):
+                    return _checks(product) and _itself(product)
+
             if gate is not None:
                 # Back within 7 nights of its cut: as kept the night before (the checks' rules 8.2);
                 # not shown until checked: out of the night before's, to wait at the gate (9.3, 9.5).
@@ -252,7 +276,59 @@ class _Cap:
         except Exception as error:
             self.result, self.error = None, _where(error)
             return None
+        self._itself_job(products, kinds)
         return self.result.keep
+
+    def _itself_job(self, products, kinds) -> None:
+        """The questions "is it the kind itself" the AI is asked next, when the night read
+        its answers; a failure here is only noted, and nothing is asked that morning."""
+        try:
+            from picwise_providers import kind_itself
+            from picwise_providers.search_selection import _product_search_fields, kinds_read
+
+            night = kind_itself.tonight()
+            if night is None or self.result is None:
+                return
+            kept_places = [place for place, kept in enumerate(self.result.keep) if kept]
+            self.itself_shown = kind_itself.shown_rows(night, products, kinds, kept_places)
+            self.itself = kind_itself.job_items(
+                night, products, kept_places + list(self.result.candidates),
+                lambda place: kinds_read(products[place], _product_search_fields(products[place])),
+                kept=[products[place] for place in kept_places], kept_kinds=[kinds[place] for place in kept_places],
+            )
+        except Exception as error:
+            self.itself, self.itself_error = None, _where(error)
+
+    def write_itself_shown(self) -> dict[str, object] | None:
+        """What tonight's catalogue shows, kept beside it for the next night's brakes, once
+        the catalogue itself is written. A night that read no answer keeps nothing: the
+        first night that reads them again has no night before to hold against."""
+        try:
+            from picwise_providers import kind_itself
+
+            path = kind_itself.shown_path(self.out)
+            night = kind_itself.tonight()
+            if night is None or self.itself_shown is None:
+                path.unlink(missing_ok=True)
+                return None
+            written = kind_itself.write_shown(
+                path, self.itself_shown, held=night.held_since, night_held=night.night_held_since, night=night.today)
+            return {"rows": written}
+        except Exception as error:
+            return {"error": _where(error)}
+
+    def write_itself_job(self) -> dict[str, object] | None:
+        """The questions written for picwise-itself; what was written, or why not."""
+        if self.itself_error:
+            return {"error": self.itself_error}
+        if self.itself is None:
+            return None
+        try:
+            from picwise_providers.kind_itself import write_job
+
+            return write_job(self.itself)
+        except Exception as error:
+            return {"error": _where(error)}
 
     def write_candidates(self) -> dict[str, object] | None:
         """The rows the checks' bot asks next, beside the decisions it wrote; what was written."""
@@ -330,6 +406,47 @@ def _checks(capping: _Cap) -> dict[str, object]:
     return {**note, "held_by_the_gate": getattr(result, "held_by_checks", 0),
             "candidates": len(getattr(result, "candidates", ()) or ()), "written": written,
             **({"gate_off": capping.gate_off} if capping.gate_off else {})}
+
+
+def _itself(capping: _Cap) -> dict[str, object]:
+    """What the answers to the question "is it the kind itself" did tonight
+    (`picwise_providers.kind_itself`): counts and kinds' names only; printed and kept in the
+    night's note."""
+    from picwise_providers.kind_itself import last_note
+
+    note = last_note() or {"applied": False, "why": "not read"}
+    written = capping.write_itself_job()
+    kept = capping.write_itself_shown()
+    if note.get("applied"):
+        left = ", ".join(f"{name} {count:,}" for name, count in (note.get("left_by_answer") or {}).items())
+        print(
+            f"prepare_catalogue: the kind itself: {note.get('products_with_a_second_reading', 0):,} products read twice,"
+            f" {note.get('left_a_kind', 0):,} left a kind ({left or 'none'}), {note.get('came_back', 0):,} came back;"
+            f" {note.get('products_with_a_question_waiting', 0):,} with a question waiting,"
+            f" {note.get('products_to_ask_again', 0):,} to ask again"
+            + (f"; for the AI next: {written}" if written else "")
+            + ("; a new product waits for its answers at the cap's gate" if capping.itself_gate else "")
+        )
+        held = note.get("held_by_a_kinds_brake") or []
+        if note.get("brakes") != "stood":
+            print(f"prepare_catalogue: the kind itself, its brakes: {note.get('brakes')}")
+        if note.get("held_by_the_nights_brake"):
+            print(
+                f"prepare_catalogue: THE KIND ITSELF, THE NIGHT'S BRAKE HOLDS since {note['held_by_the_nights_brake']}:"
+                f" {note.get('held_as_shown', 0):,} products stay as they were shown, until the owner's word"
+            )
+        elif held:
+            print("prepare_catalogue: THE KIND ITSELF, A KIND'S BRAKE HOLDS: " + "; ".join(
+                f"{entry['kind']} {entry['products']:,} (since {entry['since']})" for entry in held
+            ))
+        if kept and "error" in kept:
+            print(f"prepare_catalogue: the kind itself, what tonight shows was not kept ({kept['error']}):"
+                  " the next night's brakes have nothing to hold against")
+    else:
+        print(f"prepare_catalogue: the kind itself not read ({note.get('why')})")
+    return {**note, **({"for_the_ai": written} if written else {}),
+            **({"new_products_wait": True} if capping.itself_gate else {}),
+            **({"shown_not_kept": kept["error"]} if kept and "error" in kept else {})}
 
 
 def _freshness(prepared) -> dict[str, object]:

@@ -169,12 +169,13 @@ def key_of(title: str, brand: str, raw: Any) -> str:
     return ask_key(title, brand, shop_words(raw))
 
 
-def line_of(title: str, brand: str, raw: Any, table: Mapping[str, str] | None = None) -> str | None:
-    """The AI's line for a product (None: no answer; "": no line fits)."""
+def line_of(title: str, brand: str, raw: Any, table: Mapping[str, str] | None = None, key: str = "") -> str | None:
+    """The AI's line for a product (None: no answer; "": no line fits). `key`, when the
+    caller has worked the product's key out already (`key_of`), is not worked out again."""
     table = answers() if table is None else table
     if not table:
         return None
-    return table.get(key_of(title, brand, raw))
+    return table.get(key or key_of(title, brand, raw))
 
 
 # The first five lines of Google's tree, which the model gave products of every kind when it
@@ -275,16 +276,18 @@ def checked_kinds(
     raw: Any,
     table: Mapping[str, str] | None = None,
     lists: Mapping[str, tuple[tuple[tuple[str, ...], bool], ...]] | None = None,
+    key: str = "",
 ) -> frozenset[str]:
     """Rule 2: the kinds a product is read as, each kept only when the AI's line for the
-    product is on the kind's list; none kept, the product doubtful."""
+    product is on the kind's list; none kept, the product doubtful. `key` as `line_of`
+    takes it."""
     table = answers() if table is None else table
     if not table or not kinds:
         return kinds
     real = {kind for kind in kinds if not kind.startswith("__")}
     if not real:
         return kinds
-    line = line_of(title, brand, raw, table)
+    line = line_of(title, brand, raw, table, key)
     if not line or is_slip(line):
         return kinds
     lists = kind_lists() if lists is None else lists

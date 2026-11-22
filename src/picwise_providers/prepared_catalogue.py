@@ -87,9 +87,17 @@ LEFT_OUT_COLUMNS = frozenset(
 # written before it stale.
 _FROZEN_PACKAGES = ("src/picwise_providers", "src/picwise_nlu")
 # Files of data whose rules the file freezes too: each kind's lines of Google's taxonomy
-# (`ai_shelves`, rule 2; owner, 2026-11-20): a product's kinds are read against them; and
-# the checks' switch (`checks_applied`, the checks' rules 7.7): turning it prepares again.
-_FROZEN_FILES = ("data/kind_lines/google_lines_by_kind.json", "data/checks_switch.json")
+# (`ai_shelves`, rule 2; owner, 2026-11-20): a product's kinds are read against them; the
+# checks' switch (`checks_applied`, the checks' rules 7.7): turning it prepares again; and
+# the switch of the question "is it the kind itself" with the site's notes on a kind
+# (`kind_itself`, `docs/PICWISE_KIND_ITSELF_RULES.md` 7.5 and 4.7): the answers are read
+# under them.
+_FROZEN_FILES = (
+    "data/kind_lines/google_lines_by_kind.json",
+    "data/checks_switch.json",
+    "data/kind_itself_switch.json",
+    "data/kind_itself/kind_notes.json",
+)
 
 
 @dataclass(frozen=True)

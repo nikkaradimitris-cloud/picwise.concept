@@ -37,6 +37,7 @@ from .offer_health import (
     offer_validity_reason_codes,
 )
 from .product_photos import gone_photos, gone_photos_key, photo_is_gone
+from . import kind_itself
 from .checks_applied import apply_checks
 from .prepared_catalogue import (
     PreparedCatalogue,
@@ -60,6 +61,7 @@ from .search_selection import (
     decide_recommended_provider_product,
     forget_search_indexes,
     is_strong_feed_opportunity_selection,
+    kinds_read,
     product_kind_key,
     product_non_new_condition,
     remember_product_kinds,
@@ -428,9 +430,22 @@ def prepare_feed_catalogue(
         return None
     catalogue = _search_catalogue(pipeline, leave_out_gone_photos=False)
     eligible_count = _catalogue_counts(pipeline)[0]
-    kinds = tuple(
-        _product_concepts(product, fields) for product, fields in zip(catalogue.products, catalogue.fields)
-    )
+    # The answers to the question "is it the kind itself" (`kind_itself`, behind its switch;
+    # `docs/PICWISE_KIND_ITSELF_RULES.md`): read here, where every product's own kinds and
+    # the kinds the lists leave it are at hand, before the cap shares its places by kind.
+    night = kind_itself.begin_night()
+    if night is None:
+        kinds = tuple(
+            _product_concepts(product, fields) for product, fields in zip(catalogue.products, catalogue.fields)
+        )
+    else:
+        from .catalogue_cap import row_key
+
+        all_products, all_fields = catalogue.products, catalogue.fields
+        kinds = kind_itself.settle_catalogue(
+            night, len(all_products), lambda place: kinds_read(all_products[place], all_fields[place]),
+            lambda place: row_key(all_products[place]),
+        )
     if cap is not None:
         keep = cap(catalogue.products, kinds, pipeline.availability_context)
         if keep is not None and not all(keep):

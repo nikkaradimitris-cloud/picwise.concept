@@ -54,7 +54,9 @@ def _runner(*, web="active", offers="success", photos="success", prepare=PREPARE
     return run
 
 
-class HealthTests(unittest.TestCase):
+class _AServer:
+    """The notes a server keeps, of the test's own, and the health run printed."""
+
     def setUp(self) -> None:
         self.folder = Path(tempfile.mkdtemp())
         self.note = self.folder / "prepared.json"
@@ -82,6 +84,7 @@ class HealthTests(unittest.TestCase):
             mock.patch.object(print_health, "SPEND_DIR", self.spend),
             mock.patch.object(print_health, "CHECKS_NOTE", self.folder / "checks-note.json"),
             mock.patch.object(print_health, "SHELVES_NOTE", self.folder / "shelves-night.json"),
+            mock.patch.object(print_health, "ITSELF_NOTE", self.folder / "itself-night.json"),
             mock.patch.object(print_health, "site_memory_gb", lambda *a, **k: 4.0),
             mock.patch.object(print_health, "memory_available_gb", lambda *a, **k: (23.4, 15.2)),
         ]
@@ -102,6 +105,8 @@ class HealthTests(unittest.TestCase):
     def over(self, lines: list[str]) -> list[str]:
         return [line for line in lines if line.startswith("over the limit: ")]
 
+
+class HealthTests(_AServer, unittest.TestCase):
     def test_a_good_day_is_within_every_limit_and_says_what_it_read(self) -> None:
         lines = self.printed()
         self.assertEqual(lines[-1], "within every limit")
@@ -252,6 +257,68 @@ class HealthTests(unittest.TestCase):
         self.assertIn("over the limit: the site's service is failed", over)
         self.assertIn("over the limit: the photos were checked 40.0 h ago", over)
         self.assertIn("over the limit: the AI spent its whole day's cap yesterday ($1.00)", over)
+
+
+class KindItselfHealthTests(_AServer, unittest.TestCase):
+    """The question "is it the kind itself" (`docs/PICWISE_KIND_ITSELF_RULES.md`, 7 and 10)."""
+
+    def _note(self, itself: dict) -> None:
+        note = json.loads(self.note.read_text(encoding="utf-8"))
+        note["itself"] = itself
+        self.write(self.note, note)
+
+    def _applied(self, **more) -> dict:
+        return {"applied": True, "products_with_a_second_reading": 15210, "left_a_kind": 4120,
+                "left_by_answer": {"accessory": 2100, "other": 1500, "part": 520}, "came_back": 610, "brakes": "stood",
+                "changed_of_what_was_shown": 12, "held_as_shown": 0, "held_by_a_kinds_brake": [],
+                "held_by_the_nights_brake": "", "products_with_a_question_waiting": 31, "products_to_ask_again": 0, **more}
+
+    def test_a_release_without_it_says_nothing(self) -> None:
+        self.assertNotIn("kind itself", "\n".join(self.printed()))
+
+    def test_the_switch_off_is_said_and_is_no_limit(self) -> None:
+        self._note({"applied": False, "why": "the switch is off"})
+        lines = self.printed()
+        self.assertIn("kind itself: its answers are not read (the switch is off)", lines)
+        self.assertEqual(lines[-1], "within every limit")
+
+    def test_a_quiet_night_is_within_every_limit(self) -> None:
+        self._note(self._applied())
+        self.write(self.folder / "itself-night.json", {
+            "night": "2026-11-22", "named": 412, "first": {"asked": 380, "answered": 380}, "second": {"asked": 95, "answered": 94},
+            "left": 1, "cost_usd": 0.0731, "stopped": ""})
+        lines = self.printed()
+        self.assertIn("kind itself: 15,210 products read twice; 4,120 left a kind (accessory 2,100, other 1,500, part 520), "
+                      "610 came back; 31 wait for an answer, 0 to ask again; changed of what was shown the night before 12", lines)
+        self.assertIn("kind itself, the AI's answers on 2026-11-22: 412 questions named; first reading 380 of 380 asked, "
+                      "second 94 of 95; 1 left; $0.07", lines)
+        self.assertEqual(lines[-1], "within every limit")
+
+    def test_a_brake_that_holds_is_a_limit(self) -> None:
+        self._note(self._applied(held_as_shown=31, held_by_a_kinds_brake=[{"kind": "printer", "products": 31, "since": "2026-11-22"}]))
+        lines = self.printed()
+        self.assertIn("kind itself, a kind's brake holds: printer 31 (since 2026-11-22)", lines)
+        self.assertEqual(self.over(lines), ["over the limit: a kind's brake holds answers to \"is it the kind itself\" until the "
+                                            "owner's word: printer 31 (since 2026-11-22) (rules 7.3)"])
+        self._note(self._applied(held_as_shown=900, held_by_the_nights_brake="2026-11-22"))
+        lines = self.printed()
+        self.assertIn("kind itself, the night's brake holds since 2026-11-22: 900 products stay as shown", lines)
+        self.assertEqual(len(self.over(lines)), 1)
+        self.assertIn("the night's brake holds every new answer", self.over(lines)[0])
+
+    def test_brakes_with_nothing_to_hold_against_and_a_stopped_asking_are_limits(self) -> None:
+        self._note(self._applied(brakes="no memory of the night before: nothing to hold against", shown_not_kept="OSError"))
+        self.write(self.folder / "itself-night.json", {"night": "2026-11-22", "named": 90000, "left": 61000, "cost_usd": 4.97,
+                                                       "stopped": "its limit of $5.00"})
+        over = self.over(self.printed())
+        self.assertEqual(len(over), 3)
+        self.assertIn("had no night before to hold against", over[0])
+        self.assertIn("was not kept for the next night's brakes", over[1])
+        self.assertIn("stopped at the night's brake of $5 (its limit of $5.00)", over[2])
+        self.write(self.folder / "itself-night.json", {"night": "2026-11-22", "named": 5, "left": 0, "cost_usd": 0.0,
+                                                       "stopped": "the answers file cannot be read: nothing asked"})
+        self.assertIn("over the limit: the answers file of \"is it the kind itself\" cannot be read: nothing was asked",
+                      self.over(self.printed()))
 
 
 class CountSearchesTests(unittest.TestCase):

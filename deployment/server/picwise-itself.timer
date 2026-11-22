@@ -1,0 +1,9 @@
+[Unit]
+Description=PicWise: the AI's answer to "is it the kind itself", every morning after the preparation and the categories
+
+[Timer]
+OnCalendar=*-*-* 05:40:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

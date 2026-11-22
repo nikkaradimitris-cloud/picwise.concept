@@ -1,0 +1,5 @@
+{
+ "_about": "The switch of the question \"is it the kind itself\" (docs/PICWISE_KIND_ITSELF_RULES.md, 7.5 and 7.4). gate true: the night's preparation reads the AI's answers. looked_until: the day (YYYY-MM-DD) up to which the answers were looked at; the brakes count only younger ones. Turned only on the owner's word; frozen with the code, so turning it prepares the catalogue again.",
+ "gate": false,
+ "looked_until": ""
+}

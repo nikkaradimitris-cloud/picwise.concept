@@ -13,6 +13,7 @@ is (the spec, 4.3).
 from __future__ import annotations
 
 import json
+import threading
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -50,6 +51,30 @@ class Asked:
     cost_usd: float
     seconds: float
     error: str
+
+
+class Budget:
+    """The dollars a run's calls may cost together, several calls out at a time. A call is
+    let through only when its guessed cost fits beside what is spent and what the calls
+    still out are guessed at: the run stops before the limit, never after it."""
+
+    def __init__(self, limit: float) -> None:
+        self.limit = limit
+        self.spent = 0.0
+        self.held = 0.0
+        self.lock = threading.Lock()
+
+    def reserve(self, guess: float) -> bool:
+        with self.lock:
+            if self.spent + self.held + guess > self.limit:
+                return False
+            self.held += guess
+            return True
+
+    def settle(self, guess: float, cost: float) -> None:
+        with self.lock:
+            self.held = max(0.0, self.held - guess)
+            self.spent += cost
 
 
 def make_client(*, timeout: float = TIMEOUT_SECONDS, max_retries: int = MAX_RETRIES) -> Any:

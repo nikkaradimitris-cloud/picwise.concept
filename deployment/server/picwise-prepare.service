@@ -36,6 +36,12 @@ Environment=PICWISE_AI_SHELVES_FILE=/srv/picwise/assist/shelves/answers.jsonl.gz
 # The products the AI is asked the category of next (the checks' rules 5.5), for
 # picwise-shelves.service; the folder is the site's to write and the AI layer's to read.
 Environment=PICWISE_SHELF_JOBS=/srv/picwise/assist/shelves/jobs
+# The answers to the question "is it the kind itself" (docs/PICWISE_KIND_ITSELF_RULES.md;
+# written by picwise-itself.service, picwise-assist's, which this user's group reads), read
+# only while data/kind_itself_switch.json is true; and the questions the AI is asked next,
+# written for that service.
+Environment=PICWISE_KIND_ITSELF_FILE=/srv/picwise/assist/itself/answers.jsonl.gz
+Environment=PICWISE_ITSELF_JOBS=/srv/picwise/assist/itself/jobs
 Environment=PYTHONDONTWRITEBYTECODE=1
 # GNU time adds one line with the run's peak memory and length, for sizing the server.
 ExecStart=/usr/bin/time -f "prepare_catalogue: peak memory %%M KB, %%e s" /usr/bin/python3 \
@@ -59,6 +65,7 @@ ProtectSystem=strict
 ProtectHome=yes
 ReadWritePaths=/srv/picwise/shared
 ReadWritePaths=-/srv/picwise/assist/shelves/jobs
+ReadWritePaths=-/srv/picwise/assist/itself/jobs
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectKernelLogs=yes

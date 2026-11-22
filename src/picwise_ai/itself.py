@@ -42,6 +42,11 @@ from typing import Any
 
 MODEL = "claude-haiku-5-5"
 EFFORT = "low"
+# The second reading (the rules' 4.4): of what the first would move, and of each kind's
+# first cards. The trials of 22/11: of what Haiku would take out among the first cards,
+# Sonnet reads about one in five otherwise.
+SECOND_MODEL = "claude-sonnet-5-5"
+SECOND_EFFORT = "low"
 MAX_TOKENS = 6000
 # Products in one call, of one kind or of several: the answer stays short and each number
 # easy to keep apart.

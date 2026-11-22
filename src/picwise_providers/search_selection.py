@@ -36,7 +36,7 @@ from picwise_nlu.concept_understanding import (
 from picwise_nlu.product_concepts import broader_concepts, get_product_concepts_by_id, get_qualifiers
 from picwise_taxonomy.comparison_rules import comparison_rule
 
-from .ai_shelves import checked_kinds
+from .ai_shelves import checked_kinds, key_of
 from .shop_words import learned_kind
 from .contracts import FeedAvailabilityContext, OfferHealth, ProviderProduct
 from .normalization import extract_merchant_name, extra_image_urls
@@ -1284,12 +1284,24 @@ def _product_concepts(product: ProviderProduct, fields: dict[str, str]) -> froze
     known = _PREPARED_KINDS.get(key)
     if known is not None:
         return known
+    return kinds_read(product, fields)[1]
+
+
+def kinds_read(product: ProviderProduct, fields: dict[str, str]) -> tuple[frozenset[str], frozenset[str], str]:
+    """A product's kinds as its own words and the kinds' lists read them: its own kinds
+    (its type, shelf and title: `kinds_before_the_kind_lists`); the kinds the lists leave it
+    (`ai_shelves.checked_kinds`, rule 2; owner, 2026-11-20 19:00: each kind kept only when the
+    AI's line for the product is on the kind's own list of Google's lines, where the
+    preparation has the AI's answers; else unchanged); and the key its questions to the AI
+    are kept by (`ai_shelves.key_of`), "" for a product with no kind of its own, which has
+    none. The question "is it the kind itself" reads all three (`kind_itself`)."""
     raw = product.raw if isinstance(product.raw, dict) else {}
     kinds = kinds_before_the_kind_lists(product, fields)
-    # Each kind kept only when the AI's line for the product is on the kind's own list of
-    # Google's lines (`ai_shelves`, rule 2; owner, 2026-11-20 19:00), where the preparation
-    # has the AI's answers; else unchanged.
-    return checked_kinds(kinds, title=str(product.title or ""), brand=str(product.brand or ""), raw=raw)
+    if not any(not kind.startswith("__") for kind in kinds):
+        return kinds, kinds, ""
+    title, brand = str(product.title or ""), str(product.brand or "")
+    key = key_of(title, brand, raw)
+    return kinds, checked_kinds(kinds, title=title, brand=brand, raw=raw, key=key), key
 
 
 def kinds_before_the_kind_lists(product: ProviderProduct, fields: dict[str, str]) -> frozenset[str]:

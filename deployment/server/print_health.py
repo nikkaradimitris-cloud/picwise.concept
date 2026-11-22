@@ -51,6 +51,8 @@ SPEND_DIR = Path("/srv/picwise/assist/spend")
 CHECKS_NOTE = SHARED / "checks" / "note.json"
 # The AI's category of the products not asked yet (the checks' rules 5.5, 7.6), its morning's note.
 SHELVES_NOTE = Path("/srv/picwise/assist/shelves/night.json")
+# The question "is it the kind itself" (docs/PICWISE_KIND_ITSELF_RULES.md), its morning's note.
+ITSELF_NOTE = Path("/srv/picwise/assist/itself/night.json")
 # The checks' rules, 5.6.2 (owner, 22/11: «Σε 3 μέρες»): a shop that cannot be checked leaves on its day 4.
 CHECKS_OUT_ON_DAY = 4
 SITE_USER = "picwise"
@@ -326,6 +328,55 @@ def look_at_checks(check: Health, runner: Run) -> None:
         check.limit("budget" in stopped, f"the AI's categories stopped at the night's brake of $10 ({stopped})")
 
 
+def look_at_itself(check: Health) -> None:
+    """The question "is it the kind itself" (docs/PICWISE_KIND_ITSELF_RULES.md, 7 and 10):
+    what the preparation read of its answers (the public note's `itself`) and what the
+    morning's asking did (`ITSELF_NOTE`): counts and kinds' names only. Nothing is said
+    while a release without it runs."""
+    prepared = read_json(PREPARED_NOTE) or {}
+    applied = prepared.get("itself") if isinstance(prepared.get("itself"), dict) else None
+    if applied is not None and not applied.get("applied"):
+        check.say(f"kind itself: its answers are not read ({applied.get('why')})")
+    elif applied is not None:
+        left = _counts(applied.get("left_by_answer"))
+        check.say(f"kind itself: {int(applied.get('products_with_a_second_reading') or 0):,} products read twice; "
+                  f"{int(applied.get('left_a_kind') or 0):,} left a kind" + (f" ({left})" if left else "")
+                  + f", {int(applied.get('came_back') or 0):,} came back; "
+                  f"{int(applied.get('products_with_a_question_waiting') or 0):,} wait for an answer, "
+                  f"{int(applied.get('products_to_ask_again') or 0):,} to ask again; "
+                  f"changed of what was shown the night before {int(applied.get('changed_of_what_was_shown') or 0):,}")
+        held = [entry for entry in applied.get("held_by_a_kinds_brake") or [] if isinstance(entry, dict)]
+        names = ", ".join(f"{entry.get('kind')} {int(entry.get('products') or 0):,} (since {entry.get('since')})" for entry in held)
+        if held:
+            check.say(f"kind itself, a kind's brake holds: {names}")
+        check.limit(bool(held), f"a kind's brake holds answers to \"is it the kind itself\" until the owner's word: {names} (rules 7.3)")
+        night = str(applied.get("held_by_the_nights_brake") or "")
+        if night:
+            check.say(f"kind itself, the night's brake holds since {night}: {int(applied.get('held_as_shown') or 0):,} products stay as shown")
+        check.limit(bool(night), f"the night's brake holds every new answer to \"is it the kind itself\" since {night}, "
+                                 "until the owner's word (rules 7.4)")
+        stood = str(applied.get("brakes") or "")
+        if stood and stood != "stood":
+            check.say(f"kind itself, its brakes: {stood}")
+        check.limit(bool(stood) and stood != "stood",
+                    "the brakes of \"is it the kind itself\" had no night before to hold against (expected only on the "
+                    "first night its answers are read)")
+        check.limit(bool(applied.get("shown_not_kept")),
+                    "what the catalogue shows was not kept for the next night's brakes of \"is it the kind itself\"")
+    asked = read_json(ITSELF_NOTE)
+    if asked is not None:
+        stopped = str(asked.get("stopped") or "")
+        first = asked.get("first") if isinstance(asked.get("first"), dict) else {}
+        second = asked.get("second") if isinstance(asked.get("second"), dict) else {}
+        check.say(f"kind itself, the AI's answers on {asked.get('night')}: {int(asked.get('named') or 0):,} questions named; "
+                  f"first reading {int(first.get('answered') or 0):,} of {int(first.get('asked') or 0):,} asked, "
+                  f"second {int(second.get('answered') or 0):,} of {int(second.get('asked') or 0):,}; "
+                  f"{int(asked.get('left') or 0):,} left; ${float(asked.get('cost_usd') or 0):.2f}"
+                  + (f"; stopped at {stopped}" if stopped else ""))
+        check.limit("limit" in stopped, f"the asking of \"is it the kind itself\" stopped at the night's brake of $5 ({stopped})")
+        check.limit("cannot be read" in stopped, "the answers file of \"is it the kind itself\" cannot be read: nothing was asked")
+
+
 def site_memory_gb(proc: Path = Path("/proc"), user: str = SITE_USER) -> float:
     """What the site's processes hold in memory (the user it runs as)."""
     try:
@@ -394,6 +445,7 @@ def main(*, now: datetime | None = None, runner: Run = run) -> int:
     look_at_offers(check, runner)
     look_at_photos(check, runner)
     look_at_checks(check, runner)
+    look_at_itself(check)
     look_at_resources(check, peak_gb)
     look_at_ai(check)
     for line in check.lines:

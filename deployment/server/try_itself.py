@@ -53,6 +53,8 @@ for folder in (ROOT, ROOT / "src", HERE):
     if str(folder) not in sys.path:
         sys.path.insert(0, str(folder))
 
+from picwise_ai.client import Budget  # noqa: E402  (the dollars a run's calls may cost together)
+
 MODELS = ("claude-haiku-5-5", "claude-sonnet-5-5")
 CARDS = 12
 TAKEN_KINDS = 20
@@ -162,29 +164,6 @@ class Asked:
     seconds: list[float] = field(default_factory=list)
     errors: Counter = field(default_factory=Counter)
     not_asked: int = 0
-
-
-class Budget:
-    """The dollars every model's calls may cost together. A call is let through only when
-    its guessed cost fits beside what is spent and what the calls still out are guessed at."""
-
-    def __init__(self, limit: float) -> None:
-        self.limit = limit
-        self.spent = 0.0
-        self.held = 0.0
-        self.lock = threading.Lock()
-
-    def reserve(self, guess: float) -> bool:
-        with self.lock:
-            if self.spent + self.held + guess > self.limit:
-                return False
-            self.held += guess
-            return True
-
-    def settle(self, guess: float, cost: float) -> None:
-        with self.lock:
-            self.held = max(0.0, self.held - guess)
-            self.spent += cost
 
 
 def ask_model(

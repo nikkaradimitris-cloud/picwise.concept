@@ -548,11 +548,15 @@ class PrepareToolTests(_PreparedMixin, unittest.TestCase):
         self.assertEqual(
             set(note),
             {"prepared", "prepared_at", "products", "shops", "freshness", "intake", "intake_change", "kinds",
-             "title_alone", "shop_catalogues", "balance", "google_pool", "written_at", "checks"},
+             "title_alone", "shop_catalogues", "balance", "google_pool", "written_at", "checks", "itself"},
         )
         # No build before this one to compare each shop's feed with (2026-11-10;
         # `tests/test_picwise_feed_shrink_note.py`).
         self.assertEqual(note["intake_change"], {"compared_with": None})
+        # The question "is it the kind itself" (task 6, 2026-11-22): its switch is off, so
+        # no answer is read and nothing is kept for a next night's brakes.
+        self.assertEqual(note["itself"], {"applied": False, "why": "the switch is off"})
+        self.assertFalse((self.prepared_path.parent / "kind_itself_shown.json.gz").exists())
         # The pool Google may be given from (owner, 2026-10-30): counts only, never a row's id.
         self.assertEqual(
             note["google_pool"],
