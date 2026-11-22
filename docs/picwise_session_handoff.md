@@ -66,6 +66,12 @@ a decision came about.
     has ended (03:05 UTC) before the preparation (04:17), so the night's sum is the site's alone with the
     preparation's 15.1 GB, as before (21.8 GB on 22/11, of the server's 22.9: the standing limit, the owner means
     to take a larger server).
+  - **To watch: the bot's memory.** It keeps every answer of the round until it records the night: 2,203 MB at
+    its start (the catalogue read once), 2,379 MB after 15 minutes, then about 2 MB a minute while every shop is
+    asked (about 2.3 KB an answer); by the look's pace a night's answers add 0.3 to 0.4 GB, and recording adds
+    more for a moment. Its unit slows it at 4 GB and stops it at 5 (`picwise-checks.service`): a round stopped so
+    records no night, and nothing is applied the next morning. `prepare-runs.yml` prints its memory; read it on
+    23/11 before 03:05 UTC or in the morning's journal (a line of the kernel about memory, the round's result).
   - **Owed:** the Greek page of the rules in the Project's docs (`claude/PicWise-kanones-elegchon.md`) still says
     that the two Proposed rules wait for his yes: bring it in step (his yes of 22/11 to both; Dean Morris Cards).
     `main` is at `b6915e3` (19/11): bringing it level with the site is the owner's yes (it builds the Vercel backup).
