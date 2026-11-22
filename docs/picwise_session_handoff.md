@@ -66,6 +66,14 @@ a decision came about.
     has ended (03:05 UTC) before the preparation (04:17), so the night's sum is the site's alone with the
     preparation's 15.1 GB, as before (21.8 GB on 22/11, of the server's 22.9: the standing limit, the owner means
     to take a larger server).
+  - **Next by the work split, after the first night is read: task 6 (FABLE), not begun: the question "is it the
+    kind itself"** (the split's list is in the item of 21/11 13:50, below: its gate, the rescue of the hidden real
+    products, the independent meter; the owner's plan of 21/11, step 8). The owner, 22/11 14:31, after the
+    deployment: «Με τα συναφή είδη τι έγινε; για παράδειγμα ρολόγια και δείχνει λουράκια ... επειδή πάντα δείχνει
+    τα φθηνότερα υπάρχει αυτό το πρόβλημα». Told: the checks deployed today do not touch it (they check the page,
+    the stock, the price, the photo, the category); it is task 6, then task 8 (OPUS: the search's questions and the
+    accessories as a choice of their own); until then the price bar of 12/11 is the way around it. A change of
+    task 6 that hides products has its own look before its «ανέβασε» (task 7's kind of look).
   - **To watch: the bot's memory.** It keeps every answer of the round until it records the night: 2,203 MB at
     its start (the catalogue read once), 2,379 MB after 15 minutes, then about 2 MB a minute while every shop is
     asked (about 2.3 KB an answer); by the look's pace a night's answers add 0.3 to 0.4 GB, and recording adds
