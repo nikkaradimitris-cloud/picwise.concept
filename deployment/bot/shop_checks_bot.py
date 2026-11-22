@@ -91,10 +91,16 @@ OWNER_WORDS = ROOT / "data" / "checks_owner_words.json"
 # What only a challenge page writes (a refusal that answers 403, 429 or 503, or a small 200).
 # Not a reCAPTCHA box or Cloudflare's script, which shops put on every page: the look of
 # 22/11 (run 44971464930) found them on GamingKit's and Webbs Motorcycles' product pages,
-# whole and readable, which were read as challenges and so as refusals.
+# whole and readable, which were read as challenges and so as refusals. A wall that makes a
+# browser work or wait before the page (Anubis on Plusshop UK's and Bazta UK's pages; "One
+# moment, please..." on Luxe Mattress's and Elixir's: the looks of 22/11, runs 44972305197
+# and 44973108097) is a challenge too: never got around (the rules, 4.4).
 CHALLENGE_SIGNS = (b"_cf_chl_opt", b"cf-chl-bypass", b"<title>Just a moment", b"Attention Required! | Cloudflare",
                    b"px-captcha", b"Incapsula incident ID", b"_Incapsula_Resource?CWUDNSAI", b"captcha-delivery.com",
-                   b"/.well-known/sgcaptcha", b"Sucuri WebSite Firewall")
+                   b"/.well-known/sgcaptcha", b"Sucuri WebSite Firewall",
+                   b"anubis_challenge", b"within.website/x/cmd/anubis", b"Making sure you&#39;re not a bot!",
+                   b"Making sure you're not a bot!", b"<title>One moment, please...</title>",
+                   b"Please wait while your request is being verified")
 CHALLENGE_MAX_BYTES = 100_000
 SHOPS_LISTED = 60
 

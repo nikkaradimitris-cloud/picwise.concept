@@ -11,7 +11,7 @@
 # file. The repository is public and so is this log: the server's names are masked; the bot
 # prints counts and shop names only, never an address, an id or a key.
 #
-# Run: 2026-11-22 04:00 Athens (task 5: challenge pages told apart, Magento's price box; the shops not read), 10 a shop (to run again, change this line and push).
+# Run: 2026-11-22 04:50 Athens (task 5: the walls of Anubis and «One moment» read as refusals), 10 a shop (to run again, change this line and push).
 name: Server look at the checks (read-only)
 on:
   push:
@@ -90,9 +90,8 @@ jobs:
         if: steps.connect.outcome == 'success'
         run: |
           python3 .github/scripts/bundle_checks.py --dry --sample 10 --minutes 15 \
-            --shop GamingKit --shop "Webbs Motorcycles" --shop Pro-Camera --shop "Plusshop UK" --shop "Bazta UK" \
-            --shop "Luxe Mattress Affiliation" --shop "Elixir Garden Supplies" --shop "Aosom UK" --shop "TV Cables" \
-            --shop InterRose --shop "Dean Morris Cards" > "$RUNNER_TEMP/checks_bundle.py"
+            --shop "Plusshop UK" --shop "Bazta UK" --shop "Luxe Mattress Affiliation" \
+            --shop "Elixir Garden Supplies" > "$RUNNER_TEMP/checks_bundle.py"
           # In a unit of its own with its own limits: the prepared catalogue read once beside
           # the site (about 2 GB), the release's code on its path, Awin's token from the
           # server's secrets for its programmes (never printed), nothing writable under /srv.

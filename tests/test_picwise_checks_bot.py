@@ -154,6 +154,11 @@ class Rules4HowAShopIsAskedTests(unittest.TestCase):
         # A 404 page is never a challenge, whatever it writes.
         self.assertFalse(bot.is_challenge(bot.Answer(404, "text/html", b"<title>Just a moment</title>")))
         self.assertTrue(bot.is_challenge(bot.Answer(403, "text/html", b"<title>Just a moment...</title>")))
+        # A wall that makes a browser work or wait first: a challenge, never got around.
+        anubis = b'<title>Making sure you&#39;re not a bot!</title><script id="anubis_challenge">{}</script>'
+        moment = b"<title>One moment, please...</title><p>Please wait while your request is being verified...</p>"
+        self.assertTrue(bot.is_challenge(bot.Answer(200, "text/html", anubis + b" " * 6_000)))
+        self.assertTrue(bot.is_challenge(bot.Answer(200, "text/html", moment + b" " * 12_000)))
 
     def test_nothing_is_asked_past_the_deadline(self) -> None:
         shop = Shop({"/robots.txt": bot.Answer(404)}, clock_step=10.0)
