@@ -48,10 +48,12 @@ STOP_AFTER_SECONDS = 6000.0
 WORKERS = 8
 ROUNDS = 6
 # What a thousand readings cost in the trials of 22/11, and the share of the first readings
-# that called for a second: for a dry run's estimate only.
+# that called for a second (of a kind the product has: 47 of 453 and 76 of 470; of a kind the
+# lists took: 22 of 160): for a dry run's estimate only.
 FIRST_PER_THOUSAND = 0.037
 SECOND_PER_THOUSAND = 0.58
 SECOND_SHARE = (0.10, 0.16)
+TAKEN_SHARE = 0.14
 # A day no reading is younger than: the rounds are lived with no brake, which are for the
 # nights after the owner's look.
 NO_BRAKE = "9999-12-31"
@@ -119,13 +121,19 @@ def named(items: list[dict[str, Any]]) -> str:
 
 
 def estimate(items: list[dict[str, Any]]) -> str:
-    """A dry run's guess of the whole asking's cost, from the first round's questions."""
-    firsts = sum(1 for item in items if item.get("want") == "first")
-    seconds = sum(1 for item in items if item.get("want") == "second")
-    low, high = (seconds + share * firsts for share in SECOND_SHARE)
-    return (f"by the trials of 22/11: the first readings about ${firsts * FIRST_PER_THOUSAND / 1000:.2f}; the second,"
-            f" {low:,.0f} to {high:,.0f} before the first cards are read again, ${low * SECOND_PER_THOUSAND / 1000:.2f} to"
-            f" ${high * SECOND_PER_THOUSAND / 1000:.2f}; the first cards themselves come in the rounds after")
+    """A dry run's guess of the first round's cost, from its questions: every first reading;
+    a second for each question named for one, for each first card, and for the trials' share
+    of the rest."""
+    firsts = [item for item in items if item.get("want") == "first"]
+    cards = sum(1 for item in firsts if item.get("why") == "first card")
+    taken = sum(1 for item in firsts if item.get("why") == "taken")
+    sure = len(items) - len(firsts) + cards + TAKEN_SHARE * taken
+    low, high = (sure + share * (len(firsts) - cards - taken) for share in SECOND_SHARE)
+    first_cost = len(firsts) * FIRST_PER_THOUSAND / 1000
+    return (f"by the trials of 22/11: the first readings about ${first_cost:.2f}; the second, {low:,.0f} to {high:,.0f},"
+            f" ${low * SECOND_PER_THOUSAND / 1000:.2f} to ${high * SECOND_PER_THOUSAND / 1000:.2f}; in all"
+            f" ${first_cost + low * SECOND_PER_THOUSAND / 1000:.2f} to ${first_cost + high * SECOND_PER_THOUSAND / 1000:.2f},"
+            " before the rounds after it (the first cards that take the place of those that leave)")
 
 
 def by_shop(items: list[dict[str, Any]], listed: int = 12) -> str:

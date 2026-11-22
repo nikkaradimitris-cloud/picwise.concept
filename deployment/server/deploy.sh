@@ -122,6 +122,8 @@ if [ -n "$ASSIST_ENV_FILE" ] && [ -s "$ASSIST_ENV_FILE" ] && grep -q '^ANTHROPIC
   # answers file). While data/kind_itself_switch.json is false, nothing is named or read.
   install -d -o picwise-assist -g picwise-assist -m 2750 "$ASSIST/itself"
   install -d -o picwise -g picwise-assist -m 2770 "$ASSIST/itself/jobs"
+  # The quality meter's verdicts and its day's note (the same rules, section 9).
+  install -d -o picwise-assist -g picwise-assist -m 2750 "$ASSIST/meter"
   ASSIST_ON=yes
   echo "Anthropic key: set"
 else
@@ -145,7 +147,8 @@ done
 # The AI layer's services, started below only with its key.
 install -m 644 "$RELEASE/deployment/server/picwise-assist.service" /etc/systemd/system/
 for unit in picwise-families.service picwise-family-jobs.service picwise-family-jobs.timer \
-  picwise-shelves.service picwise-shelves.timer picwise-itself.service picwise-itself.timer; do
+  picwise-shelves.service picwise-shelves.timer picwise-itself.service picwise-itself.timer \
+  picwise-meter.service picwise-meter.timer; do
   install -m 644 "$RELEASE/deployment/server/$unit" /etc/systemd/system/
 done
 systemctl daemon-reload
@@ -199,7 +202,7 @@ case "$STATE" in
       picwise-shops.timer picwise-photos.service picwise-photos.timer picwise-offers.service picwise-offers.timer
       picwise-assist.service picwise-families.service picwise-family-jobs.service picwise-family-jobs.timer
       picwise-checks.service picwise-checks.timer picwise-shelves.service picwise-shelves.timer
-      picwise-itself.service picwise-itself.timer"
+      picwise-itself.service picwise-itself.timer picwise-meter.service picwise-meter.timer"
     if [ -n "$PREVIOUS" ] && [ -d "$APP/$PREVIOUS" ] && [ "$(readlink -f "$APP/$PREVIOUS")" != "$RELEASE" ]; then
       ln -sfn "$PREVIOUS" "$APP/current.new"
       mv -T "$APP/current.new" "$APP/current"
@@ -284,10 +287,13 @@ if [ "$ASSIST_ON" = yes ]; then
   # The question "is it the kind itself", each morning after the categories; it finds
   # nothing to ask while the preparation names nothing (its switch false).
   systemctl enable --now picwise-itself.timer
+  # The quality meter, each morning after them: the first cards of fixed searches, judged
+  # (at most $2 a day; its verdicts change nothing shown).
+  systemctl enable --now picwise-meter.timer
 else
   systemctl disable --now picwise-assist.service > /dev/null 2>&1 || true
   systemctl disable --now picwise-families.service picwise-family-jobs.timer picwise-shelves.timer \
-    picwise-itself.timer > /dev/null 2>&1 || true
+    picwise-itself.timer picwise-meter.timer > /dev/null 2>&1 || true
   echo "assist: off, no key"
 fi
 

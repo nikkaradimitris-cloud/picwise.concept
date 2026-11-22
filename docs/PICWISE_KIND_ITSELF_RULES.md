@@ -40,16 +40,24 @@ Each rule names whose it is:
 - **Όταν αλλάζουν τα λόγια ενός είδους** (π.χ. μπαίνει νέο όνομα), οι παλιές απαντήσεις
   μένουν σε ισχύ μέχρι να έρθουν οι νέες. Κανένα αξεσουάρ δεν ξαναφαίνεται στο μεταξύ.
 - **Μετρητής ποιότητας (το βήμα 9).** Κάθε μέρα ένα τρίτο, πιο δυνατό μοντέλο (Opus), που δεν
-  έχει σχέση με τα άλλα δύο, κοιτάζει τις πρώτες κάρτες των ίδιων 40 αναζητήσεων και μέρος των
-  ειδών, και το email σου γράφει μία γραμμή: πόσες κάρτες ήταν σωστές.
-- **Κόστος.** Η πρώτη φορά (όλα τα προϊόντα): περίπου 10 με 15 $, με όριο 20 $ (το σχέδιό σου
-  έλεγε περίπου 25 $). Μετά, λίγα σεντς το βράδυ. Οι δοκιμές της 22/11 κόστισαν 1,64 $.
+  έχει σχέση με τα άλλα δύο, κοιτάζει τις πρώτες 12 κάρτες των ίδιων 40 αναζητήσεων και το ένα
+  έβδομο των ειδών (όλα τα είδη μέσα σε μια εβδομάδα), όπως τις βλέπει ο επισκέπτης, και το
+  email σου γράφει μία γραμμή: πόσες κάρτες ήταν σωστές, δίπλα στη χθεσινή μέρα. Κρίνει σαν
+  αγοραστής, άρα μετράει και τα λάθη της αναζήτησης (εργασία 8), όχι μόνο αυτά που λύνονται εδώ.
+- **Κόστος.** Η πρώτη φορά (όλα τα προϊόντα): περίπου 11 με 14 $, με όριο 20 $ (το σχέδιό σου
+  έλεγε περίπου 25 $). Μετά, λίγα σεντς το βράδυ, με φρένο 5 $. Ο μετρητής: περίπου 1,5 $ την
+  πρώτη μέρα, 0,8 $ τις επόμενες έξι, μετά σεντς· φρένο 2 $ τη μέρα. Οι δοκιμές της 22/11
+  κόστισαν 1,64 $.
 - **Τι ΔΕΝ λύνει.** Τα «car tyres» που δείχνουν και λάστιχα μηχανής, και η επιλογή «αξεσουάρ»
   μετά τα προϊόντα, είναι η εργασία 8 (ερωτήσεις στην αναζήτηση). Εδώ οι απαντήσεις του AI
   κρατούν και τι είναι το κάθε προϊόν, ώστε η εργασία 8 να μη χρειαστεί να ξαναρωτήσει.
-- **Πότε ανεβαίνει.** Όχι τώρα. Πρώτα χτίζεται και δοκιμάζεται, μετά γίνεται η πρώτη ερώτηση
-  όλων των προϊόντων, μετά σου δείχνω ανά είδος τι βγαίνει και τι γυρίζει, και ανεβαίνει μόνο
-  με το «ανέβασε» σου.
+- **Πότε ανεβαίνει.** Όχι τώρα. Χτίστηκε και δοκιμάστηκε (22/11), με τον διακόπτη κλειστό.
+  Μένουν: η πρώτη ερώτηση όλων των προϊόντων (με τη λέξη σου για το κόστος), μετά σου δείχνω
+  ανά είδος τι βγαίνει και τι γυρίζει, και ανεβαίνει μόνο με το «ανέβασε» σου.
+- **Το πλαφόν ανά κατάστημα (22/11, 15:51)** θα βγάλει πολλά προϊόντα τεσσάρων καταστημάτων.
+  Σχεδόν οι μισές ερωτήσεις (47%) είναι για προϊόντα αυτών των καταστημάτων. Αν η πρώτη
+  ερώτηση γίνει πριν από το πλαφόν, περίπου 4 $ θα πάνε σε προϊόντα που μετά θα φύγουν· αν
+  γίνει μετά, η διόρθωση αργεί όσο αργεί το πλαφόν.
 
 ## 1. What it is for, and what was measured
 
@@ -262,8 +270,8 @@ title, a link or an id: the file names no product.
 
 - The first asking (every question of the catalogue): about 73,000 first readings, about $3;
   second readings for what the first would move and for the first cards, by the trials'
-  shares about 13,000 to 20,000, $7 to $12. **About $10 to $15, stopped before $20.** (His
-  plan: about $25.)
+  shares about 14,000 to 19,000, $8 to $11. **About $11 to $14, stopped before $20.** (His
+  plan: about $25. The dry run of 22/11 counted the questions: section 14.)
 - A night after it: the questions of the new products, cents.
 - **The brake** (owner: «μόνο ένα φρένο για λάθη»): the nightly asking stops for the night
   before passing $5; what it did not ask waits for the next morning. The health run tells a
@@ -287,7 +295,7 @@ night after it. And the search's work changes kinds' names often. So:
 - What the new answers change of what is shown passes the brakes (7) like any answer.
 
 The prompt is pinned to the version by a test, so that it is never changed without every
-product being asked again on purpose: about $10 to $15, over three mornings or more (the
+product being asked again on purpose: about $11 to $14, over three mornings or more (the
 brake of 4.6), each night's changes passing the brakes.
 
 ## 5. What an answer does
@@ -439,30 +447,45 @@ preparation: one more night at the gate for a new product, in that case alone.
 **Proposed** (the owner's step 9; the second opinion of 21/11: "Haiku judges today what Haiku
 would filter").
 
-- **Who judges**: Claude Opus 5.5, which reads no part of the gate: not its prompt, not its
-  answers, not the kinds' words. It is given what a visitor sees: the search's words and each
-  card's title, shop and price, read from the site's own pages as they are drawn, and answers
-  for each card whether it is what the buyer asked for (yes, no, cannot tell) and why in a
-  few words.
+- **Who judges**: Claude Opus 5.5 (`picwise_ai.meter`), which reads no part of the gate: not
+  its prompt, not its answers, not the kinds or their words. It is given what a visitor sees:
+  the search's words and each card's title, shop and price, read from the site's own pages
+  as they are drawn (`/search?q=…&shown=12`, asked on the server itself with no script: no
+  visitor's search is logged), and answers for each card whether it is what the buyer asked
+  for (yes, no, cannot tell) and why in a few words. It judges as a buyer: a pet's version of
+  a thing is wrong unless the search asks for pets, a set of two main products is wrong, a
+  motorcycle tyre is wrong for "car tyres". So it counts the search's own faults too (task 8
+  of the work split), not only this gate's.
 - **What is judged, every day**: the first 12 cards of the measure after's 40 searches (the
   same every day, so that one day can be read against another); and the first 12 cards of
   each kind's first name, a seventh of the kinds a day, every kind within a week. The
   visitors' own most frequent searches are a later step: their words are private and the
   notes are public (`docs/PICWISE_DAILY_WORK.md`).
 - **A card is judged once**: its verdict is kept by the search's words and the card's title,
-  shop and price; a day pays only for the cards it has not seen. About $1 the first day,
-  cents after; stopped before $2 a day.
-- **What it says**: for the 40 searches, the cards right of those judged, beside the day
-  before; for the week's kinds, the same; the wrong cards by title and shop. One line in the
-  owner's daily email («Ποιότητα: 461 από 480 κάρτες σωστές (96%)· χθες 95%»). A fall of more
-  than 3 points from the day before goes first in the report, like a limit.
+  shop and price; a day pays only for the cards it has not seen. By the trial's price for
+  Opus, the first day about $1.50 (the 40 searches and the first seventh of the kinds), each
+  of the six days after it about $0.80 (a new seventh of the kinds), then cents a day.
+  **Stopped before $2 a day**: what it did not judge is counted as not judged and waits for
+  the next day.
+- **What it says** (`picwise-meter.service`, 06:20 UTC, `deployment/server/meter_service.py`;
+  its note `day.json`, one line a day in `days.jsonl`): for the 40 searches, the cards right
+  of those judged (yes of yes and no), beside the day before; for the day's kinds and the
+  last seven days' kinds, the same; the wrong cards by title, shop and price. The health run
+  prints its lines ("quality …"); one line of them goes in the owner's daily email
+  («Ποιότητα: 461 από 480 κάρτες σωστές (96%)· χθες 95%»). Told first, as limits: a fall of
+  more than 3 points from the day before; a day it did not run; a stop at its $2; a page of
+  the 40 searches it could not read.
 - **It decides nothing.** Its verdicts never change what is shown. Where it calls wrong a
   card the gate read as the kind itself, the session reads why and, when the cause is the
   question or a kind's words, changes those (4.7), never the one product.
 
 Opus is stricter than the site's kinds (trial 1: a chef's jacket no jacket), so its number
 will not reach 100%; what it is for is the day against the day before, and the wrong cards
-by name.
+by name. Its instructions are pinned by a test: changed, the days before are not read
+beside the days after (`meter_service.VERSION`).
+
+It starts with the deployment that installs its unit, whatever the gate's switch: deployed
+before the switch is turned, it measures the days before the gate too.
 
 ## 10. What the night's note says
 
@@ -493,7 +516,7 @@ meter's line, the note's limits); `PROGRESS.md` and the handoff.
 ## 12. The order of work, and the look before the «ανέβασε»
 
 1. The gate, the asking and the meter built on the work branch, with tests; the switch false.
-   (22/11: the gate and the asking built; the meter not yet.)
+   (22/11: built.)
 2. The first asking (8.1), on the owner's word for its cost.
 3. **The look** (task 7's kind): the catalogue prepared on GitHub's runner with the answers
    and the switch on, as the server would; per kind, what leaves by answer and what comes
@@ -512,9 +535,12 @@ product).
 
 1. **A set** (a toaster with a kettle, a microwave with a kettle and a toaster): out of the
    kind's search, found by its words (proposed); or left in.
-2. **The first asking's cost**: about $10 to $15, stopped before $20; on his word when the
-   build is ready.
-3. The proposed rules of 4.1, 4.4, 4.7, 5.5, 6, 7 and 9, each his to change.
+2. **The first asking's cost**: about $11 to $14, stopped before $20; on his word. And
+   **when**: now, or after the cap per shop he decided on 22/11 (about $4 of it is for
+   products that cap will remove; after it, the fix waits for the cap).
+3. **The meter's start**: with the deployment that installs it (about $1.50 the first day,
+   $0.80 the six after, then cents; never over $2 a day).
+4. The proposed rules of 4.1, 4.4, 4.7, 5.5, 6, 7 and 9, each his to change.
 
 ## 14. Built
 
@@ -542,11 +568,27 @@ product).
   in `deploy.sh`, the answers file and the questions' folder in `picwise-prepare.service`;
   `deployment/server/ask_itself.py`, `.github/workflows/ai-itself-ask.yml` (dry);
   `tests/test_picwise_itself_asking.py`.
-- **The health run's lines and limits** (section 10): `deployment/server/print_health.py`;
+- **The meter** (section 9): `src/picwise_ai/meter.py` (the judge's instructions, the
+  request, the verdicts checked, a card's key); `deployment/server/meter_service.py`,
+  `picwise-meter.service` and `.timer`, its folder in `deploy.sh`; `tests/test_picwise_meter.py`.
+- **The health run's lines and limits** (sections 9 and 10): `deployment/server/print_health.py`;
   `tests/test_picwise_server_health.py`.
 
-Not built yet: the meter (section 9); the look of section 12.3 (task 7's kind), which needs
-the first asking's answers.
+Not built yet: the look of section 12.3 (task 7's kind), which needs the first asking's
+answers: the catalogue prepared on GitHub's runner with the answers and the switch on, per
+kind what leaves and what comes back with examples, the Recommended of each of the 40
+searches before and after, and the meter's judge on both (its cards then come from the
+copies, not from the site's pages).
+
+**The dry run of the first asking** (22/11, run 45031171329, no AI): on the server's catalogue
+of 22/11 11:26 UTC, 398,957 products, 141,830 with a question; none whose kinds read with
+this code are not the prepared file's; the first round names 73,290 questions in 292 kinds
+(62,298 of a kind the product has, 3,904 of a kind the lists took, 7,088 first cards), in 10
+seconds; each kind's first cards worked out in 4 seconds (5,932 cards in 290 kinds). By the
+trials' shares the first round costs $10.75 to $12.92, before the rounds after it: **about
+$11 to $14 in all.** By shop: GamingKit 15,561 questions, InStock UK 12,132, Back to the
+Office 8,533, Aosom UK 4,496, Tooled Up 4,257, PCHUB.UK 2,815. The four shops the owner's
+cap per shop of 22/11 (15:51) will cut hold 34,765 of the 73,290 (47%).
 
 Known, and left as they are:
 
@@ -554,5 +596,7 @@ Known, and left as they are:
   reads none, and shows the catalogue as the lists read it.
 - A product whose title or brand changes has a new key, so a new question: shown already,
   it stays as the lists read it until answered (one or two nights).
-- The night's preparation works out each kind's first cards once more (section 3); how long
-  that takes on the server's catalogue is measured by the dry run of 8.1 and by the look.
+- The night's preparation reads every product's answers and works out each kind's first
+  cards once more: seconds on GitHub's runner for the catalogue's 399,000 products (the dry
+  run), over 1.6 million rows on the server. The preparation takes 28.4 of the health run's
+  30 minutes today: the look measures what the gate adds.

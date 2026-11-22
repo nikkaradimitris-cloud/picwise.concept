@@ -426,7 +426,7 @@ class TheMorningsService(unittest.TestCase):
         self.assertEqual(deploy.count("picwise-itself.service picwise-itself.timer"), 2)
         # Without the key: no questions written, no timer.
         self.assertIn('"${ASSIST:?}/itself/jobs"', deploy)
-        self.assertIn("picwise-itself.timer > /dev/null", deploy)
+        self.assertIn("picwise-shelves.timer \\\n    picwise-itself.timer", deploy)
 
 
 class TheFirstAsking(unittest.TestCase):
@@ -482,7 +482,10 @@ class TheFirstAsking(unittest.TestCase):
         records, done, _night, said = self._rounds(None)
         self.assertEqual((records, done), ({}, []))
         self.assertIn("round 1: 10 questions in 1 kinds: 10 for a first reading, 0 for a second", said[0])
-        self.assertIn("by the trials of 22/11", said[1])
+        # Ten first readings; the ten are first cards, so ten second readings too.
+        self.assertEqual(said[1], "by the trials of 22/11: the first readings about $0.00; the second, 10 to 10, $0.01 to $0.01;"
+                                  " in all $0.01 to $0.01, before the rounds after it (the first cards that take the place of"
+                                  " those that leave)")
         self.assertEqual(said[2], "the questions by shop, 1 shops: Fictional Store One 10")
         # The ten products are one kind's first cards, all of them.
         self.assertIn("10 cards in 1 kinds, 10 questions", said[3])
@@ -529,6 +532,18 @@ class TheFirstAsking(unittest.TestCase):
             finally:
                 state._PREPARED_STATE.clear()
                 state.remember_product_kinds({})
+
+
+class TheDryRunsGuess(unittest.TestCase):
+    def test_the_first_rounds_cost_by_the_trials_shares(self) -> None:
+        # The dry run of 22/11 on the server's catalogue (run 45031171329): 73,290 questions.
+        items = ([_item("k", "x")] * 62298 + [_item("k", "x", why="taken")] * 3904 + [_item("k", "x", why="first card")] * 7088)
+        self.assertEqual(
+            ask_itself.estimate(items),
+            "by the trials of 22/11: the first readings about $2.71; the second, 13,864 to 17,602, $8.04 to $10.21;"
+            " in all $10.75 to $12.92, before the rounds after it (the first cards that take the place of those that leave)")
+        # A question named for its second reading is counted whole.
+        self.assertIn("the second, 2 to 2,", ask_itself.estimate([_item("k", "x", want="second")] * 2))
 
 
 class TheFirstAskingsWorkflow(unittest.TestCase):

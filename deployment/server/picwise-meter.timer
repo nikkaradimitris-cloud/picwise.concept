@@ -1,0 +1,9 @@
+[Unit]
+Description=PicWise: the first cards of fixed searches judged, every morning after the preparation and the askings
+
+[Timer]
+OnCalendar=*-*-* 06:20:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -85,6 +85,7 @@ class _AServer:
             mock.patch.object(print_health, "CHECKS_NOTE", self.folder / "checks-note.json"),
             mock.patch.object(print_health, "SHELVES_NOTE", self.folder / "shelves-night.json"),
             mock.patch.object(print_health, "ITSELF_NOTE", self.folder / "itself-night.json"),
+            mock.patch.object(print_health, "METER_NOTE", self.folder / "meter-day.json"),
             mock.patch.object(print_health, "site_memory_gb", lambda *a, **k: 4.0),
             mock.patch.object(print_health, "memory_available_gb", lambda *a, **k: (23.4, 15.2)),
         ]
@@ -319,6 +320,53 @@ class KindItselfHealthTests(_AServer, unittest.TestCase):
                                                        "stopped": "the answers file cannot be read: nothing asked"})
         self.assertIn("over the limit: the answers file of \"is it the kind itself\" cannot be read: nothing was asked",
                       self.over(self.printed()))
+
+
+class QualityMeterHealthTests(_AServer, unittest.TestCase):
+    """The quality meter's day (`docs/PICWISE_KIND_ITSELF_RULES.md`, 9)."""
+
+    def _day(self, **more) -> None:
+        self.write(self.folder / "meter-day.json", {
+            "day": "2026-11-22",
+            "searches": {"searches": 40, "pages_failed": 0, "cards": 471, "yes": 430, "no": 38, "unsure": 3, "not_judged": 0,
+                         "share": 0.9188},
+            "kinds": {"of_the_day": 45, "cards": 500, "yes": 450, "no": 40, "unsure": 10, "not_judged": 0, "share": 0.9184},
+            "kinds_week": {"days": 7, "yes": 3000, "no": 300, "share": 0.9091},
+            "before": {"day": "2026-11-21", "share": 0.9102}, "fell_points": -0.9, "fell": False,
+            "wrong": [{"part": "search", "q": "printer", "title": "Fixturon Pickup Roller", "shop": "Fixture Shop via Awin",
+                       "price": "£3.99", "why": "a roller for printers"},
+                      {"part": "kind", "q": "humidor", "title": "Cigar Cutter", "shop": "Other via Awin", "price": "£5.00",
+                       "why": "a cutter"}],
+            "wrong_in_all": 78, "judged_today": 31, "calls": 9, "failed_calls": 0, "cost_usd": 0.0712, "stopped": "",
+            "asked": True, **more})
+
+    def test_before_its_first_day_nothing_is_said(self) -> None:
+        self.assertNotIn("quality", "\n".join(self.printed()))
+
+    def test_the_day_is_said_with_the_day_before_and_the_wrong_cards_of_the_searches(self) -> None:
+        self._day()
+        lines = self.printed()
+        self.assertIn("quality on 2026-11-22, the 40 searches: 430 of 468 cards right (91.9%); 3 cannot be told, 0 not judged; "
+                      "the day before (2026-11-21) 91.0%", lines)
+        self.assertIn("quality, the day's 45 kinds: 450 of 490 cards right (91.8%); the last 7 days' kinds 90.9%; "
+                      "31 cards judged today, $0.07", lines)
+        self.assertIn('quality, wrong for "printer": Fixturon Pickup Roller (Fixture Shop via Awin, £3.99): a roller for printers',
+                      lines)
+        # The kinds' wrong cards are in the note, not in the log.
+        self.assertNotIn("Cigar Cutter", "\n".join(lines))
+        self.assertEqual(lines[-1], "within every limit")
+
+    def test_a_fall_a_stop_an_old_day_and_a_page_that_failed_are_limits(self) -> None:
+        self._day(fell=True, fell_points=4.2, stopped="its limit of $2.00")
+        over = self.over(self.printed())
+        self.assertEqual(over, [
+            "over the limit: the quality of the 40 searches fell 4.2 points from the day before: 91.0% to 91.9%",
+            "over the limit: the quality meter stopped at its day's $2 (its limit of $2.00)",
+        ])
+        self._day(day="2026-11-19")
+        self.assertIn("over the limit: the quality meter recorded no day since 2026-11-19", self.over(self.printed()))
+        self._day(searches={"yes": 400, "no": 30, "unsure": 0, "not_judged": 0, "pages_failed": 2, "share": 0.93})
+        self.assertIn("over the limit: the quality meter could not read 2 of the 40 searches' pages", self.over(self.printed()))
 
 
 class CountSearchesTests(unittest.TestCase):

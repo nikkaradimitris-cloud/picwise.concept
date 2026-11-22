@@ -53,6 +53,10 @@ CHECKS_NOTE = SHARED / "checks" / "note.json"
 SHELVES_NOTE = Path("/srv/picwise/assist/shelves/night.json")
 # The question "is it the kind itself" (docs/PICWISE_KIND_ITSELF_RULES.md), its morning's note.
 ITSELF_NOTE = Path("/srv/picwise/assist/itself/night.json")
+# The quality meter (the same rules, section 9): its day's note.
+METER_NOTE = Path("/srv/picwise/assist/meter/day.json")
+# The wrong cards of the 40 searches printed, at most.
+METER_WRONG_PRINTED = 15
 # The checks' rules, 5.6.2 (owner, 22/11: «Σε 3 μέρες»): a shop that cannot be checked leaves on its day 4.
 CHECKS_OUT_ON_DAY = 4
 SITE_USER = "picwise"
@@ -377,6 +381,50 @@ def look_at_itself(check: Health) -> None:
         check.limit("cannot be read" in stopped, "the answers file of \"is it the kind itself\" cannot be read: nothing was asked")
 
 
+def _percent(share: object) -> str:
+    return f"{100 * float(share):.1f}%" if isinstance(share, (int, float)) else "none judged"
+
+
+def look_at_meter(check: Health) -> None:
+    """The quality meter (docs/PICWISE_KIND_ITSELF_RULES.md, 9): the day's note of
+    `picwise-meter.service` (`METER_NOTE`): the cards right of those judged, beside the day
+    before; the wrong cards by title and shop. Nothing is said before its first day."""
+    note = read_json(METER_NOTE)
+    if note is None:
+        return
+    searches = note.get("searches") if isinstance(note.get("searches"), dict) else {}
+    kinds = note.get("kinds") if isinstance(note.get("kinds"), dict) else {}
+    week = note.get("kinds_week") if isinstance(note.get("kinds_week"), dict) else {}
+    before = note.get("before") if isinstance(note.get("before"), dict) else None
+    day = str(note.get("day") or "")
+    right, wrong = int(searches.get("yes") or 0), int(searches.get("no") or 0)
+    check.say(f"quality on {day or 'no date'}, the 40 searches: {right:,} of {right + wrong:,} cards right "
+              f"({_percent(searches.get('share'))}); {int(searches.get('unsure') or 0):,} cannot be told, "
+              f"{int(searches.get('not_judged') or 0):,} not judged"
+              + (f"; the day before ({before.get('day')}) {_percent(before.get('share'))}" if before else "; no day before"))
+    kinds_right, kinds_wrong = int(kinds.get("yes") or 0), int(kinds.get("no") or 0)
+    check.say(f"quality, the day's {int(kinds.get('of_the_day') or 0)} kinds: {kinds_right:,} of {kinds_right + kinds_wrong:,} "
+              f"cards right ({_percent(kinds.get('share'))}); the last {int(week.get('days') or 0)} days' kinds "
+              f"{_percent(week.get('share'))}; {int(note.get('judged_today') or 0):,} cards judged today, "
+              f"${float(note.get('cost_usd') or 0):.2f}"
+              + (f"; stopped at {note.get('stopped')}" if note.get("stopped") else ""))
+    listed = [card for card in note.get("wrong") or [] if isinstance(card, dict) and card.get("part") == "search"]
+    for card in listed[:METER_WRONG_PRINTED]:
+        check.say(f"quality, wrong for \"{card.get('q')}\": {str(card.get('title') or '')[:90]} "
+                  f"({card.get('shop')}, {card.get('price')}): {card.get('why')}")
+    try:
+        late = (check.now.date() - datetime.fromisoformat(day).date()).days
+    except ValueError:
+        late = None
+    check.limit(late is None or late > 1, f"the quality meter recorded no day since {day or 'ever'}")
+    if note.get("fell") and before:
+        check.limit(True, f"the quality of the 40 searches fell {float(note.get('fell_points') or 0):.1f} points from the day "
+                          f"before: {_percent(before.get('share'))} to {_percent(searches.get('share'))}")
+    check.limit("limit" in str(note.get("stopped") or ""), f"the quality meter stopped at its day's $2 ({note.get('stopped')})")
+    check.limit(int(searches.get("pages_failed") or 0) > 0,
+                f"the quality meter could not read {int(searches.get('pages_failed') or 0)} of the 40 searches' pages")
+
+
 def site_memory_gb(proc: Path = Path("/proc"), user: str = SITE_USER) -> float:
     """What the site's processes hold in memory (the user it runs as)."""
     try:
@@ -446,6 +494,7 @@ def main(*, now: datetime | None = None, runner: Run = run) -> int:
     look_at_photos(check, runner)
     look_at_checks(check, runner)
     look_at_itself(check)
+    look_at_meter(check)
     look_at_resources(check, peak_gb)
     look_at_ai(check)
     for line in check.lines:
