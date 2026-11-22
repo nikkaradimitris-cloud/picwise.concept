@@ -292,6 +292,15 @@ def may_enter(product: ProviderProduct) -> bool:
     return key in _ACTIVE["enter"] and key not in _ACTIVE["not_entering"] and key not in _ACTIVE["unchecked"]
 
 
+def may_enter_without_memory(product: ProviderProduct) -> bool:
+    """The gate on a night the cap has no memory of the night before (its pool missing or
+    unreadable): it cannot tell a new product from one shown last night, and `may_enter`
+    would hold back every product of the site. So only the products the decisions name as
+    not shown until checked (9.3) are held; every other product may take a place, as before
+    the checks. The preparation says so in its note, and the health run passes a limit."""
+    return _ACTIVE is None or _key(product) not in _ACTIVE["unchecked"]
+
+
 def unchecked_row_keys(products: Sequence[ProviderProduct], row_key: Any) -> frozenset[str]:
     """9.3 and 9.5: the cap's keys (`row_key`) of the products not shown until they are
     checked. They leave the cap's memory of the night before, so that they wait at its gate

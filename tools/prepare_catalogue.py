@@ -212,6 +212,8 @@ class _Cap:
         self.candidates: dict[str, object] | None = None
         # What the AI is asked next (the checks' rules 5.5): the products kept or next with no category yet.
         self.shelf: list[dict[str, object]] = []
+        # Why the checks' gate did not stand tonight, when it did not.
+        self.gate_off = ""
 
     def __call__(self, products, kinds, feed_ctx):
         try:
@@ -222,6 +224,12 @@ class _Cap:
             share, category_max = cap_limits()
             kept_before = read_google_pool(google_pool_path(self.out))
             gate = checks_applied.may_enter if checks_applied.gate_on() else None
+            if gate is not None and not kept_before:
+                # No memory of the night before (the pool missing or unreadable): the gate would
+                # take every product for a new one and hold the whole site back. Tonight it holds
+                # only the products the checks name as not shown until checked.
+                gate = checks_applied.may_enter_without_memory
+                self.gate_off = "the night before's pool could not be read: only the products not checked are held back"
             if gate is not None:
                 # Back within 7 nights of its cut: as kept the night before (the checks' rules 8.2);
                 # not shown until checked: out of the night before's, to wait at the gate (9.3, 9.5).
@@ -317,8 +325,11 @@ def _checks(capping: _Cap) -> dict[str, object]:
         )
     else:
         print(f"prepare_catalogue: the checks not applied ({note.get('why')})")
+    if capping.gate_off:
+        print(f"prepare_catalogue: THE CHECKS' GATE DID NOT STAND tonight: {capping.gate_off}")
     return {**note, "held_by_the_gate": getattr(result, "held_by_checks", 0),
-            "candidates": len(getattr(result, "candidates", ()) or ()), "written": written}
+            "candidates": len(getattr(result, "candidates", ()) or ()), "written": written,
+            **({"gate_off": capping.gate_off} if capping.gate_off else {})}
 
 
 def _freshness(prepared) -> dict[str, object]:

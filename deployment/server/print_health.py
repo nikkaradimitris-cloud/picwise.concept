@@ -298,6 +298,10 @@ def look_at_checks(check: Health, runner: Run) -> None:
                       f"named for the bot's next night {int(applied.get('candidates') or 0):,}")
     elif applied:
         check.say(f"checks applied by the preparation: none ({applied.get('why')})")
+    if applied.get("gate_off"):
+        check.say(f"checks, the cap's gate did not stand last night: {applied.get('gate_off')}")
+    check.limit(bool(applied.get("gate_off")), "the checks' gate did not stand last night: new products entered unchecked "
+                                               f"({applied.get('gate_off')})")
     category = applied.get("category") if isinstance(applied.get("category"), dict) else {}
     if category:
         check.say(f"checks, the category: {int(category.get('no_category') or 0):,} products with none"

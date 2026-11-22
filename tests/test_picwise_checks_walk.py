@@ -1,6 +1,6 @@
 """The checks walked night after night, through the ledger and the preparation's side together
-(`picwise_checks.ledger`, `picwise_providers.checks_applied`, the cap's gate in
-`catalogue_cap`; the checks' rules 8 and 9).
+(`picwise_checks.ledger`, `picwise_providers.checks_applied`, the cap behind its gate as
+`tools/prepare_catalogue.py` works it out; the checks' rules 8 and 9).
 
 Each night here is a night as the server lives it: the bot's side (the order of asking, the
 night recorded, the decisions) on the products the catalogue shows, the cap's candidates and
@@ -16,16 +16,23 @@ Pinned (the look of task 7, 22/11, which found the first by walking the two side
   and the catalogue never shows a product never asked once its shop's first round is over;
 - a product whose page fails is cut that night, asked again the next, and back in its place
   the night it passes (8.1, 8.2); one that keeps failing is asked on its schedule and is back
-  the night it passes.
+  the night it passes;
+- a night the cap has no memory of the night before (its pool missing or unreadable), the
+  gate holds back only the products not checked, never the whole site.
 
 Every row is local test data: fictional shops and brands, `.invalid` hosts.
 """
 from __future__ import annotations
 
+import gzip
+import importlib.util
+import json
 import sys
+import tempfile
 import unittest
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
 for path in (ROOT, ROOT / "src"):
@@ -36,10 +43,20 @@ from picwise_checks import ledger as L  # noqa: E402
 from picwise_checks.rows import row_from_record, row_of, row_record  # noqa: E402
 from picwise_checks.verdicts import FAILED, NO_ANSWER, PASSED, ShopNight, Verdict  # noqa: E402
 from picwise_providers import checks_applied as applied  # noqa: E402
-from picwise_providers.catalogue_cap import cap_catalogue, part_of, row_key  # noqa: E402
+from picwise_providers.catalogue_cap import google_pool_path, part_of, row_key  # noqa: E402
 from picwise_providers.contracts import ProviderProduct  # noqa: E402
 from picwise_providers.offer_health import build_feed_availability_context, evaluate_product_eligibility  # noqa: E402
 
+
+
+def _load_prepare_tool():
+    spec = importlib.util.spec_from_file_location("prepare_catalogue_walk_tool", ROOT / "tools" / "prepare_catalogue.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+TOOL = _load_prepare_tool()
 START = date(2026, 12, 1)
 KITCHEN = "Home & Garden > Kitchen"
 # Categories of Google's taxonomy as the cap reads them (its first two levels): enough of
@@ -71,17 +88,30 @@ def _number(key_or_product) -> int:
 class Server:
     """The two sides of a night, with the files they hand each other kept in memory."""
 
-    def __init__(self, feed, *, shown=None, asked_a_night, share: float = 0.15) -> None:
+    def __init__(self, feed, *, shown=None, asked_a_night) -> None:
         self.feed = tuple(feed)
         # How many products the bot gets through a night: one number, or one a shop.
         self.asked_a_night = asked_a_night if isinstance(asked_a_night, dict) else {"": asked_a_night}
-        self.share = share
         self.ledger = L.Ledger()
-        # The catalogue as it is the day the checks start: what the cap kept the night before.
+        # The catalogue as it is the day the checks start, and the cap's pool of the night
+        # before, kept beside the prepared file as on the server.
         self.shown = list(self.feed if shown is None else shown)
-        self.pool = {row_key(product) for product in self.shown}
+        self.folder = tempfile.TemporaryDirectory()
+        self.out = Path(self.folder.name) / "catalogue.json.gz"
+        self.write_pool({row_key(product) for product in self.shown})
         self.for_the_bot = {"candidates": [], "rows": []}
         self.night_number = 0
+        self.gate_off = ""
+
+    def write_pool(self, keys) -> None:
+        with gzip.open(google_pool_path(self.out), "wt", encoding="utf-8") as handle:
+            json.dump({"v": 1, "keys": sorted(keys)}, handle)
+
+    def lose_pool(self) -> None:
+        google_pool_path(self.out).unlink()
+
+    def close(self) -> None:
+        self.folder.cleanup()
 
     def night(self, answers=None) -> dict:
         """One night; `answers`: a product's number to its page's verdict (the rest pass)."""
@@ -105,19 +135,23 @@ class Server:
             shop_nights.setdefault(shop, ShopNight(requests=1, answers=1))
         recorded = L.record_night(self.ledger, night, rows, readings, shop_nights, shown=shown, parts=parts)
         made = L.decisions(self.ledger, night, rows, shown=shown, candidates=candidates, came_back=recorded.came_back)
-        # The preparation's side (`state._resolve_provider_feed_pipeline_uncached`, `prepare_catalogue._Cap`).
+        # The preparation's side: the decisions applied to the whole feed
+        # (`state._resolve_provider_feed_pipeline_uncached`), what a card can show, then the
+        # cap behind its gate as the tool works it out (`prepare_catalogue._Cap`), its pool
+        # kept for the next night and the rows named for the bot.
         applied.reset_for_tests()
         judged = applied.apply_checks(self.feed, decisions=made, switch=True, today=night)
         context = build_feed_availability_context(judged)
         eligible = [product for product in judged if evaluate_product_eligibility(product, feed_ctx=context).card_eligible]
-        before = (frozenset(self.pool) | applied.returning_row_keys(eligible, row_key)) \
-            - applied.unchecked_row_keys(eligible, row_key)
-        cap = cap_catalogue(eligible, [frozenset({"kettle"}) for _product_ in eligible], feed_ctx=context,
-                            kept_before=before, share=self.share, may_enter=applied.may_enter)
-        self.shown = [product for product, kept in zip(eligible, cap.keep) if kept]
-        self.pool = set(cap.kept_keys)
-        self.for_the_bot = applied.candidates_document([eligible[index] for index in cap.candidates],
-                                                       applied.take_cut_products(), row_record, row_of)
+        capping = TOOL._Cap(self.out)
+        keep = capping(eligible, [frozenset({"kettle"}) for _product_ in eligible], context)
+        if keep is None:
+            raise AssertionError(f"the cap was not worked out: {capping.error}")
+        self.shown = [product for product, kept in zip(eligible, keep) if kept]
+        capping.write_pool(SimpleNamespace(prepared_at=datetime(night.year, night.month, night.day, 4, 30, tzinfo=timezone.utc)))
+        self.gate_off = capping.gate_off
+        if capping.candidates is not None:
+            self.for_the_bot = capping.candidates
         return {
             "asked": sorted(_number(key) for keys in asked.values() for key in keys),
             "cut": {_number(key): reason for key, reason in made["cut"].items()},
@@ -140,6 +174,7 @@ class Rules93And94NeverAskedByDayFourTests(unittest.TestCase):
     def test_it_waits_is_named_a_candidate_that_night_is_asked_the_next_and_comes_back(self) -> None:
         # A shop the bot gets through one product a night: two of its six are not asked by day 4.
         server = Server([_product(number) for number in range(1, 7)], asked_a_night=1)
+        self.addCleanup(server.close)
         for day in range(3):
             night = server.night()
             self.assertEqual((night["shown"], night["wait"]), ([1, 2, 3, 4, 5, 6], {}))
@@ -162,6 +197,7 @@ class Rules93And94NeverAskedByDayFourTests(unittest.TestCase):
         kitchen = [_product(number) for number in range(1, 61)]
         others = [_product(100 + number, shop="Others", category=OTHER_CATEGORIES[number % 12]) for number in range(60)]
         server = Server(kitchen + others, shown=kitchen[:10] + others, asked_a_night={"Kettles": 2, "Others": 100})
+        self.addCleanup(server.close)
 
         def kettles(night: dict, part: str = "shown") -> list[int]:
             return [number for number in night[part] if number < 100]
@@ -201,7 +237,9 @@ class Rules81And82AFailureAndItsWayBackTests(unittest.TestCase):
     def _server(self) -> Server:
         # Other products around, so that one cut is not a tenth of the site (the night's brake, 7.4).
         others = [_product(100 + number, shop="Others", category=f"Toys > Kind {number}") for number in range(30)]
-        return Server([_product(number) for number in range(1, 5)] + others, asked_a_night=40)
+        server = Server([_product(number) for number in range(1, 5)] + others, asked_a_night=40)
+        self.addCleanup(server.close)
+        return server
 
     def test_cut_that_night_asked_again_the_next_and_back_in_its_place_the_night_it_passes(self) -> None:
         server = self._server()
@@ -229,6 +267,35 @@ class Rules81And82AFailureAndItsWayBackTests(unittest.TestCase):
         tenth = server.night()
         self.assertIn(2, tenth["asked"])
         self.assertIn(2, tenth["shown"])
+
+
+class ANightWithNoMemoryOfTheNightBeforeTests(unittest.TestCase):
+    def setUp(self) -> None:
+        applied.reset_for_tests()
+        self.addCleanup(applied.reset_for_tests)
+
+    def test_the_gate_holds_back_only_the_products_not_checked_never_the_whole_site(self) -> None:
+        # The cap's pool of the night before is lost (a file missing or unreadable): the gate
+        # would take every product for a new one. It must not empty the site.
+        server = Server([_product(number) for number in range(1, 7)], asked_a_night=1)
+        self.addCleanup(server.close)
+        for _day in range(3):
+            self.assertEqual((server.night()["shown"], server.gate_off), ([1, 2, 3, 4, 5, 6], ""))
+        server.lose_pool()
+        # That night the feed also brings a product never seen before.
+        server.feed += (_product(7),)
+        fourth = server.night()
+        self.assertTrue(server.gate_off)
+        # The two never asked by day 4 are still held back; every other product stays, and
+        # the new one, which nothing tells from the rest tonight, is let in.
+        self.assertEqual(fourth["wait"], {5: "never checked", 6: "never checked"})
+        self.assertEqual(fourth["shown"], [1, 2, 3, 4, 7])
+        self.assertEqual(fourth["candidates"], [5, 6])
+        # The pool is written again that night: the gate stands from the next, when the product
+        # let in unchecked is held back in its turn until the bot has asked it (9.3).
+        fifth = server.night()
+        self.assertEqual((server.gate_off, fifth["enter"], fifth["shown"]), ("", [5], [1, 2, 3, 4, 5]))
+        self.assertEqual(fifth["wait"], {7: "never checked"})
 
 
 if __name__ == "__main__":

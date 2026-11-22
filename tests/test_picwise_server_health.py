@@ -153,6 +153,17 @@ class HealthTests(unittest.TestCase):
         self.assertIn("over the limit: the checks' round was ours: fewer than half of the shops answered (rules 7.1)",
                       self.over(self.printed()))
 
+    def test_a_night_the_caps_gate_did_not_stand_passes_a_limit(self) -> None:
+        self.write(self.folder / "checks-note.json", {"night": "2026-11-22", "shops_asked": 151, "decided": 10,
+                                                      "passed": 10, "failed": {}})
+        note = json.loads(self.note.read_text())
+        why = "the night before's pool could not be read: only the products not checked are held back"
+        self.write(self.note, {**note, "checks": {"applied": True, "shops_out": {}, "cut": 12, "gate_off": why}})
+        lines = self.printed()
+        self.assertIn(f"checks, the cap's gate did not stand last night: {why}", lines)
+        self.assertIn(f"over the limit: the checks' gate did not stand last night: new products entered unchecked ({why})",
+                      self.over(lines))
+
     def test_the_category_its_brake_and_the_ais_night_are_told(self) -> None:
         self.write(self.folder / "checks-note.json", {"night": "2026-11-22", "shops_asked": 151, "decided": 10,
                                                       "passed": 10, "failed": {}})
