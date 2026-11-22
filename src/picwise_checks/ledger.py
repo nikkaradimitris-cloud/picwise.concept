@@ -559,7 +559,10 @@ def not_shown_until_checked(product: Product | None, shop: Shop, night: date, *,
     if passed is None or (night - passed).days >= PASS_VALID_NIGHTS:
         return "not passed in 30 nights"
     if old_feed_rule and feed_is_old(_day(shop.feed_import), night):
-        read = _day(product.price_on) or _day(product.stock_on)
+        # The latest of its two readings, the price's and the stock's (until 22/11 the price's
+        # stood before the stock's, so a fresh reading of stock beside an older one of price
+        # counted as old).
+        read = max((day for day in (_day(product.price_on), _day(product.stock_on)) if day is not None), default=None)
         if read is None or (night - read).days >= STOCK_DAYS:
             return "old feed, no fresh reading"
     return ""

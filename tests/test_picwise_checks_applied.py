@@ -59,8 +59,19 @@ class Rules77TheSwitchTests(unittest.TestCase):
     def setUp(self) -> None:
         applied.reset_for_tests()
 
-    def test_the_switch_is_off_until_the_look_of_task_7(self) -> None:
-        self.assertFalse(applied.checks_switch_on())
+    def test_the_switch_is_on_from_the_owners_word_of_22_11(self) -> None:
+        # Owner, 2026-11-22, after the look of task 7: «Ανέβασε». Off again only on his word (rules 7.7).
+        self.assertTrue(applied.checks_switch_on())
+
+    def test_a_switch_file_missing_unreadable_or_not_true_is_off(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "switch.json"
+            self.assertFalse(applied.checks_switch_on(path))
+            for text in ("not json", '{"cut": "true"}', '{"cut": false}', "[]"):
+                path.write_text(text, encoding="utf-8")
+                self.assertFalse(applied.checks_switch_on(path), text)
+            path.write_text('{"cut": true}', encoding="utf-8")
+            self.assertTrue(applied.checks_switch_on(path))
 
     def test_with_the_switch_off_nothing_is_applied_or_gated(self) -> None:
         products = (_product(1),)

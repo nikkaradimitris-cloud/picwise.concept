@@ -288,6 +288,16 @@ class Rules56ShopsTests(unittest.TestCase):
         without = L.decisions(ledger, NIGHT + timedelta(days=3), rows, shown=rows.keys())
         self.assertEqual((without["wait"], without["cut"]), ({}, {}))
 
+    def test_5_6_4_a_fresh_reading_of_stock_counts_beside_an_older_one_of_price(self) -> None:
+        ledger, rows = L.Ledger(), _rows("Alpha", 1)
+        key = next(iter(rows))
+        old_feed = {"Alpha": NIGHT - timedelta(days=10)}
+        _night(ledger, NIGHT, rows, {key: L.Reading(page=OK, site_price=10.0, tie="code", stock="in stock")}, feeds=old_feed)
+        _night(ledger, NIGHT + timedelta(days=3), rows, {key: L.Reading(page=OK, stock="in stock")}, feeds=old_feed)
+        self.assertEqual(L.decisions(ledger, NIGHT + timedelta(days=4), rows, shown=rows.keys(), old_feed_rule=True)["wait"], {})
+        self.assertEqual(L.decisions(ledger, NIGHT + timedelta(days=6), rows, shown=rows.keys(), old_feed_rule=True)["wait"],
+                         {key: "old feed, no fresh reading"})
+
     def test_5_6_4_of_an_old_feed_only_a_candidate_with_a_fresh_reading_enters(self) -> None:
         ledger, rows = L.Ledger(), _rows("Alpha", 2)
         keys = list(rows)

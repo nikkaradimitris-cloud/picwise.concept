@@ -311,10 +311,17 @@ class TheOldFeedRuleCountedWhileItWaitsTests(unittest.TestCase):
 
 
 class OwnersYesTests(unittest.TestCase):
-    def test_the_two_proposed_rules_are_off_until_the_owners_yes(self) -> None:
+    def test_the_two_proposed_rules_stand_on_the_owners_yes_of_22_11_and_are_off_without_it(self) -> None:
         # Rules 13.2: a feed over 7 days old (5.6.4) and a shop suspended, closed or offline at
-        # Awin (5.6.3) wait for his yes (asked 21/11 to be reminded of them); the repo's file says no.
-        self.assertEqual(bot.owner_yes(), {"old_feed_rule": False, "awin_closed_out": False})
+        # Awin (5.6.3) waited for his yes (asked 21/11 to be reminded of them). Asked 22/11 with the
+        # «ανέβασε»: «Ναι» and «Ναι, να βγαίνει»; and of Dean Morris Cards' held products: «Κόψε τα».
+        self.assertEqual(bot.owner_yes(), {"old_feed_rule": True, "awin_closed_out": True})
+        self.assertEqual(bot.owner_words(), (["Dean Morris Cards"], False))
+        words = json.loads((ROOT / "data" / "checks_owner_words.json").read_text(encoding="utf-8"))["words"]
+        self.assertEqual(sorted(entry["about"] for entry in words),
+                         ["awin_closed_out", "cut_held_shops: Dean Morris Cards", "old_feed_rule"])
+        self.assertTrue(all(entry["date"] == "2026-11-22" and entry["word"] for entry in words))
+        # Without a file, or a word of his in it, each is off.
         self.assertEqual(bot.owner_yes(ROOT / "data" / "none.json"), {"old_feed_rule": False, "awin_closed_out": False})
 
     def test_his_yes_is_read_from_the_file_and_only_true_is_yes(self) -> None:

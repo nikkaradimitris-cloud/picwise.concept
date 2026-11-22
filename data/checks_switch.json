@@ -1,6 +1,6 @@
 {
-  "_about": "The one switch of the checks' rules, 7.7 (docs/PICWISE_CHECKS_RULES.md). true: the preparation applies the checks' decisions (cuts, shops out, the page's price and stock, the cap's gate) and the photo check counts any failure as gone; false: none of it, the catalogue as before the checks. Read with the code (prepared_catalogue._FROZEN_FILES): turning it prepares the catalogue again. Owner, 2026-11-21: «Όχι, κόβει από το πρώτο βράδυ» (no nights of report only). It stays false until the look of task 7 (Fable) and the owner's «ανέβασε» of the checks; the deployment he approves turns it to true, so the checks cut from their first night live.",
-  "cut": false,
-  "set": "2026-11-21",
-  "by": "built, not yet looked at (task 5); to true with the owner's «ανέβασε» after the look of task 7"
+  "_about": "The one switch of the checks' rules, 7.7 (docs/PICWISE_CHECKS_RULES.md). true: the preparation applies the checks' decisions (cuts, shops out, the page's price and stock, the cap's gate) and the photo check counts any failure as gone; false: none of it, the catalogue as before the checks. Read with the code (prepared_catalogue._FROZEN_FILES): turning it prepares the catalogue again. Owner, 2026-11-21: «Όχι, κόβει από το πρώτο βράδυ» (no nights of report only). True from 2026-11-22, on the owner's «Ανέβασε» after the look of task 7 (Fable): the checks cut from their first night live. Turned to false only on his word: every cut is then off from the next preparation, while the checks go on asking and recording.",
+  "cut": true,
+  "set": "2026-11-22",
+  "by": "the owner's «Ανέβασε», 2026-11-22 12:50 Athens, after the look of task 7"
 }

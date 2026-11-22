@@ -1,10 +1,10 @@
 # PicWise: the checks' rules
 
 Written 2026-11-21 (evening, Athens) as task 4 of the work split by model (Claude Fable
-5.2; `docs/picwise_session_handoff.md`). **Rules only: nothing here is built, nothing is
-deployed, nothing on the site has changed.** They are built in task 5 and looked at before
-their «ανέβασε» in task 7. Until that deployment the site's rules are the ones
-`PROJECT_RULES.md` gives as in force today.
+5.2; `docs/picwise_session_handoff.md`), as rules only. Built in task 5 (section 15),
+looked at and mended in task 7 (sections 16 and 17). **The owner's «Ανέβασε», 2026-11-22
+(12:50 Athens): `data/checks_switch.json` is true from that day's commit, and the checks cut
+from the first night after its deployment** (`PROGRESS.md` says how the deployment went).
 
 Each rule names whose it is:
 
@@ -38,10 +38,12 @@ Each rule names whose it is:
   προϊόντα που πέρασαν.
 - Προϊόν που το bot δεν πρόλαβε να ελέγξει μέσα στις 3 μέρες δεν φαίνεται μέχρι να ελεγχθεί.
   Δεν «κόβεται»: περιμένει στη σειρά, ρωτιέται την επόμενη μέρα και γυρίζει μόλις περάσει.
-- Δύο κανόνες που σου έχω προτείνει ΔΕΝ ισχύουν μέχρι να πεις «ναι»: (α) προϊόν από feed
-  παλαιότερο των 7 ημερών φαίνεται μόνο με πρόσφατη ανάγνωση του site του· (β) κατάστημα
-  που η Awin το έχει σε αναστολή, κλειστό ή offline βγαίνει. Το κατάστημα που απορρίπτει την
-  αίτησή μας βγαίνει έτσι κι αλλιώς (απόφασή σου).
+- Οι δύο κανόνες που σου είχα προτείνει ισχύουν από 22/11, με το «ναι» σου: (α) προϊόν από
+  feed παλαιότερο των 7 ημερών φαίνεται μόνο αν το bot διάβασε το site του τις τελευταίες 3
+  μέρες· (β) κατάστημα που η Awin το έχει σε αναστολή, κλειστό ή offline βγαίνει. Το
+  κατάστημα που απορρίπτει την αίτησή μας βγαίνει έτσι κι αλλιώς (απόφασή σου).
+- Dean Morris Cards: τα προϊόντα του δεν υπάρχουν πια στο site του· κόβονται (απόφασή σου,
+  22/11: «Κόψε τα») και γυρίζουν αν ξαναβρεθούν.
 - Το AI δίνει σε κάθε προϊόν κατηγορία μία φορά. Όποιο δεν μπαίνει σε κατηγορία βγαίνει, και
   νέο προϊόν μπαίνει μόνο αφού πάρει κατηγορία (απόφασή σου, 21/11).
 - Κατάστημα με «φράχτη» για ρομπότ δεν το παρακάμπτουμε. Σου ετοιμάζεται ένα γράμμα για να του
@@ -312,16 +314,16 @@ is out, never forced in.
    - joined: in.
    - rejected: out from that night (owner, 21/11: «Βγαίνουν»); back the night it is joined.
    - suspended, or in none of Awin's lists (a programme closed): out likewise (Proposed:
-     the same reason, no partnership; 2 shops, 28 products on 21/11). **Built off until his
-     yes** (22/11, task 7; `data/checks_owner_words.json`, `awin_closed_out`): until then
-     such a shop stays and the night's note names it.
+     the same reason, no partnership; 2 shops, 28 products on 21/11). Built off until his
+     yes (22/11, task 7; `data/checks_owner_words.json`, `awin_closed_out`). **His yes,
+     22/11, 12:50 Athens: «Ναι, να βγαίνει»: on** (that day usmile, 28 products).
    - not joined, or pending: in (owner, 21/11, 16:51: the applications first). The button
      of a shop the account is not joined to opens the shop (the owner's tap on InStock UK,
      22/11; section 13, 1).
    - Awin's link status `offline` (advertisers upgraded from ShareASale): Awin sends the
      shop's links to the publisher's fallback address, or to its page "This link is
      inactive". The shop is out while offline, back the night it is online (Proposed: the
-     button would not reach the shop; **off until his yes**, with the line above). The
+     button would not reach the shop; **on by his yes of 22/11**, with the line above). The
      owner sets a fallback address in his Awin profile.
    - A night Awin's API does not answer changes nothing: the last reading stands, and
      after 7 such nights the report says so.
@@ -334,10 +336,12 @@ is out, never forced in.
    days old, the feed's word on stock and price is old: a product of it is shown only with
    a reading of its shop's own site of the last 3 nights. From the end of the shop's first
    round (9.3). A feed the list does not show has no known age and is not judged by it. On
-   21/11: 35 shops, 12,684 products (MoreThisWay since 16/09). **Built off until his yes**
-   (22/11, task 7; `data/checks_owner_words.json`, `old_feed_rule`): until then a feed's
-   age changes nothing. With it, such a product is not cut: it waits as 9.3 says, and a
-   candidate of such a shop enters only with a reading of that night.
+   21/11: 35 shops, 12,684 products (MoreThisWay since 16/09). Built off until his yes
+   (22/11, task 7; `data/checks_owner_words.json`, `old_feed_rule`). **His yes, 22/11,
+   12:50 Athens: «Ναι»: on** (told with the question: how many products it hides was not
+   known; proposed and not taken: to count first). Such a product is not cut: it waits as
+   9.3 says, and a candidate of such a shop enters only with a reading of that night. The
+   reading is the latest of the price's and the stock's.
 
 ## 6. What is cut, and when
 
@@ -349,9 +353,9 @@ is out, never forced in.
 | A product sold out on its shop's site (5.2) | that night, hidden as out of stock | Owner, 12/11 |
 | A price far apart (7.5) | that night | Proposed |
 | A shop rejected at Awin | that night | Owner, 21/11 |
-| A shop suspended, closed or offline at Awin | that night | Proposed; off until his yes |
+| A shop suspended, closed or offline at Awin | that night | Owner, 22/11 (Proposed until then) |
 | A shop that cannot be checked | on its day 4 | Owner, 22/11 |
-| A product of an old feed with no fresh reading of its shop | not shown, from the end of its shop's first round | Proposed; off until his yes |
+| A product of an old feed with no fresh reading of its shop | not shown, from the end of its shop's first round | Owner, 22/11 (Proposed until then) |
 | A product never asked, or not passed in 30 nights (9.3) | not shown until checked, from the end of its shop's first round; it waits, it is not cut | Owner, 22/11 |
 | A new product never asked | it does not enter | Owner, 21/11 |
 
@@ -534,10 +538,10 @@ email carries the same numbers in Greek (his plan, step 12).
    **Answered 22/11, 03:24 Athens**, by the owner's own tap on a button of InStock UK (not
    joined): «Το in stock μπαίνει»: the shop opens. Whether Awin counts such a sale for a
    commission is not known (likely not, with no partnership): never claimed.
-2. **Proposed, his yes to come** (each built as written until he says otherwise, **but the
-   first two, which he asked to be reminded of (21/11) and which are built off until his
-   yes**: `data/checks_owner_words.json`): a feed
-   over 7 days old (5.6.4); a shop suspended, closed or offline at Awin (5.6.3); the stop on a
+2. **Proposed, his yes to come** (each built as written until he says otherwise). **The
+   first two had his yes on 22/11** (asked with the «ανέβασε»; `data/checks_owner_words.json`
+   holds his words): a feed
+   over 7 days old (5.6.4); a shop suspended, closed or offline at Awin (5.6.3). Still his to say: the stop on a
    reading of Awin that would put out many shops at once (5.6.3); a shop's 3 days
    starting afresh only after 7 nights checked (5.6.2); the category asked again only when
    the question changes (5.5); the brakes' numbers (7.2 to 7.4, 7.6); a reader proves
@@ -573,8 +577,8 @@ email carries the same numbers in Greek (his plan, step 12).
 
 ## 15. Built (task 5, 21/11): what the code settles that these rules left open
 
-Built on the work branch, **not deployed**; `data/checks_switch.json` stays `false` until the
-look of task 7, and the deployment the owner approves turns it `true`, so that the checks cut
+Built on the work branch; `data/checks_switch.json` stayed `false` until the look of task 7,
+and the deployment the owner approved on 22/11 turned it `true`, so that the checks cut
 from their first night live (2.2, 4). Where the code had to settle a point:
 
 1. A redirect to another site is not followed (4.1) and is `not checked`; it counts with the
@@ -655,7 +659,7 @@ Where: `src/picwise_checks` (verdicts, brakes, the ledger, the page reader, rows
 
 The look walked the ledger and the preparation's side together, night after night
 (`tests/test_picwise_checks_walk.py`), and looked on the server, read-only (section 17 gives
-the numbers). Mended on the work branch, **not deployed**:
+the numbers). Mended on the work branch before the deployment of 22/11:
 
 1. **A product not shown until it is checked is not cut** (9.3). As built, a product never
    asked by its shop's day 4 (or not passed in 30 nights) was marked cut like a failed one:
@@ -666,7 +670,8 @@ the numbers). Mended on the work branch, **not deployed**:
    candidate that night; the bot asks it the next; it is back the night it passes.
 2. **The two Proposed rules he asked to be reminded of are off until his yes** (5.6.3's
    suspended, closed or offline; 5.6.4's old feed): `data/checks_owner_words.json`,
-   `awin_closed_out` and `old_feed_rule`, false. A rejected shop is out either way.
+   `awin_closed_out` and `old_feed_rule`. A rejected shop is out either way. **Asked that
+   day with the «ανέβασε», he said yes to both: true from the deployment's commit.**
 3. **The category's brake** (5.5, 15.14) counts among the rows the AI answered (a line, or
    none), not among every row of the feed: the feed has about seven rows for each product
    shown, most never asked, so a tenth of them was more than every product with an answer.
@@ -737,4 +742,19 @@ shops with products called gone, asked at their own page first, and the stock wo
   a few thousand of PCHUB.UK and Tooled Up, are not asked by day 4**, are not shown from
   that night (9.3), and their places are refilled by products that passed over the next one
   to two days.
+
+## 18. The owner's answers of 22/11 (12:50 Athens), asked after the look with its numbers
+
+Put to him with what the deployment would do (the catalogue from about 399,000 products to
+about 285,000 at its lowest, on day 4, then filling again with checked products):
+
+1. To deploy the checks now: **«Ανέβασε»**. `data/checks_switch.json` true.
+2. Dean Morris Cards (869 products), all 100 asked gone at the page a visitor's button opens:
+   **«Κόψε τα»**. `cut_held_shops` (7.2): its products, held for him the first night, are cut
+   the night they fail again, and come back if they pass.
+3. A shop suspended, closed or offline at Awin: **«Ναι, να βγαίνει»** (5.6.3).
+4. A product of a feed over 7 days old, shown only with a reading of its shop's own site of
+   the last 3 days: **«Ναι»** (5.6.4). Offered first and not taken: to count each night what
+   it would hide and decide with the number. The night's note and the health run say how
+   many products wait for it (`not shown until checked`, by reason).
 
