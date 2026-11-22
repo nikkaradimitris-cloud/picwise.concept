@@ -88,9 +88,10 @@ a decision came about.
   check in one day at that shop's own measured pace (our 3 s, its answers' time, its crawl-delay), and never more
   than 20,000 (owner: «...κάθε κατάστημα να έχει πλαφόν μέχρι 20.000 πού είναι ο αριθμός που μπορούμε να ελέγξουμε
   στις 24 ώρες συνεχής λειτουργίας», then «Εφόσον αυτός ο κανόνας μπορεί να επαληθεύεται να θεσπιστεί ως σύστημα
-  λειτουργίας ... κάθε κατάστημα που θα μπαίνει μέσα πρέπει να τηρούμε τα όρια που επιτρέπει»). **Put to him, not
-  answered yet:** which products a shop over its cap keeps (proposed: a share of each kind spread over its prices,
-  the most complete first, as `catalogue_cap` does; not the cheapest, often accessories). **Proposed, needed for
+  λειτουργίας ... κάθε κατάστημα που θα μπαίνει μέσα πρέπει να τηρούμε τα όρια που επιτρέπει»). **Which products,
+  answered 16:00:** a shop over its cap keeps a share of each kind spread over its prices, the most complete first,
+  as `catalogue_cap` does, not the cheapest (owner: «Ναι συμφωνώ επισήμανση 20.000 είναι το μέγιστο όριο που
+  μπορούμε να βάλουμε από ένα κατάστημα»: 20,000 is the most any shop keeps, whatever its pace). **Proposed, needed for
   the numbers to hold:** the bot over several processes (with every shop asked at once its one processor slows the
   pace: GamingKit 4.3 to 10 s). **By the work split:** the rule's text (the checks' rules, `PROJECT_RULES.md`, its
   place beside the cap's 15% a category and 12,000 at most, and the first round): FABLE; the build: OPUS; a look
