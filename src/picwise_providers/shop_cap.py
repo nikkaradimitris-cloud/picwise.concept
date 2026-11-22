@@ -50,9 +50,11 @@ shops with far more rows than the site shows of them, 63,000 candidates between 
 every product of such a shop that waits at the gate goes on to the cap of a category
 (`ShopCapResult.waiting`), which names one only where a place is open for it.
 The shops are settled by name after a first pass in which each takes what it sells cheapest
-of every shop that sells it (b); in the second pass "cheapest" is read among the offers the
-other shops keep, so a product whose cheaper offers were all left out by their own shops is
-the next shop's to keep.
+of every shop that sells it (b); then "cheapest" is read among the offers the other shops
+keep, so a product whose cheaper offers were all left out by their own shops is the next
+shop's to keep; and a shop whose choice rested on what another has since changed is settled
+again, until no choice changes (`SETTLE_ROUNDS` at most): two shops with one catalogue then
+show two different parts of it, never the same part twice.
 
 Behind one switch (`data/shop_cap_switch.json`, frozen with the code, 19.7.2): false, no
 shop is capped and the bot asks as before.
@@ -76,6 +78,9 @@ SHOP_LIMIT = 20_000
 THIN = 100
 SWITCH_FILE = Path(__file__).resolve().parents[2] / "data" / "shop_cap_switch.json"
 
+# How many times at most the shops are settled against what the others keep (`cap_shops`): the
+# first time each, then only those whose choice rests on a shop that chose otherwise since.
+SETTLE_ROUNDS = 5
 # The steps of 19.4, in order; a product's step is the first that fits it.
 THIN_STEP, CHEAPEST_STEP, KIND_STEP, REST_STEP, DEARER_STEP = range(5)
 STEPS = ("thin kinds", "cheapest kept", "with a kind", "the rest", "a cheaper shop's")
@@ -347,14 +352,35 @@ def cap_shops(
     # The first pass: each takes what it sells cheapest of every shop that sells it (19.4 b).
     for shop in capped:
         settle(shop, lambda place: shared[place] and facts.prices[place] > cheapest_all[facts.codes[place]])
-    # Then shop by shop, "cheapest" read among the offers the other shops keep.
+    # Then shop by shop, "cheapest" read among the offers the other shops keep; and again, the
+    # shops whose choice rests on a shop that has since chosen otherwise, until no choice
+    # changes (`SETTLE_ROUNDS` at most). Settled once each, a shop chose against what another
+    # kept in the first pass, which that shop then changed: one shop of two with one catalogue
+    # kept 8,962 copies of what the other kept cheaper among its 20,000, and its note called
+    # them its cheapest (the look of 22/11). A shop that shares no product with another
+    # capped shop is settled once: nothing another keeps changes its order.
     lows = {shop: low_of(shop) for shop in capped}
-    for shop in capped:
-        def kept_elsewhere(code: str, _shop: str = shop) -> float:
-            return min([uncapped_low.get(code, _INFINITY)] + [lows[other].get(code, _INFINITY) for other in capped if other != _shop])
+    codes_of = {shop: {facts.codes[place] for place in by_shop[shop] if shared[place]} for shop in capped}
+    tied = {shop: [other for other in capped if other != shop and not codes_of[shop].isdisjoint(codes_of[other])]
+            for shop in capped}
+    del codes_of
+    stale = set(capped)
+    for _round in range(SETTLE_ROUNDS):
+        if not stale:
+            break
+        for shop in capped:
+            if shop not in stale:
+                continue
+            stale.discard(shop)
 
-        settle(shop, lambda place: shared[place] and kept_elsewhere(facts.codes[place]) < facts.prices[place])
-        lows[shop] = low_of(shop)
+            def kept_elsewhere(code: str, _shop: str = shop) -> float:
+                return min([uncapped_low.get(code, _INFINITY)] + [lows[other].get(code, _INFINITY) for other in tied[_shop]])
+
+            settle(shop, lambda place: shared[place] and kept_elsewhere(facts.codes[place]) < facts.prices[place])
+            chosen_low = low_of(shop)
+            if chosen_low != lows[shop]:
+                lows[shop] = chosen_low
+                stale.update(tied[shop])
 
     keep = [True] * count
     for index in members:

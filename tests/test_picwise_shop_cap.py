@@ -162,6 +162,56 @@ class CapShopsTests(unittest.TestCase):
         self.assertEqual(shop_cap.candidates_for(4), 5)
         self.assertEqual(shop_cap.candidates_for(0), 0)
 
+    def test_no_shop_keeps_a_copy_of_what_a_cheaper_shop_keeps_whatever_the_order_they_are_settled_in(self) -> None:
+        # The look of 22/11 (two shops with one catalogue: 8,962 of one's 20,000 were copies of
+        # what the other kept cheaper). Alpha is never the cheapest; Papa sells the same forty
+        # cheaper; India sells twenty of them cheaper still, and keeps only some. Papa's choice
+        # changes once India has chosen, after Alpha chose against Papa's first one: settled once
+        # each, Alpha kept six copies of what Papa keeps, and its note called them its cheapest.
+        alpha = [_product(number, shop="Alpha", price=20.0 + number, gtin=_gtin(number)) for number in range(1, 41)]
+        papa = [_product(number, shop="Papa", price=10.0 + number, gtin=_gtin(number)) for number in range(1, 41)]
+        india = [_product(number, shop="India", price=5.0 + number, gtin=_gtin(number)) for number in range(1, 21)] \
+            + [_product(100 + number, shop="India", price=50.0 + number) for number in range(40)]
+        products = alpha + papa + india
+        before = {row_key(product) for product in products}
+        result = shop_cap.cap_shops(products, [KETTLE] * len(products), kept_before=before, limit=10)
+        kept = [product for product, keep in zip(products, result.keep) if keep]
+        self.assertEqual({shop: sum(1 for product in kept if product.raw["merchant_name"] == shop)
+                          for shop in ("Alpha", "India", "Papa")}, {"Alpha": 10, "India": 10, "Papa": 10})
+        low: dict[str, float] = {}
+        for product in kept:
+            low[product.raw["ean"]] = min(low.get(product.raw["ean"], float("inf")), float(product.price_text)) \
+                if product.raw.get("ean") else 0.0
+        copies = [product.provider_product_id for product in kept
+                  if product.raw.get("ean") and low[product.raw["ean"]] < float(product.price_text)]
+        self.assertEqual(copies, [])
+        # Thirty different products, and each shop's note says what its places hold.
+        self.assertEqual(len({product.raw["ean"] for product in kept if product.raw.get("ean")}), 30)
+        for shop in ("Alpha", "India", "Papa"):
+            self.assertEqual(result.shops[shop]["kept_by_step"]["a cheaper shop's"], 0, shop)
+
+    def test_the_shops_are_settled_a_few_times_at_most(self) -> None:
+        self.assertEqual(shop_cap.SETTLE_ROUNDS, 5)
+        # With one round, as it was built: the copies are there. The rounds are what takes them out.
+        alpha = [_product(number, shop="Alpha", price=20.0 + number, gtin=_gtin(number)) for number in range(1, 41)]
+        papa = [_product(number, shop="Papa", price=10.0 + number, gtin=_gtin(number)) for number in range(1, 41)]
+        india = [_product(number, shop="India", price=5.0 + number, gtin=_gtin(number)) for number in range(1, 21)] \
+            + [_product(100 + number, shop="India", price=50.0 + number) for number in range(40)]
+        products = alpha + papa + india
+        before = {row_key(product) for product in products}
+        real = shop_cap.SETTLE_ROUNDS
+        shop_cap.SETTLE_ROUNDS = 1
+        try:
+            once = shop_cap.cap_shops(products, [KETTLE] * len(products), kept_before=before, limit=10)
+        finally:
+            shop_cap.SETTLE_ROUNDS = real
+        kept = [product for product, keep in zip(products, once.keep) if keep]
+        low: dict[str, float] = {}
+        for product in kept:
+            if product.raw.get("ean"):
+                low[product.raw["ean"]] = min(low.get(product.raw["ean"], float("inf")), float(product.price_text))
+        self.assertGreater(sum(1 for product in kept if product.raw.get("ean") and low[product.raw["ean"]] < float(product.price_text)), 0)
+
     def test_what_waits_at_the_gate_is_kept_for_the_cap_of_a_category_to_name_among(self) -> None:
         big = [_product(number, kinds_hint="kettle") for number in range(20)]
         before = {row_key(product) for product in big[:4]}
