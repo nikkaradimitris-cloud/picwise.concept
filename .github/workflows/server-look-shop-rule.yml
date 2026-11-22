@@ -1,0 +1,433 @@
+# The look before the «ανέβασε» of how many of a shop's products pass (the checks' rules,
+# docs/PICWISE_CHECKS_RULES.md, 19.7.1; owner, 2026-11-22: what the bot scans of a shop passes
+# to the site, 20,000 the most; built behind data/shop_cap_switch.json, not deployed). Read-only:
+# nothing on the server or the site changes, no shop is asked, nothing is asked of any AI.
+#
+# 1. The catalogue prepared on GitHub's runner, never on the server, by the preparation's own
+#    code of this commit (deployment/server/look_shop_rule.py runs tools/prepare_catalogue.py),
+#    from copies of what the server prepared from: its feed copies, the night before's pool, the
+#    shops' catalogues, the AI's lines, the checks' decisions when there are any. Twice: with the
+#    switch as it is (off) and with it on; the two set side by side: the shops over 20,000
+#    counted before the cap of a category, what each keeps and by which step, every kind before
+#    and after, every kind's own search and the 40 searches' first cards, the time and the
+#    memory. And the same pair once more with the cap's gate on as it is from the checks' first
+#    night (23/11): while the server holds no decisions yet, on a decisions file of the look's
+#    own that fails no product and lets no new one in (the AI's categories applied as the
+#    preparation applies them).
+# 2. The bot on the server, inside the limits of its own unit (picwise-checks.service), from a
+#    copy of this commit's code in the unit's private temporary folder, which goes with the
+#    unit (deployment/server/look_bot_rule.py): whether the processes the pages are read on
+#    start in its sandbox, the order of 19.4 worked out, what it would ask with the rule off
+#    and on, what the round running has answered so far, its memory. No shop is asked.
+#
+# The copies hold the shops' links: they are never uploaded anywhere, and are removed. What is
+# kept of a run (its summary, as the run's file, and this log, public like the repository):
+# counts, shops' names, kinds, categories, titles and prices; never a link, an id or a key.
+#
+# Run: 2026-11-22 20:30 Athens (to run again, change this line and push).
+name: How many of a shop's products pass, the look before its «ανέβασε» (read-only)
+on:
+  push:
+    branches: [claude/shop-rule-look]
+    paths:
+      - '.github/workflows/server-look-shop-rule.yml'
+permissions:
+  contents: read
+concurrency:
+  group: shop-rule-look
+  cancel-in-progress: false
+jobs:
+  prepare:
+    name: Prepared on the runner (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: "off", rule: "off", checks: "server"}
+          - {name: "on", rule: "on", checks: "server"}
+          - {name: "gate-off", rule: "off", checks: "assumed"}
+          - {name: "gate-on", rule: "on", checks: "assumed"}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Connect with the key, check the server's identity, mask its names
+        id: connect
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          AWIN_FEED_URL: ${{ secrets.AWIN_FEED_URL }}
+        run: |
+          install -m 700 -d ~/.ssh
+          # A key pasted on Windows may carry carriage returns, which ssh refuses.
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # The server must show a login the host key pinned in .github/server-host-key.pin
+          # (an HMAC under the deploy key: .github/scripts/host_key_pin.py), or prove below
+          # that it holds the feed link; every connection accepts the key it showed only.
+          # The key is the one a login's first step is shown: an ssh client offering no
+          # key or password writes it down, and the login ends there.
+          seen="$RUNNER_TEMP/seen"
+          : > "$seen"
+          ssh -F /dev/null -o BatchMode=yes -o ConnectTimeout=15 -o HostKeyAlgorithms=ssh-ed25519 \
+            -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$seen" -o GlobalKnownHostsFile=/dev/null \
+            -o PubkeyAuthentication=no -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no \
+            -o HostbasedAuthentication=no -o GSSAPIAuthentication=no -o LogLevel=QUIET \
+            "ubuntu@$SERVER_HOST" true 2>/dev/null || true
+          host_key=$(awk 'NF >= 3 {print $2, $3; exit}' "$seen")
+          rm -f "$seen"
+          [ -n "$host_key" ] || { echo "the server showed a login no host key"; exit 1; }
+          pin=$(HOST_KEY="$host_key" python3 .github/scripts/host_key_pin.py)
+          expected=$( (grep -v '^#' .github/server-host-key.pin || true) | tr -d '[:space:]')
+          if [ "$pin" = "$expected" ]; then
+            echo "the server matches the pin"
+            echo "pinned=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "the server does NOT match the pin (reinstalled, or not our server); its pin: $pin"
+            echo "pinned=no" >> "$GITHUB_OUTPUT"
+          fi
+          # What a key scan is shown, only to report it.
+          scanned=$(ssh-keyscan -T 15 -t ed25519 "$SERVER_HOST" 2>/dev/null | awk 'NF >= 3 {print $2, $3; exit}')
+          scan_pin=""
+          if [ -n "$scanned" ]; then scan_pin=$(HOST_KEY="$scanned" python3 .github/scripts/host_key_pin.py); fi
+          if [ "$scan_pin" = "$pin" ]; then
+            echo "a key scan is shown the same key"
+            echo "scan_differs=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "a key scan is shown another key (pin ${scan_pin:-none})"
+            echo "scan_differs=yes" >> "$GITHUB_OUTPUT"
+            echo "scan_pin=$scan_pin" >> "$GITHUB_OUTPUT"
+          fi
+          echo "picwise-server $host_key" > ~/.ssh/known_hosts_picwise
+          # The user is OVHcloud's for Ubuntu, written here rather than read from the
+          # SERVER_USER secret: GitHub masks a secret's value all over the log.
+          cat > ~/.ssh/config <<EOF
+          Host picwise
+            HostName $SERVER_HOST
+            HostKeyAlias picwise-server
+            UserKnownHostsFile ~/.ssh/known_hosts_picwise
+            StrictHostKeyChecking yes
+            User ubuntu
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            BatchMode yes
+            ConnectTimeout 15
+            ServerAliveInterval 15
+            ServerAliveCountMax 8
+            LogLevel ERROR
+          EOF
+          chmod 600 ~/.ssh/config
+          # Without the pin, the server must seal a random nonce under the feed link as
+          # GitHub does: only the nonce goes to it, only the seal comes back.
+          nonce=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
+          ours=$(python3 .github/scripts/feed_seal.py "$nonce") || ours=""
+          unset AWIN_FEED_URL
+          if [ "$pin" != "$expected" ]; then
+            [ -n "$ours" ] || { echo "no feed link in GitHub's secrets: nothing can prove the server is ours"; exit 1; }
+            # What any visitor of port 22 is told first: its SSH software and system.
+            banner=$(timeout 10 bash -c 'exec 3<>"/dev/tcp/$1/22"; head -n 1 <&3' _ "$SERVER_HOST" 2>/dev/null \
+              | tr -cd '[:print:]' | cut -c1-80 || true)
+            echo "the server's SSH software says: ${banner:-nothing}"
+            # The server's own words are never printed: its errors are only sorted.
+            errors="$RUNNER_TEMP/seal-errors"
+            theirs=$(ssh picwise "sudo -n python3 - $nonce" < .github/scripts/feed_seal.py 2> "$errors") && status=0 || status=$?
+            if [ "$theirs" != "$ours" ]; then
+              if grep -q 'Permission denied' "$errors"; then why="it did not let the deploy key in"
+              elif grep -q 'Host key verification failed' "$errors"; then why="its host key changed again during the run"
+              elif [ "$status" = 255 ]; then why="the login did not complete"
+              elif grep -q 'sudo:' "$errors"; then why="the deploy key was let in, but sudo was refused"
+              elif grep -q 'feed_seal: no feed link' "$errors"; then why="the deploy key was let in, but the server holds no feed link"
+              elif [ "$status" = 0 ]; then why="the deploy key was let in, but its seal is not GitHub's (another feed link)"
+              else why="the deploy key was let in, but sealing failed (exit $status)"
+              fi
+              rm -f "$errors"
+              echo "the server could NOT prove it holds the feed link: $why; nothing is read"
+              exit 1
+            fi
+            rm -f "$errors"
+            echo "the server proved it holds the feed link: it is ours, with a new host key"
+          fi
+          # The host name resolves to the address, so it is masked like the address.
+          names=$(ssh -n picwise 'hostname; hostname -f; hostname -I')
+          for name in $names; do echo "::add-mask::$name"; done
+          echo "connected"
+      - name: Copy what the server prepared from
+        id: copy
+        env:
+          AWIN_FEED_URL: ${{ secrets.AWIN_FEED_URL }}
+          AWIN_FEED_URL_AWIN: ${{ secrets.AWIN_FEED_URL_AWIN }}
+        run: |
+          set -e
+          mkdir -p "$RUNNER_TEMP/look/run" "$RUNNER_TEMP/look/checks"
+          # The server keeps each link's copy under a name made of the link's hash
+          # (picwise_providers.awin_adapter._feed_cache_path): never printed.
+          # Each link as the deployment writes it for the server (server-deploy.yml).
+          clean() { printf '%s' "$1" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
+          name_of() { clean "$1" | python3 -c 'import hashlib, sys; print("picwise_awin_feed_" + hashlib.sha256(sys.stdin.read().encode("utf-8")).hexdigest()[:20] + ".bin")'; }
+          first=$(name_of "$AWIN_FEED_URL")
+          second=$(name_of "$AWIN_FEED_URL_AWIN")
+          ssh -n picwise "if sudo test -f /srv/picwise/shared/cache/$first; then sudo cat /srv/picwise/shared/cache/$first; fi" > "$RUNNER_TEMP/look/google.bin"
+          ssh -n picwise "if sudo test -f /srv/picwise/shared/cache/$second; then sudo cat /srv/picwise/shared/cache/$second; fi" > "$RUNNER_TEMP/look/awin.bin"
+          for pair in "google.bin AWIN_FEED_URL first" "awin.bin AWIN_FEED_URL_AWIN second"; do
+            set -- $pair
+            if [ -s "$RUNNER_TEMP/look/$1" ]; then
+              echo "the $3 link: the server's own copy, $(( $(stat -c %s "$RUNNER_TEMP/look/$1") / 1048576 )) MB"
+            else
+              echo "the $3 link: no copy on the server under its name; downloaded here"
+              curl -sS --fail --max-time 900 -o "$RUNNER_TEMP/look/$1" "$(clean "${!2}")" || { echo "the $3 link could not be read"; exit 1; }
+              echo "the $3 link: $(( $(stat -c %s "$RUNNER_TEMP/look/$1") / 1048576 )) MB"
+            fi
+          done
+          ssh -n picwise 'sudo ls -l --time-style=+%Y-%m-%dT%H:%MZ /srv/picwise/shared/cache/ /srv/picwise/shared/prepared/ /srv/picwise/shared/checks/' 2> /dev/null \
+            | awk 'NF >= 7 {printf "on the server: %s %.1f MB %s\n", $6, $5 / 1048576, $7}' | sed -E 's/picwise_awin_feed_[0-9a-f]+/picwise_awin_feed_(a link)/' || true
+          for pair in \
+            "/srv/picwise/shared/prepared/google_pool.json.gz run/google_pool.json.gz" \
+            "/srv/picwise/shared/shops/catalogues.json.gz catalogues.json.gz" \
+            "/srv/picwise/assist/shelves/answers.jsonl.gz shelves.jsonl.gz" \
+            "/srv/picwise/shared/photos/gone.json gone.json" \
+            "/srv/picwise/shared/offers/offers.json offers.json" \
+            "/srv/picwise/assist/families/answers/families.json families.json" \
+            "/srv/picwise/shared/checks/decisions.json.gz checks/decisions.json.gz" \
+            "/srv/picwise/shared/checks/note.json checks/note.json"; do
+            set -- $pair
+            ssh -n picwise "if sudo test -f $1; then sudo cat $1; fi" > "$RUNNER_TEMP/look/$2"
+            echo "$2: $(stat -c %s "$RUNNER_TEMP/look/$2") bytes"
+            # A file the server does not have is not left empty in its place.
+            [ -s "$RUNNER_TEMP/look/$2" ] || rm -f "$RUNNER_TEMP/look/$2"
+          done
+          free -g | awk '/^Mem:/ {print "the runner: " $2 " GB of memory"}'; swapon --show=SIZE --noheadings | awk '{print "the runner: swap " $1}'
+          nproc | awk '{print "the runner: " $1 " processors"}'
+      - name: The checks as this run reads them
+        run: |
+          set -e
+          if [ -s "$RUNNER_TEMP/look/checks/decisions.json.gz" ]; then
+            python3 -c 'import gzip, json, sys; d = json.load(gzip.open(sys.argv[1], "rt", encoding="utf-8")); print("the decisions of the server, the night of", d.get("night"), "- cut", len(d.get("cut") or {}), "wait", len(d.get("wait") or {}), "enter", len(d.get("enter") or ()), "shops out", len(d.get("shops_out") or {}), "passed named", len(d.get("passed") or ()))' "$RUNNER_TEMP/look/checks/decisions.json.gz"
+          elif [ "${{ matrix.checks }}" = assumed ]; then
+            # No decisions on the server yet (the checks' first night is recorded 03:05 UTC on
+            # 23/11): the gate as it will be from that night, on a decisions file of the look's
+            # own that fails no product and lets no new one in. Never on the server.
+            python3 -c 'import datetime, gzip, json, sys; json.dump({"format": "picwise-checks-decisions", "version": 1, "night": datetime.datetime.now(datetime.timezone.utc).date().isoformat(), "shops_out": {}, "cut": {}, "wait": {}, "enter": [], "prices": {}, "stock": {}, "returning": []}, gzip.open(sys.argv[1], "wt", encoding="utf-8"))' "$RUNNER_TEMP/look/checks/decisions.json.gz"
+            echo "no decisions on the server: the look's own, that fail no product and let no new one in (the cap's gate on)"
+          else
+            echo "no decisions on the server: the checks are not applied in this run (the cap's gate off), as on the site today"
+          fi
+      - name: Turn the switch on, in this copy only
+        if: matrix.rule == 'on'
+        run: |
+          python3 - <<'EOF'
+          import json
+          from pathlib import Path
+
+          path = Path("data/shop_cap_switch.json")
+          switch = json.loads(path.read_text(encoding="utf-8"))
+          switch["cap"] = True
+          path.write_text(json.dumps(switch, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          print("data/shop_cap_switch.json: cap true, in the runner's copy of the code only")
+          EOF
+      - name: Prepare the catalogue (the preparation's own code)
+        id: prepare
+        env:
+          AWIN_FEED_FILE_AWIN: ${{ runner.temp }}/look/awin.bin
+          PICWISE_SHOP_CATALOGUES: ${{ runner.temp }}/look/catalogues.json.gz
+          PICWISE_AI_SHELVES_FILE: ${{ runner.temp }}/look/shelves.jsonl.gz
+          PICWISE_CHECKS_DECISIONS: ${{ runner.temp }}/look/checks/decisions.json.gz
+          PICWISE_CAP_SHARE: "0.15"
+          PICWISE_CAP_CATEGORY_MAX: "12000"
+          PICWISE_MEMORY_TRACE: "1"
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          set -o pipefail
+          /usr/bin/time -o "$RUNNER_TEMP/look/time.txt" -f "%M %e" python3 deployment/server/look_shop_rule.py prepare \
+            "$RUNNER_TEMP/look/run" --feed-file "$RUNNER_TEMP/look/google.bin" 2>&1 | grep -E "^(prepare_catalogue|look):"
+          awk '{printf "peak memory %.2f GB, %.1f minutes\n", $1 / 1048576, $2 / 60}' "$RUNNER_TEMP/look/time.txt"
+      - name: What the catalogue shows, searched as the site answers
+        id: summary
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          read -r peak seconds < "$RUNNER_TEMP/look/time.txt"
+          /usr/bin/time -f "the summary: peak memory %M KB, %e s" python3 deployment/server/look_shop_rule.py summary \
+            "$RUNNER_TEMP/look/run" --name "${{ matrix.name }}" --seconds "$seconds" --peak-kb "$peak" \
+            --gone "$RUNNER_TEMP/look/gone.json" --offers "$RUNNER_TEMP/look/offers.json" --families "$RUNNER_TEMP/look/families.json"
+          mkdir -p "$RUNNER_TEMP/summary"
+          cp "$RUNNER_TEMP/look/run/summary.json" "$RUNNER_TEMP/summary/summary-${{ matrix.name }}.json"
+      # Counts, names, titles and prices only (the look's own summary): no link, id or key.
+      - uses: actions/upload-artifact@v4
+        id: upload
+        if: steps.summary.outcome == 'success'
+        continue-on-error: true
+        with:
+          name: summary-${{ matrix.name }}
+          path: ${{ runner.temp }}/summary/summary-${{ matrix.name }}.json
+          retention-days: 14
+      # Only when the run's file could not be kept: the same summary, packed, in the log, so
+      # that the two can still be set side by side from it.
+      - name: The summary in the log, when it could not be kept as the run's file
+        if: steps.summary.outcome == 'success' && steps.upload.outcome != 'success'
+        run: |
+          echo "look-summary-begin ${{ matrix.name }}"
+          gzip -9 -c "$RUNNER_TEMP/summary/summary-${{ matrix.name }}.json" | base64 -w 120
+          echo "look-summary-end ${{ matrix.name }}"
+      - name: Remove the key and the copies from the runner
+        if: always()
+        run: |
+          rm -rf ~/.ssh/deploy_key ~/.ssh/config "$RUNNER_TEMP/look"
+  compare:
+    name: The two side by side
+    needs: prepare
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/summaries
+          merge-multiple: true
+      - name: The switch off and on, the checks as the server has them
+        if: always()
+        run: python3 deployment/server/look_shop_rule.py compare "$RUNNER_TEMP/summaries/summary-off.json" "$RUNNER_TEMP/summaries/summary-on.json"
+      - name: The switch off and on, the cap's gate on
+        if: always()
+        run: python3 deployment/server/look_shop_rule.py compare "$RUNNER_TEMP/summaries/summary-gate-off.json" "$RUNNER_TEMP/summaries/summary-gate-on.json"
+  bot:
+    name: The bot on the server, no shop asked
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    # Shared with server-setup.yml and server-deploy.yml: never while the server is set up or
+    # a release deployed.
+    concurrency:
+      group: server-setup
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Connect with the key, check the server's identity, mask its names
+        id: connect
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          AWIN_FEED_URL: ${{ secrets.AWIN_FEED_URL }}
+        run: |
+          install -m 700 -d ~/.ssh
+          # A key pasted on Windows may carry carriage returns, which ssh refuses.
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # The server must show a login the host key pinned in .github/server-host-key.pin
+          # (an HMAC under the deploy key: .github/scripts/host_key_pin.py), or prove below
+          # that it holds the feed link; every connection accepts the key it showed only.
+          # The key is the one a login's first step is shown: an ssh client offering no
+          # key or password writes it down, and the login ends there.
+          seen="$RUNNER_TEMP/seen"
+          : > "$seen"
+          ssh -F /dev/null -o BatchMode=yes -o ConnectTimeout=15 -o HostKeyAlgorithms=ssh-ed25519 \
+            -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$seen" -o GlobalKnownHostsFile=/dev/null \
+            -o PubkeyAuthentication=no -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no \
+            -o HostbasedAuthentication=no -o GSSAPIAuthentication=no -o LogLevel=QUIET \
+            "ubuntu@$SERVER_HOST" true 2>/dev/null || true
+          host_key=$(awk 'NF >= 3 {print $2, $3; exit}' "$seen")
+          rm -f "$seen"
+          [ -n "$host_key" ] || { echo "the server showed a login no host key"; exit 1; }
+          pin=$(HOST_KEY="$host_key" python3 .github/scripts/host_key_pin.py)
+          expected=$( (grep -v '^#' .github/server-host-key.pin || true) | tr -d '[:space:]')
+          if [ "$pin" = "$expected" ]; then
+            echo "the server matches the pin"
+            echo "pinned=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "the server does NOT match the pin (reinstalled, or not our server); its pin: $pin"
+            echo "pinned=no" >> "$GITHUB_OUTPUT"
+          fi
+          # What a key scan is shown, only to report it.
+          scanned=$(ssh-keyscan -T 15 -t ed25519 "$SERVER_HOST" 2>/dev/null | awk 'NF >= 3 {print $2, $3; exit}')
+          scan_pin=""
+          if [ -n "$scanned" ]; then scan_pin=$(HOST_KEY="$scanned" python3 .github/scripts/host_key_pin.py); fi
+          if [ "$scan_pin" = "$pin" ]; then
+            echo "a key scan is shown the same key"
+            echo "scan_differs=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "a key scan is shown another key (pin ${scan_pin:-none})"
+            echo "scan_differs=yes" >> "$GITHUB_OUTPUT"
+            echo "scan_pin=$scan_pin" >> "$GITHUB_OUTPUT"
+          fi
+          echo "picwise-server $host_key" > ~/.ssh/known_hosts_picwise
+          # The user is OVHcloud's for Ubuntu, written here rather than read from the
+          # SERVER_USER secret: GitHub masks a secret's value all over the log.
+          cat > ~/.ssh/config <<EOF
+          Host picwise
+            HostName $SERVER_HOST
+            HostKeyAlias picwise-server
+            UserKnownHostsFile ~/.ssh/known_hosts_picwise
+            StrictHostKeyChecking yes
+            User ubuntu
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            BatchMode yes
+            ConnectTimeout 15
+            ServerAliveInterval 15
+            ServerAliveCountMax 8
+            LogLevel ERROR
+          EOF
+          chmod 600 ~/.ssh/config
+          # Without the pin, the server must seal a random nonce under the feed link as
+          # GitHub does: only the nonce goes to it, only the seal comes back.
+          nonce=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
+          ours=$(python3 .github/scripts/feed_seal.py "$nonce") || ours=""
+          unset AWIN_FEED_URL
+          if [ "$pin" != "$expected" ]; then
+            [ -n "$ours" ] || { echo "no feed link in GitHub's secrets: nothing can prove the server is ours"; exit 1; }
+            # What any visitor of port 22 is told first: its SSH software and system.
+            banner=$(timeout 10 bash -c 'exec 3<>"/dev/tcp/$1/22"; head -n 1 <&3' _ "$SERVER_HOST" 2>/dev/null \
+              | tr -cd '[:print:]' | cut -c1-80 || true)
+            echo "the server's SSH software says: ${banner:-nothing}"
+            # The server's own words are never printed: its errors are only sorted.
+            errors="$RUNNER_TEMP/seal-errors"
+            theirs=$(ssh picwise "sudo -n python3 - $nonce" < .github/scripts/feed_seal.py 2> "$errors") && status=0 || status=$?
+            if [ "$theirs" != "$ours" ]; then
+              if grep -q 'Permission denied' "$errors"; then why="it did not let the deploy key in"
+              elif grep -q 'Host key verification failed' "$errors"; then why="its host key changed again during the run"
+              elif [ "$status" = 255 ]; then why="the login did not complete"
+              elif grep -q 'sudo:' "$errors"; then why="the deploy key was let in, but sudo was refused"
+              elif grep -q 'feed_seal: no feed link' "$errors"; then why="the deploy key was let in, but the server holds no feed link"
+              elif [ "$status" = 0 ]; then why="the deploy key was let in, but its seal is not GitHub's (another feed link)"
+              else why="the deploy key was let in, but sealing failed (exit $status)"
+              fi
+              rm -f "$errors"
+              echo "the server could NOT prove it holds the feed link: $why; nothing is read"
+              exit 1
+            fi
+            rm -f "$errors"
+            echo "the server proved it holds the feed link: it is ours, with a new host key"
+          fi
+          # The host name resolves to the address, so it is masked like the address.
+          names=$(ssh -n picwise 'hostname; hostname -f; hostname -I')
+          for name in $names; do echo "::add-mask::$name"; done
+          echo "connected"
+      - name: The round running, as the server's own services say it
+        run: |
+          ssh -n picwise 'sudo systemctl show picwise-checks.service -p ActiveState -p SubState -p ExecMainStartTimestamp -p MemoryCurrent -p MemoryPeak -p MemoryHigh -p MemoryMax -p NRestarts; date -u "+now %Y-%m-%d %H:%M:%S UTC"; free -m | awk "/^Mem:/ {print \"the server: \" \$2 \" MB of memory, \" \$7 \" MB available\"}"; nproc | awk "{print \"the server: \" \$1 \" processors\"}"'
+          # The round's own lines so far: counts and shop names only.
+          ssh -n picwise 'sudo journalctl -u picwise-checks.service --since "-20h" -o cat --no-pager | grep -v -E "https?://" | tail -n 25'
+      - name: The bot of this commit in its look, inside its unit's limits (no shop asked, nothing written)
+        run: |
+          tar czf "$RUNNER_TEMP/code.tgz" src deployment data
+          echo "this commit's code: $(( $(stat -c %s "$RUNNER_TEMP/code.tgz") / 1024 )) KB"
+          # A unit of its own with the sandbox and the memory of picwise-checks.service, but
+          # nothing writable under /srv: the code is unpacked in the unit's private /tmp, which
+          # goes with the unit. The site's user, as the bot runs.
+          ssh picwise "sudo systemd-run --quiet --wait --pipe --collect \
+            -p User=picwise -p Group=picwise -p Environment=PYTHONDONTWRITEBYTECODE=1 \
+            -p Nice=10 -p MemoryHigh=4G -p MemoryMax=5G -p RuntimeMaxSec=25min -p UMask=0027 \
+            -p NoNewPrivileges=yes -p PrivateTmp=yes -p PrivateDevices=yes -p ProtectSystem=strict -p ProtectHome=yes \
+            -p ProtectKernelTunables=yes -p ProtectKernelModules=yes -p ProtectKernelLogs=yes -p ProtectControlGroups=yes \
+            -p RestrictNamespaces=yes -p RestrictRealtime=yes -p RestrictSUIDSGID=yes -p LockPersonality=yes \
+            -p SystemCallArchitectures=native -p CapabilityBoundingSet= \
+            /bin/sh -c 'mkdir /tmp/look && cd /tmp/look && tar xzf - && exec /usr/bin/python3 deployment/server/look_bot_rule.py'" \
+            < "$RUNNER_TEMP/code.tgz"
+      - name: Remove the key from the runner
+        if: always()
+        run: rm -f ~/.ssh/deploy_key ~/.ssh/config "$RUNNER_TEMP/code.tgz"
