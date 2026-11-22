@@ -269,6 +269,8 @@ class ANightEndToEndTests(unittest.TestCase):
         printed = "\n".join(lines)
         self.assertIn("products cut 1", printed)
         self.assertIn("Kettles: 5 requests in 12 s, 2.4 s a request", printed)
+        # And the shops' own stock words behind its readings (rules 5.2), counted.
+        self.assertEqual(night.note["stock_words_by_shop"]["Kettles"], {"in stock: instock": 2})
         self.assertNotIn(".invalid", printed)
         self.assertNotIn("\x1f", printed)
 

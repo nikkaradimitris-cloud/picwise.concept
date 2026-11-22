@@ -467,9 +467,12 @@ class Tonight:
 
 
 def judge(rows: Mapping[str, Row], result: ShopResult, *, shared_ids: Iterable[str] = (),
-          by_page: Mapping[tuple[str, str], set] | None = None) -> dict[str, L.Reading]:
+          by_page: Mapping[tuple[str, str], set] | None = None,
+          stock_words: Counter | None = None) -> dict[str, L.Reading]:
     """What each answer of one shop's night means (`picwise_checks.verdicts`).
-    `by_page`: the feed's prices of each product page, over all the shop's rows."""
+    `by_page`: the feed's prices of each product page, over all the shop's rows;
+    `stock_words`: when given, counts the shop's own availability words behind each stock
+    reading ("outofstock", "backorder", "preorder"...), for a look."""
     shared = frozenset(shared_ids)
     reads_pages = shop_reads_pages(result.night.pages_200, result.night.pages_read)
     by_page = by_page if by_page is not None else prices_by_page(rows.values())
@@ -483,6 +486,11 @@ def judge(rows: Mapping[str, Row], result: ShopResult, *, shared_ids: Iterable[s
                             feed_rows_one_price=len(by_page.get(address_parts(row.address), ())) <= 1)
             site_price = tied.price if tied is not None else None
             stock = stock_reading(row, answer.read, tied)
+            if stock_words is not None and stock:
+                said = {tied.availability} if tied is not None and tied.availability else \
+                    {offer.availability for offer in answer.read.offers if offer.availability}
+                for word in said:
+                    stock_words[f"{stock}: {word}"] += 1
         readings[key] = L.Reading(page=verdict, site_price=site_price, tie=how, stock=stock)
     return readings
 
@@ -664,11 +672,12 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
         list(pool.map(one, sorted(order, key=lambda shop: (-len(order[shop]), shop))))
     readings: dict[str, L.Reading] = {}
     shop_nights: dict[str, ShopNight] = {}
+    words: dict[str, Counter] = defaultdict(Counter)
     by_page = prices_by_page(rows.values())
     for shop, result in results.items():
         shop_nights[shop] = result.night
         readings.update(judge({key: rows[key] for key in result.answers}, result, shared_ids=shared_ids,
-                              by_page=by_page))
+                              by_page=by_page, stock_words=words[shop]))
     night_result = L.record_night(ledger, night, rows, readings, shop_nights, shown=shown, parts=parts, awin=awin,
                                   feeds=feeds, owner_cut_shops=owner_cut_shops, owner_awin_word=owner_awin_word,
                                   awin_closed_out=awin_closed_out)
@@ -679,6 +688,9 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
     # How long each shop's asking took, and the crawl-delay it asks for: the bot's pace (rules 4.7).
     night_result.note["seconds_by_shop"] = {shop: [round(seconds.get(shop, 0.0), 1), result.night.crawl_delay]
                                             for shop, result in sorted(results.items())}
+    # The shops' own availability words behind tonight's stock readings (rules 5.2).
+    night_result.note["stock_words_by_shop"] = {shop: dict(sorted(counts.items()))
+                                                for shop, counts in sorted(words.items()) if counts}
     return night_result, made
 
 
@@ -819,6 +831,13 @@ def print_look(note: Mapping[str, Any], ledger: L.Ledger, say: Callable[[str], N
     for name in sorted(per_shop, key=lambda shop: -sum(per_shop[shop][key] for key in ("passed", "failed", "held"))):
         counts = per_shop[name]
         say(f"{name}: " + ", ".join(f"{key.strip()} {value}" for key, value in sorted(counts.items())))
+    said = note.get("stock_words_by_shop") or {}
+    say("== stock read as sold out, per shop: the shop's own words (rules 5.2)")
+    for name in sorted(said, key=lambda shop: -sum(count for word, count in said[shop].items() if word.startswith("sold out"))):
+        sold_out = {word: count for word, count in said[name].items() if word.startswith("sold out")}
+        if sold_out:
+            say(f"{name}: " + ", ".join(f"{word[10:]} {count}" for word, count in sorted(sold_out.items()))
+                + f"; in stock {sum(count for word, count in said[name].items() if word.startswith('in stock'))}")
     asked = note.get("asked_by_shop") or {}
     pace = note.get("seconds_by_shop") or {}
     say("== the pace, per shop: its requests, the seconds they took, seconds a request, the crawl-delay it asks for")
