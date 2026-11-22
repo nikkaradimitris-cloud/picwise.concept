@@ -19,8 +19,11 @@ one request (`picwise_ai.client.ask` with its client).
 - **An answer stands until another takes its place**: a question asked again keeps its old
   record until the new one is whole (its first reading, and its second where one is called
   for).
-- A reading asked for that came with no answer is counted in the record; after
-  `kind_itself.MOST_TRIES` the question is left, here and by the preparation.
+- A reading asked for that the model gave no answer to (a product's number left out, an
+  answer that does not check out, a refusal) is counted in the record; after
+  `kind_itself.MOST_TRIES` the question is left, here and by the preparation. A call the API
+  itself failed (no answer within the time, too many requests, an error of the network) counts
+  against no question: its products are left for the next run, after a pause.
 - A call holds products of one kind, `itself.PER_CALL` at most; each kind's first call goes
   before any kind's second, so that a run stopped by its limit or its time has served every
   kind's cheapest products (the questions come cheapest first). The run stops before a call
@@ -49,6 +52,8 @@ DEAREST_GUESS_USD = 0.12
 # The answers are written to their file after so many calls, and at the end.
 SAVE_EVERY = 40
 WORKERS = 4
+# Seconds a worker waits after a call the API failed, before its next one.
+PAUSE_AFTER_A_FAILURE = 15.0
 
 
 @dataclass
@@ -151,6 +156,7 @@ def run(
     first: tuple[str, str] = (itself.MODEL, itself.EFFORT),
     second: tuple[str, str] = (itself.SECOND_MODEL, itself.SECOND_EFFORT),
     versions: Callable[[str], str] = itself.kind_version,
+    sleep: Callable[[float], None] = time.sleep,
 ) -> Totals:
     """Ask what `items` wait for and keep the answers in `records` (changed in place).
     `ask_fn` sends one request and gives an answer as `client.ask` does (its `answer`,
@@ -234,23 +240,32 @@ def run(
                 failure = type(error).__name__
             finally:
                 budget.settle(guess, cost)
-            found = itself.checked_answers(getattr(answer, "answer", None), len(batch))
+            # The API's own failure (nothing came back: no stop reason) is not the model's
+            # answer to these products: nothing is counted against their questions.
+            api_failed = answer is None or (getattr(answer, "answer", None) is None
+                                            and not str(getattr(answer, "stop_reason", "") or ""))
+            found = {} if api_failed else itself.checked_answers(getattr(answer, "answer", None), len(batch))
             with lock:
                 totals.calls[reading] += 1
                 totals.cost[reading] += cost
-                totals.asked[reading] += len(batch)
                 if not found:
                     totals.failed_calls[reading] += 1
                     totals.errors[failure or str(getattr(answer, "error", "") or "")
                                   or str(getattr(answer, "stop_reason", "") or "") or "no answer"] += 1
-                for position, pending in enumerate(batch, 1):
-                    got = found.get(position)
-                    if got is not None:
-                        totals.answered[reading] += 1
-                        totals.said[reading][got[0]] += 1
-                    keep(pending, got, model, follow)
+                if api_failed:
+                    totals.not_asked[reading] += len(batch)
+                else:
+                    totals.asked[reading] += len(batch)
+                    for position, pending in enumerate(batch, 1):
+                        got = found.get(position)
+                        if got is not None:
+                            totals.answered[reading] += 1
+                            totals.said[reading][got[0]] += 1
+                        keep(pending, got, model, follow)
                 if save is not None and save_every > 0 and sum(totals.calls.values()) % save_every == 0:
                     save()
+            if api_failed:
+                sleep(PAUSE_AFTER_A_FAILURE)
 
         if calls:
             with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:

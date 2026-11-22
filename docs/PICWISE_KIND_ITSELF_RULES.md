@@ -224,6 +224,9 @@ A call asks about products of one kind, 40 at most.
 answer is one of the seven. A product answered twice, not answered, or with another word has
 no answer. A reading with no answer is asked once more; after two tries it is left: with no
 first reading the product stays as the lists read it, with no second it stays where it is.
+A call the API itself failed (no answer within the time, too many requests, the network) is
+not the model's answer: it counts against no question, and its products are asked by the
+next run.
 
 ### 4.3 Who is asked
 

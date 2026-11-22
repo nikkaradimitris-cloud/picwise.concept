@@ -95,6 +95,7 @@ class Model:
 def _run(items, records, model, **options):
     options.setdefault("budget", Budget(5.0))
     options.setdefault("workers", 1)
+    options.setdefault("sleep", lambda seconds: None)
     return itself_asking.run(items, records, ask_fn=model, today=TODAY, **options)
 
 
@@ -212,20 +213,38 @@ class TheCalls(unittest.TestCase):
         _run(items, records, Model({}), save=lambda: saved.append(len(records)), save_every=2)
         self.assertEqual(saved, [80, 100])
 
-    def test_a_call_that_fails_is_a_call_with_no_answer(self) -> None:
+    def test_a_call_the_api_failed_counts_against_no_question(self) -> None:
+        slept: list[float] = []
+
         def broken(request: dict) -> Asked:
-            return Asked(None, "", "", 0, 0, 0, 0, 0.0, 1.0, "APITimeoutError")
+            return Asked(None, "", "", 0, 0, 0, 0, 0.0, 1.0, "RateLimitError (HTTP 429)")
 
         records: dict = {}
-        totals = _run([_item("k1", "Cordless Drill A")], records, broken)
-        self.assertEqual((totals.failed_calls["first"], totals.answered["first"], dict(totals.errors)), (1, 0, {"APITimeoutError": 1}))
-        self.assertEqual((records[("k1", "drill")].first, records[("k1", "drill")].tries), (None, 1))
+        totals = _run([_item("k1", "Cordless Drill A")], records, broken, sleep=slept.append)
+        self.assertEqual((totals.failed_calls["first"], totals.asked["first"], totals.not_asked["first"], dict(totals.errors)),
+                         (1, 0, 1, {"RateLimitError (HTTP 429)": 1}))
+        # No record, no try counted: the question is asked again by the next run, after a pause.
+        self.assertEqual((records, totals.left(), slept), ({}, 1, [itself_asking.PAUSE_AFTER_A_FAILURE]))
 
         def raising(request: dict) -> Asked:
             raise RuntimeError("no network")
 
-        totals = _run([_item("k2", "Cordless Drill B")], records, raising)
-        self.assertEqual(dict(totals.errors), {"RuntimeError": 1})
+        totals = _run([_item("k2", "Cordless Drill B")], records, raising, sleep=slept.append)
+        self.assertEqual((dict(totals.errors), records), ({"RuntimeError": 1}, {}))
+        # A second reading the API failed leaves the first reading as it is, with no try counted.
+        record = Record("k3", "drill", DRILL_V, Reading("accessory", "x", HAIKU, TODAY))
+        records = {("k3", "drill"): record}
+        _run([_item("k3", "Pilot Drill", want="second")], records, broken, sleep=slept.append)
+        self.assertEqual((records[("k3", "drill")].second, records[("k3", "drill")].tries), (None, 0))
+
+    def test_an_answer_that_does_not_check_out_is_the_models_and_is_counted(self) -> None:
+        def refusing(request: dict) -> Asked:
+            return Asked(None, "refusal", request["model"], 500, 0, 0, 0, 0.001, 1.0, "")
+
+        records: dict = {}
+        totals = _run([_item("k1", "Cordless Drill A")], records, refusing, sleep=lambda seconds: self.fail("no pause"))
+        self.assertEqual((totals.asked["first"], totals.answered["first"], dict(totals.errors)), (1, 0, {"refusal": 1}))
+        self.assertEqual((records[("k1", "drill")].first, records[("k1", "drill")].tries), (None, 1))
 
 
 class NoAnswer(unittest.TestCase):
