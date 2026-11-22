@@ -195,6 +195,20 @@ Implemented in `search_selection` (`_non_new_condition`,
 
 ## What a product must carry to be shown, decided by the owner, 2026-10-12
 
+**Added by the owner on 2026-11-21, in force from the checks' deployment of 2026-11-22: a
+page that is there, a photo that answers, a category** (`docs/PICWISE_CHECKS_RULES.md`; his
+plan of 21/11: «Ποιότητα πάνω από ποσότητα. Όποιο προϊόν δεν περνά τον έλεγχο κόβεται»).
+Each product is asked on its shop's own site, never through an Awin link. Its page must
+answer and be the product (a page gone, moved to another, or not a product's is cut that
+night: «Αμέσως, για κάθε λόγο»); its photo must answer with an image (any failure, not only
+a link to nothing as below, from that deployment); the AI must have given it a category
+(«Όποιο προϊόν δεν μπαίνει σε κατηγορία βγαίνει»). Its shop must be one the bot can check
+(3 days, then out whole until it can be) and not rejected, suspended, closed or offline at
+Awin. A new product is shown only once it has passed, and a product the bot has not asked
+within its shop's 3 days is not shown until it is asked. A cut product is asked again and
+comes back the night it passes. The brakes, the proof a reader gives before its word counts,
+and the one switch that turns every cut off are in the checks' rules (7).
+
 **Added by the owner on 2026-11-01: a photo that is there.** On the live site some cards
 showed a broken photo, and their products' pages at the shop said "Page not found": «Όταν
 το προϊόν δεν φέρνει φωτογραφία δεν πρέπει να εμφανίζεται... Στις περισσότερες περιπτώσεις
@@ -752,6 +766,17 @@ first: «Οι προσφορές δεν πρέπει να βγαίνουν πά�
 5. Pinned by `tests/test_picwise_offers_first.py`.
 
 ## The shop's own price, decided by the owner, 2026-11-19
+
+**Added by the owner on 2026-11-21, in force from the checks' deployment of 2026-11-22: the
+price of the shop's own page.** Asked what a card shows when the shop's own page states
+another price than its feed: «Δείχνουμε την τιμή της σελίδας». The page's price is the
+shop's own, as the feed's is; still nothing is worked out. It is shown only where the
+reading is tied to the row (its variant, its code, or the page's one price) and the shop's
+reader has proven itself there (at least 7 in 10 of at least 20 tied readings the same as
+the feed's: `docs/PICWISE_CHECKS_RULES.md` 5.3, 7.5); a reading under half or over twice
+the feed's price is no price, and its product is cut that night. The price's history starts
+again the night a product's price changes its source. Where a shop's reader is not proven,
+the feed's price stands.
 
 The owner, told that the cheapest shop of one product was chosen at the shops' own prices
 while each product then stood at its price after its offer, so that a shop whose offer

@@ -714,7 +714,7 @@ shops with products called gone, asked at their own page first, and the stock wo
 - **Shops that cannot be checked, day 1**: Aosom UK, InterRose, TV Cables (robots.txt
   refused), Bazta UK, Plusshop UK, Elixir Garden Supplies, Luxe Mattress Affiliation (a wall),
   Juicy Couture UK (no address of its own), Pro-Camera (its pages not read): nine shops,
-  about 45,000 products, out on their day 4.
+  about 43,000 products (the six whose sizes were read on 21/11 hold 41,591), out on their day 4.
 - **Prices**: tied readings the same as the feed's in most shops; 73 of 8,355 passed would
   show the page's price (shops whose reader is proven). Not proven, so the feed's price
   stands: InStock UK (20 of 93 the same, then 54 of 216; the commonest ratio 1.19: its

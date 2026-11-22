@@ -45,7 +45,9 @@ by email and to their phone. The owner answers in that session, once a day.
    **The server's health** (owner, 2026-11-16, among the proposals for the daily work:
    «Έλεγχος προσφορών, ταχύτητας και πόρων ... Ειδοποίηση μόνο αν ξεπεράσουν το όριο»):
    at the start of the day, start `.github/workflows/server-health.yml` by hand (the GitHub
-   tools: run the workflow, on `main`; it only reads, and takes about half a minute), then
+   tools: run the workflow, on the site's branch `ccr-1361f1a7-dcpo60`, the code the server
+   runs, so that it prints the checks' lines; `main` moves only on the owner's yes and
+   stood at 19/11 on 22/11, without them; it only reads, and takes about half a minute), then
    read that run (the workflow's runs, then its job's log). Its own schedule, 08:07 UTC,
    is not waited for: GitHub started it 9 to 10 hours late on 16, 17 and 18/11 (17:09 to
    18:20 UTC), after the daily session; it stays as a second look in the evening, and as
@@ -66,14 +68,17 @@ by email and to their phone. The owner answers in that session, once a day.
    speed. Each limit passed goes first in the report, one line each, in plain words; the
    rest of the log is told only on Sundays. When the run failed, the report says so first.
    **The shops' checks** (`docs/PICWISE_CHECKS_RULES.md`, section 11; the owner's plan
-   of 21/11, step 12: «a daily email with the checks' numbers»): from their deployment
-   (task 7; until then the health run says "checks: no night recorded yet", and the report
-   says nothing of them), the same run prints the bot's night, lines that start "checks":
+   of 21/11, step 12: «a daily email with the checks' numbers»): deployed 2026-11-22
+   (11:07 UTC; the bot's first night is the one recorded 03:05 UTC on 23/11, applied by the
+   preparation of 04:17). The same run, started on the site's branch, prints the bot's
+   night, lines that start "checks" ("checks: no night recorded yet" before the first):
    what was decided, passed and failed by reason, cut and back; the brakes; the shops that
    cannot be checked, with their day (on day 4 a shop leaves); the shops out by Awin's
-   reading. Its limits (a failed round, no night for over a day, a round that was ours, a
-   brake that held, an Awin reading that waits for the owner's word) go first, like every
-   limit. The public note (`/prepared.json`, its `checks`) says what the preparation applied
+   reading; the products not shown until checked (never asked by their shop's day 4, an
+   old feed with no fresh reading) and how many wait at the cap's gate. Its limits (a
+   failed round, no night for over a day, a round that was ours, a brake that held, an Awin
+   reading that waits for the owner's word, a night the cap's gate did not stand) go first,
+   like every limit. The public note (`/prepared.json`, its `checks`) says what the preparation applied
    of it, and carries the bot's note too (`checks.bot`), for a day the run cannot be read.
    **Whether the Sunday tidy-up of the branches ran** (owner, 2026-11-16: «Θέλω να
    λαμβάνω ενημέρωση να συμπεριλάβεις την αυτόματη εργασία»): on a Sunday, and on the
