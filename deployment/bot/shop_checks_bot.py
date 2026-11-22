@@ -1,7 +1,7 @@
 """The checks' bot: each night, the products asked on their shops' own sites.
 
     python3 deployment/bot/shop_checks_bot.py [--catalogue PATH] [--checks DIR]
-        [--until 03:05] [--workers 48] [--pause 3]
+        [--until 03:05] [--workers 0] [--processes 4] [--pause 3] [--shop-rule file|on|off]
 
 The checks' rules (`docs/PICWISE_CHECKS_RULES.md`; owner, 2026-11-21: «Ποιότητα πάνω από
 ποσότητα. Όποιο προϊόν δεν περνά τον έλεγχο κόβεται...» and his six answers). Run by
@@ -30,6 +30,16 @@ candidates and the products the checks cut that the feed still lists (the prepar
 `candidates.json.gz`), in the rules' order (10). Awin's programmes and feed list are read
 from its API, never by a click (5.6.3, 5.6.4).
 
+How many of a shop's products pass (the rules' section 19, behind its switch,
+`data/shop_cap_switch.json`; owner, 2026-11-22: «μόνο όσα έχουν σκανναριστεί περνάνε», 20,000
+the most): a pass counts for three nights (19.3.1); each day a shop's shown products are
+asked again first, in the order of 19.4 (`picwise_providers.shop_cap.shop_order`, worked out
+from the prepared catalogue), and new ones only in the time left (19.3.2); of a shop, at most
+its first 20,000 (19.3.3). Every shop is asked at once, one thread each, and the pages are
+read on processes of their own (`--processes`; 19.5, owner: «Ναι, μαζί»): with every shop
+asked on one process a request took twice as long (the look of 22/11). When the processes
+cannot be started, the pages are read on the bot's own, as before, and it says so.
+
 Written, beside the catalogue on the server (never in the repo or a public place): the
 ledger, the decisions the preparation reads, and the night's note. Printed: counts and
 shop names only; never an address, an id, a key or a server name.
@@ -47,7 +57,8 @@ import time
 import urllib.error
 import urllib.request
 from collections import Counter, defaultdict
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -63,7 +74,8 @@ import shop_catalogue_test as look  # noqa: E402
 
 from picwise_checks import ledger as L  # noqa: E402
 from picwise_checks.rows import row_from_record, row_of, row_record  # noqa: E402,F401
-from picwise_checks.page_reader import NOTHING, Offer, PageRead, read_page, read_shopify_product  # noqa: E402
+from picwise_checks.page_reader import NOTHING, Offer, PageRead  # noqa: E402
+from picwise_checks.page_reader import read_catalogue_page, read_page_bytes, read_product_json  # noqa: E402
 from picwise_checks.verdicts import (  # noqa: E402
     PageAnswer, Row, ShopNight, address_parts, page_verdict, shop_reads_pages, stock_reading, tie,
 )
@@ -80,7 +92,12 @@ JSON_BYTES = 20 * 1024 * 1024
 ROBOTS_BYTES = look.ROBOTS_BYTES
 LISTING_SIZE = 250
 LISTING_PAGES = 100
-WORKERS = 48
+# Shops asked at once: 0 is every shop at once, one thread each, up to `SHOPS_AT_ONCE`
+# (the rules 4.3, "many shops at once"; until 22/11, 48).
+WORKERS = 0
+SHOPS_AT_ONCE = 200
+# The processes the pages are read on (the rules 19.5); 0 reads them on the bot's own.
+PROCESSES = 4
 UNTIL = "03:05"
 # Between `UNTIL` and this the preparation (04:17) and the photos' check (04:40) run: a
 # round started then asks nothing.
@@ -188,18 +205,66 @@ def _text(answer: Answer) -> str:
         return answer.body.decode("utf-8", "replace")
 
 
-def _json(answer: Answer) -> Any:
-    if answer.status != 200 or answer.body.lstrip()[:1] not in (b"{", b"["):
-        return None
-    try:
-        return json.loads(answer.body.decode("utf-8", "replace"))
-    except ValueError:
-        return None
-
-
 def _path(url: str) -> str:
     parts = urlsplit(url)
     return (parts.path or "/") + (f"?{parts.query}" if parts.query else "")
+
+
+class Readers:
+    """What reads an answer's bytes (the rules 19.5): processes of their own when started
+    (`start`), else the bot's own process, as before. A pool that breaks (a process killed)
+    is let go and the rest is read on the bot's own process."""
+
+    def __init__(self, pool: ProcessPoolExecutor | None = None) -> None:
+        self.pool = pool
+
+    @classmethod
+    def start(cls, processes: int, say: Callable[[str], None]) -> "Readers":
+        if processes <= 0:
+            return cls()
+        import multiprocessing
+
+        pool = None
+        try:
+            # Started fresh, not copied from the bot: a process reads pages and holds no catalogue.
+            pool = ProcessPoolExecutor(max_workers=processes, mp_context=multiprocessing.get_context("spawn"))
+            pool.submit(read_page_bytes, b"", "").result(timeout=120)
+        except Exception as error:  # the sandbox may refuse it: read on the bot's own process
+            if pool is not None:
+                pool.shutdown(wait=False, cancel_futures=True)
+            say(f"the pages are read on the bot's own process: the processes did not start ({type(error).__name__})")
+            return cls()
+        say(f"the pages are read on {processes} processes of their own")
+        return cls(pool)
+
+    @property
+    def processes(self) -> int:
+        return getattr(self.pool, "_max_workers", 0) if self.pool is not None else 0
+
+    def _read(self, job: Callable[..., Any], *args: Any) -> Any:
+        pool = self.pool
+        if pool is not None:
+            try:
+                return pool.submit(job, *args).result()
+            except (BrokenProcessPool, RuntimeError, OSError):
+                self.pool = None
+        return job(*args)
+
+    def page(self, answer: "Answer") -> PageRead:
+        return self._read(read_page_bytes, answer.body, answer.content_type) if answer.status == 200 else NOTHING
+
+    def product(self, answer: "Answer") -> PageRead:
+        return self._read(read_product_json, answer.body) if answer.status == 200 else NOTHING
+
+    def catalogue_page(self, answer: "Answer | None") -> tuple[int, list[tuple[str, PageRead]]] | None:
+        if answer is None or answer.status != 200:
+            return None
+        return self._read(read_catalogue_page, answer.body)
+
+    def close(self) -> None:
+        if self.pool is not None:
+            self.pool.shutdown(wait=True, cancel_futures=True)
+            self.pool = None
 
 
 @dataclass
@@ -240,11 +305,13 @@ def _counted(answer: PageAnswer) -> Counter:
 
 def ask_shop(rows: list[Row], *, fetch: Fetch, sleep: Callable[[float], None], clock: Callable[[], float],
              deadline: float, pause: float = PAUSE, done: Mapping[str, PageAnswer] | None = None,
-             keep: Callable[[str, PageAnswer], None] | None = None) -> ShopResult:
+             keep: Callable[[str, PageAnswer], None] | None = None, readers: Readers | None = None) -> ShopResult:
     """One shop's night (module docstring): its robots.txt, its catalogue when it is a
     Shopify shop, then its products in the order given, until the deadline. `done`: the
     answers this night kept already (a round started again), not asked again; `keep`: told
-    each new answer as it comes."""
+    each new answer as it comes; `readers`: what reads the answers (the bot's own process
+    when None)."""
+    readers = readers or Readers()
     done = dict(done or {})
     scheme, host = _base_of(rows)
     if not host or "awin" in host:
@@ -301,25 +368,21 @@ def ask_shop(rows: list[Row], *, fetch: Fetch, sleep: Callable[[float], None], c
     catalogue: dict[str, PageRead] = {}
     whole = False
     listing = ask_counted(f"/products.json?limit={LISTING_SIZE}&page=1", JSON_BYTES, rules, wait)
-    data = _json(listing) if listing else None
-    shopify = isinstance(data, dict) and isinstance(data.get("products"), list)
+    read_listing = readers.catalogue_page(listing)
+    shopify = read_listing is not None
     if shopify:
         page = 1
-        while True:
-            products = data.get("products") if isinstance(data, dict) else None
-            if not isinstance(products, list):
-                break
-            for product in products:
-                if isinstance(product, dict) and product.get("handle"):
-                    catalogue[str(product["handle"]).lower()] = read_shopify_product(product, pence=False)
-            if len(products) < LISTING_SIZE:
+        while read_listing is not None:
+            size, found = read_listing
+            catalogue.update(found)
+            if size < LISTING_SIZE:
                 whole = True
                 break
             page += 1
             if page > LISTING_PAGES:
                 break
             answer = ask_counted(f"/products.json?limit={LISTING_SIZE}&page={page}", JSON_BYTES, rules, wait)
-            data = _json(answer) if answer else None
+            read_listing = readers.catalogue_page(answer)
 
     def page_of(row: Row) -> PageAnswer | None:
         """A product asked at its own address: in a Shopify shop its `.js`, else its page.
@@ -335,8 +398,7 @@ def ask_shop(rows: list[Row], *, fetch: Fetch, sleep: Callable[[float], None], c
                 final = answer.final_url or base + requested
                 redirected = address_parts(final) != address_parts(base + requested)
                 final = final[:-3] if final.endswith(".js") else final
-                data = _json(answer)
-                read = read_shopify_product(data, pence=True) if isinstance(data, dict) else NOTHING
+                read = readers.product(answer)
                 return PageAnswer(status=answer.status, error=answer.error, final_url=final, redirected=redirected,
                                   elsewhere=answer.elsewhere, challenge=is_challenge(answer, read_found=read.found),
                                   read=read)
@@ -352,7 +414,7 @@ def ask_shop(rows: list[Row], *, fetch: Fetch, sleep: Callable[[float], None], c
             return None
         final = answer.final_url or row.address
         redirected = address_parts(final) != address_parts(row.address)
-        read = read_page(_text(answer)) if answer.status == 200 else NOTHING
+        read = readers.page(answer)
         return PageAnswer(status=answer.status, error=answer.error, final_url=final, redirected=redirected,
                           elsewhere=answer.elsewhere, challenge=is_challenge(answer, read_found=read.found), read=read)
 
@@ -498,9 +560,12 @@ def judge(rows: Mapping[str, Row], result: ShopResult, *, shared_ids: Iterable[s
 # ---- what is asked -----------------------------------------------------------------
 
 
-def rows_from_catalogue(path: Path) -> tuple[dict[str, Row], dict[str, str], set[str]]:
-    """The products the site shows: their rows, their kinds as the cap reads them, and
-    the ids more than one of them carries (the site's button finds a product by its id)."""
+def rows_from_catalogue(path: Path, *, order: bool = False,
+                        ) -> tuple[dict[str, Row], dict[str, str], set[str], dict[str, list[str]]]:
+    """The products the site shows: their rows, their kinds as the cap reads them, the ids
+    more than one of them carries (the site's button finds a product by its id), and, with
+    `order`, per shop its products' keys in the order of 19.4 (`shop_cap.shop_order`), the
+    order its shown products are asked again in (19.3.2)."""
     from picwise_providers.catalogue_cap import part_of
     from picwise_providers.prepared_catalogue import read_prepared_catalogue_to_measure
 
@@ -510,14 +575,23 @@ def rows_from_catalogue(path: Path) -> tuple[dict[str, Row], dict[str, str], set
     rows: dict[str, Row] = {}
     parts: dict[str, str] = {}
     ids: Counter = Counter()
+    keys: list[str] = []
     for product, kinds in zip(prepared.products, prepared.kinds):
         row = row_of(product)
         rows[row.key] = row
         parts[row.key] = part_of(product, kinds)
         ids[row.product_id] += 1
-    del prepared
+        keys.append(row.key)
+    orders: dict[str, list[str]] = {}
+    if order:
+        from picwise_providers.shop_cap import shop_order
+
+        orders = {shop: [keys[place] for place in places]
+                  for shop, places in shop_order(prepared.products, prepared.kinds,
+                                                 feed_ctx=prepared.availability_context).items()}
+    del prepared, keys
     gc.collect()
-    return rows, parts, {ident for ident, count in ids.items() if count > 1}
+    return rows, parts, {ident for ident, count in ids.items() if count > 1}, orders
 
 
 def rows_from_candidates(path: Path) -> tuple[dict[str, Row], list[str]]:
@@ -642,12 +716,20 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
         awin: Mapping[str, tuple[str | None, str]] | None, feeds: Mapping[str, date | None],
         owner_cut_shops: list[str], owner_awin_word: bool, say: Callable[[str], None],
         sample: int = 0, tonight: Tonight | None = None, shops: frozenset[str] = frozenset(),
-        old_feed_rule: bool = False, awin_closed_out: bool = False) -> tuple[L.Night, dict]:
+        old_feed_rule: bool = False, awin_closed_out: bool = False, scanned: bool = False,
+        shown_order: Mapping[str, list[str]] | None = None, readers: Readers | None = None,
+        ) -> tuple[L.Night, dict]:
     """Ask every shop its products in the rules' order; record the night; the decisions.
     `sample`: a look, at most this many products a shop; `tonight`: the night's answers
-    kept as they come, those kept already not asked again."""
+    kept as they come, those kept already not asked again; `scanned`: the rule of how many
+    of a shop's products pass (section 19), with `shown_order` the order of 19.4 of each
+    shop's shown products; `readers`: what reads the answers (19.5)."""
+    from picwise_providers.shop_cap import SHOP_LIMIT
+
     tonight = tonight or Tonight(None)
-    order = L.asking_order(ledger, night, rows, shown=shown, candidates=candidates, parts=parts)
+    pass_nights = L.PASS_NIGHTS_SCANNED if scanned else L.PASS_VALID_NIGHTS
+    order = L.asking_order(ledger, night, rows, shown=shown, candidates=candidates, parts=parts, scanned=scanned,
+                           shown_order=shown_order, limit=SHOP_LIMIT if scanned else 0)
     if shops:
         order = {shop: keys for shop, keys in order.items() if shop in shops}
     if sample > 0:
@@ -663,12 +745,13 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
         done = {key: kept[key] for key in order[shop] if key in kept}
         started = clock()
         result = ask_shop([rows[key] for key in order[shop]], fetch=fetch, sleep=sleep, clock=clock,
-                          deadline=deadline, pause=pause, done=done, keep=tonight.keep)
+                          deadline=deadline, pause=pause, done=done, keep=tonight.keep, readers=readers)
         with lock:
             results[shop] = result
             seconds[shop] = clock() - started
 
-    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+    threads = workers if workers > 0 else min(SHOPS_AT_ONCE, len(order))
+    with ThreadPoolExecutor(max_workers=max(1, threads)) as pool:
         list(pool.map(one, sorted(order, key=lambda shop: (-len(order[shop]), shop))))
     readings: dict[str, L.Reading] = {}
     shop_nights: dict[str, ShopNight] = {}
@@ -682,15 +765,22 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
                                   feeds=feeds, owner_cut_shops=owner_cut_shops, owner_awin_word=owner_awin_word,
                                   awin_closed_out=awin_closed_out)
     made = L.decisions(ledger, night, rows, shown=shown, candidates=candidates, came_back=night_result.came_back,
-                       old_feed_rule=old_feed_rule)
+                       old_feed_rule=old_feed_rule, pass_nights=pass_nights, passed_over=SHOP_LIMIT if scanned else 0)
     if not old_feed_rule and not night_result.note.get("ours"):
         # What the Proposed rule of a feed over 7 days old (5.6.4) would not show tonight, while
         # it waits for the owner's yes: counted for him, changing nothing.
-        with_it = L.decisions(ledger, night, rows, shown=shown, candidates=candidates, old_feed_rule=True)["wait"]
+        with_it = L.decisions(ledger, night, rows, shown=shown, candidates=candidates, old_feed_rule=True,
+                              pass_nights=pass_nights)["wait"]
         would: Counter = Counter(rows[key].shop for key, why in with_it.items()
                                  if why == "old feed, no fresh reading" and key not in made["wait"])
         night_result.note["old_feed_would_wait"] = {"products": sum(would.values()), "shops": len(would),
                                                     "most": [[shop, count] for shop, count in would.most_common(10)]}
+    # How many of a shop's products pass (section 19): whether the rule was on, the nights a
+    # pass counts for, the most asked of a shop, the processes the pages were read on (19.5).
+    night_result.note["shop_rule"] = {"on": scanned, "pass_nights": pass_nights,
+                                      "most_asked_of_a_shop": SHOP_LIMIT if scanned else None,
+                                      "processes": readers.processes if readers is not None else 0,
+                                      "shops_at_once": max(1, threads)}
     night_result.note["asked_by_shop"] = {shop: [result.night.requests, len(result.answers), result.stopped]
                                           for shop, result in sorted(results.items())}
     # How long each shop's asking took, and the crawl-delay it asks for: the bot's pace (rules 4.7).
@@ -707,6 +797,13 @@ def print_night(note: Mapping[str, Any], made: Mapping[str, Any], ledger: L.Ledg
     if note.get("ours"):
         say("the round is ours: fewer than half of the shops answered at all; nothing recorded (rules 7.1)")
         return
+    rule = note.get("shop_rule") or {}
+    if rule:
+        say(f"how many of a shop's products pass (section 19): {'ON' if rule.get('on') else 'off'}; a pass counts for "
+            f"{rule.get('pass_nights')} nights"
+            + (f"; at most {rule['most_asked_of_a_shop']:,} asked of a shop" if rule.get("most_asked_of_a_shop") else "")
+            + f"; {rule.get('shops_at_once')} shops at once, pages read on "
+            + (f"{rule['processes']} processes" if rule.get("processes") else "the bot's own process"))
     failed = note.get("failed") or {}
     say(f"decided {note.get('decided', 0):,}: passed {note.get('passed', 0):,}, failed {sum(failed.values()):,}"
         + (" (" + ", ".join(f"{reason} {count:,}" for reason, count in sorted(failed.items())) + ")" if failed else ""))
@@ -761,7 +858,10 @@ def main(argv: list[str] | None = None, *, fetch: Fetch = fetch, sleep: Callable
     parser.add_argument("--checks", type=Path, default=Path(CHECKS_DIR))
     parser.add_argument("--cache", default=CACHE_DIR)
     parser.add_argument("--until", default=UNTIL, help="UTC time the asking stops, HH:MM")
-    parser.add_argument("--workers", type=int, default=WORKERS)
+    parser.add_argument("--workers", type=int, default=WORKERS, help="shops asked at once; 0: every shop")
+    parser.add_argument("--processes", type=int, default=PROCESSES, help="processes the pages are read on; 0: none")
+    parser.add_argument("--shop-rule", choices=("file", "on", "off"), default="file",
+                        help="how many of a shop's products pass (section 19): as its switch says, or on or off for a look")
     parser.add_argument("--pause", type=float, default=PAUSE)
     parser.add_argument("--dry", action="store_true",
                         help="a look: write nothing (no ledger, no decisions, no note); print what the night decided")
@@ -785,8 +885,24 @@ def main(argv: list[str] | None = None, *, fetch: Fetch = fetch, sleep: Callable
         ends = min(ends, start + timedelta(minutes=args.minutes))
     night = _deadline(start, args.until).date()
     deadline = clock() + (ends - start).total_seconds()
+    from picwise_providers.shop_cap import shop_cap_on
+
+    scanned = shop_cap_on() if args.shop_rule == "file" else args.shop_rule == "on"
+    # Started before the catalogue is read, so that nothing of it is in their way (19.5).
+    readers = Readers.start(args.processes, say)
     try:
-        rows, parts, shared_ids = rows_from_catalogue(args.catalogue)
+        return _night(args, readers=readers, scanned=scanned, night=night, deadline=deadline,
+                      fetch=fetch, sleep=sleep, clock=clock, environ=environ, say=say)
+    finally:
+        readers.close()
+
+
+def _night(args: argparse.Namespace, *, readers: Readers, scanned: bool, night: date, deadline: float,
+           fetch: Fetch, sleep: Callable[[float], None], clock: Callable[[], float], environ: Mapping[str, str],
+           say: Callable[[str], None]) -> int:
+    """`main`'s night, once its readers have started."""
+    try:
+        rows, parts, shared_ids, orders = rows_from_catalogue(args.catalogue, order=scanned)
     except ValueError as error:
         say(f"the checks: {error}; nothing asked")
         return 1
@@ -809,7 +925,8 @@ def main(argv: list[str] | None = None, *, fetch: Fetch = fetch, sleep: Callable
                        pause=args.pause, awin=awin, feeds=feeds, owner_cut_shops=cut_shops,
                        owner_awin_word=awin_word, say=say, sample=args.sample, tonight=tonight,
                        shops=frozenset(args.shop) if args.dry else frozenset(),
-                       old_feed_rule=yes["old_feed_rule"], awin_closed_out=yes["awin_closed_out"])
+                       old_feed_rule=yes["old_feed_rule"], awin_closed_out=yes["awin_closed_out"],
+                       scanned=scanned, shown_order=orders, readers=readers)
     if args.dry:
         say("a look (--dry): nothing written")
     else:

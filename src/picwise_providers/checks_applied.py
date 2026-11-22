@@ -26,6 +26,12 @@ prepares the catalogue again, so the whole catalogue is back within one preparat
   passed (`may_enter`), counts a product back within 7 nights as kept the night before
   (`returning_row_keys`), and names the next ones for the bot (`candidates` written by
   `tools/prepare_catalogue.py`);
+- with the rule of how many of a shop's products pass (the checks' rules 19; its switch,
+  `shop_cap.shop_cap_on`): a pass counts for three nights, so the bot names the shown
+  products not passed in 3 nights to wait (`THREE_NIGHTS`); with that switch off the
+  preparation leaves those aside, so that turning it off brings them back within one
+  preparation; and the shown products that passed, of a shop over the most it passes
+  (`passed`), come before the ones never asked when the shop keeps its products (19.4 f);
 - the category (rules 5.5; owner, 21/11: «Το AI ρωτιέται μία φορά για την κατηγορία κάθε
   προϊόντος. Όποιο προϊόν δεν μπαίνει σε κατηγορία βγαίνει»): a product the AI gave no line
   of Google's taxonomy ("no line fits", refused for good, or a slip:
@@ -77,6 +83,9 @@ ROWS_OF_A_SHOP_OUT = 20
 # among every row of the feed (until 22/11): the feed has seven rows for each product
 # shown, most never asked, so a tenth of them was more than every product with an answer.
 NO_CATEGORY = "no category"
+# 19.3.1: the reason the bot gives a shown product not passed in 3 nights (`picwise_checks.ledger`,
+# `NOT_PASSED_IN_THREE`), applied only with the switch of how many of a shop's products pass on.
+THREE_NIGHTS = "not passed in 3 nights"
 CATEGORY_BRAKE_SHARE = 0.10
 # The products the AI is asked about the next morning (`deployment/server/shelves_service.py`).
 SHELF_JOBS_ENV = "PICWISE_SHELF_JOBS"
@@ -88,7 +97,7 @@ _ABOUT_CHARS = 400
 BOT_NOTE_NAME = "note.json"
 BOT_NOTE_KEYS = ("night", "shops_asked", "ours", "decided", "passed", "failed", "cut_tonight", "back_tonight",
                  "held", "braked_shops", "night_brake", "stopped", "cannot_be_checked", "awin", "ai_cost_usd",
-                 "old_feed_would_wait")
+                 "old_feed_would_wait", "shop_rule")
 
 _ACTIVE: dict[str, Any] | None = None
 _LAST_NOTE: dict[str, Any] | None = None
@@ -167,10 +176,16 @@ def apply_checks(
     decisions: Mapping[str, Any] | None = None,
     switch: bool | None = None,
     today: date | None = None,
+    scanned: bool | None = None,
 ) -> tuple[ProviderProduct, ...]:
-    """The rows with the checks' decisions applied (module docstring)."""
+    """The rows with the checks' decisions applied (module docstring). `scanned`: the
+    switch of how many of a shop's products pass (`shop_cap.shop_cap_on`, read when None)."""
     global _ACTIVE, _LAST_NOTE, _LAST_CUT
     switch = checks_switch_on() if switch is None else switch
+    if scanned is None:
+        from .shop_cap import shop_cap_on
+
+        scanned = shop_cap_on()
     status = "given"
     if decisions is None and switch:
         decisions, status = load_decisions(today=today)
@@ -220,8 +235,12 @@ def apply_checks(
                 reasons[str(cut[key] or "failed")] += 1
             else:
                 if key in wait:
-                    unchecked.add(key)
-                    unchecked_reasons[str(wait[key] or "not checked")] += 1
+                    why = str(wait[key] or "not checked")
+                    if why == THREE_NIGHTS and not scanned:
+                        counts["three_nights_left_aside"] += 1
+                    else:
+                        unchecked.add(key)
+                        unchecked_reasons[why] += 1
                 state = ai_shelves.category_state(product.title, product.brand, product.raw) if categories else ""
                 if state == "none":
                     no_category.append(index)
@@ -257,7 +276,7 @@ def apply_checks(
             cut_by_shop[_shop(product)] += 1
     _ACTIVE = {"enter": frozenset(decisions.get("enter") or ()), "returning": frozenset(decisions.get("returning") or ()),
                "not_entering": frozenset(not_entering), "waiting": frozenset(waiting),
-               "unchecked": frozenset(unchecked)}
+               "unchecked": frozenset(unchecked), "passed": frozenset(decisions.get("passed") or ())}
     _LAST_CUT = marked
     _LAST_NOTE = {
         "applied": True,
@@ -271,6 +290,8 @@ def apply_checks(
         "stock_from_page": {name[6:]: count for name, count in counts.items() if name.startswith("stock_")},
         "not_shown_until_checked": len(unchecked),
         "not_shown_until_checked_by_reason": dict(sorted(unchecked_reasons.items())),
+        # 19.3.1 with its switch off: the bot's waits of a pass over 3 nights old, left aside.
+        **({"three_nights_left_aside": counts["three_nights_left_aside"]} if counts["three_nights_left_aside"] else {}),
         "category": {"answers": categories, "no_category": len(no_category), "held_by_its_brake": category_brake,
                      "not_asked_yet": len(waiting), "with_a_line": with_a_line},
     }
@@ -291,6 +312,12 @@ def may_enter(product: ProviderProduct) -> bool:
         return True
     key = _key(product)
     return key in _ACTIVE["enter"] and key not in _ACTIVE["not_entering"] and key not in _ACTIVE["unchecked"]
+
+
+def passed(product: ProviderProduct) -> bool:
+    """19.4 f: the product passed its checks and may be shown, as the bot named it for a shop
+    over the most it passes (`decisions`' `passed`); false while the gate is off."""
+    return _ACTIVE is not None and _key(product) in _ACTIVE["passed"]
 
 
 def may_enter_without_memory(product: ProviderProduct) -> bool:
@@ -386,12 +413,17 @@ def candidates_document(candidates: Collection[ProviderProduct], cut: Collection
     """What the preparation writes for the bot (`candidates.json.gz`): the rows of the
     cap's candidates and of the cut products the feed still lists."""
     rows: dict[str, list] = {}
+    named: dict[str, None] = {}
     for product in list(candidates) + list(cut):
         row = row_of(product)
         rows.setdefault(row.key, row_record(row))
+    for product in candidates:
+        named.setdefault(row_of(product).key, None)
+    # In the order the caps named them (the bot asks a capped shop's in that order, 19.3.2;
+    # until 22/11 sorted by key, which the bot asks in when the rule of 19.3 is off).
     return {
         "format": "picwise-checks-candidates",
         "written_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "candidates": sorted({row_of(product).key for product in candidates}),
+        "candidates": list(named),
         "rows": [rows[key] for key in sorted(rows)],
     }

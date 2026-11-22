@@ -49,7 +49,8 @@ Each rule names whose it is:
 - Κατάστημα με «φράχτη» για ρομπότ δεν το παρακάμπτουμε. Σου ετοιμάζεται ένα γράμμα για να του
   το στείλεις μέσω Awin, ώστε να αφήσει το bot μας.
 - Κάθε μέρα το email σου έχει μία γραμμή με τους αριθμούς των ελέγχων.
-- **Πόσα προϊόντα δείχνει ένα κατάστημα (απόφασή σου, 22/11· δεν έχει χτιστεί).** Ό,τι
+- **Πόσα προϊόντα δείχνει ένα κατάστημα (απόφασή σου, 22/11· χτίστηκε το βράδυ της 22/11,
+  δεν έχει ανέβει, ο διακόπτης του είναι κλειστός: στο site δεν άλλαξε τίποτα).** Ό,τι
   προλαβαίνει να σκανάρει το bot σε ένα κατάστημα περνάει στο site: σε ένα 15.000, σε άλλο
   5.000. Ανώτατο όριο 20.000, για κατάστημα που απαντά γρήγορα. Δεν μπαίνει ξεχωριστό
   πλαφόν ανά κατάστημα («μόνο όσα έχουν σκανναριστεί περνάνε»· «τελειώσαμε με αυτό»). Σήμερα
@@ -60,7 +61,8 @@ Each rule names whose it is:
   να δουλεύει σε περισσότερους επεξεργαστές μαζί («Ναι, μαζί»). Ένας έλεγχος μετράει 3
   βράδια: προϊόν που το bot δεν πρόλαβε να ξαναελέγξει μένει ως 3 μέρες, μετά δεν φαίνεται
   μέχρι να ξαναπεράσει («κρατάμε τα προϊόντα ασκανάριστα μέχρι 3 μέρες», 22/11· σήμερα
-  μετράει 30 βράδια). Ο κανόνας: ενότητα 19.
+  μετράει 30 βράδια). Ο κανόνας: ενότητα 19. Τι χτίστηκε: 19.10. Επόμενο: η ματιά πριν από
+  το «ανέβασε» (Fable), μετά το «ανέβασε» σου.
 
 ## 1. What the checks are for, and what they rest on
 
@@ -771,7 +773,7 @@ about 285,000 at its lowest, on day 4, then filling again with checked products)
    many products wait for it (`not shown until checked`, by reason).
 
 
-## 19. How many of a shop's products pass: what the bot scans, 20,000 the most (owner, 22/11): decided, NOT BUILT
+## 19. How many of a shop's products pass: what the bot scans, 20,000 the most (owner, 22/11): decided; BUILT 22/11, NOT DEPLOYED, its switch false (19.10)
 
 Written 22/11 (17:10 Athens) by Claude Fable 5.2, after a look with its numbers (19.2), and
 **corrected the same day (17:35) on the owner's words of 17:08 and 17:21: what the bot scans
@@ -1014,3 +1016,111 @@ own word, told that two were proposed; 19.3.1). He asked for no more questions o
 - The standing texts change when it is deployed, not before: `PROJECT_RULES.md` (2 and 5,
   beside the category cap), `docs/PICWISE_DECISION_CONTRACT.md` ("What a product must carry
   to be shown"), `docs/PICWISE_DAILY_WORK.md` (the health run's lines).
+
+### 19.10 Built (22/11, Claude Opus 5.5): what the code settles that this section left open
+
+Built on the work branch, with tests; **`data/shop_cap_switch.json` is false: nothing on the
+site changes, and the bot asks as before, until the owner's «ανέβασε» after the look (19.7.1)
+turns it true.** No question was put to the owner and nothing was measured (19.1, 17:16).
+Task 6's code is as it was built (19.6.7): its gate, its morning's job and its memory of what
+was shown, and its tests, untouched and passing.
+
+Where:
+
+- `src/picwise_providers/shop_cap.py`: the order of 19.4 (`ordered`), the rule in the
+  preparation (`cap_shops`), the order the bot asks a shop's shown products in (`shop_order`),
+  the switch (`shop_cap_on`), the note (`shop_cap_summary`).
+- `tools/prepare_catalogue.py` (`_Cap._shops`, `_widened`, `_shop_cap`): the rule worked out
+  before the category cap, on every product a card can show; the category cap then works on
+  what the shops keep, behind the gate as it stood (the checks', and task 6's when its switch
+  is on). A failure of the rule keeps every product and is said (the health run passes a
+  limit).
+- `src/picwise_checks/ledger.py`: `PASS_NIGHTS_SCANNED` (3) and its reason "not passed in 3
+  nights" (19.3.1); `decisions(..., pass_nights, passed_over)`; `asking_order(..., scanned,
+  shown_order, limit)` (19.3.2, 19.3.3).
+- `src/picwise_providers/checks_applied.py`: `THREE_NIGHTS`, `passed`.
+- `deployment/bot/shop_checks_bot.py`: the switch read when a round starts (`--shop-rule` for
+  a look), the order read from the prepared catalogue, the most asked of a shop, the pages
+  read on processes of their own (`Readers`, `--processes`), every shop at once.
+- `deployment/server/print_health.py`: the bot's `shop_rule` and the preparation's
+  `checks.shop_cap`, printed.
+- Tests: `tests/test_picwise_shop_cap.py`, `tests/test_picwise_checks_shop_rule.py`, and the
+  walk of nights (`tests/test_picwise_checks_walk.py`, class `Rules19...`): a capped shop
+  shows the most and no more, the same products each night, and is asked no more; a place a
+  cut leaves goes to a candidate that passed; a slow shop settles at what the bot scans of it
+  in a day, the same products each night; a pass counts for three nights, then the product
+  waits and is back the night it passes; with the switch off the waits of three nights are
+  left aside.
+
+Points the code settled (each **Proposed**, built so, for the look to show and the owner to
+change):
+
+1. **The order is one list.** Inside a step the passed come first (19.4 f, every night, not
+   only the first: after it a shop's new products are all passed ones, so it matters only
+   when the night before kept more than the most); then fair shares over the parts, taken
+   round by round, the largest part first in each round (as `fair_quotas` gives the places
+   left over to the largest); inside a part the clean ones first, as the category cap ranks
+   them (an identity, here the code of `same_product_key`; an image; a stock state that
+   varies), then the ones more than one shop sells; each rank spread over its prices by
+   midpoints (the middle, the quarters, the eighths...), ties by the row's id. So the first N
+   of the list are what a shop keeps with N places, and the bot asks in the same order. The
+   category cap's own choosing (a number for each part, spread at that number) is not
+   prefix-steady; the counts each part gets are the same, the products picked can differ.
+2. **Thin** is read by the kinds of what the site kept the night before (the category cap's
+   pool, as far as a card can still show them), every kind a product carries counted (as the
+   look counted them); a product is of a thin kind when the smallest of its narrowest kinds
+   is under 100. On a night with no pool, by every product given. On the first night that is
+   today's catalogue, as the look read it.
+3. **A capped shop** is one with more than 20,000 products a card can show, counted before the
+   category cap (19.6.1). That count is over the rows a card can show (1.6 million on the
+   server), not the 399,000 the site shows: more shops than the look's four may be over it.
+   The look counts them. A shop at or under 20,000 is not touched by this rule: its products
+   meet the category cap and its gate as before; what the bot scans of it shows by the three
+   nights and the order of asking alone.
+4. **What a capped shop keeps**, in this order, up to 20,000: what it kept the night before
+   that no cheaper shop keeps (e; more than 20,000 of them, the first night, by the order, so
+   the passed first); then the products that may enter (the checks' gate: passed, a candidate,
+   a category, 9.4) and no cheaper shop keeps, by the order; then the kept ones a cheaper shop
+   keeps; then those that may enter and a cheaper shop keeps. A dearer copy is last whatever
+   its kind (a thin kind's too): it shows nothing on the site.
+5. **The shops are settled by name** in the second pass (19.4 b says the smallest cap first;
+   every cap is 20,000 now).
+6. **Candidates**: one and a quarter times the places open, the next by the order among the
+   products that wait at the gate, the dearer copies last; no minimum (the category cap names
+   at least 4 a kind). They go to the bot first, in their order, and to the AI's category
+   (5.5) with the category cap's; not to task 6's morning job (19.6.7, to weigh).
+7. **The bot, with the switch on**: per shop, (1) the held and the failed that are due; (2)
+   the shown whose row changed, and the sold-out readings about to lapse; (3) the shown asked
+   before, in the order of 19.4, which the bot works out from the prepared catalogue
+   (`shop_order`: every shown product read as kept, so a product another shop shows cheaper is
+   last, and a kind thin by what the catalogue shows); (4) the candidates in the order named;
+   (5) the shown never asked (10.4's order). Past (1), at most 20,000 of a shop (19.3.3): the
+   failed products due are cut ones asked on their schedule (8.1) and are not counted. So of
+   a capped shop's candidates the bot asks as many as its places open: the quarter more is
+   named but not asked (19.3.3 read before 19.6.2), and a candidate that fails leaves its
+   place to the next one the night after. With the switch off, as before (10).
+8. **Three nights** (19.3.1): passed on a night, shown that night and the two after; then "not
+   passed in 3 nights", a wait, not a cut (9.3). A pass over 30 nights old keeps its own reason.
+   A candidate enters only with a pass of the last 3 nights. The bot reads the switch when a
+   round starts; **with the switch off the preparation leaves aside the waits of three nights
+   the bot wrote** (counted in the note, `three_nights_left_aside`), so turning it off brings
+   them back within one preparation, as 19.7.2 asks.
+9. **The passed** (19.4 f): the decisions name them (`passed`) only for a shop that shows more
+   than 20,000, the only place they change what is kept; a list of every passed product would
+   add about 400,000 keys to the file the preparation reads.
+10. **Several processes** (19.5): the pages, the products' own `.js` and the catalogue's pages
+    are read on 4 processes of their own, started fresh (not copied from the bot, so they hold
+    no catalogue) before the catalogue is read; each holds what the bot's own reading held. If
+    they cannot start (the service's sandbox), or one dies, the bot reads on its own process,
+    as before, and says so in its journal and note. **Every shop is asked at once**, one thread
+    each (up to 200; until now 48 at a time, the rest waiting for a shop to end): rules 4.3,
+    "many shops at once", and what the bot scans is what passes. The pace a shop allows (3 s,
+    its crawl-delay, one request at a time) is unchanged.
+11. **The note**: the preparation's under `checks.shop_cap` in `/prepared.json` (the note's own
+    keys are pinned by the preparation's tests); the bot's `shop_rule` in its note. The health
+    run prints both, per shop over the most what it kept by step, and passes a limit when the
+    rule was not worked out.
+
+Not measured (the look's, 19.7.1): the preparation's time and memory with it (the rule itself
+took 4 s on 300,000 made-up rows here; the category cap and the catalogue after it then work on
+fewer products), the shops over 20,000 before the category cap, and what each night cuts.

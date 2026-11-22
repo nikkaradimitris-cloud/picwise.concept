@@ -107,7 +107,9 @@ def main(argv: list[str] | None = None) -> int:
         _write_static_note(args.static_dir, {"prepared": False, "reason": "feed_not_readable"})
         return 0 if args.keep_going else 1
     pool = capping.write_pool(prepared)
-    checks = _checks(capping)
+    # The rule of how many of a shop's products pass is the checks' (their rules, section 19):
+    # its numbers go in the note with theirs.
+    checks = {**_checks(capping), "shop_cap": _shop_cap(capping)}
     itself = _itself(capping)
     print(
         f"prepare_catalogue: {prepared.feed_status.product_count} rows, "
@@ -217,6 +219,10 @@ class _Cap:
         self.shelf: list[dict[str, object]] = []
         # Why the checks' gate did not stand tonight, when it did not.
         self.gate_off = ""
+        # How many of a shop's products pass (the checks' rules 19; `picwise_providers.shop_cap`),
+        # behind its switch: what it kept, or why it was not worked out.
+        self.shops = None
+        self.shops_error = ""
         # What the AI is asked next of the question "is it the kind itself" (its rules 8.2):
         # the questions that wait, of the products kept or next, and each kind's first cards;
         # and what tonight's catalogue shows, for the next night's brakes (its rules 7).
@@ -259,25 +265,64 @@ class _Cap:
                 # not shown until checked: out of the night before's, to wait at the gate (9.3, 9.5).
                 kept_before = (frozenset(kept_before) | checks_applied.returning_row_keys(products, row_key)) \
                     - checks_applied.unchecked_row_keys(products, row_key)
-            self.result = cap_catalogue(
-                products, kinds, feed_ctx=feed_ctx, kept_before=kept_before,
-                share=share, category_max=category_max, may_enter=gate,
-            )
+            # How many of a shop's products pass, before the cap of 15% a category (the checks'
+            # rules 19.6.1), behind the checks' gate alone (19.6.2); task 6's gate stands after it,
+            # at the category cap, as it was built (19.6.7).
+            checks_gate = None
+            if checks_applied.gate_on():
+                checks_gate = checks_applied.may_enter_without_memory if self.gate_off else checks_applied.may_enter
+            places = self._shops(products, kinds, feed_ctx, kept_before, checks_gate)
+            if places is None:
+                self.result = cap_catalogue(
+                    products, kinds, feed_ctx=feed_ctx, kept_before=kept_before,
+                    share=share, category_max=category_max, may_enter=gate,
+                )
+            else:
+                self.result = _widened(cap_catalogue(
+                    [products[place] for place in places], [kinds[place] for place in places], feed_ctx=feed_ctx,
+                    kept_before=kept_before, share=share, category_max=category_max, may_enter=gate,
+                ), places, len(products))
             if gate is not None:
                 from picwise_checks.rows import row_of, row_record
 
                 next_ones = [products[index] for index in self.result.candidates]
+                # A capped shop's candidates (19.6.2) go to the bot first, in their order, and to
+                # the AI's category (5.5) with the cap's; not to task 6's morning (19.6.7: to weigh).
+                of_shops = [products[index] for index in (self.shops.candidates if self.shops is not None else ())]
                 self.candidates = checks_applied.candidates_document(
-                    next_ones, checks_applied.take_cut_products(), row_record, row_of,
+                    of_shops + next_ones, checks_applied.take_cut_products(), row_record, row_of,
                 )
                 self.shelf = checks_applied.shelf_items(
-                    [product for product, kept in zip(products, self.result.keep) if kept] + next_ones
+                    [product for product, kept in zip(products, self.result.keep) if kept] + of_shops + next_ones
                 )
         except Exception as error:
             self.result, self.error = None, _where(error)
             return None
         self._itself_job(products, kinds)
         return self.result.keep
+
+    def _shops(self, products, kinds, feed_ctx, kept_before, gate):
+        """The rule of how many of a shop's products pass (`shop_cap.cap_shops`), behind its
+        switch and the checks' gate (`gate`, None while the checks are not applied): the places
+        of the products it keeps, or None when it keeps every product (its switch off, no shop
+        over the most, or it failed: then every product goes on to the category cap as before,
+        and the note says so)."""
+        try:
+            from picwise_providers import checks_applied, shop_cap
+
+            if not shop_cap.shop_cap_on():
+                return None
+            self.shops = shop_cap.cap_shops(
+                products, kinds, feed_ctx=feed_ctx, kept_before=kept_before, may_enter=gate,
+                passed=checks_applied.passed if checks_applied.gate_on() else None,
+                limit=shop_cap.SHOP_LIMIT, thin=shop_cap.THIN,
+            )
+        except Exception as error:
+            self.shops, self.shops_error = None, _where(error)
+            return None
+        if all(self.shops.keep):
+            return None
+        return [place for place, kept in enumerate(self.shops.keep) if kept]
 
     def _itself_job(self, products, kinds) -> None:
         """The questions "is it the kind itself" the AI is asked next, when the night read
@@ -372,6 +417,43 @@ class _Cap:
             "kept_from_before": result.kept_from_before,
             "over": sorted(result.inside),
         }
+
+
+def _widened(result, places, count):
+    """A cap worked out on the products at `places` of `count`, as one on all of them: the
+    products left out before it are not kept, and its candidates name the places given."""
+    from dataclasses import replace
+
+    keep = [False] * count
+    for place, kept in zip(places, result.keep):
+        keep[place] = kept
+    return replace(result, keep=tuple(keep), candidates=tuple(places[index] for index in result.candidates))
+
+
+def _shop_cap(capping: _Cap) -> dict[str, object]:
+    """What the rule of how many of a shop's products pass did tonight (the checks' rules
+    19.7.3): counts and shop names only; printed and kept in the night's note."""
+    from picwise_providers.shop_cap import shop_cap_on, shop_cap_summary
+
+    if capping.shops_error:
+        print(f"prepare_catalogue: how many of a shop's products pass: NOT WORKED OUT ({capping.shops_error});"
+              " every shop's products went on to the category cap")
+        return {"applied": False, "error": capping.shops_error}
+    if capping.shops is None:
+        return {"applied": False, "why": "the switch is off" if not shop_cap_on() else "not worked out"}
+    summary = shop_cap_summary(capping.shops)
+    print(
+        f"prepare_catalogue: how many of a shop's products pass (at most {summary['limit']:,}): "
+        f"{summary['capped_shops']} shops over it, {summary['cut']:,} of their products left out, "
+        f"candidates {summary['candidates']:,}"
+        + "".join(
+            f"; {entry['shop']} {entry['kept']:,} of {entry['products']:,} ("
+            + ", ".join(f"{step} {count:,}" for step, count in entry["kept_by_step"].items() if count)
+            + f"; from the night before {entry['kept_from_before']:,}, waiting {entry['waiting_at_the_gate']:,})"
+            for entry in summary["shops"]
+        )
+    )
+    return summary
 
 
 def _checks(capping: _Cap) -> dict[str, object]:

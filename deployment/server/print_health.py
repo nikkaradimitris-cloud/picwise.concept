@@ -263,6 +263,13 @@ def look_at_checks(check: Health, runner: Run) -> None:
         check.say("checks: the round was ours, fewer than half of the shops answered at all; nothing recorded")
         check.limit(True, "the checks' round was ours: fewer than half of the shops answered (rules 7.1)")
         return
+    rule = note.get("shop_rule") if isinstance(note.get("shop_rule"), dict) else {}
+    if rule.get("on"):
+        # The rule of how many of a shop's products pass, as the bot asked under it (section 19).
+        check.say(f"checks, how many of a shop's products pass: on; a pass counts for {rule.get('pass_nights')} nights; "
+                  f"at most {int(rule.get('most_asked_of_a_shop') or 0):,} asked of a shop; "
+                  f"{rule.get('shops_at_once')} shops at once, pages read on "
+                  + (f"{rule['processes']} processes" if rule.get("processes") else "the bot's own process"))
     failed = note.get("failed") if isinstance(note.get("failed"), dict) else {}
     check.say(f"checks: decided {note.get('decided', 0):,}, passed {note.get('passed', 0):,}, "
               f"failed {sum(failed.values()):,}" + (f" ({_counts(failed)})" if failed else "")
@@ -311,6 +318,23 @@ def look_at_checks(check: Health, runner: Run) -> None:
                       f"named for the bot's next night {int(applied.get('candidates') or 0):,}")
     elif applied:
         check.say(f"checks applied by the preparation: none ({applied.get('why')})")
+    shops = applied.get("shop_cap") if isinstance(applied.get("shop_cap"), dict) else {}
+    if shops.get("applied"):
+        # How many of a shop's products pass (the checks' rules 19.7.3): per shop over the most,
+        # its products a card can show, kept by step, left out, candidates.
+        check.say(f"checks, how many of a shop's products pass (at most {int(shops.get('limit') or 0):,}): "
+                  f"{int(shops.get('capped_shops') or 0)} shops over it, {int(shops.get('cut') or 0):,} products left out, "
+                  f"candidates {int(shops.get('candidates') or 0):,}")
+        for entry in shops.get("shops") or []:
+            if isinstance(entry, dict):
+                steps = entry.get("kept_by_step") if isinstance(entry.get("kept_by_step"), dict) else {}
+                check.say(f"checks, {entry.get('shop')}: {int(entry.get('kept') or 0):,} of {int(entry.get('products') or 0):,}"
+                          + (f" ({_counts({name: count for name, count in steps.items() if count})})" if steps else "")
+                          + f"; waiting at the gate {int(entry.get('waiting_at_the_gate') or 0):,}")
+    elif shops.get("error"):
+        check.say(f"checks, how many of a shop's products pass: NOT WORKED OUT ({shops.get('error')})")
+    check.limit(bool(shops.get("error")), "how many of a shop's products pass was not worked out last night: "
+                                          f"every shop's products went on to the category cap ({shops.get('error')})")
     if applied.get("gate_off"):
         check.say(f"checks, the cap's gate did not stand last night: {applied.get('gate_off')}")
     check.limit(bool(applied.get("gate_off")), "the checks' gate did not stand last night: new products entered unchecked "

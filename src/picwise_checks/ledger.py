@@ -26,7 +26,7 @@ from collections import Counter, defaultdict
 from dataclasses import astuple, dataclass, field, fields
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Collection, Iterable, Mapping
+from typing import Any, Collection, Iterable, Mapping, Sequence
 
 from . import brakes
 from .verdicts import ANOTHER_PRODUCT, FAILED, GONE, PASSED, Row, ShopNight, Verdict, awin_out, feed_is_old
@@ -63,6 +63,13 @@ KEEPS_PLACE_NIGHTS = 7
 # by then is not shown, as a shop that cannot be checked leaves on its day 4.
 PASS_VALID_NIGHTS = 30
 FIRST_ROUND_NIGHTS = 4
+# 19.3.1: with the rule of how many of a shop's products pass (its switch on), a pass counts
+# for three nights (owner, 2026-11-22: «Και 3 βράδια μπορούμε... Αν υπάρξει κάποια έπιπλοκή
+# κρατάμε τα προϊόντα ασκανάριστα μέχρι 3 μέρες»): a product passed on a night is shown that
+# night and the two after, then waits until it passes again. The reason it waits by.
+PASS_NIGHTS_SCANNED = 3
+NOT_PASSED_IN_THREE = "not passed in 3 nights"
+NOT_PASSED_IN_THIRTY = "not passed in 30 nights"
 # 5.6.2: a shop that cannot be checked leaves on its day 4, after 3 days (owner, 2026-11-22:
 # «Σε 3 μέρες», instead of the 14 of 21/11).
 OUT_ON_DAY = 4
@@ -548,16 +555,20 @@ def stock_proven(shop: Shop) -> bool:
     return brakes.reader_proven((tied, same) for _night, tied, same in shop.stock_proof)
 
 
-def not_shown_until_checked(product: Product | None, shop: Shop, night: date, *, old_feed_rule: bool = False) -> str:
+def not_shown_until_checked(product: Product | None, shop: Shop, night: date, *, old_feed_rule: bool = False,
+                            pass_nights: int = PASS_VALID_NIGHTS) -> str:
     """9.3 (and 5.6.4, Proposed): why a product may not be shown until the bot has asked
-    it, or "": never asked; not passed in 30 nights; with `old_feed_rule`, of a feed over
+    it, or "": never asked; not passed in 30 nights, or in `pass_nights` when fewer (19.3.1:
+    3, the rule of how many of a shop's products pass); with `old_feed_rule`, of a feed over
     7 days old with no reading of its shop's own site of the last 3 nights. No check
     failed: the product waits at the cap's gate as a new one does (9.4)."""
     if product is None or not _decided_once(product):
         return "never checked"
     passed = _day(product.passed_on)
     if passed is None or (night - passed).days >= PASS_VALID_NIGHTS:
-        return "not passed in 30 nights"
+        return NOT_PASSED_IN_THIRTY
+    if (night - passed).days >= pass_nights:
+        return NOT_PASSED_IN_THREE if pass_nights == PASS_NIGHTS_SCANNED else f"not passed in {pass_nights} nights"
     if old_feed_rule and feed_is_old(_day(shop.feed_import), night):
         # The latest of its two readings, the price's and the stock's (until 22/11 the price's
         # stood before the stock's, so a fresh reading of stock beside an older one of price
@@ -570,7 +581,8 @@ def not_shown_until_checked(product: Product | None, shop: Shop, night: date, *,
 
 def decisions(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown: Collection[str],
               candidates: Collection[str] = (), came_back: Iterable[str] = (),
-              old_feed_rule: bool = False) -> dict[str, Any]:
+              old_feed_rule: bool = False, pass_nights: int = PASS_VALID_NIGHTS,
+              passed_over: int = 0) -> dict[str, Any]:
     """What the preparation reads (`picwise_providers.checks_applied`), rules 6 and 9:
 
     - `shops_out`: the shops out, and why (5.6);
@@ -589,9 +601,17 @@ def decisions(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown: Co
     - `prices`: the shop's own page's price, tied to its row, where the shop's reader is
       proven and the reading is of the row's present price (5.3, 7.5);
     - `stock`: what a page reader read of stock, where it is proven, for 3 days (5.2);
-    - `returning`: products that passed again within 7 nights of their cut (8.2)."""
+    - `returning`: products that passed again within 7 nights of their cut (8.2);
+    - `passed`, with `passed_over`: of the shops that show more than `passed_over` products,
+      the shown ones that passed and may be shown, so that a shop over the most it passes
+      keeps those before the ones never asked (19.4 f; `picwise_providers.shop_cap`).
+
+    `pass_nights`: how many nights a pass counts for (9.1: 30; 19.3.1: 3, the rule of how
+    many of a shop's products pass, its switch on)."""
     shown = frozenset(shown)
     candidates = frozenset(candidates)
+    shown_by_shop: Counter = Counter(rows[key].shop for key in shown if key in rows) if passed_over > 0 else Counter()
+    passed: list[str] = []
     cut: dict[str, str] = {}
     wait: dict[str, str] = {}
     prices: dict[str, list[str]] = {}
@@ -607,15 +627,18 @@ def decisions(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown: Co
             cut[key] = product.reason
             continue
         if key in shown and shop.round_over and (product is None or product.state != HELD):
-            why = not_shown_until_checked(product, shop, night, old_feed_rule=old_feed_rule)
+            why = not_shown_until_checked(product, shop, night, old_feed_rule=old_feed_rule, pass_nights=pass_nights)
             if why:
                 wait[key] = why
                 continue
         if key in candidates and key not in shown and product is not None and product.state == PASSED \
-                and not not_shown_until_checked(product, shop, night, old_feed_rule=old_feed_rule):
+                and not not_shown_until_checked(product, shop, night, old_feed_rule=old_feed_rule, pass_nights=pass_nights):
             enter.append(key)
         if product is None:
             continue
+        if key in shown and shown_by_shop[row.shop] > passed_over > 0 and product.state == PASSED \
+                and not not_shown_until_checked(product, shop, night, old_feed_rule=old_feed_rule, pass_nights=pass_nights):
+            passed.append(key)
         if proven(shop) and product.site_price and product.feed_price and row.price is not None \
                 and product.feed_price == f"{row.price:.2f}" and product.site_price != product.feed_price:
             prices[key] = [product.site_price, product.price_on]
@@ -635,6 +658,7 @@ def decisions(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown: Co
         "prices": dict(sorted(prices.items())),
         "stock": dict(sorted(stock.items())),
         "returning": sorted(came_back),
+        **({"passed": sorted(passed)} if passed_over > 0 else {}),
     }
 
 
@@ -647,17 +671,29 @@ def write_decisions(document: Mapping[str, Any], path: Path) -> None:
 
 def asking_order(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown: Collection[str],
                  candidates: Collection[str] = (), parts: Mapping[str, str] | None = None,
-                 ) -> dict[str, list[str]]:
+                 scanned: bool = False, shown_order: Mapping[str, Sequence[str]] | None = None,
+                 limit: int = 0) -> dict[str, list[str]]:
     """Per shop, its products in the order they are asked tonight (rules 10): (1) the
     held and the failed that are due; (2) the shown whose row changed its price, address
     or photo since their check, and the sold-out readings about to lapse; (3) the cap's
     candidates; (4) the shown never asked, of each kind the 24 cheapest and the middle
     price first, then the rest, the cheapest first; (5) the shown whose last pass is over
     14 nights old, then the rest, asked longest ago first. A failed product not due is
-    not asked; `rows` may hold cut products the feed still lists."""
+    not asked; `rows` may hold cut products the feed still lists.
+
+    `scanned`: the rule of how many of a shop's products pass (the checks' rules 19.3, its
+    switch on). Each day the bot asks a shop's shown products again first, after (1) and
+    (2), in the order of 19.4 (`shown_order`, per shop its keys, worked out from the
+    prepared catalogue by `picwise_providers.shop_cap.shop_order`), and new ones only in
+    the time left: the cap's candidates in the order the caps named them, then the shown
+    never asked (19.3.2); so a shop settles at what it lets the bot scan in a day and its
+    products do not take turns. `limit`: past (1), at most this many of a shop (19.3.3:
+    its first 20,000)."""
     parts = parts or {}
     shown = frozenset(shown)
-    candidates = frozenset(candidates)
+    named = {key: place for place, key in enumerate(dict.fromkeys(candidates))}
+    candidates = frozenset(named)
+    places = {key: place for keys in (shown_order or {}).values() for place, key in enumerate(keys)} if scanned else {}
     today = _iso(night)
     tiers: dict[str, list[list[tuple[Any, str]]]] = defaultdict(lambda: [[], [], [], [], [], []])
     never: dict[tuple[str, str], list[str]] = defaultdict(list)
@@ -677,17 +713,24 @@ def asking_order(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown:
                 shop_tiers[1].append(((product.stock_on, key), key))
             elif product is None or not product.asked:
                 never[(row.shop, parts.get(key, ""))].append(key)
+            elif scanned:
+                # 19.3.2: asked again first, in the order of 19.4; a product the order does not
+                # name (the catalogue read without it), after, the cheapest first.
+                place = places.get(key)
+                rank = (0, place, 0.0) if place is not None else (1, 0, row.price or 0.0)
+                shop_tiers[2].append(((rank, key), key))
             else:
                 passed = _day(product.passed_on)
                 old = passed is None or (night - passed).days > OLD_PASS_FIRST
                 shop_tiers[4 if old else 5].append(((product.asked, key), key))
         elif key in candidates:
-            shop_tiers[2].append(((0, key), key))
+            shop_tiers[3 if scanned else 2].append((((0, named[key]) if scanned else (0, key)), key))
         elif (ledger.shops.get(row.shop) or Shop()).out.startswith("cannot be checked"):
             # A shop out because it could not be checked is asked again each night by a
             # few of its pages (5.6.2).
-            if sum(1 for rank, _asked in shop_tiers[2] if rank[0] == 1) < RETRY_PAGES:
-                shop_tiers[2].append(((1, key), key))
+            tier = shop_tiers[3 if scanned else 2]
+            if sum(1 for rank, _asked in tier if rank[0] == 1) < RETRY_PAGES:
+                tier.append(((1, key), key))
     for (shop_name, _part), keys in sorted(never.items()):
         priced = sorted(keys, key=lambda key: (rows[key].price is None, rows[key].price or 0.0, key))
         first = priced[:CHEAPEST_FIRST]
@@ -695,13 +738,16 @@ def asking_order(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown:
         if middle is not None and middle not in first:
             first.append(middle)
         chosen = set(first)
-        tiers[shop_name][3].extend(((0, rows[key].price or 0.0, key), key) for key in first)
-        tiers[shop_name][3].extend(((1, rows[key].price or 0.0, key), key) for key in priced if key not in chosen)
+        never_tier = tiers[shop_name][4 if scanned else 3]
+        never_tier.extend(((0, rows[key].price or 0.0, key), key) for key in first)
+        never_tier.extend(((1, rows[key].price or 0.0, key), key) for key in priced if key not in chosen)
     order: dict[str, list[str]] = {}
     for shop_name, shop_tiers in tiers.items():
-        keys: list[str] = []
-        for tier in shop_tiers:
-            keys.extend(key for _rank, key in sorted(tier))
+        keys = [key for _rank, key in sorted(shop_tiers[0])]
+        rest: list[str] = []
+        for tier in shop_tiers[1:]:
+            rest.extend(key for _rank, key in sorted(tier))
+        keys.extend(rest[:limit] if limit > 0 else rest)
         if keys:
             order[shop_name] = keys
     return order

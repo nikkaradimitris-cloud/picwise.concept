@@ -162,6 +162,32 @@ class HealthTests(_AServer, unittest.TestCase):
         self.assertIn("over the limit: the checks' round was ours: fewer than half of the shops answered (rules 7.1)",
                       self.over(self.printed()))
 
+    def test_how_many_of_a_shops_products_pass_is_printed_and_a_failure_passes_a_limit(self) -> None:
+        # The checks' rules 19.7.3: per shop over the most, what it kept by step.
+        self.write(self.folder / "checks-note.json", {"night": "2026-11-25", "shops_asked": 135, "decided": 10,
+                                                      "passed": 10, "failed": {},
+                                                      "shop_rule": {"on": True, "pass_nights": 3,
+                                                                    "most_asked_of_a_shop": 20000, "processes": 4,
+                                                                    "shops_at_once": 135}})
+        note = json.loads(self.note.read_text())
+        shops = {"applied": True, "limit": 20000, "capped_shops": 1, "cut": 82278, "candidates": 0,
+                 "shops": [{"shop": "Big Shop", "products": 102278, "kept": 20000, "waiting_at_the_gate": 12,
+                            "kept_by_step": {"thin kinds": 840, "cheapest kept": 1438, "with a kind": 17722,
+                                             "the rest": 0, "a cheaper shop's": 0}}]}
+        self.write(self.note, {**note, "checks": {"applied": True, "shops_out": {}, "cut": 0, "shop_cap": shops}})
+        lines = self.printed()
+        self.assertIn("checks, how many of a shop's products pass: on; a pass counts for 3 nights; at most 20,000 asked "
+                      "of a shop; 135 shops at once, pages read on 4 processes", lines)
+        self.assertIn("checks, how many of a shop's products pass (at most 20,000): 1 shops over it, 82,278 products "
+                      "left out, candidates 0", lines)
+        self.assertIn("checks, Big Shop: 20,000 of 102,278 (cheapest kept 1,438, thin kinds 840, with a kind 17,722); "
+                      "waiting at the gate 12", lines)
+        self.assertEqual(lines[-1], "within every limit")
+        self.write(self.note, {**note, "checks": {"applied": True, "shops_out": {}, "cut": 0,
+                                                  "shop_cap": {"applied": False, "error": "KeyError at shop_cap.py:1"}}})
+        self.assertIn("over the limit: how many of a shop's products pass was not worked out last night: every shop's "
+                      "products went on to the category cap (KeyError at shop_cap.py:1)", self.over(self.printed()))
+
     def test_a_night_the_caps_gate_did_not_stand_passes_a_limit(self) -> None:
         self.write(self.folder / "checks-note.json", {"night": "2026-11-22", "shops_asked": 151, "decided": 10,
                                                       "passed": 10, "failed": {}})

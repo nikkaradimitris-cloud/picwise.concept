@@ -20,6 +20,17 @@ Pinned (the look of task 7, 22/11, which found the first by walking the two side
 - a night the cap has no memory of the night before (its pool missing or unreadable), the
   gate holds back only the products not checked, never the whole site.
 
+And the rule of how many of a shop's products pass (the checks' rules 19; `scanned`, its
+switch on), walked the same way, with the most a shop passes made small:
+
+- a capped shop shows the most and no more, the same products each night, and the bot asks
+  it no more than the most (19.3.3, 19.4 e);
+- a slow shop settles at what the bot scans of it in a day, the same products each night
+  (19.3.2: its shown products asked again first);
+- a pass counts for three nights: a product the bot could not reach is shown the night it
+  passed and the two after, then waits, is named a candidate and is back the night it
+  passes again (19.3.1).
+
 Every row is local test data: fictional shops and brands, `.invalid` hosts.
 """
 from __future__ import annotations
@@ -33,6 +44,7 @@ import unittest
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 for path in (ROOT, ROOT / "src"):
@@ -46,6 +58,7 @@ from picwise_providers import checks_applied as applied  # noqa: E402
 from picwise_providers.catalogue_cap import google_pool_path, part_of, row_key  # noqa: E402
 from picwise_providers.contracts import ProviderProduct  # noqa: E402
 from picwise_providers.offer_health import build_feed_availability_context, evaluate_product_eligibility  # noqa: E402
+from picwise_providers import shop_cap  # noqa: E402
 
 
 
@@ -88,7 +101,11 @@ def _number(key_or_product) -> int:
 class Server:
     """The two sides of a night, with the files they hand each other kept in memory."""
 
-    def __init__(self, feed, *, shown=None, asked_a_night) -> None:
+    def __init__(self, feed, *, shown=None, asked_a_night, scanned: bool = False, limit: int = 0) -> None:
+        # `scanned`: the rule of how many of a shop's products pass (19), with `limit` the most
+        # a shop passes (20,000 on the server).
+        self.scanned = scanned
+        self.limit = limit or shop_cap.SHOP_LIMIT
         self.feed = tuple(feed)
         # How many products the bot gets through a night: one number, or one a shop.
         self.asked_a_night = asked_a_night if isinstance(asked_a_night, dict) else {"": asked_a_night}
@@ -113,9 +130,17 @@ class Server:
     def close(self) -> None:
         self.folder.cleanup()
 
-    def night(self, answers=None) -> dict:
-        """One night; `answers`: a product's number to its page's verdict (the rest pass)."""
+    def night(self, answers=None, *, reach=None) -> dict:
+        """One night; `answers`: a product's number to its page's verdict (the rest pass);
+        `reach`: how many products the bot gets through tonight, when not as usual."""
         answers = answers or {}
+        if self.scanned:
+            with mock.patch.object(shop_cap, "shop_cap_on", return_value=True), \
+                    mock.patch.object(shop_cap, "SHOP_LIMIT", self.limit):
+                return self._night(answers, reach)
+        return self._night(answers, reach)
+
+    def _night(self, answers, reach) -> dict:
         night = START + timedelta(days=self.night_number)
         self.night_number += 1
         # The bot's side (`shop_checks_bot.main` and `run`).
@@ -126,21 +151,31 @@ class Server:
         candidates = [key for key in self.for_the_bot["candidates"] if key in named]
         for key, row in named.items():
             rows.setdefault(key, row)
-        order = L.asking_order(self.ledger, night, rows, shown=shown, candidates=candidates, parts=parts)
-        asked = {shop: keys[: self.asked_a_night.get(shop, self.asked_a_night.get("", 0))] for shop, keys in order.items()}
+        shown_order = None
+        if self.scanned:
+            keys_of = [row_of(product).key for product in self.shown]
+            shown_order = {shop: [keys_of[place] for place in places] for shop, places in
+                           shop_cap.shop_order(self.shown, [frozenset({"kettle"})] * len(self.shown)).items()}
+        order = L.asking_order(self.ledger, night, rows, shown=shown, candidates=candidates, parts=parts,
+                               scanned=self.scanned, shown_order=shown_order, limit=self.limit if self.scanned else 0)
+        asked = {shop: keys[: (reach if reach is not None else self.asked_a_night.get(shop, self.asked_a_night.get("", 0)))]
+                 for shop, keys in order.items()}
+        self.ordered = order
         readings = {key: L.Reading(page=answers.get(_number(key), OK)) for keys in asked.values() for key in keys}
         shop_nights = {shop: ShopNight(requests=len(keys) + 1, answers=len(keys) + 1, pages_200=len(keys),
                                        pages_read=len(keys)) for shop, keys in asked.items()}
         for shop in {row.shop for row in rows.values()}:
             shop_nights.setdefault(shop, ShopNight(requests=1, answers=1))
         recorded = L.record_night(self.ledger, night, rows, readings, shop_nights, shown=shown, parts=parts)
-        made = L.decisions(self.ledger, night, rows, shown=shown, candidates=candidates, came_back=recorded.came_back)
+        made = L.decisions(self.ledger, night, rows, shown=shown, candidates=candidates, came_back=recorded.came_back,
+                           pass_nights=L.PASS_NIGHTS_SCANNED if self.scanned else L.PASS_VALID_NIGHTS,
+                           passed_over=self.limit if self.scanned else 0)
         # The preparation's side: the decisions applied to the whole feed
         # (`state._resolve_provider_feed_pipeline_uncached`), what a card can show, then the
         # cap behind its gate as the tool works it out (`prepare_catalogue._Cap`), its pool
         # kept for the next night and the rows named for the bot.
         applied.reset_for_tests()
-        judged = applied.apply_checks(self.feed, decisions=made, switch=True, today=night)
+        judged = applied.apply_checks(self.feed, decisions=made, switch=True, today=night, scanned=self.scanned)
         context = build_feed_availability_context(judged)
         eligible = [product for product in judged if evaluate_product_eligibility(product, feed_ctx=context).card_eligible]
         capping = TOOL._Cap(self.out)
@@ -153,6 +188,7 @@ class Server:
         if capping.candidates is not None:
             self.for_the_bot = capping.candidates
         return {
+            "ordered": {shop: len(keys) for shop, keys in order.items()},
             "asked": sorted(_number(key) for keys in asked.values() for key in keys),
             "cut": {_number(key): reason for key, reason in made["cut"].items()},
             "wait": {_number(key): reason for key, reason in made["wait"].items()},
@@ -296,6 +332,102 @@ class ANightWithNoMemoryOfTheNightBeforeTests(unittest.TestCase):
         fifth = server.night()
         self.assertEqual((server.gate_off, fifth["enter"], fifth["shown"]), ("", [5], [1, 2, 3, 4, 5]))
         self.assertEqual(fifth["wait"], {7: "never checked"})
+
+
+class Rules19WhatTheBotScansPassesTests(unittest.TestCase):
+    """The checks' rules 19 (owner, 2026-11-22: «μόνο όσα έχουν σκανναριστεί περνάνε», 20,000
+    the most; a pass counts for three nights), walked night after night with its switch on."""
+
+    def setUp(self) -> None:
+        applied.reset_for_tests()
+        self.addCleanup(applied.reset_for_tests)
+
+    def test_a_capped_shop_shows_the_most_the_same_each_night_and_is_asked_no_more(self) -> None:
+        server = Server([_product(number) for number in range(1, 13)], asked_a_night=50, scanned=True, limit=6)
+        self.addCleanup(server.close)
+        first = server.night()
+        # The night the rule starts the site shows all twelve: the bot asks only the first six
+        # (19.3.3), and the shop keeps the six that passed before the six never asked (19.4 f).
+        self.assertEqual((first["ordered"]["Kettles"], first["asked"]), (6, [1, 2, 3, 4, 5, 6]))
+        self.assertEqual(first["shown"], [1, 2, 3, 4, 5, 6])
+        for _day in range(8):
+            night = server.night()
+            self.assertEqual(night["shown"], first["shown"])
+            # 19.3.3: never more of the shop asked than the most it passes.
+            self.assertLessEqual(night["ordered"]["Kettles"], 6)
+            self.assertEqual(night["asked"], first["shown"])
+
+    def test_a_capped_shops_place_left_by_a_cut_goes_to_a_candidate_that_passed(self) -> None:
+        # Other products around, in shops under the most, so that one cut is no tenth of the site
+        # (7.4); four nights first, so that the shop has passed 20 (7.2).
+        others = [_product(100 + number, shop=f"Other{number % 6}", category=f"Toys > Kind {number}") for number in range(36)]
+        server = Server([_product(number) for number in range(1, 13)] + others, asked_a_night=50, scanned=True, limit=6)
+        self.addCleanup(server.close)
+        for _day in range(4):
+            server.night()
+
+        def kettles(night: dict, part: str = "shown") -> list[int]:
+            return [number for number in night[part] if number < 100]
+
+        second = server.night({3: DOWN})
+        second["shown"] = kettles(second)
+        self.assertEqual((second["cut"], second["shown"]), ({3: NO_ANSWER}, [1, 2, 4, 5, 6]))
+        # One place open: one and a quarter candidates, the next by the order (19.6.2).
+        named = second["candidates"]
+        self.assertEqual(len(named), 2)
+        self.assertFalse(set(named) & {1, 2, 3, 4, 5, 6})
+        third = server.night({3: DOWN})
+        # The failed product asked on its schedule, the shown again, then one candidate: six of
+        # the shop past the failed (19.3.3).
+        self.assertIn(3, third["asked"])
+        self.assertEqual(len(set(third["asked"]) & set(named)), 1)
+        self.assertEqual(len(kettles(third)), 6)
+        self.assertEqual(sorted(set(kettles(third)) - {1, 2, 4, 5, 6}), sorted(third["enter"]))
+
+    def test_a_slow_shop_settles_at_what_the_bot_scans_of_it_in_a_day(self) -> None:
+        server = Server([_product(number) for number in range(1, 9)], asked_a_night=3, scanned=True)
+        self.addCleanup(server.close)
+        first = server.night()
+        self.assertEqual(first["asked"], [1, 2, 3])
+        for _day in range(2):
+            # 19.3.2: the shown products it asked before, asked again first.
+            self.assertEqual(server.night()["asked"], [1, 2, 3])
+        fourth = server.night()
+        # The first round over: the five never reached are not shown; they are candidates.
+        self.assertEqual((fourth["shown"], sorted(fourth["wait"])), ([1, 2, 3], [4, 5, 6, 7, 8]))
+        self.assertEqual(fourth["candidates"], [4, 5, 6, 7, 8])
+        for _day in range(5):
+            night = server.night()
+            # The same three each night: no turns taken on the site.
+            self.assertEqual((night["asked"], night["shown"]), ([1, 2, 3], [1, 2, 3]))
+
+    def test_a_pass_counts_for_three_nights_then_it_waits_and_comes_back_when_it_passes(self) -> None:
+        server = Server([_product(number) for number in range(1, 5)], asked_a_night=10, scanned=True)
+        self.addCleanup(server.close)
+        for _day in range(4):
+            self.assertEqual(server.night()["shown"], [1, 2, 3, 4])
+        # Passed on the fourth night; the bot reaches none of the shop on the next two.
+        for _day in range(2):
+            night = server.night(reach=0)
+            self.assertEqual((night["asked"], night["shown"], night["wait"]), ([], [1, 2, 3, 4], {}))
+        third = server.night(reach=0)
+        self.assertEqual(third["wait"], {number: "not passed in 3 nights" for number in range(1, 5)})
+        self.assertEqual((third["shown"], third["cut"], third["candidates"]), ([], {}, [1, 2, 3, 4]))
+        back = server.night()
+        self.assertEqual((back["asked"], back["enter"], back["shown"]), ([1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]))
+
+    def test_with_its_switch_off_the_waits_of_three_nights_are_left_aside(self) -> None:
+        server = Server([_product(number) for number in range(1, 5)], asked_a_night=10, scanned=True)
+        self.addCleanup(server.close)
+        for _day in range(4):
+            server.night()
+        for _day in range(2):
+            server.night(reach=0)
+        # The bot named them to wait; the preparation, the switch turned off, shows them.
+        server.scanned = False
+        night = server._night({}, 0)
+        self.assertEqual(sorted(night["wait"]), [])
+        self.assertEqual(night["shown"], [1, 2, 3, 4])
 
 
 if __name__ == "__main__":

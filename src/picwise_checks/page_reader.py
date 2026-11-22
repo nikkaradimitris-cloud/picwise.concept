@@ -407,3 +407,56 @@ def title_alike(feed_title: str, page_title: str, *, share: float = 0.6) -> bool
 def offers_in_pounds(offers: Iterable[Offer]) -> list[Offer]:
     """The offers whose currency is pounds or not written (rules 5.3.1: pounds only)."""
     return [offer for offer in offers if offer.currency in ("", "GBP")]
+
+
+# ---- read on another process (the checks' rules 19.5) --------------------------------
+#
+# The bot asks every shop at once on one process, and reading a page is the work a
+# processor does: with every shop asked at once a request took twice as long (the look of
+# 22/11). These read the bytes an answer brought, so the bot can hand them to processes of
+# their own (`deployment/bot/shop_checks_bot.Readers`); they give what the bot read itself
+# before.
+
+
+def decoded(body: bytes, content_type: str) -> str:
+    """An answer's bytes as text, in the charset its Content-Type names, else UTF-8."""
+    charset = "utf-8"
+    for part in str(content_type or "").split(";")[1:]:
+        name, _, value = part.strip().partition("=")
+        if name.lower() == "charset" and value:
+            charset = value.strip("\"' ")
+    try:
+        return body.decode(charset, "replace")
+    except LookupError:
+        return body.decode("utf-8", "replace")
+
+
+def _json_of(body: bytes) -> Any:
+    if body.lstrip()[:1] not in (b"{", b"["):
+        return None
+    try:
+        return json.loads(body.decode("utf-8", "replace"))
+    except ValueError:
+        return None
+
+
+def read_page_bytes(body: bytes, content_type: str = "") -> PageRead:
+    """A product page's bytes read (reader 2)."""
+    return read_page(decoded(body, content_type))
+
+
+def read_product_json(body: bytes) -> PageRead:
+    """A Shopify product's own `/products/<name>.js` read (reader 1, prices in pence)."""
+    data = _json_of(body)
+    return read_shopify_product(data, pence=True) if isinstance(data, dict) else NOTHING
+
+
+def read_catalogue_page(body: bytes) -> tuple[int, list[tuple[str, PageRead]]] | None:
+    """A page of a Shopify catalogue (`/products.json`): how many products it lists, and
+    each one with a name of its own read (reader 1); None when it is no such page."""
+    data = _json_of(body)
+    products = data.get("products") if isinstance(data, dict) else None
+    if not isinstance(products, list):
+        return None
+    return len(products), [(str(product["handle"]).lower(), read_shopify_product(product, pence=False))
+                           for product in products if isinstance(product, dict) and product.get("handle")]
