@@ -1,16 +1,18 @@
 """A look before the rule of a cap per shop is written: what it would keep and cut.
 
-Owner, 2026-11-22 (15:51 to 16:03 Athens): each shop, and every shop that comes in, keeps at
-most what the bot can check in one day at that shop's own pace, and never more than 20,000;
-kept first, the products the shop sells cheapest of all (the same product, by its code);
-then the products of the site's kinds with the fewest products; then the rest, a share of
-each kind over its prices, the most complete first. Not yet in the rules, not built.
+Owner, 2026-11-22: a shop keeps at most 20,000 products, one cap for every shop (17:08
+Athens: «το πλαφόν είναι ένα και είναι 20.000 προϊόντα.. δεν μπαίνει πλαφόν για το κάθε
+κατάστημα.. μπαίνει κανόνας μόνο όσα έχουν σκανναριστεί περνάνε»: what a shop's pace allows
+shows by itself, since only the products the bot has checked are shown). Kept first (16:03,
+and 17:15 with three changes): the products of the kinds with the fewest products; what the
+shop sells cheapest of the offers the site keeps (the same product, by its code); the rest,
+the products with a kind before those with none, a share of each kind over its prices.
 
 On a copy of the server's prepared catalogue, with no AI and nothing written anywhere:
 
-1. each shop's products as the catalogue shows them, and its cap: 20,000, or a day of the
-   bot's 21.6 hours at the pace the look of 22/11 measured for it, where that is less
-   (`PACE_SECONDS`; the bot's own nights will measure every shop from 23/11);
+1. each shop's products as the catalogue shows them, and its cap: 20,000 for every shop
+   (with `--by-pace`, as the rule was first read: a day of the bot's 21.6 hours at the pace
+   the look of 22/11 measured for the shop, where that is less, `PACE_SECONDS`);
 2. for the shops over their cap: how many of their products carry a code another shop's
    product carries too (`product_identity.same_product_key`), and of those where this shop
    is the cheapest, tied or dearer; how many are of a kind the whole catalogue holds few of;
@@ -25,7 +27,7 @@ On a copy of the server's prepared catalogue, with no AI and nothing written any
    too, each kind's products before and after, the kinds left with none, with fewer than 4,
    with fewer than 24; and the kinds that lose the most.
 
-    python3 deployment/server/look_shop_cap.py CATALOGUE.json.gz [--cap 20000] [--thin 100]
+    python3 deployment/server/look_shop_cap.py CATALOGUE.json.gz [--cap 20000] [--thin 100] [--by-pace]
 
 Counts, shops' and kinds' names only, never a link or an id. Always exits 0.
 """
@@ -55,8 +57,13 @@ SHOPS_LISTED = 25
 KINDS_LISTED = 20
 
 
-def cap_of(shop: str, cap: int = CAP) -> int:
-    pace = PACE_SECONDS.get(shop)
+# Whether a shop's cap is also held to a day of the bot at its pace: not the owner's rule
+# (22/11, 17:08: one cap for every shop), kept to compare with the first reading of it.
+BY_PACE = False
+
+
+def cap_of(shop: str, cap: int = CAP, by_pace: bool | None = None) -> int:
+    pace = PACE_SECONDS.get(shop) if (BY_PACE if by_pace is None else by_pace) else None
     return min(cap, int(DAY_SECONDS // pace)) if pace else cap
 
 
@@ -264,7 +271,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("catalogue", type=Path)
     parser.add_argument("--cap", type=int, default=CAP)
     parser.add_argument("--thin", type=int, default=THIN)
+    parser.add_argument("--by-pace", action="store_true", help="hold a shop's cap to a day of the bot at its pace too")
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
+    global BY_PACE
+    BY_PACE = bool(args.by_pace)
     try:
         sys.stdout.reconfigure(line_buffering=True)
     except (AttributeError, ValueError):

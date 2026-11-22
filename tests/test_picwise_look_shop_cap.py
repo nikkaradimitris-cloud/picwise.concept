@@ -1,11 +1,11 @@
 """The look before the rule of a cap per shop is written (`deployment/server/look_shop_cap.py`;
-owner, 2026-11-22: each shop keeps at most what the bot can check in a day, never over 20,000;
-kept first what it sells cheapest of all, then the kinds with the fewest products, then a
-share of each kind over its prices).
+owner, 2026-11-22: a shop keeps at most 20,000 products, one cap for every shop; kept first
+the kinds with the fewest products, then what it sells cheapest of the offers the site keeps,
+then the rest, a share of each kind over its prices).
 
-Pinned here, on a prepared catalogue of the test's own: a shop's cap is 20,000 or a day of the
-bot at its measured pace; a shop over its cap keeps its cap and no more, by the three steps in
-their order; a shop under it keeps everything; what is said holds counts and names only.
+Pinned here, on a prepared catalogue of the test's own: the cap is one, 20,000 for every shop;
+a shop over it keeps its cap and no more, by the steps; a shop under it keeps everything; what
+is said holds counts and names only.
 
 Every product is local test data: fictional brands and shops, `.invalid` addresses.
 """
@@ -28,15 +28,21 @@ from test_picwise_look_itself import _write  # noqa: E402
 
 
 class TheCapOfAShop(unittest.TestCase):
-    def test_twenty_thousand_or_a_day_of_the_bot_at_its_pace(self) -> None:
+    def test_one_cap_for_every_shop(self) -> None:
+        # Owner, 22/11 17:08: «το πλαφόν είναι ένα και είναι 20.000 προϊόντα».
+        for shop in ("A Shop Never Measured", "InStock UK", "Tooled Up", "GamingKit", "PCHUB.UK", "Tirendo UK"):
+            self.assertEqual(look_shop_cap.cap_of(shop), 20000, shop)
+        self.assertEqual(look_shop_cap.cap_of("PCHUB.UK", 5000), 5000)
+        self.assertFalse(look_shop_cap.BY_PACE)
+
+    def test_by_pace_as_the_rule_was_first_read(self) -> None:
         self.assertEqual(look_shop_cap.DAY_SECONDS, 77700)
-        self.assertEqual(look_shop_cap.cap_of("A Shop Never Measured"), 20000)
-        self.assertEqual(look_shop_cap.cap_of("InStock UK"), 20000)
-        self.assertEqual(look_shop_cap.cap_of("Tooled Up"), 18951)
-        self.assertEqual(look_shop_cap.cap_of("GamingKit"), 18069)
-        self.assertEqual(look_shop_cap.cap_of("PCHUB.UK"), 12140)
-        self.assertEqual(look_shop_cap.cap_of("Tirendo UK"), 7770)
-        self.assertEqual(look_shop_cap.cap_of("Tirendo UK", 5000), 5000)
+        self.assertEqual(look_shop_cap.cap_of("A Shop Never Measured", by_pace=True), 20000)
+        self.assertEqual(look_shop_cap.cap_of("InStock UK", by_pace=True), 20000)
+        self.assertEqual(look_shop_cap.cap_of("Tooled Up", by_pace=True), 18951)
+        self.assertEqual(look_shop_cap.cap_of("GamingKit", by_pace=True), 18069)
+        self.assertEqual(look_shop_cap.cap_of("PCHUB.UK", by_pace=True), 12140)
+        self.assertEqual(look_shop_cap.cap_of("Tirendo UK", by_pace=True), 7770)
 
 
 class OnACatalogue(unittest.TestCase):
