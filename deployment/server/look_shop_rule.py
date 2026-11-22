@@ -12,7 +12,8 @@ by side. Read-only: nothing on the server or the site changes.
     python3 deployment/server/look_shop_rule.py prepare DIR [the preparation's own arguments]
     python3 deployment/server/look_shop_rule.py summary DIR --name on [--gone GONE.json] \
         [--offers OFFERS.json] [--families FAMILIES.json] [--seconds N] [--peak-kb N] [--no-searches]
-    python3 deployment/server/look_shop_rule.py compare OFF/summary.json ON/summary.json
+    python3 deployment/server/look_shop_rule.py compare BEFORE/summary.json AFTER/summary.json \
+        [--before "the switch off"] [--after "the rule on"]
 
 `prepare` runs the preparation into `DIR` (`catalogue.json.gz`, the note `prepared.json`) and
 counts, where the caps are worked out, every product a card can show: per shop, per category
@@ -21,7 +22,7 @@ category then keeps; which were shown the night before; the candidates each cap 
 (`caps.json`). `summary` reads the catalogue that run wrote as the site reads it and writes
 `summary.json`: the products per shop, category and kind, every kind searched by its first
 name and the 40 searches of the measure after, their first cards. `compare` prints the two
-side by side.
+side by side: the switch off and on, or a night with the rule and the night after it.
 
 Written and printed: counts, shops' names, kinds, categories, titles and prices; never a
 link, an id or a key.
@@ -371,23 +372,28 @@ def _cards_lines(item: Mapping[str, Any]) -> list[str]:
     return [f"      {'R ' if card[3] else '  '}{card[0]:>9} | {card[1]} | {card[2]}" for card in item.get("cards") or []]
 
 
-def compare(off: Mapping[str, Any], on: Mapping[str, Any], say: Any = print) -> int:
-    """The two runs side by side (module docstring)."""
+def compare(off: Mapping[str, Any], on: Mapping[str, Any], say: Any = print, *,
+            before: str = "the switch off", after: str = "the rule on") -> int:
+    """The two runs side by side (module docstring): `off` is the run before, `on` the run
+    after, named by `before` and `after`."""
     off_caps, on_caps = off.get("caps") or {}, on.get("caps") or {}
-    off_checks = (off.get("note") or {}).get("checks") or {}
     on_checks = (on.get("note") or {}).get("checks") or {}
     rule = on_checks.get("shop_cap") or {}
 
-    say("== 1. the two preparations")
-    for label, run in (("as the site is (the switch off)", off), ("with the rule ON", on)):
+    say(f"== 1. the two preparations: before is {before}; after is {after}")
+    for label, run in ((f"before ({before})", off), (f"after ({after})", on)):
         caps = run.get("caps") or {}
         checks = (run.get("note") or {}).get("checks") or {}
         seconds = caps.get("seconds") or {}
+        of_rule = int((checks.get("shop_cap") or {}).get("candidates") or 0)
         say(f"{label}: {run.get('products', 0):,} products of {len(run.get('shops') or {})} shops, "
             f"{run.get('with_a_kind', 0):,} with a kind; a card can show {caps.get('products', 0):,}, after the shops' rule "
             f"{caps.get('after_the_shops_rule', 0):,}; the pool of the night before {caps.get('pool', 0):,}")
         say(f"    the checks: {'applied, the night of ' + str(checks.get('night')) if checks.get('applied') else 'not applied (' + str(checks.get('why')) + ')'}"
             f"; the cap's gate {'on' if caps.get('gate') else 'off'}"
+            + (f"; cut {int(checks.get('cut') or 0):,}, not shown until checked {int(checks.get('not_shown_until_checked') or 0):,}, "
+               f"held back at the gate {int(checks.get('held_by_the_gate') or 0):,}; candidates for the bot "
+               f"{int(checks.get('candidates') or 0) + of_rule:,} (of the shops over the most {of_rule:,})" if checks.get("applied") else "")
             + (f"; THE GATE DID NOT STAND: {caps['gate_off']}" if caps.get("gate_off") else "")
             + (f"; THE SHOPS' RULE FAILED: {caps['shops_rule_error']}" if caps.get("shops_rule_error") else "")
             + (f"; THE CAP FAILED: {caps['cap_error']}" if caps.get("cap_error") else ""))
@@ -396,29 +402,29 @@ def compare(off: Mapping[str, Any], on: Mapping[str, Any], say: Any = print) -> 
     say(f"products: {_change(int(off.get('products') or 0), int(on.get('products') or 0))}; with a kind: "
         f"{_change(int(off.get('with_a_kind') or 0), int(on.get('with_a_kind') or 0))}")
 
-    say("== 2. the shops over the most a shop passes, counted before the cap of a category")
+    say("== 2. the shops over the most a shop passes, counted before the cap of a category (the run after)")
     if rule.get("applied"):
         say(f"the rule (at most {rule.get('limit', 0):,}; a kind thin under {rule.get('thin')}): {rule.get('capped_shops')} shops over it, "
             f"{rule.get('cut', 0):,} of their products left out, candidates {rule.get('candidates', 0):,}")
     else:
-        say(f"THE RULE WAS NOT APPLIED in the run with the switch on: {rule.get('why') or rule.get('error') or rule}")
+        say(f"THE RULE WAS NOT APPLIED in the run after: {rule.get('why') or rule.get('error') or rule}")
     off_shops, on_shops = off_caps.get("shops") or {}, on_caps.get("shops") or {}
     noted = {str(entry.get("shop")): entry for entry in rule.get("shops") or []}
-    capped = [name for name, entry in on_shops.items() if entry[2] < entry[0]]
-    say("shop: a card can show | shown the night before | shown now (the switch off) | the rule keeps | then the cap of a"
-        " category keeps | shown the night before and left out by the rule | candidates named by the rule")
+    capped = [name for name in on_shops if name in noted or on_shops[name][2] < on_shops[name][0]]
+    say("shop: a card can show | shown the night before | shown before | the rule keeps | then the cap of a category keeps |"
+        " shown the night before and left out by the rule | candidates of the shop for the bot")
     for name in sorted(capped, key=lambda name: -on_shops[name][0]):
         entry = on_shops[name]
-        before = off_shops.get(name) or [0] * 7
-        say(f"  {name}: {entry[0]:,} | {entry[1]:,} | {before[3]:,} | {entry[2]:,} | {entry[3]:,} | {entry[4]:,} | {entry[5]:,}")
+        earlier = off_shops.get(name) or [0] * 7
+        say(f"  {name}: {entry[0]:,} | {entry[1]:,} | {earlier[3]:,} | {entry[2]:,} | {entry[3]:,} | {entry[4]:,} | {entry[5] + entry[6]:,}")
         note = noted.get(name)
         if note:
             say("      kept by step: " + ", ".join(f"{step} {count:,}" for step, count in (note.get("kept_by_step") or {}).items() if count)
                 + f"; from the night before {note.get('kept_from_before', 0):,}, passed {note.get('kept_passed', 0):,}, "
                 f"waiting at the gate {note.get('waiting_at_the_gate', 0):,}")
-    say(f"in all, of the {len(capped)} shops: a card can show {sum(on_shops[name][0] for name in capped):,}; shown now "
+    say(f"in all, of the {len(capped)} shops: a card can show {sum(on_shops[name][0] for name in capped):,}; shown before "
         f"{sum((off_shops.get(name) or [0] * 7)[3] for name in capped):,}; the rule keeps {sum(on_shops[name][2] for name in capped):,}; "
-        f"shown with the rule {sum(on_shops[name][3] for name in capped):,}")
+        f"shown after {sum(on_shops[name][3] for name in capped):,}")
 
     say("== 3. every shop whose products shown change")
     names = sorted(set(off.get("shops") or {}) | set(on.get("shops") or {}),
@@ -432,16 +438,17 @@ def compare(off: Mapping[str, Any], on: Mapping[str, Any], say: Any = print) -> 
     gone = [name for name in names if (off.get("shops") or {}).get(name, 0) and not (on.get("shops") or {}).get(name, 0)]
     say(f"shops whose count changes {len(moved)} of {len(names)}; shops left with no product: {', '.join(gone) or 'none'}")
 
-    say("== 4. the categories (the cap of a category): a card can show | kept, the switch off | after the shops' rule | kept, the rule on")
+    say("== 4. the categories (the cap of a category): a card can show | kept before | given to the cap after | kept after")
     off_categories, on_categories = off_caps.get("categories") or {}, on_caps.get("categories") or {}
     off_pool, on_pool = (off.get("note") or {}).get("google_pool") or {}, (on.get("note") or {}).get("google_pool") or {}
-    say(f"a category keeps at most: {off_pool.get('size')} (the switch off), {on_pool.get('size')} (the rule on); over it: "
+    say(f"a category keeps at most: {off_pool.get('size')} before, {on_pool.get('size')} after; over it: "
         f"{len(off_pool.get('over') or [])} and {len(on_pool.get('over') or [])} categories")
     for name in sorted(set(off_categories) | set(on_categories), key=lambda name: -(off_categories.get(name) or [0])[0])[:LISTED]:
-        before, after = off_categories.get(name) or [0, 0, 0], on_categories.get(name) or [0, 0, 0]
-        say(f"  {before[0]:>9,} | {before[2]:>7,} | {after[1]:>9,} | {after[2]:>7,}  {name or '(none)'}")
-    filled = [name for name in off_categories if (on_categories.get(name) or [0, 0, 0])[2] < off_categories[name][2]]
-    say(f"categories that keep fewer with the rule: {len(filled)} of {len(off_categories)}")
+        was, now = off_categories.get(name) or [0, 0, 0], on_categories.get(name) or [0, 0, 0]
+        say(f"  {was[0]:>9,} | {was[2]:>7,} | {now[1]:>9,} | {now[2]:>7,}  {name or '(none)'}")
+    fewer = [name for name in off_categories if (on_categories.get(name) or [0, 0, 0])[2] < off_categories[name][2]]
+    more = [name for name in on_categories if on_categories[name][2] > (off_categories.get(name) or [0, 0, 0])[2]]
+    say(f"categories that keep fewer after: {len(fewer)} of {len(off_categories)}; that keep more: {len(more)}")
 
     say("== 5. the kinds, before and after")
     kinds = kinds_compared(off.get("kinds") or {}, on.get("kinds") or {})
@@ -450,7 +457,7 @@ def compare(off: Mapping[str, Any], on: Mapping[str, Any], say: Any = print) -> 
         f"{kinds['thin'][0]} and {kinds['thin'][1]}; that lose over half {len(kinds['lose_over_half'])}; left with none: "
         f"{', '.join(kinds['emptied']) or 'none'}")
     available = on_caps.get("kinds") or {}
-    say("the kinds that lose the most: shown before -> after | of the kind a card can show | of them the shops' rule keeps")
+    say("the kinds that lose the most: shown before -> after | of the kind a card can show | of them given to the cap of a category")
     lost = sorted(set(off.get("kinds") or {}) | set(on.get("kinds") or {}),
                   key=lambda name: ((on.get("kinds") or {}).get(name, 0) - (off.get("kinds") or {}).get(name, 0), name))
     for name in lost[:LISTED]:
@@ -464,20 +471,20 @@ def compare(off: Mapping[str, Any], on: Mapping[str, Any], say: Any = print) -> 
 
     if off.get("kind_searches") and on.get("kind_searches"):
         say("== 6. every kind searched by its first name, its first 4 cards")
-        before = list((off.get("kind_searches") or {}).values())
-        after = list((on.get("kind_searches") or {}).values())
-        found = searches_compared(before, after)
+        first = list((off.get("kind_searches") or {}).values())
+        second = list((on.get("kind_searches") or {}).values())
+        found = searches_compared(first, second)
         say(f"{found['searches']} kinds searched: the same first {KIND_CARDS} cards in {found['same_first']}; the same Recommended in "
             f"{found['same_recommended']}; the same count of products in {found['same_total']}; with cards before and none after: "
             f"{', '.join(found['emptied']) or 'none'}")
-        by_query = {str(item.get("q")): item for item in after}
-        fewer = sorted(before, key=lambda item: int(by_query.get(str(item.get("q")), {}).get("total") or 0) - int(item.get("total") or 0))
+        by_query = {str(item.get("q")): item for item in second}
+        losing = sorted(first, key=lambda item: int(by_query.get(str(item.get("q")), {}).get("total") or 0) - int(item.get("total") or 0))
         say("the searches that lose the most products: before -> after")
-        for item in fewer[:LISTED]:
+        for item in losing[:LISTED]:
             other = by_query.get(str(item.get("q")), {})
             if int(other.get("total") or 0) < int(item.get("total") or 0):
                 say(f"  {_change(int(item.get('total') or 0), int(other.get('total') or 0))}  \"{item.get('q')}\"")
-        short = [str(item.get("q")) for item in before
+        short = [str(item.get("q")) for item in first
                  if len(item.get("cards") or []) >= KIND_CARDS > len(by_query.get(str(item.get("q")), {}).get("cards") or [])]
         say(f"with {KIND_CARDS} cards before and fewer after: {', '.join(short) or 'none'}")
 
@@ -530,14 +537,17 @@ def main(argv: list[str] | None = None) -> int:
         found = parser.parse_args(rest)
         return summary(found.folder, name=found.name, gone=found.gone, offers=found.offers, families=found.families,
                        seconds=found.seconds, peak_kb=found.peak_kb, searches=not found.no_searches)
-    if len(rest) != 2:
-        print(__doc__)
-        return 1
-    off, on = _json(Path(rest[0])), _json(Path(rest[1]))
+    parser = argparse.ArgumentParser(prog="look_shop_rule.py compare")
+    parser.add_argument("first", type=Path)
+    parser.add_argument("second", type=Path)
+    parser.add_argument("--before", default="the switch off")
+    parser.add_argument("--after", default="the rule on")
+    found = parser.parse_args(rest)
+    off, on = _json(found.first), _json(found.second)
     if not off or not on:
-        print("look: a summary is missing: " + ", ".join(name for name, found in (("off", off), ("on", on)) if not found))
+        print("look: a summary is missing: " + ", ".join(name for name, read in (("before", off), ("after", on)) if not read))
         return 1
-    return compare(off, on)
+    return compare(off, on, before=found.before, after=found.after)
 
 
 if __name__ == "__main__":

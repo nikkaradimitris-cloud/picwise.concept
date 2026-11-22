@@ -261,7 +261,8 @@ class ThePreparationOfTheLook(unittest.TestCase):
         printed = out.getvalue()
         self.assertEqual(status, 0)
         self.assertIn("the rule (at most 5; a kind thin under 100): 1 shops over it, 7 of their products left out", printed)
-        # a card can show | shown the night before | shown now | the rule keeps | then kept | ...
+        self.assertIn("== 1. the two preparations: before is the switch off; after is the rule on", printed)
+        # a card can show | shown the night before | shown before | the rule keeps | then kept | ...
         self.assertIn("  Fixture Big Store: 12 | 0 | 12 | 5 | 5 | 0 | 0", printed)
         self.assertIn("(-7)  Fixture Big Store", printed)
         self.assertNotIn("Fixture Small Store:", printed.split("== 3.")[0].split("== 2.")[1])
@@ -276,7 +277,24 @@ class ThePreparationOfTheLook(unittest.TestCase):
         with redirect_stdout(out):
             status = look_shop_rule.main(["compare", str(self.base / "none.json"), str(self.base / "none.json")])
         self.assertEqual(status, 1)
-        self.assertIn("a summary is missing: off, on", out.getvalue())
+        self.assertIn("a summary is missing: before, after", out.getvalue())
+
+    def test_two_nights_are_set_side_by_side_under_their_own_names(self) -> None:
+        for name in ("off", "on"):
+            if not (self.base / name / look_shop_rule.SUMMARY_NAME).is_file():
+                with redirect_stdout(io.StringIO()):
+                    look_shop_rule.summary(self.base / name, name=name, searches=False)
+        out = io.StringIO()
+        with redirect_stdout(out):
+            status = look_shop_rule.main([
+                "compare", str(self.base / "on" / look_shop_rule.SUMMARY_NAME), str(self.base / "on" / look_shop_rule.SUMMARY_NAME),
+                "--before", "the first night", "--after", "the night after"])
+        printed = out.getvalue()
+        self.assertEqual(status, 0)
+        self.assertIn("== 1. the two preparations: before is the first night; after is the night after", printed)
+        self.assertIn("before (the first night): 9 products of 2 shops", printed)
+        self.assertIn("after (the night after): 9 products of 2 shops", printed)
+        self.assertIn("shops whose count changes 0 of 2", printed)
 
 
 class TheLookAtTheBot(unittest.TestCase):
