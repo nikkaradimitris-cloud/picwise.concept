@@ -115,11 +115,36 @@ class Rules4HowAShopIsAskedTests(unittest.TestCase):
                 _row(2, path="/products/old-kettle", handle="old-kettle")]
         result = _ask(shop, rows)
         self.assertTrue(result.night.catalogue_read)
-        self.assertEqual(shop.asked, ["/robots.txt", "/products.json?limit=250&page=1", "/products/old-kettle.js"])
+        # No `.js` of that name: asked at its own address before it is called gone (rules 5.1).
+        self.assertEqual(shop.asked, ["/robots.txt", "/products.json?limit=250&page=1", "/products/old-kettle.js",
+                                      "/products/old-kettle"])
+        self.assertEqual(result.night.requests, 4)
         readings = bot.judge({row.key: row for row in rows}, result)
         self.assertEqual(readings["Kettles\x1f1"].page.state, PASSED)
         self.assertEqual(readings["Kettles\x1f1"].site_price, 24.99)
         self.assertEqual(readings["Kettles\x1f2"].page.reason, GONE)
+
+    def test_a_shopify_product_the_shop_renamed_is_found_at_its_own_address_not_called_gone(self) -> None:
+        # The feed still names the old address: the shop's site sends a visitor on to the new
+        # one, while the old name's `.js` answers 404. The same product, by its code: passed.
+        catalogue = {"products": [{"handle": "zentra-kettle-2", "title": "Zentra Kettle",
+                                   "variants": [{"id": 111, "sku": "ZK-1", "price": "24.99", "available": True}]}]}
+        page = (PRODUCT_PAGE % "24.99").encode()
+        shop = Shop({"/robots.txt": bot.Answer(404),
+                     "/products.json?limit=250&page=1": bot.Answer(200, "application/json", json.dumps(catalogue).encode()),
+                     "/products/zentra-kettle.js": bot.Answer(404),
+                     "/products/zentra-kettle": bot.Answer(200, "text/html", page,
+                                                           final_url="https://kettles.invalid/products/zentra-kettle-2"),
+                     "/products/other.js": bot.Answer(404),
+                     "/products/other": bot.Answer(200, "text/html", b"<html><title>Kettles</title></html>",
+                                                   final_url="https://kettles.invalid/")})
+        rows = [_row(1, path="/products/zentra-kettle", handle="zentra-kettle"),
+                _row(2, path="/products/other", handle="other")]
+        result = _ask(shop, rows)
+        readings = bot.judge({row.key: row for row in rows}, result)
+        self.assertEqual((readings["Kettles\x1f1"].page.state, readings["Kettles\x1f1"].page.by), (PASSED, "by code"))
+        # Sent to the home page instead: moved, a failure as before.
+        self.assertEqual((readings["Kettles\x1f2"].page.state, readings["Kettles\x1f2"].page.reason), (FAILED, "moved"))
 
     def test_no_answer_is_asked_once_more_at_the_end(self) -> None:
         page = bot.Answer(200, "text/html", (PRODUCT_PAGE % "24.99").encode(), final_url="https://kettles.invalid/p/1")

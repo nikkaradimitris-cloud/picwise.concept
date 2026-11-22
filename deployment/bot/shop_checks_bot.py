@@ -22,7 +22,8 @@ robots.txt first, and only what it allows; one request at a time a shop, 3 secon
 redirect to another site is not followed; a 429, or a 503 that says when to come back,
 ends that shop's night. A Shopify shop is read by its catalogue (`/products.json`, 250
 products a request, up to 100 pages), a product missing from it by its own
-`/products/<name>.js`; any other shop by each product's own page.
+`/products/<name>.js`, and one with no `.js` of that name at its own page before it is
+called gone; any other shop by each product's own page.
 
 The products asked are those the site shows (the prepared catalogue), the cap's
 candidates and the products the checks cut that the feed still lists (the preparation's
@@ -330,19 +331,28 @@ def ask_shop(rows: list[Row], *, fetch: Fetch, sleep: Callable[[float], None], c
             answer = ask(requested, JSON_BYTES, rules, wait)
             if answer is None:
                 return None
-            final = answer.final_url or base + requested
-            redirected = address_parts(final) != address_parts(base + requested)
-            final = final[:-3] if final.endswith(".js") else final
-            data = _json(answer)
-            read = read_shopify_product(data, pence=True) if isinstance(data, dict) else NOTHING
-        else:
-            requested = _path(row.address)
-            answer = ask(requested, PAGE_BYTES, rules, wait)
-            if answer is None:
-                return None
-            final = answer.final_url or row.address
-            redirected = address_parts(final) != address_parts(row.address)
-            read = read_page(_text(answer)) if answer.status == 200 else NOTHING
+            if answer.status not in (404, 410):
+                final = answer.final_url or base + requested
+                redirected = address_parts(final) != address_parts(base + requested)
+                final = final[:-3] if final.endswith(".js") else final
+                data = _json(answer)
+                read = read_shopify_product(data, pence=True) if isinstance(data, dict) else NOTHING
+                return PageAnswer(status=answer.status, error=answer.error, final_url=final, redirected=redirected,
+                                  elsewhere=answer.elsewhere, challenge=is_challenge(answer, read_found=read.found),
+                                  read=read)
+            # Not in the catalogue and no `.js` of that name: before it is called gone it is
+            # asked at its own address, the one a visitor's button opens (rules 5.1). A
+            # product the shop renamed answers there with a redirect to its new address,
+            # which its `.js` does not follow; one the shop took down answers 404 there too.
+            counts["requests"] += 1
+            counts["answers"] += 1
+        requested = _path(row.address)
+        answer = ask(requested, PAGE_BYTES, rules, wait)
+        if answer is None:
+            return None
+        final = answer.final_url or row.address
+        redirected = address_parts(final) != address_parts(row.address)
+        read = read_page(_text(answer)) if answer.status == 200 else NOTHING
         return PageAnswer(status=answer.status, error=answer.error, final_url=final, redirected=redirected,
                           elsewhere=answer.elsewhere, challenge=is_challenge(answer, read_found=read.found), read=read)
 
