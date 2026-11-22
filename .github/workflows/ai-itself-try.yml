@@ -27,8 +27,13 @@ jobs:
     timeout-minutes: 60
     env:
       # The most this run's calls may cost, in dollars, every model together.
-      # The second run of 22/11: $0.88 was spent by the first, of the day's $2.
-      BUDGET: '0.70'
+      # The third run of 22/11: $0.88 and $0.38 were spent by the first two, of the day's $2.
+      BUDGET: '0.55'
+      # Products the first two runs did not read: each search's cards 13 to 24, and another
+      # sample of what the lists took out of a kind.
+      CARDS: '24'
+      SKIP: '12'
+      SEED: '20261123'
     steps:
       - uses: actions/checkout@v5
         with:
@@ -169,7 +174,7 @@ jobs:
           "$RUNNER_TEMP/ai/bin/python" deployment/server/try_itself.py "$RUNNER_TEMP/site/catalogue.json.gz" \
             --shelves "$RUNNER_TEMP/site/shelves.jsonl.gz" --gone "$RUNNER_TEMP/site/gone.json" \
             --offers "$RUNNER_TEMP/site/offers.json" --families "$RUNNER_TEMP/site/families.json" \
-            --budget "$BUDGET"
+            --budget "$BUDGET" --cards "$CARDS" --skip "$SKIP" --seed "$SEED"
       - name: Remove the key and the copies from the runner
         if: always()
         run: |

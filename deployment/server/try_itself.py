@@ -24,8 +24,8 @@ kind (`picwise_ai.itself`).
 
     python3 deployment/server/try_itself.py CATALOGUE.json.gz [--shelves ANSWERS.jsonl.gz] \
         [--gone GONE.json] [--offers OFFERS.json] [--families FAMILIES.json] \
-        [--models claude-haiku-5-5,claude-sonnet-5-5] [--cards 12] \
-        [--taken-kinds 20] [--taken-each 8] [--budget 1.50] [--dry-run]
+        [--models claude-haiku-5-5,claude-sonnet-5-5] [--cards 12] [--skip 0] \
+        [--taken-kinds 20] [--taken-each 8] [--seed N] [--budget 1.50] [--dry-run]
 
 It stops asking before a call would pass `--budget` dollars in all. Without
 `ANTHROPIC_API_KEY`, or with `--dry-run`, nothing is asked: the run says what would be.
@@ -100,8 +100,9 @@ def item_of(product: Any) -> dict[str, str]:
     }
 
 
-def card_questions(prepared: Any, index: dict[str, int], cards: int) -> list[Question]:
-    """Set A: each of the 40 searches' first cards, for the kind the search is read as."""
+def card_questions(prepared: Any, index: dict[str, int], cards: int, skip: int = 0) -> list[Question]:
+    """Set A: each of the 40 searches' first cards, for the kind the search is read as;
+    with `skip`, the cards after the first so many (products a trial has not read yet)."""
     import look_itself
     from measure_after import SEARCHES
     from picwise_providers.catalogue_cap import shop_of
@@ -111,7 +112,7 @@ def card_questions(prepared: Any, index: dict[str, int], cards: int) -> list[Que
         found = look_itself.searched(query, cards)
         if not found["kind"]:
             continue
-        for product_id in found["cards"]:
+        for product_id in found["cards"][skip:]:
             place = index.get(product_id)
             if place is None:
                 continue
@@ -390,6 +391,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--families", default="")
     parser.add_argument("--models", default=",".join(MODELS))
     parser.add_argument("--cards", type=int, default=CARDS)
+    parser.add_argument("--skip", type=int, default=0, help="leave out each search's first so many cards")
+    parser.add_argument("--seed", type=int, default=SEED, help="which products of set B are sampled")
     parser.add_argument("--taken-kinds", type=int, default=TAKEN_KINDS)
     parser.add_argument("--taken-each", type=int, default=TAKEN_EACH)
     parser.add_argument("--budget", type=float, default=BUDGET_USD)
@@ -415,10 +418,11 @@ def main(argv: list[str] | None = None) -> int:
         notices.say("trial: failed", "the copy is not a prepared catalogue", final=True)
         return 0
     index = {str(product.provider_product_id): place for place, product in enumerate(prepared.products)}
-    cards = card_questions(prepared, index, args.cards)
-    taken = taken_questions(prepared, args.taken_kinds, args.taken_each)
+    cards = card_questions(prepared, index, args.cards, args.skip)
+    taken = taken_questions(prepared, args.taken_kinds, args.taken_each, args.seed)
+    which = f"the first {args.cards} cards" if not args.skip else f"cards {args.skip + 1} to {args.cards}"
     print(f"the catalogue of {prepared.prepared_at.isoformat()}: {len(prepared.products):,} products; set A {len(cards)} "
-          f"questions (the first {args.cards} cards of the searches), set B {len(taken)} (taken out of a kind by the lists);"
+          f"questions ({which} of the searches), set B {len(taken)} (taken out of a kind by the lists);"
           f" read in {time.monotonic() - began:.0f} s")
     models = [name.strip() for name in args.models.split(",") if name.strip()]
     ask = None

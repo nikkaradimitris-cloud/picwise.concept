@@ -79,6 +79,16 @@ class TrialTests(unittest.TestCase):
         self.assertNotIn("http", " ".join(item.values()))
         self.assertEqual(drill[1].shop, "Fictional Store One")
 
+    def test_the_cards_after_the_first_are_products_a_trial_has_not_read(self) -> None:
+        later = try_itself.card_questions(self.prepared, self.index, 12, skip=8)
+        by_search = {}
+        for question in later:
+            by_search.setdefault(question.source, []).append(question.place)
+        # The laptops' search has eight cards in all: none after the first eight.
+        self.assertEqual({source: len(places) for source, places in by_search.items()}, {"kettle": 4, "drill": 4})
+        first = {question.place for question in try_itself.card_questions(self.prepared, self.index, 8)}
+        self.assertFalse(first & {question.place for question in later})
+
     def test_nothing_was_taken_out_of_a_kind_without_the_ais_lines(self) -> None:
         self.assertEqual(try_itself.taken_questions(self.prepared, 20, 8), [])
 

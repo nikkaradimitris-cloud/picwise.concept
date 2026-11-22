@@ -19,11 +19,14 @@ a buyer who typed the kind's name (`ANSWERS`) and, in a few words, what it is. T
 checks every answer (`checked_answers`): each product answered exactly once, with one of the
 answers; any other answer is none, and the product stays as the rules read it.
 
-The trial of 22/11 (run 45024964529: 630 questions, Haiku 5.5, Sonnet 5.5 and Opus 5.5) is
-why the kind is described so widely and why a call holds one kind: read only by its name, a
-kind was narrower to the stronger models than the site means it (a dog bed no bed, a chef's
-jacket no jacket, a security camera no camera), and Haiku 5.5 lost the numbers of a call
-that held several kinds (28 products with no answer).
+The trials of 22/11 are why the kind is described so and why a call holds one kind. The
+first (run 45024964529: 630 questions, Haiku 5.5, Sonnet 5.5 and Opus 5.5): read only by its
+name, a kind was narrower to the stronger models than the site means it (a dog bed no bed, a
+chef's jacket no jacket, a security camera no camera), and Haiku 5.5 lost the numbers of a
+call that held several kinds (28 products with no answer). The second (run 45025769493, the
+kind with its shelves): Haiku and Sonnet on the same side for 95.2% (92.0% before); but "the
+same thing made for another place" read a computer's case fan as a household fan, so the
+shelves and the department say how wide a kind is, not that sentence.
 
 Nothing here decides what a search shows: `docs/PICWISE_KIND_ITSELF_RULES.md` says what the
 answers do. No test calls the API.
@@ -75,13 +78,14 @@ shop's own category, its price and the start of its description. For each produc
 it is to a buyer who typed that kind's name:
 - "itself": the product is that kind of thing, the one the buyer wants to buy. Of any brand, \
 size, colour, style or quality; new, used or refurbished. The kind is as wide as its names \
-and shelves say. A narrower type of it is the kind (a robot vacuum is a vacuum cleaner). The \
-same thing made for another user or place is the kind: for children, pets, work, camping, \
-security or a vehicle (a kids' smartwatch is a smartwatch, a dog bed a bed, a chef's jacket a \
-jacket, a security camera a camera), unless it is a toy that only imitates the thing. Several \
-of the same thing sold together are the kind (a set of two suitcases). The thing sold with \
-what belongs to it is the kind: its own accessories or supplies, a small extra, a gift box or \
-a card (a drill with a set of bits, a keyboard with a mouse, earrings in a gift box).
+and shelves say: a product that belongs on one of those shelves, as the thing that shelf \
+sells, is the kind. A narrower type of it is the kind (a robot vacuum is a vacuum cleaner), \
+and so is the thing made for children, for pets or for work (a kids' smartwatch is a \
+smartwatch, a dog bed a bed, a chef's jacket a jacket), unless it is a toy that only imitates \
+the thing. Several of the same thing sold together are the kind (a set of two suitcases). The \
+thing sold with what belongs to it is the kind: its own accessories or supplies, a small \
+extra, a gift box or a card (a drill with a set of bits, a keyboard with a mouse, earrings in \
+a gift box).
 - "accessory": something used with or on the thing, sold apart from it: a case, cover, strap, \
 stand, mount, bag, holder, charger, cable, adapter, remote, screen protector.
 - "part": a piece of the thing, for repairing, extending or building it: a spare, a \
@@ -91,9 +95,10 @@ toner, paper, bags, pods, refills.
 - "set": the thing sold as one item together with a different product of equal weight, which \
 a buyer of the kind alone would not look for (a toaster with a kettle).
 - "other": none of these. Another kind of product, however close (a monitor is no \
-television, a body spray no perfume, a lap tray no desk); a toy, model, costume, picture, \
-book or film of the thing; software, a licence, a service or a warranty for it; something \
-that only shares the word.
+television, a body spray no perfume, a lap tray no desk); a thing of another department that \
+shares the name (a computer case fan is no household fan, a car battery charger no phone \
+charger); a toy, model, costume, picture, book or film of the thing; software, a licence, a \
+service or a warranty for it; something that only shares the word.
 - "unsure": the words given cannot tell what the product is.
 Judge what the product is, never the word alone: a "TV unit" is furniture, a "laptop stand" \
 an accessory, a "printer roller" a part, a "pilot drill for hole saws" an accessory of a hole \

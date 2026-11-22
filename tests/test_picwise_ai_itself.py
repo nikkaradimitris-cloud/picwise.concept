@@ -38,7 +38,7 @@ from picwise_ai.client import PRICES_PER_MILLION, cost_usd, prices_of  # noqa: E
 # The prompt and the answers' form as written for each version of the question. A change of
 # either is a new question: add its version here and raise `itself.QUESTION_VERSION`, so
 # that every product is asked again (about 73,000 questions on 22/11), never by accident.
-PROMPTS = {1: "fd3921b6ef46"}
+PROMPTS = {1: "c1ab043f6178"}
 
 
 class TheKindAsTheModelReadsIt(unittest.TestCase):
