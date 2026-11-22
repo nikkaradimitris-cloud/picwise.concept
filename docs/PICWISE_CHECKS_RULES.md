@@ -5,6 +5,8 @@ Written 2026-11-21 (evening, Athens) as task 4 of the work split by model (Claud
 looked at and mended in task 7 (sections 16 and 17). **The owner's «Ανέβασε», 2026-11-22
 (12:50 Athens): `data/checks_switch.json` is true from that day's commit, and the checks cut
 from the first night after its deployment** (`PROGRESS.md` says how the deployment went).
+How many of a shop's products pass (section 19) is built and not deployed; the look before
+its «ανέβασε» is section 20.
 
 Each rule names whose it is:
 
@@ -53,16 +55,24 @@ Each rule names whose it is:
   δεν έχει ανέβει, ο διακόπτης του είναι κλειστός: στο site δεν άλλαξε τίποτα).** Ό,τι
   προλαβαίνει να σκανάρει το bot σε ένα κατάστημα περνάει στο site: σε ένα 15.000, σε άλλο
   5.000. Ανώτατο όριο 20.000, για κατάστημα που απαντά γρήγορα. Δεν μπαίνει ξεχωριστό
-  πλαφόν ανά κατάστημα («μόνο όσα έχουν σκανναριστεί περνάνε»· «τελειώσαμε με αυτό»). Σήμερα
-  πάνω από 20.000 έχουν 4 καταστήματα: κόβονται τουλάχιστον 186.900 προϊόντα. Ποια προϊόντα
-  κρατά ένα κατάστημα (η λέξη σου, 22/11: «Με τις 3 αλλαγές»): πρώτα τα είδη με τα λίγα
-  προϊόντα· μετά ό,τι πουλά φθηνότερα από όσα δείχνει το site· μετά τα υπόλοιπα, πρώτα όσα
-  έχουν είδος· ό,τι το κρατά φθηνότερα άλλο κατάστημα μπαίνει τελευταίο. Το bot φτιάχνεται
-  να δουλεύει σε περισσότερους επεξεργαστές μαζί («Ναι, μαζί»). Ένας έλεγχος μετράει 3
-  βράδια: προϊόν που το bot δεν πρόλαβε να ξαναελέγξει μένει ως 3 μέρες, μετά δεν φαίνεται
-  μέχρι να ξαναπεράσει («κρατάμε τα προϊόντα ασκανάριστα μέχρι 3 μέρες», 22/11· σήμερα
-  μετράει 30 βράδια). Ο κανόνας: ενότητα 19. Τι χτίστηκε: 19.10. Επόμενο: η ματιά πριν από
-  το «ανέβασε» (Fable), μετά το «ανέβασε» σου.
+  πλαφόν ανά κατάστημα («μόνο όσα έχουν σκανναριστεί περνάνε»· «τελειώσαμε με αυτό»). Ποια
+  προϊόντα κρατά ένα κατάστημα (η λέξη σου, 22/11: «Με τις 3 αλλαγές»): πρώτα τα είδη με τα
+  λίγα προϊόντα· μετά ό,τι πουλά φθηνότερα από όσα δείχνει το site· μετά τα υπόλοιπα, πρώτα
+  όσα έχουν είδος· ό,τι το κρατά φθηνότερα άλλο κατάστημα μπαίνει τελευταίο. Το bot
+  δουλεύει σε περισσότερους επεξεργαστές («Ναι, μαζί»). Ένας έλεγχος μετράει 3 βράδια:
+  προϊόν που το bot δεν πρόλαβε να ξαναελέγξει μένει ως 3 μέρες, μετά δεν φαίνεται μέχρι να
+  ξαναπεράσει («κρατάμε τα προϊόντα ασκανάριστα μέχρι 3 μέρες», 22/11· σήμερα μετράει 30
+  βράδια). Ο κανόνας: ενότητα 19. Τι χτίστηκε: 19.10.
+- **Η ματιά πριν από το «ανέβασε» έγινε (22/11 βράδυ, ενότητα 20).** Τη μέρα του
+  «ανέβασε» ο κατάλογος πάει από 385.657 σε 208.110 προϊόντα: InStock UK 99.013 → 20.000,
+  Tooled Up 66.241 → 20.000, GamingKit 46.240 → 20.000, PCHUB.UK 46.053 → 20.000. Πάνω από
+  20.000 δεν είναι 4 καταστήματα αλλά 7 (και Finediam, Tirendo UK, Tyres UK): αυτά τα 3
+  δείχνουν όσα και σήμερα. Κανένα είδος δεν αδειάζει· 17 από τα 289 χάνουν πάνω από τα
+  μισά. Στις 40 δοκιμαστικές αναζητήσεις οι 25 δείχνουν τις ίδιες κάρτες. Ο χρόνος της
+  ετοιμασίας μένει ίδιος. Το bot ξεκινά στους 4 επεξεργαστές. Διορθώθηκαν δύο λάθη του
+  χτισίματος: το bot θα ρωτούσε 63.000 προϊόντα που η κατηγορία τους δεν χωρά, και το
+  GamingKit θα κρατούσε 8.962 προϊόντα που το PCHUB.UK δείχνει φθηνότερα. Επόμενο: η ίδια
+  ματιά άλλη μία φορά με το πρώτο πραγματικό βράδυ των ελέγχων (23/11), μετά το «ανέβασε» σου.
 
 ## 1. What the checks are for, and what they rest on
 
@@ -773,7 +783,7 @@ about 285,000 at its lowest, on day 4, then filling again with checked products)
    many products wait for it (`not shown until checked`, by reason).
 
 
-## 19. How many of a shop's products pass: what the bot scans, 20,000 the most (owner, 22/11): decided; BUILT 22/11, NOT DEPLOYED, its switch false (19.10)
+## 19. How many of a shop's products pass: what the bot scans, 20,000 the most (owner, 22/11): decided; BUILT 22/11, NOT DEPLOYED, its switch false (19.10); looked at 22/11, two things mended (section 20)
 
 Written 22/11 (17:10 Athens) by Claude Fable 5.2, after a look with its numbers (19.2), and
 **corrected the same day (17:35) on the owner's words of 17:08 and 17:21: what the bot scans
@@ -911,7 +921,9 @@ b. **"Cheapest of all" is read among the offers the site keeps.** A product a ch
    product whose cheaper offers were all cut by their own shops' caps is the next shop's to
    keep, as cheapest. So two shops with one catalogue show two different halves of it, not
    the same half twice. The shops are settled the smallest cap first, after a first pass in
-   which each keeps what it sells cheapest of every shop that sells it.
+   which each keeps what it sells cheapest of every shop that sells it. (Mended by the look
+   of 22/11, 20.2.2: settled once each, one shop kept 8,962 copies of what the other kept
+   cheaper; the shops are now settled until no choice changes.)
 c. **In "the rest", the products with a kind of the site's before those with none.** A
    product of a kind is found by a search for the kind; one with none only by its own words.
    His step 3 says "a share of each kind"; the category cap shares over its "parts" (a kind,
@@ -948,7 +960,9 @@ his word of 17:21 puts it back.)
 2. **The checks' gate stands** (9.4): a place in a shop's cap goes only to a product whose
    checks passed. For each capped shop with places open, the shop's cap names its
    candidates: the products it would choose next, one and a quarter times the places open;
-   the bot asks them in their turn (10.3).
+   the bot asks them in their turn (10.3). **Mended by the look of 22/11 (20.2.1): only
+   those the cap of a category has a place for.** A shop's place open is no place open in a
+   category at its size.
 3. **The order of asking** (section 10) stands. A capped shop's shown products can all be
    asked within a day: "passed within the last 30 nights" (9.1) is made three nights, by
    his word of 17:35 (19.3.1; 6 below).
@@ -1084,11 +1098,17 @@ change):
    keeps; then those that may enter and a cheaper shop keeps. A dearer copy is last whatever
    its kind (a thin kind's too): it shows nothing on the site.
 5. **The shops are settled by name** in the second pass (19.4 b says the smallest cap first;
-   every cap is 20,000 now).
+   every cap is 20,000 now). **Since the look of 22/11 (20.2.2): and again, the shops whose
+   choice rests on one that has since chosen otherwise, until no choice changes, five rounds
+   at most (`shop_cap.SETTLE_ROUNDS`).**
 6. **Candidates**: one and a quarter times the places open, the next by the order among the
    products that wait at the gate, the dearer copies last; no minimum (the category cap names
    at least 4 a kind). They go to the bot first, in their order, and to the AI's category
-   (5.5) with the category cap's; not to task 6's morning job (19.6.7, to weigh).
+   (5.5) with the category cap's; not to task 6's morning job (19.6.7, to weigh). **Since the
+   look of 22/11 (20.2.1): of them, only those the cap of a category names too
+   (`shop_cap.vetted`): every product of a capped shop that waits at the gate is given to the
+   cap of a category with the ones the shops keep, where it can take no place and is named
+   only where a place is open for it.**
 7. **The bot, with the switch on**: per shop, (1) the held and the failed that are due; (2)
    the shown whose row changed, and the sold-out readings about to lapse; (3) the shown asked
    before, in the order of 19.4, which the bot works out from the prepared catalogue
@@ -1124,3 +1144,206 @@ change):
 Not measured (the look's, 19.7.1): the preparation's time and memory with it (the rule itself
 took 4 s on 300,000 made-up rows here; the category cap and the catalogue after it then work on
 fewer products), the shops over 20,000 before the category cap, and what each night cuts.
+
+## 20. The look before the «ανέβασε» of how many of a shop's products pass (22/11, Claude Fable 5.2): what it found, what was mended, its numbers
+
+Read-only: nothing on the server or the site changed, no shop was asked, nothing was asked of
+any AI. `data/shop_cap_switch.json` is false. What was mended is on the work branch, with
+tests, not deployed. Each number below names its run.
+
+### 20.1 How it looked
+
+- **The preparation, off the server** (`deployment/server/look_shop_rule.py`;
+  `.github/workflows/server-look-shop-rule.yml`, on a push of `claude/shop-rule-look` that
+  changes the workflow's "Run:" line): the catalogue prepared on GitHub's runner by the
+  preparation's own code (`tools/prepare_catalogue.py`), from copies of what the server
+  prepared from on 22/11 (its two feed copies of 11:10 UTC, the pool of 11:28 UTC, the shops'
+  catalogues, the AI's lines), with the switch off and with it on. The caps are counted
+  where they are worked out: per shop, category and kind, what a card can show, what the
+  shops' rule keeps, what is kept in the end, the candidates named. Each catalogue is then
+  read as the site reads it and searched: every kind by its first name (312 searches), and
+  the 40 searches of the measure after.
+- **The run with the switch off gave the server's own catalogue to the product**: 398,957
+  products of 135 shops, 134,097 with a kind. So the runner prepares as the server does.
+- **The gate.** The server holds no decisions until the checks' first night is recorded
+  (03:05 UTC on 23/11): there the cap's gate is still off, as on the site on 22/11. From
+  23/11 it is on. So the pair was prepared a second time with the gate on, on a decisions
+  file of the look's own that fails no product and lets no new one in; the AI's categories
+  are applied as the preparation applies them (20,370 rows with none cut, 13,300 of them
+  shown). **That pair is what the «ανέβασε» does on its day**, but for the products the
+  first night itself fails. The pair with the gate off is what it would do before any night
+  is recorded, and is not what will happen.
+- **The night after**, the gate on: the same preparation once more from the first night's
+  own pool, every candidate the caps named taken as asked and passed. It is the most that
+  can enter in a night: the bot gets through fewer, not every one passes, and a new product
+  enters only once the AI has given it a category (5.5; the look's AI lines are 22/11's).
+- **The bot, on the server** (`deployment/server/look_bot_rule.py`): this commit's code
+  unpacked in the private temporary folder of a unit with the sandbox and the memory of
+  `picwise-checks.service`, which goes with the unit. It starts the processes the pages are
+  read on, reads the catalogue as the bot reads it, works out the order of 19.4 and what the
+  bot would ask with the rule off and on, and counts what the round running has answered. No
+  shop is asked, nothing is written; the real round went on beside it.
+- **Runs**: 45050561292 (the code as built), 45053630532 (20.2.1 mended; the night after),
+  45058022788 (20.2.2 mended too). Tests: `tests/test_picwise_look_shop_rule.py` (18).
+
+### 20.2 Found and mended on the work branch, with tests
+
+1. **A capped shop's candidates were named for the shop's own places open, whatever their
+   category** (19.6.2, 19.10.6). **Seven shops, not four, have more than 20,000 products a
+   card can show, counted before the cap of a category** (20.4): Finediam, Tirendo UK and
+   Tyres UK too, which the site shows 6,619, 1,431 and 1,337 products of, since the cap of a
+   category has no more places for them. As built, each named one and a quarter times its
+   own places open: 16,727, 23,212 and 23,329 candidates, 63,268 between them, and 86,329
+   for the bot in all (run 45050561292). A category at its size takes none of them. Walked
+   through nights (`tests/test_picwise_checks_walk.py`), such a candidate is asked, passes,
+   is let into the shop's places, is refused by its category, and is named again two nights
+   later, for good: thousands of requests a day to a shop for products that can never be
+   shown, and the cap's own candidates of that shop, which do have a place, asked after
+   them. **Now** every product of a capped shop that waits at the gate is given to the cap
+   of a category with the ones the shops keep (`ShopCapResult.waiting`). It can take no
+   place there (the gate); the cap names it a candidate only where a place is open for it,
+   and a shop's candidates are those, in its own order, as many as it may name
+   (`shop_cap.vetted`; `tools/prepare_catalogue.py`, `_Cap.__call__`). The three name 1,502,
+   4,211 and 4,286, and the bot is given 31,961 candidates in all (run 45058022788). The
+   night after, 14,798 products had entered and 14,649 more were named: the candidates
+   enter and their number falls.
+2. **Two shops with one catalogue kept the same products** (19.4 b, 19.10.5). GamingKit and
+   PCHUB.UK sell the same 307,000 rows, PCHUB.UK the cheaper. Each shop was settled once
+   against what the others kept in the first pass. PCHUB.UK, settled after GamingKit, then
+   chose otherwise, since the shops whose cheaper offers it had counted kept only some of
+   them. So GamingKit's choice rested on a choice no longer there: **8,962 of its 20,000
+   places held copies of what PCHUB.UK keeps cheaper**, which show nothing (one product is
+   shown once, from the cheapest; owner, 16/10), and its note called them its cheapest. The
+   night after showed them (run 45053630532). **Now** a shop whose choice rests on a shop
+   that has since chosen otherwise is settled again, until no choice changes, five rounds at
+   most (`shop_cap.SETTLE_ROUNDS`); a shop that shares no product with another capped shop
+   is settled once. GamingKit keeps 138 such copies, the fewest it can: of the 46,240
+   products the site shows of it, only 19,862 are kept cheaper by no other shop (run
+   45058022788; the same 138 the night after). With it the kind `ram_memory` keeps 1,853
+   products where it kept 457.
+
+### 20.3 Found, not mended: each a later step
+
+1. **The first night, the passed do not come before the never asked** (19.4 f). The bot
+   names the passed only while its round runs with the switch on, and only for a shop that
+   shows more than 20,000 (19.10.9). The «ανέβασε» prepares before the bot starts again, from
+   the decisions of a round that ran with the switch off: they name none. So the first
+   night each of the four keeps its 20,000 by the order alone. After that night none of them
+   shows more than 20,000, so the bot never names any. What it costs: the bot's work of the
+   days before on the four (24,675 of their 266,900 products asked by 19:00 UTC on 22/11,
+   about a fifth by the end of that night at its pace) is not what decides which stay; the
+   20,000 kept are asked in the day or two after. From the
+   shops' day 4 (26/11) a product never asked is not shown (9.3), so an «ανέβασε» from that
+   day on finds only checked products to choose among.
+2. **A full shop names no candidate, so 19.4 e's second sentence is not reached**: a kept
+   product that a cheaper shop comes to keep holds its place, last in the shop's order,
+   since no product is ever asked for it. GamingKit's 138 are of this kind.
+3. **A candidate enters only once the AI has given it a category** (5.5). The first days
+   after the «ανέβασε» the AI's morning job is asked tens of thousands of products, not a
+   few thousand: its $10 a night stands (7.6); what it costs is to be read those mornings.
+4. Corrected in the records only: the handoff said a round running keeps the old order
+   until the next morning. A deployment that prepares stops the bot and starts it again
+   (`deploy.sh`), and the round started again reads the switch then: it goes on with the rule
+   on, from the answers it kept.
+
+### 20.4 The numbers
+
+**The shops over 20,000 products a card can show, counted before the cap of a category**
+(run 45058022788, the gate on):
+
+| shop | a card can show | shown, the switch off | the rule keeps | shown, the rule on | candidates for the bot |
+|---|---|---|---|---|---|
+| Finediam | 357,936 | 6,619 | 6,619 | 6,619 | 1,502 |
+| PCHUB.UK | 306,871 | 46,053 | 20,000 | 20,000 | 0 |
+| GamingKit | 306,854 | 46,240 | 20,000 | 20,000 | 0 |
+| Tooled Up | 209,588 | 66,241 | 20,000 | 20,000 | 0 |
+| InStock UK | 153,562 | 99,013 | 20,000 | 20,000 | 0 |
+| Tirendo UK | 39,494 | 1,431 | 1,431 | 1,431 | 4,211 |
+| Tyres UK | 30,713 | 1,337 | 1,337 | 1,337 | 4,286 |
+
+- **The catalogue: 385,657 products to 208,110** (177,547 fewer), 134 shops before and
+  after; with a kind 129,264 to 106,474. Only the four change what the site shows of them.
+  By step, of each one's 20,000: InStock UK thin kinds 811, cheapest kept 1,809, with a kind
+  16,236, the rest 1,144; Tooled Up 336, 2,348, 17,316; PCHUB.UK thin kinds 233, cheapest
+  kept 19,767; GamingKit cheapest kept 19,840, with a kind 19, the rest 3, a cheaper
+  shop's 138.
+- **The categories**: over their size 16 before, 6 after. The four's categories empty out:
+  electronics > computers 11,334 to 3,610; hardware > tools 11,636 to 4,431; hardware > tool
+  accessories 11,651 to 138; vehicles & parts > vehicle parts & accessories 11,641 to 4,330.
+  The places left are for other shops' products that pass their checks.
+- **The kinds** (289): none is left without a product. Under 4 products 16 before and 19
+  after (car_audio 6 to 3, e_reader 4 to 2, printer_paper 6 to 3); under 24, 61 and 63
+  (game_console 37 to 22, smoke_detector 32 to 20); under 100, 109 and 118. **17 lose over
+  half**: ram_memory 4,662 to 1,853, headphones 4,060 to 1,946, ink_cartridge 3,243 to
+  1,542, printer 1,656 to 328, label_printer 1,310 to 498, toner 1,284 to 588, phone_charger
+  1,132 to 507, storage_drive 1,035 to 434, access_point 951 to 455, television 869 to 388,
+  projector 843 to 412, router 815 to 392, desk_phone 680 to 311, scanner 476 to 215,
+  power_supply 419 to 204, spanner 187 to 55, soundbar 63 to 31.
+- **Every kind searched by its first name** (312): the same first 4 cards in 262, the same
+  Recommended in 263; none with cards before and none after; none with 4 cards before and
+  fewer after. The searches that lose the most products: "monitor" 1,482 to 1,195, "cable"
+  1,220 to 975, "toner" 714 to 516, "ink cartridge" 1,375 to 1,246, "spanner" 118 to 38.
+  Some show more, since two shops no longer show the same products: "headphones" 1,400 to
+  1,519, "camera" 796 to 831.
+- **The 40 searches, their first 12 cards**: the same in 25; they differ in 15 (router,
+  monitor, tv, laptop, headphones, speaker, keyboard, mouse, printer, camera, phone charger,
+  drill, jacket, shampoo, backpack). The Recommended is the same in 25.
+- **The night after, every candidate passed** (the most that can enter): 208,110 to
+  222,908; tyres 2,391 to 6,711, shoes 9,490 to 10,576, cable 1,764 to 2,676; no kind loses.
+  Finediam 6,619 to 7,590, Tirendo UK 1,431 to 2,645, Tyres UK 1,337 to 4,443. Of the 31,961
+  candidates, 9,791 are of Plusshop UK, Bazta UK and TV Cables, which the bot cannot check
+  (section 17): those do not enter.
+- **Before any night is recorded** (the gate off, as on the server on 22/11; run
+  45058022788): 398,957 to 239,129, and new products never checked enter the places the four
+  leave (TV Cables 3,663, Tyres UK 3,519, Tirendo UK 3,077, Bazta UK 2,602, Plusshop UK
+  2,584); the 40 searches show the same 12 cards in 19. An «ανέβασε» before the first night
+  is applied (04:17 UTC on 23/11) would do this; after it, it does not.
+- **The preparation's time and memory, on the runner** (4 processors, 15 GB; the server's
+  own run of 22/11 took 28.4 minutes, peak 15.08 GB; twelve preparations in the three runs):
+  the caps take 33 to 43 s without the rule and 39 to 73 s with it (73 s with the gate on
+  and both mends); the catalogue built and written after them takes 94 to 128 s without the
+  rule and 79 to 88 s with it, being smaller. So the rule adds and saves about the same.
+  Whole runs: 13.3 to 18.8 minutes without it, 14.6 to 18.7 with it; the same job took
+  13.3 minutes on one runner and 18.8 on another, so the whole runs tell no difference.
+  **Peak memory 0.6 GB lower with the rule** (14.49 to 13.90 GB; 14.70 to 14.10 GB with the
+  gate on).
+- **The bot on the server** (three looks, 17:38, 18:11 and 18:58 UTC): "the pages are read
+  on 4 processes of their own", 4 of 4 answering at once, inside the unit's sandbox
+  (`PrivateDevices`, `ProtectSystem=strict` and the rest). The catalogue read and the order
+  of 19.4 worked out for 398,957 products in 57 s; the unit's memory at its peak 1,891 MB of
+  its 4,096 (the readers take 11 MB each). The round running held 2,531 MB after 7.3 hours
+  and 136,662 answers.
+- **What the bot scans of a shop in a day** (the round running, which asks every shop at
+  once on one process; a day of asking is 21 hours 35 minutes): seconds a request over the
+  round's first 7.3 hours, and over the 80 minutes between the looks: InStock UK 3.6 and
+  3.4, about 21,600 to 22,600 a day; Tooled Up 3.6 and 3.6, about 21,300 to 21,800;
+  GamingKit 4.5 and 4.3, about 17,300 to 17,900; PCHUB.UK 6.6 and 6.3, about 11,700 to
+  12,300. **So by 19.3 GamingKit and PCHUB.UK settle under 20,000**, at what the bot scans
+  of them in a day and passes: PCHUB.UK's own pages called 25 to 29 in 100 sold out
+  (section 17). InStock UK: 926 of the 7,365 asked that day were gone from its site.
+
+### 20.5 Not measured
+
+- **What leaves by a pass over three nights old** (19.7.1): there is no ledger until the
+  first night is recorded, and no pass can be three nights old before the night of 26/11.
+  Which shops it touches is read from the pace above: GamingKit and PCHUB.UK are not asked
+  whole within a day; every other shop the bot can check is (the largest of them, Back to
+  the Office, 11,280 products, within the round's first 6 hours).
+- **The preparation's time on the server**: only a deployment prepares there. The health
+  run says it the morning after (its limit is 30 minutes).
+- **The bot's pace with the pages read on 4 processes**: only the round after the «ανέβασε».
+- **The first real night's decisions**: the look is run once more on 23/11, when the server
+  holds them (the same workflow: its first pair is then the real one, and the pair on the
+  look's own decisions is not run).
+
+### 20.6 For the «ανέβασε»
+
+- Not before the checks' first night is recorded and applied (23/11, 04:17 UTC): 20.4,
+  "before any night is recorded".
+- The look once more on the real decisions first (20.5), read against 20.4.
+- As the handoff says: the site restarted first by a fast-forward to a commit that does not
+  concern the catalogue, then the commit that turns the switch; the bot starts again with
+  the rule on (20.3.4); the standing texts change with it (19.9).
+- What it carries besides the rule: task 6's code with its switch false, and its meter,
+  which starts measuring (`docs/PICWISE_KIND_ITSELF_RULES.md`: $2 a day at most).
+
