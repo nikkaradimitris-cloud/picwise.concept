@@ -80,14 +80,16 @@ a decision came about.
     more for a moment. Its unit slows it at 4 GB and stops it at 5 (`picwise-checks.service`): a round stopped so
     records no night, and nothing is applied the next morning. `prepare-runs.yml` prints its memory; read it on
     23/11 before 03:05 UTC or in the morning's journal (a line of the kernel about memory, the round's result).
-  - **Owed:** the Greek page of the rules in the Project's docs (`claude/PicWise-kanones-elegchon.md`) still says
-    that the two Proposed rules wait for his yes: bring it in step (his yes of 22/11 to both; Dean Morris Cards).
-    `main` is at `b6915e3` (19/11): bringing it level with the site is the owner's yes (it builds the Vercel backup).
+  - The Greek page of the rules in the Project's docs (`claude/PicWise-kanones-elegchon.md`) was brought in step on
+    22/11 (16:40 Athens): deployed, the switch open, his three answers of 22/11, the cap per shop as decided and
+    not yet built. **Owed:** `main` is at `b6915e3` (19/11): bringing it level with the site is the owner's yes (it
+    builds the Vercel backup).
 - **(22/11, 16:35 Athens): TASK 6 (FABLE) BUILT, NOT DEPLOYED: the question "is it the kind itself". Its switch
   (`data/kind_itself_switch.json`) is false; no answer is kept anywhere; nothing on the site changed. IT WAITS FOR
   THE OWNER'S WORD FOR THE FIRST ASKING** (PROGRESS.md, 22/11 16:35). The rules, with a Greek summary for the owner
   at their top and what is built in their section 14: `docs/PICWISE_KIND_ITSELF_RULES.md`. Read them before
-  touching any of it.
+  touching any of it. Their Greek page for the owner, in the Project's docs: `claude/PicWise-kanones-eidous.md`
+  (keep it in step: it says what waits for his word).
   - **What it does, in one breath:** the AI is asked, for each product and for the kind the site would show it as,
     whether it is the kind itself or an accessory, a part, a consumable, a set or another thing; Haiku 5.5 reads
     every question, Sonnet 5.5 reads again what Haiku would move and each kind's first cards, and **only Sonnet's
