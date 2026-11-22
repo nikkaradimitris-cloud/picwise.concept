@@ -7,7 +7,7 @@
 # On a push of its own branch that changes the script or this file. The repository is public
 # and so is this log: the server's names are masked; the script prints counts and shop names.
 #
-# Run: 2026-11-22 05:40 Athens (to run again, change this line and push).
+# Run: 2026-11-22 05:45 Athens (to run again, change this line and push).
 name: Server look at the products' category (read-only)
 on:
   push:
