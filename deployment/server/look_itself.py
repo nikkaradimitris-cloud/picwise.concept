@@ -50,7 +50,8 @@ FRONT = 24
 CARDS = 12
 TOP = 25
 EXAMPLES = 20
-NOTE_CHARS = 7000
+# GitHub keeps about 4,000 characters of a note (the look of 22/11 lost the rest of each).
+NOTE_CHARS = 3600
 TITLE = 62
 
 

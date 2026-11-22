@@ -1,0 +1,174 @@
+# Task 6's trial before its rules (the work split by model, 21/11: the question "is it the kind
+# itself"; the owner's plan of 21/11, step 8). GitHub's runner copies the server's prepared
+# catalogue and what the site reads beside it, and runs deployment/server/try_itself.py: the
+# question (picwise_ai.itself) asked of Claude Haiku 5.5, Claude Sonnet 5.5 and Claude Opus 5.5
+# about the first cards of the measure after's 40 searches, and of the first two about a sample
+# of the products the kinds' lists took out of a kind. It says each model's answers and cost, how
+# often they agree and every product they read differently. No answer is kept, and nothing on
+# the server or the site changes; the copies are removed. The SDK is installed from
+# deployment/server/requirements-ai.txt, every package checked against its hash; the key is
+# ANTHROPIC_API_KEY, never printed; the calls stop before the budget below, within the daily
+# limit of the measures (docs/PICWISE_DAILY_WORK.md: $2 a day). The catalogue holds the shops'
+# links: it is never uploaded anywhere. The log is public: counts, titles, shops, prices and
+# categories only.
+name: Kind itself, the trial of the question (read-only, nothing kept)
+on:
+  push:
+    branches: [claude/itself-try]
+permissions:
+  contents: read
+concurrency:
+  group: itself-try
+  cancel-in-progress: false
+jobs:
+  trial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      # The most this run's calls may cost, in dollars, every model together.
+      BUDGET: '1.50'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Connect with the key, check the server's identity, mask its names
+        id: connect
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          AWIN_FEED_URL: ${{ secrets.AWIN_FEED_URL }}
+        run: |
+          install -m 700 -d ~/.ssh
+          # A key pasted on Windows may carry carriage returns, which ssh refuses.
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # The server must show a login the host key pinned in .github/server-host-key.pin
+          # (an HMAC under the deploy key: .github/scripts/host_key_pin.py), or prove below
+          # that it holds the feed link; every connection accepts the key it showed only.
+          # The key is the one a login's first step is shown: an ssh client offering no
+          # key or password writes it down, and the login ends there.
+          seen="$RUNNER_TEMP/seen"
+          : > "$seen"
+          ssh -F /dev/null -o BatchMode=yes -o ConnectTimeout=15 -o HostKeyAlgorithms=ssh-ed25519 \
+            -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$seen" -o GlobalKnownHostsFile=/dev/null \
+            -o PubkeyAuthentication=no -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no \
+            -o HostbasedAuthentication=no -o GSSAPIAuthentication=no -o LogLevel=QUIET \
+            "ubuntu@$SERVER_HOST" true 2>/dev/null || true
+          host_key=$(awk 'NF >= 3 {print $2, $3; exit}' "$seen")
+          rm -f "$seen"
+          [ -n "$host_key" ] || { echo "the server showed a login no host key"; exit 1; }
+          pin=$(HOST_KEY="$host_key" python3 .github/scripts/host_key_pin.py)
+          expected=$( (grep -v '^#' .github/server-host-key.pin || true) | tr -d '[:space:]')
+          if [ "$pin" = "$expected" ]; then
+            echo "the server matches the pin"
+            echo "pinned=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "the server does NOT match the pin (reinstalled, or not our server); its pin: $pin"
+            echo "pinned=no" >> "$GITHUB_OUTPUT"
+          fi
+          # What a key scan is shown, only to report it.
+          scanned=$(ssh-keyscan -T 15 -t ed25519 "$SERVER_HOST" 2>/dev/null | awk 'NF >= 3 {print $2, $3; exit}')
+          scan_pin=""
+          if [ -n "$scanned" ]; then scan_pin=$(HOST_KEY="$scanned" python3 .github/scripts/host_key_pin.py); fi
+          if [ "$scan_pin" = "$pin" ]; then
+            echo "a key scan is shown the same key"
+            echo "scan_differs=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "a key scan is shown another key (pin ${scan_pin:-none})"
+            echo "scan_differs=yes" >> "$GITHUB_OUTPUT"
+            echo "scan_pin=$scan_pin" >> "$GITHUB_OUTPUT"
+          fi
+          echo "picwise-server $host_key" > ~/.ssh/known_hosts_picwise
+          # The user is OVHcloud's for Ubuntu, written here rather than read from the
+          # SERVER_USER secret: GitHub masks a secret's value all over the log.
+          cat > ~/.ssh/config <<EOF
+          Host picwise
+            HostName $SERVER_HOST
+            HostKeyAlias picwise-server
+            UserKnownHostsFile ~/.ssh/known_hosts_picwise
+            StrictHostKeyChecking yes
+            User ubuntu
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            BatchMode yes
+            ConnectTimeout 15
+            ServerAliveInterval 15
+            ServerAliveCountMax 8
+            LogLevel ERROR
+          EOF
+          chmod 600 ~/.ssh/config
+          # Without the pin, the server must seal a random nonce under the feed link as
+          # GitHub does: only the nonce goes to it, only the seal comes back.
+          nonce=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
+          ours=$(python3 .github/scripts/feed_seal.py "$nonce") || ours=""
+          unset AWIN_FEED_URL
+          if [ "$pin" != "$expected" ]; then
+            [ -n "$ours" ] || { echo "no feed link in GitHub's secrets: nothing can prove the server is ours"; exit 1; }
+            # What any visitor of port 22 is told first: its SSH software and system.
+            banner=$(timeout 10 bash -c 'exec 3<>"/dev/tcp/$1/22"; head -n 1 <&3' _ "$SERVER_HOST" 2>/dev/null \
+              | tr -cd '[:print:]' | cut -c1-80 || true)
+            echo "the server's SSH software says: ${banner:-nothing}"
+            # The server's own words are never printed: its errors are only sorted.
+            errors="$RUNNER_TEMP/seal-errors"
+            theirs=$(ssh picwise "sudo -n python3 - $nonce" < .github/scripts/feed_seal.py 2> "$errors") && status=0 || status=$?
+            if [ "$theirs" != "$ours" ]; then
+              if grep -q 'Permission denied' "$errors"; then why="it did not let the deploy key in"
+              elif grep -q 'Host key verification failed' "$errors"; then why="its host key changed again during the run"
+              elif [ "$status" = 255 ]; then why="the login did not complete"
+              elif grep -q 'sudo:' "$errors"; then why="the deploy key was let in, but sudo was refused"
+              elif grep -q 'feed_seal: no feed link' "$errors"; then why="the deploy key was let in, but the server holds no feed link"
+              elif [ "$status" = 0 ]; then why="the deploy key was let in, but its seal is not GitHub's (another feed link)"
+              else why="the deploy key was let in, but sealing failed (exit $status)"
+              fi
+              rm -f "$errors"
+              echo "the server could NOT prove it holds the feed link: $why; nothing is read"
+              exit 1
+            fi
+            rm -f "$errors"
+            echo "the server proved it holds the feed link: it is ours, with a new host key"
+          fi
+          # The host name resolves to the address, so it is masked like the address.
+          names=$(ssh -n picwise 'hostname; hostname -f; hostname -I')
+          for name in $names; do echo "::add-mask::$name"; done
+          echo "connected"
+      - name: Copy the server's prepared catalogue and what the site reads beside it
+        id: copy
+        run: |
+          mkdir -p "$RUNNER_TEMP/site"
+          ssh -n picwise 'sudo cat /srv/picwise/shared/prepared/catalogue.json.gz' > "$RUNNER_TEMP/site/catalogue.json.gz"
+          echo "the catalogue: $(( $(stat -c %s "$RUNNER_TEMP/site/catalogue.json.gz") / 1048576 )) MB"
+          for pair in \
+            "/srv/picwise/assist/shelves/answers.jsonl.gz shelves.jsonl.gz" \
+            "/srv/picwise/shared/photos/gone.json gone.json" \
+            "/srv/picwise/shared/offers/offers.json offers.json" \
+            "/srv/picwise/assist/families/answers/families.json families.json"; do
+            set -- $pair
+            ssh -n picwise "if sudo test -f $1; then sudo cat $1; fi" > "$RUNNER_TEMP/site/$2"
+            echo "$2: $(stat -c %s "$RUNNER_TEMP/site/$2") bytes"
+          done
+          free -g | awk '/^Mem:/ {print "the runner: " $2 " GB of memory"}'
+      # The server's Python (Ubuntu 24.04), for which requirements-ai.txt is compiled.
+      - uses: actions/setup-python@v5
+        if: steps.copy.outcome == 'success'
+        with:
+          python-version: '3.12'
+      - name: Install the SDK, every package checked against its hash
+        if: steps.copy.outcome == 'success'
+        run: |
+          python -m venv "$RUNNER_TEMP/ai"
+          "$RUNNER_TEMP/ai/bin/pip" install -q --disable-pip-version-check --no-cache-dir --require-hashes \
+            -r deployment/server/requirements-ai.txt
+          "$RUNNER_TEMP/ai/bin/python" -c "import anthropic, sys; print('anthropic', anthropic.__version__, 'on Python', sys.version.split()[0])"
+      - name: The question asked of each model
+        if: steps.copy.outcome == 'success'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          "$RUNNER_TEMP/ai/bin/python" deployment/server/try_itself.py "$RUNNER_TEMP/site/catalogue.json.gz" \
+            --shelves "$RUNNER_TEMP/site/shelves.jsonl.gz" --gone "$RUNNER_TEMP/site/gone.json" \
+            --offers "$RUNNER_TEMP/site/offers.json" --families "$RUNNER_TEMP/site/families.json" \
+            --budget "$BUDGET"
+      - name: Remove the key and the copies from the runner
+        if: always()
+        run: |
+          rm -rf ~/.ssh/deploy_key ~/.ssh/config "$RUNNER_TEMP/site"

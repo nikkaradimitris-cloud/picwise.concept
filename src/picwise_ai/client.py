@@ -20,8 +20,13 @@ from typing import Any
 # Anthropic's prices per million tokens for Claude Haiku 5.5, prompts up to 100,000
 # tokens (the pricing page, read on 2026-11-05): read, written, a 5-minute cache write,
 # a cache read. A prompt over 100,000 tokens costs more; this layer never sends one.
+# Claude Sonnet 5.5 and Claude Opus 5.5 (the same page, read on 2026-11-22), one price for
+# every prompt: the question "is it the kind itself" has its second look and its meter
+# answered by them (`picwise_ai.itself`, task 6).
 PRICES_PER_MILLION = {
     "claude-haiku-5-5": {"input": 0.10, "output": 0.50, "cache_write": 0.125, "cache_read": 0.01},
+    "claude-sonnet-5-5": {"input": 2.00, "output": 10.00, "cache_write": 2.50, "cache_read": 0.10},
+    "claude-opus-5-5": {"input": 4.00, "output": 20.00, "cache_write": 5.00, "cache_read": 0.20},
 }
 # No answer within this many seconds: nothing is shown (the spec, 4.3). The fourth
 # measure's answers took 5.2 s in the middle and 11.1 s at most.
@@ -54,9 +59,25 @@ def make_client(*, timeout: float = TIMEOUT_SECONDS, max_retries: int = MAX_RETR
     return anthropic.Anthropic(timeout=timeout, max_retries=max_retries)
 
 
+def prices_of(model: str) -> dict[str, float]:
+    """A model's prices: its own, or those of the listed model its name starts with (the API
+    may answer a dated name, "claude-sonnet-5-5-20260928"). A model not listed is counted at
+    the dearest prices listed, so that a budget stops early rather than late; no name at
+    all (a caller with no model in hand) at Haiku 5.5's, as before 2026-11-22."""
+    name = str(model or "")
+    if name in PRICES_PER_MILLION:
+        return PRICES_PER_MILLION[name]
+    if not name:
+        return PRICES_PER_MILLION["claude-haiku-5-5"]
+    for known in sorted(PRICES_PER_MILLION, key=len, reverse=True):
+        if name.startswith(known):
+            return PRICES_PER_MILLION[known]
+    return max(PRICES_PER_MILLION.values(), key=lambda prices: prices["output"])
+
+
 def cost_usd(model: str, usage: dict[str, Any]) -> float:
     """What one call cost, from the tokens the API counted."""
-    prices = PRICES_PER_MILLION.get(model) or PRICES_PER_MILLION["claude-haiku-5-5"]
+    prices = prices_of(model)
     tokens = {
         "input": int(usage.get("input_tokens") or 0),
         "output": int(usage.get("output_tokens") or 0),

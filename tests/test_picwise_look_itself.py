@@ -172,7 +172,7 @@ class LookItselfTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             notes = look_itself.Notes(Path(folder))
             with redirect_stdout(io.StringIO()):
-                notes.say("long", ["x" * 3000 for _ in range(5)])
+                notes.say("long", ["x" * 1500 for _ in range(5)])
             files = sorted(Path(folder).glob("*.txt"))
             self.assertEqual(len(files), 3)
             self.assertTrue(files[0].read_text(encoding="utf-8").startswith("long (1 of 3)\n"))
