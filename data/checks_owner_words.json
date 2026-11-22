@@ -1,6 +1,8 @@
 {
-  "_about": "The owner's words the checks' brakes wait for (docs/PICWISE_CHECKS_RULES.md): `cut_held_shops`, the shops whose products held for the owner (7.2: a shop with fewer than 20 passes on record) he said to cut («κόψε»), each with its date in `words`; `awin_reading_let_through`, true for one night when he lets through a reading of Awin that waits (5.6.3: more than 3 shops, or over 5% of the products, out in one night). Written only on his word, and set back after the night that used it.",
+  "_about": "The owner's words the checks' brakes wait for (docs/PICWISE_CHECKS_RULES.md): `cut_held_shops`, the shops whose products held for the owner (7.2: a shop with fewer than 20 passes on record) he said to cut («κόψε»), each with its date in `words`; `awin_reading_let_through`, true for one night when he lets through a reading of Awin that waits (5.6.3: more than 3 shops, or over 5% of the products, out in one night). Written only on his word, and set back after the night that used it. `old_feed_rule` and `awin_closed_out`: the owner's yes to the two Proposed rules he asked to be reminded of (21/11, 22:26): a product of a feed over 7 days old shown only with a reading of its shop's own site of the last 3 nights (rules 5.6.4), and a shop suspended, in no list or offline at Awin out (5.6.3; a rejected one is out on his word of 21/11 either way). Each false until he says yes: the rule then changes nothing on the site, and the night's note names what it would put out.",
   "cut_held_shops": [],
   "awin_reading_let_through": false,
+  "old_feed_rule": false,
+  "awin_closed_out": false,
   "words": []
 }

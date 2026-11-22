@@ -4,8 +4,9 @@ and the order of asking (`picwise_checks.ledger`; `docs/PICWISE_CHECKS_RULES.md`
 Pinned by section: a failure cut that night and asked again on its schedule (5, 8.1);
 back within 7 nights keeping its place (8.2); the brakes holding new failures of a shop,
 of a kind, of the whole night, and twice running stopping the cutting (7.2 to 7.4); a
-round ours recording nothing (7.1); a shop's 14 days (5.6.2); Awin's word and its stop
-(5.6.3); a feed over 7 days old (5.6.4); the first round (9.3); what may enter (9.4); the
+round ours recording nothing (7.1); a shop's 3 days (5.6.2); Awin's word and its stop
+(5.6.3), its Proposed part and a feed over 7 days old (5.6.4) only on the owner's yes; the
+first round, after which a product never asked waits and is not cut (9.3); what may enter (9.4); the
 page's price and stock only where the reader is proven (5.3, 5.2, 7.5); the order of
 asking (10); the ledger written and read whole (11).
 
@@ -244,12 +245,33 @@ class Rules56ShopsTests(unittest.TestCase):
     def test_5_6_3_the_owners_word_lets_a_large_reading_through(self) -> None:
         ledger, rows = L.Ledger(), _rows("Big", 100)
         rows.update(_rows("Other", 100))
-        result = _night(ledger, NIGHT, rows, {}, awin={"Big": ("suspended", ""), "Other": ("joined", "")}, filler=False)
+        result = _night(ledger, NIGHT, rows, {}, awin={"Big": ("rejected", ""), "Other": ("joined", "")}, filler=False)
         self.assertTrue(result.note["awin"]["waits"])
         self.assertEqual(ledger.shops["Big"].out, "")
-        _night(ledger, NIGHT, rows, {}, awin={"Big": ("suspended", ""), "Other": ("joined", "")}, owner_awin_word=True,
+        _night(ledger, NIGHT, rows, {}, awin={"Big": ("rejected", ""), "Other": ("joined", "")}, owner_awin_word=True,
                filler=False)
-        self.assertEqual(ledger.shops["Big"].out, "Awin: suspended")
+        self.assertEqual(ledger.shops["Big"].out, "Awin: rejected")
+
+    def test_5_6_3_suspended_closed_or_offline_is_out_only_on_the_owners_yes(self) -> None:
+        # Proposed (13.2), his yes still to come on 22/11: until it, only a rejection puts a shop out.
+        rows = _rows("Big", 1000)
+        for shop in ("Closed", "Paused", "Offline", "Refused"):
+            rows.update(_rows(shop, 3))
+        awin = {"Big": ("joined", ""), "Closed": (None, ""), "Paused": ("suspended", ""), "Offline": ("joined", "offline"),
+                "Refused": ("rejected", "")}
+        ledger = L.Ledger()
+        result = _night(ledger, NIGHT, rows, {}, awin=awin, filler=False)
+        self.assertEqual({name: shop.out for name, shop in ledger.shops.items() if shop.out}, {"Refused": "Awin: rejected"})
+        self.assertEqual(result.note["awin"]["would_be_out_if_proposed"],
+                         [["Closed", "Awin: in no list", 3], ["Offline", "Awin: offline", 3], ["Paused", "Awin: suspended", 3]])
+        with_yes = L.Ledger()
+        _night(with_yes, NIGHT, rows, {}, awin=awin, awin_closed_out=True, owner_awin_word=True, filler=False)
+        self.assertEqual({name: shop.out for name, shop in with_yes.shops.items() if shop.out},
+                         {"Closed": "Awin: in no list", "Offline": "Awin: offline", "Paused": "Awin: suspended",
+                          "Refused": "Awin: rejected"})
+        # His yes taken back: the shops it had put out are in again the next night.
+        _night(with_yes, NIGHT + timedelta(days=1), rows, {}, awin=awin, filler=False)
+        self.assertEqual({name: shop.out for name, shop in with_yes.shops.items() if shop.out}, {"Refused": "Awin: rejected"})
 
     def test_5_6_4_an_old_feed_needs_a_fresh_reading_once_the_first_round_is_over(self) -> None:
         ledger, rows = L.Ledger(), _rows("Alpha", 2)
@@ -257,10 +279,22 @@ class Rules56ShopsTests(unittest.TestCase):
         _night(ledger, NIGHT, rows, {keys[0]: L.Reading(page=OK, site_price=10.0, tie="code"), keys[1]: OK},
                feeds={"Alpha": NIGHT - timedelta(days=10)})
         self.assertTrue(ledger.shops["Alpha"].round_over)
-        made = L.decisions(ledger, NIGHT + timedelta(days=2), rows, shown=rows.keys())
-        self.assertEqual(made["cut"], {keys[1]: "old feed, no fresh reading"})
-        later = L.decisions(ledger, NIGHT + timedelta(days=3), rows, shown=rows.keys())
-        self.assertEqual(set(later["cut"]), set(keys))
+        made = L.decisions(ledger, NIGHT + timedelta(days=2), rows, shown=rows.keys(), old_feed_rule=True)
+        self.assertEqual(made["wait"], {keys[1]: "old feed, no fresh reading"})
+        self.assertEqual(made["cut"], {})
+        later = L.decisions(ledger, NIGHT + timedelta(days=3), rows, shown=rows.keys(), old_feed_rule=True)
+        self.assertEqual(set(later["wait"]), set(keys))
+        # Proposed (13.2), the owner's yes still to come on 22/11: without it the rule changes nothing.
+        without = L.decisions(ledger, NIGHT + timedelta(days=3), rows, shown=rows.keys())
+        self.assertEqual((without["wait"], without["cut"]), ({}, {}))
+
+    def test_5_6_4_of_an_old_feed_only_a_candidate_with_a_fresh_reading_enters(self) -> None:
+        ledger, rows = L.Ledger(), _rows("Alpha", 2)
+        keys = list(rows)
+        _night(ledger, NIGHT, rows, {keys[0]: L.Reading(page=OK, site_price=10.0, tie="code"), keys[1]: OK},
+               shown=(), feeds={"Alpha": NIGHT - timedelta(days=10)})
+        self.assertEqual(L.decisions(ledger, NIGHT, rows, shown=(), candidates=keys, old_feed_rule=True)["enter"], [keys[0]])
+        self.assertEqual(L.decisions(ledger, NIGHT, rows, shown=(), candidates=keys)["enter"], keys)
 
 
 class Rules9WhatTheCapReadsTests(unittest.TestCase):
@@ -275,25 +309,31 @@ class Rules9WhatTheCapReadsTests(unittest.TestCase):
         _night(ledger, NIGHT + timedelta(days=3), rows, {})
         self.assertEqual(ledger.shops["Alpha"].round_over, (NIGHT + timedelta(days=3)).isoformat())
         made = L.decisions(ledger, NIGHT + timedelta(days=3), rows, shown=rows.keys())
-        self.assertEqual(made["cut"], {keys[2]: "never checked"})
+        # No check of it failed: it is not cut, it waits at the cap's gate until asked (9.3, 9.4).
+        self.assertEqual(made["wait"], {keys[2]: "never checked"})
+        self.assertEqual(made["cut"], {})
 
     def test_9_3_a_shop_whose_products_were_refused_keeps_its_three_days(self) -> None:
         ledger, rows = L.Ledger(), _rows("Alpha", 4)
         refused = {key: Verdict(NOT_CHECKED, REFUSED) for key in rows}
         _night(ledger, NIGHT, rows, refused)
         self.assertEqual(ledger.shops["Alpha"].round_over, "")
-        self.assertEqual(L.decisions(ledger, NIGHT, rows, shown=rows.keys())["cut"], {})
+        self.assertEqual(L.decisions(ledger, NIGHT, rows, shown=rows.keys())["wait"], {})
         _night(ledger, NIGHT + timedelta(days=3), rows, refused)
         made = L.decisions(ledger, NIGHT + timedelta(days=3), rows, shown=rows.keys())
-        self.assertEqual(set(made["cut"].values()), {"never checked"})
+        self.assertEqual((set(made["wait"]), set(made["wait"].values())), (set(rows), {"never checked"}))
 
     def test_9_3_not_passed_in_thirty_nights(self) -> None:
         ledger, rows = L.Ledger(), _rows("Alpha", 1)
         key = next(iter(rows))
         _night(ledger, NIGHT, rows, {key: OK})
-        self.assertEqual(L.decisions(ledger, NIGHT + timedelta(days=29), rows, shown=rows.keys())["cut"], {})
-        self.assertEqual(L.decisions(ledger, NIGHT + timedelta(days=30), rows, shown=rows.keys())["cut"],
-                         {key: "not passed in 30 nights"})
+        self.assertEqual(L.decisions(ledger, NIGHT + timedelta(days=29), rows, shown=rows.keys())["wait"], {})
+        late = L.decisions(ledger, NIGHT + timedelta(days=30), rows, shown=rows.keys())
+        self.assertEqual((late["wait"], late["cut"]), ({key: "not passed in 30 nights"}, {}))
+        # Named a candidate by the cap, it may enter again only once it has passed afresh.
+        self.assertEqual(L.decisions(ledger, NIGHT + timedelta(days=31), rows, shown=(), candidates=[key])["enter"], [])
+        _night(ledger, NIGHT + timedelta(days=31), rows, {key: OK}, shown=())
+        self.assertEqual(L.decisions(ledger, NIGHT + timedelta(days=31), rows, shown=(), candidates=[key])["enter"], [key])
 
     def test_9_4_only_a_candidate_that_passed_may_enter(self) -> None:
         ledger, rows = L.Ledger(), _rows("Alpha", 3)

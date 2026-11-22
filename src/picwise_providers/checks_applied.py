@@ -9,6 +9,12 @@ prepares the catalogue again, so the whole catalogue is back within one preparat
 
 - a product cut, or of a shop out, is marked (`CHECKS_COLUMN`, with its reason), which
   `offer_health.evaluate_product_eligibility` reads as no product a card can show;
+- a product not shown until it is checked (rules 9.3: never asked, or not passed in 30
+  nights, once its shop's first round is over) failed no check and is not marked: it leaves
+  the cap's memory of the night before (`unchecked_row_keys`) and waits at the cap's gate as
+  a new product does, so that the cap names it among its candidates and the bot asks it the
+  next night (9.4; until 22/11 it was marked cut, never reached the cap, and was not asked
+  the night after);
 - a product a proven page reader read sold out or in stock in the last 3 days takes that
   word in `shop_stock`, as a Shopify catalogue's reading does (owner, 2026-11-12);
 - a product whose shop's own page states another price, tied to its row, in a shop
@@ -25,8 +31,9 @@ prepares the catalogue again, so the whole catalogue is back within one preparat
   of Google's taxonomy ("no line fits", refused for good, or a slip:
   `ai_shelves.category_state`) is cut (`NO_CATEGORY`); one not asked yet stays if shown and
   waits if new; the ones shown or next for the cap with no answer are named for the AI
-  (`shelf_items`, the job `picwise-shelves` answers before the next night). More cut so in
-  one night than `CATEGORY_BRAKE_SHARE` of the products: none, and the note says so.
+  (`shelf_items`, the job `picwise-shelves` answers before the next night). More with none
+  in one night than `CATEGORY_BRAKE_SHARE` of the rows the AI answered: none is cut, and
+  the note says so.
 
 With the switch off, no decisions file (`PICWISE_CHECKS_DECISIONS` unset or nothing
 there), or one more than 2 nights old, nothing is applied and nothing gated: the
@@ -64,9 +71,11 @@ _SHOPS_LISTED = 30
 ROWS_OF_A_SHOP_OUT = 20
 
 # The category (rules 5.5): the reason of a product cut for it; more of them in one night than
-# this share of the products and none is cut, for the owner's word (the whole night's brake
-# of 7.4, its 10%, for the check the bot does not count: an answers file gone wrong must not
-# empty the site).
+# this share of the rows the AI answered (a line, or none) and none is cut, for the owner's
+# word (the whole night's brake of 7.4, its 10%, for the check the bot does not count: an
+# answers file gone wrong must not empty the site). Counted among the rows answered, not
+# among every row of the feed (until 22/11): the feed has seven rows for each product
+# shown, most never asked, so a tenth of them was more than every product with an answer.
 NO_CATEGORY = "no category"
 CATEGORY_BRAKE_SHARE = 0.10
 # The products the AI is asked about the next morning (`deployment/server/shelves_service.py`).
@@ -175,9 +184,13 @@ def apply_checks(
 
     categories = bool(ai_shelves.answers())
     no_category: list[int] = []
+    with_a_line = 0
     waiting: set[str] = set()
+    unchecked: set[str] = set()
+    unchecked_reasons: Counter = Counter()
     shops_out: Mapping[str, str] = decisions.get("shops_out") or {}
     cut: Mapping[str, str] = decisions.get("cut") or {}
+    wait: Mapping[str, str] = decisions.get("wait") or {}
     stock: Mapping[str, list] = decisions.get("stock") or {}
     prices: Mapping[str, list] = decisions.get("prices") or {}
     counts: Counter = Counter()
@@ -205,11 +218,16 @@ def apply_checks(
                 cut_by_shop[shop] += 1
                 reasons[str(cut[key] or "failed")] += 1
             else:
+                if key in wait:
+                    unchecked.add(key)
+                    unchecked_reasons[str(wait[key] or "not checked")] += 1
                 state = ai_shelves.category_state(product.title, product.brand, product.raw) if categories else ""
                 if state == "none":
                     no_category.append(index)
                 elif state == "unasked":
                     waiting.add(key)
+                elif state == "line":
+                    with_a_line += 1
                 if key in stock:
                     raw["shop_stock"] = str(stock[key][0])
                     counts["stock_" + str(stock[key][0]).replace(" ", "_")] += 1
@@ -225,7 +243,7 @@ def apply_checks(
         result[index] = replace(product, raw=raw)
         if CHECKS_COLUMN in raw:
             marked.append(result[index])
-    category_brake = len(no_category) > CATEGORY_BRAKE_SHARE * max(1, len(result))
+    category_brake = len(no_category) > CATEGORY_BRAKE_SHARE * max(1, len(no_category) + with_a_line)
     not_entering = {_key(result[index]) for index in no_category} | waiting
     if not category_brake:
         for index in no_category:
@@ -237,7 +255,8 @@ def apply_checks(
             reasons[NO_CATEGORY] += 1
             cut_by_shop[_shop(product)] += 1
     _ACTIVE = {"enter": frozenset(decisions.get("enter") or ()), "returning": frozenset(decisions.get("returning") or ()),
-               "not_entering": frozenset(not_entering), "waiting": frozenset(waiting)}
+               "not_entering": frozenset(not_entering), "waiting": frozenset(waiting),
+               "unchecked": frozenset(unchecked)}
     _LAST_CUT = marked
     _LAST_NOTE = {
         "applied": True,
@@ -249,8 +268,10 @@ def apply_checks(
         "cut_by_shop": [{"shop": name, "cut": count} for name, count in cut_by_shop.most_common(_SHOPS_LISTED)],
         "price_from_site": counts["price_from_site"],
         "stock_from_page": {name[6:]: count for name, count in counts.items() if name.startswith("stock_")},
+        "not_shown_until_checked": len(unchecked),
+        "not_shown_until_checked_by_reason": dict(sorted(unchecked_reasons.items())),
         "category": {"answers": categories, "no_category": len(no_category), "held_by_its_brake": category_brake,
-                     "not_asked_yet": len(waiting)},
+                     "not_asked_yet": len(waiting), "with_a_line": with_a_line},
     }
     if bot is not None:
         _LAST_NOTE["bot"] = bot
@@ -268,7 +289,25 @@ def may_enter(product: ProviderProduct) -> bool:
     if _ACTIVE is None:
         return True
     key = _key(product)
-    return key in _ACTIVE["enter"] and key not in _ACTIVE["not_entering"]
+    return key in _ACTIVE["enter"] and key not in _ACTIVE["not_entering"] and key not in _ACTIVE["unchecked"]
+
+
+def may_enter_without_memory(product: ProviderProduct) -> bool:
+    """The gate on a night the cap has no memory of the night before (its pool missing or
+    unreadable): it cannot tell a new product from one shown last night, and `may_enter`
+    would hold back every product of the site. So only the products the decisions name as
+    not shown until checked (9.3) are held; every other product may take a place, as before
+    the checks. The preparation says so in its note, and the health run passes a limit."""
+    return _ACTIVE is None or _key(product) not in _ACTIVE["unchecked"]
+
+
+def unchecked_row_keys(products: Sequence[ProviderProduct], row_key: Any) -> frozenset[str]:
+    """9.3 and 9.5: the cap's keys (`row_key`) of the products not shown until they are
+    checked. They leave the cap's memory of the night before, so that they wait at its gate
+    (`may_enter` is false for them) and the cap names the next ones as candidates."""
+    if _ACTIVE is None or not _ACTIVE["unchecked"]:
+        return frozenset()
+    return frozenset(row_key(product) for product in products if _key(product) in _ACTIVE["unchecked"])
 
 
 def shelf_items(products: Sequence[ProviderProduct]) -> list[dict[str, Any]]:

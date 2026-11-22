@@ -126,10 +126,14 @@ class HealthTests(unittest.TestCase):
                 "failed": {"gone": 101, "moved": 18}, "cut_tonight": 119, "back_tonight": 4, "held": {},
                 "braked_shops": [], "night_brake": False, "stopped": False,
                 "cannot_be_checked": {"Plusshop UK": ["refuses the bot", 1], "Aosom UK": ["robots.txt refused", 3]},
-                "awin": {"newly_out": [["usmile", "Awin: in no list"]], "waits": False, "products": 0}}
+                "awin": {"newly_out": [["usmile", "Awin: in no list"]], "waits": False, "products": 0,
+                         "would_be_out_if_proposed": [["Paused Shop", "Awin: suspended", 28]]}}
         self.write(self.folder / "checks-note.json", note)
         lines = self.printed()
         self.assertEqual(lines[-1], "within every limit")
+        # Named, not out: the Proposed part of the rule waits for the owner's yes.
+        self.assertIn("checks, not out while the Proposed rule waits for the owner's yes (rules 5.6.3): "
+                      "Paused Shop (suspended, 28 products)", lines)
         self.assertIn("checks, the night of 2026-11-22: 151 shops asked; the last round: unknown", lines)
         self.assertIn("checks: decided 3,120, passed 3,001, failed 119 (gone 101, moved 18); cut tonight 119, back 4", lines)
         self.assertIn("checks, cannot be checked: Aosom UK: robots.txt refused, day 3; leaves tomorrow", lines)
@@ -149,11 +153,25 @@ class HealthTests(unittest.TestCase):
         self.assertIn("over the limit: the checks' round was ours: fewer than half of the shops answered (rules 7.1)",
                       self.over(self.printed()))
 
+    def test_a_night_the_caps_gate_did_not_stand_passes_a_limit(self) -> None:
+        self.write(self.folder / "checks-note.json", {"night": "2026-11-22", "shops_asked": 151, "decided": 10,
+                                                      "passed": 10, "failed": {}})
+        note = json.loads(self.note.read_text())
+        why = "the night before's pool could not be read: only the products not checked are held back"
+        self.write(self.note, {**note, "checks": {"applied": True, "shops_out": {}, "cut": 12, "gate_off": why}})
+        lines = self.printed()
+        self.assertIn(f"checks, the cap's gate did not stand last night: {why}", lines)
+        self.assertIn(f"over the limit: the checks' gate did not stand last night: new products entered unchecked ({why})",
+                      self.over(lines))
+
     def test_the_category_its_brake_and_the_ais_night_are_told(self) -> None:
         self.write(self.folder / "checks-note.json", {"night": "2026-11-22", "shops_asked": 151, "decided": 10,
                                                       "passed": 10, "failed": {}})
         note = json.loads(self.note.read_text())
         self.write(self.note, {**note, "checks": {"applied": True, "shops_out": {}, "cut": 4100,
+                                                  "not_shown_until_checked": 5200,
+                                                  "not_shown_until_checked_by_reason": {"never checked": 5200},
+                                                  "held_by_the_gate": 61000, "candidates": 6500,
                                                   "category": {"answers": True, "no_category": 4093,
                                                                "held_by_its_brake": False, "not_asked_yet": 812}}})
         self.write(self.folder / "shelves-night.json", {"night": "2026-11-22", "asked": 812, "answered": 790,
@@ -162,6 +180,9 @@ class HealthTests(unittest.TestCase):
         lines = self.printed()
         self.assertEqual(lines[-1], "within every limit")
         self.assertIn("checks, the category: 4,093 products with none, 812 not asked yet", lines)
+        # The products never asked by their shop's day 4 (rules 9.3): not shown, waiting at the cap's gate.
+        self.assertIn("checks, not shown until checked: 5,200 products (never checked 5,200); at the cap's gate 61,000, "
+                      "named for the bot's next night 6,500", lines)
         self.assertIn("checks, the AI's categories on 2026-11-22: 812 asked, 790 answered (21 no line fits), "
                       "0 refused, 22 left; $0.06", lines)
         self.write(self.note, {**note, "checks": {"applied": True, "category": {"no_category": 90000,
