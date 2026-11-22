@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (17:15 Athens: the owner's answers on the cap per shop: the order with the three changes, the bot over several processes with it; NEXT: ITS BUILD, OPUS; 17:10 Athens: the cap per shop's rule written with a look's numbers, the checks' rules 19, not built; 16:45 Athens: the owner's two answers on task 6: a set stays shown, and the first asking is made AFTER THE CAP PER SHOP; 16:35 Athens: task 6 BUILT, the question "is it the kind itself", not deployed, its switch false; 15:51 Athens: the owner decided a cap per shop, records only; 15:05 Athens: Vercel's preview builds turned off, records only; 13:45 Athens: THE CHECKS DEPLOYED on the owner's «Ανέβασε», the bot's first round running, read the night on 23/11; 11:50 Athens: task 7's look done, its findings mended, not deployed, waits for the owner's answers and his «ανέβασε»; 10:30 Athens: task 7 begun, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (17:25 Athens: THE CAP PER SHOP IS ONE, 20,000 FOR EVERY SHOP, on the owner's word of 17:08, and only what the bot has checked is shown; its rule is the checks' rules 19; NEXT: ITS BUILD, OPUS; 17:15 Athens: his order for which products a shop keeps, with the three changes; 16:45 Athens: the owner's two answers on task 6: a set stays shown, and the first asking is made AFTER THE CAP PER SHOP; 16:35 Athens: task 6 BUILT, the question "is it the kind itself", not deployed, its switch false; 15:51 Athens: the owner decided a cap per shop, records only; 15:05 Athens: Vercel's preview builds turned off, records only; 13:45 Athens: THE CHECKS DEPLOYED on the owner's «Ανέβασε», the bot's first round running, read the night on 23/11; 11:50 Athens: task 7's look done, its findings mended, not deployed, waits for the owner's answers and his «ανέβασε»; 10:30 Athens: task 7 begun, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -145,22 +145,36 @@ a decision came about.
     lists read it; a product whose title or brand changes has a new question and, shown already, stays as the
     lists read it for a night or two; a new product that becomes a kind's Recommended is read a second time the
     morning after it enters.
-- **(22/11, 17:10 Athens; the owner's two answers 17:15): THE CAP PER SHOP'S RULE IS WRITTEN, with a look's numbers:
-  the checks' rules, section 19. NOT BUILT. THE BUILD IS NEXT, AND IT IS OPUS'S** (PROGRESS.md, 22/11 17:10 and
-  17:15; the item below is how he decided it). The look (`deployment/server/look_shop_cap.py`, runs 45034692763 and 45035123154, read-only, no AI,
-  the catalogue of 22/11): **four shops are over their cap and no other; 197,740 products are cut and 201,217
-  stay** (InStock UK 102,278 to 20,000; Tooled Up 68,449 to 18,951; GamingKit 48,191 to 18,069; PCHUB.UK 47,982 to
-  12,140). GamingKit and PCHUB.UK sell the same 43,500 products, PCHUB.UK the cheaper on 33,373 and GamingKit on
-  none. **With the steps as recorded, 71,972 of the 134,097 products with a kind stay and 90 of the 292 kinds lose
-  over half** (printer 1,902 to 273); **with three changes proposed (19.4 a, b, c: the thin kinds first, as he
-  first proposed; a product a cheaper shop keeps kept last; in "the rest" the products with a kind before those
-  with none), 104,718 stay and 21 kinds lose over half** (printer to 487). **His answers, 17:15: (1) the order:
-  «Με τις 3 αλλαγές»; (2) the bot over several processes built with the cap: «Ναι, μαζί»** (19.5: asked alone
-  GamingKit answers in 4.3 s, with every shop at once in 10: measured so, the caps come out at about half).
-  **Next by the work split: the build, OPUS** (19.9 is for the builder), then a look before its «ανέβασε», FABLE;
-  after its deployment, task 6's first asking (the item above). The morning of 23/11, the bot's first whole
-  night says each shop's real day (its note's `asked_by_shop` and `seconds_by_shop`): put the numbers beside
-  the table of 19.2.
+- **(22/11, 17:25 Athens): THE CAP PER SHOP'S RULE IS WRITTEN: the checks' rules, section 19. NOT BUILT. THE BUILD
+  IS NEXT, AND IT IS OPUS'S** (PROGRESS.md, 22/11 17:10, 17:15 and 17:25; the item below is how he decided it, and
+  it is corrected by this one).
+  - **The rule, in his words of 17:08: ONE CAP, 20,000 PRODUCTS A SHOP, THE SAME FOR EVERY SHOP; NO CAP WORKED OUT
+    FOR EACH SHOP FROM ITS PACE; «μόνο όσα έχουν σκανναριστεί περνάνε»**: what a shop's pace allows shows by
+    itself, since only the products the bot has checked are shown (the checks' rules 9.1, 9.3, 9.4, as they
+    stand). The record of 15:51 ("at most what the bot can check in one day at that shop's own measured pace")
+    had been read as a cap of its own for each shop (18,951, 18,069, 12,140), and he corrected it. Nothing is
+    measured to set a cap; nothing of the bot changes for it.
+  - **Which products a shop over the cap keeps** (his «Με τις 3 αλλαγές», 17:15): first its products of the
+    thin kinds (under 100 products in the whole catalogue: proposed number); then what it sells cheapest of the
+    offers the site keeps (the same product by its code; a product whose cheaper offers were cut counts as
+    cheapest for the next shop); then the rest, the products with a kind before those with none, a share of each
+    kind over its prices; last, only when places are left, a product a cheaper shop keeps. Proposed with it: the
+    night before's first, the checked before the never asked, before the category cap, the checks' gate and
+    candidates as they are, a switch, the note (19.4 d to f, 19.6, 19.7).
+  - **The look** (`deployment/server/look_shop_cap.py`, run 45036794087, read-only, no AI, the catalogue of
+    22/11): four shops are over 20,000 and no other (InStock UK 102,278, Tooled Up 68,449, GamingKit 48,191,
+    PCHUB.UK 47,982): **186,900 products cut, 212,057 stay**; GamingKit and PCHUB.UK sell the same 43,500
+    products, PCHUB.UK the cheaper on 33,373 and GamingKit on none; with his order 109,651 of the 134,097
+    products with a kind stay and 12 of the 292 kinds lose over half (printer 1,902 to 1,021). **The owner does
+    not want more measuring of it** (17:16: «Για ποιο λόγο μετράς δεν μας ενδιαφέρει κάτι τέτοιο»): the look
+    before the «ανέβασε» is the next and only one.
+  - **The bot over several processes** (his «Ναι, μαζί» of 17:15 was asked on the first reading, in which a
+    slower bot made the caps smaller): with one cap it does not change what a shop keeps; it is a step of its
+    own, after the cap, when he says (19.5). Told to him.
+  - **Next by the work split: the build, OPUS** (19.9 is for the builder; the owner asked at 17:06 whether it is
+    being built now and was told it is Opus's, in a new conversation: «PicWise: συνέχισε από το handoff, χτίσιμο
+    του πλαφόν ανά κατάστημα»); then a look before its «ανέβασε», FABLE; after its deployment, task 6's first
+    asking (the item above).
 - **(22/11, 15:51 Athens): THE OWNER DECIDED A CAP PER SHOP; not yet in the rules, not built** (PROGRESS.md, 22/11
   15:51). **The rule as decided:** each shop, and every shop that comes in, keeps at most the products the bot can
   check in one day at that shop's own measured pace (our 3 s, its answers' time, its crawl-delay), and never more
