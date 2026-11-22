@@ -42,7 +42,13 @@ passed their checks and may enter (the checks' gate, 19.6.2); then the ones it k
 night before that a cheaper shop keeps; then those that may enter and a cheaper shop keeps
 (e: "a kept product that became a cheaper shop's too gives its place to a product that
 waits, checked and passed"). With places still open, the next ones by the order that wait at
-the gate are its candidates, one and a quarter times the places open: the bot asks them.
+the gate are its candidates, one and a quarter times the places open: the bot asks them. But
+only those the cap of a category would take too (`vetted`; the look of 22/11): a shop's
+place open is no place open in a category at its size, and a candidate named for one alone
+was asked, passed, refused by the category and named again two nights later, for good (three
+shops with far more rows than the site shows of them, 63,000 candidates between them). So
+every product of such a shop that waits at the gate goes on to the cap of a category
+(`ShopCapResult.waiting`), which names one only where a place is open for it.
 The shops are settled by name after a first pass in which each takes what it sells cheapest
 of every shop that sells it (b); in the second pass "cheapest" is read among the offers the
 other shops keep, so a product whose cheaper offers were all left out by their own shops is
@@ -55,7 +61,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter, defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Callable, Collection, Iterable, Mapping, Sequence
 
@@ -224,6 +230,11 @@ class ShopCapResult:
     # Per capped shop (19.7.3): its products a card can show, kept, by step, from the night
     # before, waiting at the gate, candidates named.
     shops: dict[str, dict[str, Any]] = field(default_factory=dict)
+    # Per capped shop with places open: every product of it that waits at the gate (indices
+    # into the products), in its order, and how many of them it may name as candidates
+    # (19.6.2): what the cap of a category is given to name them among (`vetted`).
+    waiting: dict[str, tuple[int, ...]] = field(default_factory=dict)
+    allowed: dict[str, int] = field(default_factory=dict)
 
     @property
     def kept(self) -> int:
@@ -350,6 +361,8 @@ def cap_shops(
         keep[index] = False
     candidates: list[int] = []
     notes: dict[str, dict[str, Any]] = {}
+    waits: dict[str, tuple[int, ...]] = {}
+    allowed: dict[str, int] = {}
     for shop in capped:
         chosen = taken[shop]
         for place in chosen:
@@ -358,6 +371,9 @@ def cap_shops(
         waiting = [place for place in orders[shop] if not in_before[place] and not enters[place]]
         named = waiting[:candidates_for(open_places)]
         candidates.extend(members[place] for place in named)
+        if named:
+            waits[shop] = tuple(members[place] for place in waiting)
+            allowed[shop] = candidates_for(open_places)
         by_step = Counter(steps[shop])
         notes[shop] = {
             "products": sizes[shop],
@@ -369,7 +385,26 @@ def cap_shops(
             "waiting_at_the_gate": len(waiting),
             "candidates": len(named),
         }
-    return ShopCapResult(limit=limit, thin=thin, keep=tuple(keep), candidates=tuple(candidates), shops=notes)
+    return ShopCapResult(limit=limit, thin=thin, keep=tuple(keep), candidates=tuple(candidates), shops=notes,
+                         waiting=waits, allowed=allowed)
+
+
+def vetted(result: ShopCapResult, named: Collection[int]) -> ShopCapResult:
+    """`result` with each capped shop's candidates only those the cap of a category names
+    too. `named`: of the products that wait at the gate (`result.waiting`), given to the cap
+    of a category with the ones the shops keep, those it names as its candidates (indices
+    into the products): the ones a place is open for in their category. A shop's candidates
+    are then the first of them by its own order, at most what it may name
+    (`result.allowed`, one and a quarter times its places open). So the bot asks of a shop
+    over the most only products that can be shown when they pass (module docstring)."""
+    named = frozenset(named)
+    candidates: list[int] = []
+    notes = {shop: dict(entry) for shop, entry in result.shops.items()}
+    for shop in sorted(result.waiting):
+        mine = [place for place in result.waiting[shop] if place in named][: result.allowed.get(shop, 0)]
+        candidates.extend(mine)
+        notes[shop]["candidates"] = len(mine)
+    return replace(result, candidates=tuple(candidates), shops=notes)
 
 
 def shop_order(

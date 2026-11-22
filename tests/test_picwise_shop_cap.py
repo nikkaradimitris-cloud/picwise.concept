@@ -162,6 +162,43 @@ class CapShopsTests(unittest.TestCase):
         self.assertEqual(shop_cap.candidates_for(4), 5)
         self.assertEqual(shop_cap.candidates_for(0), 0)
 
+    def test_what_waits_at_the_gate_is_kept_for_the_cap_of_a_category_to_name_among(self) -> None:
+        big = [_product(number, kinds_hint="kettle") for number in range(20)]
+        before = {row_key(product) for product in big[:4]}
+        result = shop_cap.cap_shops(big, [KETTLE] * 20, kept_before=before, limit=8, may_enter=lambda product: False)
+        # Every product of the shop that waits, in its order; the candidates it named itself are the first of them.
+        self.assertEqual(sorted(result.waiting["Big"]), list(range(4, 20)))
+        self.assertEqual(result.waiting["Big"][:5], result.candidates)
+        self.assertEqual(result.allowed, {"Big": 5})
+        # A shop with no place open, or with none that waits, gives nothing to name among.
+        full = shop_cap.cap_shops(big, [KETTLE] * 20, kept_before={row_key(product) for product in big[:8]}, limit=8,
+                                  may_enter=lambda product: False)
+        self.assertEqual((full.waiting, full.allowed, full.candidates), ({}, {}, ()))
+        ungated = shop_cap.cap_shops(big, [KETTLE] * 20, kept_before=before, limit=8)
+        self.assertEqual((ungated.waiting, ungated.allowed, ungated.candidates), ({}, {}, ()))
+
+    def test_a_shops_candidates_are_only_those_the_cap_of_a_category_names_too(self) -> None:
+        # The look of 22/11: a shop's place open is no place open in a category at its size.
+        big = [_product(number, kinds_hint="kettle") for number in range(20)]
+        before = {row_key(product) for product in big[:4]}
+        result = shop_cap.cap_shops(big, [KETTLE] * 20, kept_before=before, limit=8, may_enter=lambda product: False)
+        waiting = result.waiting["Big"]
+        # The category has a place for three of them, far down the shop's order: those three, in its order.
+        named = {waiting[9], waiting[12], waiting[15]}
+        some = shop_cap.vetted(result, named)
+        self.assertEqual(some.candidates, (waiting[9], waiting[12], waiting[15]))
+        self.assertEqual(some.shops["Big"]["candidates"], 3)
+        self.assertEqual((some.keep, some.shops["Big"]["waiting_at_the_gate"]), (result.keep, 16))
+        # For none of them: the shop names none, and no product is asked for nothing.
+        none = shop_cap.vetted(result, ())
+        self.assertEqual((none.candidates, none.shops["Big"]["candidates"]), ((), 0))
+        # For every one: the first by its order, as many as it may name and no more.
+        every = shop_cap.vetted(result, waiting)
+        self.assertEqual(every.candidates, result.candidates)
+        self.assertEqual(len(every.candidates), 5)
+        # What it was given is as it was.
+        self.assertEqual((len(result.candidates), result.shops["Big"]["candidates"]), (5, 5))
+
     def test_the_first_night_the_passed_come_before_the_never_asked(self) -> None:
         big = [_product(number, kinds_hint="kettle") for number in range(10)]
         before = {row_key(product) for product in big}

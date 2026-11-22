@@ -278,10 +278,29 @@ class _Cap:
                     share=share, category_max=category_max, may_enter=gate,
                 )
             else:
-                self.result = _widened(cap_catalogue(
-                    [products[place] for place in places], [kinds[place] for place in places], feed_ctx=feed_ctx,
+                # A shop's place open is no place open in a category at its size. Every product
+                # of a capped shop that waits at the gate goes on to the cap of a category with
+                # the ones the shops keep: it can take no place there (the gate), but the cap
+                # names it a candidate only where a place is open for it, and a shop's candidates
+                # are those, in its own order, as many as it may name (`shop_cap.vetted`; the
+                # look of 22/11: named for the shop's place alone, 63,000 candidates of three
+                # shops were asked, passed, refused by their category and named again).
+                offered = [place for shop in sorted(self.shops.waiting) for place in self.shops.waiting[shop]]
+                given = places + offered
+                result = _widened(cap_catalogue(
+                    [products[place] for place in given], [kinds[place] for place in given], feed_ctx=feed_ctx,
                     kept_before=kept_before, share=share, category_max=category_max, may_enter=gate,
-                ), places, len(products))
+                ), given, len(products))
+                if offered:
+                    from dataclasses import replace
+                    from picwise_providers import shop_cap
+
+                    waits = frozenset(offered)
+                    self.shops = shop_cap.vetted(self.shops, [place for place in result.candidates if place in waits])
+                    # The cap's own candidates stay the other shops', as they were; a capped
+                    # shop's go to the bot first, in its order (below).
+                    result = replace(result, candidates=tuple(place for place in result.candidates if place not in waits))
+                self.result = result
             if gate is not None:
                 from picwise_checks.rows import row_of, row_record
 

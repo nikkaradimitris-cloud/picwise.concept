@@ -384,6 +384,65 @@ class Rules19WhatTheBotScansPassesTests(unittest.TestCase):
         self.assertEqual(len(kettles(third)), 6)
         self.assertEqual(sorted(set(kettles(third)) - {1, 2, 4, 5, 6}), sorted(third["enter"]))
 
+    def test_a_capped_shop_is_asked_no_candidate_its_category_has_no_place_for(self) -> None:
+        # The look of 22/11 (three shops with far more rows than the site shows of them: 63,000
+        # candidates named for their own places open). The kitchen category is at its size, 10:
+        # 4 of the capped shop's 12 kettles and 6 of another shop's. The shop has 2 places open
+        # of its 6, the category none: no kettle of it is named, asked or let in, night after
+        # night (as built it named 3, the bot asked 2, they passed, the category refused them,
+        # and two nights later they were named again, for good).
+        big = [_product(number, shop="Big") for number in range(1, 13)]
+        small = [_product(50 + number, shop="Small") for number in range(10)]
+        others = [_product(100 + number, shop=f"Other{number % 12}", category=OTHER_CATEGORIES[number % 12]) for number in range(60)]
+        server = Server(big + small + others, shown=big[:4] + small[:6] + others,
+                        asked_a_night={"Big": 50, "Small": 50, "": 100}, scanned=True, limit=6)
+        self.addCleanup(server.close)
+        for _day in range(8):
+            night = server.night()
+            self.assertEqual([number for number in night["shown"] if number < 50], [1, 2, 3, 4])
+            self.assertEqual(len([number for number in night["shown"] if 50 <= number < 100]), 6)
+            self.assertEqual([number for number in night["asked"] if number < 50], [1, 2, 3, 4])
+            self.assertEqual(([number for number in night["candidates"] if number < 100], night["enter"]), ([], []))
+
+    def test_a_capped_shops_place_open_in_a_category_with_room_is_filled(self) -> None:
+        # The same shop when a kettle of the other shop fails: the category has a place open, and
+        # the capped shop two of its own. The cap of the category names the next ones it would
+        # take, among them the capped shop's that wait (its own order, no more than it may name);
+        # the bot asks them, and the category is at its size again with products that passed.
+        big = [_product(number, shop="Big") for number in range(1, 13)]
+        small = [_product(50 + number, shop="Small") for number in range(10)]
+        others = [_product(100 + number, shop=f"Other{number % 12}", category=OTHER_CATEGORIES[number % 12]) for number in range(60)]
+        server = Server(big + small + others, shown=big[:4] + small[:6] + others,
+                        asked_a_night={"Big": 50, "Small": 50, "": 100}, scanned=True, limit=6)
+        self.addCleanup(server.close)
+        for _day in range(4):
+            server.night()
+
+        def kitchen(night: dict, part: str = "shown") -> list[int]:
+            return [number for number in night[part] if number < 100]
+
+        failed = server.night({50: DOWN})
+        self.assertEqual((failed["cut"], len(kitchen(failed))), ({50: NO_ANSWER}, 9))
+        named = kitchen(failed, "candidates")
+        # One place open in the category: at least 4 named (9.4), the capped shop's among them
+        # no more than it may name for its two places open (three).
+        self.assertGreaterEqual(len(named), 4)
+        of_big = [number for number in named if number < 50]
+        self.assertTrue(0 < len(of_big) <= 3)
+        self.assertFalse(set(of_big) & {1, 2, 3, 4})
+        after = server.night({50: DOWN})
+        self.assertTrue(set(after["asked"]) & set(named))
+        self.assertEqual(len(kitchen(after)), 10)
+        entered = sorted(set(kitchen(after)) - set(kitchen(failed)))
+        self.assertEqual(len(entered), 1)
+        self.assertIn(entered[0], after["enter"])
+        self.assertEqual(server.state(entered[0]), PASSED)
+        # The capped shop never shows more than the most it passes.
+        for _day in range(4):
+            night = server.night({50: DOWN})
+            self.assertLessEqual(len([number for number in night["shown"] if number < 50]), 6)
+            self.assertEqual(len(kitchen(night)), 10)
+
     def test_a_slow_shop_settles_at_what_the_bot_scans_of_it_in_a_day(self) -> None:
         server = Server([_product(number) for number in range(1, 9)], asked_a_night=3, scanned=True)
         self.addCleanup(server.close)
