@@ -128,6 +128,14 @@ def estimate(items: list[dict[str, Any]]) -> str:
             f" ${high * SECOND_PER_THOUSAND / 1000:.2f}; the first cards themselves come in the rounds after")
 
 
+def by_shop(items: list[dict[str, Any]], listed: int = 12) -> str:
+    """Whose products the questions are: a dry run's count, for a catalogue about to change
+    (a question several shops' products share is counted for the cheapest's shop)."""
+    shops = Counter(str(item.get("shop") or "no shop") for item in items)
+    most = ", ".join(f"{name} {count:,}" for name, count in shops.most_common(listed))
+    return f"the questions by shop, {len(shops):,} shops: {most}"
+
+
 def effect(night: Any) -> list[str]:
     """What the answers kept would do, were the switch turned: counts and kinds' names."""
     note = night.note()
@@ -173,6 +181,7 @@ def rounds(
             return done, night
         if ask_fn is None:
             say(estimate(items))
+            say(by_shop(items))
             say(front(products, read, kinds, clock))
             return done, night
         totals = itself_asking.run(items, records, ask_fn=ask_fn, budget=budget, today=today, deadline=deadline,

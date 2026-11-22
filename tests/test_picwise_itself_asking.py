@@ -483,8 +483,9 @@ class TheFirstAsking(unittest.TestCase):
         self.assertEqual((records, done), ({}, []))
         self.assertIn("round 1: 10 questions in 1 kinds: 10 for a first reading, 0 for a second", said[0])
         self.assertIn("by the trials of 22/11", said[1])
+        self.assertEqual(said[2], "the questions by shop, 1 shops: Fictional Store One 10")
         # The ten products are one kind's first cards, all of them.
-        self.assertIn("10 cards in 1 kinds, 10 questions", said[2])
+        self.assertIn("10 cards in 1 kinds, 10 questions", said[3])
 
     def test_it_stops_with_its_budget(self) -> None:
         model = Model({HAIKU: {"Pilot": "accessory"}}, cost={HAIKU: 0.01, SONNET: 0.05})
