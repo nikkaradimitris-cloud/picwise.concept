@@ -56,27 +56,32 @@ class OnACatalogue(unittest.TestCase):
 
     def test_a_shop_under_its_cap_keeps_everything(self) -> None:
         numbers = look_shop_cap.measure(self.prepared)
-        self.assertEqual((numbers["kept"], numbers["cut"]), (numbers["products"], 0))
         self.assertEqual(sum(row["products"] for row in numbers["rows"]), numbers["products"])
-        self.assertTrue(all("kept_by_step" not in row for row in numbers["rows"]))
+        for way in ("as_recorded", "refined"):
+            self.assertEqual((numbers[way]["kept"], numbers[way]["cut"], numbers[way]["steps"]), (numbers["products"], 0, {}))
 
-    def test_a_shop_over_its_cap_keeps_its_cap_by_the_three_steps(self) -> None:
+    def test_a_shop_over_its_cap_keeps_its_cap_by_the_steps(self) -> None:
         numbers = look_shop_cap.measure(self.prepared, cap=5, thin=6)
-        over = [row for row in numbers["rows"] if row["over"]]
+        over = {row["shop"]: row for row in numbers["rows"] if row["over"]}
         self.assertTrue(over)
-        for row in over:
-            self.assertEqual(sum(row["kept_by_step"]), 5)
-            self.assertEqual(row["over"], row["products"] - 5)
-        self.assertEqual(numbers["cut"], sum(row["over"] for row in over))
-        self.assertEqual(numbers["kept"] + numbers["cut"], numbers["products"])
-        # The kinds are counted before and after, and none gains a product.
-        for entry in numbers["lost_most"]:
-            self.assertLessEqual(entry["after"], entry["before"])
+        for way in ("as_recorded", "refined"):
+            found = numbers[way]
+            self.assertEqual(set(found["steps"]), set(over))
+            for shop, steps in found["steps"].items():
+                self.assertEqual(sum(steps), 5, (way, shop))
+            self.assertEqual(found["cut"], sum(row["over"] for row in over.values()))
+            self.assertEqual(found["kept"] + found["cut"], numbers["products"])
+            # The kinds are counted before and after, and none gains a product.
+            for entry in found["lost_most"]:
+                self.assertLessEqual(entry["after"], entry["before"])
+        # As recorded, nothing is kept in the step of a cheaper shop's products.
+        self.assertTrue(all(steps[3] == 0 for steps in numbers["as_recorded"]["steps"].values()))
 
     def test_what_is_said_holds_counts_and_names_only(self) -> None:
         numbers = look_shop_cap.measure(self.prepared, cap=5, thin=6)
         text = "\n".join(look_shop_cap.report(numbers, look_shop_cap.ties(self.prepared), 6))
-        self.assertIn("a cap per shop would keep", text)
+        self.assertIn("== the steps as recorded: kept", text)
+        self.assertIn("== the steps refined (proposed): kept", text)
         self.assertIn("shops over their cap:", text)
         for word in ("http", ".invalid", "row-"):
             self.assertNotIn(word, text)
