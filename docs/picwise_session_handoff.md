@@ -91,7 +91,12 @@ a decision came about.
   λειτουργίας ... κάθε κατάστημα που θα μπαίνει μέσα πρέπει να τηρούμε τα όρια που επιτρέπει»). **Which products,
   answered 16:00:** a shop over its cap keeps a share of each kind spread over its prices, the most complete first,
   as `catalogue_cap` does, not the cheapest (owner: «Ναι συμφωνώ επισήμανση 20.000 είναι το μέγιστο όριο που
-  μπορούμε να βάλουμε από ένα κατάστημα»: 20,000 is the most any shop keeps, whatever its pace). **Proposed, needed for
+  μπορούμε να βάλουμε από ένα κατάστημα»: 20,000 is the most any shop keeps, whatever its pace). **The order, agreed 16:03** (the owner's
+  proposal at 16:02, «Προτείνω να διαλέξουμε πρώτα με βάση την πληρότητα της κατηγορίας που λείπουν», with one
+  step put before it; his «Ναι»): (1) the products this shop sells cheapest of all (the same product, by its
+  code: cut, the site would show it dearer from another shop; GamingKit and PCHUB.UK each share about 41,600
+  with another shop); (2) the products of the site's kinds with the fewest products (the site's own kinds, not
+  the shop's categories); (3) the rest, a share of each kind over its prices, the most complete first. **Proposed, needed for
   the numbers to hold:** the bot over several processes (with every shop asked at once its one processor slows the
   pace: GamingKit 4.3 to 10 s). **By the work split:** the rule's text (the checks' rules, `PROJECT_RULES.md`, its
   place beside the cap's 15% a category and 12,000 at most, and the first round): FABLE; the build: OPUS; a look
