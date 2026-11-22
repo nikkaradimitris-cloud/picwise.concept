@@ -6,12 +6,14 @@ Pinned here, with no call to any API:
 
 - the question is asked for a kind as the site describes it: its first name, the other
   names a buyer types (no plural of a name already given), its department, its narrower
-  kinds, and the site's own note where one is written;
+  kinds, the shelves of Google's taxonomy the site counts as it (the lines the AI chose for
+  the kind, never the lines its check added one by one), and the site's own note where one
+  is written;
 - an answer is read under the question's version and the kind's own words: a kind
   described otherwise is asked again; the prompt is pinned to the version, so that it is
   never changed without every product being asked again on purpose;
-- a call holds the products of one kind or of several, numbered through, each as its
-  title, brand, the shop's category, price and the start of its description;
+- a call holds the products of one kind, numbered from 1, each as its title, brand, the
+  shop's category, price and the start of its description;
 - every answer is checked: each product answered exactly once with one of the answers;
   anything else is no answer;
 - the calls' cost is counted at each model's own prices, a dated name at its model's, and
@@ -36,24 +38,37 @@ from picwise_ai.client import PRICES_PER_MILLION, cost_usd, prices_of  # noqa: E
 # The prompt and the answers' form as written for each version of the question. A change of
 # either is a new question: add its version here and raise `itself.QUESTION_VERSION`, so
 # that every product is asked again (about 73,000 questions on 22/11), never by accident.
-PROMPTS = {1: "ab285dd50787"}
+PROMPTS = {1: "fd3921b6ef46"}
 
 
 class TheKindAsTheModelReadsIt(unittest.TestCase):
-    def test_a_kind_is_its_names_its_department_and_its_narrower_kinds(self) -> None:
+    def test_a_kind_is_its_names_its_department_its_narrower_kinds_and_its_shelves(self) -> None:
         self.assertEqual(
             itself.kind_words("drill"),
             (
                 "Kind: drill",
                 "A buyer may also type: power drill, drill driver, combi drill, impact drill, hammer drill",
                 "Department: power tools workshop",
+                "Shelves the site counts as this kind: Handheld Power Drills",
             ),
         )
         words = itself.kind_words("vacuum_cleaner")
         self.assertEqual(words[0], "Kind: vacuum cleaner")
         # No plural of a name already given: "vacuum cleaners", "vacuums".
         self.assertEqual(words[1], "A buyer may also type: vacuum, hoover")
-        self.assertEqual(words[-1], "Narrower kinds, which are this kind too: robot vacuum")
+        self.assertEqual(words[3], "Narrower kinds, which are this kind too: robot vacuum")
+        self.assertTrue(words[4].startswith("Shelves the site counts as this kind: "))
+
+    def test_a_kinds_shelves_say_how_wide_the_site_means_it(self) -> None:
+        # The trial of 22/11: read by its name alone, a kind was narrower to the stronger
+        # models than the site means it (a dog bed no bed, a security camera no camera).
+        self.assertIn("Dog Beds", itself.kind_words("bed")[-1])
+        self.assertIn("Surveillance Cameras", itself.kind_words("camera")[-1])
+        self.assertIn("Chef's Jackets", itself.kind_words("jacket")[-1])
+        # Never the lines the check of 20/11 added one by one ("Humidors" for jackets).
+        self.assertNotIn("Humidors", " ".join(itself.kind_words("jacket")))
+        shelves = itself.kind_words("toy")[-1].split(": ", 1)[1].split("; ")
+        self.assertLessEqual(len(shelves), itself.SHELVES_SHOWN)
 
     def test_a_kind_the_site_does_not_know_has_no_words_and_no_version(self) -> None:
         self.assertEqual(itself.kind_words("no_such_kind"), ())
@@ -108,34 +123,35 @@ class OneCall(unittest.TestCase):
         long = itself.item_line(1, {"title": "x" * 400, "about": "y" * 400})
         self.assertLessEqual(len(long), 3 + itself.TITLE_CHARS + 10 + itself.ABOUT_CHARS)
 
-    def test_the_products_are_numbered_through_every_kind(self) -> None:
-        message = itself.user_message([("drill", [self.ITEM, self.ITEM]), ("printer", [{"title": "Fixturon Printer"}])])
-        blocks = message.split("\n\n")
-        self.assertEqual(len(blocks), 2)
-        self.assertTrue(blocks[0].startswith("Kind: drill\n"))
-        self.assertIn("\nProducts:\n1. Fixturon Pilot Drill", blocks[0])
-        self.assertIn("\n2. Fixturon Pilot Drill", blocks[0])
-        self.assertTrue(blocks[1].startswith("Kind: printer\n"))
-        self.assertTrue(blocks[1].endswith("Products:\n3. Fixturon Printer"))
+    def test_a_call_is_one_kind_and_its_products_numbered_from_one(self) -> None:
+        message = itself.user_message("drill", [self.ITEM, {"title": "Fixturon Combi Drill"}])
+        lines = message.splitlines()
+        self.assertEqual(lines[0], "Kind: drill")
+        self.assertEqual(lines[-3], "Products (2):")
+        self.assertTrue(lines[-2].startswith("1. Fixturon Pilot Drill"))
+        self.assertEqual(lines[-1], "2. Fixturon Combi Drill")
+        self.assertEqual(message.count("Kind: "), 1)
+        # A kind the site does not know is still named, by its id's words.
+        self.assertTrue(itself.user_message("no_such_kind", [self.ITEM]).startswith("Kind: no such kind\nProducts (1):"))
 
     def test_the_request_is_the_instructions_then_the_products(self) -> None:
-        request = itself.request_kwargs([("drill", [self.ITEM])])
+        request = itself.request_kwargs("drill", [self.ITEM])
         self.assertEqual(request["model"], "claude-haiku-5-5")
         self.assertEqual(request["system"][0]["text"], itself.SYSTEM_PROMPT)
         self.assertEqual(request["output_config"]["effort"], "low")
         self.assertEqual(request["output_config"]["format"], {"type": "json_schema", "schema": itself.SCHEMA})
         self.assertEqual(len(request["messages"]), 1)
         self.assertNotIn("http", json.dumps(request))
-        other = itself.request_kwargs([("drill", [self.ITEM])], model="claude-opus-5-5", effort="medium")
+        other = itself.request_kwargs("drill", [self.ITEM], model="claude-opus-5-5", effort="medium")
         self.assertEqual((other["model"], other["output_config"]["effort"]), ("claude-opus-5-5", "medium"))
         self.assertEqual(other["system"], request["system"])
 
-    def test_calls_keep_a_kinds_products_together(self) -> None:
-        pairs = [("drill", n) for n in range(5)] + [("printer", n) for n in range(3)]
+    def test_a_call_holds_one_kind(self) -> None:
+        # Haiku 5.5 lost the numbers of a call that held several kinds (the trial of 22/11).
+        pairs = [("drill", 0), ("printer", 0), ("drill", 1), ("drill", 2), ("drill", 3), ("drill", 4), ("printer", 1)]
         calls = itself.batches(pairs, size=4)
-        self.assertEqual(calls, [[("drill", [0, 1, 2, 3])], [("drill", [4]), ("printer", [0, 1, 2])]])
+        self.assertEqual(calls, [("drill", [0, 1, 2, 3]), ("drill", [4]), ("printer", [0, 1])])
         self.assertEqual(itself.batches([]), [])
-        self.assertTrue(all(sum(len(group) for _kind, group in call) <= 4 for call in calls))
 
 
 class TheAnswersChecked(unittest.TestCase):

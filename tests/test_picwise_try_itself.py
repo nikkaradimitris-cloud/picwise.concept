@@ -91,16 +91,18 @@ class TrialTests(unittest.TestCase):
 
         asked = try_itself.ask_model("claude-haiku-5-5", self.questions, ask, try_itself.Budget(1.0), workers=1)
         self.assertEqual(len(asked.answers), len(self.questions))
-        self.assertEqual(asked.calls, 1)
-        self.assertEqual(seen[0]["model"], "claude-haiku-5-5")
-        self.assertEqual(seen[0]["messages"][0]["content"].count("\nProducts:\n"), 3)
+        # A call a kind: the kettles, the laptops, the drills.
+        self.assertEqual(asked.calls, 3)
+        self.assertEqual({request["model"] for request in seen}, {"claude-haiku-5-5"})
+        self.assertEqual(sorted(request["messages"][0]["content"].splitlines()[0] for request in seen),
+                         ["Kind: drill", "Kind: kettle", "Kind: laptop"])
         sides = [asked.answers[number][0] for number, question in enumerate(self.questions)
                  if "Pilot Drill" in question.item["title"]]
         self.assertEqual(sides, ["accessory"] * 4)
-        self.assertAlmostEqual(asked.cost, 0.01)
+        self.assertAlmostEqual(asked.cost, 0.03)
         line = try_itself.report_model(asked, self.questions)[0]
-        self.assertIn("32 of 32 questions answered in 1 calls", line)
-        self.assertIn("$0.312 a thousand questions", line)
+        self.assertIn("32 of 32 questions answered in 3 calls", line)
+        self.assertIn("$0.938 a thousand questions", line)
 
     def test_the_calls_stop_before_the_budget(self) -> None:
         budget = try_itself.Budget(0.05)
@@ -131,6 +133,16 @@ class TrialTests(unittest.TestCase):
         searches = try_itself.report_searches([first, second], self.questions)
         self.assertIn('  "drill" (drill): 12; 12, 8', searches)
         self.assertIn("in all: haiku itself 32 of 32 (100.0%), unsure 0; opus itself 28 of 32 (87.5%), unsure 0", searches)
+
+    def test_the_two_readings_together(self) -> None:
+        first = try_itself.ask_model("claude-haiku-5-5", self.questions, _model("itself", 0.001), try_itself.Budget(1.0), workers=1)
+        second = try_itself.ask_model("claude-sonnet-5-5", self.questions, _model("part", 0.02), try_itself.Budget(1.0), workers=1)
+        lines = try_itself.report_two_readings(first, second, self.questions)
+        # Every question here is a first card: the second model reads them all again.
+        self.assertEqual(lines[0], "no questions outside the first cards")
+        self.assertIn("the first cards as the second reads them: itself 28, not 4", lines)
+        self.assertIn("read twice in all: 32", lines)
+        self.assertIn("$0.094 a thousand at the first reading and $1.875 at the second", lines[2])
 
     def test_a_dry_run_asks_nothing_and_ends_well(self) -> None:
         out = io.StringIO()

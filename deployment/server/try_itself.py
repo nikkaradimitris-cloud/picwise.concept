@@ -12,13 +12,19 @@ B. a sample of the products the kinds' lists took out of a kind
 
 Each model named is asked the same questions: set A every model, set B the first two. The
 run says, per model, the answers, the cost and what a thousand questions cost; how often
-two models agree; every product two models read differently; and every answer, so that
-the question's wording can be judged by reading. Nothing on the server or the site
+two models agree; every product two models read differently; what the two readings
+together would cost and decide (the first model reads every product, the second reads
+again what the first would take out of a kind and every first card); and every answer, so
+that the question's wording can be judged by reading. Nothing on the server or the site
 changes, and no answer is kept anywhere.
+
+The first trial (run 45024964529, 22/11: Haiku 5.5, Sonnet 5.5 and Opus 5.5, $0.88) changed
+the question: the kind is described as widely as the site means it, and a call holds one
+kind (`picwise_ai.itself`).
 
     python3 deployment/server/try_itself.py CATALOGUE.json.gz [--shelves ANSWERS.jsonl.gz] \
         [--gone GONE.json] [--offers OFFERS.json] [--families FAMILIES.json] \
-        [--models claude-haiku-5-5,claude-sonnet-5-5,claude-opus-5-5] [--cards 12] \
+        [--models claude-haiku-5-5,claude-sonnet-5-5] [--cards 12] \
         [--taken-kinds 20] [--taken-each 8] [--budget 1.50] [--dry-run]
 
 It stops asking before a call would pass `--budget` dollars in all. Without
@@ -47,7 +53,7 @@ for folder in (ROOT, ROOT / "src", HERE):
     if str(folder) not in sys.path:
         sys.path.insert(0, str(folder))
 
-MODELS = ("claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5")
+MODELS = ("claude-haiku-5-5", "claude-sonnet-5-5")
 CARDS = 12
 TAKEN_KINDS = 20
 TAKEN_EACH = 8
@@ -194,21 +200,18 @@ def ask_model(
     from picwise_ai import itself
 
     asked = Asked(model)
-    order = sorted(range(len(questions)), key=lambda number: (questions[number].kind, number))
-    calls = itself.batches([(questions[number].kind, number) for number in order])
+    calls = itself.batches([(question.kind, number) for number, question in enumerate(questions)])
     lock = threading.Lock()
 
-    def one(call: list[tuple[str, list[int]]]) -> None:
-        numbers = [number for _kind, group in call for number in group]
+    def one(call: tuple[str, list[int]]) -> None:
+        kind, numbers = call
         with lock:
             guess = 1.5 * asked.cost / asked.calls if asked.calls else FIRST_GUESS_USD.get(model, 0.12)
         if ask is None or not budget.reserve(guess):
             with lock:
                 asked.not_asked += len(numbers)
             return
-        request = itself.request_kwargs(
-            [(kind, [questions[number].item for number in group]) for kind, group in call], model=model, effort=effort
-        )
+        request = itself.request_kwargs(kind, [questions[number].item for number in numbers], model=model, effort=effort)
         cost = 0.0
         try:
             answer = ask(request)
@@ -331,6 +334,37 @@ def report_taken(asked: list[Asked], questions: list[Question]) -> list[str]:
     return lines
 
 
+def report_two_readings(first: Asked, second: Asked, questions: list[Question]) -> list[str]:
+    """What the two readings together would decide and cost: the first model reads every
+    question; the second reads again every first card (set A) and, of the rest (set B),
+    what the first would take out of a kind or could not tell. The second's answer stands
+    where it read."""
+    from picwise_ai import itself
+
+    cards = [number for number, question in enumerate(questions) if question.source != "taken"]
+    rest = [number for number, question in enumerate(questions) if question.source == "taken"]
+    again = [number for number in rest if number in first.answers and first.answers[number][0] != itself.ITSELF]
+    read_twice = [number for number in cards + again if number in second.answers]
+    changed = [number for number in again if number in second.answers
+               and _side(second.answers[number][0]) != _side(first.answers[number][0])]
+    each_first = first.cost / len(first.answers) if first.answers else 0.0
+    each_second = second.cost / len(second.answers) if second.answers else 0.0
+    lines = [
+        f"the first reading ({first.model}): {len(first.answers):,} questions; the second ({second.model}) reads again"
+        f" {len(cards):,} first cards and {len(again):,} of the other {len(rest):,} (those the first would take out"
+        f" or could not tell: {100 * len(again) / len(rest):.0f}%)" if rest else "no questions outside the first cards",
+        f"of those {len(again):,}, the second reads {len(changed):,} otherwise",
+        f"a question costs ${1000 * each_first:.3f} a thousand at the first reading and ${1000 * each_second:.3f} at the second",
+    ]
+    final = Counter()
+    for number in cards:
+        if number in second.answers:
+            final[_side(second.answers[number][0])] += 1
+    lines.append("the first cards as the second reads them: " + ", ".join(f"{name} {count}" for name, count in final.most_common()))
+    lines.append(f"read twice in all: {len(read_twice):,}")
+    return lines
+
+
 def report_every(asked: list[Asked], questions: list[Question]) -> list[str]:
     """Every question with each model's answer, to judge the wording by reading."""
     lines = []
@@ -412,11 +446,14 @@ def main(argv: list[str] | None = None) -> int:
                         "\n".join(lines[:2]), final=True)
             for line in lines:
                 print(line)
-    for title, lines in (
+    reports = [
         ("trial: the searches' cards", report_searches(asked, questions)),
         ("trial: taken out of a kind", report_taken(asked[:2], questions)),
-    ):
-        notices.say(title, "\n".join(lines)[:3800], final=True)
+    ]
+    if len(asked) >= 2:
+        reports.append(("trial: the two readings together", report_two_readings(asked[0], asked[1], questions)))
+    for title, lines in reports:
+        notices.say(title, "\n".join(lines)[:3600], final=True)
         for line in lines:
             print(line)
     print("== every question, each model's answer (" + " / ".join(model.model for model in asked) + ")")

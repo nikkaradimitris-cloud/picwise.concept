@@ -1,10 +1,11 @@
 # Task 6's trial before its rules (the work split by model, 21/11: the question "is it the kind
 # itself"; the owner's plan of 21/11, step 8). GitHub's runner copies the server's prepared
 # catalogue and what the site reads beside it, and runs deployment/server/try_itself.py: the
-# question (picwise_ai.itself) asked of Claude Haiku 5.5, Claude Sonnet 5.5 and Claude Opus 5.5
-# about the first cards of the measure after's 40 searches, and of the first two about a sample
-# of the products the kinds' lists took out of a kind. It says each model's answers and cost, how
-# often they agree and every product they read differently. No answer is kept, and nothing on
+# question (picwise_ai.itself) asked of Claude Haiku 5.5 and Claude Sonnet 5.5 (the first run,
+# 45024964529, of Claude Opus 5.5 too) about the first cards of the measure after's 40 searches
+# and about a sample of the products the kinds' lists took out of a kind. It says each model's
+# answers and cost, how often they agree, every product they read differently, and what the two
+# readings together would decide. No answer is kept, and nothing on
 # the server or the site changes; the copies are removed. The SDK is installed from
 # deployment/server/requirements-ai.txt, every package checked against its hash; the key is
 # ANTHROPIC_API_KEY, never printed; the calls stop before the budget below, within the daily
@@ -26,7 +27,8 @@ jobs:
     timeout-minutes: 60
     env:
       # The most this run's calls may cost, in dollars, every model together.
-      BUDGET: '1.50'
+      # The second run of 22/11: $0.88 was spent by the first, of the day's $2.
+      BUDGET: '0.70'
     steps:
       - uses: actions/checkout@v5
         with:

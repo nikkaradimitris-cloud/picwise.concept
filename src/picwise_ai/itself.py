@@ -9,13 +9,21 @@ would show the product as, never in general: an ink cartridge, a phone case and 
 are kinds of the site themselves.
 
 One question is one product (`picwise_providers.ai_shelves.key_of`: its sizes and colours
-together) for one kind. The model reads the kind as the site describes it (its names, its
-department, its narrower kinds: `kind_lines.kinds_described`; a note of the site's own where
-one is written, `KIND_NOTES_PATH`) and each product's title, brand, the shop's own category
-words, price and the start of its description, and answers what the product is to a buyer
-who typed the kind's name (`ANSWERS`) and, in a few words, what it is. The code checks every
-answer (`checked_answers`): each product answered exactly once, with one of the answers; any
-other answer is none, and the product stays as the rules read it.
+together) for one kind. A call asks about products of one kind. The model reads the kind as
+the site describes it (its names, its department, its narrower kinds:
+`kind_lines.kinds_described`; the shelves of Google's taxonomy the site counts as the kind,
+the lines the AI chose for it on 20/11, `kind_lines.KIND_LINES_PATH`; a note of the site's
+own where one is written, `KIND_NOTES_PATH`) and each product's title, brand, the shop's own
+category words, price and the start of its description, and answers what the product is to
+a buyer who typed the kind's name (`ANSWERS`) and, in a few words, what it is. The code
+checks every answer (`checked_answers`): each product answered exactly once, with one of the
+answers; any other answer is none, and the product stays as the rules read it.
+
+The trial of 22/11 (run 45024964529: 630 questions, Haiku 5.5, Sonnet 5.5 and Opus 5.5) is
+why the kind is described so widely and why a call holds one kind: read only by its name, a
+kind was narrower to the stronger models than the site means it (a dog bed no bed, a chef's
+jacket no jacket, a security camera no camera), and Haiku 5.5 lost the numbers of a call
+that held several kinds (28 products with no answer).
 
 Nothing here decides what a search shows: `docs/PICWISE_KIND_ITSELF_RULES.md` says what the
 answers do. No test calls the API.
@@ -40,6 +48,7 @@ CATEGORY_CHARS = 120
 ABOUT_CHARS = 160
 WHAT_CHARS = 60
 NAMES_SHOWN = 8
+SHELVES_SHOWN = 12
 # The question's version: a product answered under another version is asked again, and until
 # then its answer is not read. Changed only on purpose, with the prompt
 # (`tests/test_picwise_ai_itself.py` pins the prompt to it).
@@ -59,33 +68,39 @@ SYSTEM_PROMPT = """\
 You check the catalogue of PicWise, a UK shopping search. A buyer types the name of a kind \
 of product and PicWise must show that kind only: the thing itself, never something that goes \
 with it or only shares its name.
-You are given one or more kinds, each as the site describes it, and under each kind numbered \
-products that shops sell, each with its title, brand, the shop's own category, its price and \
-the start of its description. For each product, say what it is to a buyer who typed that \
-kind's name:
+You are given one kind as the site describes it: its name, the other names a buyer types for \
+it, its department, its narrower kinds, and the shelves of Google's product taxonomy the site \
+counts as this kind. Then numbered products that shops sell, each with its title, brand, the \
+shop's own category, its price and the start of its description. For each product, say what \
+it is to a buyer who typed that kind's name:
 - "itself": the product is that kind of thing, the one the buyer wants to buy. Of any brand, \
-size, colour, style or quality; new, used or refurbished; for adults or for children; a \
-narrower type of the kind (a robot vacuum is a vacuum cleaner, a kids' sofa a sofa); several \
-of the same thing sold together (a set of two suitcases); the thing sold with its own \
-accessories or supplies (a drill with a set of bits, a printer with its ink).
+size, colour, style or quality; new, used or refurbished. The kind is as wide as its names \
+and shelves say. A narrower type of it is the kind (a robot vacuum is a vacuum cleaner). The \
+same thing made for another user or place is the kind: for children, pets, work, camping, \
+security or a vehicle (a kids' smartwatch is a smartwatch, a dog bed a bed, a chef's jacket a \
+jacket, a security camera a camera), unless it is a toy that only imitates the thing. Several \
+of the same thing sold together are the kind (a set of two suitcases). The thing sold with \
+what belongs to it is the kind: its own accessories or supplies, a small extra, a gift box or \
+a card (a drill with a set of bits, a keyboard with a mouse, earrings in a gift box).
 - "accessory": something used with or on the thing, sold apart from it: a case, cover, strap, \
 stand, mount, bag, holder, charger, cable, adapter, remote, screen protector.
 - "part": a piece of the thing, for repairing, extending or building it: a spare, a \
 replacement part, a roller, a blade, a filter, a battery made for it, a module, a board.
 - "consumable": something the thing uses up, or a product for cleaning or caring for it: ink, \
 toner, paper, bags, pods, refills.
-- "set": the thing sold as one item together with a different kind of product (a toaster \
-with a kettle), which a buyer of the kind alone would not look for.
-- "other": none of these. Another kind of product (a monitor is no television, a body spray \
-no perfume, a sandwich maker no toaster); a toy, model, costume, picture, book or film of the \
-thing; software, a licence, a service or a warranty for it; something that only shares the \
-word.
+- "set": the thing sold as one item together with a different product of equal weight, which \
+a buyer of the kind alone would not look for (a toaster with a kettle).
+- "other": none of these. Another kind of product, however close (a monitor is no \
+television, a body spray no perfume, a lap tray no desk); a toy, model, costume, picture, \
+book or film of the thing; software, a licence, a service or a warranty for it; something \
+that only shares the word.
 - "unsure": the words given cannot tell what the product is.
 Judge what the product is, never the word alone: a "TV unit" is furniture, a "laptop stand" \
 an accessory, a "printer roller" a part, a "pilot drill for hole saws" an accessory of a hole \
 saw. A title that names the thing and then "for", "to fit" or "compatible with" a product \
-names something for that product. The price helps: a price far too low for the thing usually \
-means a part, an accessory or a service. A kind that is itself an accessory, a part or a \
+names something for that product. The price helps and never decides alone: a price far too \
+low for the thing usually means a part, an accessory or a service, but a product whose words \
+plainly name the thing is the thing. A kind that is itself an accessory, a part or a \
 consumable (a phone case, drill bits, an ink cartridge) is judged the same way: that \
 accessory itself is "itself".
 Also say what the product is, in two to five plain words ("hole saw arbor", "cordless combi \
@@ -145,11 +160,22 @@ def read_kind_notes(path: Path | None = None) -> dict[str, str]:
             if isinstance(note, str) and note.strip() and not str(kind).startswith("_")}
 
 
+def _shelves() -> dict[str, list[str]]:
+    """Per kind, the own names of the lines of Google's taxonomy the AI chose for it
+    (`kind_lines`, 20/11): the shelves the site counts as the kind. Not the lines its check
+    added one by one: those are where single products of the kind were found, and say
+    nothing of the kind's width ("Humidors" for jackets)."""
+    from .kind_lines import read
+
+    return {kind: [line.split(">")[-1].strip() for line in lines if line.strip()] for kind, lines in read().items()}
+
+
 @lru_cache(maxsize=4)
 def _described(notes_path: Path | None = None) -> dict[str, tuple[str, ...]]:
     from .kind_lines import kinds_described
 
     notes = read_kind_notes(notes_path)
+    shelves = _shelves()
     found: dict[str, tuple[str, ...]] = {}
     for kind in kinds_described():
         names = _distinct_names(kind.get("names") or ())[:NAMES_SHOWN]
@@ -162,6 +188,8 @@ def _described(notes_path: Path | None = None) -> dict[str, tuple[str, ...]]:
         narrower = [text.split("(", 1)[-1].rstrip(")") for text in kind.get("narrower") or ()]
         if narrower:
             lines.append("Narrower kinds, which are this kind too: " + ", ".join(narrower))
+        if shelves.get(kind["id"]):
+            lines.append("Shelves the site counts as this kind: " + "; ".join(shelves[kind["id"]][:SHELVES_SHOWN]))
         if notes.get(kind["id"]):
             lines.append("Note: " + notes[kind["id"]])
         found[kind["id"]] = tuple(lines)
@@ -170,7 +198,8 @@ def _described(notes_path: Path | None = None) -> dict[str, tuple[str, ...]]:
 
 def kind_words(kind: str, notes_path: Path | None = None) -> tuple[str, ...]:
     """A kind as the model reads it: its name, the other names a buyer types, its department,
-    its narrower kinds and the site's note; empty for a kind the site does not know."""
+    its narrower kinds, the shelves the site counts as it and the site's note; empty for a
+    kind the site does not know."""
     return _described(notes_path).get(kind, ())
 
 
@@ -205,35 +234,29 @@ def item_line(number: int, item: Mapping[str, Any]) -> str:
     return " | ".join(parts)
 
 
-def user_message(groups: Sequence[tuple[str, Sequence[Mapping[str, Any]]]], notes_path: Path | None = None) -> str:
-    """The products of one call, numbered from 1 through every kind's, each kind's under
-    its own words."""
-    blocks: list[str] = []
-    number = 0
-    for kind, items in groups:
-        lines = list(kind_words(kind, notes_path)) or [f"Kind: {kind.replace('_', ' ')}"]
-        lines.append("Products:")
-        for item in items:
-            number += 1
-            lines.append(item_line(number, item))
-        blocks.append("\n".join(lines))
-    return "\n\n".join(blocks)
+def user_message(kind: str, items: Sequence[Mapping[str, Any]], notes_path: Path | None = None) -> str:
+    """The products of one call, numbered from 1, under their kind's own words."""
+    lines = list(kind_words(kind, notes_path)) or [f"Kind: {kind.replace('_', ' ')}"]
+    lines.append(f"Products ({len(items)}):")
+    lines.extend(item_line(number, item) for number, item in enumerate(items, 1))
+    return "\n".join(lines)
 
 
 def request_kwargs(
-    groups: Sequence[tuple[str, Sequence[Mapping[str, Any]]]],
+    kind: str,
+    items: Sequence[Mapping[str, Any]],
     *,
     model: str = MODEL,
     effort: str = EFFORT,
     notes_path: Path | None = None,
 ) -> dict[str, Any]:
     """The Messages API request for one call: the instructions first, the same on every
-    call; then the kinds and their products."""
+    call; then the kind and its products."""
     return {
         "model": model,
         "max_tokens": MAX_TOKENS,
         "system": [{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
-        "messages": [{"role": "user", "content": user_message(groups, notes_path)}],
+        "messages": [{"role": "user", "content": user_message(kind, items, notes_path)}],
         "output_config": {"effort": effort, "format": {"type": "json_schema", "schema": SCHEMA}},
     }
 
@@ -259,23 +282,11 @@ def checked_answers(answer: Mapping[str, Any] | None, count: int) -> dict[int, t
     return {number: said for number, said in found.items() if seen.get(number) == 1}
 
 
-def batches(
-    pairs: Sequence[tuple[str, Any]], size: int = PER_CALL
-) -> list[list[tuple[str, list[Any]]]]:
-    """(kind, product) pairs cut into calls of at most `size` products, a kind's products
-    kept together in the order given, and a call's kinds in the order they first come."""
-    calls: list[list[tuple[str, list[Any]]]] = []
-    current: list[tuple[str, list[Any]]] = []
-    held = 0
+def batches(pairs: Sequence[tuple[str, Any]], size: int = PER_CALL) -> list[tuple[str, list[Any]]]:
+    """(kind, product) pairs cut into calls, each of one kind and at most `size` products:
+    the kinds in the order they first come, a kind's products in the order given."""
+    by_kind: dict[str, list[Any]] = {}
     for kind, product in pairs:
-        if held >= size:
-            calls.append(current)
-            current, held = [], 0
-        if current and current[-1][0] == kind:
-            current[-1][1].append(product)
-        else:
-            current.append((kind, [product]))
-        held += 1
-    if current:
-        calls.append(current)
-    return calls
+        by_kind.setdefault(kind, []).append(product)
+    return [(kind, products[start:start + size]) for kind, products in by_kind.items()
+            for start in range(0, len(products), size)]
