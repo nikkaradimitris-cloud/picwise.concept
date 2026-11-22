@@ -638,14 +638,17 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
     say(f"to ask: {sum(len(keys) for keys in order.values()):,} products of {len(order)} shops"
         + (f"; {len(kept):,} answered already tonight (the round goes on)" if kept else ""))
     results: dict[str, ShopResult] = {}
+    seconds: dict[str, float] = {}
     lock = threading.Lock()
 
     def one(shop: str) -> None:
         done = {key: kept[key] for key in order[shop] if key in kept}
+        started = clock()
         result = ask_shop([rows[key] for key in order[shop]], fetch=fetch, sleep=sleep, clock=clock,
                           deadline=deadline, pause=pause, done=done, keep=tonight.keep)
         with lock:
             results[shop] = result
+            seconds[shop] = clock() - started
 
     with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
         list(pool.map(one, sorted(order, key=lambda shop: (-len(order[shop]), shop))))
@@ -663,6 +666,9 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
                        old_feed_rule=old_feed_rule)
     night_result.note["asked_by_shop"] = {shop: [result.night.requests, len(result.answers), result.stopped]
                                           for shop, result in sorted(results.items())}
+    # How long each shop's asking took, and the crawl-delay it asks for: the bot's pace (rules 4.7).
+    night_result.note["seconds_by_shop"] = {shop: [round(seconds.get(shop, 0.0), 1), result.night.crawl_delay]
+                                            for shop, result in sorted(results.items())}
     return night_result, made
 
 
@@ -803,6 +809,14 @@ def print_look(note: Mapping[str, Any], ledger: L.Ledger, say: Callable[[str], N
     for name in sorted(per_shop, key=lambda shop: -sum(per_shop[shop][key] for key in ("passed", "failed", "held"))):
         counts = per_shop[name]
         say(f"{name}: " + ", ".join(f"{key.strip()} {value}" for key, value in sorted(counts.items())))
+    asked = note.get("asked_by_shop") or {}
+    pace = note.get("seconds_by_shop") or {}
+    say("== the pace, per shop: its requests, the seconds they took, seconds a request, the crawl-delay it asks for")
+    for name in sorted(pace, key=lambda shop: -(asked.get(shop) or [0])[0])[:SHOPS_LISTED]:
+        requests, (spent, delay) = (asked.get(name) or [0])[0], pace[name]
+        if requests:
+            say(f"{name}: {requests:,} requests in {spent:,.0f} s, {spent / requests:.1f} s a request"
+                + (f"; crawl-delay {delay:g} s" if delay else ""))
 
 
 if __name__ == "__main__":

@@ -238,8 +238,12 @@ class ANightEndToEndTests(unittest.TestCase):
                          (PASSED, "3.00"))
         lines: list[str] = []
         bot.print_night(night.note, made, ledger, lines.append)
+        # A look also says each shop's pace: its robots.txt, its catalogue asked for, 3 products; 3 s apart.
+        self.assertEqual(night.note["seconds_by_shop"]["Kettles"], [12.0, None])
+        bot.print_look(night.note, ledger, lines.append)
         printed = "\n".join(lines)
         self.assertIn("products cut 1", printed)
+        self.assertIn("Kettles: 5 requests in 12 s, 2.4 s a request", printed)
         self.assertNotIn(".invalid", printed)
         self.assertNotIn("\x1f", printed)
 
