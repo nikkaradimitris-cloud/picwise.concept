@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (17:35 Athens: WHAT THE BOT SCANS OF A SHOP PASSES TO THE SITE, 20,000 THE MOST, NO CAP FOR EACH SHOP, in the owner's words of 17:08 and 17:21; the checks' rules 19; the bot over several processes with it; NEXT: THE BUILD, OPUS; 17:15 Athens: his order for which products a shop keeps, with the three changes; 16:45 Athens: the owner's two answers on task 6: a set stays shown, and the first asking is made AFTER THE CAP PER SHOP; 16:35 Athens: task 6 BUILT, the question "is it the kind itself", not deployed, its switch false; 15:51 Athens: the owner decided a cap per shop, records only; 15:05 Athens: Vercel's preview builds turned off, records only; 13:45 Athens: THE CHECKS DEPLOYED on the owner's «Ανέβασε», the bot's first round running, read the night on 23/11; 11:50 Athens: task 7's look done, its findings mended, not deployed, waits for the owner's answers and his «ανέβασε»; 10:30 Athens: task 7 begun, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (17:40 Athens: A PASS COUNTS FOR THREE NIGHTS, the owner's word, «κρατάμε τα προϊόντα ασκανάριστα μέχρι 3 μέρες», the checks' rules 19.3.1; 17:35 Athens: WHAT THE BOT SCANS OF A SHOP PASSES TO THE SITE, 20,000 THE MOST, NO CAP FOR EACH SHOP, in the owner's words of 17:08 and 17:21; the checks' rules 19; the bot over several processes with it; NEXT: THE BUILD, OPUS; 17:15 Athens: his order for which products a shop keeps, with the three changes; 16:45 Athens: the owner's two answers on task 6: a set stays shown, and the first asking is made AFTER THE CAP PER SHOP; 16:35 Athens: task 6 BUILT, the question "is it the kind itself", not deployed, its switch false; 15:51 Athens: the owner decided a cap per shop, records only; 15:05 Athens: Vercel's preview builds turned off, records only; 13:45 Athens: THE CHECKS DEPLOYED on the owner's «Ανέβασε», the bot's first round running, read the night on 23/11; 11:50 Athens: task 7's look done, its findings mended, not deployed, waits for the owner's answers and his «ανέβασε»; 10:30 Athens: task 7 begun, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -146,7 +146,7 @@ a decision came about.
     lists read it for a night or two; a new product that becomes a kind's Recommended is read a second time the
     morning after it enters.
 - **(22/11, 17:35 Athens): HOW MANY OF A SHOP'S PRODUCTS PASS: THE RULE IS WRITTEN (the checks' rules, section 19),
-  IN THE OWNER'S LAST WORDS. NOT BUILT. THE BUILD IS NEXT, AND IT IS OPUS'S** (PROGRESS.md, 22/11 17:10 to 17:35;
+  IN THE OWNER'S LAST WORDS. NOT BUILT. THE BUILD IS NEXT, AND IT IS OPUS'S** (PROGRESS.md, 22/11 17:10 to 17:40;
   the item below is how he first decided it, and this one corrects it).
   - **The rule, his words of 17:08 and 17:21: WHAT THE BOT SCANS OF A SHOP PASSES TO THE SITE** («μπορεί να σκανάρει
     15.000 προϊόντα σε ένα άλλο 20 και σε ένα άλλο 5 αυτά περνάνε στο site»), **20,000 THE MOST** (a shop that
@@ -155,11 +155,14 @@ a decision came about.
     shop from its pace (18,951, 18,069, 12,140), then as a flat 20,000 that the bot's speed does not touch. **Do
     not put a question on it to him again, and do not measure it again before the look** (17:16: «Για ποιο λόγο
     μετράς δεν μας ενδιαφέρει κάτι τέτοιο»).
-  - **Proposed so that it holds steady, built as written and shown to him in the look** (19.3): scanned is checked
-    and passed in the bot's last day of asking the shop, a pass counting for two nights (today 9.1 counts 30:
-    with that a slow shop would pile up to 20,000 over days); each day the bot asks a shop's shown products
-    again first and new ones only in the time left, so a shop settles at what it lets the bot scan in a day;
-    the bot asks of a shop only its first 20,000 by the order.
+  - **A PASS COUNTS FOR THREE NIGHTS, his word of 17:35** («Και 3 βράδια μπορούμε... Αν υπάρξει κάποια έπιπλοκή
+    κρατάμε τα προϊόντα ασκανάριστα μέχρι 3 μέρες»; 19.3.1): a product the bot could not ask again stays shown up
+    to 3 days after its last pass, then it is not shown until it passes again (it waits, it is not cut). Two
+    nights were proposed before his word; today 9.1 counts 30.
+  - **Proposed so that it holds steady, built as written and shown to him in the look** (19.3): each day the bot
+    asks a shop's shown products again first and new ones only in the time left, so a shop settles at what it
+    lets the bot scan in a day and the three nights are for a complication (with them and no such order a slow
+    shop would pile up over three days); the bot asks of a shop only its first 20,000 by the order.
   - **Which products** (his «Με τις 3 αλλαγές», 17:15; 19.4): first a shop's products of the thin kinds (under
     100 products in the whole catalogue: proposed number); then what it sells cheapest of the offers the site
     keeps (the same product by its code; a product whose cheaper offers were cut counts as cheapest for the next

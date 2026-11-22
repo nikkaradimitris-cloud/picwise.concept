@@ -57,7 +57,10 @@ Each rule names whose it is:
   κρατά ένα κατάστημα (η λέξη σου, 22/11: «Με τις 3 αλλαγές»): πρώτα τα είδη με τα λίγα
   προϊόντα· μετά ό,τι πουλά φθηνότερα από όσα δείχνει το site· μετά τα υπόλοιπα, πρώτα όσα
   έχουν είδος· ό,τι το κρατά φθηνότερα άλλο κατάστημα μπαίνει τελευταίο. Το bot φτιάχνεται
-  να δουλεύει σε περισσότερους επεξεργαστές μαζί («Ναι, μαζί»). Ο κανόνας: ενότητα 19.
+  να δουλεύει σε περισσότερους επεξεργαστές μαζί («Ναι, μαζί»). Ένας έλεγχος μετράει 3
+  βράδια: προϊόν που το bot δεν πρόλαβε να ξαναελέγξει μένει ως 3 μέρες, μετά δεν φαίνεται
+  μέχρι να ξαναπεράσει («κρατάμε τα προϊόντα ασκανάριστα μέχρι 3 μέρες», 22/11· σήμερα
+  μετράει 30 βράδια). Ο κανόνας: ενότητα 19.
 
 ## 1. What the checks are for, and what they rest on
 
@@ -772,7 +775,8 @@ about 285,000 at its lowest, on day 4, then filling again with checked products)
 
 Written 22/11 (17:10 Athens) by Claude Fable 5.2, after a look with its numbers (19.2), and
 **corrected the same day (17:35) on the owner's words of 17:08 and 17:21: what the bot scans
-of a shop passes to the site, 20,000 the most; no cap is set for each shop** (19.3). The build is OPUS's by
+of a shop passes to the site, 20,000 the most; no cap is set for each shop** (19.3); **and, by
+his word of 17:35, a pass counts for three nights** (19.3.1). The build is OPUS's by
 the work split; a look before its «ανέβασε» is FABLE's, since it cuts products. Each rule
 names whose it is, as everywhere in this file.
 
@@ -810,6 +814,9 @@ large shop takes days by the pace rule (4.3, 4.7):
   δευτερόλεπτο είναι τα 20.000... τελειώσαμε με αυτό..»**.
 - 17:16, while the look was run once more with one cap: «Για ποιο λόγο μετράς δεν μας
   ενδιαφέρει κάτι τέτοιο». Nothing more is measured of it before the look of 19.7.
+- 17:35, told that this section proposed a pass to count for two nights (30 today, 9.1):
+  **«Και 3 βράδια μπορούμε... Αν υπάρξει κάποια έπιπλοκή κρατάμε τα προϊόντα ασκανάριστα
+  μέχρι 3 μέρες»**.
 
 ### 19.2 What the look measured (22/11, read-only, no AI)
 
@@ -863,10 +870,17 @@ answers fast and allows many checks, is 20,000. No cap is set for each shop.** �
 
 **Proposed, so that it holds steady; for the builder, and his to change:**
 
-1. **Scanned** is checked and passed in the bot's last day of asking the shop. A pass counts
-   for two nights, so that one bad day does not empty a shop. (9.1 counts a pass for 30
-   nights today: with that, a shop the bot scans 5,000 a day of would pile up to 20,000 over
-   four days, each product checked once in four days, which is not what he says.)
+1. **Scanned** is checked and passed in the bot's last day of asking the shop. **A pass
+   counts for three nights. Owner, 22/11 (17:35): «Και 3 βράδια μπορούμε... Αν υπάρξει
+   κάποια έπιπλοκή κρατάμε τα προϊόντα ασκανάριστα μέχρι 3 μέρες».** A product the bot could
+   not ask again stays shown up to 3 days after its last pass; after them it is not shown
+   until it passes again: it waits, it is not cut (9.3). Two nights were proposed here
+   before his word. They are the 3 days the rules hold already: a shop that cannot be
+   checked (5.6.2), a shop's first round (9.3). (9.1 counts a pass for 30 nights today:
+   with that, a shop the bot scans 5,000 a day of would pile up to 20,000 over four days,
+   each product checked once in four days, which is not what he says. With three nights
+   and nothing else it would pile up to 15,000 over three: 2 below keeps a shop at what the
+   bot scans of it in a day, and the three nights are for a complication, as he says.)
 2. **Each day the bot asks a shop's shown products again first**, in the order of 19.4, and
    new ones only in the time left. So a shop settles at what it lets the bot scan in a day,
    and its products do not take turns on the site.
@@ -934,12 +948,13 @@ his word of 17:21 puts it back.)
    candidates: the products it would choose next, one and a quarter times the places open;
    the bot asks them in their turn (10.3).
 3. **The order of asking** (section 10) stands. A capped shop's shown products can all be
-   asked within a day: "passed within the last 30 nights" (9.1) can then be made shorter;
-   that is another rule, his to say, not this one.
+   asked within a day: "passed within the last 30 nights" (9.1) is made three nights, by
+   his word of 17:35 (19.3.1; 6 below).
 4. **A shop that cannot be checked** (5.6) is out on its day 4, as before.
 5. **A new shop**: the bot asks its first 20,000 by the order; what it scans and passes enters.
-6. **9.1's 30 nights** become the two nights of 19.3.1 for every shop: a look before the
-   «ανέβασε» counts what that hides (19.7).
+6. **9.1's 30 nights** become the three nights of 19.3.1 for every shop (**Owner**, 17:35;
+   9.3's "not passed in 30 nights" with them): a look before the «ανέβασε» counts what that
+   hides (19.7).
 
 ### 19.7 The brake, the switch, what is reported
 
@@ -948,7 +963,7 @@ his word of 17:21 puts it back.)
 1. **The first night cuts at least 186,900 products, by his decision.** Its look, before the
    «ανέβασε» (task 7's kind), the only measuring left (19.1, 17:16): the catalogue prepared
    on GitHub's runner with the rule; per shop what the bot scanned and what passes; what
-   leaves by a pass over two nights old; each kind before and after; the first cards of the
+   leaves by a pass over three nights old; each kind before and after; the first cards of the
    40 searches before and after; the preparation's time and memory.
 2. **A switch** (`data/shop_cap_switch.json`, frozen with the code): false, no shop is
    capped, within one preparation.
@@ -960,10 +975,11 @@ his word of 17:21 puts it back.)
 
 Answered on 22/11: what the bot scans of a shop passes, 20,000 the most, no cap for each
 shop (17:08, 17:21; 19.3); the order, with the three changes (17:15; 19.4); the bot over
-several processes, built with it (17:15; 19.5). He asked for no more questions on it
+several processes, built with it (17:15; 19.5); a pass counts for three nights (17:35, his
+own word, told that two were proposed; 19.3.1). He asked for no more questions on it
 («τελειώσαμε με αυτό»): what follows is built as written and shown to him in the look.
 
-1. A pass counts for two nights (19.3.1); a kind is thin under 100 products (19.4 a).
+1. A kind is thin under 100 products (19.4 a).
 2. The proposed rules of 19.3.2, 19.3.3, 19.4 d to f, 19.6 and 19.7.
 
 ### 19.9 For the builder
