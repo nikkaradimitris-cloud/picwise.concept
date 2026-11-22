@@ -12,7 +12,8 @@
 #
 # DRY_RUN 'yes' asks nothing and puts nothing: the run counts what the first round would ask and
 # says what it would cost. It is turned to 'no' only on the owner's word for the cost (about $11
-# to $14 by the dry run of 22/11, run 45031171329; the calls stop before the budget below).
+# to $14 by the dry run of 22/11, run 45031171329; the calls stop before the budget below). His
+# word of 22/11: after the cap per shop is deployed («Μετά το πλαφόν»); a dry run first, that day.
 #
 # The catalogue holds the shops' links: it is never uploaded anywhere, only read on the runner
 # and removed. The SDK is installed from deployment/server/requirements-ai.txt, every package

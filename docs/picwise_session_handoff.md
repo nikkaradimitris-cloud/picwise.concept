@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (16:35 Athens: task 6 BUILT, the question "is it the kind itself", not deployed, its switch false, waits for the owner's word for the first asking; 15:51 Athens: the owner decided a cap per shop, records only; 15:05 Athens: Vercel's preview builds turned off, records only; 13:45 Athens: THE CHECKS DEPLOYED on the owner's «Ανέβασε», the bot's first round running, read the night on 23/11; 11:50 Athens: task 7's look done, its findings mended, not deployed, waits for the owner's answers and his «ανέβασε»; 10:30 Athens: task 7 begun, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (16:45 Athens: the owner's two answers on task 6: a set stays shown, and the first asking is made AFTER THE CAP PER SHOP; 16:35 Athens: task 6 BUILT, the question "is it the kind itself", not deployed, its switch false; 15:51 Athens: the owner decided a cap per shop, records only; 15:05 Athens: Vercel's preview builds turned off, records only; 13:45 Athens: THE CHECKS DEPLOYED on the owner's «Ανέβασε», the bot's first round running, read the night on 23/11; 11:50 Athens: task 7's look done, its findings mended, not deployed, waits for the owner's answers and his «ανέβασε»; 10:30 Athens: task 7 begun, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -84,9 +84,10 @@ a decision came about.
     22/11 (16:40 Athens): deployed, the switch open, his three answers of 22/11, the cap per shop as decided and
     not yet built. **Owed:** `main` is at `b6915e3` (19/11): bringing it level with the site is the owner's yes (it
     builds the Vercel backup).
-- **(22/11, 16:35 Athens): TASK 6 (FABLE) BUILT, NOT DEPLOYED: the question "is it the kind itself". Its switch
-  (`data/kind_itself_switch.json`) is false; no answer is kept anywhere; nothing on the site changed. IT WAITS FOR
-  THE OWNER'S WORD FOR THE FIRST ASKING** (PROGRESS.md, 22/11 16:35). The rules, with a Greek summary for the owner
+- **(22/11, 16:35 Athens; the owner's answers 16:45): TASK 6 (FABLE) BUILT, NOT DEPLOYED: the question "is it the
+  kind itself". Its switch (`data/kind_itself_switch.json`) is false; no answer is kept anywhere; nothing on the
+  site changed. ITS FIRST ASKING WAITS FOR THE CAP PER SHOP, ON THE OWNER'S WORD («Μετά το πλαφόν»): THE CAP PER
+  SHOP (the next item) COMES FIRST** (PROGRESS.md, 22/11 16:35 and 16:45). The rules, with a Greek summary for the owner
   at their top and what is built in their section 14: `docs/PICWISE_KIND_ITSELF_RULES.md`. Read them before
   touching any of it. Their Greek page for the owner, in the Project's docs: `claude/PicWise-kanones-eidous.md`
   (keep it in step: it says what waits for his word).
@@ -96,8 +97,11 @@ a decision came about.
     reading moves a product** out of a kind's search (it is still found by its words) or back into one the lists
     of 20/11 took it from. Opus 5.5, which has no part in it, judges the first cards of 40 fixed searches every
     day: the daily email's line of quality.
-  - **The order of work** (the rules' 12): (1) built, with tests: done. (2) **The first asking, on the owner's
-    word:** in `.github/workflows/ai-itself-ask.yml` turn `DRY_RUN` to `'no'`, commit, push the commit to the work
+  - **The order of work** (the rules' 12): (1) built, with tests: done. (2) **The first asking, AFTER THE CAP PER
+    SHOP IS DEPLOYED** (his word of 22/11): first a dry run that day (push the work branch's head to
+    `claude/itself-ask` as it is: it counts the questions, which will be fewer than 22/11's 73,290, and guesses
+    the cost), tell him the count and the cost in one line, then
+    in `.github/workflows/ai-itself-ask.yml` turn `DRY_RUN` to `'no'`, commit, push the commit to the work
     branch and to `claude/itself-ask`; the run asks in rounds and puts the answers in
     `/srv/picwise/assist/itself/answers.jsonl.gz` (it makes the folder as `deploy.sh` would); **about $11 to $14,
     stopped before $20** (the dry run of 22/11, run 45031171329: 73,290 questions in 292 kinds); a run that stops
@@ -112,12 +116,15 @@ a decision came about.
     (4) His «ανέβασε»: the switch true with `looked_until` at the look's day. The deployment prepares (the code's
     fingerprint changes): restart the site first, as on 22/11. The first night the answers are read has no night
     before to hold against, and the health run says so as a limit: expected that one morning only.
-  - **Put to the owner on 22/11, waiting:** (a) a set (a toaster with a kettle; today the Recommended of
-    "toaster") out of the kind's search, found by its words: proposed yes; (b) the first asking: its cost, and
-    when: now, or after the cap per shop he decided at 15:51. **The four shops that cap will cut (GamingKit,
-    InStock UK, Tooled Up, PCHUB.UK) hold 34,765 of the 73,290 questions (47%)**: asked before it, about $4 goes
-    to products it will remove; asked after it, the fix waits for the cap. The answers are kept by question key,
-    not by product: they stay good as products come and go.
+  - **The owner's answers of 22/11 (16:40 to 16:45 Athens, asked with the numbers; his words in the rules'
+    sections 2 and 5):** (a) a set of two main products (a toaster with a kettle; today the Recommended of
+    "toaster"), proposed to leave the kind's search: **«Να φαίνεται»**: `set` moves nothing, out of a kind or
+    back into one (`kind_itself.SET`; the answer is still kept, as what the product is), and the meter's judge
+    counts such a set right; (b) the first asking, advised to be made now: **«Μετά το πλαφόν»**. He was told
+    what it means: the accessories stay first until the cap per shop is written, built, looked at and deployed,
+    then the asking, the look and his «ανέβασε»; about $4 saved, and the asking made on the catalogue as it will
+    be (the four shops the cap will cut, GamingKit, InStock UK, Tooled Up and PCHUB.UK, hold 34,765 of the 73,290
+    questions, 47%).
   - **Deployed with the switch still false** the code changes no product (the dry run read every one of the
     398,957 products' kinds with this code: none differs from the server's prepared file), but it prepares,
     installs `picwise-itself` and `picwise-meter` with their timers, and **the meter starts measuring** (about

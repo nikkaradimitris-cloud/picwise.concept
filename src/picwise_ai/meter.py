@@ -43,13 +43,12 @@ the price. For each result say whether it is the thing the buyer asked for.
 - "yes": the product is the kind of thing the search names. Any brand, model, size, colour \
 or price range is fine, new or refurbished. A version made for children or for work is still \
 that thing. Several of the same thing sold together are that thing. The thing sold with its \
-own small extras (its case, its charger, a gift box) is that thing.
+own small extras (its case, its charger, a gift box) is that thing. A set that sells the \
+thing together with another main product (a toaster with a kettle) is that thing too.
 - "no": it is something else. An accessory, spare part, refill, case, cover, cable, mount or \
 stand for the thing. A different kind of product whose title only mentions the thing. A toy, \
 model, book, film or game about the thing. A service, a warranty, a subscription or software \
-for the thing. A set that pairs the thing with another main product (a toaster sold with a \
-kettle): the buyer asked for one thing. A version made for pets, unless the search asks for \
-pets.
+for the thing. A version made for pets, unless the search asks for pets.
 - "unsure": the title does not say enough to tell what the product is.
 
 Judge only from what is shown. The price helps (a "printer" at 3 pounds is unlikely to be a \

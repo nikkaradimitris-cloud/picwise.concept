@@ -5,8 +5,9 @@ split by model; the owner's plan of 21/11, step 8).
 Pinned here, with no call to any AI (the answers are the test's own):
 
 - only a second reading moves a product: a first reading alone or an unsure changes nothing;
-- an accessory, a part, a consumable or a set leaves the kind and the broader kinds it
-  carries through it; another thing leaves the kind, and its broader kind is asked in turn;
+- an accessory, a part or a consumable leaves the kind and the broader kinds it carries
+  through it; another thing leaves the kind, and its broader kind is asked in turn; a set
+  stays where it is (the owner's word of 22/11);
 - a product the lists took out of a kind is of it again when its second reading says so,
   with the context it carried; a product left with no kind is doubtful;
 - which questions wait: a first reading for every narrowest kind, a second for what the
@@ -101,8 +102,26 @@ class OnlyASecondReadingMovesAProduct(unittest.TestCase):
             self.assertEqual(settled.want_second, wanted, first)
             self.assertEqual(settled.want_first, ())
 
+    def test_a_set_stays_where_it_is(self) -> None:
+        # Owner, 22/11, asked whether a toaster sold with a kettle should be shown when a buyer
+        # searches "toaster": «Να φαίνεται». The answer is kept and moves nothing.
+        for first in ("set", "itself"):
+            settled = settle(self.DRILL, self.DRILL, _lookup(_record("drill", first, "set")))
+            self.assertIs(settled.kinds, self.DRILL, first)
+            self.assertEqual((settled.out, settled.want_first, settled.want_second), ((), (), ()))
+            self.assertEqual(settled.read_twice, ("drill",))
+        # What the first reading calls a set is still read again: the second may read an accessory.
+        self.assertEqual(settle(self.DRILL, self.DRILL, _lookup(_record("drill", "set"))).want_second, ("drill",))
+        self.assertEqual(settle(self.DRILL, self.DRILL, _lookup(_record("drill", "set", "accessory"))).kinds, UNCERTAIN)
+        # Nor does it bring a product back to a kind the lists took from it.
+        back = settle(self.DRILL, UNCERTAIN, _lookup(_record("drill", "itself", "set")))
+        self.assertIs(back.kinds, UNCERTAIN)
+        self.assertEqual(back.back, ())
+        self.assertIn(kind_itself.SET, kind_itself.ANSWERS)
+        self.assertNotIn(kind_itself.SET, kind_itself.NOT_ITSELF)
+
     def test_what_goes_with_the_thing_leaves_the_kind(self) -> None:
-        for said in ("accessory", "part", "consumable", "set"):
+        for said in ("accessory", "part", "consumable"):
             settled = settle(self.DRILL, self.DRILL, _lookup(_record("drill", said, said)))
             self.assertEqual(settled.kinds, UNCERTAIN, said)
             self.assertEqual(settled.out, (("drill", said, "2026-11-23"),))

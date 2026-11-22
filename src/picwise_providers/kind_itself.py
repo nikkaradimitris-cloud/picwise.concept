@@ -11,10 +11,10 @@ preparation reads the answers, behind one switch (`data/kind_itself_switch.json`
 with the code: turning it prepares the catalogue again):
 
 - **only a second reading moves a product** (the rules' section 5): not itself, and the
-  product leaves the kind (an accessory, a part, a consumable or a set leaves its broader
-  kinds too; another thing leaves the kind, and its broader kinds are asked in turn); itself,
-  for a kind the lists (`ai_shelves.checked_kinds`) took from it, and the product is of that
-  kind again; unsure, or no second reading, and nothing changes;
+  product leaves the kind (an accessory, a part or a consumable leaves its broader kinds
+  too; another thing leaves the kind, and its broader kinds are asked in turn); itself, for
+  a kind the lists (`ai_shelves.checked_kinds`) took from it, and the product is of that
+  kind again; a set, unsure, or no second reading, and nothing changes;
 - a product left with none of its kinds is doubtful, as when the lists leave it none: found
   by its words, never by its kind;
 - **an answer stands until another takes its place** (4.7): one asked under other words of
@@ -71,10 +71,15 @@ SHOWN_FORMAT = 1
 ITSELF = "itself"
 UNSURE = "unsure"
 OTHER = "other"
+# The thing sold as one item with another main product (a toaster with a kettle). It stays
+# where it is (owner, 2026-11-22, asked whether such a set should be shown when a buyer
+# searches "toaster": «Να φαίνεται»): the answer is kept, as what the product is, and moves
+# nothing, out of a kind or back into one.
+SET = "set"
 # Not the kind itself, and nothing of its broader kinds either: it goes with the thing.
-GOES_WITH = frozenset({"accessory", "part", "consumable", "set"})
+GOES_WITH = frozenset({"accessory", "part", "consumable"})
 NOT_ITSELF = GOES_WITH | {OTHER}
-ANSWERS = frozenset(NOT_ITSELF | {ITSELF, UNSURE})
+ANSWERS = frozenset(NOT_ITSELF | {ITSELF, UNSURE, SET})
 # A question with no answer is asked so many times in all, then left.
 MOST_TRIES = 2
 # A kind's first cards: so many of a search for its name, and its Recommended (the rules' 3).

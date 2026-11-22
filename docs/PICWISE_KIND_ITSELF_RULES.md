@@ -28,6 +28,9 @@ Each rule names whose it is:
 - **Τι αλλάζει για τον επισκέπτη.** Όποιο προϊόν δεν είναι το ίδιο το είδος δεν εμφανίζεται
   όταν ψάχνει το είδος. Δεν χάνεται: βρίσκεται με τα δικά του λόγια («printer roller»). Η
   σειρά, το Recommended και οι τιμές δεν αλλάζουν.
+- **Τα σετ μένουν όπως είναι** (η λέξη σου, 22/11: «Να φαίνεται»). Ένα σετ με δύο κύρια
+  προϊόντα, π.χ. τοστιέρα μαζί με βραστήρα, συνεχίζει να φαίνεται όταν κάποιος ψάχνει
+  «toaster».
 - **Γυρίζουν και σωστά προϊόντα.** Περίπου 8.000 προϊόντα είναι σήμερα κρυμμένα από τις λίστες
   κατηγοριών της 20/11. Η δοκιμή δείχνει ότι περίπου 1 στα 10 είναι σωστό (κυρίως παιχνίδια και
   τραπέζια): αυτά γυρίζουν.
@@ -52,12 +55,13 @@ Each rule names whose it is:
   μετά τα προϊόντα, είναι η εργασία 8 (ερωτήσεις στην αναζήτηση). Εδώ οι απαντήσεις του AI
   κρατούν και τι είναι το κάθε προϊόν, ώστε η εργασία 8 να μη χρειαστεί να ξαναρωτήσει.
 - **Πότε ανεβαίνει.** Όχι τώρα. Χτίστηκε και δοκιμάστηκε (22/11), με τον διακόπτη κλειστό.
-  Μένουν: η πρώτη ερώτηση όλων των προϊόντων (με τη λέξη σου για το κόστος), μετά σου δείχνω
-  ανά είδος τι βγαίνει και τι γυρίζει, και ανεβαίνει μόνο με το «ανέβασε» σου.
-- **Το πλαφόν ανά κατάστημα (22/11, 15:51)** θα βγάλει πολλά προϊόντα τεσσάρων καταστημάτων.
-  Σχεδόν οι μισές ερωτήσεις (47%) είναι για προϊόντα αυτών των καταστημάτων. Αν η πρώτη
-  ερώτηση γίνει πριν από το πλαφόν, περίπου 4 $ θα πάνε σε προϊόντα που μετά θα φύγουν· αν
-  γίνει μετά, η διόρθωση αργεί όσο αργεί το πλαφόν.
+  **Η πρώτη ερώτηση όλων των προϊόντων θα γίνει μετά το πλαφόν ανά κατάστημα** (η λέξη σου,
+  22/11: «Μετά το πλαφόν»). Μετά σου δείχνω ανά είδος τι βγαίνει και τι γυρίζει, και
+  ανεβαίνει μόνο με το «ανέβασε» σου.
+- **Τι σημαίνει αυτό.** Τα αξεσουάρ μένουν μπροστά μέχρι να γραφτεί, να χτιστεί και να ανέβει
+  το πλαφόν ανά κατάστημα. Το κέρδος: περίπου 4 $ λιγότερα, και η ερώτηση γίνεται πάνω στον
+  τελικό κατάλογο (το 47% των ερωτήσεων ήταν για προϊόντα των τεσσάρων καταστημάτων που θα
+  κόψει το πλαφόν).
 
 ## 1. What it is for, and what was measured
 
@@ -156,6 +160,12 @@ keep in a public place a link, a key or a server name.
   doubtful is still found by its words, never by its kind.
 - Standing: nothing on the site without his «ανέβασε»; a change that hides products has its
   own look first (`docs/picwise_session_handoff.md`, 22/11).
+- **22/11, 16:40 Athens, asked with the numbers of this file:** (a) whether a set of two main
+  products (a toaster with a kettle; today the Recommended of "toaster") should be shown when
+  a buyer searches "toaster", proposed not: **«Να φαίνεται»** (section 5); (b) whether the AI
+  should be asked now about every product (73,290 questions, about $11 to $14, stopped before
+  $20; told that about $4 of it is for products the cap per shop will remove, and advised to
+  ask now): **«Μετά το πλαφόν»** (section 12).
 
 "Accessories a choice of their own" and the search's questions («Car or motorbike?») are
 task 8 of the work split, not built here. The answers keep what each product is (section
@@ -172,9 +182,10 @@ task 8 of the work split, not built here. The answers keep what each product is 
 - **Question**: one product for one kind. Products of one key (`ai_shelves.key_of`: a title's
   own words without its sizes and colours, the brand, the shop's own category words) share
   their questions.
-- **Answer**: `itself`; or not itself: `accessory`, `part`, `consumable`, `set` (the four
-  that **go with** the thing) or `other`; or `unsure`. With it, in a few words, what the
-  product is ("hole saw arbor").
+- **Answer**: `itself`; `set` (the thing sold as one item with another main product: it
+  moves nothing, section 5); or not itself: `accessory`, `part`, `consumable` (the three that
+  **go with** the thing) or `other`; or `unsure`. With it, in a few words, what the product
+  is ("hole saw arbor").
 - **Reading**: one model's answer to a question. The **first reading** is Claude Haiku 5.5's,
   the **second** Claude Sonnet 5.5's.
 - **First cards** of a kind: the first 24 cards of a search for the kind's name, as the site
@@ -307,23 +318,27 @@ In the night's preparation, behind the switch (7.6), for each product, from its 
 the kinds the lists leave it, and the second readings in force:
 
 1. **`itself` for a kind the lists leave it**: nothing changes.
-2. **`accessory`, `part`, `consumable` or `set`**: the product leaves that kind and every
-   broader kind it carries through it (a robot vacuum's filter is no vacuum cleaner either).
+2. **`accessory`, `part` or `consumable`**: the product leaves that kind and every broader
+   kind it carries through it (a robot vacuum's filter is no vacuum cleaner either).
 3. **`other`**: the product leaves that kind. Its broader kinds stay as the lists read them
    until their own question (4.3.3) is answered.
 4. **`itself` for a kind the lists took from it**: the product is of that kind again, and of
    the broader kinds the lists took with it.
-5. **`unsure`, or no second reading**: nothing changes. (**Proposed.** A title like "MH22"
-   or "Lasertec" tells no model what the product is; its shop's own category and the lists
-   read it as a tyre, and they stand.)
+5. **`set`, `unsure`, or no second reading**: nothing changes. (`unsure`: **Proposed.** A
+   title like "MH22" or "Lasertec" tells no model what the product is; its shop's own
+   category and the lists read it as a tyre, and they stand. `set`: the owner's, below.)
 6. A product left with none of its kinds is doubtful (`UNCERTAIN_MARKER`), as when the lists
    leave it none: found by its words, never by its kind. A product that came back keeps the
    context it carried (a pet's, a camping product's).
 
-**Proposed: `set` takes a product out of the kind.** A toaster sold with a kettle is found by
-its words; it is not what "toaster" asks for, and on 22/11 it is the Recommended of "toaster",
-as a microwave with a kettle and a toaster is the Recommended of "microwave". Put to the owner
-(section 13).
+**Owner, 22/11: a set stays where it is.** Asked whether a set of two main products (a
+toaster sold with a kettle) should be shown when a buyer searches "toaster", told that such a
+set is the Recommended of "toaster" today (as a microwave with a kettle and a toaster is the
+Recommended of "microwave"), and that the proposal was to take it out: **«Να φαίνεται»**. So
+`set` moves nothing: a set that is shown stays shown, and a set the lists took out of a kind
+is not brought back by it. The answer is kept, as what the product is (for task 8's choices).
+A first reading of `set` is still read a second time (4.4 a): the second may read an
+accessory.
 
 The cap, the suggestions, the choices a kind's search offers and the pages meant for Google
 read the kinds after this, as they read them after the lists.
@@ -456,9 +471,10 @@ would filter").
   as they are drawn (`/search?q=…&shown=12`, asked on the server itself with no script: no
   visitor's search is logged), and answers for each card whether it is what the buyer asked
   for (yes, no, cannot tell) and why in a few words. It judges as a buyer: a pet's version of
-  a thing is wrong unless the search asks for pets, a set of two main products is wrong, a
-  motorcycle tyre is wrong for "car tyres". So it counts the search's own faults too (task 8
-  of the work split), not only this gate's.
+  a thing is wrong unless the search asks for pets, a motorcycle tyre is wrong for "car
+  tyres"; a set that sells the thing with another main product is right (the owner's word of
+  22/11 on sets). So it counts the search's own faults too (task 8 of the work split), not
+  only this gate's.
 - **What is judged, every day**: the first 12 cards of the measure after's 40 searches (the
   same every day, so that one day can be read against another); and the first 12 cards of
   each kind's first name, a seventh of the kinds a day, every kind within a week. The
@@ -520,7 +536,10 @@ meter's line, the note's limits); `PROGRESS.md` and the handoff.
 
 1. The gate, the asking and the meter built on the work branch, with tests; the switch false.
    (22/11: built.)
-2. The first asking (8.1), on the owner's word for its cost.
+2. The first asking (8.1): **after the cap per shop is deployed** (owner, 22/11: «Μετά το
+   πλαφόν»; that cap, decided by him the same day at 15:51, is not yet in the rules nor
+   built). The session that starts it runs the dry run first and tells him that day's count
+   and cost: fewer questions than 22/11's 73,290, since the cap removes products.
 3. **The look** (task 7's kind): the catalogue prepared on GitHub's runner with the answers
    and the switch on, as the server would; per kind, what leaves by answer and what comes
    back, with examples; the kinds a brake would hold; the meter on the 40 searches and every
@@ -536,14 +555,12 @@ product).
 
 ## 13. Open: the owner's to say
 
-1. **A set** (a toaster with a kettle, a microwave with a kettle and a toaster): out of the
-   kind's search, found by its words (proposed); or left in.
-2. **The first asking's cost**: about $11 to $14, stopped before $20; on his word. And
-   **when**: now, or after the cap per shop he decided on 22/11 (about $4 of it is for
-   products that cap will remove; after it, the fix waits for the cap).
-3. **The meter's start**: with the deployment that installs it (about $1.50 the first day,
+Answered on 22/11 (section 2): a set stays where it is; the first asking is made after the
+cap per shop.
+
+1. **The meter's start**: with the deployment that installs it (about $1.50 the first day,
    $0.80 the six after, then cents; never over $2 a day).
-4. The proposed rules of 4.1, 4.4, 4.7, 5.5, 6, 7 and 9, each his to change.
+2. The proposed rules of 4.1, 4.4, 4.7, 5.5 (`unsure`), 6, 7 and 9, each his to change.
 
 ## 14. Built
 

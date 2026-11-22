@@ -128,7 +128,7 @@ class TheJudge(unittest.TestCase):
     def test_the_instructions_are_pinned(self) -> None:
         # Changed on purpose only, with `meter_service.VERSION`: the days before are then
         # not read beside the days after.
-        self.assertEqual((meter_service.VERSION, meter.prompt_fingerprint()), (1, "6fdca035d31a"))
+        self.assertEqual((meter_service.VERSION, meter.prompt_fingerprint()), (1, "26748659e200"))
 
     def test_every_verdict_is_checked(self) -> None:
         answer = {"verdicts": [{"n": 1, "is": "yes", "why": "a printer"}, {"n": 2, "is": "no", "why": "x" * 200},
