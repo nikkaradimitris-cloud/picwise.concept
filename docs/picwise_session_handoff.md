@@ -8,7 +8,7 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (22/11, 06:10 Athens): task 5 (OPUS) DONE but one part, on the work branch; NOT deployed; the switch false.**
+- **FIRST (22/11, 10:18 Athens): task 5 (OPUS) DONE, on the work branch; NOT deployed; the switch false. Next: task 7 (FABLE).**
   (PROGRESS.md, 22/11 06:10.) Built since 01:10: the walls told from pages (`21953a1`, `85d9fc7`), the night's numbers
   in the daily email and the letter (`0fe6829`), the category (`e8c044e`); read-only looks on the server.
   - **The looks of 22/11** (runs 44971761757, 44972305197, 44973108097, 44973503931): GamingKit (48,126) and Webbs
@@ -28,8 +28,9 @@ a decision came about.
     it runs `main`'s code, so from the deployment's merge); `docs/PICWISE_DAILY_WORK.md` says to put one line of the
     checks' numbers in the email, the letter on a shop's day 1, «βγαίνει αύριο» on its day 3. Until the deployment the
     health run prints no "checks" line and the email says nothing of them.
-  - **Open, the owner's:** build the AI's recipe (4.5.3) for Pro-Camera's 433 products, or let it leave on its day 4
-    (asked 22/11 06:10, recommended: not now). **Then task 7 (FABLE):** the look before the «ανέβασε» and the
+  - **The AI's recipe (4.5.3): not built, on the owner's word** (asked whether to build it for Pro-Camera's 433
+    products, 22/11 10:18 Athens: «Όχι τώρα»; Pro-Camera leaves on its day 4; built when a larger shop needs it).
+    **So task 5 is done. Next, task 7 (FABLE):** the look before the «ανέβασε» and the
     deployment that turns `data/checks_switch.json` true; everything together (owner, 22/11). The deployment prepares
     again (the fingerprint changed) and installs 17 units; `picwise-shelves.timer` only with the AI's key.
   - **Reminder owed at the end of each work:** the two proposals that wait for his yes (a feed over 7 days old; a shop

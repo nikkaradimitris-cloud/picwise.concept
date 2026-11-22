@@ -540,6 +540,9 @@ email carries the same numbers in Greek (his plan, step 12).
    reads: not in these rules; such a shop cannot be checked (5.6.2).
 7. **A shop whose photo host refuses the checker** while its pages are read (5.4):
    reported, nothing cut; whether it leaves is his to say, with the report's numbers.
+8. ~~The shop's recipe by the AI (4.5.3)~~ **Answered 22/11, 10:18 Athens: «Όχι τώρα»**: not built
+   while it would serve one shop (Pro-Camera, 433 products, which leaves on its day 4); built when
+   a larger shop needs it.
 
 ## 14. For the builder (task 5)
 
@@ -593,8 +596,9 @@ from their first night live (2.2, 4). Where the code had to settle a point:
     failed, or after 3 days: a product the shop refused was not checked, so a shop that refuses
     keeps the 3 days of 5.6.2 (in the look of 21/11 a shop of 4 products, all refused, would
     have ended its round, and lost them, on its first night).
-11. Not built yet: the shop's recipe by the AI (4.5.3). Without it a shop whose pages no reader
-    reads leaves on its day 4 (5.6.2). The looks on the server of 22/11 (runs 44971761757,
+11. Not built: the shop's recipe by the AI (4.5.3), on the owner's word (22/11, 10:18 Athens, asked
+    whether to build it for the one shop it would serve: «Όχι τώρα»); built when a larger shop needs
+    it. Without it a shop whose pages no reader reads leaves on its day 4 (5.6.2). The looks on the server of 22/11 (runs 44971761757,
     44972305197, 44973108097, 44973503931) left one such shop: Pro-Camera (433 products; Magento,
     its price written only as words on the page).
 12. A challenge page (4.4, 5.6.2) is told by what only a challenge writes: a 403, 429 or 503, or a
