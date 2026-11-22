@@ -135,6 +135,22 @@ class ReaderTwoMicrodataAndTagsTests(unittest.TestCase):
         self.assertEqual(page.offers, ())
 
 
+class MagentoPriceBoxTests(unittest.TestCase):
+    def test_magentos_own_price_box_of_one_product(self) -> None:
+        box = {"[data-role=priceBox][data-price-box=product-id-42]": {"priceBox": {"priceConfig": {
+            "productId": "42", "prices": {"oldPrice": {"amount": 149.99}, "finalPrice": {"amount": 129.99}}}}}}
+        page = read_page('<html><div class="stock available"><span>In stock</span></div>'
+                         f'<script type="text/x-magento-init">{json.dumps(box)}</script></html>')
+        self.assertEqual(page.how, "magento")
+        self.assertEqual((page.offers[0].price, page.offers[0].availability), (129.99, ""))
+
+    def test_a_page_listing_several_products_has_none(self) -> None:
+        boxes = [{"a": {"priceBox": {"priceConfig": {"productId": str(n), "prices": {"finalPrice": {"amount": n}}}}}}
+                 for n in (1, 2)]
+        text = "".join(f'<script type="text/x-magento-init">{json.dumps(box)}</script>' for box in boxes)
+        self.assertFalse(read_page(text).found)
+
+
 class ReaderOneShopifyTests(unittest.TestCase):
     def test_the_product_js_in_pence(self) -> None:
         page = read_shopify_product({"title": "Fila Runner", "variants": [

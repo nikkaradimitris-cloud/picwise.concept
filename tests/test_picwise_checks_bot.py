@@ -136,11 +136,24 @@ class Rules4HowAShopIsAskedTests(unittest.TestCase):
         result = _ask(shop, [_row(1), _row(2)])
         self.assertNotIn("/p/2", shop.asked)
         self.assertIn("429", result.stopped)
-        challenge = bot.Answer(503, "text/html", b"<html><title>Just a moment...</title>cf-chl-bypass</html>")
+        challenge = bot.Answer(503, "text/html", b"<html><title>Just a moment...</title>_cf_chl_opt</html>")
         refused = _ask(Shop({"/robots.txt": bot.Answer(404), "/p/1": challenge}), [_row(1)])
         self.assertEqual(refused.night.refused, 1)
         readings = bot.judge({"Kettles\x1f1": _row(1)}, refused)
         self.assertEqual(readings["Kettles\x1f1"].page.state, NOT_CHECKED)
+
+    def test_a_product_page_with_a_recaptcha_box_or_cloudflares_script_is_no_challenge(self) -> None:
+        page = (PRODUCT_PAGE % "24.99") + ('<script src="/cdn-cgi/challenge-platform/h/b/scripts/jsd/main.js"></script>'
+                                           '<div class="g-recaptcha" data-sitekey="x"></div>' + "x" * 120_000)
+        shop = Shop({"/robots.txt": bot.Answer(404), "/p/1": bot.Answer(200, "text/html", page.encode(),
+                                                                         final_url="https://kettles.invalid/p/1")})
+        result = _ask(shop, [_row(1)])
+        self.assertFalse(result.answers["Kettles\x1f1"].challenge)
+        self.assertEqual(result.night.refused, 0)
+        self.assertEqual(bot.judge({"Kettles\x1f1": _row(1)}, result)["Kettles\x1f1"].page.state, PASSED)
+        # A 404 page is never a challenge, whatever it writes.
+        self.assertFalse(bot.is_challenge(bot.Answer(404, "text/html", b"<title>Just a moment</title>")))
+        self.assertTrue(bot.is_challenge(bot.Answer(403, "text/html", b"<title>Just a moment...</title>")))
 
     def test_nothing_is_asked_past_the_deadline(self) -> None:
         shop = Shop({"/robots.txt": bot.Answer(404)}, clock_step=10.0)

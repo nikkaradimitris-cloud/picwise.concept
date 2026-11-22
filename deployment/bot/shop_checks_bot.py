@@ -88,9 +88,13 @@ MAX_HOURS = 22
 TONIGHT = "tonight-{night}.jsonl"
 NOTE_NAME = "note.json"
 OWNER_WORDS = ROOT / "data" / "checks_owner_words.json"
-# What a challenge page writes (a refusal that answers 200, 403 or 503).
-CHALLENGE_SIGNS = (b"cf-chl-", b"challenge-platform", b"<title>Just a moment", b"Attention Required! | Cloudflare",
-                   b"px-captcha", b"g-recaptcha", b"hcaptcha.com/1/api.js", b"_Incapsula_Resource")
+# What only a challenge page writes (a refusal that answers 403, 429 or 503, or a small 200).
+# Not a reCAPTCHA box or Cloudflare's script, which shops put on every page: the look of
+# 22/11 (run 44971464930) found them on GamingKit's and Webbs Motorcycles' product pages,
+# whole and readable, which were read as challenges and so as refusals.
+CHALLENGE_SIGNS = (b"_cf_chl_opt", b"cf-chl-bypass", b"<title>Just a moment", b"Attention Required! | Cloudflare",
+                   b"px-captcha", b"_Incapsula_Resource", b"captcha-delivery.com")
+CHALLENGE_MAX_BYTES = 100_000
 SHOPS_LISTED = 60
 
 
@@ -152,8 +156,16 @@ def fetch(url: str, limit: int) -> Answer:
         return Answer(error=reason if isinstance(reason, str) else type(reason).__name__)
 
 
-def is_challenge(answer: Answer) -> bool:
-    return answer.status in (200, 403, 429, 503) and any(sign in answer.body[:200_000] for sign in CHALLENGE_SIGNS)
+def is_challenge(answer: Answer, *, read_found: bool = False) -> bool:
+    """A challenge page: a refusal dressed as a page. Never a page a product was read on,
+    never a 404; a 200 only when small."""
+    if read_found:
+        return False
+    if answer.status in (403, 429, 503):
+        return any(sign in answer.body[:200_000] for sign in CHALLENGE_SIGNS)
+    if answer.status == 200 and len(answer.body) < CHALLENGE_MAX_BYTES:
+        return any(sign in answer.body for sign in CHALLENGE_SIGNS)
+    return False
 
 
 def _text(answer: Answer) -> str:
@@ -325,7 +337,7 @@ def ask_shop(rows: list[Row], *, fetch: Fetch, sleep: Callable[[float], None], c
             redirected = address_parts(final) != address_parts(row.address)
             read = read_page(_text(answer)) if answer.status == 200 else NOTHING
         return PageAnswer(status=answer.status, error=answer.error, final_url=final, redirected=redirected,
-                          elsewhere=answer.elsewhere, challenge=is_challenge(answer), read=read)
+                          elsewhere=answer.elsewhere, challenge=is_challenge(answer, read_found=read.found), read=read)
 
     def take(row: Row, answer: PageAnswer, *, again_of: PageAnswer | None = None) -> None:
         if again_of is not None:
@@ -591,12 +603,14 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
         clock: Callable[[], float], deadline: float, workers: int, pause: float,
         awin: Mapping[str, tuple[str | None, str]] | None, feeds: Mapping[str, date | None],
         owner_cut_shops: list[str], owner_awin_word: bool, say: Callable[[str], None],
-        sample: int = 0, tonight: Tonight | None = None) -> tuple[L.Night, dict]:
+        sample: int = 0, tonight: Tonight | None = None, shops: frozenset[str] = frozenset()) -> tuple[L.Night, dict]:
     """Ask every shop its products in the rules' order; record the night; the decisions.
     `sample`: a look, at most this many products a shop; `tonight`: the night's answers
     kept as they come, those kept already not asked again."""
     tonight = tonight or Tonight(None)
     order = L.asking_order(ledger, night, rows, shown=shown, candidates=candidates, parts=parts)
+    if shops:
+        order = {shop: keys for shop, keys in order.items() if shop in shops}
     if sample > 0:
         order = {shop: keys[:sample] for shop, keys in order.items()}
     kept = tonight.load()
@@ -682,6 +696,7 @@ def main(argv: list[str] | None = None, *, fetch: Fetch = fetch, sleep: Callable
                         help="a look: write nothing (no ledger, no decisions, no note); print what the night decided")
     parser.add_argument("--sample", type=int, default=0, help="a look: at most this many products a shop")
     parser.add_argument("--minutes", type=float, default=0.0, help="a look: ask for this many minutes only")
+    parser.add_argument("--shop", action="append", default=[], help="a look: these shops only")
     args = parser.parse_args(argv)
     try:
         sys.stdout.reconfigure(line_buffering=True)
@@ -720,7 +735,8 @@ def main(argv: list[str] | None = None, *, fetch: Fetch = fetch, sleep: Callable
     result, made = run(rows, shown=shown, parts=parts, shared_ids=shared_ids, candidates=candidates, ledger=ledger,
                        night=night, fetch=fetch, sleep=sleep, clock=clock, deadline=deadline, workers=args.workers,
                        pause=args.pause, awin=awin, feeds=feeds, owner_cut_shops=cut_shops,
-                       owner_awin_word=awin_word, say=say, sample=args.sample, tonight=tonight)
+                       owner_awin_word=awin_word, say=say, sample=args.sample, tonight=tonight,
+                       shops=frozenset(args.shop) if args.dry else frozenset())
     if args.dry:
         say("a look (--dry): nothing written")
     else:

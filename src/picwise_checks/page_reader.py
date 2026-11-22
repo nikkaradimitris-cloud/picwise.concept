@@ -300,15 +300,58 @@ def _read_tags(meta: Mapping[str, str]) -> PageRead:
     return PageRead(how="tags", name=meta.get("og:title", ""), offers=(offer,), skus=frozenset({sku}) - {""})
 
 
+# ---- a platform's own data ---------------------------------------------------------
+
+_MAGENTO_INIT = re.compile(r"<script\b[^>]*\btype\s*=\s*[\"']?text/x-magento-init[\"']?[^>]*>(.*?)</script\s*>", re.I | re.S)
+
+
+def _price_configs(node: Any) -> Iterator[Mapping[str, Any]]:
+    if isinstance(node, dict):
+        config = node.get("priceConfig")
+        if isinstance(config, dict):
+            yield config
+        for value in node.values():
+            yield from _price_configs(value)
+    elif isinstance(node, list):
+        for item in node:
+            yield from _price_configs(item)
+
+
+def _read_magento(text: str) -> PageRead:
+    """Magento's own price box (`text/x-magento-init`, its `priceConfig`): the price it
+    shows, of one product only (a page listing several has several). Its stock is not
+    read: Magento writes it as words, which are never guessed from (4.5.4)."""
+    products: dict[str, float] = {}
+    for block in _MAGENTO_INIT.findall(text):
+        try:
+            data = json.loads(block)
+        except ValueError:
+            continue
+        for config in _price_configs(data):
+            prices = config.get("prices") if isinstance(config.get("prices"), dict) else {}
+            final = prices.get("finalPrice") if isinstance(prices.get("finalPrice"), dict) else {}
+            price = amount(final.get("amount"))
+            if price is not None:
+                products[str(config.get("productId") or "")] = price
+    if len(products) != 1:
+        return NOTHING
+    return PageRead(how="magento", offers=(Offer(price=next(iter(products.values()))),))
+
+
 def read_page(text: str) -> PageRead:
-    """What a product page's own HTML says of its product (module docstring)."""
+    """What a product page's own HTML says of its product (module docstring); last, a
+    platform's own structured data (Magento's price box: like Shopify's own JSON, data the
+    page gives as data, never words)."""
     body = str(text or "")
     meta, canonical = _tags(body)
     for reader in (_read_json_ld, _read_microdata):
         found = reader(body)
         if found.found:
             return replace(found, canonical=canonical)
-    return replace(_read_tags(meta), canonical=canonical)
+    found = _read_tags(meta)
+    if not found.found:
+        found = _read_magento(body)
+    return replace(found, canonical=canonical)
 
 
 # ---- Shopify ----------------------------------------------------------------------
