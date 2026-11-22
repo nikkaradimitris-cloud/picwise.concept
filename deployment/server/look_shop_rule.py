@@ -328,7 +328,15 @@ def kinds_compared(before: Mapping[str, int], after: Mapping[str, int]) -> dict[
         return sum(1 for name in names if counts.get(name, 0) < limit)
 
     halved = [name for name in names if before.get(name, 0) and after.get(name, 0) * 2 < before[name]]
+
+    def newly_under(limit: int) -> list[str]:
+        return [name for name in names if before.get(name, 0) >= limit > after.get(name, 0)]
+
     return {
+        # The kinds that had a search's first page of products (4), 24 or `THIN` and have fewer after.
+        "newly_under_4": newly_under(4),
+        "newly_under_24": newly_under(24),
+        "newly_thin": newly_under(THIN),
         "kinds": len(names),
         "empty": (under(before, 1), under(after, 1)),
         "under_4": (under(before, 4), under(after, 4)),
@@ -465,6 +473,9 @@ def compare(off: Mapping[str, Any], on: Mapping[str, Any], say: Any = print, *,
         say(f"  {_change((off.get('kinds') or {}).get(name, 0), (on.get('kinds') or {}).get(name, 0))} | {can[0]:>8,} | {can[1]:>8,}  {name}")
     say("the kinds that lose over half: " + (", ".join(
         f"{name} {(off.get('kinds') or {}).get(name, 0):,} to {(on.get('kinds') or {}).get(name, 0):,}" for name in kinds["lose_over_half"]) or "none"))
+    for label, key in ((f"under {THIN}", "newly_thin"), ("under 24", "newly_under_24"), ("under 4", "newly_under_4")):
+        say(f"the kinds that fall {label}: " + (", ".join(
+            f"{name} {(off.get('kinds') or {}).get(name, 0):,} to {(on.get('kinds') or {}).get(name, 0):,}" for name in kinds[key]) or "none"))
     gained = [name for name in reversed(lost) if (on.get("kinds") or {}).get(name, 0) > (off.get("kinds") or {}).get(name, 0)]
     say("the kinds that gain: " + (", ".join(
         f"{name} {(off.get('kinds') or {}).get(name, 0):,} to {(on.get('kinds') or {}).get(name, 0):,}" for name in gained[:LISTED]) or "none"))

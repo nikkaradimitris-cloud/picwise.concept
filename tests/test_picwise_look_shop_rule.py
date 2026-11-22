@@ -121,6 +121,8 @@ class Compared(unittest.TestCase):
         # Over half lost: 200 to 90 and 3 to none; 120 to 61 is not over half.
         self.assertEqual(found["lose_over_half"], ["kettle", "toaster"])
         self.assertEqual(found["emptied"], ["toaster"])
+        # A search's first page is four cards: the toasters had three before, so they do not newly fall under it.
+        self.assertEqual((found["newly_under_4"], found["newly_under_24"], found["newly_thin"]), ([], [], ["drill", "kettle"]))
 
     def test_the_searches(self) -> None:
         def cards(*titles: str, recommended: str = "") -> list[list]:
