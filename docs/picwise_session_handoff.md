@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (10:30 Athens: task 7 begun, the look's first finding, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (11:50 Athens: task 7's look done, its findings mended, not deployed, waits for the owner's answers and his «ανέβασε»; 10:30 Athens: task 7 begun, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,40 +8,54 @@ a decision came about.
 
 ## Next conversation: start here
 
-- **FIRST (22/11, 10:30 Athens): task 7 (FABLE, Claude Fable 5.2) BEGUN and NOT finished: the look before the
-  «ανέβασε» of the checks. Nothing built, nothing deployed, the switch false.** The owner, 10:28: «Πάμε να συνεχίσουμε
-  σε άλλη συζήτηση εδώ είναι τεράστια και το κόστος πάρα πολύ»: go on from here, on Fable 5.2, in a new conversation.
-  Read so far: the rules, `verdicts.py`, `brakes.py`, `ledger.py`, `checks_applied.py`, `deploy.sh`. **Not read yet:**
-  `deployment/bot/shop_checks_bot.py`, `check_photos.py` (its strict mode), `state.py` (where `apply_checks` sits), the
-  cap's gate. **Not done yet:** the server's state today (`server-health.yml` by hand: the site's memory after the
-  night; `prepare-runs.yml`, `since=-30h`: the shops' bot's first round with both links), the bigger look, the report.
-  - **Found, confirmed by a run of the ledger's own code (must be mended before the «ανέβασε»):** a product cut as
-    "never checked" on its shop's day 4 (also "not passed in 30 nights", "old feed, no fresh reading") **is never asked
-    again**: `checks_applied` marks it cut like a failed one, so it is no product a card can show, never reaches the
-    cap, is never a candidate, and `ledger.asking_order` asks a row not shown only when it is failed and due, a
-    candidate, or of a shop out. The rules (9.3, 9.4) say it is not shown *until it is* checked, the cap naming it a
-    candidate. A way: such a product is not marked cut; it leaves the cap's memory of the night before and waits at the
-    gate (`may_enter` false), so the cap names the next ones as candidates; or `asking_order` asks the cut rows never
-    decided. With a test that walks the whole way (cut on day 4, asked, passed, back).
-  - **Read, to be checked and settled:** (a) **the pace**: one request at a time a shop, 3 s apart *plus each answer's
-    time*; Tooled Up 68,508 pages, InStock UK about 77,000 products past its catalogue's 25,000, GamingKit 48,126: a
-    timed look (`--sample 300 --minutes 25` on a few large shops) gives requests an hour a shop, so how many products
-    would be "never checked" on day 4; (b) **the category's brake** (`checks_applied.CATEGORY_BRAKE_SHARE`) divides by
-    every row `apply_checks` is given (the whole intake), not by the products shown: weaker than "10% of the products";
-    better the share with none among the rows the AI answered; (c) **the two proposals that wait for his yes are built
-    as written and would go live with the deployment**: a shop in no Awin list, suspended or offline out (usmile), and
-    a feed over 7 days old (35 shops, 12,684 products on 21/11): either two flags in `data/checks_owner_words.json`,
-    off until his yes (only "rejected" is his word), or his answer with the «ανέβασε»; (d) **the strict photo check
-    starts at the deployment itself** (`deploy.sh` starts `picwise-photos.service`; with the switch true any failure is
-    cut within the hour, behind its own brakes): count first what it would cut; `verdicts.photo_verdict` reads a
-    content type that is neither `image/` nor `application/octet-stream` as no image (S3's default is
-    `binary/octet-stream`): see how `check_photos.py` itself tells an image; (e) Dean Morris Cards (869 products): 10
-    of 10 gone in the look; on a live night held for the owner (fewer than 20 passes): ask him with a bigger sample;
-    (f) `ledger._shop_night`'s docstring still says day 15 (the code: day 4).
-  - **The deployment, when he says «ανέβασε»:** a fast-forward of `ccr-1361f1a7-dcpo60` (at `00f7078`, an ancestor of
-    the work branch) to the commit that sets `data/checks_switch.json` true; it prepares again (about 28 min, peak
-    about 14.9 GB: read the site's memory first), installs 17 units; the bot's first night is the next morning's.
-    Everything together (owner, 22/11). Then the reminder of the two proposals, if not answered with it.
+- **FIRST (22/11, 11:50 Athens): task 7 (FABLE, Claude Fable 5.2): the look DONE, its findings MENDED on the work
+  branch; NOT deployed; `data/checks_switch.json` false. WAITS for the owner's answers and his «ανέβασε».**
+  (PROGRESS.md, 22/11 11:50; the numbers of every look: `docs/PICWISE_CHECKS_RULES.md`, sections 16 and 17.)
+  - **Put to the owner in the conversation of 22/11 (10:31 Athens on), each waiting for his word:** (1) the two
+    Proposed rules: a feed over 7 days old (35 shops, 12,684 products on 21/11), and a shop suspended, closed or
+    offline at Awin (usmile, 28 products): each **off** in `data/checks_owner_words.json` (`old_feed_rule`,
+    `awin_closed_out`) until his yes; (2) Dean Morris Cards (869 products): 100 of 100 gone at the page a visitor's
+    button opens; held for his «κόψε» (`cut_held_shops` in the same file, with its date in `words`); (3) the
+    «ανέβασε». Read his answers in that conversation's last messages, or ask again: nothing of the three is decided
+    by this file.
+  - **Mended, with tests** (`92eed0f`, `28f74a7`, `0051ed4`, `d235d55`, `71d5e77`): a product never asked by its shop's
+    day 4 is not cut, it waits at the cap's gate, is named a candidate that night and asked the next; the gate on a
+    night with no pool of the night before holds back only the products not checked (it would have held the whole
+    site); the two Proposed rules off until his yes; the category's brake counts among the rows answered; a photo
+    is no image or empty only on a GET's word; a Shopify product is asked at its own page before it is called gone;
+    a look prints each shop's pace and stock words. `tests/test_picwise_checks_walk.py` walks nights through the
+    ledger and the preparation's own cap together: use it for any change to either side.
+  - **What the deployment will do, as the looks measured** (told to the owner in plain numbers): the morning after,
+    about 13,300 products with no category leave (3.4%) and new products wait for their check; over the first three
+    nights about 3% of the products asked fail and are cut (gone, moved), about 22,000 are hidden as out of stock
+    on their shop's own page (PCHUB.UK, GamingKit, MoreThisWay: the shops' own `OutOfStock`), a few thousand show
+    the page's price; **on day 4** nine shops that cannot be checked leave (about 45,000: Plusshop UK, Bazta UK,
+    Aosom UK, Luxe Mattress Affiliation, TV Cables, InterRose, Juicy Couture UK, Pro-Camera, Elixir Garden
+    Supplies) and about 25,000 products the bot has not asked yet are not shown (InStock UK about 23,000: a whole
+    round of it is 4.6 days), their places refilled by products that passed over one to two days. The strict photo
+    check leaves out nothing more (no photo the night's check could not read; 3,985 of 3,989 read).
+  - **The deployment, when he says «ανέβασε»** (everything together; owner, 22/11): the site holds 6.7 to 6.9 GB
+    after a night and a preparation peaks at 15.1 GB of the server's 22.9, so **two fast-forwards of
+    `ccr-1361f1a7-dcpo60`** (at `00f7078`): first to `f42bffa` (the checks' core, not wired: no preparation while the
+    file in place is under 24 hours old; it restarts the site, about 4.5 GB); read the site's memory
+    (`prepare-runs.yml` by hand); then to the commit that sets `data/checks_switch.json` true and holds his words
+    in `data/checks_owner_words.json` (prepares, about 29 minutes; installs 17 units; starts the photos' check and
+    the bot's round: its first night is the next morning's). Before it: the Tests run green on the work's head.
+    After it: the deployment's run, `server-health.yml`, the bot's first lines (`prepare-runs.yml`), and the next
+    morning the health run's "checks" lines; day 1's letter to the shops that refuse the bot
+    (`docs/PICWISE_CHECKS_LETTER.md`).
+  - **Known, not mended (each a later step, none stops the «ανέβασε»):** the bot is started by its timer at 05:30
+    UTC and by a deployment only: a stop by day (a reboot, memory) is not started again, and the lost day counts in
+    the first round's 3 days (more products not asked on day 4); a failed product in a category at its size is
+    known to the bot the night after its cut and then only when the cap names it a candidate (rules 8.1 give it
+    three nights); the proof of a page reader's stock is its agreement with the feed (7.5): PCHUB.UK's is 71% to
+    75%, near the 70% line, and under it none of its sold-out products is hidden; Gains Nutrition's pages say
+    `BackOrder` for 46 of 100 (not in stock by 5.2, Proposed; its reader not proven, so nothing changes today);
+    the prices' readers not proven (InStock UK, Finediam, ANCHOR & CREW, Natkina, WAU, MOH, Optimum Nutrition UK,
+    Webbs Motorcycles): the feed's prices stand, a look names each cause (7.5); the bot reads pages on one
+    processor: with every shop asked at once a request takes twice as long (the first hours of each day).
+  - The Greek page of the rules in the Project's docs (`claude/PicWise-kanones-elegchon.md`) was not changed: no
+    decision of the owner changed. Change it with his answers (the two Proposed rules).
 - **(22/11, 10:18 Athens): task 5 (OPUS) DONE, on the work branch; NOT deployed; the switch false. Next: task 7 (FABLE).**
   (PROGRESS.md, 22/11 06:10.) Built since 01:10: the walls told from pages (`21953a1`, `85d9fc7`), the night's numbers
   in the daily email and the letter (`0fe6829`), the category (`e8c044e`); read-only looks on the server.

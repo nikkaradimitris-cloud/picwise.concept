@@ -36,6 +36,12 @@ Each rule names whose it is:
   πίσω όλα τα προϊόντα, με τη λέξη σου.
 - Νέο προϊόν μπαίνει μόνο αφού περάσει τον έλεγχο. Τη θέση όσων κόπηκαν την παίρνουν
   προϊόντα που πέρασαν.
+- Προϊόν που το bot δεν πρόλαβε να ελέγξει μέσα στις 3 μέρες δεν φαίνεται μέχρι να ελεγχθεί.
+  Δεν «κόβεται»: περιμένει στη σειρά, ρωτιέται την επόμενη μέρα και γυρίζει μόλις περάσει.
+- Δύο κανόνες που σου έχω προτείνει ΔΕΝ ισχύουν μέχρι να πεις «ναι»: (α) προϊόν από feed
+  παλαιότερο των 7 ημερών φαίνεται μόνο με πρόσφατη ανάγνωση του site του· (β) κατάστημα
+  που η Awin το έχει σε αναστολή, κλειστό ή offline βγαίνει. Το κατάστημα που απορρίπτει την
+  αίτησή μας βγαίνει έτσι κι αλλιώς (απόφασή σου).
 - Το AI δίνει σε κάθε προϊόν κατηγορία μία φορά. Όποιο δεν μπαίνει σε κατηγορία βγαίνει, και
   νέο προϊόν μπαίνει μόνο αφού πάρει κατηγορία (απόφασή σου, 21/11).
 - Κατάστημα με «φράχτη» για ρομπότ δεν το παρακάμπτουμε. Σου ετοιμάζεται ένα γράμμα για να του
@@ -306,15 +312,17 @@ is out, never forced in.
    - joined: in.
    - rejected: out from that night (owner, 21/11: «Βγαίνουν»); back the night it is joined.
    - suspended, or in none of Awin's lists (a programme closed): out likewise (Proposed:
-     the same reason, no partnership; 2 shops, 28 products on 21/11).
+     the same reason, no partnership; 2 shops, 28 products on 21/11). **Built off until his
+     yes** (22/11, task 7; `data/checks_owner_words.json`, `awin_closed_out`): until then
+     such a shop stays and the night's note names it.
    - not joined, or pending: in (owner, 21/11, 16:51: the applications first). The button
      of a shop the account is not joined to opens the shop (the owner's tap on InStock UK,
      22/11; section 13, 1).
    - Awin's link status `offline` (advertisers upgraded from ShareASale): Awin sends the
      shop's links to the publisher's fallback address, or to its page "This link is
      inactive". The shop is out while offline, back the night it is online (Proposed: the
-     button would not reach the shop). The owner sets a fallback address in his Awin
-     profile.
+     button would not reach the shop; **off until his yes**, with the line above). The
+     owner sets a fallback address in his Awin profile.
    - A night Awin's API does not answer changes nothing: the last reading stands, and
      after 7 such nights the report says so.
    - A reading of Awin (relationships, link status, the feeds' ages) that would put out,
@@ -326,7 +334,10 @@ is out, never forced in.
    days old, the feed's word on stock and price is old: a product of it is shown only with
    a reading of its shop's own site of the last 3 nights. From the end of the shop's first
    round (9.3). A feed the list does not show has no known age and is not judged by it. On
-   21/11: 35 shops, 12,684 products (MoreThisWay since 16/09).
+   21/11: 35 shops, 12,684 products (MoreThisWay since 16/09). **Built off until his yes**
+   (22/11, task 7; `data/checks_owner_words.json`, `old_feed_rule`): until then a feed's
+   age changes nothing. With it, such a product is not cut: it waits as 9.3 says, and a
+   candidate of such a shop enters only with a reading of that night.
 
 ## 6. What is cut, and when
 
@@ -338,9 +349,10 @@ is out, never forced in.
 | A product sold out on its shop's site (5.2) | that night, hidden as out of stock | Owner, 12/11 |
 | A price far apart (7.5) | that night | Proposed |
 | A shop rejected at Awin | that night | Owner, 21/11 |
-| A shop suspended, closed or offline at Awin | that night | Proposed |
+| A shop suspended, closed or offline at Awin | that night | Proposed; off until his yes |
 | A shop that cannot be checked | on its day 4 | Owner, 22/11 |
-| A product of an old feed with no fresh reading of its shop | from the end of its shop's first round | Proposed |
+| A product of an old feed with no fresh reading of its shop | not shown, from the end of its shop's first round | Proposed; off until his yes |
+| A product never asked, or not passed in 30 nights (9.3) | not shown until checked, from the end of its shop's first round; it waits, it is not cut | Owner, 22/11 |
 | A new product never asked | it does not enter | Owner, 21/11 |
 
 Not cut: a price that differs (the page's price is shown); a price not tied to its row; a
@@ -453,7 +465,9 @@ Owner, 21/11: «Τη θέση τους μέσα στο όριο των 12.000 τ
    never asked: they stay as they are until asked. A shop's first round is over the night
    every product it has in the catalogue has been asked once, or 3 days after its first
    night, whichever comes first. From then a product of it never asked, or not passed in 30
-   nights, is not shown until it is.
+   nights, is not shown until it is. No check of it failed: it is not cut. It leaves the
+   cap's memory of the night before and waits at the gate as a new product does (4 below),
+   so the cap may name it a candidate that same night and the bot asks it the next.
 4. **A place left free goes only to a product whose checks passed.** A product never asked
    takes no place: the cap names it a candidate. For each kind with places open, the
    products it would choose next by its own order, one and a quarter times the places open
@@ -520,8 +534,10 @@ email carries the same numbers in Greek (his plan, step 12).
    **Answered 22/11, 03:24 Athens**, by the owner's own tap on a button of InStock UK (not
    joined): «Το in stock μπαίνει»: the shop opens. Whether Awin counts such a sale for a
    commission is not known (likely not, with no partnership): never claimed.
-2. **Proposed, his yes to come** (each built as written until he says otherwise): a feed
-   over 7 days old (5.6.4); a shop suspended, closed or offline at Awin, and the stop on a
+2. **Proposed, his yes to come** (each built as written until he says otherwise, **but the
+   first two, which he asked to be reminded of (21/11) and which are built off until his
+   yes**: `data/checks_owner_words.json`): a feed
+   over 7 days old (5.6.4); a shop suspended, closed or offline at Awin (5.6.3); the stop on a
    reading of Awin that would put out many shops at once (5.6.3); a shop's 3 days
    starting afresh only after 7 nights checked (5.6.2); the category asked again only when
    the question changes (5.5); the brakes' numbers (7.2 to 7.4, 7.6); a reader proves
@@ -634,3 +650,91 @@ Where: `src/picwise_checks` (verdicts, brakes, the ledger, the page reader, rows
 `deployment/server/check_photos.py`, the category's morning in `deployment/server/shelves_service.py`
 (`picwise-shelves.service`, `.timer`); looks on the server, read-only:
 `.github/workflows/server-checks-look.yml`, `.github/workflows/server-look-unread.yml`.
+
+## 16. The look of task 7 (22/11): what it found and what was mended before the «ανέβασε»
+
+The look walked the ledger and the preparation's side together, night after night
+(`tests/test_picwise_checks_walk.py`), and looked on the server, read-only (section 17 gives
+the numbers). Mended on the work branch, **not deployed**:
+
+1. **A product not shown until it is checked is not cut** (9.3). As built, a product never
+   asked by its shop's day 4 (or not passed in 30 nights) was marked cut like a failed one:
+   the cap never saw it that night, the bot did not ask it the night after, and in a
+   category at its size its place went to another product before it could be named for it.
+   Now the decisions name it apart (`wait`); the preparation does not mark it, takes it out of
+   the cap's memory of the night before and holds it at the gate; the cap may name it a
+   candidate that night; the bot asks it the next; it is back the night it passes.
+2. **The two Proposed rules he asked to be reminded of are off until his yes** (5.6.3's
+   suspended, closed or offline; 5.6.4's old feed): `data/checks_owner_words.json`,
+   `awin_closed_out` and `old_feed_rule`, false. A rejected shop is out either way.
+3. **The category's brake** (5.5, 15.14) counts among the rows the AI answered (a line, or
+   none), not among every row of the feed: the feed has about seven rows for each product
+   shown, most never asked, so a tenth of them was more than every product with an answer.
+4. **The photo** (5.4, 15.5): a photo is no image, or empty, only when a GET says so (a HEAD
+   that says it is asked again with a GET of one byte); a bare binary type
+   (`binary/octet-stream`, a store's default) is a photo's.
+5. **A night with no memory of the night before**: the cap's pool file missing or unreadable
+   reads as an empty pool, and the gate would then take every product for a new one and hold
+   the whole site back. On such a night the gate holds back only the products named as not
+   shown until checked; the preparation's note says so (`gate_off`) and the health run
+   passes a limit.
+6. **A Shopify product is asked at its own page before it is called gone** (5.1, 15.4): a
+   `.js` answers 404 for a product the shop renamed, while its own address sends a visitor
+   on to the new one. A `.js` 404 is followed by one request for the page, judged as any
+   shop's page (the same product at a new address passes; the home page or a collection is
+   moved; a 404 is gone).
+7. For a look only: each shop's pace (requests, seconds, its crawl-delay) and the shops' own
+   stock words behind a sold-out reading.
+
+## 17. The looks of task 7 on the server (22/11, read-only): the numbers
+
+Nothing written on the server; counts and shop names only. Runs: the health and the
+preparation's runs 45003593319, 45003595123; the bot, 100 products a shop, every shop
+45004081526; the photos 45005122012; the pace of the six largest shops 45005863163; the
+shops with products called gone, asked at their own page first, and the stock words
+45006137403.
+
+- **The catalogue that morning**: 398,994 products of 135 shops; the night's preparation 28.6
+  minutes, peak 15.1 GB; the site 6.7 to 6.9 GB after the night's swap (a preparation beside
+  it by day needs the site restarted first); the shops' bot's first round with both links:
+  143 of 145 shops with an address, 706 requests, 100,274 products known.
+- **The page** (100 a shop, 9,531 asked of 135 shops, 8,629 decided): passed 8,355 (96.8%),
+  failed 274: gone 262, moved 4, not a product page 4, another product 2, a price far apart
+  2. Three shops hold 171 of them. Asked again with a product's own page asked before it is
+  called gone (16.6): no product called gone was found passed at its page; 94 of 254 are
+  moved (the shop's site sends the visitor to another page), the rest gone there too.
+  **Dean Morris Cards: 100 of 100 gone at the page a visitor's button opens** (held for the
+  owner: under 20 passes on record); Happy Days Factory Flowers 56 of 100 moved (held one
+  night by its brake); Bern Helmets (UK) 15 of 15 moved (cut: under 20 decided, no brake).
+- **Shops that cannot be checked, day 1**: Aosom UK, InterRose, TV Cables (robots.txt
+  refused), Bazta UK, Plusshop UK, Elixir Garden Supplies, Luxe Mattress Affiliation (a wall),
+  Juicy Couture UK (no address of its own), Pro-Camera (its pages not read): nine shops,
+  about 45,000 products, out on their day 4.
+- **Prices**: tied readings the same as the feed's in most shops; 73 of 8,355 passed would
+  show the page's price (shops whose reader is proven). Not proven, so the feed's price
+  stands: InStock UK (20 of 93 the same, then 54 of 216; the commonest ratio 1.19: its
+  `.js` prices read as another currency), Finediam (0 of 99; 1.08), ANCHOR & CREW (0 of 84;
+  1.2), Natkina, WAU, MOH, Optimum Nutrition UK, Webbs Motorcycles. Each wants a look that
+  names the cause (7.5).
+- **Stock**: where the page reader is proven, a product its shop's own page calls out of
+  stock is hidden (owner, 12/11). PCHUB.UK 25 of 99 and 47 of 164, GamingKit 14 of 90 and 46
+  of 248, MoreThisWay 15 of 96, Sport and Leisure UK 6 of 93: the shops' own word is
+  `OutOfStock` in every one. About 22,000 products of the catalogue by these shares. PCHUB.UK's
+  reader agrees with the feed on 71% to 75% of its readings, near the 70% the proof asks:
+  under it nothing of the shop is hidden. Gains Nutrition's pages say `BackOrder` for 46 of
+  100 (read as not in stock by 5.2, Proposed): its reader is not proven, so nothing changes.
+- **The photos** (5.4): the night's check holds 278,946 read and 6,601 gone of the catalogue's
+  285,547 photos, **none it could not read**; 3,989 asked as the strict check asks (40 a
+  shop, 131 shops): 3,985 read, 4 gone (404), no refusal, none that is no image or empty, no
+  host that refuses. The strict check starting at the deployment leaves out nothing more.
+- **The pace** (4.7), seconds a request, each shop alone: InStock UK 3.3 (and none of 324
+  products asked was among its catalogue's first 25,000: each is asked by its own `.js`),
+  Tyres UK 3.3, Tooled Up 4.1, GamingKit 4.3, PCHUB.UK 6.3 to 6.5, Tirendo UK 10.0 (its
+  crawl-delay). With every shop asked at once (140 workers) GamingKit gave 10 s a request:
+  the bot reads pages on one processor. A round of the whole shop: InStock UK about 103 hours
+  (4.6 days of the bot's 21.6 hours), PCHUB.UK 85, Tooled Up 78, GamingKit 58. The first
+  round's four rounds give about 80 hours: **about 23,000 products of InStock UK, and up to
+  a few thousand of PCHUB.UK and Tooled Up, are not asked by day 4**, are not shown from
+  that night (9.3), and their places are refilled by products that passed over the next one
+  to two days.
+
