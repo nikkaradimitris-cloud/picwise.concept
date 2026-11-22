@@ -37,9 +37,10 @@ a decision came about.
     **Then task 7 (FABLE):** a look with a bigger sample, and the deployment that turns the switch true (the owner's
     answer 4: no nights of report only). Until then never push the work branch to the site's for anything else without
     saying that the checks' bot and timer go with it (the switch false: it would ask and record, not cut).
-  - **The owner's reminder, asked 22:26:** at the end of each work, remind him of his tap on a button of a shop not
-    joined at Awin (InStock UK or Tooled Up: does the shop open?) and of the two proposals (a feed over 7 days old; a
-    shop closed, suspended or offline at Awin). Also to tell him: Dean Morris Cards' products lead nowhere on its site.
+  - **The owner's reminder, asked 22:26:** at the end of each work, remind him of the two proposals that wait for his
+    yes (a feed over 7 days old; a shop closed, suspended or offline at Awin). **His tap is done** (22/11 03:24: «Το in
+    stock μπαίνει»: the button of InStock UK, not joined at Awin, opens the shop; whether such a sale earns a
+    commission is not known, never claimed). Also told him: Dean Morris Cards' products lead nowhere on its site.
 - **(21/11, 20:35 Athens): task 4 of the work split by model (FABLE) DONE: the checks' rules
   written, `docs/PICWISE_CHECKS_RULES.md`. Records only: nothing built, nothing deployed.** (owner, 17:22,
   the model set to Fable 5.2: «Ωραία το έβαλα ξεκίνα»; PROGRESS.md, 21/11 20:35.)
@@ -63,8 +64,8 @@ a decision came about.
   - **Proposed, his yes to come** (the rules' section 13; told to him in the closing message): a product of
     a feed over 7 days old shown only with a reading of its shop of the last 3 nights; a shop suspended,
     closed or offline at Awin out; the brakes' numbers; the category asked again only when the question
-    changes; the rest listed there. **Open, his:** what a visitor meets behind the button of a shop the
-    account is not joined to (150 shops, 83.1%): one tap of his own on such a button tells.
+    changes; the rest listed there. **Answered 22/11 03:24:** the button of a shop the account is not joined
+    to opens the shop (his tap on InStock UK).
   - **Next by the split: task 5 is OPUS** (the ledger and the per-shop bots, built to these rules; its
     section 14 is for the builder): the owner switches back to Opus 5.5. Task 7 (FABLE) is the look before
     the «ανέβασε» of the built checks: of the same day, not nights of report only. **The button with no dead end DEPLOYED** 21/11 22:28 Athens on the owner's «Ωραία ανέβασε το» (run

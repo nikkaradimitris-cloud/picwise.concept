@@ -302,9 +302,9 @@ is out, never forced in.
    - rejected: out from that night (owner, 21/11: «Βγαίνουν»); back the night it is joined.
    - suspended, or in none of Awin's lists (a programme closed): out likewise (Proposed:
      the same reason, no partnership; 2 shops, 28 products on 21/11).
-   - not joined, or pending: in (owner, 21/11, 16:51: the applications first). What a
-     visitor meets behind the button of a shop the account is not joined to is not known
-     (section 13, 1).
+   - not joined, or pending: in (owner, 21/11, 16:51: the applications first). The button
+     of a shop the account is not joined to opens the shop (the owner's tap on InStock UK,
+     22/11; section 13, 1).
    - Awin's link status `offline` (advertisers upgraded from ShareASale): Awin sends the
      shop's links to the publisher's fallback address, or to its page "This link is
      inactive". The shop is out while offline, back the night it is online (Proposed: the
@@ -511,9 +511,10 @@ email carries the same numbers in Greek (his plan, step 12).
 
 ## 13. Open: the owner's to say
 
-1. **What a visitor meets behind the button of a shop the account is not joined to** (150
-   shops, 83.1% of the products). No machine may press it. One tap of the owner's own on
-   such a button tells.
+1. ~~What a visitor meets behind the button of a shop the account is not joined to~~
+   **Answered 22/11, 03:24 Athens**, by the owner's own tap on a button of InStock UK (not
+   joined): «Το in stock μπαίνει»: the shop opens. Whether Awin counts such a sale for a
+   commission is not known (likely not, with no partnership): never claimed.
 2. **Proposed, his yes to come** (each built as written until he says otherwise): a feed
    over 7 days old (5.6.4); a shop suspended, closed or offline at Awin, and the stop on a
    reading of Awin that would put out many shops at once (5.6.3); a shop's 3 days
