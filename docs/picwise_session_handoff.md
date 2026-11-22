@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (10:30 Athens: task 7 begun, the look's first finding, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (11:50 Athens: the daily session, the week's summary, stopped at task 7 for the model; 10:30 Athens: task 7 begun, the look's first finding, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,6 +8,11 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **(22/11, 11:50 Athens, the daily session, Sunday): the week's summary; nothing changed. The next step is still task 7
+  (FABLE), below: this session was not on Fable 5.2, so it stopped and asked the owner to change the model.** Seen:
+  the night's memory, the site and the preparation together, 21.1 GB, over the limit of 20 (22.5 on 21/11, before the
+  memory fix): to be watched, and read before the checks' deployment, which prepares again. The Sunday tidy-up of the
+  branches had not run by 09:50 UTC: read its run tomorrow (and whether it deleted `ccr-99b47f03-l8t4dj`).
 - **FIRST (22/11, 10:30 Athens): task 7 (FABLE, Claude Fable 5.2) BEGUN and NOT finished: the look before the
   «ανέβασε» of the checks. Nothing built, nothing deployed, the switch false.** The owner, 10:28: «Πάμε να συνεχίσουμε
   σε άλλη συζήτηση εδώ είναι τεράστια και το κόστος πάρα πολύ»: go on from here, on Fable 5.2, in a new conversation.
