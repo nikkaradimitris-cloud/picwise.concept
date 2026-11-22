@@ -955,6 +955,16 @@ his word of 17:21 puts it back.)
 6. **9.1's 30 nights** become the three nights of 19.3.1 for every shop (**Owner**, 17:35;
    9.3's "not passed in 30 nights" with them): a look before the «ανέβασε» counts what that
    hides (19.7).
+7. **Task 6's gate, its morning's job and its memory of what was shown** (`kind_itself`,
+   built 22/11, its switch false; `docs/PICWISE_KIND_ITSELF_RULES.md`) **stand as they
+   are**, after the checks' gate at the category cap; a shop's rule works before them. They
+   were built before this rule and have not run with it: the looks see them together. A
+   product a shop's rule leaves out is asked nothing. One that leaves by a pass over three
+   nights old and comes back keeps its answer (an answer stands until another takes its
+   place) and counts as no change for task 6's brakes, which count against what was shown
+   the night before. To weigh, not decided: a capped shop's candidates (2 above) named to
+   the morning's job as the category cap's are, so that they do not wait a night more once
+   task 6's gate is on.
 
 ### 19.7 The brake, the switch, what is reported
 
@@ -984,6 +994,11 @@ own word, told that two were proposed; 19.3.1). He asked for no more questions o
 
 ### 19.9 For the builder
 
+- **Task 6 lives in the same step.** The preparation (`tools/prepare_catalogue.py`: `_Cap`,
+  `_itself_job`, `write_itself_job`, `write_itself_shown`) carries task 6's gate, job and
+  memory of what was shown, pinned by `tests/test_picwise_kind_itself.py` and
+  `tests/test_picwise_prepared_catalogue.py`. Build the shop's rule beside them and keep
+  them as they are (19.6.7).
 - What exists: the same product by its code (`product_identity.same_product_key`); the
   category cap's shares and spread (`catalogue_cap.fair_quotas`, `_spread`, `part_of`, its
   ranks of clean products, its memory of the night before and its gate, `may_enter`, with
