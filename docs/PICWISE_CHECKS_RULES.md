@@ -1390,7 +1390,7 @@ mends of 20.7.2; copied 06:27 UTC); the health run by hand, 45119975809 (`main`)
   held 9.0 GB after reading the night's catalogue (7.3 on 22/11): 23.6 GB together, over
   the health run's 20 as on 22/11 (21.7).
 - **The AI's categories of that morning came after the preparation** (`picwise-shelves`,
-  05:20 UTC: 27,956 asked and $2.03 by 05:50; more answers in its file by 06:27). The
+  05:20 UTC: 27,956 asked and $2.03 by 05:54; more answers in its file by 06:27). The
   look's copies hold them, so its "switch off" is the catalogue the server would prepare
   next from that morning's files, not the one it showed that morning: **362,432 products at
   05:42 (29,274 with no category), 355,114 at 06:27 (35,854)**. Two things in it, neither
@@ -1532,7 +1532,7 @@ candidates the next night.)
    day are never reached. What it would gain: about 2,000 to 4,500 products of GamingKit
    shown that are not shown elsewhere.
 2. 20.3.1 and 20.3.3 stand as written. Of 20.3.3: the AI's morning of 23/11 was asked
-   27,956 products for $2.03 by 05:50 UTC and went on; with the rule the candidates named
+   27,956 products for $2.03 by 05:54 UTC and went on; with the rule the candidates named
    are 34,148 against 31,425 without it, so the rule adds little to that.
 
 #### 20.7.5 For the «ανέβασε»
