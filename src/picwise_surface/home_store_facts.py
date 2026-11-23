@@ -30,6 +30,7 @@ import logging
 import os
 import threading
 from collections import Counter
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Callable, Iterable
 
@@ -38,7 +39,17 @@ from picwise_providers.product_offers import offers_covering
 from picwise_providers.state import loaded_prepared_at
 from picwise_search import resolve_live_search
 
-from .home_store import HomeFacts, HomeLists, Kind, OfferCard, Pick, home_store_on, load_home_lists
+from .home_store import (
+    Departments,
+    HomeFacts,
+    HomeLists,
+    Kind,
+    OfferCard,
+    Pick,
+    home_store_on,
+    load_departments,
+    load_home_lists,
+)
 from .reference import _build_price_first_cards, provider_feed_cards_will_render
 from .shop_names import shop_display_name
 
@@ -47,9 +58,10 @@ logger = logging.getLogger(__name__)
 # The shops named on the page (the specification, 5.9), and the offers in its row (5.5).
 TOP_SHOPS = 8
 TOP_OFFERS = 8
-_STATE: dict[str, Any] = {"facts": None}
+_STATE: dict[str, Any] = {"facts": None, "kinds": None}
 _WORK_LOCK = threading.Lock()
 _WATCHER: dict[str, Any] = {}
+_UNSET_KINDS: Any = object()
 
 
 def current_home_facts() -> HomeFacts | None:
@@ -63,6 +75,86 @@ def current_home_facts() -> HomeFacts | None:
 
 def set_home_facts_for_tests(facts: HomeFacts | None) -> None:
     _STATE["facts"] = facts
+
+
+@dataclass(frozen=True)
+class KindFacts:
+    """A department's kind tonight (the specification, 7.1): how many products its search
+    holds, the price of its cheapest card, its Recommended as its search shows it."""
+
+    count: int
+    low: str
+    pick: Pick | None
+
+
+@dataclass(frozen=True)
+class DepartmentsFacts:
+    prepared_at: datetime | None
+    kinds: dict[str, KindFacts]
+
+
+def current_kind_facts() -> DepartmentsFacts | None:
+    """The departments' facts of the catalogue this process answers from now, or None."""
+    facts = _STATE["kinds"]
+    if facts is None or facts.prepared_at != loaded_prepared_at():
+        return None
+    return facts
+
+
+def set_kind_facts_for_tests(facts: DepartmentsFacts | None) -> None:
+    _STATE["kinds"] = facts
+
+
+def _link_words(name: str) -> str:
+    """"See kettles", "See TVs": the name's first letter small unless it starts a word in
+    capitals."""
+    if len(name) > 1 and name[1].isupper():
+        return f"See {name}"
+    return f"See {name[:1].lower()}{name[1:]}"
+
+
+def kind_facts(name: str, query: str, resolution: Any) -> KindFacts | None:
+    """A kind's facts by its search's own cards, or None when it shows none."""
+    try:
+        if resolution is None or not provider_feed_cards_will_render(resolution):
+            return None
+        cards = _build_price_first_cards(resolution=resolution)
+    except Exception:
+        logger.exception("a department could not read the search %r", query)
+        return None
+    if not cards:
+        return None
+    count = int(getattr(resolution, "provider_feed_total_count", 0) or 0) or len(cards)
+    cheapest = next((card for card in cards if not card.get("recommended")), cards[0])
+    low = str(cheapest.get("price") or "").strip()
+    pick = recommended_pick(Kind(query=query, kind=name, link=_link_words(name), drawing=""), resolution)
+    return KindFacts(count=count, low=low, pick=pick)
+
+
+def work_out_kind_facts(
+    *,
+    departments: Departments | None = None,
+    search: Callable[[str], Any] = resolve_live_search,
+    prepared_at: datetime | None = _UNSET_KINDS,
+) -> DepartmentsFacts:
+    """Every department's kinds, each by its search (about 210 searches): worked out once
+    for each catalogue, never while a page is drawn."""
+    departments = departments if departments is not None else load_departments()
+    when = loaded_prepared_at() if prepared_at is _UNSET_KINDS else prepared_at
+    kinds: dict[str, KindFacts] = {}
+    for items in departments.kinds.values():
+        for item in items:
+            if item.query in kinds:
+                continue
+            try:
+                resolution = search(item.query)
+            except Exception:
+                logger.exception("a department's search for %r failed", item.query)
+                continue
+            fact = kind_facts(item.name, item.query, resolution)
+            if fact is not None:
+                kinds[item.query] = fact
+    return DepartmentsFacts(prepared_at=when, kinds=kinds)
 
 
 def recommended_pick(kind: Kind, resolution: Any) -> Pick | None:
@@ -230,6 +322,25 @@ def refresh_home_facts() -> HomeFacts | None:
         return facts
 
 
+def refresh_kind_facts() -> DepartmentsFacts | None:
+    """As `refresh_home_facts`, for the departments' kinds; worked out after the home
+    page's facts, so that those are never kept waiting for them."""
+    prepared_at = loaded_prepared_at()
+    if prepared_at is None:
+        return None
+    facts = _STATE["kinds"]
+    if facts is not None and facts.prepared_at == prepared_at:
+        return facts
+    with _WORK_LOCK:
+        facts = _STATE["kinds"]
+        if facts is not None and facts.prepared_at == prepared_at:
+            return facts
+        facts = work_out_kind_facts(prepared_at=prepared_at)
+        if loaded_prepared_at() == prepared_at:
+            _STATE["kinds"] = facts
+        return facts
+
+
 def keep_home_facts_current(*, every_seconds: float = 20.0) -> threading.Event | None:
     """Start this worker's thread that keeps the facts current: while the switch is on
     (`home_store_on`), it works them out when the worker first answers from a catalogue
@@ -244,6 +355,7 @@ def keep_home_facts_current(*, every_seconds: float = 20.0) -> threading.Event |
             try:
                 if home_store_on():
                     refresh_home_facts()
+                    refresh_kind_facts()
             except Exception:  # the next look tries again; the page leaves out what it needs
                 logger.exception("the home page's facts could not be worked out")
             stop.wait(every_seconds)

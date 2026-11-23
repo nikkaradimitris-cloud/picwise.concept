@@ -81,7 +81,7 @@ BACKGROUND_PATH = "/assets/home/ov/"
 # B), "offers" (Part C), "pages" (Part D, the four pages). A link to a part not named here
 # is not drawn (the specification's section 6), so the page never leads to a page that
 # does not answer. Each part is added here with its routes, in the same commit.
-PARTS_BUILT: frozenset[str] = frozenset()
+PARTS_BUILT: frozenset[str] = frozenset({"departments"})
 PART_ADDRESSES = {
     "how_picwise_works": "/how-picwise-works",
     "how_we_choose": "/how-we-choose",
@@ -337,6 +337,75 @@ def _lists_from(payload: Any) -> HomeLists:
     )
 
 
+@dataclass(frozen=True)
+class DeptKind:
+    """A kind of a department (`data/home_departments.json`): its name as a visitor reads
+    it, written by hand; the words its tile and row search; its drawing, or none."""
+
+    kind: str
+    name: str
+    query: str
+    drawing: str
+
+
+@dataclass(frozen=True)
+class DeptGroup:
+    gid: str
+    name: str
+    departments: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class Departments:
+    groups: tuple[DeptGroup, ...]
+    kinds: dict[str, tuple[DeptKind, ...]]
+
+
+DEPARTMENTS_PATH = Path(__file__).resolve().parents[2] / "data" / "home_departments.json"
+_DEPARTMENTS_CACHE: dict[str, Any] = {"key": None, "departments": None}
+
+
+def load_departments() -> Departments:
+    """The departments' groups and kinds (the specification, 7.1), read again only when
+    their file changes; none when it is missing or unreadable."""
+    try:
+        stat = DEPARTMENTS_PATH.stat()
+        key = (str(DEPARTMENTS_PATH), stat.st_mtime_ns, stat.st_size)
+    except OSError:
+        return Departments(groups=(), kinds={})
+    if _DEPARTMENTS_CACHE["key"] == key:
+        return _DEPARTMENTS_CACHE["departments"]
+    try:
+        payload = json.loads(DEPARTMENTS_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        payload = {}
+    groups = tuple(
+        DeptGroup(
+            gid=_text(item.get("id")),
+            name=_text(item.get("name")),
+            departments=tuple(_text(slug) for slug in item.get("departments") or () if _text(slug)),
+        )
+        for item in (payload.get("groups") or () if isinstance(payload, dict) else ())
+        if isinstance(item, dict) and _text(item.get("id")) and _text(item.get("name"))
+    )
+    kinds: dict[str, tuple[DeptKind, ...]] = {}
+    raw = payload.get("kinds") if isinstance(payload, dict) else None
+    for slug, items in (raw.items() if isinstance(raw, dict) else ()):
+        kinds[_text(slug)] = tuple(
+            DeptKind(
+                kind=_text(item.get("kind")),
+                name=_text(item.get("name")),
+                query=_text(item.get("query")),
+                drawing=_text(item.get("drawing")),
+            )
+            for item in items or ()
+            if isinstance(item, dict) and _text(item.get("name")) and _text(item.get("query"))
+        )
+    departments = Departments(groups=groups, kinds=kinds)
+    _DEPARTMENTS_CACHE.update(key=key, departments=departments)
+    return departments
+
+
 def load_home_lists() -> HomeLists:
     """The page's lists, read again only when their file changes; empty lists when it is
     missing or unreadable (then the sections that need them are left out)."""
@@ -438,6 +507,11 @@ def _search_href(query: str) -> str:
 
 
 def _department_href(slug: str) -> str:
+    """A department's page; a department of one kind has none, and leads to that kind's
+    search (the specification, 7.1)."""
+    kinds = load_departments().kinds.get(slug, ())
+    if len(kinds) == 1:
+        return _search_href(kinds[0].query)
     return f"/department/{quote(slug, safe='-')}"
 
 
@@ -510,14 +584,21 @@ def search_box_html() -> str:
     )
 
 
-def _header_html(lists: HomeLists, parts: frozenset[str]) -> str:
+def _header_html(lists: HomeLists, parts: frozenset[str], *, nav_row: bool = True, current: str = "") -> str:
+    """The store's header; its departments' row on the home page and the departments'
+    pages only (`nav_row`), the department shown marked (`current`)."""
     nav = ""
-    if "departments" in parts and lists.departments:
+    if nav_row and "departments" in parts and lists.departments:
         nav = (
             '<nav class="pw-hs-nav" aria-label="Departments">'
             f'<a class="pw-hs-nav-all" href="{PART_ADDRESSES["departments"]}">{_MENU}{escape(ALL_DEPARTMENTS)}</a>'
             + "".join(
-                f'<a href="{_department_href(item.slug)}">{escape(item.short or item.name)}</a>'
+                (
+                    f'<a class="is-on" aria-current="page" href="{_department_href(item.slug)}">'
+                    if item.slug == current
+                    else f'<a href="{_department_href(item.slug)}">'
+                )
+                + f"{escape(item.short or item.name)}</a>"
                 for item in lists.departments
             )
             + "</nav>"
@@ -1033,6 +1114,7 @@ HOME_STORE_STYLES = (
     ".pw-hs-nav::-webkit-scrollbar{display:none;}"
     ".pw-hs-nav a{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:48px;min-width:48px;padding:0 8px;color:#dbe5f5;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap;}"
     ".pw-hs-nav a.pw-hs-nav-all{color:#fff;font-weight:700;}"
+    ".pw-hs-nav a.is-on{color:#fff;box-shadow:inset 0 -3px 0 var(--hs-gold);}"
     # the promise
     ".pw-hs-promise{padding:18px 16px 6px;}"
     ".pw-hs-eyebrow{margin:0;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--hs-acc);}"
@@ -1304,6 +1386,50 @@ def render_home_store_page(
         f"<script>{_SEARCH_SCRIPT}</script>"
         f"<script>{BROWSER_LISTS_SCRIPT}</script>"
         f"{'<script>' + TRENDS_SCRIPT + '</script>' if popular_html else ''}"
+        f"<script>{HOME_STORE_SCRIPT}</script>"
+        "</main>"
+        "</body></html>"
+    )
+
+
+def render_store_page(
+    *,
+    title: str,
+    main_html: str,
+    styles: str = "",
+    nav_row: bool = False,
+    current: str = "",
+    parts: frozenset[str] | None = None,
+    lists: HomeLists | None = None,
+) -> str:
+    """A page of the store other than the home page (the specification, section 7): the
+    store's header (its departments' row only where `nav_row`), the store's footer, the
+    site's own search box, History, Favourites and "What is PicWise?". Never indexed:
+    nothing of the store is declared to Google (section 2)."""
+    lists = lists if lists is not None else load_home_lists()
+    parts = PARTS_BUILT if parts is None else frozenset(parts)
+    return (
+        "<!doctype html>"
+        f'<html lang="{SITE_LANGUAGE}"><head>'
+        '<meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">'
+        f"{NOINDEX_META}"
+        f"<title>{escape(title)}</title>"
+        f"{icon_links_html()}"
+        f"{FONT_PRELOAD_HTML}"
+        f"<script>{HEAD_SCRIPT}</script>"
+        f"<style>{_PAGE_STYLES}{BROWSER_LISTS_STYLES}{HOME_STORE_STYLES}{styles}</style>"
+        '</head><body class="pw-hs-body">'
+        '<main class="pw-reference-viewport pw-hs">'
+        f"{_header_html(lists, parts, nav_row=nav_row, current=current)}"
+        f"{panels_html()}"
+        f'<div class="pw-hs-main">{main_html}'
+        f'<a class="pw-hs-back" href="#top">{_UP}{escape(BACK_TO_TOP)}</a></div>'
+        f"{_footer_html(parts)}"
+        f"<script>{_INFO_SCRIPT}</script>"
+        f"{_scanning_screen_html()}"
+        f"<script>{_SEARCH_SCRIPT}</script>"
+        f"<script>{BROWSER_LISTS_SCRIPT}</script>"
         f"<script>{HOME_STORE_SCRIPT}</script>"
         "</main>"
         "</body></html>"

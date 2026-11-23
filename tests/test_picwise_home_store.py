@@ -61,7 +61,13 @@ from picwise_surface.reference import render_picwise_reference_surface  # noqa: 
 from picwise_surface.trends import TrendRow, TrendsPanel, load_trends_panel  # noqa: E402
 
 ALL_PARTS = frozenset({"departments", "offers", "pages"})
-_NOT_BUILT = ("/departments", "/department/", "/offers", "/how-picwise-works", "/how-we-choose", "/our-checks", "/our-shops")
+_PART_PATHS = {
+    "departments": ("/departments", "/department/"),
+    "offers": ("/offers",),
+    "pages": ("/how-picwise-works", "/how-we-choose", "/our-checks", "/our-shops"),
+}
+# The addresses of the parts not built yet: never a link (the specification, section 6).
+_NOT_BUILT = tuple(path for part, paths in _PART_PATHS.items() if part not in home_store.PARTS_BUILT for path in paths)
 
 
 def _get(path: str, query: str = "") -> str:
@@ -300,7 +306,7 @@ class TheSectionsTests(unittest.TestCase):
         return _markup(render_home_store_page(**kwargs))
 
     def test_while_nothing_of_section_7_is_built_its_entries_are_not_drawn(self) -> None:
-        page = self._page()
+        page = self._page(parts=frozenset())
         for name in ("pw-hs-banners", "pw-hs-nav", "pw-hs-depts", "pw-hs-arrow"):
             self.assertNotIn(f'class="{name}', page, name)
         self.assertNotIn("How PicWise works ›", page)
@@ -314,9 +320,14 @@ class TheSectionsTests(unittest.TestCase):
         self.assertIn("/departments", links)
         for href in ("/how-picwise-works", "/how-we-choose", "/our-checks", "/our-shops"):
             self.assertIn(href, links)
-        # Banner 2's destination waits for the owner (the specification, 7.1): not drawn.
-        self.assertNotIn("Browse home", page)
-        self.assertEqual(page.count('class="pw-hs-banner pw-hs-banner-'), 3)
+        # Banner 2 to the first group of all departments (owner, 2026-11-24, 7.1).
+        self.assertIn('href="/departments#home-kitchen"', page)
+        self.assertIn("Browse home", page)
+        self.assertEqual(page.count('class="pw-hs-banner pw-hs-banner-'), 4)
+        # A department of one kind leads to that kind's search (7.1).
+        self.assertIn("/search?q=lamp", links)
+        self.assertNotIn("/department/lighting", links)
+        self.assertNotIn("/department/perfume", links)
         self.assertIn('class="pw-hs-banner pw-hs-banner-gold" href="/offers"', page)
         self.assertEqual(page.count('class="pw-hs-dept"'), 13)
 

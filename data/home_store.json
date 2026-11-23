@@ -19,7 +19,7 @@
       "line": "From UK shops, in stock only.",
       "button": "Browse home",
       "part": "departments",
-      "href": "",
+      "href": "/departments#home-kitchen",
       "drawings": [["robot_vacuum", "mist"], ["air_fryer", "sand"], ["coffee_machine", "white"]]
     },
     {

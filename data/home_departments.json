@@ -1,0 +1,1337 @@
+{
+ "_about": "The departments of the home page as a store (docs/PICWISE_HOME_STORE_SPEC.md, 7.1; the owner, 2026-11-24, «Ναι σε όλα»): their four groups and, for each, its kinds: every kind of data/kind_lines/google_lines_by_kind.json whose Google line is open in data/category_switches.json on 2026-11-24, in the department of that line (alloy wheels in Car tyres by hand). 'name' is what a visitor reads, written by hand; 'query' the words its tile and row search; 'drawing' its picture (assets/home/art), or none. A kind with no product tonight is not shown. Written by hand on 2026-11-24 from those two files; changed only by hand.",
+ "_πώς": "Για να αλλάξεις πώς λέγεται ένα είδος, άλλαξε το \"name\" του· για να μη φαίνεται, σβήσε τη γραμμή του.",
+ "groups": [
+  {
+   "id": "home-kitchen",
+   "name": "Home & kitchen",
+   "departments": [
+    "kitchen",
+    "home-appliances",
+    "furniture",
+    "lighting",
+    "garden"
+   ]
+  },
+  {
+   "id": "tech-tools",
+   "name": "Tech & tools",
+   "departments": [
+    "computers",
+    "tools",
+    "car-tyres"
+   ]
+  },
+  {
+   "id": "fashion",
+   "name": "Fashion",
+   "departments": [
+    "fashion",
+    "jewellery-watches",
+    "perfume"
+   ]
+  },
+  {
+   "id": "play-sport",
+   "name": "Play & sport",
+   "departments": [
+    "toys-games",
+    "sports"
+   ]
+  }
+ ],
+ "kinds": {
+  "computers": [
+   {
+    "kind": "smartphone",
+    "name": "Smartphones",
+    "query": "smartphone",
+    "drawing": ""
+   },
+   {
+    "kind": "mobile_phone",
+    "name": "Mobile phones",
+    "query": "mobile phone",
+    "drawing": ""
+   },
+   {
+    "kind": "desk_phone",
+    "name": "Desk phones",
+    "query": "desk phone",
+    "drawing": ""
+   },
+   {
+    "kind": "laptop",
+    "name": "Laptops",
+    "query": "laptop",
+    "drawing": "laptop"
+   },
+   {
+    "kind": "desktop_pc",
+    "name": "Desktop PCs",
+    "query": "desktop pc",
+    "drawing": ""
+   },
+   {
+    "kind": "monitor",
+    "name": "Monitors",
+    "query": "monitor",
+    "drawing": ""
+   },
+   {
+    "kind": "printer",
+    "name": "Printers",
+    "query": "printer",
+    "drawing": "printer"
+   },
+   {
+    "kind": "router",
+    "name": "Routers",
+    "query": "router",
+    "drawing": "router"
+   },
+   {
+    "kind": "access_point",
+    "name": "Access points",
+    "query": "access point",
+    "drawing": ""
+   },
+   {
+    "kind": "firewall",
+    "name": "Firewalls",
+    "query": "firewall",
+    "drawing": ""
+   },
+   {
+    "kind": "server",
+    "name": "Servers",
+    "query": "server",
+    "drawing": ""
+   },
+   {
+    "kind": "memory_card",
+    "name": "Memory cards",
+    "query": "memory card",
+    "drawing": ""
+   },
+   {
+    "kind": "network_switch",
+    "name": "Network switches",
+    "query": "network switch",
+    "drawing": ""
+   },
+   {
+    "kind": "media_converter",
+    "name": "Media converters",
+    "query": "media converter",
+    "drawing": ""
+   },
+   {
+    "kind": "network_card",
+    "name": "Network cards",
+    "query": "network card",
+    "drawing": ""
+   },
+   {
+    "kind": "keyboard",
+    "name": "Keyboards",
+    "query": "keyboard",
+    "drawing": ""
+   },
+   {
+    "kind": "mouse",
+    "name": "Mice",
+    "query": "mouse",
+    "drawing": ""
+   },
+   {
+    "kind": "webcam",
+    "name": "Webcams",
+    "query": "webcam",
+    "drawing": ""
+   },
+   {
+    "kind": "scanner",
+    "name": "Scanners",
+    "query": "scanner",
+    "drawing": ""
+   },
+   {
+    "kind": "storage_drive",
+    "name": "Hard drives & SSDs",
+    "query": "hard drive",
+    "drawing": ""
+   },
+   {
+    "kind": "usb_flash_drive",
+    "name": "USB flash drives",
+    "query": "usb flash drive",
+    "drawing": ""
+   },
+   {
+    "kind": "television",
+    "name": "TVs",
+    "query": "tv",
+    "drawing": ""
+   },
+   {
+    "kind": "speaker",
+    "name": "Speakers",
+    "query": "speaker",
+    "drawing": ""
+   },
+   {
+    "kind": "soundbar",
+    "name": "Soundbars",
+    "query": "soundbar",
+    "drawing": ""
+   },
+   {
+    "kind": "headphones",
+    "name": "Headphones",
+    "query": "headphones",
+    "drawing": "headphones"
+   },
+   {
+    "kind": "game_console",
+    "name": "Games consoles",
+    "query": "games console",
+    "drawing": ""
+   },
+   {
+    "kind": "game_controller",
+    "name": "Game controllers",
+    "query": "game controller",
+    "drawing": ""
+   },
+   {
+    "kind": "video_game",
+    "name": "Video games",
+    "query": "video game",
+    "drawing": ""
+   },
+   {
+    "kind": "camera",
+    "name": "Cameras",
+    "query": "camera",
+    "drawing": ""
+   },
+   {
+    "kind": "action_camera",
+    "name": "Action cameras",
+    "query": "action camera",
+    "drawing": ""
+   },
+   {
+    "kind": "microphone",
+    "name": "Microphones",
+    "query": "microphone",
+    "drawing": ""
+   },
+   {
+    "kind": "projector",
+    "name": "Projectors",
+    "query": "projector",
+    "drawing": ""
+   },
+   {
+    "kind": "amplifier",
+    "name": "Amplifiers",
+    "query": "amplifier",
+    "drawing": ""
+   },
+   {
+    "kind": "dash_cam",
+    "name": "Dash cams",
+    "query": "dash cam",
+    "drawing": ""
+   },
+   {
+    "kind": "tablet",
+    "name": "Tablets",
+    "query": "tablet",
+    "drawing": ""
+   },
+   {
+    "kind": "e_reader",
+    "name": "E-readers",
+    "query": "e-reader",
+    "drawing": ""
+   },
+   {
+    "kind": "graphics_card",
+    "name": "Graphics cards",
+    "query": "graphics card",
+    "drawing": ""
+   },
+   {
+    "kind": "processor",
+    "name": "Processors",
+    "query": "processor",
+    "drawing": ""
+   },
+   {
+    "kind": "ram_memory",
+    "name": "RAM",
+    "query": "ram",
+    "drawing": ""
+   },
+   {
+    "kind": "motherboard",
+    "name": "Motherboards",
+    "query": "motherboard",
+    "drawing": ""
+   },
+   {
+    "kind": "power_supply",
+    "name": "PC power supplies",
+    "query": "power supply",
+    "drawing": ""
+   },
+   {
+    "kind": "pc_case",
+    "name": "PC cases",
+    "query": "pc case",
+    "drawing": ""
+   },
+   {
+    "kind": "pc_cooling",
+    "name": "PC cooling",
+    "query": "cpu cooler",
+    "drawing": ""
+   },
+   {
+    "kind": "smart_speaker",
+    "name": "Smart speakers",
+    "query": "smart speaker",
+    "drawing": ""
+   },
+   {
+    "kind": "vr_headset",
+    "name": "VR headsets",
+    "query": "vr headset",
+    "drawing": ""
+   },
+   {
+    "kind": "tv_box",
+    "name": "TV boxes",
+    "query": "tv box",
+    "drawing": ""
+   },
+   {
+    "kind": "car_audio",
+    "name": "Car audio",
+    "query": "car stereo",
+    "drawing": ""
+   }
+  ],
+  "fashion": [
+   {
+    "kind": "work_gloves",
+    "name": "Work gloves",
+    "query": "work gloves",
+    "drawing": ""
+   },
+   {
+    "kind": "trousers",
+    "name": "Trousers",
+    "query": "trousers",
+    "drawing": ""
+   },
+   {
+    "kind": "work_trousers",
+    "name": "Work trousers",
+    "query": "work trousers",
+    "drawing": ""
+   },
+   {
+    "kind": "jeans",
+    "name": "Jeans",
+    "query": "jeans",
+    "drawing": ""
+   },
+   {
+    "kind": "jacket",
+    "name": "Jackets",
+    "query": "jacket",
+    "drawing": ""
+   },
+   {
+    "kind": "t_shirt",
+    "name": "T-shirts",
+    "query": "t-shirt",
+    "drawing": ""
+   },
+   {
+    "kind": "shirt",
+    "name": "Shirts",
+    "query": "shirt",
+    "drawing": ""
+   },
+   {
+    "kind": "hoodie",
+    "name": "Hoodies",
+    "query": "hoodie",
+    "drawing": "hoodie"
+   },
+   {
+    "kind": "sweater",
+    "name": "Jumpers",
+    "query": "jumper",
+    "drawing": ""
+   },
+   {
+    "kind": "dress",
+    "name": "Dresses",
+    "query": "dress",
+    "drawing": "dress"
+   },
+   {
+    "kind": "skirt",
+    "name": "Skirts",
+    "query": "skirt",
+    "drawing": ""
+   },
+   {
+    "kind": "shorts",
+    "name": "Shorts",
+    "query": "shorts",
+    "drawing": ""
+   },
+   {
+    "kind": "leggings",
+    "name": "Leggings",
+    "query": "leggings",
+    "drawing": ""
+   },
+   {
+    "kind": "swimwear",
+    "name": "Swimwear",
+    "query": "swimwear",
+    "drawing": ""
+   },
+   {
+    "kind": "pyjamas",
+    "name": "Pyjamas",
+    "query": "pyjamas",
+    "drawing": ""
+   },
+   {
+    "kind": "suit",
+    "name": "Suits",
+    "query": "suit",
+    "drawing": ""
+   },
+   {
+    "kind": "safety_vest",
+    "name": "Hi-vis vests",
+    "query": "hi vis vest",
+    "drawing": ""
+   },
+   {
+    "kind": "raincoat",
+    "name": "Raincoats",
+    "query": "raincoat",
+    "drawing": ""
+   },
+   {
+    "kind": "shoes",
+    "name": "Shoes",
+    "query": "shoes",
+    "drawing": ""
+   },
+   {
+    "kind": "athletic_shoes",
+    "name": "Trainers",
+    "query": "trainers",
+    "drawing": "sneaker"
+   },
+   {
+    "kind": "running_shoes",
+    "name": "Running shoes",
+    "query": "running shoes",
+    "drawing": ""
+   },
+   {
+    "kind": "boots",
+    "name": "Boots",
+    "query": "boots",
+    "drawing": "boot"
+   },
+   {
+    "kind": "hiking_boots",
+    "name": "Hiking boots",
+    "query": "hiking boots",
+    "drawing": ""
+   },
+   {
+    "kind": "safety_shoes",
+    "name": "Safety shoes",
+    "query": "safety shoes",
+    "drawing": ""
+   },
+   {
+    "kind": "sandals",
+    "name": "Sandals",
+    "query": "sandals",
+    "drawing": ""
+   },
+   {
+    "kind": "slippers",
+    "name": "Slippers",
+    "query": "slippers",
+    "drawing": ""
+   },
+   {
+    "kind": "sunglasses",
+    "name": "Sunglasses",
+    "query": "sunglasses",
+    "drawing": ""
+   },
+   {
+    "kind": "bag",
+    "name": "Bags",
+    "query": "bag",
+    "drawing": ""
+   },
+   {
+    "kind": "handbag",
+    "name": "Handbags",
+    "query": "handbag",
+    "drawing": ""
+   },
+   {
+    "kind": "wallet",
+    "name": "Wallets",
+    "query": "wallet",
+    "drawing": ""
+   },
+   {
+    "kind": "belt",
+    "name": "Belts",
+    "query": "belt",
+    "drawing": ""
+   },
+   {
+    "kind": "hat",
+    "name": "Hats",
+    "query": "hat",
+    "drawing": ""
+   },
+   {
+    "kind": "gloves",
+    "name": "Gloves",
+    "query": "gloves",
+    "drawing": ""
+   }
+  ],
+  "kitchen": [
+   {
+    "kind": "dishwasher",
+    "name": "Dishwashers",
+    "query": "dishwasher",
+    "drawing": ""
+   },
+   {
+    "kind": "refrigerator",
+    "name": "Fridges",
+    "query": "fridge",
+    "drawing": ""
+   },
+   {
+    "kind": "freezer",
+    "name": "Freezers",
+    "query": "freezer",
+    "drawing": ""
+   },
+   {
+    "kind": "coffee_machine",
+    "name": "Coffee machines",
+    "query": "coffee machine",
+    "drawing": "coffee_machine"
+   },
+   {
+    "kind": "microwave",
+    "name": "Microwaves",
+    "query": "microwave",
+    "drawing": "microwave"
+   },
+   {
+    "kind": "oven",
+    "name": "Ovens",
+    "query": "oven",
+    "drawing": ""
+   },
+   {
+    "kind": "cooker",
+    "name": "Cookers",
+    "query": "cooker",
+    "drawing": ""
+   },
+   {
+    "kind": "hob",
+    "name": "Hobs",
+    "query": "hob",
+    "drawing": ""
+   },
+   {
+    "kind": "air_fryer",
+    "name": "Air fryers",
+    "query": "air fryer",
+    "drawing": "air_fryer"
+   },
+   {
+    "kind": "deep_fryer",
+    "name": "Deep fryers",
+    "query": "deep fryer",
+    "drawing": ""
+   },
+   {
+    "kind": "mixer",
+    "name": "Mixers",
+    "query": "mixer",
+    "drawing": ""
+   },
+   {
+    "kind": "hand_blender",
+    "name": "Hand blenders",
+    "query": "hand blender",
+    "drawing": ""
+   },
+   {
+    "kind": "blender",
+    "name": "Blenders",
+    "query": "blender",
+    "drawing": "blender"
+   },
+   {
+    "kind": "food_processor",
+    "name": "Food processors",
+    "query": "food processor",
+    "drawing": ""
+   },
+   {
+    "kind": "toaster",
+    "name": "Toasters",
+    "query": "toaster",
+    "drawing": "toaster"
+   },
+   {
+    "kind": "kettle",
+    "name": "Kettles",
+    "query": "kettle",
+    "drawing": "kettle"
+   },
+   {
+    "kind": "juicer",
+    "name": "Juicers",
+    "query": "juicer",
+    "drawing": ""
+   },
+   {
+    "kind": "cookware",
+    "name": "Pots & pans",
+    "query": "cookware",
+    "drawing": ""
+   },
+   {
+    "kind": "pressure_cooker",
+    "name": "Pressure cookers",
+    "query": "pressure cooker",
+    "drawing": ""
+   },
+   {
+    "kind": "kitchen_scale",
+    "name": "Kitchen scales",
+    "query": "kitchen scale",
+    "drawing": ""
+   },
+   {
+    "kind": "knife_set",
+    "name": "Knife sets",
+    "query": "knife set",
+    "drawing": ""
+   },
+   {
+    "kind": "cutlery",
+    "name": "Cutlery",
+    "query": "cutlery",
+    "drawing": ""
+   },
+   {
+    "kind": "dinnerware",
+    "name": "Dinner sets",
+    "query": "dinnerware",
+    "drawing": ""
+   },
+   {
+    "kind": "glassware",
+    "name": "Glasses",
+    "query": "glassware",
+    "drawing": ""
+   },
+   {
+    "kind": "water_filter_jug",
+    "name": "Water filter jugs",
+    "query": "water filter jug",
+    "drawing": ""
+   },
+   {
+    "kind": "food_storage",
+    "name": "Food storage",
+    "query": "food storage",
+    "drawing": ""
+   },
+   {
+    "kind": "grill",
+    "name": "Grills",
+    "query": "grill",
+    "drawing": ""
+   }
+  ],
+  "tools": [
+   {
+    "kind": "drill",
+    "name": "Drills",
+    "query": "drill",
+    "drawing": "drill"
+   },
+   {
+    "kind": "rotary_hammer",
+    "name": "Rotary hammers",
+    "query": "rotary hammer",
+    "drawing": ""
+   },
+   {
+    "kind": "impact_driver",
+    "name": "Impact drivers",
+    "query": "impact driver",
+    "drawing": ""
+   },
+   {
+    "kind": "angle_grinder",
+    "name": "Angle grinders",
+    "query": "angle grinder",
+    "drawing": ""
+   },
+   {
+    "kind": "circular_saw",
+    "name": "Circular saws",
+    "query": "circular saw",
+    "drawing": ""
+   },
+   {
+    "kind": "jigsaw",
+    "name": "Jigsaws",
+    "query": "jigsaw",
+    "drawing": ""
+   },
+   {
+    "kind": "mitre_saw",
+    "name": "Mitre saws",
+    "query": "mitre saw",
+    "drawing": "mitre_saw"
+   },
+   {
+    "kind": "sander",
+    "name": "Sanders",
+    "query": "sander",
+    "drawing": ""
+   },
+   {
+    "kind": "heat_gun",
+    "name": "Heat guns",
+    "query": "heat gun",
+    "drawing": ""
+   },
+   {
+    "kind": "air_compressor",
+    "name": "Air compressors",
+    "query": "air compressor",
+    "drawing": ""
+   },
+   {
+    "kind": "multi_tool",
+    "name": "Multi-tools",
+    "query": "multi tool",
+    "drawing": ""
+   },
+   {
+    "kind": "nail_gun",
+    "name": "Nail guns",
+    "query": "nail gun",
+    "drawing": ""
+   },
+   {
+    "kind": "welder",
+    "name": "Welders",
+    "query": "welder",
+    "drawing": ""
+   },
+   {
+    "kind": "screwdriver",
+    "name": "Screwdrivers",
+    "query": "screwdriver",
+    "drawing": ""
+   },
+   {
+    "kind": "screwdriver_set",
+    "name": "Screwdriver sets",
+    "query": "screwdriver set",
+    "drawing": ""
+   },
+   {
+    "kind": "socket_set",
+    "name": "Socket sets",
+    "query": "socket set",
+    "drawing": ""
+   },
+   {
+    "kind": "spanner",
+    "name": "Spanners",
+    "query": "spanner",
+    "drawing": ""
+   },
+   {
+    "kind": "pliers",
+    "name": "Pliers",
+    "query": "pliers",
+    "drawing": ""
+   },
+   {
+    "kind": "hammer",
+    "name": "Hammers",
+    "query": "hammer",
+    "drawing": ""
+   },
+   {
+    "kind": "tape_measure",
+    "name": "Tape measures",
+    "query": "tape measure",
+    "drawing": ""
+   },
+   {
+    "kind": "spirit_level",
+    "name": "Spirit levels",
+    "query": "spirit level",
+    "drawing": ""
+   },
+   {
+    "kind": "utility_knife",
+    "name": "Utility knives",
+    "query": "utility knife",
+    "drawing": ""
+   },
+   {
+    "kind": "multimeter",
+    "name": "Multimeters",
+    "query": "multimeter",
+    "drawing": ""
+   },
+   {
+    "kind": "soldering_iron",
+    "name": "Soldering irons",
+    "query": "soldering iron",
+    "drawing": ""
+   },
+   {
+    "kind": "hand_saw",
+    "name": "Hand saws",
+    "query": "hand saw",
+    "drawing": ""
+   },
+   {
+    "kind": "ladder",
+    "name": "Ladders",
+    "query": "ladder",
+    "drawing": ""
+   },
+   {
+    "kind": "thermometer",
+    "name": "Thermometers",
+    "query": "thermometer",
+    "drawing": ""
+   }
+  ],
+  "furniture": [
+   {
+    "kind": "office_chair",
+    "name": "Office chairs",
+    "query": "office chair",
+    "drawing": "office_chair"
+   },
+   {
+    "kind": "chair",
+    "name": "Chairs",
+    "query": "chair",
+    "drawing": ""
+   },
+   {
+    "kind": "desk",
+    "name": "Desks",
+    "query": "desk",
+    "drawing": "desk"
+   },
+   {
+    "kind": "sofa",
+    "name": "Sofas",
+    "query": "sofa",
+    "drawing": "sofa"
+   },
+   {
+    "kind": "sofa_bed",
+    "name": "Sofa beds",
+    "query": "sofa bed",
+    "drawing": ""
+   },
+   {
+    "kind": "bed",
+    "name": "Beds",
+    "query": "bed",
+    "drawing": "bed"
+   },
+   {
+    "kind": "mattress",
+    "name": "Mattresses",
+    "query": "mattress",
+    "drawing": "mattress"
+   },
+   {
+    "kind": "wardrobe",
+    "name": "Wardrobes",
+    "query": "wardrobe",
+    "drawing": ""
+   },
+   {
+    "kind": "shelving",
+    "name": "Shelving",
+    "query": "shelving",
+    "drawing": ""
+   },
+   {
+    "kind": "bookcase",
+    "name": "Bookcases",
+    "query": "bookcase",
+    "drawing": ""
+   },
+   {
+    "kind": "table",
+    "name": "Tables",
+    "query": "table",
+    "drawing": ""
+   },
+   {
+    "kind": "bedside_table",
+    "name": "Bedside tables",
+    "query": "bedside table",
+    "drawing": ""
+   },
+   {
+    "kind": "garden_furniture",
+    "name": "Garden furniture",
+    "query": "garden furniture",
+    "drawing": ""
+   }
+  ],
+  "jewellery-watches": [
+   {
+    "kind": "smartwatch",
+    "name": "Smartwatches",
+    "query": "smartwatch",
+    "drawing": ""
+   },
+   {
+    "kind": "watch",
+    "name": "Watches",
+    "query": "watch",
+    "drawing": "watch"
+   },
+   {
+    "kind": "ring",
+    "name": "Rings",
+    "query": "ring",
+    "drawing": ""
+   },
+   {
+    "kind": "necklace",
+    "name": "Necklaces",
+    "query": "necklace",
+    "drawing": ""
+   },
+   {
+    "kind": "bracelet",
+    "name": "Bracelets",
+    "query": "bracelet",
+    "drawing": ""
+   },
+   {
+    "kind": "earrings",
+    "name": "Earrings",
+    "query": "earrings",
+    "drawing": ""
+   }
+  ],
+  "home-appliances": [
+   {
+    "kind": "washing_machine",
+    "name": "Washing machines",
+    "query": "washing machine",
+    "drawing": ""
+   },
+   {
+    "kind": "tumble_dryer",
+    "name": "Tumble dryers",
+    "query": "tumble dryer",
+    "drawing": ""
+   },
+   {
+    "kind": "washer_dryer",
+    "name": "Washer dryers",
+    "query": "washer dryer",
+    "drawing": ""
+   },
+   {
+    "kind": "air_conditioner",
+    "name": "Air conditioners",
+    "query": "air conditioner",
+    "drawing": ""
+   },
+   {
+    "kind": "dehumidifier",
+    "name": "Dehumidifiers",
+    "query": "dehumidifier",
+    "drawing": "dehumidifier"
+   },
+   {
+    "kind": "air_purifier",
+    "name": "Air purifiers",
+    "query": "air purifier",
+    "drawing": "air_purifier"
+   },
+   {
+    "kind": "heater",
+    "name": "Heaters",
+    "query": "heater",
+    "drawing": "heater"
+   },
+   {
+    "kind": "fan",
+    "name": "Fans",
+    "query": "fan",
+    "drawing": ""
+   },
+   {
+    "kind": "heat_pump",
+    "name": "Heat pumps",
+    "query": "heat pump",
+    "drawing": ""
+   },
+   {
+    "kind": "water_heater",
+    "name": "Water heaters",
+    "query": "water heater",
+    "drawing": ""
+   },
+   {
+    "kind": "vacuum_cleaner",
+    "name": "Vacuum cleaners",
+    "query": "vacuum cleaner",
+    "drawing": ""
+   },
+   {
+    "kind": "robot_vacuum",
+    "name": "Robot vacuums",
+    "query": "robot vacuum",
+    "drawing": "robot_vacuum"
+   },
+   {
+    "kind": "steam_mop",
+    "name": "Steam mops",
+    "query": "steam mop",
+    "drawing": ""
+   },
+   {
+    "kind": "iron",
+    "name": "Irons",
+    "query": "iron",
+    "drawing": ""
+   }
+  ],
+  "garden": [
+   {
+    "kind": "lawn_mower",
+    "name": "Lawn mowers",
+    "query": "lawn mower",
+    "drawing": "lawn_mower"
+   },
+   {
+    "kind": "robot_mower",
+    "name": "Robot mowers",
+    "query": "robot mower",
+    "drawing": ""
+   },
+   {
+    "kind": "brush_cutter",
+    "name": "Brush cutters",
+    "query": "brush cutter",
+    "drawing": ""
+   },
+   {
+    "kind": "hedge_trimmer",
+    "name": "Hedge trimmers",
+    "query": "hedge trimmer",
+    "drawing": ""
+   },
+   {
+    "kind": "chainsaw",
+    "name": "Chainsaws",
+    "query": "chainsaw",
+    "drawing": "chainsaw"
+   },
+   {
+    "kind": "leaf_blower",
+    "name": "Leaf blowers",
+    "query": "leaf blower",
+    "drawing": ""
+   },
+   {
+    "kind": "pressure_washer",
+    "name": "Pressure washers",
+    "query": "pressure washer",
+    "drawing": "pressure_washer"
+   },
+   {
+    "kind": "garden_hose",
+    "name": "Garden hoses",
+    "query": "garden hose",
+    "drawing": ""
+   },
+   {
+    "kind": "tiller",
+    "name": "Tillers",
+    "query": "tiller",
+    "drawing": ""
+   },
+   {
+    "kind": "garden_sprayer",
+    "name": "Garden sprayers",
+    "query": "garden sprayer",
+    "drawing": ""
+   },
+   {
+    "kind": "parasol",
+    "name": "Parasols",
+    "query": "parasol",
+    "drawing": ""
+   },
+   {
+    "kind": "flower_pot",
+    "name": "Plant pots",
+    "query": "plant pot",
+    "drawing": ""
+   },
+   {
+    "kind": "greenhouse",
+    "name": "Greenhouses",
+    "query": "greenhouse",
+    "drawing": ""
+   }
+  ],
+  "lighting": [
+   {
+    "kind": "lamp",
+    "name": "Lamps",
+    "query": "lamp",
+    "drawing": "lamp"
+   }
+  ],
+  "toys-games": [
+   {
+    "kind": "toy",
+    "name": "Toys",
+    "query": "toy",
+    "drawing": "toy_blocks"
+   },
+   {
+    "kind": "play_tent",
+    "name": "Play tents",
+    "query": "play tent",
+    "drawing": ""
+   },
+   {
+    "kind": "drone",
+    "name": "Drones",
+    "query": "drone",
+    "drawing": ""
+   },
+   {
+    "kind": "lego",
+    "name": "LEGO",
+    "query": "lego",
+    "drawing": ""
+   },
+   {
+    "kind": "board_game",
+    "name": "Board games",
+    "query": "board game",
+    "drawing": ""
+   },
+   {
+    "kind": "doll",
+    "name": "Dolls",
+    "query": "doll",
+    "drawing": ""
+   }
+  ],
+  "sports": [
+   {
+    "kind": "bicycle",
+    "name": "Bikes",
+    "query": "bike",
+    "drawing": ""
+   },
+   {
+    "kind": "e_bike",
+    "name": "E-bikes",
+    "query": "e-bike",
+    "drawing": ""
+   },
+   {
+    "kind": "helmet",
+    "name": "Helmets",
+    "query": "helmet",
+    "drawing": ""
+   },
+   {
+    "kind": "bicycle_helmet",
+    "name": "Bike helmets",
+    "query": "bike helmet",
+    "drawing": ""
+   },
+   {
+    "kind": "scooter",
+    "name": "Scooters",
+    "query": "scooter",
+    "drawing": ""
+   },
+   {
+    "kind": "e_scooter",
+    "name": "E-scooters",
+    "query": "e-scooter",
+    "drawing": ""
+   },
+   {
+    "kind": "bike_lock",
+    "name": "Bike locks",
+    "query": "bike lock",
+    "drawing": ""
+   },
+   {
+    "kind": "punching_bag",
+    "name": "Punch bags",
+    "query": "punch bag",
+    "drawing": ""
+   },
+   {
+    "kind": "treadmill",
+    "name": "Treadmills",
+    "query": "treadmill",
+    "drawing": ""
+   },
+   {
+    "kind": "exercise_bike",
+    "name": "Exercise bikes",
+    "query": "exercise bike",
+    "drawing": ""
+   },
+   {
+    "kind": "dumbbells",
+    "name": "Dumbbells",
+    "query": "dumbbells",
+    "drawing": "dumbbell"
+   },
+   {
+    "kind": "barbell",
+    "name": "Barbells",
+    "query": "barbell",
+    "drawing": ""
+   },
+   {
+    "kind": "yoga_mat",
+    "name": "Yoga mats",
+    "query": "yoga mat",
+    "drawing": ""
+   },
+   {
+    "kind": "tent",
+    "name": "Tents",
+    "query": "tent",
+    "drawing": ""
+   },
+   {
+    "kind": "sleeping_bag",
+    "name": "Sleeping bags",
+    "query": "sleeping bag",
+    "drawing": ""
+   },
+   {
+    "kind": "kettlebell",
+    "name": "Kettlebells",
+    "query": "kettlebell",
+    "drawing": ""
+   },
+   {
+    "kind": "weight_bench",
+    "name": "Weight benches",
+    "query": "weight bench",
+    "drawing": ""
+   },
+   {
+    "kind": "football",
+    "name": "Footballs",
+    "query": "football",
+    "drawing": ""
+   },
+   {
+    "kind": "game_table",
+    "name": "Games tables",
+    "query": "games table",
+    "drawing": ""
+   }
+  ],
+  "perfume": [
+   {
+    "kind": "perfume",
+    "name": "Perfume",
+    "query": "perfume",
+    "drawing": "perfume"
+   }
+  ],
+  "car-tyres": [
+   {
+    "kind": "tyres",
+    "name": "Tyres",
+    "query": "tyres",
+    "drawing": "tyre"
+   },
+   {
+    "kind": "winter_tyres",
+    "name": "Winter tyres",
+    "query": "winter tyres",
+    "drawing": ""
+   },
+   {
+    "kind": "summer_tyres",
+    "name": "Summer tyres",
+    "query": "summer tyres",
+    "drawing": ""
+   },
+   {
+    "kind": "alloy_wheels",
+    "name": "Alloy wheels",
+    "query": "alloy wheels",
+    "drawing": ""
+   }
+  ]
+ }
+}

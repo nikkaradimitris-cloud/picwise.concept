@@ -35,6 +35,8 @@ from picwise_integrations import (  # noqa: E402
 )
 from picwise_search.live_search_resolver import parse_min_price, parse_shown_count  # noqa: E402
 from picwise_surface.seo import SITEMAP_PATH, declares_to_google, robots_txt, sitemap_xml  # noqa: E402
+from picwise_surface.home_store import home_store_on  # noqa: E402
+from picwise_surface.store_pages import store_page  # noqa: E402
 from picwise_surface import (  # noqa: E402
     render_about_page,
     render_affiliate_disclosure_page,
@@ -363,6 +365,14 @@ def answer(environ: dict[str, object], start_response: StartResponse, local_app:
         return _response(
             status, "application/json; charset=utf-8", body, start_response, cache_control="no-store"
         )
+
+    if home_store_on():
+        # The store's other pages (docs/PICWISE_HOME_STORE_SPEC.md, section 7), only while
+        # its switch is on and only those built; never indexed (`noindex` on each).
+        page = store_page(path)
+        if page is not None:
+            body = page.encode("utf-8")
+            return _response("200 OK", "text/html; charset=utf-8", body, start_response, cache_control="no-store")
 
     html = render_branded_not_found_page()
     body = html.encode("utf-8")
