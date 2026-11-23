@@ -1,6 +1,6 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-22 (21:50 Athens: THE LOOK BEFORE THE «ανέβασε» OF HOW MANY OF A SHOP'S PRODUCTS PASS, DONE (FABLE), two things mended, NOT DEPLOYED, its switch false; NEXT: THE SAME LOOK ONCE MORE ON THE CHECKS' FIRST REAL NIGHT (23/11), THEN HIS «ανέβασε»; 18:30 Athens: HOW MANY OF A SHOP'S PRODUCTS PASS, BUILT (OPUS), NOT DEPLOYED, its switch false; the bot over several processes with it; 17:50 Athens: task 6's pieces beside the shops' rule, a note for the builder, the checks' rules 19.6.7; 17:40 Athens: A PASS COUNTS FOR THREE NIGHTS, the owner's word, «κρατάμε τα προϊόντα ασκανάριστα μέχρι 3 μέρες», the checks' rules 19.3.1; 17:35 Athens: WHAT THE BOT SCANS OF A SHOP PASSES TO THE SITE, 20,000 THE MOST, NO CAP FOR EACH SHOP, in the owner's words of 17:08 and 17:21; the checks' rules 19; the bot over several processes with it; NEXT: THE BUILD, OPUS; 17:15 Athens: his order for which products a shop keeps, with the three changes; 16:45 Athens: the owner's two answers on task 6: a set stays shown, and the first asking is made AFTER THE CAP PER SHOP; 16:35 Athens: task 6 BUILT, the question "is it the kind itself", not deployed, its switch false; 15:51 Athens: the owner decided a cap per shop, records only; 15:05 Athens: Vercel's preview builds turned off, records only; 13:45 Athens: THE CHECKS DEPLOYED on the owner's «Ανέβασε», the bot's first round running, read the night on 23/11; 11:50 Athens: task 7's look done, its findings mended, not deployed, waits for the owner's answers and his «ανέβασε»; 10:30 Athens: task 7 begun, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-23 (10:05 Athens: THE LOOK OF HOW MANY OF A SHOP'S PRODUCTS PASS, ONCE MORE ON THE CHECKS' FIRST REAL NIGHT (FABLE): two more things mended, it reads right, NOT DEPLOYED, its switch false; THE OWNER ASKED «Να το ανεβάσω;»: NEXT, HIS «ανέβασε»; 22/11 21:50 Athens: THE LOOK BEFORE THE «ανέβασε» OF HOW MANY OF A SHOP'S PRODUCTS PASS, DONE (FABLE), two things mended, NOT DEPLOYED, its switch false; 18:30 Athens: HOW MANY OF A SHOP'S PRODUCTS PASS, BUILT (OPUS), NOT DEPLOYED, its switch false; the bot over several processes with it; 17:50 Athens: task 6's pieces beside the shops' rule, a note for the builder, the checks' rules 19.6.7; 17:40 Athens: A PASS COUNTS FOR THREE NIGHTS, the owner's word, «κρατάμε τα προϊόντα ασκανάριστα μέχρι 3 μέρες», the checks' rules 19.3.1; 17:35 Athens: WHAT THE BOT SCANS OF A SHOP PASSES TO THE SITE, 20,000 THE MOST, NO CAP FOR EACH SHOP, in the owner's words of 17:08 and 17:21; the checks' rules 19; the bot over several processes with it; NEXT: THE BUILD, OPUS; 17:15 Athens: his order for which products a shop keeps, with the three changes; 16:45 Athens: the owner's two answers on task 6: a set stays shown, and the first asking is made AFTER THE CAP PER SHOP; 16:35 Athens: task 6 BUILT, the question "is it the kind itself", not deployed, its switch false; 15:51 Athens: the owner decided a cap per shop, records only; 15:05 Athens: Vercel's preview builds turned off, records only; 13:45 Athens: THE CHECKS DEPLOYED on the owner's «Ανέβασε», the bot's first round running, read the night on 23/11; 11:50 Athens: task 7's look done, its findings mended, not deployed, waits for the owner's answers and his «ανέβασε»; 10:30 Athens: task 7 begun, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
@@ -8,11 +8,49 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **(23/11, 10:05 Athens): THE LOOK OF HOW MANY OF A SHOP'S PRODUCTS PASS, ONCE MORE ON THE CHECKS' FIRST REAL NIGHT:
+  DONE (FABLE). TWO MORE THINGS MENDED ON THE WORK BRANCH, WITH TESTS; IT READS RIGHT AFTER THEM. NOT DEPLOYED:
+  `data/shop_cap_switch.json` is false, nothing on the site changed. THE OWNER WAS TOLD AND ASKED «Να το ανεβάσω;».
+  NEXT: HIS «ανέβασε» (nothing before his word), THEN TASK 6'S FIRST ASKING.** (PROGRESS.md, 23/11 10:05; the
+  checks' rules 20.7: read it, and 20.6, before the «ανέβασε».)
+  - **What the real night showed that 22/11's files hid, both mended** (`c340e1b`, `fa2e8e0`; 20.7.2): (1) the
+    night after the first with the rule, products shown the night before left and candidates that had passed
+    were refused: the mend of 22/11 gave the cap of a category a capped shop's products that wait at the gate,
+    and the cap counted them; a shop with one place open moved every kind's share in its categories. Now they
+    are `offered`: counted for nothing, kept never, named only where a place is open. (2) A cheaper row that
+    waits at the gate is no cheaper offer: of a shop that is not capped, only a row shown the night before or
+    let in counts.
+  - **What the «ανέβασε» does on its day** (run 45123975734, the server's files of 23/11 06:27 UTC): 355,114
+    products to 199,771; only the four lose (InStock UK 97,030 to 19,887, Tooled Up 63,073 to 18,628, GamingKit
+    36,851 to 18,818, PCHUB.UK 36,625 to 19,968); no kind without a product, 14 of 289 lose over half; the 40
+    searches the same 12 cards in 26; 34,148 candidates for the bot. The two nights after, every candidate
+    taken as passed: 217,672 and 221,316, nothing of note leaving. **The day's own numbers will differ**: the
+    AI's categories move the catalogue each morning now (below); read `checks.shop_cap` in the health run the
+    morning after.
+  - **Not of this rule, to tell the owner in the daily report if it stands:** the preparation on the server took
+    **32.2 minutes** on 23/11 (the health run's limit is 30; 28.4 on 22/11) and with the site needs 23.6 GB (its
+    limit 20). And the AI's categories of 23/11 came after the preparation: by them the next catalogue is about
+    355,000 products against 374,859, 35,854 cut for no category against 20,255, and the products that got a
+    category share its places ("electronics > computers" 3,277 where 11,334; `ram_memory` 219 where 4,662):
+    20.7.1. Three shops' cuts wait for his word (the health run's "a shop's brake held its cuts").
+  - **Not mended, the next step on this rule** (20.7.4): GamingKit keeps 4,477 products a cheaper shop shows among
+    its 20,000; about 2,600 leave by themselves after three nights, about 2,000 stay. Two halves to build:
+    candidates named for those places (`shop_cap.cap_shops`), and a shop's candidates asked before its shown
+    products a cheaper shop shows (`ledger.asking_order`).
+  - **To know before the «ανέβασε»** (20.7.5): turning the switch off afterwards does not bring the products back
+    at once (the gate stands: they come back as candidates, the never asked as the bot asks them). The procedure
+    is the item below's: the site restarted first by a fast-forward to a commit that does not concern the
+    catalogue, then the commit that turns the switch; the standing texts with it (19.9); it carries task 6's
+    code with its switch false and starts its meter ($2 a day at most). The morning after: the health run's
+    `checks.shop_cap`, the preparation's time, the bot's journal and its pace.
+  - **To run the look again**: the item below says how (now about 60 minutes on a slow runner: three
+    preparations with the rule).
+
 - **(22/11, 21:50 Athens): THE LOOK BEFORE THE «ανέβασε» OF HOW MANY OF A SHOP'S PRODUCTS PASS: DONE (FABLE), ON THE
   SERVER'S FILES OF 22/11. TWO THINGS OF THE BUILD MENDED ON THE WORK BRANCH, WITH TESTS. NOT DEPLOYED:
-  `data/shop_cap_switch.json` is false, nothing on the site changed. NEXT: THE SAME LOOK ONCE MORE ON THE CHECKS'
-  FIRST REAL NIGHT (23/11), THEN HIS «ανέβασε», THEN TASK 6'S FIRST ASKING.** (PROGRESS.md, 22/11 21:50; the
-  checks' rules, section 20: read it before anything else on this rule.)
+  `data/shop_cap_switch.json` is false, nothing on the site changed. LOOKED AT ONCE MORE ON 23/11, ON THE REAL
+  FIRST NIGHT (the item above: its numbers are the day's, these are 22/11's).** (PROGRESS.md, 22/11 21:50; the
+  checks' rules, section 20.)
   - **To run the look again** (40 minutes, read-only): change the "Run:" line at the top of
     `.github/workflows/server-look-shop-rule.yml`, commit, push the commit to `claude/shop-rule-look` (a branch
     made at a commit already pushed starts nothing: the push must bring the workflow's file as a change) and to
