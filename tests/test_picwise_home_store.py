@@ -28,6 +28,7 @@ import re
 import sys
 import tempfile
 import unittest
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -337,7 +338,15 @@ class TheSectionsTests(unittest.TestCase):
         self.assertEqual(page.count('class="pw-hs-pop-item"'), 10)
         self.assertIn('data-more="Show all 10"', page)
         self.assertIn("Ranking: Google Ads Keyword Planner", page)
-        mattress = re.search(r'<a class="pw-hs-pop-tile" href="/search\?q=mattress">(.*?)</a>', page, flags=re.S)
+        # Each of the ten has its drawing (mattress and hoodie since 2026-11-24).
+        tile = r'<a class="pw-hs-pop-tile" href="/search\?q=%s">(.*?)</a>'
+        for kind in ("mattress", "hoodie"):
+            self.assertIn(f'src="/assets/home/art/{kind}.svg"', re.search(tile % kind, page, flags=re.S).group(1))
+            self.assertTrue((ROOT / "assets" / "home" / "art" / f"{kind}.svg").is_file())
+        # A kind the lists give no drawing keeps its tile, with none.
+        lists = load_home_lists()
+        without = replace(lists, popular_drawings={k: v for k, v in lists.popular_drawings.items() if k != "mattress"})
+        mattress = re.search(tile % "mattress", self._page(lists=without), flags=re.S)
         self.assertNotIn("<img class=\"pw-hs-art\"", mattress.group(1))
         panel = TrendsPanel(
             period="November 2026",

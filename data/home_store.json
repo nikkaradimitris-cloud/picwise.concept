@@ -148,6 +148,8 @@
     "laptop": "laptop",
     "sofa": "sofa",
     "air fryer": "air_fryer",
+    "mattress": "mattress",
+    "hoodie": "hoodie",
     "microwave": "microwave"
   }
 }

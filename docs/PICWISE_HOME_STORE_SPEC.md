@@ -15,22 +15,26 @@ Each rule names whose it is:
 ## Σύνοψη για τον ιδιοκτήτη
 
 - **Τι είναι.** Οι προδιαγραφές για τη νέα αρχική «σαν κατάστημα»: η εικόνα που κράτησες
-  στις 23/11, με το χρυσοκίτρινο banner. Με αυτές χτίζει το Opus. Τίποτα δεν έχει χτιστεί
-  και τίποτα δεν έχει ανέβει.
+  στις 23/11, με το χρυσοκίτρινο banner. Με αυτές χτίζει το Opus. Η αρχική χτίστηκε πίσω
+  από κλειστό διακόπτη (24/11)· τίποτα δεν έχει ανέβει.
 - **Τι αποφάσισες (23/11).** Ανεβαίνουν όλα μαζί. Το πάνω μέρος με το χρυσοκίτρινο banner.
   Το πάτημα σε μια προσφορά ανοίγει τα προϊόντα της μέσα στο PicWise.
-- **Η σειρά.** (1) Προδιαγραφές: έγινε. (2) Εικόνες για όσα δεν έχεις δει ακόμα, για να
-  πεις ναι ή όχι. (3) Χτίσιμο από το Opus, πίσω από έναν διακόπτη: ό,τι κι αν ανέβει στο
-  μεταξύ, η αρχική μένει η σημερινή. (4) Έλεγχος πριν το «ανέβασε». (5) Το «ανέβασε» σου.
-- **Τι δεν έχεις δει ακόμα σε εικόνα:** η σελίδα ενός τμήματος, οι σελίδες των προσφορών,
-  τα κείμενα των 4 νέων σελίδων, η σελίδα αναζήτησης με τη νέα κεφαλίδα, η αρχική σε
-  υπολογιστή.
+- **Η σειρά.** (1) Προδιαγραφές: έγινε. (2) Εικόνες για όσα δεν είχες δει: έγιναν 24/11,
+  περιμένουν το ναι ή το όχι σου. (3) Χτίσιμο από το Opus, πίσω από έναν διακόπτη: η αρχική
+  έγινε, τα υπόλοιπα μέρη μετά τις απαντήσεις σου. (4) Έλεγχος πριν το «ανέβασε». (5) Το
+  «ανέβασε» σου.
+- **Οι εικόνες της 24/11**, στον ίδιο καμβά με την αρχική, σε 5 σελίδες: «Τμήματα»,
+  «Προσφορές», «Νέες σελίδες», «Αναζήτηση & κινητό», «Υπολογιστής». Δίπλα σε κάθε εικόνα,
+  σε μπλε σημείωμα η μετάφραση και σε πορτοκαλί ό,τι θέλει τη λέξη σου.
 - **Τι αποφάσισες στις 23/11, 23:23** («Ναι σε όλα»): «See» αντί για «Compare» στο βήμα
   2· στα προϊόντα μιας προσφοράς δεν μπαίνει Recommended (ο κανόνας σου της 15/11 για τα
   φίλτρα)· στο iPhone η λωρίδα δείχνει μόνο οδηγίες· οι εικόνες για όσα δεν έχεις δει
   γίνονται (από το Fable).
-- **Τι περιμένει ακόμα τη λέξη σου** (ενότητα 8): αν θυμόμαστε το ✕ της λωρίδας, μπαίνει
-  μία γραμμή στις σελίδες Cookies και Privacy· και ό,τι δείξουν οι εικόνες.
+- **Τι περιμένει ακόμα τη λέξη σου** (ενότητα 8, σημεία 4 και 6 έως 15): τα λόγια και η
+  διάταξη των νέων σελίδων· στα προϊόντα μιας προσφοράς οι κάρτες χωρίς «Lowest price»· το
+  «Shopping Ads: Google & Bing» έξω από τη λίστα των καταστημάτων· η νέα κεφαλίδα και στις
+  άλλες σελίδες, με δύο χρώματα λίγο πιο σκούρα· η γραμμή για το ✕ της λωρίδας στις σελίδες
+  Cookies και Privacy.
 - **Τι δεν αλλάζει:** η αναζήτηση, οι κάρτες, η σειρά, το Recommended, οι τιμές. Τίποτα δεν
   δηλώνεται στη Google· οι νέες σελίδες μένουν κρυφές από αυτήν (`noindex`) μέχρι να πεις.
 
@@ -107,7 +111,7 @@ the other model that reaches a task stops and tells the owner, in Greek, to chan
 | Task | Who | What | State |
 |---|---|---|---|
 | H1 | FABLE | This specification; the picture and its drawings in the repository | done 23/11 |
-| H2 | FABLE | The pictures not seen yet, put to the owner (section 7.6); the points of section 8; his answers written into sections 6 to 8 | approved 23/11 («Ναι σε όλα»); to do |
+| H2 | FABLE | The pictures not seen yet, put to the owner (section 7.6); the points of section 8; his answers written into sections 6 to 8 | pictures shown 24/11 (7.6); his answers awaited (section 8, points 6 to 15), then written into sections 6 to 8 |
 | H3 | OPUS | The home page of section 5, behind the switch | done 24/11 (`578008f`, `3cf6282`), the switch false; its entries to Parts B to D drawn only as each is built |
 | H4 | OPUS | Parts B to F (section 7), each to the owner's answers of H2 | after H2 |
 | H5 | FABLE | The look before the «ανέβασε» (section 9); the owner's own taps on his phone | after H3 and H4 |
@@ -222,7 +226,7 @@ with "Show all 10" and "Show fewer"; every tile shown without a script. Under th
 ranking's source, as today. A row that carries products and a lowest price, or a change on
 last month, says so under its name in today's words; a row PicWise's shops do not sell reads
 "Not in our shops yet" and is no link. A row whose word has no drawing shows its tile
-without one ("mattress" and "hoodie" today: their drawings are part of H2).
+without one (none today: "mattress" and "hoodie" were drawn in H2, 2026-11-24).
 
 ### 5.7 The Recommended
 
@@ -400,8 +404,27 @@ fix, what is proposed, and what H2 puts to him.
 - A department's page: its name; its kinds as tiles, those with the most products first,
   each to its search, none with no product; its Recommended, as the band of 5.7. No list of
   products of its own: a kind's products are its search's.
-- **Open, for H2**: the page's picture; how many kinds a page shows; the groups of
-  `/departments`; where banner 2 ("Browse home") leads, since "home" is several departments.
+- **Shown to the owner, 2026-11-24 (H2), waits for his word (8.6, 8.7).** A department's page
+  (pictured: Kitchen, with the site's numbers of that day): the store's header with the
+  departments' row, the department marked; "DEPARTMENT", its name, "From UK shops, in stock
+  only."; a tile for each of its kinds that has a drawing, with "N products from £X" (the
+  wording of the month's ten); the band of 5.7 with the Recommended of its kinds; then "All
+  kinds in <name>": every kind with a product as a row (its name, "N products from £X"),
+  the most products first. A kind with no product is not shown; a search that asks which
+  kind is meant ("cookware" that day) is no kind's row.
+- A kind's name on these pages ("Kettles", "Coffee machines") is written by hand in a file,
+  never worked out from the kind's word; the whole list is shown to the owner before the
+  «ανέβασε» (H5).
+- `/departments`: "All departments", "From UK shops, in stock only.", four groups, each
+  with an anchor: "Home & kitchen" (Kitchen, Home appliances, Furniture, Lighting, Garden),
+  "Tech & tools" (Computers & tech, Tools & machines, Car tyres), "Fashion" (Fashion &
+  shoes, Jewellery & watches, Perfume), "Play & sport" (Toys & games, Sports). Banner 2
+  ("Browse home") leads to the first group (`/departments#home-kitchen`); until his word it
+  has no destination and is not drawn (5.4).
+- A department of one kind (Lighting: lamp; Perfume) has no page: its tile and its place in
+  the header lead straight to the kind's search.
+- The departments' row of the header is on the home page and on the departments' pages
+  only; every other page has the header without it (7.4).
 
 ### 7.2 Part C: the offers
 
@@ -417,8 +440,26 @@ fix, what is proposed, and what H2 puts to him.
   cheapest first, "More", and above them the offer in the shop's words and a link to the
   kind in every shop ("cheapest first" is PicWise's promise across shops; an answer of one
   shop must say that it is one shop's).
-- **Waits (8.2)**: no Recommended on that answer.
-- **Open, for H2**: the pictures of `/offers` and of an offer's products; their wording.
+- **Decided (8.2)**: no Recommended on that answer.
+- **Shown to the owner, 2026-11-24 (H2), waits for his word (8.8, 8.9).**
+  - `/offers`: "SHOP OFFERS", "Offers from the shops", the line of 5.5; a block a shop, in
+    the row's order, with each of its offers: its words, "until <day>", "Code: <code>",
+    "Offer terms" (closed, as on a card), "See the products ›"; under the blocks "Offers are
+    the shops' own, as they state them through Awin: check them on the shop's site."
+  - An offer on a whole shop: "‹ All offers", the shop's name, the offer in a pale gold
+    box ("OFFER AT <SHOP>"), "Which kind are you looking for?", a row for each kind the
+    shop sells (its name, "N products from £X"), the most products first.
+  - An offer's products: the search's page. The box holds the kind's word; above the
+    heading the offer's box, once; the heading "Results for: <kind>, at <shop>, cheapest
+    first"; under the price bar "<Shop>'s <kinds> only, so there is no Recommended here.
+    Prices and stock are as the shops list them." and the link "See <kinds> from every shop
+    ›" to the kind's own search; four cards, cheapest first, "More", the price bar as on a
+    search.
+  - **Proposed there: a card carries no "Lowest price" and no place among the prices
+    ("Cheapest of 50").** On a search both compare every shop; here they would compare one
+    shop's products with each other, and a buyer would read them as the market's. A card
+    shows an offer's words only when it is another offer than the page's.
+
 
 ### 7.3 Part D: the four pages
 
@@ -433,15 +474,36 @@ fix, what is proposed, and what H2 puts to him.
   passes; a shop that cannot be checked for 3 days leaves); "Our shops" (the shops shown
   tonight, A to Z, nothing said of which pay). Proposed addresses: `/how-picwise-works`,
   `/how-we-choose`, `/our-checks`, `/our-shops`.
-- **Open, for H2**: each page's text, with its Greek meaning, for his word. A page says only
-  what is in force on the site that day; a rule not yet deployed is not on it.
+- **Shown to the owner, 2026-11-24 (H2), each with its Greek meaning, waits for his word
+  (8.10, 8.11).** The four texts are in `tools/draw_store_pages.py` (`how_it_works_page`,
+  `how_we_choose_page`, `our_checks_page`, `our_shops_page`), word for word as pictured. A
+  link stands on a line of its own (48 px to tap), never inside a sentence.
+- A page says only what is in force on the site that day; a rule not yet deployed is not on
+  it. **"Our checks" is read sentence by sentence against what the server does on the day
+  of the «ανέβασε» (H5); a sentence not in force that day leaves the page.**
+- "Our shops": the shops with a product shown that night, by the name a card gives them
+  (`shop_display_name`), A to Z under their letters, two a row; worked out with the page's
+  other facts (5.10). **Proposed: a name that names no shop is not on the list ("Shopping
+  Ads: Google & Bing", 4,748 products on 2026-11-23), and the number of shops the home page
+  gives (5.9) is the list's own count (108 that night, not 109).** Names as Awin's
+  programmes give them stay as they are ("Luxe Mattress Affiliation") unless he says.
 
 ### 7.4 Part F: the other pages' header and footer
 
 The picture is the home page's. A visitor who searches would go from the dark header to
 today's white one, and the footer's new pages would be reachable from the home page alone.
-**Proposed**: the same header and footer on the search's page and the info pages. **Open,
-for H2**: its picture; until his word those pages stay as they are.
+**Proposed**: the same header and footer on the search's page and the info pages. Until his
+word those pages stay as they are.
+
+**Shown to the owner, 2026-11-24 (H2), waits for his word (8.12, 8.13)**: the search's page
+for "kettle" (the site's products of that day) under the store's header **without the
+departments' row** and over the store's footer, on the store's ground. Measured at 390 px:
+the Recommended's button ends 504 px down the page, so on the first screen. With the ground,
+two colours: the notes on the ground take the store's grey (`--hs-muted`, 5.6:1; today's
+`--muted` is 4.35:1 on today's ground), and "Listed as available by the shop" a green that
+reads on a card (`#187a44`, 5.4:1; today's `--green` is 4.38:1). Both are under the 4.5:1 of
+5.12 today, with or without this part. **Not changed, and told to him**: a card's heart is
+36 px (5.12 asks 48 of the home page); a later step, on his word.
 
 ### 7.5 Part E: the phone strip
 
@@ -457,7 +519,10 @@ for H2**: its picture; until his word those pages stay as they are.
   above, HTTPS, one tap and 30 s on the site, and no service worker), that; elsewhere a
   small sheet that says how, in the browser's own words. Safari on an iPhone offers a page
   no way to start it: there the sheet is all "Add" can do (8.3).
-- **Open**: the "×" (8.4); the sheet's wording and picture (H2); and, **to be proven before
+- **Shown to the owner, 2026-11-24 (H2), waits for his word (8.14)**: the sheet, on an
+  iPhone: "Add PicWise to your home screen"; "1 Tap the Share button in your browser's
+  bar."; "2 Choose Add to Home Screen."; "3 Tap Add."; the button "Got it".
+- **Open**: the "×" (8.4); and, **to be proven before
   the strip is shown, not assumed**: that a shop's button pressed inside the installed app
   opens the shop where its cookie serves the purchase, on Android and on an iPhone (an
   iPhone opens it in the app's own browser sheet, not in Safari). Until it is proven the
@@ -465,10 +530,31 @@ for H2**: its picture; until his word those pages stay as they are.
 
 ### 7.6 The pictures of H2
 
-On the owner's canvas, each with its texts' Greek meaning: a department; all departments;
-`/offers`; an offer's products; the four pages' texts; the search's page with the new
-header and footer; the install sheet; the home page on a computer; the drawings for
-"mattress" and "hoodie".
+**Made 2026-11-24 (Fable), on the owner's canvas** (the artifact of 1.2), a page of the
+canvas for each group, each picture with its texts' Greek meaning on a note beside it and,
+in orange, what waits for his word:
+
+| The canvas's page | Pictures |
+|---|---|
+| «Τμήματα» | a department (Kitchen); all departments |
+| «Προσφορές» | `/offers`; an offer on a whole shop; an offer's products |
+| «Νέες σελίδες» | the four pages; the three long ones also in Greek, for his own reading |
+| «Αναζήτηση & κινητό» | the search's page under the store's header; the phone strip and its sheet; the month's ten opened, with the drawings for "mattress" and "hoodie" |
+| «Υπολογιστής» | the home page at 1,280 px: the page of H3 itself, every part drawn |
+
+Each picture is a page drawn with the site's own header, footer and styles and, for a
+search, the site's own search page over a small feed of the site's real kettles of that
+day; rendered in a plain local browser at 390 px (not the site) and measured as 5.12 asks:
+nothing to tap under 48 px or nearer than 8 px in what is new, no word under 12 px, no text
+under 4.5:1, nothing wider than the screen. **`python tools/draw_store_pages.py OUT` draws
+them again; its `PROTO_STYLES` and markup are the builder's reference for Parts B to F**,
+not the site's code. The offers' words stand in square brackets (no offer's words were
+read), and the products' photos are drawings.
+
+Seen while drawing them, not mended, each a later step on his word: the Recommended of
+three of Kitchen's kinds that day is a set (a coffee machine with a toaster for "coffee
+machine"): a matter of the search, not of this page; and the two colours and the heart of
+7.4.
 
 ## 8. Points that wait for the owner's word
 
@@ -490,6 +576,27 @@ header and footer; the install sheet; the home page on a computer; the drawings 
    every page.
 5. Everything "Open, for H2" in section 7. **H2 approved by the owner the same night**
    («Ναι σε όλα», to «Να τις ετοιμάσω;»): a session on Fable 5.2 makes the pictures.
+   **Made and shown 2026-11-24 (7.6).** What they put to him, each waiting for his word
+   (the builder of H4 builds a part only once its points are answered here):
+6. **A department's page (7.1)**: tiles for the kinds with a drawing, then every kind as a
+   row; the kinds' names written by hand.
+7. **All departments (7.1)**: the four groups and their names; banner 2 to
+   `/departments#home-kitchen`; a department of one kind straight to its search; the
+   departments' row on the home page and the departments' pages only.
+8. **The offers' pages (7.2)**: their wording; an offer on a whole shop asks the kind first.
+9. **An offer's products (7.2)**: the heading and the line under the bar; no "Lowest
+   price" and no place among the prices on its cards; the offer's words once, above.
+10. **The four pages' texts (7.3)**, his word for each.
+11. **"Our shops" (7.3)**: "Shopping Ads: Google & Bing" left out, the home page's number
+    of shops the same count; Awin's names as they are.
+12. **The other pages (7.4)**: the store's header without the departments' row, its footer
+    and its ground on the search's page and the info pages.
+13. **Two colours a little darker (7.4)**, for the 4.5:1 of 5.12.
+14. **The sheet's wording (7.5)**, and the line for the Cookies and Privacy pages of point
+    4: "PicWise remembers on this device that you closed the “PicWise on your phone” strip,
+    so it is not shown again."
+15. **The drawings** for "mattress" and "hoodie" (5.6), and "toaster" and "blender" for a
+    department's kinds.
 
 ## 9. The look before the «ανέβασε» (H5)
 

@@ -142,6 +142,23 @@ A['printer']=svg(r(62,26,76,52,4,'#f4f5f7')+r(28,70,144,64,12,'#e9ecef')+r(44,82
 A['router']=svg(s('M52 120 L40 50',DK,7)+s('M100 118 L100 42',DK,7)+s('M148 120 L160 50',DK,7)
   +r(24,114,152,40,13,'#f4f5f7')+c(52,134,4,MI)+c(70,134,4,MI)+c(88,134,4,YE)+r(120,130,36,8,4,G3)+r(40,154,14,6,2,DK)+r(146,154,14,6,2,DK))
 
+A['toaster']=svg(p('M68 70 H96 Q102 70 102 62 V46 Q102 36 90 36 H74 Q62 36 62 46 V62 Q62 70 68 70 Z','#e9c98f')
+  +p('M110 70 H138 Q144 70 144 62 V50 Q144 40 132 40 H116 Q104 40 104 50 V62 Q104 70 110 70 Z','#e9c98f')
+  +r(34,66,132,88,16,'#e9ecef',f'stroke="{G3}" stroke-width="2"')+r(56,62,44,10,5)+r(104,62,44,10,5)
+  +r(48,88,60,6,3,G3)+c(140,112,10,W,f'stroke="{G2}" stroke-width="3"')+c(140,112,3,MI)+r(162,84,10,26,4)
+  +r(46,154,22,8,3)+r(132,154,22,8,3))
+A['blender']=svg(r(60,120,80,44,10)+c(100,142,10,YE)+r(70,164,60,6,3,DK2)+s('M138 46 Q168 50 160 96',G2,8)
+  +p('M64 34 H136 L126 120 H74 Z','#cfe1fa',f'stroke="{G2}" stroke-width="2"')+p('M70 78 H130 L126 120 H74 Z',MI,'fill-opacity="0.55"')
+  +r(78,44,7,60,3.5,W,'fill-opacity="0.6"')+r(58,24,84,12,6)+r(88,14,24,12,5,DK2))
+A['mattress']=svg(p('M20 100 L58 64 H180 L142 100 Z','#ffffff',f'stroke="{G3}" stroke-width="2"')
+  +r(20,100,122,50,9,'#f4f5f7',f'stroke="{G3}" stroke-width="2"')+p('M142 100 L180 64 V114 L142 150 Z','#e5e9ee',f'stroke="{G3}" stroke-width="2"')
+  +r(20,119,122,12,0,MI)+p('M142 119 L180 83 V95 L142 131 Z',OR)
+  +''.join(c(x,y,2.6,G2) for x,y in ((76,76),(110,76),(144,76),(62,89),(96,89),(130,89))))
+A['hoodie']=svg(p('M70 44 Q100 20 130 44 L126 66 Q100 52 74 66 Z',RE)
+  +p('M74 60 Q100 48 126 60 L152 80 L174 132 L152 142 L138 108 V166 Q100 174 62 166 V108 L48 142 L26 132 L48 80 Z',OR)
+  +p('M86 62 Q100 74 114 62 Q100 54 86 62 Z','#16357a')+s('M92 70 V98',W,3)+s('M108 70 V98',W,3)
+  +p('M74 128 H126 L132 152 H68 Z',ORL)+r(62,158,76,10,4,RE))
+
 # The drawings a tile of the home page uses (the picture the owner kept on 2026-11-23).
 USED = (
     'air_fryer', 'air_purifier', 'bed', 'boot', 'chainsaw', 'coffee_machine',
@@ -149,6 +166,8 @@ USED = (
     'heater', 'kettle', 'lamp', 'laptop', 'lawn_mower', 'microwave',
     'mitre_saw', 'office_chair', 'perfume', 'pressure_washer', 'printer', 'robot_vacuum',
     'router', 'sneaker', 'sofa', 'toy_blocks', 'tyre', 'watch',
+    # The month's ten (mattress, hoodie) and a department's kinds (toaster, blender), 2026-11-24.
+    'blender', 'hoodie', 'mattress', 'toaster',
 )
 
 # ---- backgrounds: clear layers laid over a tile's plain colour ----
