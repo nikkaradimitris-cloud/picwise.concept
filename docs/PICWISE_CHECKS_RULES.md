@@ -1787,6 +1787,16 @@ preparation), or told how many of a shop it may name.
 - A night on which a shop is full with no place open and names for its copies' places alone
   was lived by GamingKit and PCHUB.UK (the night after and two nights after): the
   preparation's time and memory as on the others.
+- **Seen in the bot's look, not looked into.** The bot's order counts 505 of PCHUB.UK's shown
+  products as a cheaper shop's; the rule's own note counts none to 6 of them on the same
+  nights. The two read it differently: `shop_order` sets a row against the lowest price of
+  its code among every row of the catalogue, its own shop's included (a shop's own dearer
+  listing of a product another shop sells too); `cap_shops` against what the other shops
+  keep. Such a row shows nothing by either (one card a product, at the cheapest), so nothing
+  shown is at stake; but by the cap it holds a place as "cheapest kept", and the mend does
+  not replace it. That this is the whole of the 505 is read from the code, not product by
+  product. GamingKit's two counts agree (4,476). A later step with 20.10.3: one reading of
+  "shows nothing" for the cap and for the bot's order.
 
 #### 20.10.6 For the «ανέβασε»
 

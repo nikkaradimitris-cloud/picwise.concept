@@ -37,7 +37,14 @@ a decision came about.
     site now.
   - **Not measured**: how fast the gain comes. The bot asks GamingKit's candidates after its 14,342 shown
     products that show: by the first round's pace about 3,000 a day; if it reads fewer of GamingKit's pages in
-    a day than GamingKit shows, none. The reading of 24/11 measures the pace on 4 processes.
+    a day than GamingKit shows, none. The reading of 24/11 measures the pace on 4 processes. **Seen, not
+    looked into** (the rules' 20.10.5): the bot's order counts 505 of PCHUB.UK's shown products as a cheaper
+    shop's, the rule's own note none to 6: `shop_order` counts a shop's own dearer listing of a product,
+    `cap_shops` only what the other shops keep; nothing shown is at stake.
+  - **The owner asked (15:47 Athens) whether all this was for the one shop.** Told: nearly; the mend is a
+    general rule (every shop at its 20,000 with such places; the bot's order changes for 23 shops), but its
+    gain today is GamingKit's alone, at most about 3,900 products, 2% of the catalogue; the look's tool stays
+    for every later change to the rule.
   - **To deploy it, on his «ανέβασε»** (the rules' 20.10.6, as 20.8): the work branch's head; the site
     restarted first (a commit that starts a deployment and does not concern the catalogue), then the commit
     that prepares; `main` not moved. The look's "site" run is the forecast of the night of 24/11 without it
