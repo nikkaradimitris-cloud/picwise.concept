@@ -8,6 +8,13 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **(23/11, 23:30 Athens): THE OWNER, ON OPUS 5.5: «Ναι σε όλα».** To the four things put to him: the specification
+  saved to the work branch (the repository attached for pushing on that word, `3a17c51` pushed); step 2 reads **"See"**,
+  not "Compare" (in the specification, the repository's picture and his canvas); **no Recommended on an offer's
+  products**; the iPhone's "Add" only shows how; **the pictures of H2 to be made, by a session on Fable 5.2**. Still
+  open: the strip's "×" kept in the browser (the specification's 8.4). **H3 (OPUS) started the same night**, behind the
+  switch, nothing deployed (the items above it, as they come).
+
 - **(23/11, 23:15 Athens): THE HOME PAGE AS A STORE IS SPECIFIED (FABLE, ITS TASK H1), ON THE OWNER'S «Κράτα αυτό και
   ανέβασε το». NOTHING OF IT IS BUILT, NOTHING IS DEPLOYED, THE SITE'S HOME PAGE IS THE ONE OF 12/11. NEXT: H2 (FABLE), THE
   PICTURES HE HAS NOT SEEN, ON HIS «ναι»; THEN H3 AND H4 (OPUS), BEHIND A SWITCH; H5 (FABLE), THE LOOK; THEN HIS «ανέβασε».**

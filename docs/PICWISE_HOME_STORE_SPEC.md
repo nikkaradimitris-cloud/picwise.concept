@@ -25,10 +25,12 @@ Each rule names whose it is:
 - **Τι δεν έχεις δει ακόμα σε εικόνα:** η σελίδα ενός τμήματος, οι σελίδες των προσφορών,
   τα κείμενα των 4 νέων σελίδων, η σελίδα αναζήτησης με τη νέα κεφαλίδα, η αρχική σε
   υπολογιστή.
-- **Τι περιμένει τη λέξη σου** (ενότητα 8): η λέξη «Compare» στο βήμα 2 (θυμίζει σύγκριση
-  τιμών: προτείνεται «See»)· στη σελίδα μιας προσφοράς δεν μπαίνει Recommended (ο κανόνας
-  σου της 15/11 για τα φίλτρα)· στο iPhone η λωρίδα δείχνει μόνο οδηγίες· αν θυμόμαστε το
-  ✕ της λωρίδας, μπαίνει μία γραμμή στη σελίδα Cookies.
+- **Τι αποφάσισες στις 23/11, 23:23** («Ναι σε όλα»): «See» αντί για «Compare» στο βήμα
+  2· στα προϊόντα μιας προσφοράς δεν μπαίνει Recommended (ο κανόνας σου της 15/11 για τα
+  φίλτρα)· στο iPhone η λωρίδα δείχνει μόνο οδηγίες· οι εικόνες για όσα δεν έχεις δει
+  γίνονται (από το Fable).
+- **Τι περιμένει ακόμα τη λέξη σου** (ενότητα 8): αν θυμόμαστε το ✕ της λωρίδας, μπαίνει
+  μία γραμμή στις σελίδες Cookies και Privacy· και ό,τι δείξουν οι εικόνες.
 - **Τι δεν αλλάζει:** η αναζήτηση, οι κάρτες, η σειρά, το Recommended, οι τιμές. Τίποτα δεν
   δηλώνεται στη Google· οι νέες σελίδες μένουν κρυφές από αυτήν (`noindex`) μέχρι να πεις.
 
@@ -68,7 +70,8 @@ Each rule names whose it is:
 
 - His canvas: "PicWise — Νέα αρχική (πρόταση)",
   https://claude.ai/artifact/DfMJJUm7XubCSureCYqZZj, the artboard "Αρχική για κινητό —
-  πρόταση 5" (a phone 390 px wide; its notes give each English text's Greek meaning).
+  πρόταση 5" (a phone 390 px wide; its notes give each English text's Greek meaning); step 2
+  reads "See" there too since 23/11, 23:27).
 - The same picture in this repository: `docs/design/picwise_home_store_2026-11-23.html`,
   with its drawings (`assets/home/art/`, `assets/home/ov/`, drawn by
   `tools/draw_home_art.py`). Where the picture and this specification differ, this stands.
@@ -104,8 +107,8 @@ the other model that reaches a task stops and tells the owner, in Greek, to chan
 | Task | Who | What | State |
 |---|---|---|---|
 | H1 | FABLE | This specification; the picture and its drawings in the repository | done 23/11 |
-| H2 | FABLE | The pictures not seen yet, put to the owner (section 7.6); the points of section 8; his answers written into sections 6 to 8 | next |
-| H3 | OPUS | The home page of section 5, behind the switch | waits for nothing; may be built before or after H2 |
+| H2 | FABLE | The pictures not seen yet, put to the owner (section 7.6); the points of section 8; his answers written into sections 6 to 8 | approved 23/11 («Ναι σε όλα»); to do |
+| H3 | OPUS | The home page of section 5, behind the switch | started 23/11 on his «Ναι σε όλα», the model switched to Opus 5.5 |
 | H4 | OPUS | Parts B to F (section 7), each to the owner's answers of H2 | after H2 |
 | H5 | FABLE | The look before the «ανέβασε» (section 9); the owner's own taps on his phone | after H3 and H4 |
 | H6 | owner | «ανέβασε»: the switch true in one commit, deployed as every switch is | his word |
@@ -161,8 +164,8 @@ For a phone first (the rules a phone is given, `@media (max-width:699px)`); a co
   decided." (the owner's own phrase, «μπαίνεις μπερδεμένος και φεύγεις αποφασισμένος»). It
   takes the place of "Find the product you want in UK shops" on the page; that sentence
   stays the page's `<title>` (section 2).
-- Three steps: "1 Search" / "Type what you need"; "2 Compare" / "4 choices, cheapest
-  first" (**waits**, 8.1); "3 Decide" / "One is Recommended", its number on gold.
+- Three steps: "1 Search" / "Type what you need"; "2 See" / "4 choices, cheapest first"
+  (**owner**, 8.1: not "Compare"); "3 Decide" / "One is Recommended", its number on gold.
 
 ### 5.4 The banners
 
@@ -462,24 +465,24 @@ header and footer; the install sheet; the home page on a computer; the drawings 
 
 ## 8. Points that wait for the owner's word
 
-1. **"Compare" (step 2).** The picture says "2 Compare / 4 choices, cheapest first". His
-   rule of 2026-11-12: PicWise is not presented as price comparison («θα κλείσουν πολλές
-   πόρτες»), and the account is asking some 150 shops to accept it. A conflict between the
-   picture and the rule (`PROJECT_RULES.md` 1.4): reported, not settled here. **Proposed:
-   "2 See"**, the line under it unchanged. The builder keeps the word in one constant; the
-   switch is not turned on before his word.
-2. **No Recommended on an offer's products.** Put to him on 23/11 as "4 choices and
-   Recommended": that was wrong against his own rule of 2026-11-15 («Το recommendit πρέπει
-   να ακιρονετε όταν χρησιμοποιεί φίλτρο», `PROJECT_RULES.md` 5, the price bar). An answer
-   narrowed to one shop's offer is a filtered answer: four choices, cheapest first, no
-   Recommended, unless he says otherwise.
-3. **The iPhone.** "Add" cannot install there; it can only show how (7.5).
+1. **"Compare" (step 2). Decided by the owner, 2026-11-23 (23:23 Athens), «Ναι σε όλα»:
+   "2 See".** The picture said "2 Compare / 4 choices, cheapest first", against his rule of
+   2026-11-12 that PicWise is not presented as price comparison («θα κλείσουν πολλές
+   πόρτες»). The line under it unchanged.
+2. **No Recommended on an offer's products. Decided by the owner, the same «Ναι σε όλα».**
+   Put to him first as "4 choices and Recommended", which was wrong against his own rule
+   of 2026-11-15 («Το recommendit πρέπει να ακιρονετε όταν χρησιμοποιεί φίλτρο»,
+   `PROJECT_RULES.md` 5, the price bar); told so, he agreed: an answer narrowed to one
+   shop's offer is a filtered answer, four choices, cheapest first, no Recommended.
+3. **The iPhone. Told to him, the same «Ναι σε όλα».** "Add" cannot install there; it can
+   only show how (7.5).
 4. **The strip's "×".** To stay closed on the next page, the choice must be kept in the
    browser. The Cookies and Privacy pages say PicWise keeps nothing on a device unless
    asked (a favourite, History). **Proposed**: keep it (the visitor asked for it by
    pressing "×") and add its line to both pages, his wording; else the strip comes back on
    every page.
-5. Everything "Open, for H2" in section 7.
+5. Everything "Open, for H2" in section 7. **H2 approved by the owner the same night**
+   («Ναι σε όλα», to «Να τις ετοιμάσω;»): a session on Fable 5.2 makes the pictures.
 
 ## 9. The look before the «ανέβασε» (H5)
 
