@@ -19,10 +19,11 @@ Each rule names whose it is:
   από κλειστό διακόπτη (24/11)· τίποτα δεν έχει ανέβει.
 - **Τι αποφάσισες (23/11).** Ανεβαίνουν όλα μαζί. Το πάνω μέρος με το χρυσοκίτρινο banner.
   Το πάτημα σε μια προσφορά ανοίγει τα προϊόντα της μέσα στο PicWise.
-- **Η σειρά.** (1) Προδιαγραφές: έγινε. (2) Εικόνες για όσα δεν είχες δει: έγιναν 24/11,
-  περιμένουν το ναι ή το όχι σου. (3) Χτίσιμο από το Opus, πίσω από έναν διακόπτη: η αρχική
-  έγινε, τα υπόλοιπα μέρη μετά τις απαντήσεις σου. (4) Έλεγχος πριν το «ανέβασε». (5) Το
-  «ανέβασε» σου.
+- **Η σειρά.** (1) Προδιαγραφές: έγινε. (2) Εικόνες για όσα δεν είχες δει: έγιναν 24/11
+  και είπες «Ναι σε όλα». (3) Χτίσιμο από το Opus, πίσω από έναν διακόπτη: η αρχική έγινε,
+  **τα υπόλοιπα μέρη είναι το επόμενο βήμα** (ενότητα 10.1). (4) Τελικός έλεγχος (Fable).
+  (5) Το «ανέβασε» σου πάνω στα έτοιμα: θα σου πούμε «έτοιμο» και τι βρήκε ο έλεγχος, και
+  ανεβαίνουν με τη λέξη σου (ενότητα 3.1).
 - **Οι εικόνες της 24/11**, στον ίδιο καμβά με την αρχική, σε 5 σελίδες: «Τμήματα»,
   «Προσφορές», «Νέες σελίδες», «Αναζήτηση & κινητό», «Υπολογιστής». Δίπλα σε κάθε εικόνα,
   σε μπλε σημείωμα η μετάφραση και σε πορτοκαλί ό,τι θέλει τη λέξη σου.
@@ -35,11 +36,10 @@ Each rule names whose it is:
   2· στα προϊόντα μιας προσφοράς δεν μπαίνει Recommended (ο κανόνας σου της 15/11 για τα
   φίλτρα)· στο iPhone η λωρίδα δείχνει μόνο οδηγίες· οι εικόνες για όσα δεν έχεις δει
   γίνονται (από το Fable).
-- **Τι περιμένει ακόμα τη λέξη σου** (ενότητα 8, σημεία 4 και 6 έως 15): τα λόγια και η
-  διάταξη των νέων σελίδων· στα προϊόντα μιας προσφοράς οι κάρτες χωρίς «Lowest price»· το
-  «Shopping Ads: Google & Bing» έξω από τη λίστα των καταστημάτων· η νέα κεφαλίδα και στις
-  άλλες σελίδες, με δύο χρώματα λίγο πιο σκούρα· η γραμμή για το ✕ της λωρίδας στις σελίδες
-  Cookies και Privacy.
+- **Τι περιμένει ακόμα τη λέξη σου:** μόνο το τελικό «ανέβασε», όταν χτιστούν και ελεγχθούν.
+  Στις 24/11, 01:36 είπες «Ναι σε όλα» για τα σημεία των εικόνων (ενότητα 8, σημεία 4 και
+  6 έως 15) και «Τελείωνε και ανέβασε τα»: εκείνη την ώρα τα μέρη δεν ήταν χτισμένα, γι' αυτό
+  δεν ανέβηκε τίποτα.
 - **Τι δεν αλλάζει:** η αναζήτηση, οι κάρτες, η σειρά, το Recommended, οι τιμές. Τίποτα δεν
   δηλώνεται στη Google· οι νέες σελίδες μένουν κρυφές από αυτήν (`noindex`) μέχρι να πεις.
 
@@ -72,7 +72,7 @@ Each rule names whose it is:
 - **«Κράτα αυτό και ανέβασε το»**, of the fifth proposal. Told that it is a picture and not
   yet a page, and asked three things, he answered: **«Όλα μαζί»** (it goes live only when
   the department pages, the four new pages and the phone strip are built too); **«Με
-  χρυσοκίτρινο banner»** (the first banner gold, not the all-blue alternative); **«Στα
+  χρυσοκίτρινο banner»** (the first banner gold, not the all-blue alternative; again on 2026-11-24, 01:33: «Κρατάς το χρυσοκίτρινο», and on his «Ναι» the all-blue alternative left the canvas); **«Στα
   προϊόντα της στο PicWise»** (an offer opens its products inside PicWise, not the shop).
 
 ### 1.2 The picture he kept
@@ -146,16 +146,29 @@ the other model that reaches a task stops and tells the owner, in Greek, to chan
 | Task | Who | What | State |
 |---|---|---|---|
 | H1 | FABLE | This specification; the picture and its drawings in the repository | done 23/11 |
-| H2 | FABLE | The pictures not seen yet, put to the owner (section 7.6); the points of section 8; his answers written into sections 6 to 8 | pictures shown 24/11 (7.6); his answers awaited (section 8, points 6 to 15), then written into sections 6 to 8 |
+| H2 | FABLE | The pictures not seen yet, put to the owner (section 7.6); the points of section 8; his answers written into sections 6 to 8 | done 24/11: the pictures shown (7.6), his answers («Ναι σε όλα», 01:36 Athens) written into sections 7 and 8 |
 | H3 | OPUS | The home page of section 5, behind the switch | done 24/11 (`578008f`, `3cf6282`), the switch false; its entries to Parts B to D drawn only as each is built |
-| H4 | OPUS | Parts B to F (section 7), each to the owner's answers of H2 | after H2 |
+| H4 | OPUS | Parts B to F (section 7), each to the owner's answers of H2, and the texts of trust (8.16) | **next**, in the order of 10.1 |
 | H5 | FABLE | The look before the «ανέβασε» (section 9); the owner's own taps on his phone | after H3 and H4 |
-| H6 | owner | «ανέβασε»: the switch true in one commit, deployed as every switch is | his word |
+| H6 | owner | «ανέβασε»: the switch true in one commit, deployed as every switch is | his word, on the built pages (3.1) |
 
 Each of H3 and H4 in small closed steps, each with its tests, each a commit
 (`PROJECT_RULES.md` 11). Nothing of them is deployed for a visitor to see while the switch is
 false: another deployment of the work branch's head, for any other reason, shows the home
 page as it is today.
+
+### 3.1 His words of 2026-11-24, 01:36 Athens
+
+**«Ναι σε όλα... Τελείωνε και ανέβασε τα»**, to the pictures of H2, their points and the
+texts of trust. Taken as his yes to every point of section 8 that waited (4, and 6 to 15),
+and as his wish that the work be finished and deployed. He was told in the answer that the
+parts are designed and not built, that the build is Opus's by his own split, and that
+nothing could go live that night.
+
+**Nothing is deployed on these words: they were said before the parts existed.** The
+deployment keeps his standing rule (`PROJECT_RULES.md`: the site changes on his «ανέβασε»
+for that push): when H4 is built and H5 has looked, he is told that it is ready and what
+the look found, and it goes live on his «ανέβασε» then.
 
 ## 4. The switch
 
@@ -457,7 +470,7 @@ fix, what is proposed, and what H2 puts to him.
 - A department's page: its name; its kinds as tiles, those with the most products first,
   each to its search, none with no product; its Recommended, as the band of 5.7. No list of
   products of its own: a kind's products are its search's.
-- **Shown to the owner, 2026-11-24 (H2), waits for his word (8.6, 8.7).** A department's page
+- **Shown to the owner 2026-11-24 (H2) and decided by him the same night, «Ναι σε όλα» (8.6, 8.7).** A department's page
   (pictured: Kitchen, with the site's numbers of that day): the store's header with the
   departments' row, the department marked; "DEPARTMENT", its name, "From UK shops, in stock
   only."; a tile for each of its kinds that has a drawing, with "N products from £X" (the
@@ -472,8 +485,8 @@ fix, what is proposed, and what H2 puts to him.
   with an anchor: "Home & kitchen" (Kitchen, Home appliances, Furniture, Lighting, Garden),
   "Tech & tools" (Computers & tech, Tools & machines, Car tyres), "Fashion" (Fashion &
   shoes, Jewellery & watches, Perfume), "Play & sport" (Toys & games, Sports). Banner 2
-  ("Browse home") leads to the first group (`/departments#home-kitchen`); until his word it
-  has no destination and is not drawn (5.4).
+  ("Browse home") leads to the first group (`/departments#home-kitchen`): its destination
+  in `data/home_store.json`, written with Part B (5.4).
 - A department of one kind (Lighting: lamp; Perfume) has no page: its tile and its place in
   the header lead straight to the kind's search.
 - The departments' row of the header is on the home page and on the departments' pages
@@ -494,7 +507,7 @@ fix, what is proposed, and what H2 puts to him.
   kind in every shop ("cheapest first" is PicWise's promise across shops; an answer of one
   shop must say that it is one shop's).
 - **Decided (8.2)**: no Recommended on that answer.
-- **Shown to the owner, 2026-11-24 (H2), waits for his word (8.8, 8.9).**
+- **Shown to the owner 2026-11-24 (H2) and decided by him the same night, «Ναι σε όλα» (8.8, 8.9).**
   - `/offers`: "SHOP OFFERS", "Offers from the shops", the line of 5.5; a block a shop, in
     the row's order, with each of its offers: its words, "until <day>", "Code: <code>",
     "Offer terms" (closed, as on a card), "See the products ›"; under the blocks "Offers are
@@ -508,7 +521,7 @@ fix, what is proposed, and what H2 puts to him.
     Prices and stock are as the shops list them." and the link "See <kinds> from every shop
     ›" to the kind's own search; four cards, cheapest first, "More", the price bar as on a
     search.
-  - **Proposed there: a card carries no "Lowest price" and no place among the prices
+  - **Decided with them: there a card carries no "Lowest price" and no place among the prices
     ("Cheapest of 50").** On a search both compare every shop; here they would compare one
     shop's products with each other, and a buyer would read them as the market's. A card
     shows an offer's words only when it is another offer than the page's.
@@ -527,8 +540,8 @@ fix, what is proposed, and what H2 puts to him.
   passes; a shop that cannot be checked for 3 days leaves); "Our shops" (the shops shown
   tonight, A to Z, nothing said of which pay). Proposed addresses: `/how-picwise-works`,
   `/how-we-choose`, `/our-checks`, `/our-shops`.
-- **Shown to the owner, 2026-11-24 (H2), each with its Greek meaning, waits for his word
-  (8.10, 8.11).** The four texts are in `tools/draw_store_pages.py` (`how_it_works_page`,
+- **Shown to the owner 2026-11-24 (H2), each with its Greek meaning, and decided by him the
+  same night, «Ναι σε όλα» (8.10, 8.11).** The four texts are in `tools/draw_store_pages.py` (`how_it_works_page`,
   `how_we_choose_page`, `our_checks_page`, `our_shops_page`), word for word as pictured. A
   link stands on a line of its own (48 px to tap), never inside a sentence.
 - A page says only what is in force on the site that day; a rule not yet deployed is not on
@@ -536,7 +549,7 @@ fix, what is proposed, and what H2 puts to him.
   of the «ανέβασε» (H5); a sentence not in force that day leaves the page.**
 - "Our shops": the shops with a product shown that night, by the name a card gives them
   (`shop_display_name`), A to Z under their letters, two a row; worked out with the page's
-  other facts (5.10). **Proposed: a name that names no shop is not on the list ("Shopping
+  other facts (5.10). **Decided: a name that names no shop is not on the list ("Shopping
   Ads: Google & Bing", 4,748 products on 2026-11-23), and the number of shops the home page
   gives (5.9) is the list's own count (108 that night, not 109).** Names as Awin's
   programmes give them stay as they are ("Luxe Mattress Affiliation") unless he says.
@@ -548,7 +561,8 @@ today's white one, and the footer's new pages would be reachable from the home p
 **Proposed**: the same header and footer on the search's page and the info pages. Until his
 word those pages stay as they are.
 
-**Shown to the owner, 2026-11-24 (H2), waits for his word (8.12, 8.13)**: the search's page
+**Shown to the owner 2026-11-24 (H2) and decided by him the same night, «Ναι σε όλα» (8.12,
+8.13)**: the search's page
 for "kettle" (the site's products of that day) under the store's header **without the
 departments' row** and over the store's footer, on the store's ground. Measured at 390 px:
 the Recommended's button ends 504 px down the page, so on the first screen. With the ground,
@@ -572,10 +586,12 @@ reads on a card (`#187a44`, 5.4:1; today's `--green` is 4.38:1). Both are under 
   above, HTTPS, one tap and 30 s on the site, and no service worker), that; elsewhere a
   small sheet that says how, in the browser's own words. Safari on an iPhone offers a page
   no way to start it: there the sheet is all "Add" can do (8.3).
-- **Shown to the owner, 2026-11-24 (H2), waits for his word (8.14)**: the sheet, on an
+- **Shown to the owner 2026-11-24 (H2) and decided by him the same night, «Ναι σε όλα»
+  (8.14)**: the sheet, on an
   iPhone: "Add PicWise to your home screen"; "1 Tap the Share button in your browser's
   bar."; "2 Choose Add to Home Screen."; "3 Tap Add."; the button "Got it".
-- **Open**: the "×" (8.4); and, **to be proven before
+- **Decided (8.4, 8.14)**: the "×" is kept in the browser, and its line stands on the
+  Cookies and Privacy pages. **To be proven before
   the strip is shown, not assumed**: that a shop's button pressed inside the installed app
   opens the shop where its cookie serves the purchase, on Android and on an iPhone (an
   iPhone opens it in the app's own browser sheet, not in Safari). Until it is proven the
@@ -622,15 +638,16 @@ machine"): a matter of the search, not of this page; and the two colours and the
    shop's offer is a filtered answer, four choices, cheapest first, no Recommended.
 3. **The iPhone. Told to him, the same «Ναι σε όλα».** "Add" cannot install there; it can
    only show how (7.5).
-4. **The strip's "×".** To stay closed on the next page, the choice must be kept in the
+4. **The strip's "×". Decided by the owner, 2026-11-24, «Ναι σε όλα» (point 14).** To stay closed on the next page, the choice must be kept in the
    browser. The Cookies and Privacy pages say PicWise keeps nothing on a device unless
    asked (a favourite, History). **Proposed**: keep it (the visitor asked for it by
    pressing "×") and add its line to both pages, his wording; else the strip comes back on
    every page.
 5. Everything "Open, for H2" in section 7. **H2 approved by the owner the same night**
    («Ναι σε όλα», to «Να τις ετοιμάσω;»): a session on Fable 5.2 makes the pictures.
-   **Made and shown 2026-11-24 (7.6).** What they put to him, each waiting for his word
-   (the builder of H4 builds a part only once its points are answered here):
+   **Made and shown 2026-11-24 (7.6). All of points 6 to 15 answered by the owner the same
+   night (01:36 Athens): «Ναι σε όλα» (3.1). They are decided as written here and in
+   section 7:**
 6. **A department's page (7.1)**: tiles for the kinds with a drawing, then every kind as a
    row; the kinds' names written by hand.
 7. **All departments (7.1)**: the four groups and their names; banner 2 to
@@ -680,3 +697,32 @@ taps, on his phone: the strip and "Add"; a shop's button from the installed app 
   home page's cards are not `pw-card` articles; give them names of their own.
 - After each step: its tests, `python tools/run_test_modules.py --skip-slow`, an entry in
   `PROGRESS.md`, the handoff's first section.
+
+### 10.1 H4, in order (Opus)
+
+Every step behind the switch of section 4 (off: every page of the site as today, byte for
+byte, and the new addresses not found), each a commit with its tests, the fast modules, its
+entry in `PROGRESS.md` and the handoff's first section. A part's entries on the home page
+are drawn when it is added to `home_store.PARTS_BUILT`, never before (section 6). New
+pages carry `noindex`; nothing is declared to Google. The pictures' pages are the look to
+build to: `python tools/draw_store_pages.py OUT` (7.6). Nothing of it is deployed by the
+builder: the deployment is H6, on the owner's word (3.1).
+
+1. **The texts of trust on the home page** (8.16; 5.3, 5.9): the heading, the three ticks
+   with the rule for "100+", the three points, the footer's line and no "Cookies" link.
+2. **Part B, the departments** (7.1): a file of the departments (their lines of
+   `data/category_switches.json`, their groups, each kind's name written by hand);
+   `/departments`, `/department/<name>`; a department of one kind to its search; banner 2's
+   destination; the header's row and its mark.
+3. **Part D, the four pages** (7.3), their texts word for word from the pictures' tool;
+   "Our shops" from the night's catalogue, the home page's count of shops the same count.
+4. **Part C, the offers** (7.2): `/offers`; an offer on a whole shop; an offer's products
+   on the search's page, with no Recommended, no "Lowest price", no place among the prices.
+5. **Part F, the other pages** (7.4): the store's header without the departments' row, its
+   footer and its ground on the search's page and the info pages; the two colours.
+6. **Part E, the phone strip** (7.5): the strip, "Add", the sheet, the "×" kept in the
+   browser, its line on the Cookies and Privacy pages. Built, and kept from being shown by
+   a line of its own in the switch's file until the proof of 7.5 exists.
+
+Then H5 (Fable), section 9, with the list of the kinds' names in its report to the owner;
+then H6 (3.1).
