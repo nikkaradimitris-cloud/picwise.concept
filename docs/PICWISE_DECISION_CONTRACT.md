@@ -209,6 +209,15 @@ within its shop's 3 days is not shown until it is asked. A cut product is asked 
 comes back the night it passes. The brakes, the proof a reader gives before its word counts,
 and the one switch that turns every cut off are in the checks' rules (7).
 
+**Added on 2026-11-23, on the owner's «Ανέβασε το»: of a shop, the products the bot scans,
+20,000 the most** (the checks' rules, sections 19 and 20; his words of 22/11: «μόνο όσα έχουν
+σκανναριστεί περνάνε», «Το πλαφόνι είναι 20.000 προϊόντα»). A shop with more products a
+card can show keeps 20,000 of them, in the order he chose («Με τις 3 αλλαγές»): those of the
+kinds with few products, then what it sells cheapest of the offers the site keeps, then the
+rest, a product a cheaper shop keeps last; the cap of a category then counts and chooses
+among what the shops keep. A pass counts for three nights: a product the bot has not asked
+again in three nights is not shown until it passes again.
+
 **Added by the owner on 2026-11-01: a photo that is there.** On the live site some cards
 showed a broken photo, and their products' pages at the shop said "Page not found": «Όταν
 το προϊόν δεν φέρνει φωτογραφία δεν πρέπει να εμφανίζεται... Στις περισσότερες περιπτώσεις

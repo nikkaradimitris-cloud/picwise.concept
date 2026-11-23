@@ -5,9 +5,10 @@ Written 2026-11-21 (evening, Athens) as task 4 of the work split by model (Claud
 looked at and mended in task 7 (sections 16 and 17). **The owner's «Ανέβασε», 2026-11-22
 (12:50 Athens): `data/checks_switch.json` is true from that day's commit, and the checks cut
 from the first night after its deployment** (`PROGRESS.md` says how the deployment went).
-How many of a shop's products pass (section 19) is built and not deployed; the look before
-its «ανέβασε» is section 20, and the same look on the checks' first real night (23/11), with
-two more things mended, its part 20.7.
+**How many of a shop's products pass (section 19): deployed 2026-11-23 (09:02 UTC) on the
+owner's «Ανέβασε το», its switch true**, after the look of section 20 (22/11) and the same
+look on the checks' first real night (23/11, 20.7); how the deployment went, and what the
+mornings after read, is 20.8.
 
 Each rule names whose it is:
 
@@ -52,8 +53,9 @@ Each rule names whose it is:
 - Κατάστημα με «φράχτη» για ρομπότ δεν το παρακάμπτουμε. Σου ετοιμάζεται ένα γράμμα για να του
   το στείλεις μέσω Awin, ώστε να αφήσει το bot μας.
 - Κάθε μέρα το email σου έχει μία γραμμή με τους αριθμούς των ελέγχων.
-- **Πόσα προϊόντα δείχνει ένα κατάστημα (απόφασή σου, 22/11· χτίστηκε το βράδυ της 22/11,
-  δεν έχει ανέβει, ο διακόπτης του είναι κλειστός: στο site δεν άλλαξε τίποτα).** Ό,τι
+- **Πόσα προϊόντα δείχνει ένα κατάστημα (απόφασή σου, 22/11· χτίστηκε το βράδυ της 22/11·
+  ανέβηκε στις 23/11 στις 11:02, με το «Ανέβασε το» σου, και ο διακόπτης του είναι
+  ανοιχτός).** Ό,τι
   προλαβαίνει να σκανάρει το bot σε ένα κατάστημα περνάει στο site: σε ένα 15.000, σε άλλο
   5.000. Ανώτατο όριο 20.000, για κατάστημα που απαντά γρήγορα. Δεν μπαίνει ξεχωριστό
   πλαφόν ανά κατάστημα («μόνο όσα έχουν σκανναριστεί περνάνε»· «τελειώσαμε με αυτό»). Ποια
@@ -84,7 +86,13 @@ Each rule names whose it is:
   Και χωρίς τον κανόνα, ο κατάλογος της 24/11 θα είναι μικρότερος από τον σημερινό
   (374.859 → περίπου 355.000): το AI έδωσε το πρωί της 23/11 κατηγορία σε προϊόντα που δεν
   είχαν, 15.600 δεν πήραν καμία και κόβονται, και όσα πήραν ανταγωνίζονται πια στη νέα
-  τους κατηγορία (20.7.1). Επόμενο: το «ανέβασε» σου.
+  τους κατηγορία (20.7.1).
+- **Ανέβηκε στις 23/11 (20.8).** Ο κατάλογος έγινε 199.771 προϊόντα από 132 καταστήματα,
+  όσα ακριβώς έδειξε η ματιά. Η ετοιμασία πήρε 26,9 λεπτά (το πρωί 32,2) και το site
+  κρατά 4,4 GB μνήμη (πριν 9,1): οι δύο συναγερμοί του server έσβησαν. Το bot ξεκίνησε
+  ξανά στους 4 επεξεργαστές, με τον κανόνα. Μαζί ανέβηκε ο κώδικας της ερώτησης «είναι το
+  ίδιο το είδος;» με κλειστό διακόπτη, και ο μετρητής ποιότητας κάνει την πρώτη του
+  μέτρηση το πρωί της 24/11 (έως 2 $ τη μέρα).
 
 ## 1. What the checks are for, and what they rest on
 
@@ -795,7 +803,7 @@ about 285,000 at its lowest, on day 4, then filling again with checked products)
    many products wait for it (`not shown until checked`, by reason).
 
 
-## 19. How many of a shop's products pass: what the bot scans, 20,000 the most (owner, 22/11): decided; BUILT 22/11, NOT DEPLOYED, its switch false (19.10); looked at 22/11 and 23/11, four things mended (section 20)
+## 19. How many of a shop's products pass: what the bot scans, 20,000 the most (owner, 22/11): decided; built 22/11 (19.10); looked at 22/11 and 23/11, four things mended (section 20); DEPLOYED 23/11 on the owner's «Ανέβασε το», its switch true (20.8)
 
 Written 22/11 (17:10 Athens) by Claude Fable 5.2, after a look with its numbers (19.2), and
 **corrected the same day (17:35) on the owner's words of 17:08 and 17:21: what the bot scans
@@ -1054,7 +1062,8 @@ own word, told that two were proposed; 19.3.1). He asked for no more questions o
 
 Built on the work branch, with tests; **`data/shop_cap_switch.json` is false: nothing on the
 site changes, and the bot asks as before, until the owner's «ανέβασε» after the look (19.7.1)
-turns it true.** No question was put to the owner and nothing was measured (19.1, 17:16).
+turns it true.** (It is true from 23/11: 20.8.) No question was put to the owner and nothing
+was measured (19.1, 17:16).
 Task 6's code is as it was built (19.6.7): its gate, its morning's job and its memory of what
 was shown, and its tests, untouched and passing.
 
@@ -1549,3 +1558,55 @@ candidates the next night.)
 - 20.6 stands: the site restarted first, then the commit that turns the switch; the bot
   starts again with the rule on; the standing texts change with it (19.9); it carries task
   6's code with its switch false, and its meter starts ($2 a day at most).
+
+### 20.8 The «ανέβασε» (23/11): how it went, and what the mornings after read
+
+- **Owner, 23/11 (10:31 Athens), told the numbers of 20.7.3, what is left (20.7.4), that the
+  products do not come back at once (20.7.5) and what the deployment carries: «Ποια είναι η
+  άποψή σου». Answered: to deploy that day** (what is not known shows only live: the bot
+  with the rule, the preparation's time on the server, the three nights; a mistake costs
+  little now, with about 30 searches a day and nothing declared to Google; it does what he
+  asked; and it eases the server); the reserve told with it (one of the day's two mends was
+  of the session's own mend of the day before: no promise that there is no other), and that
+  the surest way was to wait a day more. **10:34: «Ανέβασε το».**
+- **The switch true** in `7ba917c` (`data/shop_cap_switch.json`: `cap` true, `set`, `by`), the
+  test that pinned it off now pinning his word. Before it: every fast module on its own,
+  355 modules, 3,387 tests, 353 pass, 2 fail as known; GitHub's "Tests" on that commit, every
+  module but the two slow ones, green (run 45141548329; the two slow ones, of the search's
+  index and its learning, green on `cb5ce0d`, which they do not differ from).
+- **Two fast-forwards of the site's branch, for the server's memory** (as on 22/11):
+  `0e3a683` (08:58 UTC, run 45142919631: "not prepared again: the change does not concern
+  the catalogue", the site restarted, 15 of 15 pages the same), then `7ba917c` (09:02 UTC, run
+  45143440046, release `20261123T090212Z-7ba917c`): the bot stopped, the catalogue prepared
+  in **26.9 minutes, peak 14.0 GB** (32.2 minutes and 14.6 GB that morning, without the
+  rule), the site restarted on it at 09:31 UTC, 15 of 15 pages answering, the bot started
+  again. The deployment's job may take 75 minutes from this commit (it was 45, under the
+  preparation's own 60 on the server).
+- **The catalogue: 199,771 products of 132 shops, the look's number to the product**
+  (20.7.3). 7 shops over 20,000, 1,296,528 of their products left out; InStock UK, Tooled Up,
+  GamingKit and PCHUB.UK 20,000 each by the rule, the cap of a category then taking a few;
+  GamingKit's "a cheaper shop's" 4,477; candidates for the bot 34,148 (9,566 of the capped
+  shops); 38,236 products cut by the checks (35,854 with no category); for the AI the next
+  morning 12,031 questions (15,605 products).
+- **The health run after it** (45148116992): within every limit but the three shops' brake,
+  which is the owner's (20.7.1). The preparation 26.9 minutes; the site 4.4 GB (9.1 before),
+  18.4 GB with the preparation's peak (23.8 before; the limit is 20); 17.8 GB available.
+- **The bot** (run 45148112347): stopped 09:02 UTC with its answers kept, started again
+  09:31: "the pages are read on 4 processes of their own"; "the night of 2026-11-24: 199,771
+  products shown, 34,148 candidates, 2,476 cut ones the feed still lists"; "to ask: 234,426
+  products of 137 shops; 96,180 answered already tonight (the round goes on)".
+- **With it**: task 6's code, its switch false (the health run: "kind itself: its answers
+  are not read"); its timers in place: `picwise-itself` (05:40 UTC; nothing to ask while its
+  switch is false) and `picwise-meter` (06:20 UTC: the first cards of the fixed searches
+  judged by Claude Opus 5.5, $2 a day at most; its first morning is 24/11).
+- **To read the morning after (24/11) and the next days**, the health run started on the
+  site's branch: "checks, how many of a shop's products pass" (the four near 20,000,
+  GamingKit's "a cheaper shop's", the candidates); no shop but the four with fewer products
+  than the day before for this rule; the preparation's minutes and the memory together; the
+  bot's note of its first night with the rule ("on; a pass counts for 3 nights; at most
+  20,000 asked of a shop; N shops at once, pages read on 4 processes") and its pace on 4
+  processes (20.5); what the AI's categories cost; the meter's first line. From 26/11: what
+  leaves by a pass over three nights old, and the nine shops that cannot be checked.
+- **If a night goes wrong**: the switch false on the owner's word and a deployment (it
+  prepares: the site restarted first); 20.7.5 says how the products come back.
+

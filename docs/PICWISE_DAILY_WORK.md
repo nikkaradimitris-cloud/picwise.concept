@@ -80,6 +80,15 @@ by email and to their phone. The owner answers in that session, once a day.
    reading that waits for the owner's word, a night the cap's gate did not stand) go first,
    like every limit. The public note (`/prepared.json`, its `checks`) says what the preparation applied
    of it, and carries the bot's note too (`checks.bot`), for a day the run cannot be read.
+   **How many of a shop's products pass** (the checks' rules, sections 19 and 20): deployed
+   2026-11-23 (09:02 UTC), on the owner's «Ανέβασε το». The same run prints what the
+   preparation kept by it, "checks, how many of a shop's products pass (at most 20,000): N
+   shops over it, N products left out, candidates N" and a line for each shop over it (what
+   it keeps by step, how many wait at the gate), and, once a night is recorded with the
+   rule, how the bot asked under it ("on; a pass counts for 3 nights; at most 20,000 asked
+   of a shop; N shops at once, pages read on N processes"). Its limit: the rule not worked
+   out one night (every shop's products then went on to the cap of a category). What to
+   compare the first mornings with: the rules' 20.8.
    **Whether the Sunday tidy-up of the branches ran** (owner, 2026-11-16: «Θέλω να
    λαμβάνω ενημέρωση να συμπεριλάβεις την αυτόματη εργασία»): on a Sunday, and on the
    first day after one whose session did not report it, read the last run of
