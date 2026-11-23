@@ -8,7 +8,9 @@ from the first night after its deployment** (`PROGRESS.md` says how the deployme
 **How many of a shop's products pass (section 19): deployed 2026-11-23 (09:02 UTC) on the
 owner's «Ανέβασε το», its switch true**, after the look of section 20 (22/11) and the same
 look on the checks' first real night (23/11, 20.7); how the deployment went, and what the
-mornings after read, is 20.8.
+mornings after read, is 20.8. **A mend to it built the same day (20.9: the places a full
+shop's own copies hold) is NOT deployed: looked at on the server's data that afternoon
+(20.10), it does what it says and waits for the owner's «ανέβασε».**
 
 Each rule names whose it is:
 
@@ -1610,7 +1612,7 @@ candidates the next night.)
 - **If a night goes wrong**: the switch false on the owner's word and a deployment (it
   prepares: the site restarted first); 20.7.5 says how the products come back.
 
-### 20.9 The places a full shop's own copies hold: mended (23/11, the daily session, Claude Opus 5.5). BUILT AND TESTED, NOT DEPLOYED
+### 20.9 The places a full shop's own copies hold: mended (23/11, the daily session, Claude Opus 5.5). BUILT AND TESTED, LOOKED AT (20.10), NOT DEPLOYED
 
 20.7.4's first item, the one thing the look of 23/11 left: **a shop whose cap is full of
 products a cheaper shop shows keeps places that show nothing and names no candidate for
@@ -1654,3 +1656,148 @@ that can show; the cap of a category names among them under the same rule; `name
 itself), `tests/test_picwise_checks_shop_rule.py` (the shown a cheaper shop shows asked after
 the candidates; with the rule off nothing changes). Every fast module on its own after it: its
 numbers are in `PROGRESS.md`'s entry of the day.
+
+### 20.10 The look at the mend of 20.9, on the server's data (23/11, afternoon, Claude Fable 5.2): it does what it says; two things found, each a later step
+
+On the owner's «Ναι» (13:15 Athens) to the advice that the mend be looked at on the server's
+data before its «ανέβασε» (the two looks of the rule had found four defects its tests had
+not). Run 45165463672 (`claude/shop-rule-look` at `a2aeba1`, 11:28 to 12:12 UTC). Read-only:
+no shop asked, no AI, nothing on the server or the site changed.
+
+#### 20.10.1 How it looked
+
+The look's workflow set the switch off against the switch on; the rule is live, so it now
+sets **a change to the rule against the code the site runs** (`server-look-shop-rule.yml`,
+`deployment/server/look_shop_rule.py`, `look_bot_rule.py`; `tests/test_picwise_look_shop_rule.py`):
+
+- Two runs from the same copies of what the server prepared from (the same to the byte: the
+  feed's two copies, the pool of the 199,771 products the site shows since 09:21 UTC, the
+  decisions of the night of 23/11, the AI's lines). "site": the catalogue prepared by the head
+  of the site's branch (`7ba917c`, without the mend), in a folder of its own on the runner.
+  "mend": by the work branch's head (`a2aeba1`, which holds `2a264ba`). The rule on in both.
+- Each then lives the two nights after by its own code, every candidate the caps named taken
+  as asked and passed: the most that can enter in a night, not what the bot gets through.
+- Every summary and comparison by one code. A summary now counts, on its own and not through
+  `shop_cap`, the products a cheaper shop shows too (`look_shop_rule.copies_by_shop`: the same
+  product by its code, in another shop, at a lower price): its count and the rule's own
+  agreed to the product on every night (GamingKit 4,476, 4,707, 4,744 by the site's code;
+  4,476, 2,680, 885 by the mend).
+- The bot's look on the server, in its unit's limits, now says where each shop's candidates
+  stand in what it is asked, its products a cheaper shop shows asked after them (the mend) and
+  among its shown (before it): `look_bot_rule.candidates_standing`.
+
+#### 20.10.2 What it found
+
+- **The night it is deployed nothing shown changes.** The first night (tonight's, if nothing
+  more passed): 199,770 products of 132 shops by both codes (the site shows 199,771); no
+  shop's count differs; the same 20,861 products a cheaper shop shows; the same categories and
+  kinds; the same cards in all 312 kinds' own searches and in all 40 searches.
+- **The candidates: 31,368 by the site's code, 36,963 by the mend: 5,595 more, every one
+  GamingKit's** (1,478 to 7,073). Of the 18,818 it keeps, 4,476 are a cheaper shop's and 1,182
+  places are open: it may name 7,345, and the cap of a category has a place for 7,073.
+- **The night after** (every candidate passed): GamingKit keeps 20,000 by both; a cheaper
+  shop's among them 4,707 by the site's code, 2,680 by the mend: **it shows 17,320 products no
+  cheaper shop shows, 15,214 without the mend (+2,106)**. The catalogue's products that show:
+  193,244 and 195,353 (+2,109). No shop has fewer products by the mend (GamingKit +79 and
+  PCHUB.UK +3: the cap of a category cuts none of theirs).
+- **Two nights after**: GamingKit's a cheaper shop's 4,744 and 885: **it shows 19,115, 15,213
+  without the mend (+3,902)**. The catalogue's products that show: 197,600 and 200,853
+  (+3,253). The catalogue holds 599 fewer rows by the mend (220,561 and 219,962): 3,852 fewer
+  that show nothing, and fewer of TV Cables (1,481 and 793), Bazta UK (13,238 and 13,185) and
+  Tirendo UK (3,096 and 3,083): 20.10.4.
+- **What a night shows stays the next**: by the mend, from the night after to two nights
+  after, no shop loses more than one product (by the site's code, two).
+- **The searches**, two nights after, the mend against the site's code: "monitor" 1,709
+  products for 1,378, "laptop" 578 for 567, "watches" 1,084 for 1,074; the kinds monitor
+  (1,997 rows for 1,549), ink_cartridge (1,357 for 1,215), cable, ram_memory. Of the 312
+  kinds' own searches 27 find more products and 19 fewer (20.10.3, 20.10.4).
+- **The preparation**: 12.4 to 12.5 minutes and 14.18 to 14.33 GB at its peak by the mend;
+  13.2 to 13.5 minutes and 14.13 to 14.32 GB by the site's code, on GitHub's runner (15 GB).
+  No difference: the mend's third part (20.9, 3) holds on these nights.
+- **The bot** (on the server, 11:28 UTC): the order worked out in 3 s, 1.0 GB of the unit's 4.
+  20,861 shown products of 23 shops are a cheaper shop's (Plusshop UK 7,431, Bazta UK 6,150,
+  GamingKit 4,476, Back to the Office 929, Lightsin UK 566, PCHUB.UK 505). With the mend a
+  shop's candidates stand before them: Plusshop UK's first candidate after 5,300 products
+  (after 12,711 before the mend), Bazta UK's after 5,709 (11,828), Back to the Office's after
+  6,576 (7,505). GamingKit had no candidate that day (the site's code named none that
+  morning), so its order shows nothing of the mend yet.
+
+#### 20.10.3 Found, not mended: a product a cheaper shop keeps is not always one that shows nothing
+
+The rule puts last, and the mend now has replaced, a shop's product that another shop keeps
+cheaper by its code (19.4). But the site joins the offers of one product among the products
+a search finds: where the cheaper shop's row is not found by a search (most likely its own
+title and shelf read as another kind or as none, or its shop's own page says it is sold out;
+not read product by product here, the summaries hold counts), the dearer row is that search's
+card, and with it gone the search shows one product fewer.
+
+As GamingKit's own copies leave, the kinds' own searches that find fewer products by the mend
+than by the site's code, and that this explains: the night after, when no other shop's
+products differ, 9 products in 8 kinds (motherboard
+2; shelving unit, charger, firewall, household battery, mouse, docking station, graphics card
+1 each); two nights after, 23 in 13 kinds (charger 5, motherboard 4, charging cable 2,
+household battery 2, mouse 2; air purifier 10 to 9, games console 16 to 15, gps navigator 4
+to 3; shelving unit, ip phone, firewall, tv, graphics card 1 each), with 3,859 of its copies
+gone: about six in a thousand. The same nights it shows 2,106 and 3,902 more products.
+
+The site's code does the same wherever a capped shop's product that a cheaper shop keeps
+gives its place to one that enters (19.4 e, the owner's order): the mend makes it happen for
+GamingKit's 4,476. **Left as it is, the owner told. A later step, his to weigh:** a product
+counted as a cheaper shop's only when the cheaper row is found wherever this one is (it
+carries every kind this one carries). It changes the rule's order for every shop (20,861
+such products of 23 shops today) and wants a look of its own.
+
+#### 20.10.4 Found, not mended: what the cap of a category names of a capped shop beyond what the shop may name is named for no one
+
+The cap of a category names candidates for a part's open places among every product that
+waits, the capped shops' rows that are offered to it with them (19.6.2), and each capped shop
+then keeps of its own only as many as it may name (`vetted`). The rest of the cap's choices
+are dropped, and no other shop's product is named in their place.
+
+- By the site's code, tonight: the cap names at least 7,073 of GamingKit's rows and the shop
+  keeps 1,478 (its 1,182 open places): 5,595 or more dropped. The mend uses them.
+- By the mend, GamingKit is offered to the cap on every night it has a copy to replace. The
+  night after, the site's code has it full and not offered, and the cap's choices in its
+  categories go to the others; by the mend GamingKit takes many of them and may name 3,350.
+  Two nights after: TV Cables 793 products for 1,481, Bazta UK 13,185 for 13,238, Tirendo UK
+  3,083 for 3,096; "electronics > electronics accessories" keeps 10,333 for 11,613 (GamingKit's
+  own copies gone are part of that). And, the cap's choices falling otherwise, the searches
+  "spanner" 87 products for 97 and "tyre" 4,005 for 4,013.
+- TV Cables and Bazta UK cannot be checked today (the one by its robots.txt, the other
+  refuses the bot: `PROGRESS.md`, 23/11, the day's reading), so their candidates would not
+  pass by either code: **on the site this costs nothing now**.
+  It would cost a shop that can be checked and shares a part with a capped shop.
+
+**Left as it is. A later step:** the cap of a category worked out a second time with each
+capped shop's offered rows cut down to the ones it names (about a minute more of the
+preparation), or told how many of a shop it may name.
+
+#### 20.10.5 Not measured
+
+- **How fast the gain comes.** The look takes every candidate as asked and passed in one
+  night. The bot asks GamingKit's candidates after its shown products that show (14,342
+  today), and past 20,000 of a shop nothing: by the first round's pace (about 17,300 of its
+  pages a day) about 3,000 candidates a day; the round of 23/11, stopped for the deployment,
+  says nothing sure of its pace on 4 processes. If the bot reads fewer of its pages in a day
+  than it shows, no candidate is reached and the mend changes nothing for it. The reading of
+  24/11 measures the pace.
+- GamingKit's own products a cheaper shop shows are no longer asked again before its
+  candidates, and not at all past its 20,000: their passes run out after three nights and
+  they leave, whatever passes. They show nothing but for the few of 20.10.3.
+- A night on which a shop is full with no place open and names for its copies' places alone
+  was lived by GamingKit and PCHUB.UK (the night after and two nights after): the
+  preparation's time and memory as on the others.
+
+#### 20.10.6 For the «ανέβασε»
+
+**Fit to deploy as built** (`2a264ba`; the work branch's head holds it). The night it is
+deployed nothing shown changes; what it gains shows from the night after the bot has asked
+GamingKit's candidates. As in 20.8: the site restarted first (a commit that starts a
+deployment and does not concern the catalogue), then the commit that prepares.
+
+Advised to the owner: **after the reading of 24/11**, so that the first night with the rule
+is read alone against 20.8. The look's "site" run is that night's forecast if nothing more
+passes: 199,770 products, 31,368 candidates, GamingKit's 1,478. A day sooner gains almost
+nothing: deployed on the afternoon of 23/11 the bot would not reach GamingKit's candidates
+before the night's end either way (they stand after its 14,342 shown products that show),
+and the first of them would be shown on 25/11 by both.
