@@ -204,4 +204,38 @@ numbers say whether they should move.
 
 ## 9. What the look found
 
-Not run yet.
+Run 45199357636 (`claude/category-switches-look` at `32f2478`, the list as built at `08c9dcc`),
+23/11 from 14:55 UTC; read-only, no shop asked, no AI; the catalogue prepared on GitHub's runner
+from the server's copies of 23/11, the list's switch off (as the site runs) and on.
+
+- **Of what the site shows today**: of the 199,770 products, the list would close 86,745 and
+  keep 113,010 (15 have no line from the AI). Of the 1,608,044 products a card can show,
+  320,669 closed, 483,993 open, 803,382 with no line from the AI (not decided by the list: the
+  checks hold them, 5.5).
+- **The site, night by night**: the first night with the list on 113,026 products of 104 shops
+  (199,770 of 132 with it off); the night after, every candidate taken as asked and passed,
+  147,245 (215,873 off); two nights after 148,201 of 105 shops (219,962 of 134 off): about a
+  third fewer than without it, once the bot has filled the places the list frees.
+- **Closed most of what the site shows**: media 7,479, decor 6,345, ink and toner 4,566,
+  vehicles (mostly tyres) 4,540, household supplies 4,165, food 3,894, arts and hobbies 3,145,
+  office supplies 3,125, pet supplies 3,066, sports 2,857, mobile phone accessories 2,520, power
+  2,017; each line's count is printed in the run's log ("each line of the list").
+- **Shops**: 29 have no product two nights after (Tyres UK, Tirendo UK, and small shops of
+  beauty, food and health); closed most: PCHUB.UK 9,391 (keeps 10,577), Plusshop UK 8,735,
+  GamingKit 8,279, Bazta UK 8,036, InStock UK 6,583, MoreThisWay 5,341, Lets Buy Books 4,318
+  (keeps 38).
+- **The cap of a category**: 12,000 the most before and after; the 15% cut nothing more (what
+  Claude had feared on 22/11 did not happen).
+- **The kinds**: with no product 0 and 78, under 4 products 19 and 103, under 100 116 and 162,
+  all of closed categories (tyres, cables, ink, bedding, backpacks, shampoo...); gaining:
+  printer 172 to 1,058, headphones 1,914 to 2,737, camera 1,015 to 1,664, monitors, earrings,
+  routers, televisions.
+- **The 40 searches**: those of open categories the same or more (earrings 773 to 1,071,
+  monitor +93, watches +55, smartphone +23); those of closed ones empty (car tyres, phone
+  charger, shampoo, dog bed, backpack, suitcase).
+- **Perfume**: 152 to 154; its first cards are body sprays at £0.95 to £2.49 (Plusshop UK,
+  Bazta UK), the owner's own example of 22/11 (a deodorant among the colognes). A lowest price
+  for perfume (£15, proposed on 22/11) would take them away; none at this step, his word.
+- **Saunas** (979 to 16, under pools and spas) and **car tyres** (8,193 to 0): products of high
+  value that leave by lines he closed; each opens again with its line.
+- **The preparation**: 12.7 minutes and 13.87 GB with the list on (13.8 and 14.19 off).
