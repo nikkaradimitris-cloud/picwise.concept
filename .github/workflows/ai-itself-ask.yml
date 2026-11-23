@@ -10,13 +10,19 @@
 # data/kind_itself_switch.json is turned, on the owner's word, after a look: nothing shown
 # changes.
 #
-# DRY_RUN 'yes' asks nothing and puts nothing: the run counts what the first round would ask and
-# says what it would cost. It is turned to 'no' only on the owner's word for the cost (about $11
-# to $14 by the dry run of 22/11, run 45031171329; the calls stop before the budget below). His
-# word of 22/11: after the cap per shop is deployed («Μετά το πλαφόν»); a dry run first, that day.
-# The cap per shop was deployed on 2026-11-23; the dry run that day (run 45148852096): 58,171
+# DRY_RUN 'yes' asks nothing and puts nothing: the run counts what a first round would ask and
+# says what it would cost. It is turned to 'no' only on the owner's word for the cost (the calls
+# stop before the budget below), and goes back to 'yes' when the run has ended. His word of
+# 22/11: after the cap per shop is deployed («Μετά το πλαφόν»); a dry run first, that day. The
+# cap per shop was deployed on 2026-11-23; the dry run that day (run 45148852096): 58,171
 # questions in 290 kinds, $9.02 to $10.71. Told the count and the cost, the owner said (23/11,
-# 11:55 Athens): «Ξεκίνα». DRY_RUN is 'no' for that asking, and goes back to 'yes' after it.
+# 11:55 Athens): «Ξεκίνα».
+#
+# THE FIRST ASKING WAS MADE ON 2026-11-23 (run 45151523646, 24.5 minutes): four rounds, 58,207
+# questions kept, 67,117 readings, none left to ask, $6.83 of the $20. Its answers are on the
+# server. A run now copies them and asks only what they do not hold (the products that came
+# after): dry, it counts them. Turning DRY_RUN to 'no' again needs the owner's word for that
+# count's cost, as the first asking did.
 #
 # The catalogue holds the shops' links: it is never uploaded anywhere, only read on the runner
 # and removed. The SDK is installed from deployment/server/requirements-ai.txt, every package
@@ -37,7 +43,7 @@ jobs:
     timeout-minutes: 150
     env:
       # 'yes': nothing is asked and nothing is put on the server.
-      DRY_RUN: 'no'
+      DRY_RUN: 'yes'
       # The most this run's calls may cost, in dollars (the rules' 4.6: stopped before $20).
       BUDGET: '20'
       WORKERS: '8'
