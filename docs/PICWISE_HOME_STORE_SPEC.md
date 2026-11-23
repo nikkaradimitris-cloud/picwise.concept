@@ -108,7 +108,7 @@ the other model that reaches a task stops and tells the owner, in Greek, to chan
 |---|---|---|---|
 | H1 | FABLE | This specification; the picture and its drawings in the repository | done 23/11 |
 | H2 | FABLE | The pictures not seen yet, put to the owner (section 7.6); the points of section 8; his answers written into sections 6 to 8 | approved 23/11 («Ναι σε όλα»); to do |
-| H3 | OPUS | The home page of section 5, behind the switch | started 23/11 on his «Ναι σε όλα», the model switched to Opus 5.5 |
+| H3 | OPUS | The home page of section 5, behind the switch | started 23/11 on his «Ναι σε όλα»; first step `578008f` (24/11): all of section 5 but the offers' row (5.5) and the computer (5.13) |
 | H4 | OPUS | Parts B to F (section 7), each to the owner's answers of H2 | after H2 |
 | H5 | FABLE | The look before the «ανέβασε» (section 9); the owner's own taps on his phone | after H3 and H4 |
 | H6 | owner | «ανέβασε»: the switch true in one commit, deployed as every switch is | his word |
