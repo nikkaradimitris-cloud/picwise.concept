@@ -186,15 +186,38 @@ def _catalogue_products() -> tuple[Any, ...]:
     return tuple(prepared.products)
 
 
+# Names in the feed that name no shop a buyer could visit (owner, 2026-11-24, «Ναι σε
+# όλα»: off the list of shops and out of their count).
+NOT_A_SHOP = frozenset({"shopping ads: google & bing"})
+
+
+def is_a_shop(name: str) -> bool:
+    return " ".join(str(name or "").split()).casefold() not in NOT_A_SHOP
+
+
+def all_shop_names(products: Iterable[Any]) -> tuple[str, ...]:
+    """Every shop of these products, by its name as a buyer knows it, A to Z."""
+    names = set()
+    for product in products:
+        raw = getattr(product, "raw", None)
+        name = str(extract_merchant_name(raw if isinstance(raw, dict) else {}) or "").strip()
+        if name and is_a_shop(name):
+            display = shop_display_name(name)
+            if display and is_a_shop(display):
+                names.add(display)
+    return tuple(sorted(names, key=lambda name: (name.casefold(), name)))
+
+
 def top_shops(products: Iterable[Any], *, count: int = TOP_SHOPS) -> tuple[tuple[str, ...], int]:
     """The `count` shops with the most of these products, by their names as a buyer
-    knows them, the most first, then by name; and how many shops there are."""
+    knows them, the most first, then by name; and how many shops there are. A name that
+    names no shop is in neither (`NOT_A_SHOP`)."""
     tally: Counter[str] = Counter()
     names: dict[str, Counter[str]] = {}
     for product in products:
         raw = getattr(product, "raw", None)
         name = str(extract_merchant_name(raw if isinstance(raw, dict) else {}) or "").strip()
-        if not name:
+        if not name or not is_a_shop(name):
             continue
         key = name.lower()
         tally[key] += 1
@@ -288,6 +311,9 @@ def work_out_home_facts(
                 with_products.add(tile.query)
     catalogue = _catalogue_products() if products is None else tuple(products)
     shops, shop_count = top_shops(catalogue)
+    shop_names = all_shop_names(catalogue)
+    # The home page's count is the list's (the specification, 7.3).
+    shop_count = len(shop_names) if shop_names else shop_count
     try:
         offers = shop_offers(catalogue)
     except Exception:  # no offers' row rather than a wrong one
@@ -299,6 +325,7 @@ def work_out_home_facts(
         tiles_with_products=frozenset(with_products),
         shops=shops,
         shop_count=shop_count,
+        shop_names=shop_names,
         offers=offers,
     )
 

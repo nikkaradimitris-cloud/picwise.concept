@@ -188,6 +188,74 @@ class TheKindFactsOnAFeedTests(price_first._PageMixin, unittest.TestCase):
         self.assertEqual(kettle.pick.link, "See kettles")
 
 
+class TheFourPagesTests(_On, unittest.TestCase):
+    PAGES = {
+        "/how-picwise-works": ("How PicWise works", ("1 Search", "2 See", "3 Decide", "How PicWise earns",
+                                                      "the commission never changes the order")),
+        "/how-we-choose": ("How we choose the Recommended", ("of 45 products, the 23rd", "Two safeguards",
+                                                             "When there is no Recommended", "What never counts")),
+        "/our-checks": ("Our checks", ("What is checked", "When a check fails", "What a check is not")),
+        "/our-shops": ("Our shops", ("run a programme with Awin",)),
+    }
+
+    def setUp(self) -> None:
+        super().setUp()
+        home_store_facts.set_home_facts_for_tests(None)
+        self.addCleanup(home_store_facts.set_home_facts_for_tests, None)
+
+    def test_each_answers_with_its_words_kept_from_google(self) -> None:
+        for path, (title, words) in self.PAGES.items():
+            status, headers, page = _call(path)
+            self.assertTrue(status.startswith("200"), path)
+            self.assertIn('<meta name="robots" content="noindex">', page)
+            text = _text(page)
+            self.assertIn(f"ABOUT PICWISE {title}", text)
+            for line in words:
+                self.assertIn(line, text, path)
+            self.assertIn("Last updated: 24 November 2026", text)
+            self.assertNotRegex(text.lower(), r"compar")
+            # The other pages' header: no departments' row (the specification, 7.4).
+            self.assertNotIn('class="pw-hs-nav"', page)
+            for href in _links(page):
+                self.assertTrue(href.startswith(("/", "#")), href)
+
+    def test_their_links_stand_on_lines_of_their_own(self) -> None:
+        page = _call("/how-picwise-works")[2]
+        for href in ("/how-we-choose", "/our-checks", "/affiliate-disclosure"):
+            self.assertIn(f'<a class="pw-hs-link" href="{href}">', page)
+        self.assertNotRegex(_markup(page), r"<p>[^<]*<a ")
+
+    def test_our_shops_tonight_a_to_z_and_never_a_name_that_names_no_shop(self) -> None:
+        page = _call("/our-shops")[2]
+        self.assertIn("PicWise shows products from UK shops.", _text(page))
+        self.assertNotIn("A to Z", _text(page))
+        facts = home_store.HomeFacts(prepared_at=None, shop_names=("8wines UK", "Aosom UK", "aZengear", "Geepas"), shop_count=4)
+        home_store_facts.set_home_facts_for_tests(facts)
+        text = _text(_call("/our-shops")[2])
+        self.assertIn("PicWise shows products from 4 UK shops tonight.", text)
+        self.assertIn("A to Z 0\u20139 8wines UK A Aosom UK aZengear G Geepas", text)
+
+    def test_the_footer_names_the_four_pages(self) -> None:
+        links = _links(_call("/departments")[2])
+        for href in ("/how-picwise-works", "/how-we-choose", "/our-checks", "/our-shops"):
+            self.assertIn(href, links)
+
+
+class TheShopsTests(unittest.TestCase):
+    class _Product:
+        def __init__(self, name: str) -> None:
+            self.raw = {"merchant_name": name}
+
+    def test_a_name_that_names_no_shop_is_neither_listed_nor_counted(self) -> None:
+        products = [self._Product(n) for n in ("Geepas Partner Program", "Shopping Ads: Google & Bing", "Tooled Up",
+                                               "Tooled Up")]
+        names = home_store_facts.all_shop_names(products)
+        self.assertEqual(names, ("Geepas", "Tooled Up"))
+        shops, count = home_store_facts.top_shops(products)
+        self.assertNotIn("Shopping Ads: Google & Bing", shops)
+        self.assertEqual(count, 2)
+
+
 class TheKindFactsTests(unittest.TestCase):
     def test_link_words(self) -> None:
         self.assertEqual(home_store_facts._link_words("Kettles"), "See kettles")

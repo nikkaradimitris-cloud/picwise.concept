@@ -81,7 +81,7 @@ BACKGROUND_PATH = "/assets/home/ov/"
 # B), "offers" (Part C), "pages" (Part D, the four pages). A link to a part not named here
 # is not drawn (the specification's section 6), so the page never leads to a page that
 # does not answer. Each part is added here with its routes, in the same commit.
-PARTS_BUILT: frozenset[str] = frozenset({"departments"})
+PARTS_BUILT: frozenset[str] = frozenset({"departments", "pages"})
 PART_ADDRESSES = {
     "how_picwise_works": "/how-picwise-works",
     "how_we_choose": "/how-we-choose",
@@ -465,6 +465,9 @@ class HomeFacts:
     # The shops with the most products shown, by their names as a buyer knows them.
     shops: tuple[str, ...] = ()
     shop_count: int = 0
+    # Every shop with a product shown tonight, by its name as a buyer knows it, A to Z
+    # ("Our shops", the specification, 7.3); `shop_count` is how many.
+    shop_names: tuple[str, ...] = ()
     # The shops' offers that cover products shown tonight, one a shop (the specification, 5.5).
     offers: tuple[OfferCard, ...] = ()
 
@@ -1344,6 +1347,10 @@ def render_home_store_page(
         _section_html(section, index, facts, parts) for index, section in enumerate(lists.sections, start=1)
     )
     offers_html = _offers_html(facts, parts)
+    # The shops' count is the list's on "Our shops" once tonight's is known (owner,
+    # 2026-11-24): a name that names no shop is in neither.
+    if catalogue and facts is not None and facts.shop_count > 0:
+        catalogue = (catalogue[0], facts.shop_count)
     main_html = (
         f"{_promise_band_html(catalogue)}"
         f"{_banners_html(lists, parts, offers_shown=bool(offers_html))}"
