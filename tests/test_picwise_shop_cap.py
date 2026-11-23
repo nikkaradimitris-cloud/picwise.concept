@@ -9,7 +9,9 @@ keeps, then the products with a kind before those with none, a product a cheaper
 last (19.4 a to c); two shops of one catalogue show two halves of it (19.4 b); the night
 before's first, a kept product a cheaper shop keeps giving its place to one that passed
 (19.4 e); the checks' gate and the candidates, one and a quarter times the places open
-(19.6.2); the bot's order of a shop's shown products (19.3.2); the switch (19.7.2).
+(19.6.2); the bot's order of a shop's shown products (19.3.2); the switch (19.7.2). And, from
+the look of 23/11: a cheaper row of a shop that is not capped counts as a cheaper offer only
+when the site may show it (shown the night before, or let in by the checks' gate).
 
 Every row is local test data: fictional shops and brands, `.invalid` hosts.
 """
@@ -150,6 +152,34 @@ class CapShopsTests(unittest.TestCase):
         again = shop_cap.cap_shops(products, kinds, kept_before=before, limit=3, may_enter=lambda product: False)
         self.assertEqual([number for number in _numbers(products, again.keep) if number.startswith("big")],
                          ["big-0", "big-1", "big-2"])
+
+    def test_a_cheaper_row_that_waits_at_the_gate_is_no_cheaper_offer_yet(self) -> None:
+        # The look of 23/11: half the rows of the shops that are not capped wait at the gate.
+        # Small sells big-0 cheaper, but the site did not show its row the night before and
+        # it has not passed its check: nothing of it is shown, so big-0 is the cheapest offer
+        # the site keeps, and Big's to keep as that (19.4 b). The night Small's row is shown,
+        # or passes and may enter, big-0 is last.
+        big = [_product(number, kinds_hint="kettle") for number in range(6)]
+        big[0] = _product(0, gtin=_gtin(1), price=50.0)
+        small = [_product(1, shop="Small", gtin=_gtin(1), price=40.0)]
+        products = big + small
+        kinds = [KETTLE] * 7
+        before = {row_key(product) for product in big[:3]}
+        waits = shop_cap.cap_shops(products, kinds, kept_before=before, limit=3, thin=1, may_enter=lambda product: False)
+        self.assertEqual([number for number in _numbers(products, waits.keep) if number.startswith("big")],
+                         ["big-0", "big-1", "big-2"])
+        self.assertEqual((waits.shops["Big"]["kept_by_step"]["cheapest kept"],
+                          waits.shops["Big"]["kept_by_step"]["a cheaper shop's"]), (1, 0))
+        shown = shop_cap.cap_shops(products, kinds, kept_before=before | {row_key(small[0])}, limit=3, thin=1,
+                                   may_enter=lambda product: False)
+        self.assertEqual((shown.shops["Big"]["kept_by_step"]["cheapest kept"],
+                          shown.shops["Big"]["kept_by_step"]["a cheaper shop's"]), (0, 1))
+        passed = shop_cap.cap_shops(products, kinds, kept_before=before, limit=3, thin=1,
+                                    may_enter=lambda product: row_key(product) == row_key(small[0]))
+        self.assertEqual(passed.shops["Big"]["kept_by_step"]["a cheaper shop's"], 1)
+        # With the checks not applied, every row is an offer the site keeps, as before.
+        free = shop_cap.cap_shops(products, kinds, limit=3, thin=1)
+        self.assertNotIn("big-0", _numbers(products, free.keep))
 
     def test_the_gate_and_one_and_a_quarter_candidates_for_the_places_open(self) -> None:
         big = [_product(number, kinds_hint="kettle") for number in range(20)]

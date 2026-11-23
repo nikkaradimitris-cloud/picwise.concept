@@ -54,7 +54,9 @@ of every shop that sells it (b); then "cheapest" is read among the offers the ot
 keep, so a product whose cheaper offers were all left out by their own shops is the next
 shop's to keep; and a shop whose choice rested on what another has since changed is settled
 again, until no choice changes (`SETTLE_ROUNDS` at most): two shops with one catalogue then
-show two different parts of it, never the same part twice.
+show two different parts of it, never the same part twice. Of a shop that is not capped, an
+offer the site keeps is a row it showed the night before or one the checks' gate lets in: a
+row that waits at the gate is no cheaper offer yet (the look of 23/11).
 
 Behind one switch (`data/shop_cap_switch.json`, frozen with the code, 19.7.2): false, no
 shop is capped and the bot asks as before.
@@ -282,7 +284,7 @@ def cap_shops(
     has_passed = [passed is not None and bool(passed(products[members[place]])) for place in positions]
 
     # Who sells each of the capped shops' codes, and at what price: the cheapest of all,
-    # and the cheapest among the shops that are not capped (they keep every product).
+    # and the cheapest among the offers the shops that are not capped may show.
     wanted = {code for code in facts.codes if code}
     cheapest_all: dict[str, float] = {}
     sellers: dict[str, set[str]] = defaultdict(set)
@@ -302,7 +304,12 @@ def cap_shops(
         price = float(amount) if amount is not None else _INFINITY
         sellers[code].add(shops[index])
         cheapest_all[code] = min(cheapest_all.get(code, _INFINITY), price)
-        uncapped_low[code] = min(uncapped_low.get(code, _INFINITY), price)
+        # "Cheapest" is read among the offers the site keeps (19.4 b): a row of a shop that is
+        # not capped is one when the site showed it the night before or the checks' gate lets
+        # it in. One that waits at the gate shows nothing yet, so a capped shop's product is
+        # not last for it (the look of 23/11: half the rows of the shops not capped wait there).
+        if may_enter is None or row_key(product) in before or bool(may_enter(product)):
+            uncapped_low[code] = min(uncapped_low.get(code, _INFINITY), price)
     shared = [bool(code) and len(sellers[code]) > 1 for code in facts.codes]
     by_shop: dict[str, list[int]] = defaultdict(list)
     for place in positions:
