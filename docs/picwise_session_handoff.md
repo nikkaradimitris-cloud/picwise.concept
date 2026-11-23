@@ -44,7 +44,15 @@ a decision came about.
   - **The owner asked (15:47 Athens) whether all this was for the one shop.** Told: nearly; the mend is a
     general rule (every shop at its 20,000 with such places; the bot's order changes for 23 shops), but its
     gain today is GamingKit's alone, at most about 3,900 products, 2% of the catalogue; the look's tool stays
-    for every later change to the rule.
+    for every later change to the rule. **And (16:00) what the mechanism is for, the products being ordered
+    by price anyway.** Told: the price decides what the visitor sees, which is why the dearer copies have no
+    card; the mechanism is for the shop's 20,000 places and the bot's checks, which those copies take (about
+    3,000 of GamingKit's checks a day, by the first round's pace) while its new products are never asked.
+    Told too, as a correction: the copies are not wholly idle, they are what makes the cheaper shop's card say
+    "Lowest price of 2 shops" (the rules' 20.10.3; not counted by the look); and that the mend is an
+    improvement for one shop, not a need: left undeployed nothing breaks. **HE HAS NOT SAID «ανέβασε»: do not
+    deploy it on the advice alone.** The Project's page `claude/PicWise-kanones-elegchon.md` still says of
+    the copies only that they are not shown: add the line on "Lowest price of N shops" at its next change.
   - **To deploy it, on his «ανέβασε»** (the rules' 20.10.6, as 20.8): the work branch's head; the site
     restarted first (a commit that starts a deployment and does not concern the catalogue), then the commit
     that prepares; `main` not moved. The look's "site" run is the forecast of the night of 24/11 without it

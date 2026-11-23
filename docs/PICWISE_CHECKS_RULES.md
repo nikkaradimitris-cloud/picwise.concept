@@ -1740,6 +1740,15 @@ household battery 2, mouse 2; air purifier 10 to 9, games console 16 to 15, gps 
 to 3; shelving unit, ip phone, firewall, tv, graphics card 1 each), with 3,859 of its copies
 gone: about six in a thousand. The same nights it shows 2,106 and 3,902 more products.
 
+**And such a product is counted on the cheaper shop's card.** A shown card of a product more
+than one shop sells says "Lowest price of N shops" (`search_selection`, `shop_counts`; the
+decision contract, the owner's rule of 16/10). With the dearer row gone the card counts one
+shop fewer and, where two sold it, says "Lowest price" alone. So "it shows nothing" (19.4 b,
+20.9) is true of a card of its own, not of that line. Not counted by the look (its summaries
+hold no card's shops): at most one card for each copy that leaves, and only where that card
+is among the shown ones that carry the line. Found on 23/11 (16:00 Athens) when the owner
+asked what the mechanism is for, and told to him then.
+
 The site's code does the same wherever a capped shop's product that a cheaper shop keeps
 gives its place to one that enters (19.4 e, the owner's order): the mend makes it happen for
 GamingKit's 4,476. **Left as it is, the owner told. A later step, his to weigh:** a product
