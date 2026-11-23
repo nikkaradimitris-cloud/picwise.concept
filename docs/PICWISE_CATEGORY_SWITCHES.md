@@ -277,4 +277,15 @@ that pinned it off now pinning his word; deployed with what else waited on the w
 «ανέβασε»: the mend of the places a full shop's own copies hold (the checks' rules 20.9). Two
 deployments, for the server's memory (as on 22/11 and 23/11): first one that restarts the site
 and prepares nothing, then the one that prepares. Task 6's switch stays false: its own look is not
-built; he was told. What the deployment did: below, once read.
+built; he was told.
+
+- **Tests before it**: every fast module on its own with the switch true, 356 modules, 3,422
+  tests: 354 pass, 2 fail as known.
+- **The restart** (`1d72786` on the site's branch, run 45216959687, 16:28 UTC): "not prepared
+  again: the change does not concern the catalogue", the site restarted on the file in place.
+- **The deployment** (`64ec701`, run 45219096369, release `20261123T164018Z-64ec701`): the bot
+  stopped, the catalogue prepared in 30.6 minutes, peak 14.48 GB; the site restarted 17:13 UTC on
+  it, 2.9 GB; 15 of 15 pages the same on the server and live, 12 of 12 searches the same cards.
+- **The catalogue: 118,048 products of 109 shops** (199,771 of 132 that morning; the look of the
+  list with sports and tyres closed had said 113,026 for the first night). The places the list
+  frees fill as the bot checks its candidates, night by night.
