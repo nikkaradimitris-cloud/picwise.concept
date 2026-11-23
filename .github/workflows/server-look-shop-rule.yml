@@ -18,17 +18,24 @@
 #    passed, the most that can enter in a night; the second one to see that what a night
 #    shows stays the next (the look of 23/11: a shop with one place open moved its
 #    categories' shares from night to night).
+#    From 23/11 the rule is live, and a change to it is looked at the same way against the
+#    code the site runs: one run prepares with the head of the site's branch (in a folder of
+#    its own on the runner), the other with this commit's, the rule on in both, from the same
+#    copies; each lives the two nights after by its own code; every summary and comparison is
+#    this commit's. First for the mend of 20.9 (the places a full shop's own copies hold).
 # 2. The bot on the server, inside the limits of its own unit (picwise-checks.service), from a
 #    copy of this commit's code in the unit's private temporary folder, which goes with the
 #    unit (deployment/server/look_bot_rule.py): whether the processes the pages are read on
 #    start in its sandbox, the order of 19.4 worked out, what it would ask with the rule off
-#    and on, what the round running has answered so far, its memory. No shop is asked.
+#    and on, where each shop's candidates stand in what it is asked with its products a
+#    cheaper shop shows asked after them (20.9) and among the shown (before it), what the
+#    round running has answered so far, its memory. No shop is asked.
 #
 # The copies hold the shops' links: they are never uploaded anywhere, and are removed. What is
 # kept of a run (its summary, as the run's file, and this log, public like the repository):
 # counts, shops' names, kinds, categories, titles and prices; never a link, an id or a key.
 #
-# Run: 2026-11-23 09:10 Athens, the fifth: the offered counted for no category's size, a cheaper row that waits no cheaper offer; two nights after too (to run again, change this line and push).
+# Run: 2026-11-23 13:50 Athens, the sixth: the mend of 20.9 (2a264ba) against the code the site runs, the rule on in both, two nights after each (to run again, change this line and push).
 name: How many of a shop's products pass, the look before its «ανέβασε» (read-only)
 on:
   push:
@@ -49,14 +56,39 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {name: "off", rule: "off", checks: "server"}
-          - {name: "on", rule: "on", checks: "server"}
-          - {name: "gate-off", rule: "off", checks: "assumed"}
-          - {name: "gate-on", rule: "on", checks: "assumed"}
+          # A change to the rule against the code the site runs, the rule on in both. `code`:
+          # "site", the catalogue prepared by the head of the site's branch; "this", by this
+          # commit's code.
+          - {name: "site", rule: "on", checks: "server", code: "site"}
+          - {name: "mend", rule: "on", checks: "server", code: "this"}
+          # The pairs of the looks before the rule's own «ανέβασε» (22/11 and 23/11): the
+          # switch off and on, by this commit's code. To run them again, put them back here.
+          # - {name: "off", rule: "off", checks: "server", code: "this"}
+          # - {name: "on", rule: "on", checks: "server", code: "this"}
+          # - {name: "gate-off", rule: "off", checks: "assumed", code: "this"}
+          # - {name: "gate-on", rule: "on", checks: "assumed", code: "this"}
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+      # The code the site runs, in a folder of its own: only the preparation is run from it.
+      - uses: actions/checkout@v5
+        if: matrix.code == 'site'
+        with:
+          persist-credentials: false
+          ref: ccr-1361f1a7-dcpo60
+          path: site-code
+      - name: The code this run prepares with
+        run: |
+          if [ "${{ matrix.code }}" = site ]; then code="$GITHUB_WORKSPACE/site-code"; else code="$GITHUB_WORKSPACE"; fi
+          echo "CODE=$code" >> "$GITHUB_ENV"
+          echo "the catalogue is prepared by: $(git -C "$code" log -1 --format='%h %s' | cut -c1-120)"
+          if grep -q "^def name_candidates" "$code/src/picwise_providers/shop_cap.py"; then
+            echo "the mend of 20.9 (the places a full shop's own copies hold): in this code"
+          else
+            echo "the mend of 20.9 (the places a full shop's own copies hold): not in this code"
+          fi
+          echo "the summaries and the comparison are by: $(git log -1 --format='%h %s' | cut -c1-120)"
       - name: Connect with the key, check the server's identity, mask its names
         id: connect
         env:
@@ -177,7 +209,7 @@ jobs:
           for pair in "google.bin AWIN_FEED_URL first" "awin.bin AWIN_FEED_URL_AWIN second"; do
             set -- $pair
             if [ -s "$RUNNER_TEMP/look/$1" ]; then
-              echo "the $3 link: the server's own copy, $(( $(stat -c %s "$RUNNER_TEMP/look/$1") / 1048576 )) MB"
+              echo "the $3 link: the server's own copy, $(( $(stat -c %s "$RUNNER_TEMP/look/$1") / 1048576 )) MB ($(stat -c %s "$RUNNER_TEMP/look/$1") bytes)"
             else
               echo "the $3 link: no copy on the server under its name; downloaded here"
               curl -sS --fail --max-time 900 -o "$RUNNER_TEMP/look/$1" "$(clean "${!2}")" || { echo "the $3 link could not be read"; exit 1; }
@@ -237,11 +269,11 @@ jobs:
           import os
           from pathlib import Path
 
-          path = Path("data/shop_cap_switch.json")
+          path = Path(os.environ["CODE"]) / "data" / "shop_cap_switch.json"
           switch = json.loads(path.read_text(encoding="utf-8"))
           switch["cap"] = os.environ["RULE"] == "on"
           path.write_text(json.dumps(switch, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-          print(f"data/shop_cap_switch.json: cap {str(switch['cap']).lower()}, in the runner's copy of the code only")
+          print(f"data/shop_cap_switch.json: cap {str(switch['cap']).lower()}, in the runner's copy of the code that prepares only")
           EOF
       - name: Prepare the catalogue (the preparation's own code)
         id: prepare
@@ -257,7 +289,7 @@ jobs:
           PYTHONDONTWRITEBYTECODE: "1"
         run: |
           set -o pipefail
-          /usr/bin/time -o "$RUNNER_TEMP/look/time.txt" -f "%M %e" python3 deployment/server/look_shop_rule.py prepare \
+          /usr/bin/time -o "$RUNNER_TEMP/look/time.txt" -f "%M %e" python3 "$CODE/deployment/server/look_shop_rule.py" prepare \
             "$RUNNER_TEMP/look/run" --feed-file "$RUNNER_TEMP/look/google.bin" 2>&1 | grep -E "^(prepare_catalogue|look):"
           awk '{printf "peak memory %.2f GB, %.1f minutes\n", $1 / 1048576, $2 / 60}' "$RUNNER_TEMP/look/time.txt"
       - name: What the catalogue shows, searched as the site answers
@@ -312,7 +344,7 @@ jobs:
           print(f"the night after: {len(named):,} candidates of {len(by_shop)} shops, every one taken as asked and passed; the most: "
                 + ", ".join(f"{shop} {count:,}" for shop, count in by_shop.most_common(25)))
           EOF
-          /usr/bin/time -o "$RUNNER_TEMP/look/time2.txt" -f "%M %e" python3 deployment/server/look_shop_rule.py prepare \
+          /usr/bin/time -o "$RUNNER_TEMP/look/time2.txt" -f "%M %e" python3 "$CODE/deployment/server/look_shop_rule.py" prepare \
             "$RUNNER_TEMP/look/run2" --feed-file "$RUNNER_TEMP/look/google.bin" 2>&1 | grep -E "^(prepare_catalogue|look):"
           read -r peak seconds < "$RUNNER_TEMP/look/time2.txt"
           python3 deployment/server/look_shop_rule.py summary "$RUNNER_TEMP/look/run2" --name "${{ matrix.name }}-2" \
@@ -358,7 +390,7 @@ jobs:
           print(f"two nights after: {len(named):,} candidates of {len(by_shop)} shops, every one taken as asked and passed; the most: "
                 + ", ".join(f"{shop} {count:,}" for shop, count in by_shop.most_common(25)))
           EOF
-          /usr/bin/time -o "$RUNNER_TEMP/look/time3.txt" -f "%M %e" python3 deployment/server/look_shop_rule.py prepare \
+          /usr/bin/time -o "$RUNNER_TEMP/look/time3.txt" -f "%M %e" python3 "$CODE/deployment/server/look_shop_rule.py" prepare \
             "$RUNNER_TEMP/look/run3" --feed-file "$RUNNER_TEMP/look/google.bin" 2>&1 | grep -E "^(prepare_catalogue|look):"
           read -r peak seconds < "$RUNNER_TEMP/look/time3.txt"
           python3 deployment/server/look_shop_rule.py summary "$RUNNER_TEMP/look/run3" --name "${{ matrix.name }}-3" \
@@ -402,6 +434,20 @@ jobs:
         with:
           path: ${{ runner.temp }}/summaries
           merge-multiple: true
+      - name: The code the site runs and this commit's, night by night
+        if: always()
+        run: |
+          cd "$RUNNER_TEMP/summaries" 2> /dev/null || { echo "no summary was kept"; exit 0; }
+          found=no
+          for night in "" "-2" "-3"; do
+            if [ -f "summary-site$night.json" ] && [ -f "summary-mend$night.json" ]; then
+              found=yes
+              case "$night" in "") when="the first night";; "-2") when="the night after";; *) when="two nights after";; esac
+              python3 "$GITHUB_WORKSPACE/deployment/server/look_shop_rule.py" compare "summary-site$night.json" "summary-mend$night.json" \
+                --before "the code the site runs, $when" --after "this commit's code, $when"
+            fi
+          done
+          [ "$found" = yes ] || echo "not run this time"
       - name: The switch off and on, the checks as the server has them
         if: always()
         run: |
@@ -427,7 +473,7 @@ jobs:
         run: |
           cd "$RUNNER_TEMP/summaries" 2> /dev/null || { echo "no summary was kept"; exit 0; }
           found=no
-          for name in on gate-on; do
+          for name in on gate-on site mend; do
             if [ -f "summary-$name.json" ] && [ -f "summary-$name-2.json" ]; then
               found=yes
               python3 "$GITHUB_WORKSPACE/deployment/server/look_shop_rule.py" compare "summary-$name.json" "summary-$name-2.json" \
@@ -440,7 +486,7 @@ jobs:
         run: |
           cd "$RUNNER_TEMP/summaries" 2> /dev/null || { echo "no summary was kept"; exit 0; }
           found=no
-          for name in on gate-on; do
+          for name in on gate-on site mend; do
             if [ -f "summary-$name-2.json" ] && [ -f "summary-$name-3.json" ]; then
               found=yes
               python3 "$GITHUB_WORKSPACE/deployment/server/look_shop_rule.py" compare "summary-$name-2.json" "summary-$name-3.json" \

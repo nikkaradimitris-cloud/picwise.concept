@@ -7,9 +7,12 @@ shop is asked): the preparation run by the look is the preparation's own, with t
 counted where they are worked out: per shop what a card can show, what was shown the night
 before, what the shops' rule keeps and what is kept in the end; with the switch off no shop
 is capped; the summary of a catalogue and the two set side by side; the kinds and the
-searches compared; the look at the bot reads the processes, the order and the night's file
-and asks no shop; what is printed holds counts, names, titles and prices, never a link or
-an id.
+searches compared; the products a cheaper shop shows too counted per shop, and a run
+before that applied the rule itself (another night, or another code of the rule) told shop
+by shop beside the run after; the look at the bot reads the processes, the order and the
+night's file and asks no shop, and says where a shop's candidates stand in what it is asked
+with its products a cheaper shop shows asked after them and among the shown; what is printed
+holds counts, names, titles and prices, never a link or an id.
 
 Every row is local test data: fictional brands and shops, `.invalid` addresses.
 """
@@ -71,12 +74,16 @@ def _feed(path: Path) -> Path:
     return path
 
 
-def _product(number: int, shop: str, category: str = "Home & Garden > Kitchen") -> ProviderProduct:
+def _product(number: int, shop: str, category: str = "Home & Garden > Kitchen", *, code: int = 0,
+             price: float | None = None) -> ProviderProduct:
+    raw = {"merchant_name": shop, "availability": "in stock"}
+    if code:
+        raw["ean"] = _ean(500000009000 + code)
     return ProviderProduct(
         provider_key="awin", provider_product_id=f"{shop.lower()}-{number}", title=f"Zentra thing {number}", brand="Zentra",
         category_text=category, product_url=f"https://{shop.lower()}.invalid/p/{number}",
-        image_url=f"https://{shop.lower()}.invalid/i/{number}.jpg", price_text=f"{10 + number:.2f}",
-        availability_text="in stock", currency="GBP", raw={"merchant_name": shop, "availability": "in stock"},
+        image_url=f"https://{shop.lower()}.invalid/i/{number}.jpg", price_text=f"{10 + number if price is None else price:.2f}",
+        availability_text="in stock", currency="GBP", raw=raw,
     )
 
 
@@ -109,6 +116,61 @@ class TheCapsCounted(unittest.TestCase):
         self.assertEqual((counts["products"], counts["after_the_shops_rule"], counts["kept"]), (8, 8, 8))
         self.assertTrue(counts["cap_failed"])
         self.assertEqual(counts["shops"]["Big"], [6, 0, 6, 6, 0, 0, 0])
+
+
+class TheCopiesCounted(unittest.TestCase):
+    def test_a_product_another_shop_sells_cheaper_shows_nothing(self) -> None:
+        products = [
+            # One product in three shops: the cheapest shows, the two dearer show nothing.
+            _product(1, "Big", code=1, price=20.0), _product(2, "Small", code=1, price=18.0), _product(3, "Third", code=1, price=25.0),
+            # At one price in two shops: neither is the dearer.
+            _product(4, "Big", code=2, price=30.0), _product(5, "Small", code=2, price=30.0),
+            # Twice in one shop alone, at two prices: no other shop shows it.
+            _product(6, "Big", code=3, price=9.0), _product(7, "Big", code=3, price=12.0),
+            # No code: joined with nothing.
+            _product(8, "Big", price=5.0), _product(9, "Small", price=50.0),
+        ]
+        self.assertEqual(look_shop_rule.copies_by_shop(products), {"Big": 1, "Third": 1})
+        self.assertEqual(look_shop_rule.copies_by_shop([]), {})
+
+    def test_the_two_runs_are_told_shop_by_shop_when_both_applied_the_rule(self) -> None:
+        def run(name: str, copies: dict[str, int], candidates: int, dearer: int) -> dict:
+            note = {"shop": "Big", "products": 30, "kept": 5, "cut": 25, "candidates": candidates, "kept_from_before": 5,
+                    "kept_passed": 0, "waiting_at_the_gate": 25,
+                    "kept_by_step": {"thin kinds": 0, "cheapest kept": 5 - dearer, "with a kind": 0, "the rest": 0,
+                                     "a cheaper shop's": dearer}}
+            return {
+                "name": name, "products": 9, "with_a_kind": 9, "shops": {"Big": 5, "Small": 4}, "categories": {}, "kinds": {},
+                "copies": copies,
+                "caps": {"products": 34, "after_the_shops_rule": 9, "kept": 9, "pool": 9, "gate": True, "categories": {}, "kinds": {},
+                         "shops": {"Big": [30, 5, 5, 5, 0, candidates, 0], "Small": [4, 4, 4, 4, 0, 0, 0]}},
+                "note": {"checks": {"applied": True, "night": "2026-11-23", "candidates": 0,
+                                    "shop_cap": {"applied": True, "limit": 5, "thin": 100, "capped_shops": 1, "cut": 25,
+                                                 "candidates": candidates, "shops": [note]}}},
+            }
+
+        said: list[str] = []
+        status = look_shop_rule.compare(run("site", {"Big": 2}, 0, 2), run("mend", {"Big": 1, "Small": 1}, 3, 1), said.append,
+                                        before="the code the site runs", after="the mend")
+        printed = "\n".join(said)
+        self.assertEqual(status, 0)
+        self.assertIn("the rule (at most 5; a kind thin under 100): 1 shops over it, 25 of their products left out, candidates 3", printed)
+        self.assertIn("in the run before: 1 shops over it, 25 of their products left out, candidates 0", printed)
+        self.assertIn("  Big: 30 | 5 | 5 | 5 | 5 | 0 | 3", printed)
+        self.assertIn("      kept by step: cheapest kept 4, a cheaper shop's 1; from the night before 5", printed)
+        self.assertIn("      in the run before: the rule keeps 5, then the cap of a category 5, candidates of the shop for the bot 0", printed)
+        self.assertIn("      in the run before, kept by step: cheapest kept 3, a cheaper shop's 2; from the night before 5", printed)
+        # The products that show nothing, in all and by shop, and what then shows.
+        self.assertIn("== 3b. the products a cheaper shop shows too", printed)
+        self.assertIn("in all:         2 ->         2 (+0); the products that show:         7 ->         7 (+0)", printed)
+        self.assertIn("(-1)  Big: shows 3 ->         4 (+1)", printed)
+        self.assertIn("(+1)  Small: shows 4 ->         3 (-1)", printed)
+
+    def test_a_summary_with_no_such_count_is_compared_as_before(self) -> None:
+        said: list[str] = []
+        run = {"products": 3, "shops": {"Big": 3}, "kinds": {}, "caps": {}, "note": {}}
+        self.assertEqual(look_shop_rule.compare(run, run, said.append), 0)
+        self.assertFalse(any("3b." in line for line in said))
 
 
 class Compared(unittest.TestCase):
@@ -245,6 +307,8 @@ class ThePreparationOfTheLook(unittest.TestCase):
         self.assertEqual(off["shops"], {"Fixture Big Store": 12, "Fixture Small Store": 4})
         self.assertEqual(on["shops"], {"Fixture Big Store": 5, "Fixture Small Store": 4})
         self.assertEqual(off["kinds"]["kettle"], 13)
+        # No product of the test's feed is sold by both shops.
+        self.assertEqual((off["copies"], on["copies"]), ({}, {}))
         self.assertEqual(len(off["searches"]), 40)
         kettle = off["kind_searches"]["kettle"]
         self.assertEqual((kettle["kind"], kettle["total"], len(kettle["cards"])), ("kettle", 13, 4))
@@ -344,6 +408,31 @@ class TheLookAtTheBot(unittest.TestCase):
     def test_what_would_be_asked_with_the_rule_off_and_on(self) -> None:
         self.assertIn("in all: 41 products of 1 shops, the rule off; 41 of 1 shops, the rule on", self.printed)
         self.assertIn("  Fictional Store One: 41 | 41 | 41 | 41 | ", self.printed)
+
+    def test_where_the_candidates_stand_with_a_cheaper_shops_asked_after_them_and_among_the_shown(self) -> None:
+        # The test's catalogue is one shop's and no candidate is named: the count and the
+        # table's head are said, no shop is listed under it.
+        self.assertIn("a cheaper shop's asked after the candidates (20.9) and among the shown (before it): "
+                      "0 such products of 0 shops, 0 candidates of 0 shops", self.printed)
+        self.assertIn("    shop: a cheaper shop's among its shown | candidates named | of them in what it is asked: after, among | ",
+                      self.printed)
+        self.assertNotIn("    Fictional Store One: ", self.printed)
+
+    def test_the_places_of_a_shops_candidates_are_counted_in_both_orders(self) -> None:
+        shops = {"s1": "Big", "s2": "Big", "s3": "Big", "c1": "Big", "c2": "Big", "t1": "Small", "x1": "Third"}
+        # Big shows three products, one of them (s3) a cheaper shop's, and names two candidates.
+        after = {"Big": ["s1", "s2", "c1", "c2", "s3"], "Small": ["t1"]}
+        among = {"Big": ["s1", "s2", "s3", "c1"], "Small": ["t1"]}
+        lines = look_bot_rule.candidates_standing(after, among, shops=shops, shown={"Big": 3, "Small": 1, "Third": 1},
+                                                  candidates=["c1", "c2", "a row no catalogue holds"], dearer={"s3"})
+        self.assertIn("1 such products of 1 shops, 3 candidates of 1 shops", lines[0])
+        # a cheaper shop's | candidates named | in what it is asked: after, among | before its
+        # first candidate: after, among | before its last: after, among
+        self.assertEqual(lines[2:], ["    Big: 1 | 2 | 2, 1 | 2, 3 | 3, 3"])
+        # A shop with a candidate that is never reached in its order, and one told at most.
+        lines = look_bot_rule.candidates_standing({"Big": ["s1"]}, {}, shops=shops, shown={"Small": 9, "Big": 3},
+                                                  candidates=["c1", "t1"], dearer=(), listed=1)
+        self.assertEqual(lines[2:], ["    Small: 0 | 1 | 0, 0 | -, - | -, -"])
 
     def test_a_pass_counting_for_thirty_nights_and_for_three(self) -> None:
         self.assertIn("a pass counts for 30 nights: shops out 0, cut 0, not shown until checked 0, may enter 0", self.printed)

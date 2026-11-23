@@ -20,9 +20,12 @@ counts, where the caps are worked out, every product a card can show: per shop, 
 and per kind, how many there are, how many the shops' rule keeps and how many the cap of a
 category then keeps; which were shown the night before; the candidates each cap names
 (`caps.json`). `summary` reads the catalogue that run wrote as the site reads it and writes
-`summary.json`: the products per shop, category and kind, every kind searched by its first
-name and the 40 searches of the measure after, their first cards. `compare` prints the two
-side by side: the switch off and on, or a night with the rule and the night after it.
+`summary.json`: the products per shop, category and kind, per shop those a cheaper shop shows
+too (they show nothing), every kind searched by its first name and the 40 searches of the
+measure after, their first cards. `compare` prints the two side by side: the switch off and
+on, a night with the rule and the night after it, or the code the site runs and a change to
+the rule on the same night (the look of 23/11 at the mend of 20.9: the workflow prepares one
+of the pair with the site's branch's code and summarizes both with this one's).
 
 Written and printed: counts, shops' names, kinds, categories, titles and prices; never a
 link, an id or a key.
@@ -230,10 +233,42 @@ def _search(query: str, shown: int, prepared: Any, index: Mapping[str, int]) -> 
     return {"q": query, "kind": found["kind"], "total": found["total"], "cards": cards, "error": found["error"]}
 
 
+def copies_by_shop(products: Sequence[Any]) -> dict[str, int]:
+    """Per shop, how many of `products` show nothing: the same product (by its code,
+    `product_identity.same_product_key`) is among them from another shop at a lower price,
+    and one product is shown once, from the cheapest (owner, 16/10). The last step of 19.4,
+    counted here on its own, not through `picwise_providers.shop_cap`: the look at a change
+    to that module reads both of its codes with one count."""
+    from picwise_providers.catalogue_cap import shop_of
+    from picwise_providers.decision_labels import parse_price_amount
+    from picwise_providers.product_identity import same_product_key
+
+    facts: list[tuple[str, str, float]] = []
+    low: dict[str, float] = {}
+    sellers: dict[str, set[str]] = {}
+    for product in products:
+        raw = product.raw if isinstance(product.raw, Mapping) else {}
+        code = same_product_key(raw, brand=str(product.brand or ""))
+        shop = shop_of(product)
+        amount = parse_price_amount(product.price_text)
+        price = float(amount) if amount is not None else float("inf")
+        facts.append((shop, code, price))
+        if code:
+            sellers.setdefault(code, set()).add(shop)
+            if price < low.get(code, float("inf")):
+                low[code] = price
+    found: Counter[str] = Counter()
+    for shop, code, price in facts:
+        if code and len(sellers[code]) > 1 and low[code] < price:
+            found[shop] += 1
+    return dict(found)
+
+
 def summarize(prepared: Any, *, searches: bool = True) -> dict[str, Any]:
-    """What a prepared catalogue shows: products per shop, category and kind; and, searched
-    as the site answers (`look_itself.searched`; the catalogue must be the site's of this
-    process), every kind by its first name and the 40 searches, their first cards."""
+    """What a prepared catalogue shows: products per shop, category and kind, per shop those
+    a cheaper shop shows too; and, searched as the site answers (`look_itself.searched`; the
+    catalogue must be the site's of this process), every kind by its first name and the 40
+    searches, their first cards."""
     from picwise_providers.catalogue_cap import category_of, shop_of
 
     shops: Counter[str] = Counter()
@@ -253,6 +288,7 @@ def summarize(prepared: Any, *, searches: bool = True) -> dict[str, Any]:
         "shops": dict(shops),
         "categories": dict(categories),
         "kinds": dict(kinds),
+        "copies": copies_by_shop(prepared.products),
     }
     if searches:
         from measure_after import SEARCHES
@@ -387,6 +423,8 @@ def compare(off: Mapping[str, Any], on: Mapping[str, Any], say: Any = print, *,
     off_caps, on_caps = off.get("caps") or {}, on.get("caps") or {}
     on_checks = (on.get("note") or {}).get("checks") or {}
     rule = on_checks.get("shop_cap") or {}
+    # The run before's own rule, when it applied one (two nights, or two codes of the rule).
+    rule_before = ((off.get("note") or {}).get("checks") or {}).get("shop_cap") or {}
 
     say(f"== 1. the two preparations: before is {before}; after is {after}")
     for label, run in ((f"before ({before})", off), (f"after ({after})", on)):
@@ -416,8 +454,17 @@ def compare(off: Mapping[str, Any], on: Mapping[str, Any], say: Any = print, *,
             f"{rule.get('cut', 0):,} of their products left out, candidates {rule.get('candidates', 0):,}")
     else:
         say(f"THE RULE WAS NOT APPLIED in the run after: {rule.get('why') or rule.get('error') or rule}")
+    if rule_before.get("applied"):
+        say(f"in the run before: {rule_before.get('capped_shops')} shops over it, {rule_before.get('cut', 0):,} of their products "
+            f"left out, candidates {rule_before.get('candidates', 0):,}")
     off_shops, on_shops = off_caps.get("shops") or {}, on_caps.get("shops") or {}
     noted = {str(entry.get("shop")): entry for entry in rule.get("shops") or []}
+    noted_before = {str(entry.get("shop")): entry for entry in rule_before.get("shops") or []}
+
+    def steps_line(note: Mapping[str, Any]) -> str:
+        return ("kept by step: " + ", ".join(f"{step} {count:,}" for step, count in (note.get("kept_by_step") or {}).items() if count)
+                + f"; from the night before {note.get('kept_from_before', 0):,}, passed {note.get('kept_passed', 0):,}, "
+                f"waiting at the gate {note.get('waiting_at_the_gate', 0):,}")
     capped = [name for name in on_shops if name in noted or on_shops[name][2] < on_shops[name][0]]
     say("shop: a card can show | shown the night before | shown before | the rule keeps | then the cap of a category keeps |"
         " shown the night before and left out by the rule | candidates of the shop for the bot")
@@ -427,9 +474,12 @@ def compare(off: Mapping[str, Any], on: Mapping[str, Any], say: Any = print, *,
         say(f"  {name}: {entry[0]:,} | {entry[1]:,} | {earlier[3]:,} | {entry[2]:,} | {entry[3]:,} | {entry[4]:,} | {entry[5] + entry[6]:,}")
         note = noted.get(name)
         if note:
-            say("      kept by step: " + ", ".join(f"{step} {count:,}" for step, count in (note.get("kept_by_step") or {}).items() if count)
-                + f"; from the night before {note.get('kept_from_before', 0):,}, passed {note.get('kept_passed', 0):,}, "
-                f"waiting at the gate {note.get('waiting_at_the_gate', 0):,}")
+            say("      " + steps_line(note))
+        note = noted_before.get(name)
+        if note:
+            say(f"      in the run before: the rule keeps {earlier[2]:,}, then the cap of a category {earlier[3]:,}, "
+                f"candidates of the shop for the bot {earlier[5] + earlier[6]:,}")
+            say("      in the run before, " + steps_line(note))
     say(f"in all, of the {len(capped)} shops: a card can show {sum(on_shops[name][0] for name in capped):,}; shown before "
         f"{sum((off_shops.get(name) or [0] * 7)[3] for name in capped):,}; the rule keeps {sum(on_shops[name][2] for name in capped):,}; "
         f"shown after {sum(on_shops[name][3] for name in capped):,}")
@@ -445,6 +495,16 @@ def compare(off: Mapping[str, Any], on: Mapping[str, Any], say: Any = print, *,
             say(f"  {_change((off.get('shops') or {}).get(name, 0), (on.get('shops') or {}).get(name, 0))}  {name}")
     gone = [name for name in names if (off.get("shops") or {}).get(name, 0) and not (on.get("shops") or {}).get(name, 0)]
     say(f"shops whose count changes {len(moved)} of {len(names)}; shops left with no product: {', '.join(gone) or 'none'}")
+
+    if "copies" in off or "copies" in on:
+        off_copies, on_copies = off.get("copies") or {}, on.get("copies") or {}
+        before_all, after_all = sum(off_copies.values()), sum(on_copies.values())
+        say("== 3b. the products a cheaper shop shows too: they show nothing (one product is shown once, from the cheapest)")
+        say(f"in all: {_change(before_all, after_all)}; the products that show: "
+            f"{_change(int(off.get('products') or 0) - before_all, int(on.get('products') or 0) - after_all)}")
+        for name in sorted(set(off_copies) | set(on_copies), key=lambda name: (-max(off_copies.get(name, 0), on_copies.get(name, 0)), name))[:LISTED // 2]:
+            say(f"  {_change(off_copies.get(name, 0), on_copies.get(name, 0))}  {name}: shows "
+                f"{_change((off.get('shops') or {}).get(name, 0) - off_copies.get(name, 0), (on.get('shops') or {}).get(name, 0) - on_copies.get(name, 0)).strip()}")
 
     say("== 4. the categories (the cap of a category): a card can show | kept before | given to the cap after | kept after")
     off_categories, on_categories = off_caps.get("categories") or {}, on_caps.get("categories") or {}

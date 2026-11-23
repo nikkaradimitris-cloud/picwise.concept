@@ -35,7 +35,7 @@ import time
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Collection, Mapping
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
@@ -144,6 +144,44 @@ def tonight_counts(checks: Path, shop_of: dict[str, str]) -> list[str]:
     return lines or ["no file of a round running"]
 
 
+def candidates_standing(after: Mapping[str, list[str]], among: Mapping[str, list[str]], *, shops: Mapping[str, str],
+                        shown: Mapping[str, int], candidates: Collection[str], dearer: Collection[str],
+                        listed: int = SHOPS_LISTED) -> list[str]:
+    """Where each shop's candidates stand in what it is asked, with the rule on: `after`, its
+    shown products that a cheaper shop shows (`dearer`) asked after the cap's candidates (the
+    mend of 20.7.4, the checks' rules 20.9); `among`, those asked among its shown, as before
+    it. `shops`: each row's shop by its key; `shown`: per shop how many products it shows (the
+    shops are told the largest first, those with such a product or a candidate). Places are
+    counted from 0: the number of products asked before the first and the last candidate."""
+    named = frozenset(candidates)
+    named_by_shop = Counter(shops[key] for key in named if key in shops)
+    copies_by_shop = Counter(shops[key] for key in dearer if key in shops)
+    lines = [
+        f"  the rule on, a cheaper shop's asked after the candidates (20.9) and among the shown (before it): "
+        f"{sum(copies_by_shop.values()):,} such products of {len(copies_by_shop)} shops, {len(named):,} candidates of "
+        f"{len(named_by_shop)} shops",
+        "    shop: a cheaper shop's among its shown | candidates named | of them in what it is asked: after, among | "
+        "asked before its first candidate: after, among | before its last: after, among",
+    ]
+
+    def places(keys: list[str]) -> tuple[int, str, str]:
+        found = [place for place, key in enumerate(keys) if key in named]
+        return len(found), (f"{found[0]:,}" if found else "-"), (f"{found[-1]:,}" if found else "-")
+
+    told = 0
+    for shop, _count in sorted(shown.items(), key=lambda item: (-item[1], item[0])):
+        if told >= listed:
+            break
+        if not (copies_by_shop.get(shop) or named_by_shop.get(shop)):
+            continue
+        told += 1
+        after_count, after_first, after_last = places(after.get(shop, []))
+        among_count, among_first, among_last = places(among.get(shop, []))
+        lines.append(f"    {shop}: {copies_by_shop.get(shop, 0):,} | {named_by_shop.get(shop, 0):,} | {after_count:,}, {among_count:,} | "
+                     f"{after_first}, {among_first} | {after_last}, {among_last}")
+    return lines
+
+
 def main(argv: list[str] | None = None) -> int:
     import shop_checks_bot as bot
     from picwise_checks import ledger as L
@@ -206,6 +244,15 @@ def main(argv: list[str] | None = None) -> int:
             first, second = off.get(shop, []), on.get(shop, [])
             say(f"  {shop}: {count:,} | {len(first):,} | {len(second):,} | {sum(1 for key in second if key in shown):,} | "
                 f"{len(set(first[:100]) & set(second[:100]))}")
+        # The mend of 20.7.4 (the checks' rules 20.9): a shop's shown products that a cheaper
+        # shop shows are asked after the cap's candidates. Set against the order with them
+        # asked among the shown, as before it: where a shop's candidates stand in what it is
+        # asked, since a shop is asked only as far as its day reaches.
+        among = L.asking_order(ledger, night, rows, shown=shown, candidates=candidates, parts=parts, scanned=True,
+                               shown_order=orders, limit=SHOP_LIMIT)
+        for line in candidates_standing(on, among, shops={key: row.shop for key, row in rows.items()}, shown=by_shop,
+                                        candidates=candidates, dearer=dearer):
+            say(line)
 
         say("== 4. what the decisions would not show until checked, from the ledger as it is")
         yes = bot.owner_yes()
