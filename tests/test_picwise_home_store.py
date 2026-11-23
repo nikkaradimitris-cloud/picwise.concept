@@ -49,6 +49,7 @@ from picwise_surface.home_store import (  # noqa: E402
     HomeFacts,
     HomeLists,
     Kind,
+    OfferCard,
     Pick,
     Section,
     Tile,
@@ -93,6 +94,19 @@ def _visible_text(page: str) -> str:
 
 def _links(page: str) -> list[str]:
     return [html.unescape(href) for href in re.findall(r'<a\b[^>]*\bhref="([^"]*)"', _markup(page))]
+
+
+def _offers(count: int) -> tuple[OfferCard, ...]:
+    return tuple(
+        OfferCard(
+            shop=f"Fixture Store {index}",
+            offer_id=f"fx-{index}",
+            title=("10% off kettles", "Free second kettle lid")[index - 1],
+            end=datetime(datetime.now(timezone.utc).year, 11, 30, tzinfo=timezone.utc),
+            products=10 - index,
+        )
+        for index in range(1, count + 1)
+    )
 
 
 def _picks(count: int) -> tuple[Pick, ...]:
@@ -272,7 +286,7 @@ class TheSectionsTests(unittest.TestCase):
         self.assertNotIn("How PicWise works ›", page)
 
     def test_built_every_entry_is_drawn_and_leads_to_its_part(self) -> None:
-        page = self._page(parts=ALL_PARTS, offers_shown=True)
+        page = self._page(parts=ALL_PARTS, facts=HomeFacts(prepared_at=None, offers=_offers(2)))
         links = _links(page)
         self.assertIn("/offers", links)
         self.assertIn("/department/computers", links)
@@ -287,9 +301,22 @@ class TheSectionsTests(unittest.TestCase):
         self.assertEqual(page.count('class="pw-hs-dept"'), 13)
 
     def test_the_offers_banner_needs_an_offer_to_show(self) -> None:
-        page = self._page(parts=ALL_PARTS, offers_shown=False)
+        page = self._page(parts=ALL_PARTS)
         self.assertNotIn("pw-hs-banner-gold", page)
+        self.assertNotIn("pw-hs-offers", page)
         self.assertIn('class="pw-hs-banner pw-hs-banner-blue"', page)
+
+    def test_the_offers_row_in_the_shops_own_words(self) -> None:
+        facts = HomeFacts(prepared_at=None, offers=_offers(2))
+        self.assertNotIn("pw-hs-offer", self._page(facts=facts))
+        page = self._page(facts=facts, parts=ALL_PARTS)
+        self.assertIn("Offers from the shops", page)
+        self.assertIn("In the shops&#x27; own words. Never a made-up discount.", page)
+        self.assertEqual(page.count('class="pw-hs-offer"'), 2)
+        self.assertIn('<a class="pw-hs-offer" href="/offers/fx-1">', page)
+        self.assertIn('<span class="pw-hs-offer-title">10% off kettles</span>', page)
+        self.assertIn('<span class="pw-hs-offer-end">Ends 30 Nov</span>', page)
+        self.assertNotRegex(_visible_text(page), r"£\d")
 
     def test_a_tile_whose_search_has_nothing_is_not_drawn(self) -> None:
         everything = {tile.query for section in load_home_lists().sections for tile in section.tiles}
@@ -382,6 +409,18 @@ class ThePhonesRulesTests(unittest.TestCase):
         for selector in (".pw-hs-nav", ".pw-hs-foot-col", ".pw-hs-actions", ".pw-hs-chips"):
             self.assertIn("gap:8px", rule(selector), selector)
 
+    def test_on_a_computer_the_same_page_inside_the_site_s_width(self) -> None:
+        computer = HOME_STORE_STYLES.split("@media (min-width:700px){", 1)[1]
+        self.assertIn(".pw-hs-strip{display:none!important;}", computer)
+        self.assertIn(".pw-hs-main{width:100%;max-width:1190px;", computer)
+        self.assertIn(".pw-hs-head-in{max-width:1190px;", computer)
+        self.assertIn(".pw-hs-foot-in{max-width:1190px;", computer)
+        wide = HOME_STORE_STYLES.split("@media (min-width:1000px){", 1)[1]
+        self.assertIn(".pw-js .pw-hs-dots{display:none!important;}", wide)
+        self.assertIn(".pw-hs-secs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));", wide)
+        # The phone's rules come first and are the page's own: none of them in a block.
+        self.assertLess(HOME_STORE_STYLES.index(".pw-hs-strip{"), HOME_STORE_STYLES.index("@media (min-width:700px)"))
+
     def test_one_family_of_colours(self) -> None:
         # Owner, 2026-11-23: «γίνεσαι παιδική χαρά». Blues, a gold and its tints, greys.
         for colour in set(re.findall(r"#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b", HOME_STORE_STYLES)):
@@ -463,6 +502,59 @@ class TheFactsTests(price_first._PageMixin, unittest.TestCase):
         shops, count = home_store_facts.top_shops(products, count=2)
         self.assertEqual(shops, ("Tooled Up", "Aosom UK"))
         self.assertEqual(count, 3)
+
+    def test_the_offers_row_one_a_shop_by_how_many_products_it_covers(self) -> None:
+        from picwise_providers import product_offers
+
+        product_offers.set_offers_document(
+            {
+                "shops": {
+                    "11": {
+                        "name": "Fixture Store One Partner Program",
+                        "joined": True,
+                        "offers": [
+                            {"id": "a1", "type": "promotion", "title": "10% off kettles", "end": "2026-11-30T23:59:00Z"},
+                            {"id": "a2", "type": "promotion", "title": "15% off everything", "end": "2026-11-28T23:59:00Z"},
+                        ],
+                    },
+                    "22": {
+                        "name": "Fixture Lamps",
+                        "joined": False,
+                        "offers": [
+                            {"id": "b1", "type": "promotion", "title": "20% off sitewide", "end": "2026-12-05T00:00:00Z"}
+                        ],
+                    },
+                    # A voucher without its code covers no product (`product_offers`).
+                    "33": {
+                        "name": "Fixture Other",
+                        "offers": [
+                            {"id": "c1", "type": "voucher", "title": "10% off everything", "end": "2026-12-05T00:00:00Z"}
+                        ],
+                    },
+                }
+            }
+        )
+        self.addCleanup(product_offers.set_offers_document, None)
+
+        def product(shop: str, title: str):
+            return SimpleNamespace(title=title, raw={"merchant_id": shop})
+
+        products = (
+            [product("11", f"Fixturon Electric Kettle {index}") for index in range(3)]
+            + [product("11", "Fixturon Desk Lamp")]
+            + [product("22", f"Fixturon Floor Lamp {index}") for index in range(2)]
+            + [product("33", f"Fixturon Thing {index}") for index in range(5)]
+        )
+        now = datetime(2026, 11, 23, 12, 0, tzinfo=timezone.utc)
+        cards = home_store_facts.shop_offers(products, now=now)
+        self.assertEqual([(card.shop, card.offer_id, card.products) for card in cards], [
+            ("Fixture Store One", "a1", 3),
+            ("Fixture Lamps", "b1", 2),
+        ])
+        self.assertEqual(cards[0].title, "10% off kettles")
+        self.assertEqual(home_store_facts.shop_offers(products, now=now, count=1)[0].offer_id, "a1")
+        # Ended, an offer is no one's.
+        self.assertEqual(home_store_facts.shop_offers(products, now=datetime(2026, 12, 6, tzinfo=timezone.utc)), ())
 
     def test_facts_are_shown_only_beside_their_own_catalogue(self) -> None:
         facts = HomeFacts(prepared_at=None, picks=_picks(2))

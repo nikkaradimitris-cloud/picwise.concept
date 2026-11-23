@@ -10,6 +10,10 @@ is drawn, and shown only beside the catalogue it was worked out for.
   drawn, never a link to an empty answer (the specification, 5.8).
 - The shops: how many a search reads, and the eight with the most products a search
   holds, by their names as a buyer knows them (`shop_names`); never by commission.
+- The shops' offers that cover products shown tonight (`picwise_providers.product_offers`,
+  the same rules as a card's offer): one a shop, the one a card would show first; the
+  row ordered by how many products shown tonight each covers, eight at most; never by
+  commission, never by whether the account is joined.
 
 The searches are made here as on the site, with no AI layer and nothing written to the
 searches' log or counted as a visitor's. On the server a thread of each worker works the
@@ -30,17 +34,19 @@ from datetime import datetime
 from typing import Any, Callable, Iterable
 
 from picwise_providers.normalization import extract_merchant_name
+from picwise_providers.product_offers import offers_covering
 from picwise_providers.state import loaded_prepared_at
 from picwise_search import resolve_live_search
 
-from .home_store import HomeFacts, HomeLists, Kind, Pick, home_store_on, load_home_lists
+from .home_store import HomeFacts, HomeLists, Kind, OfferCard, Pick, home_store_on, load_home_lists
 from .reference import _build_price_first_cards, provider_feed_cards_will_render
 from .shop_names import shop_display_name
 
 logger = logging.getLogger(__name__)
 
-# The shops named on the page (the specification, 5.9).
+# The shops named on the page (the specification, 5.9), and the offers in its row (5.5).
 TOP_SHOPS = 8
+TOP_OFFERS = 8
 _STATE: dict[str, Any] = {"facts": None}
 _WORK_LOCK = threading.Lock()
 _WATCHER: dict[str, Any] = {}
@@ -112,6 +118,41 @@ def top_shops(products: Iterable[Any], *, count: int = TOP_SHOPS) -> tuple[tuple
     return tuple(shown), len(tally)
 
 
+def shop_offers(
+    products: Iterable[Any], *, count: int = TOP_OFFERS, now: datetime | None = None
+) -> tuple[OfferCard, ...]:
+    """The shops' offers that cover these products, by the rules of a card's offer: for
+    each shop the one a card would show first (naming a kind before the whole shop, with a
+    code before without, ending first), the offers covering the most of these products
+    first, then the one ending first, then by shop; `count` at most."""
+    products = tuple(products)
+    covering = offers_covering(products, now=now)
+    tally: dict[tuple[str, str], list[Any]] = {}
+    for product in products:
+        offer = covering.get(id(product))
+        if offer is None:
+            continue
+        held = tally.setdefault((offer.shop, offer.offer_id), [offer, 0])
+        held[1] += 1
+    best: dict[str, tuple[tuple[Any, ...], Any, int]] = {}
+    for (shop, _offer_id), (offer, covered) in tally.items():
+        rank = (offer.scope != "kind", not offer.code, offer.end)
+        if shop not in best or rank < best[shop][0]:
+            best[shop] = (rank, offer, covered)
+    chosen = sorted(best.values(), key=lambda item: (-item[2], item[1].end, item[1].shop))[:count]
+    return tuple(
+        OfferCard(
+            shop=shop_display_name(offer.shop) or offer.shop,
+            offer_id=offer.offer_id,
+            title=offer.title,
+            end=offer.end,
+            products=covered,
+        )
+        for _rank, offer, covered in chosen
+        if offer.offer_id and offer.title
+    )
+
+
 _UNSET: Any = object()
 
 
@@ -153,13 +194,20 @@ def work_out_home_facts(
                 shown = False
             if shown:
                 with_products.add(tile.query)
-    shops, shop_count = top_shops(_catalogue_products() if products is None else products)
+    catalogue = _catalogue_products() if products is None else tuple(products)
+    shops, shop_count = top_shops(catalogue)
+    try:
+        offers = shop_offers(catalogue)
+    except Exception:  # no offers' row rather than a wrong one
+        logger.exception("the home page's offers could not be read")
+        offers = ()
     return HomeFacts(
         prepared_at=when,
         picks=tuple(picks),
         tiles_with_products=frozenset(with_products),
         shops=shops,
         shop_count=shop_count,
+        offers=offers,
     )
 
 

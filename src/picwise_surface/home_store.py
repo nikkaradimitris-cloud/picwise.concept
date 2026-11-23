@@ -108,6 +108,11 @@ STEPS = (
     ("2", "See", "4 choices, cheapest first"),
     ("3", "Decide", "One is Recommended"),
 )
+OFFERS_TITLE = "Offers from the shops"
+OFFERS_SUB = "In the shops' own words. Never a made-up discount."
+OFFERS_ALL = "See all offers"
+OFFER_ENDS = "Ends {day}"
+OFFER_LINK = "See the products"
 POPULAR_MORE = "Show all {count}"
 POPULAR_LESS = "Show fewer"
 POPULAR_NOT_SOLD = "Not in our shops yet"
@@ -356,6 +361,19 @@ class Pick:
 
 
 @dataclass(frozen=True)
+class OfferCard:
+    """A shop's offer for the home page's row: its words as Awin gives them, never a
+    price, a percentage or a saving worked out by PicWise (owner, 2026-11-19)."""
+
+    shop: str
+    offer_id: str
+    title: str
+    end: datetime
+    # How many products shown tonight it covers; the row is ordered by it.
+    products: int
+
+
+@dataclass(frozen=True)
 class HomeFacts:
     """What the page knows of the catalogue it was worked out for (`prepared_at`)."""
 
@@ -367,6 +385,8 @@ class HomeFacts:
     # The shops with the most products shown, by their names as a buyer knows them.
     shops: tuple[str, ...] = ()
     shop_count: int = 0
+    # The shops' offers that cover products shown tonight, one a shop (the specification, 5.5).
+    offers: tuple[OfferCard, ...] = ()
 
 
 # ---- pieces ----
@@ -488,6 +508,7 @@ def _header_html(lists: HomeLists, parts: frozenset[str]) -> str:
         )
     return (
         '<header class="pw-hs-head" id="top">'
+        '<div class="pw-hs-head-in">'
         '<div class="pw-hs-head-row">'
         '<a class="pw-hs-brand" href="/" aria-label="PicWise home">'
         '<span class="pw-logo" aria-hidden="true"></span><span class="pw-hs-brand-name">picwise</span></a>'
@@ -498,6 +519,7 @@ def _header_html(lists: HomeLists, parts: frozenset[str]) -> str:
         "</div></section></div>"
         "</div>"
         f"{search_box_html()}"
+        "</div>"
         f"{nav}"
         "</header>"
     )
@@ -530,6 +552,8 @@ def _banner_href(banner: Banner, parts: frozenset[str], *, offers_shown: bool) -
 
 
 def _banners_html(lists: HomeLists, parts: frozenset[str], *, offers_shown: bool) -> str:
+    """The banners whose part is built (the specification, 5.4), in a row that stops on
+    each; the offers' banner only while there is an offer to show (5.5)."""
     drawn = []
     for banner in lists.banners:
         href = _banner_href(banner, parts, offers_shown=offers_shown)
@@ -564,6 +588,40 @@ def _banners_html(lists: HomeLists, parts: frozenset[str], *, offers_shown: bool
         '<section class="pw-hs-banners" aria-label="Featured">'
         f'<div class="pw-hs-banner-row" id="pw-hs-banner-row">{"".join(drawn)}</div>'
         f"{dots}</section>"
+    )
+
+
+def offer_href(card: OfferCard) -> str:
+    """Where an offer's card leads: its products inside PicWise (owner, 2026-11-23: «Στα
+    προϊόντα της στο PicWise»), the page Part C builds (the specification, 7.2)."""
+    return f"{PART_ADDRESSES['offers']}/{quote(card.offer_id, safe='')}"
+
+
+def _offer_end_words(end: datetime) -> str:
+    year = "" if end.year == datetime.now(end.tzinfo).year else f" {end.year}"
+    return OFFER_ENDS.format(day=f"{end.day} {end:%b}{year}")
+
+
+def _offers_html(facts: HomeFacts | None, parts: frozenset[str]) -> str:
+    """The shops' offers (the specification, 5.5): only once Part C is built, and only
+    while one covers products shown tonight; one a shop, the shop's own words."""
+    offers = tuple(facts.offers) if facts is not None else ()
+    if "offers" not in parts or not offers:
+        return ""
+    cards = "".join(
+        f'<a class="pw-hs-offer" href="{escape(offer_href(card), quote=True)}">'
+        f'<span class="pw-hs-offer-shop">{escape(card.shop)}</span>'
+        f'<span class="pw-hs-offer-title">{escape(card.title)}</span>'
+        f'<span class="pw-hs-offer-end">{escape(_offer_end_words(card.end))}</span>'
+        f'<span class="pw-hs-offer-link">{escape(OFFER_LINK)} \u203a</span>'
+        "</a>"
+        for card in offers
+    )
+    return (
+        '<section class="pw-hs-offers" aria-labelledby="pw-hs-offers-title">'
+        f'{_head2(OFFERS_TITLE, "pw-hs-offers-title", _arrow(PART_ADDRESSES["offers"], OFFERS_ALL), sub=OFFERS_SUB)}'
+        f'<div class="pw-hs-scroll pw-hs-offer-row">{cards}</div>'
+        "</section>"
     )
 
 
@@ -826,7 +884,7 @@ def _footer_html(parts: frozenset[str]) -> str:
         for title, links in footer_links(parts)
     )
     return (
-        '<footer class="pw-hs-foot">'
+        '<footer class="pw-hs-foot"><div class="pw-hs-foot-in">'
         f'<nav class="pw-hs-foot-cols" aria-label="PicWise public footer links">{columns}</nav>'
         '<div class="pw-hs-foot-rule"></div>'
         '<div class="pw-hs-foot-brand"><span class="pw-logo" aria-hidden="true"></span>'
@@ -834,7 +892,7 @@ def _footer_html(parts: frozenset[str]) -> str:
         f'<p class="pw-hs-foot-where">{escape(FOOTER_WHERE)}</p>'
         f'<p class="pw-hs-foot-notice">{escape(SHORT_AFFILIATE_NOTICE)}</p>'
         f'<p class="pw-hs-foot-meta">{escape(FOOTER_META)}</p>'
-        "</footer>"
+        "</div></footer>"
     )
 
 
@@ -917,7 +975,8 @@ HOME_STORE_STYLES = (
     ".pw-hs-strip-line{font-size:13px;color:var(--hs-muted);}"
     ".pw-hs-strip-add{flex:0 0 auto;display:inline-flex;align-items:center;height:48px;padding:0 20px;border-radius:999px;border:1.5px solid var(--hs-ink);background:#fff;color:var(--hs-ink);font:inherit;font-size:14px;font-weight:700;cursor:pointer;}"
     # the header
-    ".pw-hs-head{position:relative;z-index:20;background:var(--hs-ink);padding:10px 16px 0;}"
+    ".pw-hs-head{position:relative;z-index:20;background:var(--hs-ink);}"
+    ".pw-hs-head-in{padding:10px 16px 0;}"
     ".pw-hs-head-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}"
     ".pw-hs-brand{display:flex;align-items:center;gap:10px;min-height:48px;text-decoration:none;color:#fff;}"
     ".pw-hs-brand-name{font-size:24px;font-weight:800;letter-spacing:-.6px;text-transform:lowercase;}"
@@ -937,7 +996,7 @@ HOME_STORE_STYLES = (
     ".pw-hs .pw-mic-button{width:48px;height:48px;border:0;border-radius:12px;background:#eef2f8;color:var(--hs-ink);}"
     ".pw-hs .pw-search-button{width:48px;height:48px;border-radius:12px;background:var(--hs-blue);}"
     ".pw-hs .pw-suggest-item{padding:12px 18px;}"
-    ".pw-hs-nav{display:flex;gap:8px;overflow-x:auto;margin:0 -16px;padding:0 12px;background:var(--hs-ink2);scrollbar-width:none;}"
+    ".pw-hs-nav{display:flex;gap:8px;overflow-x:auto;padding:0 12px;background:var(--hs-ink2);scrollbar-width:none;}"
     ".pw-hs-nav::-webkit-scrollbar{display:none;}"
     ".pw-hs-nav a{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:48px;min-width:48px;padding:0 8px;color:#dbe5f5;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap;}"
     ".pw-hs-nav a.pw-hs-nav-all{color:#fff;font-weight:700;}"
@@ -983,6 +1042,14 @@ HOME_STORE_STYLES = (
     ".pw-hs-sub{margin:3px 0 0;font-size:13px;line-height:1.35;color:var(--hs-muted);}"
     ".pw-hs-arrow{flex:0 0 auto;width:48px;height:48px;margin-right:-12px;display:flex;align-items:center;justify-content:center;color:var(--hs-ink);}"
     ".pw-hs-link{display:inline-flex;align-items:center;min-height:48px;color:var(--hs-acc);font-size:14px;font-weight:700;text-decoration:none;}"
+    # the shops' offers
+    ".pw-hs-offers{margin-top:14px;padding:14px 0 16px;background:#fff;}"
+    ".pw-hs-offers .pw-hs-head2{padding:0 16px;}"
+    ".pw-hs-offer{flex:0 0 256px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:16px;background:#fff;border:1px solid var(--hs-line);text-decoration:none;color:var(--hs-ink);}"
+    ".pw-hs-offer-shop{align-self:flex-start;padding:5px 10px;border-radius:999px;background:var(--hs-sand);font-size:12px;font-weight:800;}"
+    ".pw-hs-offer-title{font-size:15px;line-height:1.3;font-weight:700;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}"
+    ".pw-hs-offer-end{font-size:12px;color:var(--hs-muted);}"
+    ".pw-hs-offer-link{margin-top:auto;padding-top:4px;font-size:13px;font-weight:700;color:var(--hs-acc);}"
     # the month's ten
     ".pw-hs-pop{margin-top:12px;padding:18px 16px;background:#fff;}"
     ".pw-hs-pop .pw-hs-h2{margin-bottom:12px;}"
@@ -1049,7 +1116,8 @@ HOME_STORE_STYLES = (
     ".pw-hs-chip{display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:999px;background:#fff;border:1px solid var(--hs-line);font-size:13px;font-weight:600;color:var(--hs-ink);}"
     # back to top, the footer
     ".pw-hs-back{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;margin-top:18px;background:var(--hs-ink2);color:#eef2f8;font-size:13px;font-weight:700;letter-spacing:.06em;text-decoration:none;}"
-    ".pw-hs-foot{background:var(--hs-ink);padding:24px 16px 36px;color:#d5deee;}"
+    ".pw-hs-foot{background:var(--hs-ink);color:#d5deee;}"
+    ".pw-hs-foot-in{padding:24px 16px 36px;}"
     ".pw-hs-foot-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;}"
     ".pw-hs-foot-col{display:flex;flex-direction:column;gap:8px;}"
     ".pw-hs-foot-h{margin:0;font-size:14px;font-weight:800;color:#fff;}"
@@ -1062,6 +1130,76 @@ HOME_STORE_STYLES = (
     ".pw-hs-foot-notice{margin:14px 0 0;font-size:13px;line-height:1.55;color:#aebbd3;}"
     ".pw-hs-foot-meta{margin:12px 0 0;font-size:12px;color:#93a3c0;}"
     "@media (prefers-reduced-motion:reduce){.pw-hs-dot,.pw-hs-more svg{transition:none;}}"
+    # On a computer (the specification, 5.13): the same sections in the same order, inside
+    # the site's width; no strip.
+    "@media (min-width:700px){"
+    ".pw-hs-strip{display:none!important;}"
+    ".pw-hs-head-in{max-width:1190px;margin:0 auto;padding:12px 22px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:24px;}"
+    ".pw-hs-head-row{display:contents;}"
+    ".pw-hs-brand{grid-column:1;grid-row:1;}"
+    ".pw-hs .pw-search-wrap{grid-column:2;grid-row:1;max-width:720px;width:100%;margin:0 auto;}"
+    ".pw-hs-actions{grid-column:3;grid-row:1;}"
+    # One row that scrolls where the names do not fit, centred where they do.
+    ".pw-hs-nav{padding:0 22px;}"
+    ".pw-hs-nav a:first-child{margin-left:auto;}.pw-hs-nav a:last-child{margin-right:auto;}"
+    # The page's column is a flex item (`.pw-reference-viewport`): its width set, so that a
+    # row that scrolls never widens it.
+    ".pw-hs-main{width:100%;max-width:1190px;margin:0 auto;padding:0 22px;}"
+    ".pw-hs-promise{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);column-gap:40px;align-items:end;padding:32px 0 12px;}"
+    ".pw-hs-promise .pw-hs-eyebrow{grid-column:1;grid-row:1;}"
+    ".pw-hs-h1{grid-column:1;grid-row:2;margin:6px 0 0;font-size:32px;}"
+    ".pw-hs-steps{grid-column:2;grid-row:1 / span 2;border-top:0;border-left:1px solid var(--hs-line);padding:0 0 0 32px;}"
+    ".pw-hs-banners{padding-top:20px;}"
+    ".pw-hs-banner-row{padding:0 0 4px;scroll-padding:0;}"
+    ".pw-hs-offers,.pw-hs-pop,.pw-hs-sec{margin-top:20px;border-radius:20px;}"
+    ".pw-hs-offers{padding:20px 0;}"
+    ".pw-hs-offers .pw-hs-head2,.pw-hs-sec-row .pw-hs-head2,.pw-hs-depts .pw-hs-head2{padding:0 20px;}"
+    ".pw-hs-offer-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));overflow:visible;padding:12px 20px 0;}"
+    ".pw-hs-pop{padding:22px 20px;}"
+    # Four a row, so that the fold of four (owner, 2026-11-12) is one whole row.
+    ".pw-hs-pop-list{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px 16px;}"
+    ".pw-hs-pop-pic{height:190px;}"
+    ".pw-hs-more{width:auto;min-width:240px;margin:18px auto 0;padding:0 28px;}"
+    ".pw-hs-band{margin-top:20px;border-radius:22px;padding:26px 0 18px;}"
+    ".pw-hs-band-head,.pw-hs-band-link{padding:0 24px;margin-left:0;margin-right:0;}"
+    ".pw-hs-band-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));overflow:visible;padding:16px 24px 4px;}"
+    ".pw-hs-pick{flex:none;}"
+    ".pw-hs-depts{padding-top:26px;}"
+    ".pw-hs-depts .pw-hs-scroll{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));overflow:visible;padding:12px 20px 0;}"
+    ".pw-hs-dept{flex:none;}"
+    ".pw-hs-grid{grid-template-columns:repeat(4,minmax(0,1fr));}"
+    ".pw-hs-sec .pw-hs-tile-pic,.pw-hs-scroll .pw-hs-tile-pic{height:150px;}"
+    ".pw-hs-sec-row .pw-hs-scroll{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible;padding:10px 20px 0;}"
+    ".pw-hs-sec-row .pw-hs-tile{flex:none;}"
+    ".pw-hs-sec{padding:18px 20px 20px;}"
+    ".pw-hs-sec-row{padding:18px 0 20px;}"
+    ".pw-hs-vows{padding:28px 0 0;}"
+    ".pw-hs-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:48px;padding:28px 32px 18px;}"
+    ".pw-hs-card>.pw-hs-eyebrow,.pw-hs-card-title,.pw-hs-figures{grid-column:1;}"
+    ".pw-hs-vow-list{grid-column:2;grid-row:1 / span 3;align-self:center;margin:0;padding:0;}"
+    ".pw-hs-card>.pw-hs-link{grid-column:2;}"
+    ".pw-hs-shops{padding:26px 0 0;}"
+    ".pw-hs-back{margin-top:28px;}"
+    ".pw-hs-foot-in{max-width:1190px;margin:0 auto;padding:32px 22px 40px;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);column-gap:40px;}"
+    ".pw-hs-foot-cols{display:contents;}"
+    ".pw-hs-foot-col:nth-child(1){grid-column:2;grid-row:1 / span 5;}"
+    ".pw-hs-foot-col:nth-child(2){grid-column:3;grid-row:1 / span 5;}"
+    ".pw-hs-foot-rule{display:none;}"
+    ".pw-hs-foot-brand{grid-column:1;grid-row:1;}"
+    ".pw-hs-foot-where{grid-column:1;grid-row:2;}"
+    ".pw-hs-foot-notice{grid-column:1;grid-row:3;max-width:520px;}"
+    ".pw-hs-foot-meta{grid-column:1;grid-row:4;}"
+    "}"
+    # Where there is room: the banners side by side, two sections side by side.
+    "@media (min-width:1000px){"
+    ".pw-hs-h1{font-size:38px;}"
+    ".pw-hs-banner-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;overflow:visible;}"
+    ".pw-hs-banner{width:auto;}"
+    ".pw-js .pw-hs-dots{display:none!important;}"
+    ".pw-hs-secs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:20px;}"
+    ".pw-hs-sec .pw-hs-tile-pic,.pw-hs-scroll .pw-hs-tile-pic{height:120px;}"
+    ".pw-hs-sec .pw-hs-art{width:96px;height:96px;}"
+    "}"
 )
 
 
@@ -1073,7 +1211,6 @@ def render_home_store_page(
     facts: HomeFacts | None = None,
     lists: HomeLists | None = None,
     parts: frozenset[str] | None = None,
-    offers_shown: bool = False,
 ) -> str:
     """The home page as a store. Its head is today's home page's: its title, its
     description, its one address when Google may index it (`indexable`), nothing more
@@ -1084,14 +1221,16 @@ def render_home_store_page(
     sections_html = "".join(
         _section_html(section, index, facts, parts) for index, section in enumerate(lists.sections, start=1)
     )
+    offers_html = _offers_html(facts, parts)
     main_html = (
         f"{_promise_band_html()}"
-        f"{_banners_html(lists, parts, offers_shown=offers_shown)}"
+        f"{_banners_html(lists, parts, offers_shown=bool(offers_html))}"
+        f"{offers_html}"
         f"{popular_html}"
         f"{_band_html(facts, parts)}"
         f"{_departments_html(lists, parts)}"
-        f"{sections_html}"
-        f"{_vows_html(catalogue, parts)}"
+        + (f'<div class="pw-hs-secs">{sections_html}</div>' if sections_html else "")
+        + f"{_vows_html(catalogue, parts)}"
         f"{_shops_html(facts, parts)}"
         f'<a class="pw-hs-back" href="#top">{_UP}{escape(BACK_TO_TOP)}</a>'
     )
