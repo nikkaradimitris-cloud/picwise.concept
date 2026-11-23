@@ -32,7 +32,11 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # Past the preparation's own limit on the server (picwise-prepare.service, 60 minutes): a
+    # run stopped while the server still prepares would leave the release in place and the
+    # site not restarted on it. It was 45: the preparation took 28.4 minutes on 22/11 and
+    # 32.2 on 23/11, and a deployment that prepares about 2 more.
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v5
         with:

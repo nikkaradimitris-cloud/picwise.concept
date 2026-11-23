@@ -319,8 +319,13 @@ class ShopOrderTests(unittest.TestCase):
 
 
 class SwitchTests(unittest.TestCase):
-    def test_the_switch_is_off_in_the_repo_and_read_strictly(self) -> None:
-        self.assertFalse(shop_cap.shop_cap_on())
+    def test_the_switch_is_on_in_the_repo_on_the_owners_word_and_read_strictly(self) -> None:
+        # Owner, 2026-11-23 (10:34 Athens), asked with the numbers of the look on the checks'
+        # first real night (the checks' rules 20.7): «Ανέβασε το».
+        self.assertTrue(shop_cap.shop_cap_on())
+        kept = json.loads(shop_cap.SWITCH_FILE.read_text(encoding="utf-8"))
+        self.assertEqual((kept["cap"], kept["set"]), (True, "2026-11-23"))
+        self.assertIn("«Ανέβασε το»", kept["by"])
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "switch.json"
             self.assertFalse(shop_cap.shop_cap_on(path))

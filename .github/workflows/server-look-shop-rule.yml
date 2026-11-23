@@ -1,6 +1,6 @@
 # The look before the «ανέβασε» of how many of a shop's products pass (the checks' rules,
 # docs/PICWISE_CHECKS_RULES.md, 19.7.1; owner, 2026-11-22: what the bot scans of a shop passes
-# to the site, 20,000 the most; built behind data/shop_cap_switch.json, not deployed). Read-only:
+# to the site, 20,000 the most; behind data/shop_cap_switch.json, true from 2026-11-23). Read-only:
 # nothing on the server or the site changes, no shop is asked, nothing is asked of any AI.
 #
 # 1. The catalogue prepared on GitHub's runner, never on the server, by the preparation's own
@@ -225,18 +225,23 @@ jobs:
             echo "no decisions on the server: the checks are not applied in this run (the cap's gate off), as on the site today"
             echo "gate=off" >> "$GITHUB_OUTPUT"
           fi
-      - name: Turn the switch on, in this copy only
-        if: matrix.rule == 'on' && steps.checks.outputs.skip != 'yes'
+      # The repository's switch is true from 2026-11-23 (the owner's «Ανέβασε το»): each run
+      # sets it as its own name says, in the runner's copy of the code only.
+      - name: Set the switch as this run reads it, in this copy only
+        if: steps.checks.outputs.skip != 'yes'
+        env:
+          RULE: ${{ matrix.rule }}
         run: |
           python3 - <<'EOF'
           import json
+          import os
           from pathlib import Path
 
           path = Path("data/shop_cap_switch.json")
           switch = json.loads(path.read_text(encoding="utf-8"))
-          switch["cap"] = True
+          switch["cap"] = os.environ["RULE"] == "on"
           path.write_text(json.dumps(switch, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-          print("data/shop_cap_switch.json: cap true, in the runner's copy of the code only")
+          print(f"data/shop_cap_switch.json: cap {str(switch['cap']).lower()}, in the runner's copy of the code only")
           EOF
       - name: Prepare the catalogue (the preparation's own code)
         id: prepare
