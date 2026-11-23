@@ -1,10 +1,13 @@
 # PicWise: the question "is it the kind itself" (rules)
 
 Written 2026-11-22 (afternoon, Athens) as task 6 of the work split by model (Claude Fable
-5.2; `docs/picwise_session_handoff.md`, the item of 21/11 13:50). **Nothing of it is on the
-site: `data/kind_itself_switch.json` is false, the code is not deployed, and no answer is kept
-anywhere yet.** What is built is in section 14; what the looks and the trials measured, in
-section 1.
+5.2; `docs/picwise_session_handoff.md`, the item of 21/11 13:50). **Nothing it decides is
+shown: `data/kind_itself_switch.json` is false. Its code is on the server since 23/11
+(deployed with the rule of how many of a shop's products pass), and the first asking's
+answers are kept there since the same day (section 12, item 2): no rule reads them until the
+switch, after the look (12, item 3: not built) and the owner's «ανέβασε». The meter (section
+9) measures each morning from 24/11.** What is built is in section 14; what the looks and the
+trials measured, in section 1.
 
 Each rule names whose it is:
 
@@ -47,21 +50,24 @@ Each rule names whose it is:
   έβδομο των ειδών (όλα τα είδη μέσα σε μια εβδομάδα), όπως τις βλέπει ο επισκέπτης, και το
   email σου γράφει μία γραμμή: πόσες κάρτες ήταν σωστές, δίπλα στη χθεσινή μέρα. Κρίνει σαν
   αγοραστής, άρα μετράει και τα λάθη της αναζήτησης (εργασία 8), όχι μόνο αυτά που λύνονται εδώ.
-- **Κόστος.** Η πρώτη φορά (όλα τα προϊόντα): περίπου 11 με 14 $, με όριο 20 $ (το σχέδιό σου
-  έλεγε περίπου 25 $). Μετά, λίγα σεντς το βράδυ, με φρένο 5 $. Ο μετρητής: περίπου 1,5 $ την
-  πρώτη μέρα, 0,8 $ τις επόμενες έξι, μετά σεντς· φρένο 2 $ τη μέρα. Οι δοκιμές της 22/11
-  κόστισαν 1,64 $.
+- **Κόστος.** Η πρώτη φορά (όλα τα προϊόντα) έγινε στις 23/11 και κόστισε 6,83 $ (όριο 20 $· η
+  εκτίμηση εκείνης της μέρας ήταν 9 με 11 $, το σχέδιό σου έλεγε περίπου 25 $). Μετά, λίγα
+  σεντς το βράδυ, με φρένο 5 $. Ο μετρητής: περίπου 1,5 $ την πρώτη μέρα, 0,8 $ τις επόμενες
+  έξι, μετά σεντς· φρένο 2 $ τη μέρα. Οι δοκιμές της 22/11 κόστισαν 1,64 $.
 - **Τι ΔΕΝ λύνει.** Τα «car tyres» που δείχνουν και λάστιχα μηχανής, και η επιλογή «αξεσουάρ»
   μετά τα προϊόντα, είναι η εργασία 8 (ερωτήσεις στην αναζήτηση). Εδώ οι απαντήσεις του AI
   κρατούν και τι είναι το κάθε προϊόν, ώστε η εργασία 8 να μη χρειαστεί να ξαναρωτήσει.
-- **Πότε ανεβαίνει.** Όχι τώρα. Χτίστηκε και δοκιμάστηκε (22/11), με τον διακόπτη κλειστό.
-  **Η πρώτη ερώτηση όλων των προϊόντων θα γίνει μετά το πλαφόν ανά κατάστημα** (η λέξη σου,
-  22/11: «Μετά το πλαφόν»). Μετά σου δείχνω ανά είδος τι βγαίνει και τι γυρίζει, και
-  ανεβαίνει μόνο με το «ανέβασε» σου.
-- **Τι σημαίνει αυτό.** Τα αξεσουάρ μένουν μπροστά μέχρι να γραφτεί, να χτιστεί και να ανέβει
-  το πλαφόν ανά κατάστημα. Το κέρδος: περίπου 4 $ λιγότερα, και η ερώτηση γίνεται πάνω στον
-  τελικό κατάλογο (το 47% των ερωτήσεων ήταν για προϊόντα των τεσσάρων καταστημάτων που θα
-  κόψει το πλαφόν).
+- **Πότε ανεβαίνει.** Όχι ακόμα. Χτίστηκε και δοκιμάστηκε (22/11)· ο κώδικας είναι στον
+  server από τις 23/11, με τον διακόπτη κλειστό. **Η πρώτη ερώτηση όλων των προϊόντων έγινε
+  στις 23/11, μετά το πλαφόν ανά κατάστημα** (οι λέξεις σου: 22/11 «Μετά το πλαφόν», 23/11
+  «Ξεκίνα»): 58.207 ερωτήσεις, καμία δεν έμεινε. Με αυτές τις απαντήσεις 1.766 προϊόντα θα
+  έβγαιναν από το είδος τους και 827 κρυμμένα θα γύριζαν. **Μένει η ματιά πριν από το
+  «ανέβασε» (δεν έχει χτιστεί):** σου δείχνω ανά είδος τι βγαίνει και τι γυρίζει, με
+  παραδείγματα, και ανεβαίνει μόνο με το «ανέβασε» σου.
+- **Τι σημαίνει αυτό.** Τα αξεσουάρ μένουν μπροστά μέχρι τη ματιά και το «ανέβασε» σου: οι
+  απαντήσεις υπάρχουν, αλλά κανένας κανόνας δεν τις διαβάζει ακόμα. Τα προϊόντα που μπαίνουν
+  στον κατάλογο μετά τις 23/11 δεν έχουν απάντηση· ρωτιούνται πριν από τη ματιά, με τη λέξη
+  σου για το κόστος τους.
 
 ## 1. What it is for, and what was measured
 
@@ -285,7 +291,9 @@ title, a link or an id: the file names no product.
 - The first asking (every question of the catalogue): about 73,000 first readings, about $3;
   second readings for what the first would move and for the first cards, by the trials'
   shares about 14,000 to 19,000, $8 to $11. **About $11 to $14, stopped before $20.** (His
-  plan: about $25. The dry run of 22/11 counted the questions: section 14.)
+  plan: about $25. The dry run of 22/11 counted the questions: section 14.) **Made on 23/11,
+  on the catalogue with the cap per shop: $6.83** (58,207 first readings $1.98, 8,910 second
+  readings $4.85; section 12, item 2).
 - A night after it: the questions of the new products, cents.
 - **The brake** (owner: «μόνο ένα φρένο για λάθη»): the nightly asking stops for the night
   before passing $5; what it did not ask waits for the next morning. The health run tells a
@@ -547,6 +555,31 @@ meter's line, the note's limits); `PROGRESS.md` and the handoff.
    readings about $2.15 and the second $6.87 to $8.56, **$9.02 to $10.71 in all** before the
    rounds after it, stopped before $20. Told to the owner; `DRY_RUN` is turned to `'no'`
    only on his word for the cost.
+
+   **The first asking, the same day, on his «Ξεκίνα» (11:55 Athens)**: run 45151523646, the
+   asking 09:57 to 10:21 UTC (24.5 minutes, 8 workers), on the catalogue of 09:21 UTC. Four
+   rounds, the fifth naming nothing: 58,171 questions, then 377 (11 of a kind the product
+   has, 14 of a kind the lists took, 352 first cards in the place of those that would
+   leave), 16 and 1.
+   - First readings (Haiku 5.5), 58,207: itself 54,126, other 2,874, accessory 384, set 375,
+     part 323, unsure 87, consumable 38; $1.98.
+   - Second readings (Sonnet 5.5), 8,910: itself 7,545, other 1,047, set 114, part 80,
+     accessory 69, unsure 46, consumable 9; $4.85.
+   - No call failed (2,153 calls); no question left without the readings it calls for.
+     **$6.83 of the $20.** The dry run had guessed $9.02 to $10.71: the first reading sent
+     8,534 questions of the first round to the second, where the trials' shares gave 11,842
+     to 14,763.
+   - Kept: 58,207 questions, 67,117 readings; 20,061 products with a second reading.
+   - **By these answers 1,766 products would leave a kind** (other 1,506, accessory 126, part
+     119, consumable 15) **and 827 would come back.** The kinds that would lose the most: toy
+     348, garden_hose 213, chair 94, vacuum_cleaner 55, steam_mop 51, engine_oil 40,
+     garden_sprayer 33, docking_station 32, garden_furniture 31, board_game 31, shelving 30,
+     router 30. That would gain the most: toy 391, ram_memory 42, cable 36, camera 34,
+     laptop_bag 28, docking_station 25, lamp 24, doll 21, garden_furniture 18, bag 18, table
+     13, ups 10. Counts only: which products they are, and whether the readings are right,
+     the look shows; nothing was read by a person yet.
+   - The answers are on the server (1,877,048 bytes, 10:21 UTC), read by no rule while the
+     switch is false; `DRY_RUN` is `'yes'` again.
 3. **The look** (task 7's kind): the catalogue prepared on GitHub's runner with the answers
    and the switch on, as the server would; per kind, what leaves by answer and what comes
    back, with examples; the kinds a brake would hold; the meter on the 40 searches and every
@@ -560,6 +593,16 @@ moves until then. The first asking and the look are best done on a catalogue of 
 first nights (the answers stay good as products come and go: they are kept by key, not by
 product).
 
+**The first asking was made on the catalogue of 23/11**, the day the cap per shop was
+deployed, on the owner's word. The products that enter on the nights after it (the cap's
+candidates as the bot passes them: with every candidate asked and passed, the look of 23/11
+read 17,901 more the first night after and 3,644 the second) have no answer, and none is
+asked for them while the switch is false (7.6: nothing is named for the AI). **So the look
+begins with a dry run on its day's catalogue** (the work branch's head pushed to
+`claude/itself-ask`: it copies the kept answers and counts what they do not hold); what it
+names is asked on the owner's word for its cost, and the look then reads a catalogue whose
+every question has its answer. Best on a catalogue of 26/11 or after.
+
 ## 13. Open: the owner's to say
 
 Answered on 22/11 (section 2): a set stays where it is; the first asking is made after the
@@ -571,7 +614,9 @@ cap per shop.
 
 ## 14. Built
 
-22/11, on the work branch, the switch false, nothing deployed, no answer kept:
+Built on 22/11 on the work branch. On the server since 23/11 (the deployment of the checks'
+rules 20.8), the switch false; the first asking's answers kept there since 23/11 (section 12,
+item 2):
 
 - **The look**: `deployment/server/look_itself.py`, `.github/workflows/ai-itself-look.yml` (a
   push to `claude/itself-look`), `deployment/server/say_notes.py`;
@@ -601,11 +646,11 @@ cap per shop.
 - **The health run's lines and limits** (sections 9 and 10): `deployment/server/print_health.py`;
   `tests/test_picwise_server_health.py`.
 
-Not built yet: the look of section 12.3 (task 7's kind), which needs the first asking's
-answers: the catalogue prepared on GitHub's runner with the answers and the switch on, per
-kind what leaves and what comes back with examples, the Recommended of each of the 40
-searches before and after, and the meter's judge on both (its cards then come from the
-copies, not from the site's pages).
+Not built yet: the look of section 12.3 (task 7's kind), which needed the first asking's
+answers (kept since 23/11): the catalogue prepared on GitHub's runner with the answers and
+the switch on, per kind what leaves and what comes back with examples, the Recommended of
+each of the 40 searches before and after, and the meter's judge on both (its cards then come
+from the copies, not from the site's pages).
 
 **The dry run of the first asking** (22/11, run 45031171329, no AI): on the server's catalogue
 of 22/11 11:26 UTC, 398,957 products, 141,830 with a question; none whose kinds read with
@@ -625,5 +670,6 @@ Known, and left as they are:
   it stays as the lists read it until answered (one or two nights).
 - The night's preparation reads every product's answers and works out each kind's first
   cards once more: seconds on GitHub's runner for the catalogue's 399,000 products (the dry
-  run), over 1.6 million rows on the server. The preparation takes 28.4 of the health run's
-  30 minutes today: the look measures what the gate adds.
+  run), over 1.6 million rows on the server. The preparation took 26.9 of the health run's 30
+  minutes on 23/11, with the cap per shop (28.4 on 22/11, 32.2 on the morning of 23/11
+  before it): the look measures what the gate adds.

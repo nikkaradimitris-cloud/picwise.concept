@@ -1,12 +1,54 @@
 # PicWise — session handoff
 
-Where the project is now and how to work on it; short on purpose. Updated 2026-11-23 (12:25 Athens, the daily session: THE PLACES A FULL SHOP'S OWN COPIES HOLD, MENDED (OPUS), tested, NOT DEPLOYED, waits for the owner's «ανέβασε»; the day's health, the nine shops that cannot be checked with their letters, the Sunday tidy-up read; 11:40 Athens: HOW MANY OF A SHOP'S PRODUCTS PASS IS DEPLOYED, ON THE OWNER'S «Ανέβασε το» (10:34), its switch true: 199,771 products of 132 shops; with it task 6's code, its switch false, and its meter from 24/11; NEXT: READ THE MORNING AFTER, THEN TASK 6'S DRY RUN AND FIRST ASKING; 10:05 Athens: THE LOOK OF HOW MANY OF A SHOP'S PRODUCTS PASS, ONCE MORE ON THE CHECKS' FIRST REAL NIGHT (FABLE): two more things mended, it reads right; 22/11 21:50 Athens: THE LOOK BEFORE THE «ανέβασε» OF HOW MANY OF A SHOP'S PRODUCTS PASS, DONE (FABLE), two things mended, NOT DEPLOYED, its switch false; 18:30 Athens: HOW MANY OF A SHOP'S PRODUCTS PASS, BUILT (OPUS), NOT DEPLOYED, its switch false; the bot over several processes with it; 17:50 Athens: task 6's pieces beside the shops' rule, a note for the builder, the checks' rules 19.6.7; 17:40 Athens: A PASS COUNTS FOR THREE NIGHTS, the owner's word, «κρατάμε τα προϊόντα ασκανάριστα μέχρι 3 μέρες», the checks' rules 19.3.1; 17:35 Athens: WHAT THE BOT SCANS OF A SHOP PASSES TO THE SITE, 20,000 THE MOST, NO CAP FOR EACH SHOP, in the owner's words of 17:08 and 17:21; the checks' rules 19; the bot over several processes with it; NEXT: THE BUILD, OPUS; 17:15 Athens: his order for which products a shop keeps, with the three changes; 16:45 Athens: the owner's two answers on task 6: a set stays shown, and the first asking is made AFTER THE CAP PER SHOP; 16:35 Athens: task 6 BUILT, the question "is it the kind itself", not deployed, its switch false; 15:51 Athens: the owner decided a cap per shop, records only; 15:05 Athens: Vercel's preview builds turned off, records only; 13:45 Athens: THE CHECKS DEPLOYED on the owner's «Ανέβασε», the bot's first round running, read the night on 23/11; 11:50 Athens: task 7's look done, its findings mended, not deployed, waits for the owner's answers and his «ανέβασε»; 10:30 Athens: task 7 begun, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
+Where the project is now and how to work on it; short on purpose. Updated 2026-11-23 (12:45 Athens: TASK 6'S FIRST ASKING IS DONE (FABLE), on the owner's «Ξεκίνα»: 58,207 questions kept, none left, $6.83 of the $20; by its answers 1,766 products would leave a kind and 827 come back; NOTHING SHOWN CHANGES, its switch false, `DRY_RUN` `'yes'` again; NEXT FOR IT: ITS LOOK, NOT BUILT; 12:25 Athens, the daily session: THE PLACES A FULL SHOP'S OWN COPIES HOLD, MENDED (OPUS), tested, NOT DEPLOYED, waits for the owner's «ανέβασε»; the day's health, the nine shops that cannot be checked with their letters, the Sunday tidy-up read; 11:40 Athens: HOW MANY OF A SHOP'S PRODUCTS PASS IS DEPLOYED, ON THE OWNER'S «Ανέβασε το» (10:34), its switch true: 199,771 products of 132 shops; with it task 6's code, its switch false, and its meter from 24/11; NEXT: READ THE MORNING AFTER, THEN TASK 6'S DRY RUN AND FIRST ASKING; 10:05 Athens: THE LOOK OF HOW MANY OF A SHOP'S PRODUCTS PASS, ONCE MORE ON THE CHECKS' FIRST REAL NIGHT (FABLE): two more things mended, it reads right; 22/11 21:50 Athens: THE LOOK BEFORE THE «ανέβασε» OF HOW MANY OF A SHOP'S PRODUCTS PASS, DONE (FABLE), two things mended, NOT DEPLOYED, its switch false; 18:30 Athens: HOW MANY OF A SHOP'S PRODUCTS PASS, BUILT (OPUS), NOT DEPLOYED, its switch false; the bot over several processes with it; 17:50 Athens: task 6's pieces beside the shops' rule, a note for the builder, the checks' rules 19.6.7; 17:40 Athens: A PASS COUNTS FOR THREE NIGHTS, the owner's word, «κρατάμε τα προϊόντα ασκανάριστα μέχρι 3 μέρες», the checks' rules 19.3.1; 17:35 Athens: WHAT THE BOT SCANS OF A SHOP PASSES TO THE SITE, 20,000 THE MOST, NO CAP FOR EACH SHOP, in the owner's words of 17:08 and 17:21; the checks' rules 19; the bot over several processes with it; NEXT: THE BUILD, OPUS; 17:15 Athens: his order for which products a shop keeps, with the three changes; 16:45 Athens: the owner's two answers on task 6: a set stays shown, and the first asking is made AFTER THE CAP PER SHOP; 16:35 Athens: task 6 BUILT, the question "is it the kind itself", not deployed, its switch false; 15:51 Athens: the owner decided a cap per shop, records only; 15:05 Athens: Vercel's preview builds turned off, records only; 13:45 Athens: THE CHECKS DEPLOYED on the owner's «Ανέβασε», the bot's first round running, read the night on 23/11; 11:50 Athens: task 7's look done, its findings mended, not deployed, waits for the owner's answers and his «ανέβασε»; 10:30 Athens: task 7 begun, moved to a new conversation on the owner's word; 06:10 Athens: task 5 done but the recipe, not deployed; the walls; the category; the daily email's line; 00:40 Athens: 3 days, not 14, and the bot all day, on the owner's word; 01:10: task 5 built in large part, not deployed; 21/11 22:28 the button deployed; 20:35: task 4, the checks' rules written and the owner's six answers; 17:15: task 3, Awin's programmes, the offers and the photo's limit deployed, the button built; 15:45: task 2, the look at 95 cards; 15:05: task 1 of the work split by model deployed, the shops' bot and both links, the memory fix, InStock UK looked at; before it, 13:50, a second opinion on the owner's plan of 21/11; 12:55, the daily session: the site's memory at night).
 `PROGRESS.md` is the dated log. The history before 12/11 is kept whole in
 `docs/archive/picwise_session_handoff_until_2026-11-12.md` (this file as it was, 3,959
 lines) and `docs/archive/PROGRESS_log_until_2026-11-08.md`; read them only to trace how
 a decision came about.
 
 ## Next conversation: start here
+
+- **(23/11, 12:45 Athens): TASK 6'S FIRST ASKING IS DONE (FABLE), ON THE OWNER'S «Ξεκίνα» (11:55 Athens): 58,207
+  QUESTIONS KEPT, NONE LEFT TO ASK, $6.83 OF THE $20. THE ANSWERS ARE ON THE SERVER AND NOTHING SHOWN CHANGES:
+  `data/kind_itself_switch.json` IS FALSE. `DRY_RUN` IS `'yes'` AGAIN. NEXT FOR TASK 6: ITS LOOK BEFORE THE
+  «ανέβασε» (THE RULES' 12, ITEM 3), NOT BUILT. HE WAS TOLD THE NUMBERS AND WHAT IS NEXT.** (PROGRESS.md, 23/11
+  12:45; `docs/PICWISE_KIND_ITSELF_RULES.md`, section 12, item 2.)
+  - **The run** (45151523646 on `claude/itself-ask`; the asking 09:57 to 10:21 UTC, on the catalogue of 09:21 UTC:
+    199,771 products, 102,613 with a question): four rounds (58,171 questions, then 377, 16 and 1; a fifth named
+    nothing). Haiku 5.5 read 58,207 ($1.98), Sonnet 5.5 8,910 of them ($4.85); 2,153 calls, none failed. The dry
+    run after it (45156880685, at `e15f43e`) copied the answers back from the server (1,877,048 bytes) and named
+    nothing to ask.
+  - **What the answers would do** (counts and kinds only: no person has read which products they are, or whether
+    the readings are right): 1,766 products would leave a kind (other 1,506, accessory 126, part 119, consumable
+    15) and 827 that the lists hide would come back; 20,061 products have a second reading. Most to leave: toy
+    348, garden_hose 213, chair 94, vacuum_cleaner 55, steam_mop 51, engine_oil 40; most to come back: toy 391,
+    ram_memory 42, cable 36, camera 34, laptop_bag 28.
+  - **The look, to build** (the rules' 12, item 3, and the paragraph after that list; section 14's "Not built
+    yet"): the catalogue prepared on GitHub's runner with the answers and the switch on; per kind what leaves by
+    answer and what comes back, with examples; the kinds a brake would hold; the Recommended of each of the 40
+    searches before and after; the meter's judge on both; what the gate adds to the preparation's minutes. **It
+    begins with a dry run on its day's catalogue** (the work branch's head pushed to `claude/itself-ask`): the
+    products that came after 23/11 have no answer, and none is asked while the switch is false. What the dry run
+    names is asked on the owner's word for its cost (`DRY_RUN` `'no'` for that run, then back to `'yes'`), as is
+    the meter's judge on the look's cards (Opus: tell him the amount before it runs). Best on a catalogue of
+    26/11 or after (the checks' shops' day 4). A large piece of work: he was advised to have it done in a new
+    conversation.
+  - **The asking has ended: nothing of task 6 holds a deployment back now** (the item below waited for it).
+    **Advised, and told to the owner, before the mend below is deployed: a look at it on the server's data.** The
+    two looks of the rule it mends found four defects that the rule's tests had not (the checks' rules 20.2 and
+    20.7.2); and the mend's third part is what keeps about 710,000 rows out of the preparation's memory (20.9,
+    item 3), which no run on the server's data has measured, on a server whose preparation peaked at 14.0 GB on
+    23/11. `server-look-shop-rule.yml` sets the rule off against the rule on: to set the mend against no mend it
+    needs the site's branch's code (`7ba917c`) beside the work branch's.
+  - **GitHub's "Tests" were red on the work branch at `de70f24`** for the one test that pins `DRY_RUN: 'yes'`
+    (`tests/test_picwise_itself_asking.py`), beside the two known failures: expected while the asking ran, mended
+    by `e15f43e` (the run on that commit: 45156880631, on `claude/itself-ask`).
+  - **The scheduled reading of 24/11, 08:45 Athens** (in the conversation that deployed the rule): the first night
+    with the rule against the checks' rules 20.8; the meter's first line (the first 12 cards of the 40 searches as
+    they are before the gate: the number to hold the look's against); and a dry run of the asking on that
+    morning's catalogue (how many questions the first night added: push the work branch's head to
+    `claude/itself-ask`, `DRY_RUN` `'yes'`). Its own text was written on the morning of 23/11 and could not be
+    changed since: where it says to remind the owner of the asking, do not; the asking is done.
 
 - **(23/11, 12:25 Athens, the daily session): THE PLACES A FULL SHOP'S OWN COPIES HOLD ARE MENDED. BUILT AND
   TESTED ON THE WORK BRANCH (`2a264ba`), NOTHING ON THE SITE: IT WAITS FOR THE OWNER'S «ανέβασε» (asked in the
@@ -34,8 +76,9 @@ a decision came about.
 - **(23/11, 11:40 Athens): HOW MANY OF A SHOP'S PRODUCTS PASS IS DEPLOYED, ON THE OWNER'S «Ανέβασε το» (10:34
   Athens). `data/shop_cap_switch.json` IS TRUE. THE SITE SHOWS 199,771 PRODUCTS OF 132 SHOPS (374,859 THAT
   MORNING), THE LOOK'S NUMBER TO THE PRODUCT; THE BOT GOES ON WITH THE RULE ON. NEXT: READ THE MORNING AFTER
-  (24/11) AGAINST THE RULES' 20.8; TASK 6'S DRY RUN AND, ON HIS WORD FOR ITS COST, ITS FIRST ASKING; THEN THE MEND
-  OF GAMINGKIT'S PRODUCTS A CHEAPER SHOP SHOWS (20.7.4).** (PROGRESS.md, 23/11 11:40; the checks' rules 20.8.)
+  (24/11) AGAINST THE RULES' 20.8. (Task 6's dry run and first asking were made the same day: the first item.
+  The mend of GamingKit's products a cheaper shop shows, 20.7.4, is built: the second item.)** (PROGRESS.md,
+  23/11 11:40; the checks' rules 20.8.)
   - **The deployment** (two fast-forwards of the site's branch, for the server's memory): `0e3a683` (run
     45142919631, no preparation, the site restarted), then `7ba917c` (run 45143440046, release
     `20261123T090212Z-7ba917c`: prepared in 26.9 minutes, peak 14.0 GB; the site restarted 09:31 UTC; 15 of 15
@@ -60,17 +103,13 @@ a decision came about.
   - **If a night goes wrong**: the switch false on the owner's word and a deployment (it prepares: the site
     restarted first, as above). The products the rule left out do not come back at once: the gate stands, they
     come back as candidates, the never asked as the bot asks them (20.7.5).
-  - **Task 6: THE FIRST ASKING IS RUNNING, started 23/11 about 12:00 Athens by the session that deployed the
-    rule, on the owner's «Ξεκίνα» (11:55). DO NOT START IT AGAIN, and leave `DRY_RUN` as it is: that session
-    turns it back to `'yes'` when the run ends and records what it asked and cost.** The dry run before it
+  - **Task 6's first asking: DONE that day (the first item), `DRY_RUN` `'yes'` again.** The dry run before it
     (23/11 09:38 UTC, run 45148852096; nothing asked): 199,771 products, 102,613 with a question, the first
-    round 58,171 questions in 290 kinds (73,290 on 22/11); $9.02 to $10.71 by the trials of 22/11, before the
-    rounds after it, stopped before $20. He was told the count and the cost, and asked whether it is the one
-    large pass (yes: after it each night asks only the new products and the first cards that change, cents).
-    The answers go to `/srv/picwise/assist/itself/answers.jsonl.gz`; no rule reads them while
-    `data/kind_itself_switch.json` is false: nothing shown changes. A run that stops at its 100 minutes is
-    pushed again and asks only what is not kept. After it: its look (not built) and his «ανέβασε» of its
-    switch.
+    round 58,171 questions in 290 kinds (73,290 on 22/11); $9.02 to $10.71 by the trials of 22/11. He was told
+    the count and the cost, and asked whether it is the one large pass (yes: once its switch is on, each night
+    asks only the new products and the first cards that change, cents). The answers are in
+    `/srv/picwise/assist/itself/answers.jsonl.gz`; no rule reads them while `data/kind_itself_switch.json` is
+    false: nothing shown changes. After it: its look (not built) and his «ανέβασε» of its switch.
 
 - **(23/11, 10:05 Athens): THE LOOK OF HOW MANY OF A SHOP'S PRODUCTS PASS, ONCE MORE ON THE CHECKS' FIRST REAL NIGHT:
   DONE (FABLE). TWO MORE THINGS MENDED ON THE WORK BRANCH, WITH TESTS; IT READ RIGHT AFTER THEM. DEPLOYED THE SAME
@@ -259,10 +298,10 @@ a decision came about.
     not yet built. **Owed:** `main` is at `b6915e3` (19/11): bringing it level with the site is the owner's yes (it
     builds the Vercel backup).
 - **(22/11, 16:35 Athens; the owner's answers 16:45): TASK 6 (FABLE) BUILT: the question "is it the
-  kind itself". ITS CODE IS ON THE SERVER FROM 23/11, DEPLOYED WITH THE RULE OF HOW MANY OF A SHOP'S PRODUCTS PASS
-  (the first item), its switch (`data/kind_itself_switch.json`) false: no answer is kept anywhere, nothing it
-  decides is shown; its meter runs each morning from 24/11. ITS FIRST ASKING WAITED FOR THE CAP PER SHOP, ON THE
-  OWNER'S WORD («Μετά το πλαφόν»): THAT IS DEPLOYED, SO THE DRY RUN AND THE FIRST ASKING ARE NEXT** (PROGRESS.md, 22/11 16:35 and 16:45). The rules, with a Greek summary for the owner
+  kind itself". ITS CODE IS ON THE SERVER FROM 23/11, DEPLOYED WITH THE RULE OF HOW MANY OF A SHOP'S PRODUCTS PASS,
+  its switch (`data/kind_itself_switch.json`) false: nothing it decides is shown; its meter runs each morning
+  from 24/11. ITS FIRST ASKING WAS MADE ON 23/11 (the first item): THE ANSWERS ARE KEPT ON THE SERVER, READ BY NO
+  RULE. NEXT: ITS LOOK, NOT BUILT** (PROGRESS.md, 22/11 16:35 and 16:45, 23/11 12:45). The rules, with a Greek summary for the owner
   at their top and what is built in their section 14: `docs/PICWISE_KIND_ITSELF_RULES.md`. Read them before
   touching any of it. Their Greek page for the owner, in the Project's docs: `claude/PicWise-kanones-eidous.md`
   (keep it in step: it says what waits for his word).
@@ -272,22 +311,22 @@ a decision came about.
     reading moves a product** out of a kind's search (it is still found by its words) or back into one the lists
     of 20/11 took it from. Opus 5.5, which has no part in it, judges the first cards of 40 fixed searches every
     day: the daily email's line of quality.
-  - **The order of work** (the rules' 12): (1) built, with tests: done. (2) **The first asking, AFTER THE CAP PER
-    SHOP IS DEPLOYED** (his word of 22/11): first a dry run that day (push the work branch's head to
-    `claude/itself-ask` as it is: it counts the questions, which will be fewer than 22/11's 73,290, and guesses
-    the cost), tell him the count and the cost in one line, then
-    in `.github/workflows/ai-itself-ask.yml` turn `DRY_RUN` to `'no'`, commit, push the commit to the work
-    branch and to `claude/itself-ask`; the run asks in rounds and puts the answers in
-    `/srv/picwise/assist/itself/answers.jsonl.gz` (it makes the folder as `deploy.sh` would); **about $11 to $14,
-    stopped before $20** (the dry run of 22/11, run 45031171329: 73,290 questions in 292 kinds); a run that stops
-    at its 100 minutes is pushed again and asks only what is not kept; then `DRY_RUN` back to `'yes'`. That day's
-    AI passes the measures' $2: it is the owner's own step 8, and his word covers it. (3) **The look before the
+  - **The order of work** (the rules' 12): (1) built, with tests: done. (2) **The first asking: DONE on 23/11**
+    (the first item; $6.83 of the $20), after the cap per shop, as he said on 22/11. **Any asking after it is
+    made the same way** (the products that came since have no answer while the switch is false): push the work
+    branch's head to `claude/itself-ask` as it is, dry: it copies the kept answers and counts what they do not
+    hold; tell him the count and the cost in one line; on his word, in `.github/workflows/ai-itself-ask.yml`
+    turn `DRY_RUN` to `'no'`, commit, push the commit to the work branch and to `claude/itself-ask`; the run
+    asks only what is not kept and puts the answers in `/srv/picwise/assist/itself/answers.jsonl.gz`, the
+    answers before kept beside them; a run that stops at its 100 minutes is pushed again; then `DRY_RUN` back
+    to `'yes'` (a test pins it: GitHub's "Tests" are red while it is `'no'`). (3) **The look before the
     «ανέβασε», NOT BUILT** (task 7's kind; the rules' 12.3): the catalogue prepared on GitHub's runner with the
     answers and the switch on, as `trial-prepare.yml` prepares one; per kind what leaves by answer and what comes
     back, with examples; the kinds a brake would hold; the Recommended of each of the 40 searches before and
     after; the meter's judge on both (`picwise_ai.meter`, its cards then from the copies); and **what the gate
-    adds to the preparation's 28.4 minutes** (the health run's limit is 30; the gate reads the answers of 1.6
-    million rows and works out each kind's first cards once more: seconds on the runner for 399,000 products).
+    adds to the preparation's 26.9 minutes** (23/11, with the shops' rule; the health run's limit is 30; the gate
+    reads the answers of 1.6 million rows and works out each kind's first cards once more: seconds on the runner
+    for 399,000 products). It begins with a dry run on its day's catalogue, best of 26/11 or after (the first item).
     (4) His «ανέβασε»: the switch true with `looked_until` at the look's day. The deployment prepares (the code's
     fingerprint changes): restart the site first, as on 22/11. The first night the answers are read has no night
     before to hold against, and the health run says so as a limit: expected that one morning only.
