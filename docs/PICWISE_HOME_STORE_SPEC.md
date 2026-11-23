@@ -26,6 +26,11 @@ Each rule names whose it is:
 - **Οι εικόνες της 24/11**, στον ίδιο καμβά με την αρχική, σε 5 σελίδες: «Τμήματα»,
   «Προσφορές», «Νέες σελίδες», «Αναζήτηση & κινητό», «Υπολογιστής». Δίπλα σε κάθε εικόνα,
   σε μπλε σημείωμα η μετάφραση και σε πορτοκαλί ό,τι θέλει τη λέξη σου.
+- **Τι αποφάσισες στις 24/11, 01:23**: τα τρία δικά σου κείμενα εμπιστοσύνης μπαίνουν στην
+  αρχική όπως τα έδωσες: «Arrive confused. Leave decided.» με τα τρία ✓ από κάτω, τα τρία
+  σημεία στο «What you can count on», και στο υποσέλιδο «No Cookie Policy — because we
+  don't use any.» στη θέση του «Cookies». Κανένας έλεγχος για cookies (το απέρριψες). Είναι
+  στην εικόνα· στη χτισμένη σελίδα τα γράφει το Opus.
 - **Τι αποφάσισες στις 23/11, 23:23** («Ναι σε όλα»): «See» αντί για «Compare» στο βήμα
   2· στα προϊόντα μιας προσφοράς δεν μπαίνει Recommended (ο κανόνας σου της 15/11 για τα
   φίλτρα)· στο iPhone η λωρίδα δείχνει μόνο οδηγίες· οι εικόνες για όσα δεν έχεις δει
@@ -83,6 +88,36 @@ Each rule names whose it is:
   under 48 px, none nearer than 8 px to another; no word under 12 px; no text fainter
   against its ground than Google asks (4.5:1, 3:1 for large letters). To be measured again
   on the built page (section 9).
+
+### 1.3 His texts of trust (2026-11-24, 01:02 to 01:23 Athens)
+
+«Πρόταση για το Marketing & την Αρχική Σελίδα (Trust & Privacy Angle)»: «δεν φορτώνουμε
+cookies και δεν κρατάμε δεδομένα στους servers μας ... συνδυάζοντας το “No Cookies” με το
+“Τίποτα ψεύτικο / Καμία πληρωμένη κατάταξη”, χτίζουμε αμέσως απόλυτη εμπιστοσύνη», with
+three texts for the home page, written into 5.3 and 5.9 word for word:
+
+1. Under the search: "Arrive confused. Leave decided." and "✓ 100+ UK Shops · ✓ 30-Day
+   Price History · ✓ Zero Cookies & Tracking".
+2. Three points: "4 honest choices, zero paid rankings: ...", "Real price history: ...",
+   "100% Private (No Cookies): ...".
+3. In the footer, «αντί για Cookie Policy»: "No Cookie Policy — because we don't use any."
+
+**What he was told, and his answers.** That the site's own code sets no cookie and has no
+analytics, pixels or accounts (so its Cookies page says); that the server keeps a search's
+words and its day, no IP address, no device, no cookie (his own rule of 2026-11-07), and
+counts how often a search was made, not by whom; and three reservations: (a) "Zero ...
+Tracking" and "100% Private" without "on PicWise", since a shop's button leads through
+Awin's link, where Awin and the shop set their cookies (the Cookies page says so), and the
+pages show the shops' photos from the shops' own servers; (b) the record of prices is
+younger than 30 nights on that day; (c) "100+": 109 shops that night, nine of which cannot
+be checked. A check each morning, from outside, that a page of the site leaves no cookie
+in a browser was proposed twice. **His answers:** «Θα βλέπουμε πόσοι αναζιτισαν μια
+αναζιτιση όχι Πίος»; «Δεν μας ενδιαφέρει τι κουμπώνουν οι άλλοι εμείς μιλάμε για εμάς αν
+δεν μεταφερθεί πουθενά δεν του βάζουμε τίποτα όταν μετάφερθεί ισχύουν οι κανώνες άλλου
+καταστήματος το οποίο ενημερώνει και η ευθύνη φεύγει από εμάς»; and **«Απορρίπτεται
+κατηγορηματικά... Κανένας ελέγχος.. το τραβάς πολύ... Εδώ κάνουμε εμπόριο... Κατά βάση το
+site δεν φορτώνει τίποτα πρόσθεσε τα κείμενα που σου έδωσα»**. So: the texts as he gave
+them; **no such check is built, and none is proposed to him again unless he asks.**
 
 ## 2. What this does not change
 
@@ -164,10 +199,16 @@ For a phone first (the rules a phone is given, `@media (max-width:699px)`); a co
 
 ### 5.3 The promise
 
-- Small heading "HOW PICWISE WORKS"; the page's `<h1>`: "Come in confused." / "Leave
-  decided." (the owner's own phrase, «μπαίνεις μπερδεμένος και φεύγεις αποφασισμένος»). It
-  takes the place of "Find the product you want in UK shops" on the page; that sentence
-  stays the page's `<title>` (section 2).
+- Small heading "HOW PICWISE WORKS"; the page's `<h1>`: "Arrive confused." / "Leave
+  decided." (**owner, 2026-11-24**, his own text, 1.3; the picture of 23/11 and the page
+  of H3 say "Come in confused."). It takes the place of "Find the product you want in UK
+  shops" on the page; that sentence stays the page's `<title>` (section 2).
+- Under it, before the steps, three lines with a tick, word for word (**owner,
+  2026-11-24**, 1.3): "100+ UK Shops", "30-Day Price History", "Zero Cookies & Tracking";
+  one wrapping row, 13 px bold, a blue tick drawn before each (no "✓" letter, no dot
+  between them). **Proposed, told to him**: "100+ UK Shops" stands while the catalogue
+  holds more than 100 shops; with 100 or fewer the line gives the count itself ("98 UK
+  Shops"), so that it is never false (109 that night; nine shops could not be checked).
 - Three steps: "1 Search" / "Type what you need"; "2 See" / "4 choices, cheapest first"
   (**owner**, 8.1: not "Compare"); "3 Decide" / "One is Recommended", its number on gold.
 
@@ -289,19 +330,31 @@ A band on `#0f2442`:
   products a search holds (their first two figures and a "+", `reference._at_least`:
   **existing** rule) over "products"; the shops, exact, over "UK shops"; "Nightly" over
   "stock and price updates". The first two are left out while this process does not know
-  them (`state.peek_search_catalogue_counts`). Four lines with a tick: "In stock only,
-  updated every night" (**existing**), "The shop's own price. Never a made-up discount",
-  "No fake reviews, ratings or countdowns", "Never ranked by commission" (**existing**).
+  them (`state.peek_search_catalogue_counts`). Then three points with a tick, word for
+  word, the words before the colon bold (**owner, 2026-11-24**, 1.3; they take the place
+  of the four lines of the picture of 23/11 and of H3: "In stock only, updated every
+  night", "The shop's own price. Never a made-up discount", "No fake reviews, ratings or
+  countdowns", "Never ranked by commission"):
+  - "4 honest choices, zero paid rankings: Commissions never change the order of results
+    or our “Recommended” pick."
+  - "Real price history: Check the last 30 nights at a glance. No fake discounts, no
+    “hurry up” tricks."
+  - "100% Private (No Cookies): No pop-ups, no accounts. Your favourites and search
+    history stay on your own device—we never see them."
+
   "How PicWise works ›" (7.3).
 - "Some of our 109 UK shops": the count exact; **proposed**, the eight shops with the most
   products shown tonight, by their names as a buyer knows them, never chosen by commission;
   "See all shops ›" (7.3). Left out while the shops are not known.
 - "BACK TO TOP", then the footer on `#0f2442`: "PicWise" (About PicWise, How PicWise works,
   How we choose the Recommended, Our checks, Our shops) and "Help & legal" (Contact, Terms,
-  Privacy, Cookies, Affiliate disclosure); the mark; "United Kingdom · Prices in £"; the
-  affiliate notice word for word (`legal.SHORT_AFFILIATE_NOTICE`, **existing**); "© 2026
-  PicWise. All rights reserved." In H3 this footer is the home page's alone; the other
-  pages keep theirs until Part F (7.4).
+  Privacy, Affiliate disclosure); the mark; "United Kingdom · Prices in £"; the affiliate
+  notice word for word (`legal.SHORT_AFFILIATE_NOTICE`, **existing**); then, 14 px bold,
+  white, **"No Cookie Policy — because we don't use any."** (**owner, 2026-11-24**, 1.3:
+  «αντί για Cookie Policy»: the footer has no "Cookies" link); "© 2026 PicWise. All rights
+  reserved." The cookies' page itself is not removed: it stays at its address and opens
+  from the Privacy page, which names it (told to him). In H3 this footer is the home
+  page's alone; the other pages keep theirs until Part F (7.4).
 
 ### 5.10 What the page knows, and when
 
@@ -597,6 +650,12 @@ machine"): a matter of the search, not of this page; and the two colours and the
     so it is not shown again."
 15. **The drawings** for "mattress" and "hoodie" (5.6), and "toaster" and "blender" for a
     department's kinds.
+16. **The texts of trust. Decided by the owner, 2026-11-24 (01:23 Athens), 1.3**: the
+    heading "Arrive confused. / Leave decided.", the three ticks under it (5.3), the three
+    points of the promise and the footer's line in the place of the "Cookies" link (5.9),
+    word for word. In the picture on his canvas the same night. **Not yet in the page of
+    H3: the builder (Opus) writes them into `home_store.py` (`PROMISE_HEADING`, the ticks,
+    `VOWS`, the footer) and brings the tests that pin the older texts to them.**
 
 ## 9. The look before the «ανέβασε» (H5)
 
