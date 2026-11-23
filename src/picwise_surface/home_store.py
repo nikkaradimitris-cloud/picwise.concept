@@ -99,8 +99,15 @@ STRIP_ADD = "Add"
 STRIP_CLOSE = "Close"
 ALL_DEPARTMENTS = "All departments"
 PROMISE_EYEBROW = "HOW PICWISE WORKS"
-# The owner's own phrase, «μπαίνεις μπερδεμένος και φεύγεις αποφασισμένος» (2026-11-23).
-PROMISE_HEADING = ("Come in confused.", "Leave decided.")
+# The owner's own text (2026-11-24, «πρόσθεσε τα κείμενα που σου έδωσα»; before it, his
+# phrase of 2026-11-23, «μπαίνεις μπερδεμένος και φεύγεις αποφασισμένος»).
+PROMISE_HEADING = ("Arrive confused.", "Leave decided.")
+# Under it, word for word (owner, 2026-11-24). "100+ UK Shops" while the catalogue holds
+# more than 100 shops; else the count itself, so that it is never false (the
+# specification, 5.3).
+TRUST_SHOPS_MANY = "100+ UK Shops"
+TRUST_SHOPS_COUNT = "{count} UK Shops"
+TRUST_TICKS = ("30-Day Price History", "Zero Cookies & Tracking")
 # Step 2 is "See", not "Compare": PicWise is never presented as price comparison (owner,
 # 2026-11-12: «θα κλείσουν πολλές πόρτες»; 2026-11-23: «Ναι σε όλα»).
 STEPS = (
@@ -125,13 +132,14 @@ DEPARTMENTS_TITLE = "Browse by department"
 VOWS_EYEBROW = "THE PICWISE PROMISE"
 VOWS_TITLE = "What you can count on"
 VOWS_FIGURE_NIGHTLY = ("Nightly", "stock and price updates")
+# The owner's three points, word for word (2026-11-24): the words before the colon bold.
 VOWS = (
-    # "In stock only, updated every night" and "Never ranked by commission" are the home
-    # page's own facts of 2026-11-12 (`reference._HOME_FACTS`).
-    "In stock only, updated every night",
-    "The shop's own price. Never a made-up discount",
-    "No fake reviews, ratings or countdowns",
-    "Never ranked by commission",
+    ("4 honest choices, zero paid rankings:", "Commissions never change the order of results or our “Recommended” pick."),
+    ("Real price history:", "Check the last 30 nights at a glance. No fake discounts, no “hurry up” tricks."),
+    (
+        "100% Private (No Cookies):",
+        "No pop-ups, no accounts. Your favourites and search history stay on your own device—we never see them.",
+    ),
 )
 VOWS_LINK = "How PicWise works"
 SHOPS_TITLE = "Some of our {count} UK shops"
@@ -141,6 +149,9 @@ FOOTER_PICWISE = "PicWise"
 FOOTER_HELP = "Help & legal"
 FOOTER_WHERE = "United Kingdom · Prices in £"
 FOOTER_META = "© 2026 PicWise. All rights reserved."
+# In the footer, in the place of the "Cookies" link (owner, 2026-11-24: «αντί για Cookie
+# Policy»). The cookies' page stays at its address and opens from the Privacy page.
+FOOTER_NO_COOKIES = "No Cookie Policy — because we don't use any."
 
 _THEMES = frozenset({"gold", "ink", "blue"})
 _GROUNDS = frozenset({"white", "mist", "sand", "pale"})
@@ -403,6 +414,11 @@ _UP = (
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" '
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>'
 )
+# The three lines under the heading: a blue tick drawn before each, no letter.
+_TRUST_TICK = (
+    '<svg class="pw-hs-trust-tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+    'stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+)
 _TICK = (
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" '
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
@@ -525,7 +541,22 @@ def _header_html(lists: HomeLists, parts: frozenset[str]) -> str:
     )
 
 
-def _promise_band_html() -> str:
+def trust_shops_line(catalogue: tuple[int, int] | None) -> str:
+    """"100+ UK Shops" while there are more than 100; the count itself at 100 or fewer;
+    "" while the count is not known (the specification, 5.3)."""
+    shops = int(catalogue[1] or 0) if catalogue else 0
+    if shops <= 0:
+        return ""
+    return TRUST_SHOPS_MANY if shops > 100 else TRUST_SHOPS_COUNT.format(count=f"{shops:,}")
+
+
+def _trust_ticks_html(catalogue: tuple[int, int] | None) -> str:
+    lines = tuple(line for line in (trust_shops_line(catalogue), *TRUST_TICKS) if line)
+    items = "".join(f'<li class="pw-hs-trust-item">{_TRUST_TICK}{escape(line)}</li>' for line in lines)
+    return f'<ul class="pw-hs-trust">{items}</ul>'
+
+
+def _promise_band_html(catalogue: tuple[int, int] | None = None) -> str:
     steps = "".join(
         f'<li class="pw-hs-step"><span class="pw-hs-step-n{" pw-hs-step-n-gold" if number == "3" else ""}">{number}</span>'
         f'<span class="pw-hs-step-name">{escape(name)}</span><span class="pw-hs-step-line">{escape(line)}</span></li>'
@@ -536,6 +567,7 @@ def _promise_band_html() -> str:
         '<section class="pw-hs-promise" aria-labelledby="pw-hs-h1">'
         f'<p class="pw-hs-eyebrow">{escape(PROMISE_EYEBROW)}</p>'
         f'<h1 class="pw-hs-h1" id="pw-hs-h1">{escape(first)}<br>{escape(second)}</h1>'
+        f"{_trust_ticks_html(catalogue)}"
         f'<ol class="pw-hs-steps">{steps}</ol>'
         "</section>"
     )
@@ -824,8 +856,9 @@ def _vows_html(catalogue: tuple[int, int] | None, parts: frozenset[str]) -> str:
         for big, small in figures
     )
     vows = "".join(
-        f'<li class="pw-hs-vow"><span class="pw-hs-tick">{_TICK}</span><span class="pw-hs-vow-text">{escape(text)}</span></li>'
-        for text in VOWS
+        f'<li class="pw-hs-vow"><span class="pw-hs-tick">{_TICK}</span><span class="pw-hs-vow-text">'
+        f"<strong>{escape(lead)}</strong> {escape(text)}</span></li>"
+        for lead, text in VOWS
     )
     link = _link(PART_ADDRESSES["how_picwise_works"], VOWS_LINK) if "pages" in parts else ""
     return (
@@ -867,7 +900,6 @@ def footer_links(parts: frozenset[str]) -> tuple[tuple[str, tuple[tuple[str, str
         ("Contact", "/contact"),
         ("Terms", "/terms"),
         ("Privacy", "/privacy"),
-        ("Cookies", "/cookies"),
         ("Affiliate disclosure", "/affiliate-disclosure"),
     )
     return ((FOOTER_PICWISE, tuple(picwise)), (FOOTER_HELP, help_links))
@@ -891,6 +923,7 @@ def _footer_html(parts: frozenset[str]) -> str:
         '<span class="pw-hs-foot-name">picwise</span></div>'
         f'<p class="pw-hs-foot-where">{escape(FOOTER_WHERE)}</p>'
         f'<p class="pw-hs-foot-notice">{escape(SHORT_AFFILIATE_NOTICE)}</p>'
+        f'<p class="pw-hs-foot-cookies">{escape(FOOTER_NO_COOKIES)}</p>'
         f'<p class="pw-hs-foot-meta">{escape(FOOTER_META)}</p>'
         "</div></footer>"
     )
@@ -1003,7 +1036,10 @@ HOME_STORE_STYLES = (
     # the promise
     ".pw-hs-promise{padding:18px 16px 6px;}"
     ".pw-hs-eyebrow{margin:0;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--hs-acc);}"
-    ".pw-hs-h1{margin:6px 0 14px;font-size:27px;line-height:1.12;font-weight:800;letter-spacing:-.6px;color:var(--hs-ink);}"
+    ".pw-hs-h1{margin:6px 0 12px;font-size:27px;line-height:1.12;font-weight:800;letter-spacing:-.6px;color:var(--hs-ink);}"
+    ".pw-hs-trust{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px;}"
+    ".pw-hs-trust-item{display:flex;align-items:center;gap:6px;font-size:13px;line-height:1.35;font-weight:700;color:var(--hs-ink);}"
+    ".pw-hs-trust-tick{flex:0 0 auto;color:var(--hs-blue);}"
     ".pw-hs-steps{list-style:none;margin:0;padding:14px 0 0;border-top:1px solid var(--hs-line);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}"
     ".pw-hs-step{display:flex;flex-direction:column;gap:5px;}"
     ".pw-hs-step-n{width:28px;height:28px;border-radius:999px;background:var(--hs-ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;}"
@@ -1106,10 +1142,11 @@ HOME_STORE_STYLES = (
     ".pw-hs-fig{display:flex;flex-direction:column;gap:2px;}"
     ".pw-hs-fig-big{font-size:21px;line-height:1.15;font-weight:800;letter-spacing:-.4px;color:var(--hs-ink);}"
     ".pw-hs-fig-small{font-size:12px;line-height:1.3;color:var(--hs-muted);}"
-    ".pw-hs-vow-list{list-style:none;margin:16px 0 0;padding:0 0 10px;display:flex;flex-direction:column;gap:12px;}"
+    ".pw-hs-vow-list{list-style:none;margin:16px 0 0;padding:0 0 10px;display:flex;flex-direction:column;gap:14px;}"
     ".pw-hs-vow{display:flex;align-items:flex-start;gap:10px;}"
     ".pw-hs-tick{flex:0 0 auto;width:24px;height:24px;border-radius:999px;background:var(--hs-blue);color:#fff;display:flex;align-items:center;justify-content:center;}"
-    ".pw-hs-vow-text{font-size:15px;line-height:1.4;font-weight:600;color:var(--hs-ink);}"
+    ".pw-hs-vow-text{font-size:15px;line-height:1.45;color:#33425c;}"
+    ".pw-hs-vow-text strong{font-weight:800;color:var(--hs-ink);}"
     ".pw-hs-shops{padding:22px 16px 0;}"
     ".pw-hs-shops-title{margin:0 0 12px;font-size:19px;}"
     ".pw-hs-chips{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px;}"
@@ -1128,6 +1165,7 @@ HOME_STORE_STYLES = (
     ".pw-hs-foot-name{font-size:20px;font-weight:800;letter-spacing:-.5px;color:#fff;}"
     ".pw-hs-foot-where{margin:10px 0 0;font-size:13px;color:#aebbd3;}"
     ".pw-hs-foot-notice{margin:14px 0 0;font-size:13px;line-height:1.55;color:#aebbd3;}"
+    ".pw-hs-foot-cookies{margin:14px 0 0;font-size:14px;line-height:1.4;font-weight:700;color:#fff;}"
     ".pw-hs-foot-meta{margin:12px 0 0;font-size:12px;color:#93a3c0;}"
     "@media (prefers-reduced-motion:reduce){.pw-hs-dot,.pw-hs-more svg{transition:none;}}"
     # On a computer (the specification, 5.13): the same sections in the same order, inside
@@ -1148,7 +1186,8 @@ HOME_STORE_STYLES = (
     ".pw-hs-promise{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);column-gap:40px;align-items:end;padding:32px 0 12px;}"
     ".pw-hs-promise .pw-hs-eyebrow{grid-column:1;grid-row:1;}"
     ".pw-hs-h1{grid-column:1;grid-row:2;margin:6px 0 0;font-size:32px;}"
-    ".pw-hs-steps{grid-column:2;grid-row:1 / span 2;border-top:0;border-left:1px solid var(--hs-line);padding:0 0 0 32px;}"
+    ".pw-hs-trust{grid-column:1;grid-row:3;margin:12px 0 0;}"
+    ".pw-hs-steps{grid-column:2;grid-row:1 / span 3;border-top:0;border-left:1px solid var(--hs-line);padding:0 0 0 32px;}"
     ".pw-hs-banners{padding-top:20px;}"
     ".pw-hs-banner-row{padding:0 0 4px;scroll-padding:0;}"
     ".pw-hs-offers,.pw-hs-pop,.pw-hs-sec{margin-top:20px;border-radius:20px;}"
@@ -1188,7 +1227,8 @@ HOME_STORE_STYLES = (
     ".pw-hs-foot-brand{grid-column:1;grid-row:1;}"
     ".pw-hs-foot-where{grid-column:1;grid-row:2;}"
     ".pw-hs-foot-notice{grid-column:1;grid-row:3;max-width:520px;}"
-    ".pw-hs-foot-meta{grid-column:1;grid-row:4;}"
+    ".pw-hs-foot-cookies{grid-column:1;grid-row:4;}"
+    ".pw-hs-foot-meta{grid-column:1;grid-row:5;}"
     "}"
     # Where there is room: the banners side by side, two sections side by side.
     "@media (min-width:1000px){"
@@ -1223,7 +1263,7 @@ def render_home_store_page(
     )
     offers_html = _offers_html(facts, parts)
     main_html = (
-        f"{_promise_band_html()}"
+        f"{_promise_band_html(catalogue)}"
         f"{_banners_html(lists, parts, offers_shown=bool(offers_html))}"
         f"{offers_html}"
         f"{popular_html}"

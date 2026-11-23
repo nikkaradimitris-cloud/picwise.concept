@@ -171,12 +171,13 @@ class TheSwitchTests(_Switch, unittest.TestCase):
         self.assertEqual(_get("/"), expected)
         self.assertIn("Find the product you want in UK shops", expected)
         self.assertNotIn("pw-hs", expected)
-        self.assertNotIn("Come in confused", expected)
+        self.assertNotIn("Arrive confused", expected)
 
     def test_on_the_home_page_is_the_store(self) -> None:
         self._switch(True)
         page = _get("/")
-        self.assertIn('<h1 class="pw-hs-h1" id="pw-hs-h1">Come in confused.<br>Leave decided.</h1>', page)
+        # The owner's own heading (2026-11-24).
+        self.assertIn('<h1 class="pw-hs-h1" id="pw-hs-h1">Arrive confused.<br>Leave decided.</h1>', page)
         self.assertNotIn('class="pw-hero-title"', _markup(page))
         # A search is as before: only the page without one is the store.
         self.assertNotIn("pw-hs-h1", _get("/search", "q=kettle"))
@@ -207,10 +208,13 @@ class ThePageTests(_Switch, unittest.TestCase):
             "1 Search Type what you need 2 See 4 choices, cheapest first 3 Decide One is Recommended",
             "THE PICWISE PROMISE",
             "What you can count on",
-            "In stock only, updated every night",
-            "The shop's own price. Never a made-up discount",
-            "No fake reviews, ratings or countdowns",
-            "Never ranked by commission",
+            # The owner's texts, word for word (2026-11-24).
+            "30-Day Price History Zero Cookies & Tracking",
+            "4 honest choices, zero paid rankings: Commissions never change the order of results or our \u201cRecommended\u201d pick.",
+            "Real price history: Check the last 30 nights at a glance. No fake discounts, no \u201churry up\u201d tricks.",
+            "100% Private (No Cookies): No pop-ups, no accounts. Your favourites and search history stay on your own "
+            "device\u2014we never see them.",
+            "No Cookie Policy \u2014 because we don't use any.",
             "BACK TO TOP",
             "United Kingdom · Prices in £",
             "PicWise earns a commission from some shops, through Awin",
@@ -230,8 +234,23 @@ class ThePageTests(_Switch, unittest.TestCase):
         for tag in re.findall(r"<(?:img|script|iframe)\b[^>]*>", _markup(self.page)):
             self.assertNotRegex(tag, r'src="(?:https?:)?//', tag)
         # The site's own footer pages answer.
-        for href in ("/about", "/contact", "/terms", "/privacy", "/cookies", "/affiliate-disclosure"):
+        for href in ("/about", "/contact", "/terms", "/privacy", "/affiliate-disclosure"):
             self.assertIn(href, links)
+        # No "Cookies" link: the owner's line in its place (2026-11-24); the page itself
+        # stays, and opens from the Privacy page.
+        self.assertNotIn("/cookies", links)
+        self.assertIn("/cookies", _links(_get("/privacy")))
+        self.assertIn("PicWise sets no cookies", _get("/cookies"))
+
+    def test_the_shops_tick_is_never_false(self) -> None:
+        self.assertEqual(home_store.trust_shops_line((118048, 109)), "100+ UK Shops")
+        self.assertEqual(home_store.trust_shops_line((90000, 101)), "100+ UK Shops")
+        self.assertEqual(home_store.trust_shops_line((90000, 100)), "100 UK Shops")
+        self.assertEqual(home_store.trust_shops_line((90000, 98)), "98 UK Shops")
+        self.assertEqual(home_store.trust_shops_line(None), "")
+        page = _markup(render_home_store_page(catalogue=None, indexable=True, trends=None))
+        self.assertNotIn("UK Shops", page)
+        self.assertIn("Zero Cookies &amp; Tracking", page)
 
     def test_the_search_box_is_every_page_s(self) -> None:
         old = render_picwise_reference_surface(query="", resolution=empty_landing_search_resolution(""))
