@@ -14,7 +14,10 @@ ones stay while they fit, and when there are fewer places the ones that stay kee
 spread; the same input gives the same choice; too few categories cut nothing. And the
 pool Google may be given from (owner, 2026-10-30: every product stays in the search):
 kept beside the prepared file and read back as written, the next night's starting
-point; no file, or a broken one, starts afresh.
+point; no file, or a broken one, starts afresh. And the products offered for the cap to
+name its candidates among (the checks' rules 19.6.2; the look of 23/11): they count for no
+category's size and no kind's share, none is kept, and they are named only where a place
+is open for them.
 
 Every row is local test data: fictional brands and shops, `.invalid` addresses.
 """
@@ -298,6 +301,111 @@ class NightBeforeTests(unittest.TestCase):
         self.assertNotIn(gone, kept_rings)
         self.assertEqual(len(kept_rings), result.size)
         self.assertEqual(products_today.size, result.size)
+
+
+class OfferedTests(unittest.TestCase):
+    """The products of a shop over the most a shop passes that wait at the gate, given for
+    the cap to name its candidates among (`offered`; the checks' rules 19.6.2 and 20.7).
+    The look of 23/11: counted like the rest, the waiting rows of a shop with one place open
+    moved every kind's share in its categories from one night to the next."""
+
+    NECKLACES = "Apparel & Accessories > Jewelry > Necklaces"
+
+    def _others(self, count: int = 20) -> list[ProviderProduct]:
+        products = []
+        number = 10_000
+        for name in SMALL:
+            for _ in range(count):
+                products.append(_product(number, name, gtin=_gtin(number)))
+                number += 1
+        return products
+
+    def test_they_count_for_no_categorys_size_and_no_share_and_none_is_kept(self) -> None:
+        products = [_product(index, JEWELLERY, price=1.0 + index, gtin=_gtin(index)) for index in range(300)] + self._others()
+        offered = [_product(20_000 + index, JEWELLERY, price=2.0 + index, shop="Big Shop", gtin=_gtin(20_000 + index))
+                   for index in range(600)]
+        offered += [_product(30_000 + index, SMALL[0], shop="Big Shop", gtin=_gtin(30_000 + index)) for index in range(50)]
+        given = products + offered
+        context = _context(given)
+        kinds = [frozenset()] * len(given)
+        night_before = cap_catalogue(products, kinds[: len(products)], feed_ctx=context)
+        self.assertEqual(night_before.size, 35)
+
+        def nothing_new(_product_: ProviderProduct) -> bool:
+            return False
+
+        plain = cap_catalogue(products, kinds[: len(products)], feed_ctx=context, kept_before=night_before.kept_keys,
+                              may_enter=nothing_new)
+        result = cap_catalogue(given, kinds, feed_ctx=context, kept_before=night_before.kept_keys, may_enter=nothing_new,
+                               offered=range(len(products), len(given)))
+        self.assertEqual((result.size, plain.size), (35, 35))
+        self.assertEqual(result.keep[: len(products)], plain.keep)
+        self.assertFalse(any(result.keep[len(products):]))
+        self.assertEqual((result.by_category, result.by_shop, result.inside), (plain.by_category, plain.by_shop, plain.inside))
+        self.assertEqual(result.kept_keys, plain.kept_keys)
+        # Counted like the rest, as they were, they move the size of every category (and with
+        # it each kind's share: the walk of nights in `test_picwise_checks_walk`).
+        counted = cap_catalogue(given, kinds, feed_ctx=context, kept_before=night_before.kept_keys, may_enter=nothing_new)
+        self.assertEqual(counted.size, 38)
+
+    def test_in_a_category_over_its_size_they_are_named_only_for_the_places_their_kind_has_open(self) -> None:
+        # Seventeen clean rings, the ones the cap keeps; the other rings have no image. The
+        # necklaces fill their share. Five kept rings then leave the feed: the rings have five
+        # places open, the necklaces none.
+        rings = [_product(index, JEWELLERY, price=1.0 + index, gtin=_gtin(index), image=index < 17) for index in range(300)]
+        necklaces = [_product(1_000 + index, self.NECKLACES, price=1.0 + index, gtin=_gtin(1_000 + index)) for index in range(300)]
+        others = self._others()
+        first = rings + necklaces + others
+        offered = [_product(20_000 + index, JEWELLERY, price=5.0 + index, shop="Big Shop", gtin=_gtin(20_000 + index))
+                   for index in range(40)]
+        offered += [_product(21_000 + index, self.NECKLACES, price=5.0 + index, shop="Big Shop", gtin=_gtin(21_000 + index))
+                    for index in range(40)]
+        context = _context(first + offered)
+        night_before = cap_catalogue(first, [frozenset()] * len(first), feed_ctx=context)
+        kept_rings = [product for product, kept in zip(rings, night_before.keep) if kept]
+        self.assertEqual((night_before.size, len(kept_rings)), (35, 17))
+        gone = {row_key(product) for product in kept_rings[:5]}
+        today = [product for product in first if row_key(product) not in gone]
+        given = today + offered
+        result = cap_catalogue(given, [frozenset()] * len(given), feed_ctx=context, kept_before=night_before.kept_keys,
+                               may_enter=lambda _product_: False, offered=range(len(today), len(given)))
+        self.assertFalse(any(result.keep[len(today):]))
+        named = [given[index] for index in result.candidates if "Jewelry" in given[index].category_text]
+        # One and a quarter times the five places, the clean ones first: the offered rings, which
+        # have an image. No necklace is named, offered or not: their kind has no place open.
+        self.assertEqual(len(named), 7)
+        self.assertTrue(all(product.category_text == JEWELLERY and product.raw["merchant_name"] == "Big Shop" for product in named))
+        # With no place open in any kind, none is named.
+        full = cap_catalogue(first + offered, [frozenset()] * len(first + offered), feed_ctx=context,
+                             kept_before=night_before.kept_keys, may_enter=lambda _product_: False,
+                             offered=range(len(first), len(first + offered)))
+        self.assertEqual([index for index in full.candidates if index >= len(first)], [])
+
+    def test_in_a_category_under_its_size_as_many_are_named_as_it_has_places_for(self) -> None:
+        products = [_product(index, JEWELLERY, price=1.0 + index, gtin=_gtin(index)) for index in range(300)] + self._others()
+        # Thirty the most a category keeps: the first small one has 20, so ten places; a
+        # category the shops keep nothing of has thirty; the one over its size has none.
+        dolls = "Toys & Games > Toys > Dolls"
+        offered = [_product(30_000 + index, SMALL[0], price=1.0 + index, shop="Big Shop", gtin=_gtin(30_000 + index))
+                   for index in range(100)]
+        offered += [_product(40_000 + index, dolls, price=1.0 + index, shop="Big Shop", gtin=_gtin(40_000 + index))
+                    for index in range(60)]
+        given = products + offered
+        context = _context(given)
+        night_before = cap_catalogue(products, [frozenset()] * len(products), feed_ctx=context, category_max=30)
+        self.assertEqual(night_before.size, 30)
+        result = cap_catalogue(given, [frozenset()] * len(given), feed_ctx=context, kept_before=night_before.kept_keys,
+                               category_max=30, may_enter=lambda _product_: False, offered=range(len(products), len(given)))
+        self.assertEqual(result.size, 30)
+        named = [given[index] for index in result.candidates if index >= len(products)]
+        by_category = {}
+        for product in named:
+            by_category[product.category_text] = by_category.get(product.category_text, 0) + 1
+        self.assertEqual(by_category, {SMALL[0]: 13, dolls: 38})
+        # Spread over their prices, not the cheapest alone.
+        prices = sorted(float(product.price_text) for product in named if product.category_text == SMALL[0])
+        self.assertLess(prices[0], 10)
+        self.assertGreater(prices[-1], 90)
 
 
 class GooglePoolFileTests(unittest.TestCase):

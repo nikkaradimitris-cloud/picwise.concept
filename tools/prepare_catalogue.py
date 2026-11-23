@@ -284,12 +284,15 @@ class _Cap:
                 # names it a candidate only where a place is open for it, and a shop's candidates
                 # are those, in its own order, as many as it may name (`shop_cap.vetted`; the
                 # look of 22/11: named for the shop's place alone, 63,000 candidates of three
-                # shops were asked, passed, refused by their category and named again).
+                # shops were asked, passed, refused by their category and named again). They are
+                # given as `offered`: the cap counts what the shops keep (19.6.1), not them (the
+                # look of 23/11: counted, they moved every kind's share from night to night).
                 offered = [place for shop in sorted(self.shops.waiting) for place in self.shops.waiting[shop]]
                 given = places + offered
                 result = _widened(cap_catalogue(
                     [products[place] for place in given], [kinds[place] for place in given], feed_ctx=feed_ctx,
                     kept_before=kept_before, share=share, category_max=category_max, may_enter=gate,
+                    offered=range(len(places), len(given)),
                 ), given, len(products))
                 if offered:
                     from dataclasses import replace

@@ -29,7 +29,9 @@ switch on), walked the same way, with the most a shop passes made small:
   (19.3.2: its shown products asked again first);
 - a pass counts for three nights: a product the bot could not reach is shown the night it
   passed and the two after, then waits, is named a candidate and is back the night it
-  passes again (19.3.1).
+  passes again (19.3.1);
+- the products of a capped shop that wait at the gate move no other kind's share in its
+  categories (the look of 23/11, the checks' rules 20.7).
 
 Every row is local test data: fictional shops and brands, `.invalid` hosts.
 """
@@ -119,6 +121,8 @@ class Server:
         self.for_the_bot = {"candidates": [], "rows": []}
         self.night_number = 0
         self.gate_off = ""
+        # A product's kinds, as the search reads them: every one a kettle, unless a walk says.
+        self.kinds_of = lambda product: frozenset({"kettle"})
 
     def write_pool(self, keys) -> None:
         with gzip.open(google_pool_path(self.out), "wt", encoding="utf-8") as handle:
@@ -145,7 +149,7 @@ class Server:
         self.night_number += 1
         # The bot's side (`shop_checks_bot.main` and `run`).
         rows = {row.key: row for row in map(row_of, self.shown)}
-        parts = {row_of(product).key: part_of(product, frozenset({"kettle"})) for product in self.shown}
+        parts = {row_of(product).key: part_of(product, self.kinds_of(product)) for product in self.shown}
         shown = set(rows)
         named = {record[0]: row_from_record(record) for record in self.for_the_bot["rows"]}
         candidates = [key for key in self.for_the_bot["candidates"] if key in named]
@@ -155,7 +159,7 @@ class Server:
         if self.scanned:
             keys_of = [row_of(product).key for product in self.shown]
             shown_order = {shop: [keys_of[place] for place in places] for shop, places in
-                           shop_cap.shop_order(self.shown, [frozenset({"kettle"})] * len(self.shown)).items()}
+                           shop_cap.shop_order(self.shown, [self.kinds_of(product) for product in self.shown]).items()}
         order = L.asking_order(self.ledger, night, rows, shown=shown, candidates=candidates, parts=parts,
                                scanned=self.scanned, shown_order=shown_order, limit=self.limit if self.scanned else 0)
         asked = {shop: keys[: (reach if reach is not None else self.asked_a_night.get(shop, self.asked_a_night.get("", 0)))]
@@ -179,7 +183,7 @@ class Server:
         context = build_feed_availability_context(judged)
         eligible = [product for product in judged if evaluate_product_eligibility(product, feed_ctx=context).card_eligible]
         capping = TOOL._Cap(self.out)
-        keep = capping(eligible, [frozenset({"kettle"}) for _product_ in eligible], context)
+        keep = capping(eligible, [self.kinds_of(product) for product in eligible], context)
         if keep is None:
             raise AssertionError(f"the cap was not worked out: {capping.error}")
         self.shown = [product for product, kept in zip(eligible, keep) if kept]
@@ -442,6 +446,30 @@ class Rules19WhatTheBotScansPassesTests(unittest.TestCase):
             night = server.night({50: DOWN})
             self.assertLessEqual(len([number for number in night["shown"] if number < 50]), 6)
             self.assertEqual(len(kitchen(night)), 10)
+
+    def test_a_capped_shops_products_that_wait_move_no_other_kinds_share(self) -> None:
+        # The look of 23/11. The kitchen category is at its size, 10, shared by two kinds: 4
+        # toasters of the capped shop, which sells 40, and 6 kettles of another shop, which sells
+        # 10. The capped shop has 2 places open of its 6, so its 36 toasters that wait go to the
+        # cap of the category to be named among. They are no part of what the shops keep: the
+        # kettles keep their 6 places, night after night, and no toaster is named, asked or let
+        # in, the category having no place. (Counted like the rest, as they were, the toasters
+        # were 40 of the category's 50: each kind's share became 5, a kettle shown the night
+        # before left, and a toaster was asked for its place.)
+        big = [_product(number, shop="Big") for number in range(1, 41)]
+        small = [_product(50 + number, shop="Small") for number in range(10)]
+        others = [_product(100 + number, shop=f"Other{number % 12}", category=OTHER_CATEGORIES[number % 12]) for number in range(60)]
+        server = Server(big + small + others, shown=big[:4] + small[:6] + others,
+                        asked_a_night={"Big": 50, "Small": 50, "": 100}, scanned=True, limit=6)
+        server.kinds_of = lambda product: frozenset({"toaster" if _number(product) < 50 else "kettle"})
+        self.addCleanup(server.close)
+        kettles = [50, 51, 52, 53, 54, 55]
+        for _day in range(8):
+            night = server.night()
+            self.assertEqual([number for number in night["shown"] if number < 50], [1, 2, 3, 4])
+            self.assertEqual([number for number in night["shown"] if 50 <= number < 100], kettles)
+            self.assertEqual([number for number in night["asked"] if number < 50], [1, 2, 3, 4])
+            self.assertEqual(([number for number in night["candidates"] if number < 50], night["enter"]), ([], []))
 
     def test_a_slow_shop_settles_at_what_the_bot_scans_of_it_in_a_day(self) -> None:
         server = Server([_product(number) for number in range(1, 9)], asked_a_night=3, scanned=True)

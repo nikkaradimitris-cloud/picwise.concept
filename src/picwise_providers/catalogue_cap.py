@@ -231,6 +231,7 @@ def cap_catalogue(
     share: float = CAP_SHARE,
     category_max: int | None = None,
     may_enter: Callable[[ProviderProduct], bool] | None = None,
+    offered: Collection[int] = (),
 ) -> CapResult:
     """Which of `products` (those a card can show, `kinds` each one's kinds) a cap of
     `share` a category keeps (module docstring); `kept_before` holds the row keys the
@@ -243,24 +244,38 @@ def cap_catalogue(
     τον έλεγχο»): a product not kept the night before takes a place only when it says so;
     the ones it holds back that the cap would choose next, one and a quarter times the
     places left open and at least 4 a kind (every one, in a category under its size), are
-    the candidates the checks' bot asks next."""
+    the candidates the checks' bot asks next.
+
+    `offered` (positions in `products`): the products of a shop over the most a shop passes
+    that wait at the gate, given only for the cap to name among them the candidates a place
+    is open for (`shop_cap.vetted`; the checks' rules 19.6.2). They are no part of what the
+    shops keep, which is what this cap counts (19.6.1): none of them is kept, and they count
+    for no category's size and for no kind's share inside one. In a category over its size
+    they are held with the others of their kind, for the places the kind has open; in one
+    under its size, as many are named as one and a quarter times the places it would still
+    have were they counted in it (all of them, when they would all fit).
+    (The look of 23/11, the checks' rules 20.7: counted like the rest, the waiting rows of a
+    shop with one place open, hundreds of thousands of them, moved every kind's share in the
+    shop's categories from one night to the next: products shown the night before left, and
+    candidates that had passed were refused.)"""
     keys = [row_key(product) for product in products]
     before = frozenset(kept_before)
+    aside = frozenset(offered)
     waiting = [
-        may_enter is not None and keys[index] not in before and not may_enter(product)
+        index in aside or (may_enter is not None and keys[index] not in before and not may_enter(product))
         for index, product in enumerate(products)
     ]
     candidates: set[int] = set()
     categories = [category_of(product) for product in products]
     parts = joined_parts(categories, [part_of(product, product_kinds) for product, product_kinds in zip(products, kinds)])
-    sizes = Counter(categories)
+    sizes = Counter(category for index, category in enumerate(categories) if index not in aside)
     size = capped_size(list(sizes.values()), share)
     # The most a category keeps holds only where a category has more: below it, the share
     # alone decides, as before (owner, 2026-11-19).
     if category_max is not None and category_max > 0 and max(sizes.values(), default=0) > category_max:
         size = category_max if size is None else min(size, category_max)
     shops = [shop_of(product) for product in products]
-    keep = [True] * len(products)
+    keep = [index not in aside for index in range(len(products))]
     over = {name for name, count in sizes.items() if size is not None and count > size}
 
     inside: dict[str, dict[str, tuple[int, int]]] = {}
@@ -268,10 +283,18 @@ def cap_catalogue(
     several_shops = 0
     from_before = 0
     prices: dict[str, dict[str, tuple[float, float, float] | None]] = {}
-    if over:
+    if over or aside:
         members: dict[str, list[int]] = defaultdict(list)
+        # The offered ones: of a category over its size, by their kind; of one under it.
+        offered_over: dict[str, dict[str, list[int]]] = defaultdict(lambda: defaultdict(list))
+        offered_under: dict[str, list[int]] = defaultdict(list)
         for index, category in enumerate(categories):
-            if category in over:
+            if index in aside:
+                if category in over:
+                    offered_over[category][parts[index]].append(index)
+                else:
+                    offered_under[category].append(index)
+            elif category in over:
                 members[category].append(index)
         # Who sells each identified product, over every product a card can show.
         sellers: dict[str, set[str]] = defaultdict(set)
@@ -283,7 +306,7 @@ def cap_catalogue(
                 sellers[identity].add(shops[index])
         amounts: list[float | None] = [None] * len(products)
         lacking = [0] * len(products)
-        for indices in members.values():
+        for indices in [*members.values(), sorted(aside)]:
             for index in indices:
                 product = products[index]
                 amounts[index] = parse_price_amount(product.price_text)
@@ -317,6 +340,8 @@ def cap_catalogue(
                     picked = earlier + _pick(later, quota - len(earlier), rank, order)
                     open_places = quota - len(picked)
                     held = [index for index in found if waiting[index]]
+                    if category in offered_over:
+                        held = held + offered_over[category].get(part, [])
                     if open_places > 0 and held:
                         candidates.update(_pick(held, max(4, -(-5 * open_places // 4)), rank, order))
                 chosen.update(picked)
@@ -334,10 +359,29 @@ def cap_catalogue(
                 "kept": _price_summary([amounts[index] for index in chosen if amounts[index] is not None]),
             }
 
+        # The offered ones of a category under its size. Were they counted in it, the category
+        # would keep at most what the share then allows it (and never over the most a category
+        # keeps): the places it still has are what that leaves past the products it was given.
+        # All of them when they would all fit; else one and a quarter times those places, at
+        # least 4, the clean ones first, spread over their prices.
+        largest = max(sizes.values(), default=0)
+        for category, found in sorted(offered_under.items()):
+            mine = sizes.get(category, 0)
+            with_them = mine + len(found)
+            most = capped_size([count for name, count in sizes.items() if name != category] + [with_them], share)
+            if category_max is not None and category_max > 0 and max(with_them, largest) > category_max:
+                most = category_max if most is None else min(most, category_max)
+            if most is None or with_them <= most:
+                candidates.update(found)
+                continue
+            room = most - mine
+            if room > 0:
+                candidates.update(_pick(found, max(4, -(-5 * room // 4)), rank, order))
+
     # A category under its size keeps every product it has, but for those the checks'
     # gate holds back: all of them are the next ones it would choose.
     for index, is_waiting in enumerate(waiting):
-        if is_waiting and categories[index] not in over:
+        if is_waiting and index not in aside and categories[index] not in over:
             keep[index] = False
             candidates.add(index)
     held_by_checks = sum(1 for index, is_waiting in enumerate(waiting) if is_waiting and not keep[index])
@@ -345,6 +389,8 @@ def cap_catalogue(
     by_category = {name: (count, 0) for name, count in sizes.items()}
     by_shop: dict[str, tuple[int, int]] = {}
     for index, category in enumerate(categories):
+        if index in aside:
+            continue
         before_count, kept_count = by_category[category]
         by_category[category] = (before_count, kept_count + keep[index])
         shop_before, shop_kept = by_shop.get(shops[index], (0, 0))
