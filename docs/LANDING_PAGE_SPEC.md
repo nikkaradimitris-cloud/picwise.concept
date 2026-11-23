@@ -100,6 +100,19 @@ Made shorter by the owner on 2026-11-12: the site «μοιάζει πιο πολ
   site itself (`picwise_surface.fonts`: 48 KB, every weight, its licence beside it);
   the words show at once in the device's font and turn to Inter when it arrives.
 
+## The Home Page as a Store (specified 2026-11-23, not built)
+
+The owner, 2026-11-23: the home page «μοιάζει σαν 100% μηχανή πρέπει να γίνει πιο κατάστημα
+πρόσεξε όχι e-shop»; of the fifth picture proposed, «Κράτα αυτό και ανέβασε το». Its rules
+are `docs/PICWISE_HOME_STORE_SPEC.md`: a header with the departments, the promise in three
+steps, banners, the shops' offers, the month's ten as tiles, the Recommended of a few kinds,
+tiles of kinds, what PicWise promises, the shops' names, a fuller footer. Behind a switch
+(`data/home_store_switch.json`), false until his «ανέβασε»: while it is false, "The Home
+Page (2026-11-12)" above is the home page, whole. With it on, that section's heading leaves
+the page and stays the page's title, its three facts move into the promise's card, and the
+month's ten keep every rule of theirs. The search box and everything under "Search Box"
+stay as they are on both.
+
 ## A Search With Nothing to Show (2026-11-13)
 
 Owner, 2026-11-13, to the words proposed the day before: «Τι περιμένεις?». Whatever the
