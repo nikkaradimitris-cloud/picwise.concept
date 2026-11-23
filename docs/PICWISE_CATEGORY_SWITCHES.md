@@ -1,8 +1,9 @@
 # PicWise: the categories the site shows, a switch for each (rules)
 
-Written 2026-11-23 (afternoon, Athens), on the owner's «Ναι ξεκινάς». **Nothing of it is in
-force: the list's switch (`"on"` at the top of `data/category_switches.json`) is false and
-nothing is deployed.** It goes live only on his «ανέβασε», after the look of section 7.
+Written 2026-11-23 (afternoon, Athens), on the owner's «Ναι ξεκινάς». **In force from its
+deployment of 23/11 (section 10), on his «Ανέβασε ότι έχεις φτιάξει στο site ανέβασε όλες τις
+υλοποιήσεις» (18:25 Athens): the list's switch (`"on"` at the top of `data/category_switches.json`)
+is true.** Turned off again only on his word.
 
 Each rule names whose it is:
 
@@ -37,8 +38,8 @@ Each rule names whose it is:
   να πάρει κατηγορία από το AI, όπως και σήμερα.
 - **Όταν κάποιος ψάχνει κάτι που δεν καλύπτουμε:** κάτω από το «No products found» γράφει τι
   καλύπτει το PicWise.
-- **Ο γενικός διακόπτης** είναι κλειστός. Με κλειστό διακόπτη τίποτα δεν φεύγει, αλλά κάθε
-  βράδυ μετριέται πόσα προϊόντα έχει κάθε γραμμή και πόσα θα έκλεινε.
+- **Ο γενικός διακόπτης** είναι ανοιχτός από το «ανέβασε» σου της 23/11 (18:25). Κάθε βράδυ
+  μετριέται πόσα προϊόντα έχει κάθε γραμμή.
 - **Αν ξανακλείσει μετά το «ανέβασε»:** τα προϊόντα γυρίζουν σταδιακά, όσο τα ξαναελέγχει το
   bot, όχι την ίδια μέρα.
 - **Μέχρι το διαχειριστικό:** κάθε αλλαγή στη λίστα περνάει με ένα «ανέβασε», όπως οι άλλοι
@@ -267,3 +268,13 @@ from the server's copies of 23/11, the list's switch off (as the site runs) and 
 Not looked at, on the owner's word (23/11, 18:23): «Σταμάτα τη μέτρηση για οικονομία χρόνου δεν
 με ενδιαφέρει». Its run (45215601358) was cancelled and nothing of it read. The numbers of 9.1
 are of the list with sports and tyres closed: with them open the site keeps more of both.
+
+## 10. The «ανέβασε» (23/11)
+
+The owner, 23/11 18:25 Athens, after he had stopped the second look: «Ανέβασε ότι έχεις φτιάξει
+στο site ανέβασε όλες τις υλοποιήσεις». The list's switch true (with `set` and `by`), the test
+that pinned it off now pinning his word; deployed with what else waited on the work branch for his
+«ανέβασε»: the mend of the places a full shop's own copies hold (the checks' rules 20.9). Two
+deployments, for the server's memory (as on 22/11 and 23/11): first one that restarts the site
+and prepares nothing, then the one that prepares. Task 6's switch stays false: its own look is not
+built; he was told. What the deployment did: below, once read.

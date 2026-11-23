@@ -209,9 +209,9 @@ within its shop's 3 days is not shown until it is asked. A cut product is asked 
 comes back the night it passes. The brakes, the proof a reader gives before its word counts,
 and the one switch that turns every cut off are in the checks' rules (7).
 
-**Decided by the owner on 2026-11-22 and 2026-11-23, built, NOT in force until his «ανέβασε»:
-a category he keeps open** (`docs/PICWISE_CATEGORY_SWITCHES.md`; `data/category_switches.json`,
-its switch false). A product is shown only when the line of Google's taxonomy the AI gave it
+**Decided by the owner on 2026-11-22 and 2026-11-23, in force from its deployment of 2026-11-23
+on his «Ανέβασε ότι έχεις φτιάξει στο site ανέβασε όλες τις υλοποιήσεις»: a category he keeps
+open** (`docs/PICWISE_CATEGORY_SWITCHES.md`; `data/category_switches.json`, its switch true). A product is shown only when the line of Google's taxonomy the AI gave it
 is under a top line of the list and no line of the list above it, its own included, is
 closed: a switch for each category and subcategory, for the dashboard to come. Kept: home &
 garden, furniture, tools, electronics, cameras, fashion, jewellery and watches, toys, sports,

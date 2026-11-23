@@ -1,9 +1,9 @@
 {
  "_about": "The categories the site shows (docs/PICWISE_CATEGORY_SWITCHES.md; picwise_providers.category_scope; the owner, 2026-11-22 and 2026-11-23). One line a category or subcategory of Google's taxonomy: 'google' its line (the program reads it), 'name' its name for the owner, 'on' open (true) or closed (false); a line may carry 'site', the words a visitor is told PicWise covers. A product is shown only when the line the AI gave it is under a top line here and every line here above it, its own included, is open: closing a category closes everything under it. 'on' at the top of the file is the whole rule's switch: false, nothing is closed and the night only counts what each line holds. Read with the code (prepared_catalogue._FROZEN_FILES): a change here prepares the catalogue again. Turned and changed only on the owner's word.",
  "_πώς": "Για να κλείσεις μια κατηγορία, βάλε false στο \"on\" της γραμμής της· για να την ανοίξεις, true. Μια κλειστή κατηγορία κλείνει και ό,τι είναι από κάτω της. Το \"on\" στην κορυφή του αρχείου ανοίγει ή κλείνει όλο τον κανόνα.",
- "on": false,
- "set": "",
- "by": "",
+ "on": true,
+ "set": "2026-11-23",
+ "by": "the owner's «Ανέβασε ότι έχεις φτιάξει στο site ανέβασε όλες τις υλοποιήσεις», 2026-11-23 18:25 Athens",
  "lines": [
   {"google": "Home & Garden", "name": "Σπίτι & κήπος", "on": true, "site": "home & garden"},
   {"google": "Home & Garden > Household Appliances", "name": "Ηλεκτρικές συσκευές σπιτιού", "on": true},

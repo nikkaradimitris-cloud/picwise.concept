@@ -80,13 +80,17 @@ class TheRepositorysListTests(unittest.TestCase):
         self.addCleanup(category_scope.reset_for_tests)
         self.payload = json.loads(category_scope.SWITCHES_FILE.read_text(encoding="utf-8"))
 
-    def test_it_reads_and_its_switch_is_off_until_the_owners_word(self) -> None:
+    def test_it_reads_and_its_switch_is_on_by_the_owners_word(self) -> None:
+        # True from 2026-11-23 18:25 Athens: «Ανέβασε ότι έχεις φτιάξει στο site ανέβασε όλες τις
+        # υλοποιήσεις». Turned off again only on his word.
         switches = category_scope.read_switches()
         self.assertIsNotNone(switches)
-        self.assertFalse(switches.on)
-        self.assertIs(self.payload["on"], False)
-        self.assertFalse(category_scope.scope_on())
-        self.assertEqual(category_scope.site_words(), "")
+        self.assertTrue(switches.on)
+        self.assertIs(self.payload["on"], True)
+        self.assertEqual(self.payload["set"], "2026-11-23")
+        self.assertIn("Ανέβασε", self.payload["by"])
+        self.assertTrue(category_scope.scope_on())
+        self.assertTrue(category_scope.site_words().startswith("PicWise covers home & garden"))
 
     def test_every_line_is_googles_and_every_top_line_of_googles_is_on_it(self) -> None:
         known = _google_lines()
@@ -478,7 +482,9 @@ class TheSiteTests(unittest.TestCase):
     def test_under_no_products_found_what_picwise_covers_only_with_the_switch_on(self) -> None:
         from picwise_surface.reference import _no_products_try_html
 
-        self.assertNotIn("PicWise covers", _no_products_try_html())
+        off = dataclasses.replace(_repo_list_on(), on=False)
+        with mock.patch.object(category_scope, "read_switches", return_value=off):
+            self.assertNotIn("PicWise covers", _no_products_try_html())
         with mock.patch.object(category_scope, "read_switches", return_value=_repo_list_on()):
             line = _no_products_try_html()
         self.assertIn("for example", line)
