@@ -26,7 +26,7 @@
 # kept of a run (its summary, as the run's file, and this log, public like the repository):
 # counts, shops' names, kinds, categories, titles and prices; never a link, an id or a key.
 #
-# Run: 2026-11-22 21:10 Athens, the third: the capped shops settled against each other until no choice changes (to run again, change this line and push).
+# Run: 2026-11-23 07:45 Athens, the fourth: on the checks' first real night, the server's own decisions (to run again, change this line and push).
 name: How many of a shop's products pass, the look before its «ανέβασε» (read-only)
 on:
   push:
