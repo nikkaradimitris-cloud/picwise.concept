@@ -264,4 +264,6 @@ from the server's copies of 23/11, the list's switch off (as the site runs) and 
 
 ### 9.2 The list with sports and tyres open
 
-Running (the look's workflow, its second run).
+Not looked at, on the owner's word (23/11, 18:23): «Σταμάτα τη μέτρηση για οικονομία χρόνου δεν
+με ενδιαφέρει». Its run (45215601358) was cancelled and nothing of it read. The numbers of 9.1
+are of the list with sports and tyres closed: with them open the site keeps more of both.
