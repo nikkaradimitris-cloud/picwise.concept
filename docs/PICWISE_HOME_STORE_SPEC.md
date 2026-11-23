@@ -108,7 +108,7 @@ the other model that reaches a task stops and tells the owner, in Greek, to chan
 |---|---|---|---|
 | H1 | FABLE | This specification; the picture and its drawings in the repository | done 23/11 |
 | H2 | FABLE | The pictures not seen yet, put to the owner (section 7.6); the points of section 8; his answers written into sections 6 to 8 | approved 23/11 («Ναι σε όλα»); to do |
-| H3 | OPUS | The home page of section 5, behind the switch | started 23/11 on his «Ναι σε όλα»; first step `578008f` (23/11, 23:50): all of section 5 but the offers' row (5.5) and the computer (5.13) |
+| H3 | OPUS | The home page of section 5, behind the switch | done 24/11 (`578008f`, `3cf6282`), the switch false; its entries to Parts B to D drawn only as each is built |
 | H4 | OPUS | Parts B to F (section 7), each to the owner's answers of H2 | after H2 |
 | H5 | FABLE | The look before the «ανέβασε» (section 9); the owner's own taps on his phone | after H3 and H4 |
 | H6 | owner | «ανέβασε»: the switch true in one commit, deployed as every switch is | his word |
@@ -206,6 +206,9 @@ discount."; an arrow to `/offers` (`aria-label` "See all offers").
   that holds most of the products the offer covers, and its drawing that department's
   (7.1); where that is not known the card has neither.
 - No offer to show: the whole section is left out, and banner 1 with it.
+- As built (24/11): a card leads to `/offers/<the offer's id>` (`home_store.offer_href`),
+  the page of Part C (7.2), which shows the offer's products or, for an offer on the whole
+  shop, first asks which kind.
 - Counted when the night's catalogue is loaded and again when the offers' file changes,
   never while a page is drawn (5.10). Where a card leads: 7.2.
 
@@ -339,9 +342,13 @@ dashboard to come can write (owner, 2026-11-23, of the categories: «χωρίς 
 **Proposed**; no picture exists, the owner sees it in the preview before his «ανέβασε».
 The same sections in the same order inside the site's width (1,190 px): the header in one
 line (mark, box, buttons) with the departments under it; the promise's heading beside its
-three steps; the four banners side by side; offers four a row; the month's ten five a row;
-the Recommended six a row; the departments in two rows; the six sections two side by side;
-the promise's figures beside its lines; the footer in four columns. No strip.
+three steps; the four banners side by side; offers four a row; the month's ten four a row
+(built so, 24/11: five a row would break the fold of four, the owner's of 2026-11-12, into
+a row and a hole); the Recommended six a row; the departments in two rows; the six sections
+two side by side; the promise's figures beside its lines; the footer in three columns. No
+strip. As built: from 700 px the header in one line and the page in the site's width; the
+banners side by side and the sections two by two from 1,000 px (under it they scroll and
+stack, as on a phone).
 
 ### 5.14 Without a script
 
