@@ -256,6 +256,140 @@ class TheShopsTests(unittest.TestCase):
         self.assertEqual(count, 2)
 
 
+import csv  # noqa: E402
+import os  # noqa: E402
+import tempfile  # noqa: E402
+
+from fixture_support import fixture_description  # noqa: E402
+from picwise_providers.awin_adapter import clear_awin_feed_parse_cache  # noqa: E402
+from picwise_providers.product_offers import set_offers_document  # noqa: E402
+from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
+from picwise_surface.home_store import HomeFacts, OfferCard  # noqa: E402
+
+_FEED_COLUMNS = price_first._COLUMNS + ("merchant_id",)
+
+
+class TheOffersTests(_On, unittest.TestCase):
+    """Two shops' kettles; one shop, "Geefix" (101), has "10% off kettles" and "15% off
+    everything": a kettle shows the kind's offer, first by a card's rank."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        home_store_facts.set_home_facts_for_tests(None)
+        self.addCleanup(home_store_facts.set_home_facts_for_tests, None)
+        rows = []
+        for index, price in enumerate((20, 30, 40, 50, 60, 70, 80, 90, 100)):
+            shop, shop_id = ("Geefix", "101") if index % 2 == 0 else ("Other Store", "202")
+            rows.append([f"k{index + 1}", f"Fixturon Electric Kettle {index + 1} 1.7L", "Fixturon", "Kettles",
+                         "Kitchen Appliances", f"https://fixture.example.invalid/out/k{index + 1}",
+                         f"https://fixture.example.invalid/img/k{index + 1}.jpg", f"{price:.2f}", "GBP", "1", shop,
+                         fixture_description(), "local_test_fixture", price_first._ean(500000001000 + index), "", shop_id])
+        path = Path(tempfile.mkdtemp()) / "feed.csv"
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(_FEED_COLUMNS)
+            writer.writerows(rows)
+        previous = os.environ.get("AWIN_FEED_FILE")
+        os.environ["AWIN_FEED_FILE"] = str(path)
+        clear_awin_feed_parse_cache()
+        clear_provider_feed_pipeline_cache()
+
+        def restore() -> None:
+            if previous is None:
+                os.environ.pop("AWIN_FEED_FILE", None)
+            else:
+                os.environ["AWIN_FEED_FILE"] = previous
+            clear_awin_feed_parse_cache()
+            clear_provider_feed_pipeline_cache()
+            set_offers_document(None)
+
+        self.addCleanup(restore)
+        offer = {"id": 7, "type": "promotion", "title": "10% off kettles", "description": "", "terms": "Fixture terms.",
+                 "start": "2026-01-01T00:00:00+00:00", "end": "2099-12-31T23:59:59+00:00", "regions_all": True}
+        whole = dict(offer, id=8, title="15% off everything", terms="")
+        set_offers_document({"shops": {"101": {"name": "Geefix", "joined": True, "offers": [offer, whole]}}})
+        end = datetime(2099, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+        self.card = OfferCard(shop="Geefix", offer_id="7", title="10% off kettles", end=end, products=5,
+                              terms="Fixture terms.", scope="kind")
+        self.whole = OfferCard(shop="Geefix", offer_id="8", title="15% off everything", end=end, products=0, scope="shop")
+        home_store_facts.set_home_facts_for_tests(HomeFacts(prepared_at=None, offers=(self.card,),
+                                                            all_offers=(self.card, self.whole)))
+
+    def test_the_offers_page_every_offer_of_tonight_in_the_shop_s_words(self) -> None:
+        status, _headers, page = _call("/offers")
+        self.assertTrue(status.startswith("200"))
+        self.assertIn('<meta name="robots" content="noindex">', page)
+        text = _text(page)
+        self.assertIn("SHOP OFFERS Offers from the shops In the shops' own words. Never a made-up discount.", text)
+        self.assertIn("Geefix 10% off kettles until 31 Dec 2099 Offer terms Fixture terms. See the products", text)
+        self.assertIn("15% off everything", text)
+        self.assertIn("Offers are the shops' own, as they state them through Awin", text)
+        self.assertIn("/offers/7", _links(page))
+
+    def test_an_offer_s_products_one_shop_cheapest_first_no_recommended(self) -> None:
+        status, _headers, page = _call("/search", "q=kettle&offer=7")
+        self.assertTrue(status.startswith("200"))
+        text = _text(page)
+        self.assertIn("Results for: kettle, at Geefix, cheapest first", text)
+        self.assertIn("Geefix's kettles only, so there is no Recommended here.", text)
+        self.assertIn("See kettles from every shop", text)
+        self.assertIn("OFFER AT GEEFIX 10% off kettles", text)
+        markup = _markup(page)
+        self.assertNotIn("pw-card-recommended", markup)
+        self.assertNotIn("Recommended</", markup.split("pw-reference-frame", 1)[1].split("Results for", 1)[0])
+        self.assertNotIn("Lowest price", text)
+        self.assertNotRegex(text, r"Cheapest of|\d+(st|nd|rd|th) cheapest")
+        self.assertNotIn("pw-pricebar", markup)
+        self.assertIn("4 of 5", text)
+        cards = re.findall(r'<article class="pw-card[^"]*" data-choice-id="([^"]+)"', markup)
+        self.assertEqual(cards, ["k1", "k3", "k5", "k7"])
+        self.assertTrue(any(href.startswith("/search?q=kettle&offer=7&shown=8") for href in _links(page)))
+        # The offer's words once, above the cards: no card repeats them.
+        self.assertEqual(text.count("10% off kettles"), 1)
+
+    def test_tonight_s_kinds_of_an_offer_are_counted_by_their_searches(self) -> None:
+        departments = home_store.Departments(
+            groups=(), kinds={"kitchen": (home_store.DeptKind(kind="kettle", name="Kettles", query="kettle", drawing=""),)}
+        )
+        facts = home_store_facts.work_out_kind_facts(departments=departments, prepared_at=None)
+        self.assertEqual(facts.offer_kinds["7"], (home_store_facts.OfferKind(query="kettle", count=5, low="£20.00"),))
+        self.assertEqual(facts.kinds["kettle"].count, 9)
+
+    def test_more_keeps_the_offer(self) -> None:
+        page = _call("/search", "q=kettle&offer=7&shown=8")[2]
+        cards = re.findall(r'<article class="pw-card[^"]*" data-choice-id="([^"]+)"', _markup(page))
+        self.assertEqual(cards, ["k1", "k3", "k5", "k7", "k9"])
+        self.assertIn("5 of 5", _text(page))
+
+    def test_an_offer_not_of_tonight_leaves_the_search_as_ever(self) -> None:
+        text = _text(_call("/search", "q=kettle&offer=999")[2])
+        self.assertIn("Results for: kettle, cheapest first", text)
+        self.assertNotIn("kettle, at Geefix", text)
+
+    def test_an_offer_on_one_kind_leads_to_its_products(self) -> None:
+        home_store_facts.set_kind_facts_for_tests(DepartmentsFacts(
+            prepared_at=None, kinds={},
+            offer_kinds={"7": (home_store_facts.OfferKind(query="kettle", count=5, low="£20.00"),),
+                         "8": (home_store_facts.OfferKind(query="kettle", count=5, low="£20.00"),
+                               home_store_facts.OfferKind(query="toaster", count=2, low="£15.00"))}))
+        status, headers, _page = _call("/offers/7")
+        self.assertTrue(status.startswith("302"))
+        self.assertEqual(headers["Location"], "/search?q=kettle&offer=7")
+        status, _headers, page = _call("/offers/8")
+        self.assertTrue(status.startswith("200"))
+        text = _text(page)
+        self.assertIn("All offers Geefix OFFER AT GEEFIX 15% off everything", text)
+        self.assertIn("Which kind are you looking for? Kettles 5 products from £20.00 Toasters 2 products from £15.00", text)
+        self.assertIn("/search?q=toaster&offer=8", _links(page))
+        self.assertTrue(_call("/offers/999")[0].startswith("404"))
+
+    def test_off_no_offer_page_answers(self) -> None:
+        home_store.set_home_store_on_for_tests(False)
+        self.assertTrue(_call("/offers")[0].startswith("404"))
+        self.assertTrue(_call("/offers/7")[0].startswith("404"))
+        self.assertNotIn("kettle, at Geefix", _text(_call("/search", "q=kettle&offer=7")[2]))
+
+
 class TheKindFactsTests(unittest.TestCase):
     def test_link_words(self) -> None:
         self.assertEqual(home_store_facts._link_words("Kettles"), "See kettles")

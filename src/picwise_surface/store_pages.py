@@ -13,19 +13,30 @@ The owner decided them on 2026-11-24 («Ναι σε όλα»), to the pictures o
   tonight, A to Z. **"Our checks" says what the checks do on the day it goes live: each of
   its sentences is read against the server before the «ανέβασε» (the specification, 9).**
 
+- Part C, the offers (7.2): `/offers`, every offer covering products shown tonight, a
+  shop after another, in the shop's own words; `/offers/<id>`, an offer: to its kind's
+  products when it covers one kind, else "Which kind are you looking for?"; and an
+  offer's products, the search's own page narrowed to the shop's products it covers
+  (`?offer=<id>`): no Recommended, no "Lowest price", no place among the prices, the offer
+  once above the cards, a link to the kind in every shop.
+
 Every page is kept out of Google (`noindex`): nothing of the store is declared (section 2).
 What a page knows of the catalogue is worked out once a night (`home_store_facts`), never
 while it is drawn; what is not known yet is left out, never filled.
 """
 from __future__ import annotations
 
+import re
+from dataclasses import replace
+from datetime import datetime, timezone
 from html import escape
 from itertools import groupby
 from typing import Any
+from urllib.parse import quote
 
 from . import home_store as hs
 from .home_store_facts import DepartmentsFacts, KindFacts, current_home_facts, current_kind_facts
-from .home_store import Department, DeptKind, HomeFacts, Pick
+from .home_store import Department, DeptKind, HomeFacts, OfferCard, Pick
 
 DEPARTMENTS_TITLE = "All departments"
 DEPARTMENTS_LINE = "From UK shops, in stock only."
@@ -74,7 +85,27 @@ STORE_PAGES_STYLES = (
     ".pw-hs-doc .pw-hs-shoplist{list-style:none;margin:6px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px;}"
     ".pw-hs-doc .pw-hs-shoplist li{margin:0;padding:8px 0;font-size:14px;line-height:1.3;color:var(--hs-ink);border-top:1px solid var(--hs-line);}"
     ".pw-hs-letter{margin:18px 0 0;font-size:14px;font-weight:800;letter-spacing:.08em;color:var(--hs-acc);}"
+    # the offers
+    ".pw-hs-shopblock{margin:12px 16px 0;padding:16px 16px 4px;border-radius:18px;background:#fff;border:1px solid var(--hs-line);}"
+    ".pw-hs-shopblock-name{margin:0;font-size:18px;line-height:1.2;font-weight:800;color:var(--hs-ink);}"
+    ".pw-hs-of{padding:12px 0 4px;border-top:1px solid var(--hs-line);margin-top:12px;}"
+    ".pw-hs-of-title{margin:0;font-size:15px;line-height:1.35;font-weight:700;color:var(--hs-ink);}"
+    ".pw-hs-of-meta{margin:4px 0 0;font-size:13px;line-height:1.4;color:var(--hs-muted);}"
+    ".pw-hs-of-code{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;letter-spacing:.04em;color:var(--hs-ink);}"
+    ".pw-hs-of-terms{margin:0;font-size:13px;color:var(--hs-muted);}"
+    ".pw-hs-of-terms summary{display:flex;align-items:center;min-height:48px;cursor:pointer;color:var(--hs-acc);font-weight:600;}"
+    ".pw-hs-of-terms p{margin:0 0 8px;line-height:1.5;}"
+    ".pw-hs-offerbox{margin:12px 16px 0;padding:14px 16px 6px;border-radius:18px;background:var(--hs-pale);}"
+    ".pw-hs-offerbox .pw-hs-eyebrow{color:#5c4300;}"
+    ".pw-hs-offerbox .pw-hs-of-title{margin-top:6px;font-size:17px;}"
+    ".pw-hs-offerbox .pw-hs-of-meta{color:#5c4300;}"
+    ".pw-hs-offerbox .pw-hs-of-terms summary{color:#5c4300;}"
+    ".pw-hs-oneshop{margin:0 0 12px;font-size:14px;line-height:1.45;}"
+    ".pw-hs-oneshop a{display:flex;align-items:center;min-height:48px;color:var(--hs-acc);font-weight:700;text-decoration:none;}"
+    ".pw-reference-frame .pw-hs-offerbox{margin:0 0 14px;}"
+    ".pw-hs-note{margin:16px 16px 0;font-size:13px;line-height:1.5;color:var(--hs-muted);}"
     "@media (min-width:700px){"
+    ".pw-hs-shopblock,.pw-hs-offerbox,.pw-hs-note{margin-left:0;margin-right:0;}"
     ".pw-hs-doc{max-width:760px;margin:32px auto 0;padding:32px 36px 22px;}"
     ".pw-hs-doc .pw-hs-shoplist{grid-template-columns:repeat(3,minmax(0,1fr));}"
     ".pw-hs-page-head{padding:32px 0 8px;}"
@@ -335,6 +366,233 @@ def render_our_shops_page(*, facts: HomeFacts | None | Any = ..., parts: frozens
     return _doc("Our shops", intro, body, parts=parts)
 
 
+# ---- Part C: the offers (the specification, 7.2) ----
+OFFERS_EYEBROW = "SHOP OFFERS"
+OFFERS_PAGE_TITLE = "Offers from the shops"
+OFFERS_NOTE = "Offers are the shops' own, as they state them through Awin: check them on the shop's site."
+OFFERS_NONE = "No shop has an offer on the products shown tonight."
+OFFER_AT = "OFFER AT {shop}"
+OFFER_ALL = "All offers"
+OFFER_WHICH = "Which kind are you looking for?"
+OFFER_SEE = "See the products"
+OFFER_HEADING = "Results for: {query}, at {shop}, cheapest first"
+OFFER_ONLY = "{shop}'s {kinds} only, so there is no Recommended here."
+OFFER_EVERY_SHOP = "See {kinds} from every shop"
+
+
+def _until(end: datetime) -> str:
+    now = datetime.now(end.tzinfo or timezone.utc)
+    year = "" if end.year == now.year else f" {end.year}"
+    return f"until {end.day} {end:%b}{year}"
+
+
+def _offer_lines(card: OfferCard, *, link: str = "") -> str:
+    code = f' \u00b7 Code: <span class="pw-hs-of-code">{escape(card.code)}</span>' if card.code else ""
+    terms = (
+        f'<details class="pw-hs-of-terms"><summary>Offer terms</summary><p>{escape(card.terms)}</p></details>'
+        if card.terms
+        else ""
+    )
+    go = hs._link(link, OFFER_SEE) if link else ""
+    return (
+        f'<p class="pw-hs-of-title">{escape(card.title)}</p>'
+        f'<p class="pw-hs-of-meta">{escape(_until(card.end))}{code}</p>{terms}{go}'
+    )
+
+
+def offer_box(card: OfferCard) -> str:
+    """The offer, once, in the shop's own words, above what it covers."""
+    return (
+        '<section class="pw-hs-offerbox" aria-label="The offer">'
+        f'<p class="pw-hs-eyebrow">{escape(OFFER_AT.format(shop=card.shop.upper()))}</p>'
+        f"{_offer_lines(card)}</section>"
+    )
+
+
+def _offers_tonight(facts: HomeFacts | None) -> tuple[OfferCard, ...]:
+    return tuple(facts.all_offers) if facts is not None else ()
+
+
+def find_offer(offer_id: str, facts: HomeFacts | None | Any = ...) -> OfferCard | None:
+    facts = current_home_facts() if facts is ... else facts
+    return next((card for card in _offers_tonight(facts) if card.offer_id == offer_id), None)
+
+
+def _offer_products_href(query: str, offer_id: str) -> str:
+    return f"/search?q={quote(query, safe='')}&offer={quote(offer_id, safe='')}"
+
+
+def render_offers_page(*, facts: HomeFacts | None | Any = ..., parts: frozenset[str] | None = None) -> str:
+    """Every offer covering products shown tonight, a shop after another (7.2)."""
+    facts = current_home_facts() if facts is ... else facts
+    blocks = ""
+    for shop, cards in groupby(_offers_tonight(facts), key=lambda card: card.shop):
+        inner = "".join(
+            f'<div class="pw-hs-of">{_offer_lines(card, link=hs.offer_href(card))}</div>' for card in cards
+        )
+        blocks += f'<section class="pw-hs-shopblock"><h2 class="pw-hs-shopblock-name">{escape(shop)}</h2>{inner}</section>'
+    main = (
+        '<section class="pw-hs-page-head" aria-labelledby="pw-hs-h1">'
+        f'<p class="pw-hs-eyebrow">{escape(OFFERS_EYEBROW)}</p>'
+        f'<h1 class="pw-hs-h1" id="pw-hs-h1">{escape(OFFERS_PAGE_TITLE)}</h1>'
+        f'<p class="pw-hs-page-line">{escape(hs.OFFERS_SUB)}</p></section>'
+        + (blocks or f'<p class="pw-hs-note">{escape(OFFERS_NONE)}</p>')
+        + f'<p class="pw-hs-note">{escape(OFFERS_NOTE)}</p>'
+    )
+    return hs.render_store_page(title=f"{OFFERS_PAGE_TITLE} — PicWise", main_html=main, styles=STORE_PAGES_STYLES, parts=parts)
+
+
+def _kind_name(query: str) -> str:
+    for kinds in hs.load_departments().kinds.values():
+        for kind in kinds:
+            if kind.query == query:
+                return kind.name
+    return query[:1].upper() + query[1:]
+
+
+def offer_page(
+    offer_id: str, *, facts: HomeFacts | None | Any = ..., kinds: DepartmentsFacts | None | Any = ...,
+    parts: frozenset[str] | None = None,
+) -> tuple[str, str] | None:
+    """An offer: ("redirect", its kind's products) when it covers products of one kind
+    tonight; else ("page", the page that asks which kind); None when it is no offer of
+    tonight's."""
+    card = find_offer(offer_id, facts)
+    if card is None:
+        return None
+    kinds = current_kind_facts() if kinds is ... else kinds
+    covered = tuple(kinds.offer_kinds.get(offer_id, ())) if kinds is not None else ()
+    if len(covered) == 1:
+        return "redirect", _offer_products_href(covered[0].query, offer_id)
+    rows = "".join(
+        f'<li><a class="pw-hs-row" href="{escape(_offer_products_href(kind.query, offer_id), quote=True)}">'
+        f'<span class="pw-hs-row-text"><span class="pw-hs-row-name">{escape(_kind_name(kind.query))}</span>'
+        f'<span class="pw-hs-row-meta">{escape(_kind_meta(KindFacts(count=kind.count, low=kind.low, pick=None)))}</span>'
+        f"</span>{_CHEVRON}</a></li>"
+        for kind in covered
+    )
+    main = (
+        '<section class="pw-hs-page-head" aria-labelledby="pw-hs-h1">'
+        f'<a class="pw-hs-crumb" href="{hs.PART_ADDRESSES["offers"]}">\u2039 {escape(OFFER_ALL)}</a>'
+        f'<h1 class="pw-hs-h1" id="pw-hs-h1">{escape(card.shop)}</h1></section>'
+        f"{offer_box(card)}"
+        + (
+            '<section class="pw-hs-list" aria-labelledby="pw-hs-which">'
+            f'<h2 class="pw-hs-h2" id="pw-hs-which">{escape(OFFER_WHICH)}</h2>'
+            f'<ul class="pw-hs-rows">{rows}</ul></section>'
+            if rows
+            else ""
+        )
+        + f'<p class="pw-hs-note">{escape(OFFERS_NOTE)}</p>'
+    )
+    page = hs.render_store_page(title=f"{card.shop}: offer — PicWise", main_html=main, styles=STORE_PAGES_STYLES, parts=parts)
+    return "page", page
+
+
+def _plural_words(query: str) -> str:
+    """The kind's name as a sentence says it: "kettles", "TVs"."""
+    name = _kind_name(query)
+    return name if len(name) > 1 and name[1].isupper() else name[:1].lower() + name[1:]
+
+
+def offer_answer(resolution: Any, offer_id: str, *, shown: int = 0) -> Any | None:
+    """A search's answer narrowed to the products this offer covers, cheapest first,
+    four a page as "More" opens them; no Recommended, no "Lowest price", no place among
+    the prices (owner, 2026-11-24). None when it covers none of them."""
+    offers = dict(getattr(resolution, "provider_feed_offers", ()) or ())
+    products = tuple(resolution.provider_feed_selected_products) + tuple(
+        getattr(resolution, "provider_feed_more_products", ()) or ()
+    )
+    if str(resolution.provider_feed_decision_status or "") == "recommended" and products:
+        # The Recommended stands first; among the offer's products it is one more, in its
+        # place by price: the search's own places in the price order.
+        places = dict(getattr(resolution, "provider_feed_price_ranks", ()) or ())
+        order = {id(product): index for index, product in enumerate(products)}
+        products = tuple(
+            sorted(
+                products,
+                key=lambda product: (
+                    places.get(str(product.get("provider_product_id") or "").strip(), 10**9),
+                    order[id(product)],
+                ),
+            )
+        )
+    kept = tuple(
+        product
+        for product in products
+        if str((offers.get(str(product.get("provider_product_id") or "").strip()) or {}).get("offer_id") or "") == offer_id
+    )
+    if not kept:
+        return None
+    page = max(4, (int(shown or 0) // 4) * 4)
+    return replace(
+        resolution,
+        provider_feed_selected_products=kept[:4],
+        provider_feed_more_products=kept[4:page],
+        provider_feed_total_count=len(kept),
+        provider_feed_decision_status="no_recommendation_price_chosen",
+        provider_feed_recommended_product_id="",
+        provider_feed_cheapest_product_ids=(),
+        provider_feed_price_ranks=(),
+        provider_feed_offers=(),
+        provider_feed_fitting_product_ids=(),
+    )
+
+
+def dress_offer_products(page: str, *, query: str, card: OfferCard) -> str:
+    """The search's page of an offer's products, as approved: the offer above the cards,
+    the heading names the shop, the line under it says it is one shop's, a link to the
+    kind in every shop, no price bar (it would choose among every shop's prices), and
+    "More" keeps the offer."""
+    kinds = _plural_words(query)
+    page = re.sub(r'<form class="pw-pricebar".*?</form>', "", page, count=1, flags=re.S)
+    page, headed = re.subn(
+        r'<h1 class="pw-query-line">.*?</h1>',
+        f'<h1 class="pw-query-line">{escape(OFFER_HEADING.format(query=query, shop=card.shop))}</h1>',
+        page,
+        count=1,
+        flags=re.S,
+    )
+    line = (
+        f'<p class="pw-reference-disclaimer">{escape(OFFER_ONLY.format(shop=card.shop, kinds=kinds))} '
+        "Prices and stock are as the shops list them.</p>"
+        f'<p class="pw-hs-oneshop"><a href="/search?q={quote(query, safe="")}">'
+        f"{escape(OFFER_EVERY_SHOP.format(kinds=kinds))} \u203a</a></p>"
+    )
+    page, lined = re.subn(r'<p class="pw-reference-disclaimer">.*?</p>', line, page, count=1, flags=re.S)
+    frame = '<div class="pw-reference-frame" id="pw-reference-frame">'
+    if not (headed and lined and page.count(frame) == 1):
+        return ""
+    page = page.replace(frame, frame + offer_box(card), 1)
+    more = f'href="/search?q={quote(query, safe="")}&amp;shown='
+    page = page.replace(more, f'href="/search?q={quote(query, safe="")}&amp;offer={quote(card.offer_id, safe="")}&amp;shown=')
+    return page.replace("</style>", STORE_PAGES_STYLES + "</style>", 1)
+
+
+def render_offer_products(query: str, offer_id: str, *, shown: int = 0) -> str | None:
+    """The search's page of an offer's products, or None (no offer of tonight's by that
+    id, or none of its products in this search): then the search is drawn as ever."""
+    from picwise_providers.state import peek_search_catalogue_counts
+    from picwise_search import resolve_live_search
+    from picwise_search.live_search_resolver import MAX_SHOWN_PRODUCTS
+
+    from .reference import provider_feed_cards_will_render, render_picwise_reference_surface
+
+    card = find_offer(offer_id)
+    if card is None or not str(query or "").strip():
+        return None
+    resolution = resolve_live_search(query, shown=MAX_SHOWN_PRODUCTS)
+    if not provider_feed_cards_will_render(resolution):
+        return None
+    narrowed = offer_answer(resolution, offer_id, shown=shown)
+    if narrowed is None:
+        return None
+    page = render_picwise_reference_surface(
+        query=query, resolution=narrowed, source_page="search", catalogue=peek_search_catalogue_counts(), indexable=False
+    )
+    return dress_offer_products(page, query=query, card=card) or None
+
+
 _PAGES = {
     "how_picwise_works": render_how_picwise_works_page,
     "how_we_choose": render_how_we_choose_page,
@@ -347,6 +605,9 @@ def store_page(path: str, *, parts: frozenset[str] | None = None) -> str | None:
     """The page of the store at `path`, or None: not one of its pages, or its part not
     built (`home_store.PARTS_BUILT`)."""
     parts = hs.PARTS_BUILT if parts is None else frozenset(parts)
+    if "offers" in parts:
+        if path == hs.PART_ADDRESSES["offers"]:
+            return render_offers_page(parts=parts)
     if "pages" in parts:
         for name, render in _PAGES.items():
             if path == hs.PART_ADDRESSES[name]:

@@ -339,7 +339,8 @@ class TheSectionsTests(unittest.TestCase):
 
     def test_the_offers_row_in_the_shops_own_words(self) -> None:
         facts = HomeFacts(prepared_at=None, offers=_offers(2))
-        self.assertNotIn("pw-hs-offer", self._page(facts=facts))
+        # Not drawn while Part C is not built.
+        self.assertNotIn("pw-hs-offer", self._page(facts=facts, parts=frozenset({"departments", "pages"})))
         page = self._page(facts=facts, parts=ALL_PARTS)
         self.assertIn("Offers from the shops", page)
         self.assertIn("In the shops&#x27; own words. Never a made-up discount.", page)

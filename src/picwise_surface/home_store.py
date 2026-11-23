@@ -81,7 +81,7 @@ BACKGROUND_PATH = "/assets/home/ov/"
 # B), "offers" (Part C), "pages" (Part D, the four pages). A link to a part not named here
 # is not drawn (the specification's section 6), so the page never leads to a page that
 # does not answer. Each part is added here with its routes, in the same commit.
-PARTS_BUILT: frozenset[str] = frozenset({"departments", "pages"})
+PARTS_BUILT: frozenset[str] = frozenset({"departments", "offers", "pages"})
 PART_ADDRESSES = {
     "how_picwise_works": "/how-picwise-works",
     "how_we_choose": "/how-we-choose",
@@ -451,6 +451,11 @@ class OfferCard:
     end: datetime
     # How many products shown tonight it covers; the row is ordered by it.
     products: int
+    # As a card shows them (the offers' page, the specification 7.2): its code, its
+    # terms, and "shop" when it covers the whole shop or "kind" when it names a kind.
+    code: str = ""
+    terms: str = ""
+    scope: str = ""
 
 
 @dataclass(frozen=True)
@@ -470,6 +475,9 @@ class HomeFacts:
     shop_names: tuple[str, ...] = ()
     # The shops' offers that cover products shown tonight, one a shop (the specification, 5.5).
     offers: tuple[OfferCard, ...] = ()
+    # Every such offer, the shops in the row's order, a shop's offers in the order a card
+    # would show them (the offers' page, 7.2).
+    all_offers: tuple[OfferCard, ...] = ()
 
 
 # ---- pieces ----

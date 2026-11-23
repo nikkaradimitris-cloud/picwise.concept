@@ -18,7 +18,7 @@ mimetypes.add_type("font/woff2", ".woff2")
 from pathlib import Path
 from typing import Callable
 from html import escape
-from urllib.parse import parse_qs, quote
+from urllib.parse import parse_qs, quote, unquote
 
 from .app import (  # noqa: E402
     ASSET_CACHE_CONTROL,
@@ -35,8 +35,8 @@ from picwise_integrations import (  # noqa: E402
 )
 from picwise_search.live_search_resolver import parse_min_price, parse_shown_count  # noqa: E402
 from picwise_surface.seo import SITEMAP_PATH, declares_to_google, robots_txt, sitemap_xml  # noqa: E402
-from picwise_surface.home_store import home_store_on  # noqa: E402
-from picwise_surface.store_pages import store_page  # noqa: E402
+from picwise_surface.home_store import PART_ADDRESSES, PARTS_BUILT, home_store_on  # noqa: E402
+from picwise_surface.store_pages import offer_page, render_offer_products, store_page  # noqa: E402
 from picwise_surface import (  # noqa: E402
     render_about_page,
     render_affiliate_disclosure_page,
@@ -220,6 +220,14 @@ def answer(environ: dict[str, object], start_response: StartResponse, local_app:
         params = parse_qs(query_string)
         query = params.get("q", [""])[0]
         source_page = "results" if path == "/results" else "search"
+        offer_id = params.get("offer", [""])[0].strip()
+        if offer_id and home_store_on() and "offers" in PARTS_BUILT:
+            # An offer's products (docs/PICWISE_HOME_STORE_SPEC.md, 7.2): the search
+            # narrowed to them; an offer that is not tonight's leaves the search as ever.
+            html = render_offer_products(query, offer_id, shown=parse_shown_count(params.get("shown", [""])[0]))
+            if html is not None:
+                body = html.encode("utf-8")
+                return _response("200 OK", "text/html; charset=utf-8", body, start_response)
         html = local_app.picwise_reference_html(
             query,
             source_page=source_page,
@@ -369,6 +377,15 @@ def answer(environ: dict[str, object], start_response: StartResponse, local_app:
     if home_store_on():
         # The store's other pages (docs/PICWISE_HOME_STORE_SPEC.md, section 7), only while
         # its switch is on and only those built; never indexed (`noindex` on each).
+        offers_prefix = PART_ADDRESSES["offers"] + "/"
+        if "offers" in PARTS_BUILT and path.startswith(offers_prefix) and path.count("/") == 2:
+            found = offer_page(unquote(path[len(offers_prefix):]))
+            if found is not None and found[0] == "redirect":
+                start_response("302 Found", [("Location", found[1]), ("Content-Length", "0"), *SECURITY_HEADERS])
+                return [b""]
+            if found is not None:
+                body = found[1].encode("utf-8")
+                return _response("200 OK", "text/html; charset=utf-8", body, start_response, cache_control="no-store")
         page = store_page(path)
         if page is not None:
             body = page.encode("utf-8")
