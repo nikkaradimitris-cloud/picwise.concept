@@ -37,14 +37,17 @@ a decision came about.
   - **If a night goes wrong**: the switch false on the owner's word and a deployment (it prepares: the site
     restarted first, as above). The products the rule left out do not come back at once: the gate stands, they
     come back as candidates, the never asked as the bot asks them (20.7.5).
-  - **Task 6 next** (the item of 22/11 16:35 below, its order of work): **the dry run is done** (23/11 09:38 UTC,
-    run 45148852096, the work branch's head pushed to `claude/itself-ask`; nothing asked): 199,771 products,
-    102,613 with a question, the first round 58,171 questions in 290 kinds (73,290 on 22/11); $9.02 to $10.71
-    by the trials of 22/11, before the rounds after it, stopped before $20. **Told to the owner in one line
-    and asked for his word for the cost: `DRY_RUN` is turned to `'no'` only on it** (then the commit pushed to
-    the work branch and to `claude/itself-ask`; a run that stops at its time is pushed again and asks only
-    what is not kept; then `DRY_RUN` back to `'yes'`). After it: its look (not built) and his «ανέβασε» of
-    its switch.
+  - **Task 6: THE FIRST ASKING IS RUNNING, started 23/11 about 12:00 Athens by the session that deployed the
+    rule, on the owner's «Ξεκίνα» (11:55). DO NOT START IT AGAIN, and leave `DRY_RUN` as it is: that session
+    turns it back to `'yes'` when the run ends and records what it asked and cost.** The dry run before it
+    (23/11 09:38 UTC, run 45148852096; nothing asked): 199,771 products, 102,613 with a question, the first
+    round 58,171 questions in 290 kinds (73,290 on 22/11); $9.02 to $10.71 by the trials of 22/11, before the
+    rounds after it, stopped before $20. He was told the count and the cost, and asked whether it is the one
+    large pass (yes: after it each night asks only the new products and the first cards that change, cents).
+    The answers go to `/srv/picwise/assist/itself/answers.jsonl.gz`; no rule reads them while
+    `data/kind_itself_switch.json` is false: nothing shown changes. A run that stops at its 100 minutes is
+    pushed again and asks only what is not kept. After it: its look (not built) and his «ανέβασε» of its
+    switch.
 
 - **(23/11, 10:05 Athens): THE LOOK OF HOW MANY OF A SHOP'S PRODUCTS PASS, ONCE MORE ON THE CHECKS' FIRST REAL NIGHT:
   DONE (FABLE). TWO MORE THINGS MENDED ON THE WORK BRANCH, WITH TESTS; IT READ RIGHT AFTER THEM. DEPLOYED THE SAME
