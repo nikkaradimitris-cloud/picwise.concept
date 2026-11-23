@@ -54,6 +54,9 @@ from picwise_surface import (
     render_terms_page,
 )
 from picwise_surface.seo import robots_txt
+from picwise_surface.home_store import home_store_on, render_home_store_page
+from picwise_surface.home_store_facts import current_home_facts
+from picwise_surface.trends import load_trends_panel
 from picwise_ai.store import assist_directory
 
 from .assist_wiring import assist_status, resolve_with_assist
@@ -246,15 +249,25 @@ class PicwiseLocalApp:
             )
         else:
             resolution, assist = resolve_with_assist(query, shown=shown, write_jobs=not assist_refresh)
-        html = render_picwise_reference_surface(
-            query=query,
-            resolution=resolution,
-            source_page=source_page,
-            catalogue=peek_search_catalogue_counts(),
-            indexable=indexable,
-            single_product_code=single_product_code(resolution),
-            assist=assist,
-        )
+        if is_empty_search_query(query) and home_store_on():
+            # The home page as a store, behind its switch (docs/PICWISE_HOME_STORE_SPEC.md;
+            # owner, 2026-11-23); off, the home page of 2026-11-12, byte for byte.
+            html = render_home_store_page(
+                catalogue=peek_search_catalogue_counts(),
+                indexable=indexable,
+                trends=load_trends_panel(),
+                facts=current_home_facts(),
+            )
+        else:
+            html = render_picwise_reference_surface(
+                query=query,
+                resolution=resolution,
+                source_page=source_page,
+                catalogue=peek_search_catalogue_counts(),
+                indexable=indexable,
+                single_product_code=single_product_code(resolution),
+                assist=assist,
+            )
         if not assist_refresh:
             self.record_decision_impression(
                 query=query,

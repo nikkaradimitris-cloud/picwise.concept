@@ -1,0 +1,7 @@
+{
+  "_about": "The switch of the home page as a store (docs/PICWISE_HOME_STORE_SPEC.md, section 4; picwise_surface.home_store). false: the home page is the one of 2026-11-12, byte for byte, and the routes the specification adds are not found. true: the home page of the specification's section 5. Not one of the preparation's files (prepared_catalogue._FROZEN_FILES): turning it prepares nothing again. Turned on, and off again, only on the owner's word: he asked for all of it to go live together («Όλα μαζί», 2026-11-23), so it is not turned on while a part of the specification's section 7 is missing.",
+  "_πώς": "true: η νέα αρχική· false: η σημερινή. Αλλάζει μόνο με τη λέξη σου (το «ανέβασε»).",
+  "on": false,
+  "set": "2026-11-23",
+  "by": "built off (task H3); the owner's «ανέβασε» turns it on"
+}

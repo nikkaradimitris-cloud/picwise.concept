@@ -21,6 +21,7 @@ from api.index import StartResponse, app as picwise_app  # noqa: E402
 from picwise_app.app import NOINDEX_HEADER, SECURITY_HEADERS  # noqa: E402
 from picwise_providers.state import keep_prepared_catalogue_loaded  # noqa: E402
 from picwise_search import resolve_live_search  # noqa: E402
+from picwise_surface.home_store_facts import keep_home_facts_current  # noqa: E402
 
 STATIC_DIR = Path(os.environ.get("PICWISE_STATIC_DIR") or ROOT / "public")
 
@@ -33,7 +34,11 @@ STATIC_DIR = Path(os.environ.get("PICWISE_STATIC_DIR") or ROOT / "public")
 # in each worker (the service does not preload it), so each has its own keeper;
 # `PICWISE_CATALOGUE_KEEPER=off` leaves the loading to the first request, as before.
 if str(os.environ.get("PICWISE_CATALOGUE_KEEPER") or "").strip().lower() != "off":
-    keep_prepared_catalogue_loaded(once_loaded=lambda: resolve_live_search("kettle"))
+    if keep_prepared_catalogue_loaded(once_loaded=lambda: resolve_live_search("kettle")) is not None:
+        # The home page as a store (docs/PICWISE_HOME_STORE_SPEC.md, 5.10): while its
+        # switch is on, each worker works out what the page shows of its catalogue, once
+        # for each catalogue and never while a page is drawn; off, the thread does nothing.
+        keep_home_facts_current()
 
 
 def app(environ: dict[str, object], start_response: StartResponse) -> list[bytes]:

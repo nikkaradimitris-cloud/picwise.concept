@@ -1,0 +1,153 @@
+{
+  "_about": "The lists of the home page as a store (docs/PICWISE_HOME_STORE_SPEC.md, section 5.11; picwise_surface.home_store): its banners, the kinds of the Recommended band, the six sections and their tiles, the thirteen departments, and the drawing of each word of the month's ten. A tile's 'query' is the words its search is made of (a kind's own name, in the number that names the kind itself: 'watch', 'boots', 'air purifier'); 'drawing' a file of assets/home/art/ (tools/draw_home_art.py). Every English word here is a visitor's reading: changed only on the owner's word. A banner or a department's destination left empty is not drawn: the owner decides it (the specification's 7.1).",
+  "_πώς": "Οι λίστες της νέας αρχικής: τα banners, τα είδη της ζώνης Recommended, οι έξι ενότητες με τα πλακίδιά τους, τα 13 τμήματα. Τα αγγλικά κείμενα αλλάζουν μόνο με τη λέξη σου.",
+  "banners": [
+    {
+      "theme": "gold",
+      "eyebrow": "SHOP OFFERS",
+      "title": "Offers from UK shops",
+      "line": "In the shops' own words.",
+      "button": "See all offers",
+      "part": "offers",
+      "href": "/offers",
+      "drawings": [["kettle", "white"], ["laptop", "mist"], ["drill", "pale"]]
+    },
+    {
+      "theme": "ink",
+      "eyebrow": "HOME & KITCHEN",
+      "title": "Air fryers, vacuums & more",
+      "line": "From UK shops, in stock only.",
+      "button": "Browse home",
+      "part": "departments",
+      "href": "",
+      "drawings": [["robot_vacuum", "mist"], ["air_fryer", "sand"], ["coffee_machine", "white"]]
+    },
+    {
+      "theme": "blue",
+      "eyebrow": "COMPUTERS & OFFICE",
+      "title": "Laptops, printers & routers",
+      "line": "From UK shops, in stock only.",
+      "button": "Browse computers",
+      "part": "departments",
+      "href": "/department/computers",
+      "drawings": [["laptop", "white"], ["printer", "mist"], ["router", "sand"]]
+    },
+    {
+      "theme": "ink",
+      "eyebrow": "TOOLS & MACHINES",
+      "title": "Drills, saws & garden machines",
+      "line": "From UK shops, in stock only.",
+      "button": "Browse tools",
+      "part": "departments",
+      "href": "/department/tools",
+      "drawings": [["drill", "sand"], ["chainsaw", "white"], ["lawn_mower", "mist"]]
+    }
+  ],
+  "recommended": [
+    {"query": "drill", "kind": "Drill", "link": "See drills", "drawing": "drill"},
+    {"query": "air fryer", "kind": "Air fryer", "link": "See air fryers", "drawing": "air_fryer"},
+    {"query": "printer", "kind": "Printer", "link": "See printers", "drawing": "printer"},
+    {"query": "robot vacuum", "kind": "Robot vacuum", "link": "See robot vacuums", "drawing": "robot_vacuum"},
+    {"query": "lawn mower", "kind": "Lawn mower", "link": "See lawn mowers", "drawing": "lawn_mower"},
+    {"query": "dehumidifier", "kind": "Dehumidifier", "link": "See dehumidifiers", "drawing": "dehumidifier"}
+  ],
+  "sections": [
+    {
+      "title": "Kitchen favourites",
+      "arrow": "See all kitchen",
+      "department": "kitchen",
+      "layout": "grid",
+      "tiles": [
+        {"name": "Air fryers", "query": "air fryer", "drawing": "air_fryer"},
+        {"name": "Coffee machines", "query": "coffee machine", "drawing": "coffee_machine"},
+        {"name": "Microwaves", "query": "microwave", "drawing": "microwave"},
+        {"name": "Kettles", "query": "kettle", "drawing": "kettle"}
+      ]
+    },
+    {
+      "title": "Style",
+      "arrow": "See all fashion",
+      "department": "fashion",
+      "layout": "row",
+      "tiles": [
+        {"name": "Boots", "query": "boots", "drawing": "boot"},
+        {"name": "Trainers", "query": "trainers", "drawing": "sneaker"},
+        {"name": "Dresses", "query": "dress", "drawing": "dress"},
+        {"name": "Watches", "query": "watch", "drawing": "watch"}
+      ]
+    },
+    {
+      "title": "Comfort at home",
+      "arrow": "See all home comfort",
+      "department": "home-appliances",
+      "layout": "grid",
+      "tiles": [
+        {"name": "Dehumidifiers", "query": "dehumidifier", "drawing": "dehumidifier"},
+        {"name": "Heaters", "query": "heater", "drawing": "heater"},
+        {"name": "Robot vacuums", "query": "robot vacuum", "drawing": "robot_vacuum"},
+        {"name": "Air purifiers", "query": "air purifier", "drawing": "air_purifier"}
+      ]
+    },
+    {
+      "title": "Computers & office",
+      "arrow": "See all computers",
+      "department": "computers",
+      "layout": "row",
+      "tiles": [
+        {"name": "Laptops", "query": "laptop", "drawing": "laptop"},
+        {"name": "Printers", "query": "printer", "drawing": "printer"},
+        {"name": "Routers", "query": "router", "drawing": "router"},
+        {"name": "Headphones", "query": "headphones", "drawing": "headphones"}
+      ]
+    },
+    {
+      "title": "Home & furniture",
+      "arrow": "See all furniture",
+      "department": "furniture",
+      "layout": "grid",
+      "tiles": [
+        {"name": "Beds", "query": "bed", "drawing": "bed"},
+        {"name": "Desks", "query": "desk", "drawing": "desk"},
+        {"name": "Office chairs", "query": "office chair", "drawing": "office_chair"},
+        {"name": "Lamps", "query": "lamp", "drawing": "lamp"}
+      ]
+    },
+    {
+      "title": "Tools & garden",
+      "arrow": "See all tools and garden",
+      "department": "tools",
+      "layout": "row",
+      "tiles": [
+        {"name": "Drills", "query": "drill", "drawing": "drill"},
+        {"name": "Mitre saws", "query": "mitre saw", "drawing": "mitre_saw"},
+        {"name": "Lawn mowers", "query": "lawn mower", "drawing": "lawn_mower"},
+        {"name": "Pressure washers", "query": "pressure washer", "drawing": "pressure_washer"}
+      ]
+    }
+  ],
+  "departments": [
+    {"slug": "computers", "name": "Computers & tech", "short": "Computers", "drawing": "laptop"},
+    {"slug": "fashion", "name": "Fashion & shoes", "short": "Fashion", "drawing": "boot"},
+    {"slug": "kitchen", "name": "Kitchen", "short": "Kitchen", "drawing": "air_fryer"},
+    {"slug": "tools", "name": "Tools & machines", "short": "Tools", "drawing": "drill"},
+    {"slug": "furniture", "name": "Furniture", "short": "Furniture", "drawing": "sofa"},
+    {"slug": "jewellery-watches", "name": "Jewellery & watches", "short": "Watches", "drawing": "watch"},
+    {"slug": "home-appliances", "name": "Home appliances", "short": "Appliances", "drawing": "robot_vacuum"},
+    {"slug": "garden", "name": "Garden", "short": "Garden", "drawing": "lawn_mower"},
+    {"slug": "lighting", "name": "Lighting", "short": "Lighting", "drawing": "lamp"},
+    {"slug": "toys-games", "name": "Toys & games", "short": "Toys", "drawing": "toy_blocks"},
+    {"slug": "sports", "name": "Sports", "short": "Sports", "drawing": "dumbbell"},
+    {"slug": "perfume", "name": "Perfume", "short": "Perfume", "drawing": "perfume"},
+    {"slug": "car-tyres", "name": "Car tyres", "short": "Tyres", "drawing": "tyre"}
+  ],
+  "popular_drawings": {
+    "boots": "boot",
+    "dress": "dress",
+    "trainers": "sneaker",
+    "perfume": "perfume",
+    "laptop": "laptop",
+    "sofa": "sofa",
+    "air fryer": "air_fryer",
+    "microwave": "microwave"
+  }
+}
