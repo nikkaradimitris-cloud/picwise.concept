@@ -539,7 +539,14 @@ meter's line, the note's limits); `PROGRESS.md` and the handoff.
 2. The first asking (8.1): **after the cap per shop is deployed** (owner, 22/11: «Μετά το
    πλαφόν»; that cap, decided by him the same day at 15:51, is not yet in the rules nor
    built). The session that starts it runs the dry run first and tells him that day's count
-   and cost: fewer questions than 22/11's 73,290, since the cap removes products.
+   and cost: fewer questions than 22/11's 73,290, since the cap removes products. **The cap
+   was deployed on 23/11 (the checks' rules 20.8), this code with it, its switch false. The
+   dry run that day** (run 45148852096, nothing asked): 199,771 products, 102,613 with a
+   question; the first round 58,171 questions in 290 kinds (48,684 of a kind the product
+   has, 2,923 of a kind the lists took, 6,564 first cards); by the trials of 22/11 the first
+   readings about $2.15 and the second $6.87 to $8.56, **$9.02 to $10.71 in all** before the
+   rounds after it, stopped before $20. Told to the owner; `DRY_RUN` is turned to `'no'`
+   only on his word for the cost.
 3. **The look** (task 7's kind): the catalogue prepared on GitHub's runner with the answers
    and the switch on, as the server would; per kind, what leaves by answer and what comes
    back, with examples; the kinds a brake would hold; the meter on the 40 searches and every
