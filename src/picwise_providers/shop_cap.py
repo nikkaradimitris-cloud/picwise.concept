@@ -42,7 +42,10 @@ passed their checks and may enter (the checks' gate, 19.6.2); then the ones it k
 night before that a cheaper shop keeps; then those that may enter and a cheaper shop keeps
 (e: "a kept product that became a cheaper shop's too gives its place to a product that
 waits, checked and passed"). With places still open, the next ones by the order that wait at
-the gate are its candidates, one and a quarter times the places open: the bot asks them. But
+the gate are its candidates, one and a quarter times the places open: the bot asks them. A
+place its own copies hold counts as open for that (a copy shows nothing), and those places
+name only products no cheaper shop keeps (`name_candidates`, the mend of 20.7.4: GamingKit's
+cap was full and named nothing). But
 only those the cap of a category would take too (`vetted`; the look of 22/11): a shop's
 place open is no place open in a category at its size, and a candidate named for one alone
 was asked, passed, refused by the category and named again two nights later, for good (three
@@ -100,6 +103,32 @@ def shop_cap_on(path: Path = SWITCH_FILE) -> bool:
 def candidates_for(open_places: int) -> int:
     """19.6.2: how many candidates a shop with `open_places` names, one and a quarter times."""
     return -(-5 * open_places // 4) if open_places > 0 else 0
+
+
+def name_candidates(waiting: Iterable[int], *, dearer: Collection[int], allowed: int,
+                    allowed_dearer: int) -> list[int]:
+    """Of `waiting` (what a shop holds at the checks' gate, in its order of 19.4), the ones it
+    names as candidates: the first `allowed`, of which at most `allowed_dearer` may be products
+    a cheaper shop keeps (`dearer`).
+
+    The mend of 20.7.4: a place held by a product of the step "a cheaper shop's" shows nothing,
+    so it counts as open when the shop names its candidates; but the candidates for such a
+    place can only be products no cheaper shop keeps (19.4 e's second sentence: a kept product
+    that became a cheaper shop's too gives its place to one that waits, checked and passed),
+    or the shop would ask for a place that would show nothing again. `allowed_dearer` is what
+    its truly open places may name, so a shop whose cap is full of copies (GamingKit, 4,477 of
+    its 20,000 on the night of 23/11) names candidates again, and only ones that can show."""
+    named: list[int] = []
+    taken_dearer = 0
+    for place in waiting:
+        if len(named) >= allowed:
+            break
+        if place in dearer:
+            if taken_dearer >= allowed_dearer:
+                continue
+            taken_dearer += 1
+        named.append(place)
+    return named
 
 
 def spread_positions(count: int) -> list[int]:
@@ -242,6 +271,11 @@ class ShopCapResult:
     # (19.6.2): what the cap of a category is given to name them among (`vetted`).
     waiting: dict[str, tuple[int, ...]] = field(default_factory=dict)
     allowed: dict[str, int] = field(default_factory=dict)
+    # Per such shop, those of the products that wait which a cheaper shop keeps, and how many
+    # of its candidates may be among them: its truly open places' share (20.7.4,
+    # `name_candidates`). The places its own copies hold name only products that can show.
+    dearer: dict[str, frozenset[int]] = field(default_factory=dict)
+    allowed_dearer: dict[str, int] = field(default_factory=dict)
 
     @property
     def kept(self) -> int:
@@ -334,10 +368,12 @@ def cap_shops(
     taken: dict[str, list[int]] = {}
     steps: dict[str, list[int]] = {}
     orders: dict[str, list[int]] = {}
+    step_of_place: dict[str, dict[int, int]] = {}
 
     def settle(shop: str, dearer: Callable[[int], bool]) -> None:
         mine = by_shop[shop]
         step = {place: step_of(place, dearer(place)) for place in mine}
+        step_of_place[shop] = step
         order = ordered(mine, step=step.__getitem__, waits=lambda place: not has_passed[place], part=facts.parts.__getitem__,
                         rank=rank, price=price)
         last = [place for place in order if step[place] == DEARER_STEP]
@@ -396,17 +432,35 @@ def cap_shops(
     notes: dict[str, dict[str, Any]] = {}
     waits: dict[str, tuple[int, ...]] = {}
     allowed: dict[str, int] = {}
+    allowed_dearer: dict[str, int] = {}
+    dearer_waiting: dict[str, frozenset[int]] = {}
     for shop in capped:
         chosen = taken[shop]
         for place in chosen:
             keep[members[place]] = True
         open_places = limit - len(chosen)
         waiting = [place for place in orders[shop] if not in_before[place] and not enters[place]]
-        named = waiting[:candidates_for(open_places)]
+        # 20.7.4: the places its own copies hold show nothing, so they count as open; what they
+        # may name is only products no cheaper shop keeps.
+        copies = sum(1 for number in steps[shop] if number == DEARER_STEP)
+        may_name = candidates_for(open_places + copies)
+        may_name_dearer = candidates_for(open_places)
+        # A product no place of the shop can ever name is given to the cap of a category for
+        # nothing: with the mend, a full shop's own copies (700,000 rows of the four full shops
+        # on 23/11, which the preparation would hold in memory to name none of them).
+        if may_name_dearer:
+            offerable = list(waiting)
+            mine_dearer = frozenset(place for place in waiting if step_of_place[shop][place] == DEARER_STEP)
+        else:
+            offerable = [place for place in waiting if step_of_place[shop][place] != DEARER_STEP]
+            mine_dearer = frozenset()
+        named = name_candidates(offerable, dearer=mine_dearer, allowed=may_name, allowed_dearer=may_name_dearer)
         candidates.extend(members[place] for place in named)
         if named:
-            waits[shop] = tuple(members[place] for place in waiting)
-            allowed[shop] = candidates_for(open_places)
+            waits[shop] = tuple(members[place] for place in offerable)
+            allowed[shop] = may_name
+            allowed_dearer[shop] = may_name_dearer
+            dearer_waiting[shop] = frozenset(members[place] for place in mine_dearer)
         by_step = Counter(steps[shop])
         notes[shop] = {
             "products": sizes[shop],
@@ -419,7 +473,7 @@ def cap_shops(
             "candidates": len(named),
         }
     return ShopCapResult(limit=limit, thin=thin, keep=tuple(keep), candidates=tuple(candidates), shops=notes,
-                         waiting=waits, allowed=allowed)
+                         waiting=waits, allowed=allowed, dearer=dearer_waiting, allowed_dearer=allowed_dearer)
 
 
 def vetted(result: ShopCapResult, named: Collection[int]) -> ShopCapResult:
@@ -434,7 +488,10 @@ def vetted(result: ShopCapResult, named: Collection[int]) -> ShopCapResult:
     candidates: list[int] = []
     notes = {shop: dict(entry) for shop, entry in result.shops.items()}
     for shop in sorted(result.waiting):
-        mine = [place for place in result.waiting[shop] if place in named][: result.allowed.get(shop, 0)]
+        mine = name_candidates([place for place in result.waiting[shop] if place in named],
+                               dearer=result.dearer.get(shop, frozenset()),
+                               allowed=result.allowed.get(shop, 0),
+                               allowed_dearer=result.allowed_dearer.get(shop, result.allowed.get(shop, 0)))
         candidates.extend(mine)
         notes[shop]["candidates"] = len(mine)
     return replace(result, candidates=tuple(candidates), shops=notes)
@@ -446,11 +503,14 @@ def shop_order(
     *,
     feed_ctx: FeedAvailabilityContext | None = None,
     thin: int = THIN,
+    copies: set[int] | None = None,
 ) -> dict[str, list[int]]:
     """Per shop, its products (indices) in the order of 19.4, read among the products given
     (the catalogue the site shows): what the bot asks a shop's shown products again in
     (19.3.2). Every product given is kept, so a product another shop shows cheaper is last,
-    and a kind is thin by what the catalogue shows."""
+    and a kind is thin by what the catalogue shows. `copies`, when given, is filled with the
+    products a cheaper shop shows (the last of each shop's order): the bot asks them after the
+    cap's candidates, since they show nothing (`ledger.asking_order`, the mend of 20.7.4)."""
     shops = _intern(products)
     members = list(range(len(products)))
     facts = _facts(products, kinds, members, _kind_sizes(kinds), thin, feed_ctx)
@@ -468,6 +528,8 @@ def shop_order(
         code = facts.codes[place]
         shared = bool(code) and len(sellers[code]) > 1
         if shared and low[code] < facts.prices[place]:
+            if copies is not None:
+                copies.add(place)
             return DEARER_STEP
         if facts.thin[place]:
             return THIN_STEP

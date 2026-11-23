@@ -62,7 +62,7 @@ from concurrent.futures.process import BrokenProcessPool
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Callable, Iterable, Mapping
+from typing import Any, Callable, Collection, Iterable, Mapping
 from urllib.parse import quote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -561,11 +561,12 @@ def judge(rows: Mapping[str, Row], result: ShopResult, *, shared_ids: Iterable[s
 
 
 def rows_from_catalogue(path: Path, *, order: bool = False,
-                        ) -> tuple[dict[str, Row], dict[str, str], set[str], dict[str, list[str]]]:
+                        ) -> tuple[dict[str, Row], dict[str, str], set[str], dict[str, list[str]], set[str]]:
     """The products the site shows: their rows, their kinds as the cap reads them, the ids
     more than one of them carries (the site's button finds a product by its id), and, with
     `order`, per shop its products' keys in the order of 19.4 (`shop_cap.shop_order`), the
-    order its shown products are asked again in (19.3.2)."""
+    order its shown products are asked again in (19.3.2), and of them the keys a cheaper shop
+    shows, asked after the cap's candidates (20.7.4)."""
     from picwise_providers.catalogue_cap import part_of
     from picwise_providers.prepared_catalogue import read_prepared_catalogue_to_measure
 
@@ -583,15 +584,19 @@ def rows_from_catalogue(path: Path, *, order: bool = False,
         ids[row.product_id] += 1
         keys.append(row.key)
     orders: dict[str, list[str]] = {}
+    dearer: set[str] = set()
     if order:
         from picwise_providers.shop_cap import shop_order
 
+        copies: set[int] = set()
         orders = {shop: [keys[place] for place in places]
                   for shop, places in shop_order(prepared.products, prepared.kinds,
-                                                 feed_ctx=prepared.availability_context).items()}
+                                                 feed_ctx=prepared.availability_context,
+                                                 copies=copies).items()}
+        dearer = {keys[place] for place in copies}
     del prepared, keys
     gc.collect()
-    return rows, parts, {ident for ident, count in ids.items() if count > 1}, orders
+    return rows, parts, {ident for ident, count in ids.items() if count > 1}, orders, dearer
 
 
 def rows_from_candidates(path: Path) -> tuple[dict[str, Row], list[str]]:
@@ -717,19 +722,21 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
         owner_cut_shops: list[str], owner_awin_word: bool, say: Callable[[str], None],
         sample: int = 0, tonight: Tonight | None = None, shops: frozenset[str] = frozenset(),
         old_feed_rule: bool = False, awin_closed_out: bool = False, scanned: bool = False,
-        shown_order: Mapping[str, list[str]] | None = None, readers: Readers | None = None,
+        shown_order: Mapping[str, list[str]] | None = None, dearer: Collection[str] = (),
+        readers: Readers | None = None,
         ) -> tuple[L.Night, dict]:
     """Ask every shop its products in the rules' order; record the night; the decisions.
     `sample`: a look, at most this many products a shop; `tonight`: the night's answers
     kept as they come, those kept already not asked again; `scanned`: the rule of how many
     of a shop's products pass (section 19), with `shown_order` the order of 19.4 of each
-    shop's shown products; `readers`: what reads the answers (19.5)."""
+    shop's shown products and `dearer` those of them a cheaper shop shows, asked after the
+    cap's candidates (20.7.4); `readers`: what reads the answers (19.5)."""
     from picwise_providers.shop_cap import SHOP_LIMIT
 
     tonight = tonight or Tonight(None)
     pass_nights = L.PASS_NIGHTS_SCANNED if scanned else L.PASS_VALID_NIGHTS
     order = L.asking_order(ledger, night, rows, shown=shown, candidates=candidates, parts=parts, scanned=scanned,
-                           shown_order=shown_order, limit=SHOP_LIMIT if scanned else 0)
+                           shown_order=shown_order, dearer=dearer, limit=SHOP_LIMIT if scanned else 0)
     if shops:
         order = {shop: keys for shop, keys in order.items() if shop in shops}
     if sample > 0:
@@ -902,7 +909,7 @@ def _night(args: argparse.Namespace, *, readers: Readers, scanned: bool, night: 
            say: Callable[[str], None]) -> int:
     """`main`'s night, once its readers have started."""
     try:
-        rows, parts, shared_ids, orders = rows_from_catalogue(args.catalogue, order=scanned)
+        rows, parts, shared_ids, orders, dearer = rows_from_catalogue(args.catalogue, order=scanned)
     except ValueError as error:
         say(f"the checks: {error}; nothing asked")
         return 1
@@ -926,7 +933,7 @@ def _night(args: argparse.Namespace, *, readers: Readers, scanned: bool, night: 
                        owner_awin_word=awin_word, say=say, sample=args.sample, tonight=tonight,
                        shops=frozenset(args.shop) if args.dry else frozenset(),
                        old_feed_rule=yes["old_feed_rule"], awin_closed_out=yes["awin_closed_out"],
-                       scanned=scanned, shown_order=orders, readers=readers)
+                       scanned=scanned, shown_order=orders, dearer=dearer, readers=readers)
     if args.dry:
         say("a look (--dry): nothing written")
     else:

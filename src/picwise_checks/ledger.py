@@ -672,7 +672,7 @@ def write_decisions(document: Mapping[str, Any], path: Path) -> None:
 def asking_order(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown: Collection[str],
                  candidates: Collection[str] = (), parts: Mapping[str, str] | None = None,
                  scanned: bool = False, shown_order: Mapping[str, Sequence[str]] | None = None,
-                 limit: int = 0) -> dict[str, list[str]]:
+                 dearer: Collection[str] = (), limit: int = 0) -> dict[str, list[str]]:
     """Per shop, its products in the order they are asked tonight (rules 10): (1) the
     held and the failed that are due; (2) the shown whose row changed its price, address
     or photo since their check, and the sold-out readings about to lapse; (3) the cap's
@@ -687,10 +687,14 @@ def asking_order(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown:
     prepared catalogue by `picwise_providers.shop_cap.shop_order`), and new ones only in
     the time left: the cap's candidates in the order the caps named them, then the shown
     never asked (19.3.2); so a shop settles at what it lets the bot scan in a day and its
-    products do not take turns. `limit`: past (1), at most this many of a shop (19.3.3:
-    its first 20,000)."""
+    products do not take turns. `dearer`: of the shown, those a cheaper shop shows (the last
+    of each shop's order, `shop_cap.shop_order`). They show nothing, so with the rule on they
+    are asked again after the cap's candidates, not before (the mend of 20.7.4: a shop the bot
+    cannot scan whole in a day never reached its candidates). `limit`: past (1), at most this
+    many of a shop (19.3.3: its first 20,000)."""
     parts = parts or {}
     shown = frozenset(shown)
+    dearer = frozenset(dearer) if scanned else frozenset()
     named = {key: place for place, key in enumerate(dict.fromkeys(candidates))}
     candidates = frozenset(named)
     places = {key: place for keys in (shown_order or {}).values() for place, key in enumerate(keys)} if scanned else {}
@@ -718,7 +722,7 @@ def asking_order(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown:
                 # name (the catalogue read without it), after, the cheapest first.
                 place = places.get(key)
                 rank = (0, place, 0.0) if place is not None else (1, 0, row.price or 0.0)
-                shop_tiers[2].append(((rank, key), key))
+                shop_tiers[4 if key in dearer else 2].append(((rank, key), key))
             else:
                 passed = _day(product.passed_on)
                 old = passed is None or (night - passed).days > OLD_PASS_FIRST
@@ -738,7 +742,7 @@ def asking_order(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown:
         if middle is not None and middle not in first:
             first.append(middle)
         chosen = set(first)
-        never_tier = tiers[shop_name][4 if scanned else 3]
+        never_tier = tiers[shop_name][5 if scanned else 3]
         never_tier.extend(((0, rows[key].price or 0.0, key), key) for key in first)
         never_tier.extend(((1, rows[key].price or 0.0, key), key) for key in priced if key not in chosen)
     order: dict[str, list[str]] = {}

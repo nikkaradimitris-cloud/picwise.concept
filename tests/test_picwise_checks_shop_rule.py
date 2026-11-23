@@ -113,6 +113,22 @@ class Rules1932And1933TheOrderOfAskingTests(unittest.TestCase):
         self.assertEqual(before[1:3], sorted(named))
         self.assertEqual(before[-3:], [keys[1], keys[2], keys[3]])
 
+    def test_the_shown_a_cheaper_shop_shows_are_asked_after_the_candidates(self) -> None:
+        # The mend of 20.7.4: a shop the bot cannot scan whole in a day asked its own copies
+        # again, which show nothing, before the candidates for the places they hold, so the
+        # candidates were never reached.
+        ledger, rows, keys = self._ledger()
+        tonight = NIGHT + timedelta(days=7)
+        candidates = dict(_rows("Alpha", 2, start=100))
+        every = {**rows, **candidates}
+        named = list(reversed(candidates))
+        order = L.asking_order(ledger, tonight, every, shown=rows.keys(), candidates=named, scanned=True,
+                               shown_order={"Alpha": [keys[3], keys[1], keys[2]]}, dearer=[keys[1]])["Alpha"]
+        self.assertEqual(order, [keys[0], keys[3], keys[2], *named, keys[1], *keys[4:]])
+        # Without the rule, which products a cheaper shop shows changes nothing.
+        before = L.asking_order(ledger, tonight, every, shown=rows.keys(), candidates=named, dearer=[keys[1]])["Alpha"]
+        self.assertEqual(before, L.asking_order(ledger, tonight, every, shown=rows.keys(), candidates=named)["Alpha"])
+
     def test_at_most_the_first_of_a_shop_past_the_failed_due(self) -> None:
         ledger, rows, keys = self._ledger()
         order = L.asking_order(ledger, NIGHT + timedelta(days=7), rows, shown=rows.keys(), scanned=True,
@@ -184,13 +200,16 @@ class Rule1932TheOrderReadFromThePreparedCatalogueTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "catalogue.json.gz"
             write_prepared_catalogue(prepared, path)
-            rows, _parts, _ids, orders = bot.rows_from_catalogue(path, order=True)
-            self.assertEqual(bot.rows_from_catalogue(path)[3], {})
+            rows, _parts, _ids, orders, dearer = bot.rows_from_catalogue(path, order=True)
+            self.assertEqual(bot.rows_from_catalogue(path)[3:], ({}, set()))
         keys = [row_of(item).key for item in products]
         self.assertEqual(set(rows), set(keys))
         self.assertEqual(sorted(orders["big"]), sorted(keys[:3]))
         self.assertEqual(orders["big"][-1], keys[0])
         self.assertEqual(orders["small"], [keys[3]])
+        # The last of its order is the one the other shop shows cheaper: the bot asks it after
+        # the cap's candidates (20.7.4).
+        self.assertEqual(dearer, {keys[0]})
 
 
 class TheShopsRuleInThePreparationTests(unittest.TestCase):

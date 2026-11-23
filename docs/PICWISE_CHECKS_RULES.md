@@ -803,7 +803,7 @@ about 285,000 at its lowest, on day 4, then filling again with checked products)
    many products wait for it (`not shown until checked`, by reason).
 
 
-## 19. How many of a shop's products pass: what the bot scans, 20,000 the most (owner, 22/11): decided; built 22/11 (19.10); looked at 22/11 and 23/11, four things mended (section 20); DEPLOYED 23/11 on the owner's «Ανέβασε το», its switch true (20.8)
+## 19. How many of a shop's products pass: what the bot scans, 20,000 the most (owner, 22/11): decided; built 22/11 (19.10); looked at 22/11 and 23/11, four things mended (section 20); DEPLOYED 23/11 on the owner's «Ανέβασε το», its switch true (20.8); the places a full shop's own copies hold mended 23/11, NOT DEPLOYED (20.9)
 
 Written 22/11 (17:10 Athens) by Claude Fable 5.2, after a look with its numbers (19.2), and
 **corrected the same day (17:35) on the owner's words of 17:08 and 17:21: what the bot scans
@@ -1523,7 +1523,7 @@ candidates the next night.)
   GamingKit 4.5, PCHUB.UK 6.3 (as on 22/11); Tooled Up 3.9, InStock UK 5.5 (its first
   requests of the day are the failed ones due again).
 
-#### 20.7.4 Found, not mended: a later step
+#### 20.7.4 Found, not mended then: a later step (1 below is built 23/11, section 20.9)
 
 1. **GamingKit keeps 4,477 products a cheaper shop shows** among its 20,000 (4,694 and
    4,717 the two nights after): 20.3.2, no longer small. Of the products it showed that
@@ -1610,3 +1610,47 @@ candidates the next night.)
 - **If a night goes wrong**: the switch false on the owner's word and a deployment (it
   prepares: the site restarted first); 20.7.5 says how the products come back.
 
+### 20.9 The places a full shop's own copies hold: mended (23/11, the daily session, Claude Opus 5.5). BUILT AND TESTED, NOT DEPLOYED
+
+20.7.4's first item, the one thing the look of 23/11 left: **a shop whose cap is full of
+products a cheaper shop shows keeps places that show nothing and names no candidate for
+them**, so nothing is asked that could fill them. GamingKit held 4,477 such places of its
+20,000 on the night of 23/11 (4,694 and 4,717 the two nights after), and its candidates were
+0. Both halves 20.7.4 named are built, with their tests; **nothing is on the site: it waits
+for the owner's «ανέβασε»** (it changes what the bot asks and what the preparation names, so
+it belongs with a deployment, not on its own).
+
+1. **The cap (`shop_cap.cap_shops`, `name_candidates`).** A place held by a product of the
+   step "a cheaper shop's" counts as open when the shop names its candidates (one and a
+   quarter times, as for a place truly open), and **the candidates for such a place are only
+   products no cheaper shop keeps** (19.4 e's second sentence), or the shop would ask for a
+   place that shows nothing again. A shop's truly open places name as before, among every
+   product that waits, its own copies included: `ShopCapResult.allowed` is what it may name in
+   all, `allowed_dearer` how many of them may be copies (0 for a full shop).
+2. **The bot's order (`ledger.asking_order`, `dearer`).** With the rule on, a shop's shown
+   products that a cheaper shop shows are asked **after** the cap's candidates, not before:
+   they are the last of its order (`shop_cap.shop_order`, which now says which they are), and
+   a shop the bot cannot scan whole in a day (GamingKit is asked about 17,300 of 20,000 a day)
+   never reached its candidates. The bot reads them from the prepared catalogue with the order
+   (`shop_checks_bot.rows_from_catalogue`).
+3. **And, found while building it: a product no place of a shop can ever name is no longer
+   given to the cap of a category.** Every product of a capped shop that waits at the gate
+   goes on to the cap of a category to be named among (19.6.2, the look of 22/11). With the
+   mend the four full shops would have sent their copies too — about 710,000 rows on 23/11,
+   which the preparation would hold in memory to name none of them (a full shop's
+   `allowed_dearer` is 0). A shop with no truly open place now offers only the products that
+   can be named. The catalogue is not changed by it (what is offered is counted for nothing
+   and kept never, the look of 23/11): only the preparation's work and memory.
+
+What it should gain, by 20.7.4's reading of the night of 23/11: **about 2,000 to 4,500
+products of GamingKit shown that no other shop shows**, in the days after the deployment (its
+candidates are asked, pass, and enter the night after they are named). Not measured: the look's
+workflow reads the server's catalogue, and the numbers of the day move with the AI's categories
+(20.7.1), so what it is worth shows in the health run's "checks, how many of a shop's products
+pass" the mornings after.
+
+**Tested**: `tests/test_picwise_shop_cap.py` (a full shop names candidates again and only ones
+that can show; the cap of a category names among them under the same rule; `name_candidates`
+itself), `tests/test_picwise_checks_shop_rule.py` (the shown a cheaper shop shows asked after
+the candidates; with the rule off nothing changes). Every fast module on its own after it: its
+numbers are in `PROGRESS.md`'s entry of the day.

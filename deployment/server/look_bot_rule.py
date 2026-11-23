@@ -174,14 +174,15 @@ def main(argv: list[str] | None = None) -> int:
         say("== 2. the catalogue read as the bot reads it, the order of 19.4 worked out")
         at = time.perf_counter()
         try:
-            rows, parts, _shared, orders = bot.rows_from_catalogue(args.catalogue, order=True)
+            rows, parts, _shared, orders, dearer = bot.rows_from_catalogue(args.catalogue, order=True)
         except ValueError as error:
             say(f"{error}; the look ends here")
             return 0
         shown = set(rows)
         by_shop = Counter(row.shop for row in rows.values())
         say(f"{len(shown):,} products shown, of {len(by_shop)} shops; read and ordered in {time.perf_counter() - at:.0f} s; "
-            f"the order names {sum(len(keys) for keys in orders.values()):,} products of {len(orders)} shops")
+            f"the order names {sum(len(keys) for keys in orders.values()):,} products of {len(orders)} shops, "
+            f"{len(dearer):,} of them a cheaper shop shows")
         for line in memory_lines():
             say(line)
         extra, candidates = bot.rows_from_candidates(args.checks / L.CANDIDATES_NAME)
@@ -197,7 +198,7 @@ def main(argv: list[str] | None = None) -> int:
         at = time.perf_counter()
         off = L.asking_order(ledger, night, rows, shown=shown, candidates=candidates, parts=parts)
         on = L.asking_order(ledger, night, rows, shown=shown, candidates=candidates, parts=parts, scanned=True,
-                            shown_order=orders, limit=SHOP_LIMIT)
+                            shown_order=orders, dearer=dearer, limit=SHOP_LIMIT)
         say(f"in all: {sum(len(keys) for keys in off.values()):,} products of {len(off)} shops, the rule off; "
             f"{sum(len(keys) for keys in on.values()):,} of {len(on)} shops, the rule on; worked out in {time.perf_counter() - at:.0f} s")
         say("  shop: shown | to ask, the rule off | to ask, the rule on | of them shown | of them the same first 100")

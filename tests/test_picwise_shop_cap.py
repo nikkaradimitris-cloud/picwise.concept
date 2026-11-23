@@ -192,6 +192,52 @@ class CapShopsTests(unittest.TestCase):
         self.assertEqual(shop_cap.candidates_for(4), 5)
         self.assertEqual(shop_cap.candidates_for(0), 0)
 
+    def _full_of_copies(self):
+        """A capped shop whose cap is full: six of its own, four copies of what a cheaper shop
+        shows; two products that wait at the gate, and five more that a cheaper shop shows too
+        (GamingKit on the night of 23/11, 4,477 of its 20,000: 20.7.4)."""
+        mine = [_product(number, kinds_hint="kettle") for number in range(6)]
+        copies = [_product(10 + number, price=50.0 + number, gtin=_gtin(number)) for number in range(4)]
+        waiting = [_product(20 + number, kinds_hint="kettle") for number in range(2)]
+        waiting_copies = [_product(30 + number, price=50.0 + number, gtin=_gtin(10 + number)) for number in range(5)]
+        cheaper = [_product(number, shop="Small", price=5.0 + number, gtin=_gtin(number)) for number in range(4)] \
+            + [_product(10 + number, shop="Small", price=5.0 + number, gtin=_gtin(10 + number)) for number in range(5)]
+        products = mine + copies + waiting + waiting_copies + cheaper
+        before = {row_key(product) for product in mine + copies + cheaper}
+        result = shop_cap.cap_shops(products, [KETTLE] * len(products), kept_before=before, limit=10, thin=1,
+                                    may_enter=lambda product: False)
+        return products, result
+
+    def test_a_place_its_own_copies_hold_names_candidates_again_and_only_ones_that_can_show(self) -> None:
+        # The mend of 20.7.4: the shop's cap is full, so it named no candidate, though four of
+        # its places hold copies that show nothing.
+        products, result = self._full_of_copies()
+        self.assertEqual(result.shops["Big"]["kept"], 10)
+        self.assertEqual(result.shops["Big"]["kept_by_step"]["a cheaper shop's"], 4)
+        self.assertEqual(result.shops["Big"]["waiting_at_the_gate"], 7)
+        # Five candidates for the four places the copies hold (one and a quarter times), but
+        # only the two that no cheaper shop shows: the rest would show nothing again.
+        self.assertEqual(_numbers(products, [index in set(result.candidates) for index in range(len(products))]),
+                         ["big-20", "big-21"])
+        self.assertEqual((result.allowed["Big"], result.allowed_dearer["Big"]), (5, 0))
+        self.assertEqual(result.shops["Big"]["candidates"], 2)
+
+    def test_the_cap_of_a_category_names_among_them_under_the_same_rule(self) -> None:
+        products, result = self._full_of_copies()
+        # The category has a place for every one that waits: the two that can show, as before.
+        every = shop_cap.vetted(result, result.waiting["Big"])
+        self.assertEqual(every.candidates, result.candidates)
+        # No place of the shop is truly open, so its own copies that wait are not given to the
+        # cap of a category at all: it would name none of them.
+        self.assertEqual(result.waiting["Big"], result.candidates)
+        self.assertEqual(result.dearer["Big"], frozenset())
+        self.assertEqual(shop_cap.vetted(result, ()).candidates, ())
+
+    def test_candidates_are_named_the_dearer_among_them_only_for_the_places_truly_open(self) -> None:
+        self.assertEqual(shop_cap.name_candidates([1, 2, 3], dearer=(), allowed=2, allowed_dearer=2), [1, 2])
+        self.assertEqual(shop_cap.name_candidates([1, 2, 3], dearer=(1, 2), allowed=3, allowed_dearer=1), [1, 3])
+        self.assertEqual(shop_cap.name_candidates([1, 2], dearer=(1, 2), allowed=5, allowed_dearer=0), [])
+
     def test_no_shop_keeps_a_copy_of_what_a_cheaper_shop_keeps_whatever_the_order_they_are_settled_in(self) -> None:
         # The look of 22/11 (two shops with one catalogue: 8,962 of one's 20,000 were copies of
         # what the other kept cheaper). Alpha is never the cheapest; Papa sells the same forty
