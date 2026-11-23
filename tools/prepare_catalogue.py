@@ -33,8 +33,9 @@ own catalogues and the rows' barcodes gave (`shop_catalogues`,
 share would cut (`balance`, `picwise_providers.catalogue_balance`), how many the
 pool Google may be given from holds (`google_pool`), which shops' feeds shrank or
 vanished since the build before (`intake_change`), and what the answers to the question
-"is it the kind itself" did (`itself`, `picwise_providers.kind_itself`), never the feed's
-link nor a row's id.
+"is it the kind itself" did (`itself`, `picwise_providers.kind_itself`), and what each line
+of the categories' list holds and what it closed or, its switch off, would close
+(`categories`, `picwise_providers.category_scope`), never the feed's link nor a row's id.
 """
 from __future__ import annotations
 
@@ -111,6 +112,7 @@ def main(argv: list[str] | None = None) -> int:
     # its numbers go in the note with theirs.
     checks = {**_checks(capping), "shop_cap": _shop_cap(capping)}
     itself = _itself(capping)
+    categories = _categories()
     print(
         f"prepare_catalogue: {prepared.feed_status.product_count} rows, "
         f"{len(prepared.products)} products in the search "
@@ -131,6 +133,15 @@ def main(argv: list[str] | None = None) -> int:
             f" {pool['kept_from_before']:,} of them kept the night before; the search and the pool Google may be"
             " given from hold the same"
         )
+    if categories.get("products") is not None:
+        print(
+            f"prepare_catalogue: the categories' list: {'applied' if categories.get('applied') else 'its switch off'};"
+            f" of {categories['products']:,} products a card can show, {categories['closed']:,}"
+            f" {'closed' if categories.get('applied') else 'it would close'}, {categories['open']:,} open,"
+            f" {categories['undecided']:,} with no category from the AI yet"
+        )
+    elif categories.get("why") or categories.get("error"):
+        print(f"prepare_catalogue: the categories' list: {categories.get('why') or categories.get('error')}")
     _trace("the file written")
     intake = _intake(feed_config) if args.static_dir is not None else None
     _trace("the intake measured")
@@ -195,6 +206,7 @@ def main(argv: list[str] | None = None) -> int:
                 "google_pool": pool,
                 "checks": checks,
                 "itself": itself,
+                "categories": categories,
                 **({"memory": memory} if memory is not None else {}),
                 **({"price_notes": notes} if notes is not None else {}),
             },
@@ -311,8 +323,14 @@ class _Cap:
                 # A capped shop's candidates (19.6.2) go to the bot first, in their order, and to
                 # the AI's category (5.5) with the cap's; not to task 6's morning (19.6.7: to weigh).
                 of_shops = [products[index] for index in (self.shops.candidates if self.shops is not None else ())]
+                # The cut products the feed still lists are asked again on their schedule, but
+                # not those of a category the list closes (`category_scope`): the bot's time
+                # goes to what the site may show.
+                from picwise_providers import category_scope
+
                 self.candidates = checks_applied.candidates_document(
-                    of_shops + next_ones, checks_applied.take_cut_products(), row_record, row_of,
+                    of_shops + next_ones, category_scope.passing(checks_applied.take_cut_products()),
+                    row_record, row_of,
                 )
                 self.shelf = checks_applied.shelf_items(
                     [product for product, kept in zip(products, self.result.keep) if kept] + of_shops + next_ones
@@ -551,6 +569,18 @@ def _itself(capping: _Cap) -> dict[str, object]:
     return {**note, **({"for_the_ai": written} if written else {}),
             **({"new_products_wait": True} if capping.itself_gate else {}),
             **({"shown_not_kept": kept["error"]} if kept and "error" in kept else {})}
+
+
+def _categories() -> dict[str, object]:
+    """What the categories' list (`picwise_providers.category_scope`) did tonight: what each
+    line holds of the products a card can show, what it closed (or, its switch off, would
+    close), and of which shops; or why it decided nothing."""
+    try:
+        from picwise_providers import category_scope
+
+        return category_scope.last_note() or {"applied": False, "why": "not read tonight"}
+    except Exception as error:
+        return {"error": _where(error)}
 
 
 def _freshness(prepared) -> dict[str, object]:

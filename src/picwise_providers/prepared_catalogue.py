@@ -92,13 +92,14 @@ _FROZEN_PACKAGES = ("src/picwise_providers", "src/picwise_nlu")
 # the switch of the question "is it the kind itself" with the site's notes on a kind
 # (`kind_itself`, `docs/PICWISE_KIND_ITSELF_RULES.md` 7.5 and 4.7): the answers are read
 # under them; and the switch of how many of a shop's products pass (`shop_cap`, the checks'
-# rules 19.7.2).
+# rules 19.7.2); and the categories' list (`category_scope`, `docs/PICWISE_CATEGORY_SWITCHES.md`).
 _FROZEN_FILES = (
     "data/kind_lines/google_lines_by_kind.json",
     "data/checks_switch.json",
     "data/shop_cap_switch.json",
     "data/kind_itself_switch.json",
     "data/kind_itself/kind_notes.json",
+    "data/category_switches.json",
 )
 
 

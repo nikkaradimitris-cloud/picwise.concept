@@ -548,8 +548,13 @@ class PrepareToolTests(_PreparedMixin, unittest.TestCase):
         self.assertEqual(
             set(note),
             {"prepared", "prepared_at", "products", "shops", "freshness", "intake", "intake_change", "kinds",
-             "title_alone", "shop_catalogues", "balance", "google_pool", "written_at", "checks", "itself"},
+             "title_alone", "shop_catalogues", "balance", "google_pool", "written_at", "checks", "itself",
+             "categories"},
         )
+        # The categories' list (2026-11-23, `category_scope`): with no answers of the AI's
+        # categories here, it decides nothing and says so.
+        self.assertEqual(note["categories"]["applied"], False)
+        self.assertIn("no answers", note["categories"]["why"])
         # No build before this one to compare each shop's feed with (2026-11-10;
         # `tests/test_picwise_feed_shrink_note.py`).
         self.assertEqual(note["intake_change"], {"compared_with": None})

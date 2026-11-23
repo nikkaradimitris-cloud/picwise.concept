@@ -405,6 +405,27 @@ def look_at_itself(check: Health) -> None:
         check.limit("cannot be read" in stopped, "the answers file of \"is it the kind itself\" cannot be read: nothing was asked")
 
 
+def look_at_categories(check: Health) -> None:
+    """The categories' list (docs/PICWISE_CATEGORY_SWITCHES.md): what the night's preparation
+    did with it (the public note's `categories`): its switch, what it closed or would close of
+    the products a card can show, the products the AI has given no category yet. Counts only;
+    nothing is said while a release without it runs."""
+    prepared = read_json(PREPARED_NOTE) or {}
+    note = prepared.get("categories") if isinstance(prepared.get("categories"), dict) else None
+    if note is None:
+        return
+    if note.get("products") is None:
+        check.say(f"categories: the list decided nothing ({note.get('why') or note.get('error') or 'no note'})")
+        return
+    applied = bool(note.get("applied"))
+    shops = ", ".join(f"{item.get('shop')} {int(item.get('closed') or 0):,}"
+                      for item in (note.get("closed_by_shop") or [])[:5])
+    check.say(f"categories: {'applied' if applied else 'the switch off'}; of {int(note['products']):,} products a card "
+              f"can show {int(note.get('closed') or 0):,} {'closed' if applied else 'would be closed'}, "
+              f"{int(note.get('open') or 0):,} open, {int(note.get('undecided') or 0):,} with no category from the AI yet"
+              + (f"; most closed: {shops}" if shops else ""))
+
+
 def _percent(share: object) -> str:
     return f"{100 * float(share):.1f}%" if isinstance(share, (int, float)) else "none judged"
 
@@ -518,6 +539,7 @@ def main(*, now: datetime | None = None, runner: Run = run) -> int:
     look_at_photos(check, runner)
     look_at_checks(check, runner)
     look_at_itself(check)
+    look_at_categories(check)
     look_at_meter(check)
     look_at_resources(check, peak_gb)
     look_at_ai(check)

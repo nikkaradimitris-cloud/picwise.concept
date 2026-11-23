@@ -209,6 +209,17 @@ within its shop's 3 days is not shown until it is asked. A cut product is asked 
 comes back the night it passes. The brakes, the proof a reader gives before its word counts,
 and the one switch that turns every cut off are in the checks' rules (7).
 
+**Decided by the owner on 2026-11-22 and 2026-11-23, built, NOT in force until his «ανέβασε»:
+a category he keeps open** (`docs/PICWISE_CATEGORY_SWITCHES.md`; `data/category_switches.json`,
+its switch false). A product is shown only when the line of Google's taxonomy the AI gave it
+is under a top line of the list and no line of the list above it, its own included, is
+closed: a switch for each category and subcategory, for the dashboard to come. Kept: home &
+garden, furniture, tools, electronics, cameras, fashion, jewellery and watches, toys, video
+games, perfume; out, the rest, and inside what stays the accessories, consumables and parts.
+A product with no line from the AI yet is the checks' to hold (5.5). No lowest price at this
+step (owner, 23/11). With the switch on, a search for what no open category holds says, under
+"No products found", what PicWise covers.
+
 **Added on 2026-11-23, on the owner's «Ανέβασε το»: of a shop, the products the bot scans,
 20,000 the most** (the checks' rules, sections 19 and 20; his words of 22/11: «μόνο όσα έχουν
 σκανναριστεί περνάνε», «Το πλαφόνι είναι 20.000 προϊόντα»). A shop with more products a

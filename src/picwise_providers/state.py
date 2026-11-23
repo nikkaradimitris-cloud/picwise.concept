@@ -37,7 +37,7 @@ from .offer_health import (
     offer_validity_reason_codes,
 )
 from .product_photos import gone_photos, gone_photos_key, photo_is_gone
-from . import kind_itself
+from . import category_scope, kind_itself
 from .checks_applied import apply_checks
 from .prepared_catalogue import (
     PreparedCatalogue,
@@ -430,6 +430,23 @@ def prepare_feed_catalogue(
         return None
     catalogue = _search_catalogue(pipeline, leave_out_gone_photos=False)
     eligible_count = _catalogue_counts(pipeline)[0]
+    # The categories the site shows (`category_scope`, behind its switch; the owner, 22/11 and
+    # 23/11; `docs/PICWISE_CATEGORY_SWITCHES.md`): a product whose category the list closes
+    # leaves here, before anything counts products, so that the answers to the question "is it
+    # the kind itself", how many of a shop's products pass, the cap of a category, the bot's
+    # candidates and the AI's next questions see only what the list lets through.
+    scope = category_scope.settle_or_keep(catalogue.products)
+    if scope is not None:
+        places = [place for place, kept in enumerate(scope) if kept]
+        scoped = tuple(catalogue.products[place] for place in places)
+        catalogue = build_search_catalogue(
+            scoped,
+            feed_ctx=pipeline.availability_context,
+            card_eligible=tuple(True for _product in scoped),
+            non_new=tuple(product_non_new_condition(product) for product in scoped),
+            fields=tuple(catalogue.fields[place] for place in places),
+        )
+        del places, scoped
     # The answers to the question "is it the kind itself" (`kind_itself`, behind its switch;
     # `docs/PICWISE_KIND_ITSELF_RULES.md`): read here, where every product's own kinds and
     # the kinds the lists leave it are at hand, before the cap shares its places by kind.

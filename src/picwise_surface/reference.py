@@ -7,6 +7,7 @@ from decimal import Decimal, InvalidOperation
 from html import escape
 from urllib.parse import quote
 
+from picwise_providers import category_scope
 from picwise_providers.decision_labels import (
     UNVERIFIED_RISK,
     VERIFIED_RISK,
@@ -56,11 +57,16 @@ _NO_PRODUCTS_EXAMPLES = ("washing machine", "laptop")
 
 
 def _no_products_try_html() -> str:
-    """The line under "No products found": two searches PicWise answers, as links."""
+    """The line under "No products found": two searches PicWise answers, as links; and, with
+    the categories' list on (`category_scope`; the owner, 22/11: an honest line rather than
+    an empty page), what PicWise covers."""
     first, second = (
         f'<a href="/search?q={quote(word, safe="")}">{escape(word)}</a>' for word in _NO_PRODUCTS_EXAMPLES
     )
-    return f"Try the name or the kind of the product, for example {first} or {second}."
+    covers = category_scope.site_words()
+    return f"Try the name or the kind of the product, for example {first} or {second}." + (
+        f" {escape(covers)}" if covers else ""
+    )
 
 _REAL_FEED_PROVIDER_KEYS = frozenset({"awin"})
 _FAKE_FEED_PROVIDER_KEYS = frozenset({"demo", "fake", "sample", "test"})
