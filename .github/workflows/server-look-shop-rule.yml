@@ -13,9 +13,11 @@
 #    memory. And the same pair once more with the cap's gate on as it is from the checks' first
 #    night (23/11): while the server holds no decisions yet, on a decisions file of the look's
 #    own that fails no product and lets no new one in (the AI's categories applied as the
-#    preparation applies them). And, the gate on, the night after the first with the rule:
-#    every candidate the caps named for the bot taken as asked and passed, the most that can
-#    enter in a night.
+#    preparation applies them). And, the gate on, the night after the first with the rule
+#    and the one after that: every candidate the caps named for the bot taken as asked and
+#    passed, the most that can enter in a night; the second one to see that what a night
+#    shows stays the next (the look of 23/11: a shop with one place open moved its
+#    categories' shares from night to night).
 # 2. The bot on the server, inside the limits of its own unit (picwise-checks.service), from a
 #    copy of this commit's code in the unit's private temporary folder, which goes with the
 #    unit (deployment/server/look_bot_rule.py): whether the processes the pages are read on
@@ -26,7 +28,7 @@
 # kept of a run (its summary, as the run's file, and this log, public like the repository):
 # counts, shops' names, kinds, categories, titles and prices; never a link, an id or a key.
 #
-# Run: 2026-11-23 07:45 Athens, the fourth: on the checks' first real night, the server's own decisions (to run again, change this line and push).
+# Run: 2026-11-23 09:10 Athens, the fifth: the offered counted for no category's size, a cheaper row that waits no cheaper offer; two nights after too (to run again, change this line and push).
 name: How many of a shop's products pass, the look before its «ανέβασε» (read-only)
 on:
   push:
@@ -312,6 +314,52 @@ jobs:
             --seconds "$seconds" --peak-kb "$peak" \
             --gone "$RUNNER_TEMP/look/gone.json" --offers "$RUNNER_TEMP/look/offers.json" --families "$RUNNER_TEMP/look/families.json"
           cp "$RUNNER_TEMP/look/run2/summary.json" "$RUNNER_TEMP/summary/summary-${{ matrix.name }}-2.json"
+      # And the night after that, the same way: the candidates the night after named, taken as
+      # asked and passed with the first night's (a pass stands for three nights), prepared from
+      # the night after's own pool. What a night shows should stay the next.
+      - name: Two nights after, every candidate asked and passed again
+        id: after2
+        if: steps.after.outcome == 'success'
+        env:
+          AWIN_FEED_FILE_AWIN: ${{ runner.temp }}/look/awin.bin
+          PICWISE_SHOP_CATALOGUES: ${{ runner.temp }}/look/catalogues.json.gz
+          PICWISE_AI_SHELVES_FILE: ${{ runner.temp }}/look/shelves.jsonl.gz
+          PICWISE_CHECKS_DECISIONS: ${{ runner.temp }}/look/checks/decisions.json.gz
+          PICWISE_CAP_SHARE: "0.15"
+          PICWISE_CAP_CATEGORY_MAX: "12000"
+          PICWISE_MEMORY_TRACE: "1"
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          set -o pipefail
+          mkdir -p "$RUNNER_TEMP/look/run3"
+          cp "$RUNNER_TEMP/look/run2/google_pool.json.gz" "$RUNNER_TEMP/look/run3/google_pool.json.gz"
+          python3 - "$RUNNER_TEMP/look/checks" <<'EOF'
+          import gzip
+          import json
+          import sys
+          from collections import Counter
+          from pathlib import Path
+
+          folder = Path(sys.argv[1])
+          with gzip.open(folder / "candidates.json.gz", "rt", encoding="utf-8") as handle:
+              named = json.load(handle)["candidates"]
+          with gzip.open(folder / "decisions.json.gz", "rt", encoding="utf-8") as handle:
+              decisions = json.load(handle)
+          decisions["enter"] = sorted(set(decisions.get("enter") or ()) | set(named))
+          with gzip.open(folder / "decisions.json.gz", "wt", encoding="utf-8") as handle:
+              json.dump(decisions, handle)
+          # A candidate's key is its shop and its id: the shop's name alone is said.
+          by_shop = Counter(key.split("\x1f", 1)[0] for key in named)
+          print(f"two nights after: {len(named):,} candidates of {len(by_shop)} shops, every one taken as asked and passed; the most: "
+                + ", ".join(f"{shop} {count:,}" for shop, count in by_shop.most_common(25)))
+          EOF
+          /usr/bin/time -o "$RUNNER_TEMP/look/time3.txt" -f "%M %e" python3 deployment/server/look_shop_rule.py prepare \
+            "$RUNNER_TEMP/look/run3" --feed-file "$RUNNER_TEMP/look/google.bin" 2>&1 | grep -E "^(prepare_catalogue|look):"
+          read -r peak seconds < "$RUNNER_TEMP/look/time3.txt"
+          python3 deployment/server/look_shop_rule.py summary "$RUNNER_TEMP/look/run3" --name "${{ matrix.name }}-3" \
+            --seconds "$seconds" --peak-kb "$peak" \
+            --gone "$RUNNER_TEMP/look/gone.json" --offers "$RUNNER_TEMP/look/offers.json" --families "$RUNNER_TEMP/look/families.json"
+          cp "$RUNNER_TEMP/look/run3/summary.json" "$RUNNER_TEMP/summary/summary-${{ matrix.name }}-3.json"
       # Counts, names, titles and prices only (the look's own summaries): no link, id or key.
       - uses: actions/upload-artifact@v4
         id: upload
@@ -379,6 +427,19 @@ jobs:
               found=yes
               python3 "$GITHUB_WORKSPACE/deployment/server/look_shop_rule.py" compare "summary-$name.json" "summary-$name-2.json" \
                 --before "the first night with the rule ($name)" --after "the night after, every candidate asked and passed"
+            fi
+          done
+          [ "$found" = yes ] || echo "not run this time"
+      - name: The night after and two nights after, every candidate passed
+        if: always()
+        run: |
+          cd "$RUNNER_TEMP/summaries" 2> /dev/null || { echo "no summary was kept"; exit 0; }
+          found=no
+          for name in on gate-on; do
+            if [ -f "summary-$name-2.json" ] && [ -f "summary-$name-3.json" ]; then
+              found=yes
+              python3 "$GITHUB_WORKSPACE/deployment/server/look_shop_rule.py" compare "summary-$name-2.json" "summary-$name-3.json" \
+                --before "the night after ($name)" --after "two nights after, every candidate asked and passed"
             fi
           done
           [ "$found" = yes ] || echo "not run this time"
