@@ -214,8 +214,9 @@ a category he keeps open** (`docs/PICWISE_CATEGORY_SWITCHES.md`; `data/category_
 its switch false). A product is shown only when the line of Google's taxonomy the AI gave it
 is under a top line of the list and no line of the list above it, its own included, is
 closed: a switch for each category and subcategory, for the dashboard to come. Kept: home &
-garden, furniture, tools, electronics, cameras, fashion, jewellery and watches, toys, video
-games, perfume; out, the rest, and inside what stays the accessories, consumables and parts.
+garden, furniture, tools, electronics, cameras, fashion, jewellery and watches, toys, sports,
+video games, perfume, car tyres; out, the rest, and inside what stays the accessories,
+consumables and parts. No top category is closed without his word (23/11, 18:16).
 A product with no line from the AI yet is the checks' to hold (5.5). No lowest price at this
 step (owner, 23/11). With the switch on, a search for what no open category holds says, under
 "No products found", what PicWise covers.

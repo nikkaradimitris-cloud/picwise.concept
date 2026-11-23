@@ -161,6 +161,14 @@ class TheRepositorysListTests(unittest.TestCase):
             "Toys & Games > Puzzles",
             "Software > Video Game Software",
             "Health & Beauty > Personal Care > Cosmetics > Perfume & Cologne",
+            # 23/11 18:20, asked of what had closed without being talked over: sports in, and of
+            # the vehicles the tyres alone («Ποτέ δεν αποφασίσαμε ότι κλείνουμε τα λάστιχα»).
+            "Sporting Goods > Outdoor Recreation > Cycling > Bicycles",
+            "Sporting Goods > Exercise & Fitness",
+            "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems"
+            " > Motor Vehicle Tires > Automotive Tires",
+            "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems"
+            " > Motor Vehicle Tires > Motorcycle Tires",
         ]
         closed = [
             # Out by category: pet shop, beauty and grooming, baby, luggage, sports, the car.
@@ -171,9 +179,18 @@ class TheRepositorysListTests(unittest.TestCase):
             "Health & Beauty > Personal Care > Cosmetics > Makeup",
             "Baby & Toddler > Baby Toys & Activity Equipment",
             "Luggage & Bags > Backpacks",
-            "Sporting Goods",
-            "Vehicles & Parts",
             "Office Supplies",
+            # Asked on 23/11 18:20 and left closed.
+            "Media > Books",
+            "Food, Beverages & Tobacco",
+            "Arts & Entertainment",
+            "Business & Industrial",
+            # Of the vehicles, everything but the tyres.
+            "Vehicles & Parts > Vehicles",
+            "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Engine Oil Circulation",
+            "Vehicles & Parts > Vehicle Parts & Accessories > Motor Vehicle Parts > Motor Vehicle Wheel Systems"
+            " > Motor Vehicle Rims & Wheels",
+            "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Safety & Security",
             # The accessories and consumables of the categories that stay.
             "Electronics > Electronics Accessories > Cables",
             "Electronics > Electronics Accessories > Adapters",
@@ -214,7 +231,7 @@ class TheRepositorysListTests(unittest.TestCase):
             self.assertEqual(
                 category_scope.site_words(),
                 "PicWise covers home & garden, furniture, tools, electronics, cameras, fashion, jewellery & watches,"
-                " toys & games, video games and perfume.",
+                " toys & games, sports & outdoors, video games, perfume and car tyres.",
             )
 
 
@@ -466,7 +483,7 @@ class TheSiteTests(unittest.TestCase):
             line = _no_products_try_html()
         self.assertIn("for example", line)
         self.assertIn("PicWise covers home &amp; garden, furniture, tools,", line)
-        self.assertTrue(line.endswith("video games and perfume."))
+        self.assertTrue(line.endswith("video games, perfume and car tyres."))
 
 
 class TheLooksWorkflowTests(unittest.TestCase):

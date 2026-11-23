@@ -13,14 +13,19 @@ Each rule names whose it is:
 ## Σύνοψη για τον ιδιοκτήτη
 
 - **Τι κάνει.** Ένα αρχείο με μία γραμμή για κάθε κατηγορία και υποκατηγορία της Google
-  (385 γραμμές), με ελληνικό όνομα και ✅ ή ❌. Ένα προϊόν φαίνεται μόνο όταν η κατηγορία που
+  (419 γραμμές), με ελληνικό όνομα και ✅ ή ❌. Ένα προϊόν φαίνεται μόνο όταν η κατηγορία που
   του έδωσε το AI είναι ανοιχτή, μαζί με όλες όσες είναι από πάνω της. Αν κλείσεις μια
   κατηγορία, κλείνουν και όλες οι υποκατηγορίες της.
 - **Τι μένει** (όσα αποφάσισες στις 22 και 23/11): σπίτι & κήπος (συσκευές, κουζίνα,
   φωτισμός, κήπος, ασφάλεια σπιτιού), έπιπλα, εργαλεία, τεχνολογία με τα κομμάτια
   υπολογιστή και τις βάσεις τηλεόρασης, φωτογραφικές, ρούχα και παπούτσια, κοσμήματα και
-  ρολόγια, τσάντες, γυαλιά ηλίου, ζώνες, καπέλα, κασκόλ και γάντια, παιχνίδια,
-  βιντεοπαιχνίδια, αρώματα.
+  ρολόγια, τσάντες, γυαλιά ηλίου, ζώνες, καπέλα, κασκόλ και γάντια, παιχνίδια, αθλητικά,
+  βιντεοπαιχνίδια, αρώματα, λάστιχα αυτοκινήτου.
+- **Μεγάλες κατηγορίες που δεν είχαμε συζητήσει** (23/11): σε ρώτησα για όλες. Άνοιξαν τα
+  αθλητικά και, από το αυτοκίνητο, μόνο τα λάστιχα. Έμειναν κλειστά τα βιβλία, μουσική &
+  ταινίες, τρόφιμα & ποτά, τέχνες & χόμπι, γραφική ύλη, επαγγελματικός εξοπλισμός,
+  προϊόντα ενηλίκων και θρησκευτικά. Από εδώ και πέρα, καμία μεγάλη κατηγορία δεν κλείνει
+  χωρίς να σε ρωτήσω.
 - **Τι φεύγει:** όλα τα υπόλοιπα, και μέσα στις κατηγορίες που μένουν τα αξεσουάρ, τα
   αναλώσιμα και τα ανταλλακτικά (καλώδια, φορτιστές, μπαταρίες, θήκες, προστατευτικά οθόνης,
   τηλεχειριστήρια, μελάνια, λουράκια ρολογιών, εσώρουχα και κάλτσες, είδη τζόγου κ.λπ.).
@@ -71,6 +76,15 @@ mounts, hats, scarves and gloves in, ink and toner out; no lowest price at this 
 or ❌, one rule, every top line of Google's on it, each line's count each night, one switch
 for the whole) and his «Ναι ξεκινάς».
 
+**Owner, 2026-11-23, 18:16**, told after the look that car tyres left with the closed vehicles:
+«Ποτέ δεν αποφασίσαμε ότι κλείνουμε τα λάστιχα και ποτέ δεν σου είπα εγώ κάτι τέτοιο». So it
+was: the list kept only what he had named, and Claude had written "car" among "all the rest
+leave" without asking of it apart. Asked then of every top category closed without being talked
+over (18:20): of the vehicles «Μόνο τα λάστιχα»; sports opened («Αθλητικά»); media, food, arts and
+hobbies, office supplies and business and industrial left closed («Καμία από αυτές»); mature and
+religious, told and not asked, left closed. **From then: no top category is closed without his
+word** (the rule the dashboard to come keeps too).
+
 What it is not: the wrong products of a kind (tablets that are pills, watches that are straps
 as a kind's search) are the kind's rules' (`PROJECT_RULES.md` 2, "The main kind only";
 `docs/PICWISE_KIND_ITSELF_RULES.md`); asked on 22/11 whether a mechanism already did that, the
@@ -111,11 +125,14 @@ Read from the list itself; its test (`tests/test_picwise_category_scope.py`,
 `test_the_owners_decisions_line_by_line`) pins them with the switch read as on.
 
 - Open top lines: Home & Garden, Furniture, Hardware (its Tools only), Electronics, Cameras &
-  Optics, Apparel & Accessories, Toys & Games, Software (Video Game Software only), Health &
-  Beauty (Perfume & Cologne only).
-- Closed top lines: Sporting Goods, Baby & Toddler, Luggage & Bags, Animals & Pet Supplies,
-  Vehicles & Parts, Office Supplies, Arts & Entertainment, Media, Food, Beverages & Tobacco,
-  Business & Industrial, Religious & Ceremonial, Mature.
+  Optics, Apparel & Accessories, Toys & Games, Sporting Goods (23/11), Software (Video Game
+  Software only), Health & Beauty (Perfume & Cologne only), Vehicles & Parts (Motor Vehicle
+  Tires only, 23/11).
+- Closed top lines, by his words: Baby & Toddler («Δεν θέλω τα βρεφικά»), Animals & Pet
+  Supplies («τα είδη pet shop έξω»), Luggage & Bags (22/11, read as out with the baby items and
+  not contested since); asked on 23/11 18:20 and left closed: Media, Food, Beverages & Tobacco,
+  Arts & Entertainment, Office Supplies, Business & Industrial; told then and left closed:
+  Mature, Religious & Ceremonial.
 - Inside the open ones, closed as he decided: the accessories, consumables and parts named in
   section 1, and the lines of 23/11.
 
@@ -156,7 +173,7 @@ Lines his words did not name, set to follow them:
 
 Under "No products found", after the two searches to try (owner, 13/11), with the switch on:
 "PicWise covers home & garden, furniture, tools, electronics, cameras, fashion, jewellery &
-watches, toys & games, video games and perfume." Made of the `site` words of the open lines,
+watches, toys & games, sports & outdoors, video games, perfume and car tyres." Made of the `site` words of the open lines,
 a line's left out where a line above it already says it, in the list's order
 (`category_scope.site_words`). **Proposed** (the owner, 22/11, agreed to an honest line in
 place of an empty page; the words are his to change). With the switch off, nothing changes.
@@ -185,7 +202,7 @@ would close, by line and by shop. What it found: section 9, once it has run.
 
 ## 8. What is built (2026-11-23)
 
-- `data/category_switches.json`: the list, 385 lines, its switch false.
+- `data/category_switches.json`: the list, 419 lines (385 until 23/11 18:20), its switch false.
 - `src/picwise_providers/category_scope.py`: the list read (again when it changes), the rule,
   the night (`settle`, `settle_or_keep`), the bot's cut products (`passing`), the site's words (`site_words`).
 - `src/picwise_providers/state.py`: the list applied in the preparation.
@@ -203,6 +220,11 @@ dashboard, which will turn these same lines (until then a change is a commit and
 numbers say whether they should move.
 
 ## 9. What the look found
+
+**The first look was of the list before the owner's answers of 23/11 18:20 (sports and tyres
+closed then); the look of the list as it is now follows it (9.2).**
+
+### 9.1 The list as built at `08c9dcc`
 
 Run 45199357636 (`claude/category-switches-look` at `32f2478`, the list as built at `08c9dcc`),
 23/11 from 14:55 UTC; read-only, no shop asked, no AI; the catalogue prepared on GitHub's runner
@@ -239,3 +261,7 @@ from the server's copies of 23/11, the list's switch off (as the site runs) and 
 - **Saunas** (979 to 16, under pools and spas) and **car tyres** (8,193 to 0): products of high
   value that leave by lines he closed; each opens again with its line.
 - **The preparation**: 12.7 minutes and 13.87 GB with the list on (13.8 and 14.19 off).
+
+### 9.2 The list with sports and tyres open
+
+Running (the look's workflow, its second run).

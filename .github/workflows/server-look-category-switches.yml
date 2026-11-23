@@ -19,7 +19,7 @@
 # kept of a run (its summaries, as the run's file, and this log, public like the repository):
 # counts, shops' names, kinds, categories, titles and prices; never a link, an id or a key.
 #
-# Run: 2026-11-23 17:00 Athens, the first: the list as built (08c9dcc), its switch off and on (to run again, change this line and push the work branch's head to claude/category-switches-look).
+# Run: 2026-11-23 18:40 Athens, the second: the list with sports and car tyres open (the owner, 18:20), its switch off and on (to run again, change this line and push the work branch's head to claude/category-switches-look).
 name: The categories' list, the look before its «ανέβασε» (read-only)
 on:
   push:
