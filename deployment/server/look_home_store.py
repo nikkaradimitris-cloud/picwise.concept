@@ -424,7 +424,8 @@ def part_zero() -> None:
     say("== 0. A search's page as the running site answers it ==")
     say(f"  the switch as this release's file says: {home_store.home_store_on()}")
     header = home_store._header_html(home_store.load_home_lists(), home_store.PARTS_BUILT, nav_row=False)
-    say(f"  the store's header holds the box's marker {header.count('name=\"q\" value=\"\"')} time(s)")
+    marker = 'name="q" value=""'
+    say(f"  the store's header holds the box's marker {header.count(marker)} time(s)")
     for query in ("blender", "kettle"):
         status, raw = running(f"/search?q={query}")
         page = raw.decode("utf-8", "replace")
