@@ -182,6 +182,15 @@ if [ "$PREPARE" = yes ]; then
     | grep -E 'prepare_catalogue|Consumed' | tail -n 3 || true
 else
   echo "not prepared again: the change does not concern the catalogue; this release reads the one in place ($BEFORE)"
+  # A round running goes on with the code it started with; when the bot's code changed it
+  # is stopped here and started again below on this release's, going on from the answers
+  # it kept (24/11: the mend of a round ended by an error would otherwise wait a day).
+  if [ -n "$PREVIOUS" ] && [ -d "$APP/$PREVIOUS" ] \
+    && ! { diff -rq "$APP/$PREVIOUS/deployment/bot" "$RELEASE/deployment/bot" > /dev/null 2>&1 \
+      && diff -rq "$APP/$PREVIOUS/src/picwise_checks" "$RELEASE/src/picwise_checks" > /dev/null 2>&1; }; then
+    echo "the checks' bot changed: its round is started again on this release, from the answers it kept"
+    systemctl stop picwise-checks.service 2> /dev/null || true
+  fi
 fi
 
 echo "== the catalogue in place, as this release reads it"

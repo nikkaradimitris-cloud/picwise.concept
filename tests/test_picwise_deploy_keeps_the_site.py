@@ -258,6 +258,10 @@ class PrepareOnlyWhenNeededTests(unittest.TestCase):
             (folder / "deployment" / "server").mkdir(parents=True)
             (folder / "tools" / "prepare_catalogue.py").write_text("the preparation\n")
             (folder / "deployment" / "server" / "picwise-prepare.service").write_text("[Service]\n")
+            (folder / "deployment" / "bot").mkdir(parents=True)
+            (folder / "deployment" / "bot" / "shop_checks_bot.py").write_text("the bot\n")
+            (folder / "src" / "picwise_checks").mkdir(parents=True)
+            (folder / "src" / "picwise_checks" / "ledger.py").write_text("the ledger\n")
         self.log = self.app / "calls.log"
 
     def _run(self, state: str, previous: str = "releases/old") -> str:
@@ -305,6 +309,25 @@ class PrepareOnlyWhenNeededTests(unittest.TestCase):
                 changed.write_text(kept + "changed\n")
                 self._run("fresh 2026-11-20T10:17:27+00:00")
                 self.assertTrue(self._prepared())
+                changed.write_text(kept)
+                self.log.unlink()
+
+    def test_the_checks_round_is_started_again_only_when_the_bots_code_changed(self) -> None:
+        # 24/11: a round running keeps the code it started with; the mend of a round ended by
+        # an error must reach the round of the same day.
+        said = self._run("fresh 2026-11-20T10:17:27+00:00")
+        self.assertNotIn("systemctl stop picwise-checks.service", self.log.read_text())
+        self.assertNotIn("the checks' bot changed", said)
+        self.log.unlink()
+        for name in ("deployment/bot/shop_checks_bot.py", "src/picwise_checks/ledger.py"):
+            with self.subTest(name):
+                changed = self.app / "releases" / "new" / name
+                kept = changed.read_text()
+                changed.write_text(kept + "changed\n")
+                said = self._run("fresh 2026-11-20T10:17:27+00:00")
+                self.assertFalse(self._prepared())
+                self.assertIn("systemctl stop picwise-checks.service", self.log.read_text())
+                self.assertIn("the checks' bot changed: its round is started again on this release", said)
                 changed.write_text(kept)
                 self.log.unlink()
 

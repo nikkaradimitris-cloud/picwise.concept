@@ -49,6 +49,7 @@ from __future__ import annotations
 import argparse
 import gc
 import gzip
+import http.client
 import json
 import os
 import sys
@@ -172,11 +173,15 @@ def fetch(url: str, limit: int) -> Answer:
         headers = error.headers or {}
         try:
             body = error.read(64 * 1024)
-        except OSError:
+        except (OSError, http.client.HTTPException):
             body = b""
         return Answer(error.code, headers.get("Content-Type", ""), body, final_url=url,
                       retry_after=str(headers.get("Retry-After", "") or ""))
-    except (urllib.error.URLError, OSError, ValueError) as error:
+    except (urllib.error.URLError, OSError, ValueError, http.client.HTTPException) as error:
+        # http.client.HTTPException: a body cut short (IncompleteRead), a status line or a
+        # header the shop's server garbled; no answer, asked again at the end of the shop's
+        # round like a timeout. Before 24/11 it went up through the round and ended it: the
+        # night of 24/11 was not recorded (an IncompleteRead at 03:05 UTC).
         reason = getattr(error, "reason", error)
         return Answer(error=reason if isinstance(reason, str) else type(reason).__name__)
 
@@ -457,6 +462,18 @@ def ask_shop(rows: list[Row], *, fetch: Fetch, sleep: Callable[[float], None], c
                       pages_200=counts["pages_200"], pages_read=counts["pages_read"], catalogue_read=shopify,
                       crawl_delay=delay)
     return ShopResult(night, answers, state["stopped"])
+
+
+def _ended(answers: Mapping[str, PageAnswer], why: str) -> ShopResult:
+    """A shop's night ended by an error: its answers so far, counted as `ask_shop` counts
+    them (its robots.txt among the requests, since it was asked first)."""
+    counts: Counter = Counter({"requests": 1, "answers": 1})
+    for answer in answers.values():
+        _count(counts, answer)
+    night = ShopNight(requests=counts["requests"], answers=counts["answers"], refused=counts["refused"],
+                      pages_200=counts["pages_200"], pages_read=counts["pages_read"],
+                      catalogue_read=any(answer.in_catalogue for answer in answers.values()))
+    return ShopResult(night, dict(answers), f"error: {why}")
 
 
 def prices_by_page(rows: Iterable[Row]) -> dict[tuple[str, str], set]:
@@ -751,8 +768,21 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
     def one(shop: str) -> None:
         done = {key: kept[key] for key in order[shop] if key in kept}
         started = clock()
-        result = ask_shop([rows[key] for key in order[shop]], fetch=fetch, sleep=sleep, clock=clock,
-                          deadline=deadline, pause=pause, done=done, keep=tonight.keep, readers=readers)
+        got: dict[str, PageAnswer] = dict(done)
+
+        def keep(key: str, answer: PageAnswer) -> None:
+            got[key] = answer
+            tonight.keep(key, answer)
+
+        try:
+            result = ask_shop([rows[key] for key in order[shop]], fetch=fetch, sleep=sleep, clock=clock,
+                              deadline=deadline, pause=pause, done=done, keep=keep, readers=readers)
+        except Exception as error:  # noqa: BLE001 - one shop never ends the whole round
+            # What went wrong with one shop's asking ends that shop's night, never the round:
+            # its answers so far count, as for a shop stopped by the deadline.
+            say(f"the checks: {shop}: its asking ended by an error ({type(error).__name__}); "
+                f"its {len(got):,} answers count")
+            result = _ended(got, type(error).__name__)
         with lock:
             results[shop] = result
             seconds[shop] = clock() - started

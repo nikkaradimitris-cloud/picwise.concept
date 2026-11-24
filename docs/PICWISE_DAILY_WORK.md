@@ -76,7 +76,7 @@ by email and to their phone. The owner answers in that session, once a day.
    cannot be checked, with their day (on day 4 a shop leaves); the shops out by Awin's
    reading; the products not shown until checked (never asked by their shop's day 4, an
    old feed with no fresh reading) and how many wait at the cap's gate. Its limits (a
-   failed round, no night for over a day, a round that was ours, a brake that held, an Awin
+   failed round, no night recorded by 03:30 UTC of the day (from 24/11; a day later before), a round that was ours, a brake that held, an Awin
    reading that waits for the owner's word, a night the cap's gate did not stand) go first,
    like every limit. The public note (`/prepared.json`, its `checks`) says what the preparation applied
    of it, and carries the bot's note too (`checks.bot`), for a day the run cannot be read.

@@ -275,6 +275,74 @@ class ANightEndToEndTests(unittest.TestCase):
         self.assertNotIn("\x1f", printed)
 
 
+class OneShopNeverEndsTheRoundTests(unittest.TestCase):
+    """The night of 24/11 was not recorded: a shop's body cut short (http.client.IncompleteRead,
+    no OSError) went up from `fetch` through the round at 03:05 UTC and ended it."""
+
+    def test_a_body_cut_short_is_no_answer_not_an_error_that_goes_up(self) -> None:
+        import http.client
+        from unittest import mock
+
+        class CutShort:
+            status = 200
+            headers = {"Content-Type": "text/html"}
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_exc) -> bool:
+                return False
+
+            def read(self, _limit: int) -> bytes:
+                raise http.client.IncompleteRead(b"")
+
+            def geturl(self) -> str:
+                return "https://kettles.invalid/p/1"
+
+        with mock.patch.object(bot._OPENER, "open", return_value=CutShort()):
+            answer = bot.fetch("https://kettles.invalid/p/1", 1024)
+        self.assertEqual((answer.status, answer.error), (0, "IncompleteRead"))
+        with mock.patch.object(bot._OPENER, "open", side_effect=http.client.BadStatusLine("garbled")):
+            self.assertEqual(bot.fetch("https://kettles.invalid/p/1", 1024).error, "BadStatusLine")
+
+    def test_an_error_in_one_shops_asking_ends_that_shops_night_only(self) -> None:
+        page = (PRODUCT_PAGE % "24.99").encode()
+        rows = {row.key: row for row in (_row(1), _row(2))}
+        broken = {f"Broken\x1f{n}": Row(key=f"Broken\x1f{n}", shop="Broken", product_id=f"b{n}",
+                                        address=f"https://broken.invalid/p/{n}", title="Zentra Kettle",
+                                        price=24.99, skus=frozenset({"ZK-1"})) for n in range(1, 4)}
+        everything = {**rows, **broken}
+        kettles = Shop({"/robots.txt": bot.Answer(404), "/p/1": bot.Answer(200, "text/html", page),
+                        "/p/2": bot.Answer(410)})
+        other = Shop({"/robots.txt": bot.Answer(404), "/p/1": bot.Answer(200, "text/html", page)})
+
+        def fetch(url: str, limit: int) -> bot.Answer:
+            if "broken.invalid" in url:
+                if url.endswith("/p/2"):
+                    raise RuntimeError("something no one foresaw")
+                return other.fetch(url, limit)
+            return kettles.fetch(url, limit)
+
+        said: list[str] = []
+        ledger = L.Ledger()
+        night, made = bot.run(everything, shown=set(everything), parts={}, shared_ids=set(), candidates=[],
+                              ledger=ledger, night=date(2026, 12, 1), fetch=fetch, sleep=kettles.sleep,
+                              clock=kettles.clock, deadline=1e9, workers=1, pause=3.0, awin=None, feeds={},
+                              owner_cut_shops=[], owner_awin_word=False, say=said.append)
+        # The night is recorded: the other shop judged as ever, the broken one's answer so far counts.
+        self.assertEqual(night.note["night"], "2026-12-01")
+        self.assertEqual(ledger.products["Kettles\x1f1"].state, PASSED)
+        self.assertEqual(ledger.products["Kettles\x1f2"].reason, GONE)
+        self.assertEqual(ledger.products["Broken\x1f1"].state, PASSED)
+        self.assertNotEqual(ledger.products.get("Broken\x1f3") and ledger.products["Broken\x1f3"].state, PASSED)
+        self.assertIn("Broken: its asking ended by an error (RuntimeError); its 1 answers count", "\n".join(said))
+        self.assertEqual(night.note["asked_by_shop"]["Broken"][2], "error: RuntimeError")
+        # And it is not called a shop that cannot be checked.
+        from picwise_checks.verdicts import shop_checkable
+
+        self.assertTrue(shop_checkable(bot._ended({}, "RuntimeError").night)[0])
+
+
 class TheOldFeedRuleCountedWhileItWaitsTests(unittest.TestCase):
     def test_what_the_rule_would_not_show_is_counted_and_nothing_changes(self) -> None:
         # Rules 5.6.4, Proposed: a feed over 7 days old; a product of it with no reading of its

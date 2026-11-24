@@ -133,6 +133,10 @@ class Health:
             self.over.append(what)
 
 
+# When the checks' night of the day is due (UTC): recorded at 03:05, with a margin.
+CHECKS_DUE = (3, 30)
+
+
 def last_result(unit: str, runner: Run) -> str:
     """How a service that runs and ends ended its last run: "success", "exit-code", ..."""
     shown = runner(["systemctl", "show", unit, "-p", "Result", "--value"]).strip()
@@ -252,13 +256,18 @@ def look_at_checks(check: Health, runner: Run) -> None:
         check.limit(result not in ("success", "unknown", ""), f"the checks' last round ended: {result}")
         return
     night = str(note.get("night") or "")
+    # The bot records the night at 03:05 UTC under that morning's date (the preparation of
+    # 04:17 reads it): from 03:30 UTC today's night is due, before it yesterday's. Until 24/11
+    # a night was missed only a day later (the night of 24/11, its round ended by an error,
+    # read as within every limit that morning).
+    due = check.now.date() - timedelta(days=0 if (check.now.hour, check.now.minute) >= CHECKS_DUE else 1)
     try:
-        late = (check.now.date() - datetime.fromisoformat(night).date()).days
+        late = (due - datetime.fromisoformat(night).date()).days
     except ValueError:
         late = None
     check.say(f"checks, the night of {night or 'no date'}: {note.get('shops_asked', 0)} shops asked; the last round: {result}")
     check.limit(result not in ("success", "unknown", ""), f"the checks' last round ended: {result}")
-    check.limit(late is None or late > 1, f"the checks recorded no night since {night or 'ever'}")
+    check.limit(late is None or late > 0, f"the checks recorded no night since {night or 'ever'}")
     if note.get("ours"):
         check.say("checks: the round was ours, fewer than half of the shops answered at all; nothing recorded")
         check.limit(True, "the checks' round was ours: fewer than half of the shops answered (rules 7.1)")

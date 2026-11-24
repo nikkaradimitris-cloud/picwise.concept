@@ -158,6 +158,14 @@ class HealthTests(_AServer, unittest.TestCase):
         self.assertIn("over the limit: the checks' cutting stopped until the owner's word (rules 7.4)", over)
         self.assertIn("over the limit: a reading of Awin that would put many shops out waits for the owner's word (rules 5.6.3)", over)
         self.assertIn("over the limit: the checks recorded no night since 2026-11-19", over)
+        # The night of the day is due from 03:30 UTC: at 08:07 yesterday's is a night missed
+        # (24/11: the round ended by an error at 03:05, read as within every limit).
+        self.write(self.folder / "checks-note.json", {**note, "night": "2026-11-21"})
+        self.assertIn("over the limit: the checks recorded no night since 2026-11-21", self.over(self.printed()))
+        early = io.StringIO()
+        with redirect_stdout(early):
+            print_health.main(now=NOW.replace(hour=2), runner=_runner())
+        self.assertNotIn("over the limit: the checks recorded no night since 2026-11-21", early.getvalue())
         self.write(self.folder / "checks-note.json", {"night": "2026-11-22", "shops_asked": 151, "ours": True})
         self.assertIn("over the limit: the checks' round was ours: fewer than half of the shops answered (rules 7.1)",
                       self.over(self.printed()))
