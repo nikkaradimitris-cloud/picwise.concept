@@ -2813,10 +2813,11 @@ def _price_first_answer(
 # "monitor" to a million: «Ναι» to hiding a product whose price is far above every other of
 # its kind). Far: at least `FAR_DEARER` times the next dearest, in an answer of `FAR_ANSWER`
 # products or more. Measured on the live site that day, the 200 searches of the home page and
-# its departments (179 with a bar): at twenty times in answers of twenty or more it takes out
-# only that monitor and an ASUS motherboard at the same price; at ten times it would also take
-# out real products (a handmade £880 knife among 8 knife sets, a £3,504 dinner service).
-FAR_DEARER = 20.0
+# its departments (179 with a bar): twenty times in answers of twenty took out only that monitor
+# and an ASUS motherboard at the same price (ten times would also take out real products, a
+# handmade £880 knife and a £3,504 dinner service); the owner set forty («40 φορές ... είναι
+# okay»: shoes of £5,000 exist), which still takes out both.
+FAR_DEARER = 40.0
 FAR_ANSWER = 20
 FAR_LEFT_OUT_MOST = 3
 

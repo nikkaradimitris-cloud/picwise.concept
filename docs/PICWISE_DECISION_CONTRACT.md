@@ -1014,10 +1014,11 @@ price", from 2026-11-19; from 2026-11-15 to 2026-11-19 they were read after offe
   again for every price; its words are not logged as a new search.
 - **A product far dearer than the rest, decided by the owner, 2026-11-24** («Ναι», of GamingKit's iiyama 24"
   monitor at £1,281,010.87, its feed's price, which ran the bar of "monitor" to a million): a product priced
-  twenty times the next dearest of its answer or more, in an answer of twenty products or more, is left out of
-  it before the bar, the order and the counter (`search_selection._without_far_dearer`). Measured that day on
-  the 200 searches of the home page and its departments: it takes out that monitor and a motherboard at the same
-  price, nothing else; ten times would take out real products (a handmade £880 knife, a £3,504 dinner service).
+  forty times the next dearest of its answer or more (his number: «40 φορές ... είναι okay», shoes of £5,000
+  exist), in an answer of twenty products or more, is left out of it before the bar, the order and the counter
+  (`search_selection._without_far_dearer`). Measured that day on the 200 searches of the home page and its
+  departments: twenty times took out that monitor and a motherboard at the same price, nothing else, and forty
+  still takes out both; ten times would take out real products (a handmade £880 knife, a £3,504 dinner service).
 - Pinned by `tests/test_picwise_price_bar.py`.
 
 ## The price's history on the cards, decided by the owner, 2026-11-13
