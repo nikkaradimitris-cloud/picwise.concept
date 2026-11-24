@@ -8,6 +8,13 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **(24/11, 17:20 Athens): DEPLOYED `102e725` (release `20261124T134110Z-102e725`): forty times, the brackets, the 95 lowest
+  prices, shorter deployments; 110,410 products.** (PROGRESS.md, 24/11 17:20.) The floors reach only products with an AI line
+  (679,407 rows undecided). Put to the owner: monitors £60 and sofas £150 are above real products (22" at £52-£58, sofas at
+  £124-£130). **The manufacturers** are on `claude/brands-merge-2026-11-24` (`2241efa`, today's code + the brands of 20/11,
+  tests green): measure on today's catalogue, show him, deploy apart on his word. The next deployment that changes only
+  `@answer_only` functions should say "not prepared again" (about 5 minutes): check it.
+
 - **(24/11, 16:45 Athens): BUILT, TESTED, NOT DEPLOYED, ONE «ανέβασε» FOR ALL (his choice): forty times (`9906319`), the
   brackets only for a colour, the 95 lowest prices of the categories (`3789353`), shorter deployments (`d473e5c`).** (PROGRESS.md,
   24/11 16:05 and 16:45.) The deployment prepares the catalogue (about 30 minutes). Then read live: "monitor"'s bar ends at a real
