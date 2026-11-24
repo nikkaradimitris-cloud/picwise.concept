@@ -8,6 +8,15 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **(24/11, 13:00 Athens): THE CHECKS' BOT MEND IS DEPLOYED (`40bd3e3`, release `20261124T102839Z-40bd3e3`), on the owner's
+  «Ανέβασε»; the round started again from its kept answers. THEN A READ-ONLY LOOK AT THREE FAULTS HE SAW, NOTHING ELSE CHANGED.**
+  (PROGRESS.md, 24/11 13:00.) **Found:** (1) the price bar is broken in 45 of 179 searches by GamingKit's six-decimal prices
+  ("269.448001" read as 269,448,001 by `decision_labels.parse_price_amount`): GamingKit's products fall out of price ranges and
+  stand last in cheapest-first; the fix (a dot followed by more than three digits is decimal) is proposed, NOT BUILT, waits for
+  his word. (2) PCHUB.UK: our buttons are sound to Awin's link; its titles show "&quot;" (feed HTML-encoded, escaped twice);
+  reading its links for "&amp;" on the server is proposed, not done. (3) InStock UK's prices are right: he sees euros from
+  Greece. **Next:** check on 25/11 that the night of 25/11 was recorded (health run: "the night of 2026-11-25").
+
 - **(24/11, 12:40 Athens, the daily session): THE CHECKS' NIGHT OF 24/11 WAS NOT RECORDED: THE BOT'S ROUND ENDED BY AN ERROR AT
   03:05 UTC (`http.client.IncompleteRead`, a shop's page cut short, raised from `fetch` and up through the whole round). MENDED ON
   THE WORK BRANCH, TESTED, NOT DEPLOYED: IT WAITS FOR THE OWNER'S «ναι».** (PROGRESS.md, 24/11 12:40.) Fast suite: every module but the two known (359 modules, 3,492 tests; `look_home_store.py` of the morning mended to parse on Python 3.11 too). The preparation of 04:17
