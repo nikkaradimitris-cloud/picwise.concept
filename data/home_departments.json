@@ -273,7 +273,7 @@
    {
     "kind": "ram_memory",
     "name": "RAM",
-    "query": "ram",
+    "query": "ram memory",
     "drawing": ""
    },
    {
@@ -285,7 +285,7 @@
    {
     "kind": "power_supply",
     "name": "PC power supplies",
-    "query": "power supply",
+    "query": "pc power supply",
     "drawing": ""
    },
    {
@@ -631,7 +631,7 @@
    {
     "kind": "cookware",
     "name": "Pots & pans",
-    "query": "cookware",
+    "query": "pots and pans",
     "drawing": ""
    },
    {
@@ -667,7 +667,7 @@
    {
     "kind": "glassware",
     "name": "Glasses",
-    "query": "glassware",
+    "query": "drinking glasses",
     "drawing": ""
    },
    {
@@ -679,7 +679,7 @@
    {
     "kind": "food_storage",
     "name": "Food storage",
-    "query": "food storage",
+    "query": "food containers",
     "drawing": ""
    },
    {
