@@ -15,6 +15,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from api.index import app as deployment_app  # noqa: E402
+from picwise_surface import home_store  # noqa: E402
 
 
 def _call_wsgi(path: str, query_string: str = "") -> tuple[str, dict[str, str], str]:
@@ -58,6 +59,9 @@ class PickWiseStage35PublicSearchResultPageTests(unittest.TestCase):
         self.assertNotIn("checkout", body.lower())
 
     def test_search_route_handles_no_data_honestly(self) -> None:
+        # This pins today's page of 2026-11-12, which since the owner's «ανέβασε» of 2026-11-24 is the home page with the store's switch off (the way back); the same guarantees on the store's pages: tests/test_picwise_home_store_live.py.
+        home_store.set_home_store_on_for_tests(False)
+        self.addCleanup(home_store.set_home_store_on_for_tests, None)
         status, _headers, body = _call_wsgi("/search", f"q={quote('   ')}")
         self.assertEqual(status, "200 OK")
         # A search of blanks is the page without a search (the design of 2026-10-31):

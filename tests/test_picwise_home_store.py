@@ -140,10 +140,18 @@ class _Switch:
 
 
 class TheSwitchTests(_Switch, unittest.TestCase):
-    def test_the_switch_is_built_off(self) -> None:
+    def test_the_switch_is_on_on_the_owners_word_and_the_strip_stays_off(self) -> None:
+        # Owner, 2026-11-24 (10:40 Athens), told that every part is built and what the look
+        # on the server's data found (the specification's 9.1): «Ανέβασε το όλο έχουμε άλλα
+        # πράγματα να κάνουμε». The phone strip is not part of it: off by its own line until
+        # the proof of 7.5.
         payload = json.loads((ROOT / "data" / "home_store_switch.json").read_text(encoding="utf-8"))
-        self.assertIs(payload["on"], False)
-        self.assertFalse(home_store.home_store_on())
+        self.assertIs(payload["on"], True)
+        self.assertEqual(payload["set"], "2026-11-24")
+        self.assertIn("«Ανέβασε το όλο", payload["by"])
+        self.assertIs(payload["strip"], False)
+        self.assertTrue(home_store.home_store_on())
+        self.assertFalse(home_store.strip_shown())
 
     def test_only_true_turns_it_on(self) -> None:
         folder = Path(tempfile.mkdtemp())

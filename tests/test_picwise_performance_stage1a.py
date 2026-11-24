@@ -12,6 +12,7 @@ if str(SRC) not in sys.path:
 
 from picwise_app import PicwiseLocalApp  # noqa: E402
 from picwise_search import resolve_live_search, search_warmup  # noqa: E402
+from picwise_surface import home_store  # noqa: E402
 from picwise_search.index_resolver_adapter import get_cached_offline_search_index  # noqa: E402
 from picwise_search.live_search_resolver import _vocabulary_registry  # noqa: E402
 from picwise_search_memory.canonical_registry import (  # noqa: E402
@@ -52,6 +53,9 @@ class PicwisePerformanceStage1ATests(unittest.TestCase):
         # (as the stage 1B and 1C performance tests already do).
         search_warmup._reset_search_warmup_for_tests()
         self.addCleanup(search_warmup._reset_search_warmup_for_tests)
+        # The landing shell these pin is today's page of 2026-11-12, which since the owner's «ανέβασε» of 2026-11-24 is the home page with the store's switch off (the way back); the same guarantees on the store's pages: tests/test_picwise_home_store_live.py.
+        home_store.set_home_store_on_for_tests(False)
+        self.addCleanup(home_store.set_home_store_on_for_tests, None)
         self.app = PicwiseLocalApp()
 
     def test_empty_homepage_does_not_call_resolve_live_search(self) -> None:

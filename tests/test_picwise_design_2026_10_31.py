@@ -51,6 +51,7 @@ from picwise_providers.decision_labels import (  # noqa: E402
 )
 from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
 from picwise_search import resolve_live_search  # noqa: E402
+from picwise_surface import home_store  # noqa: E402
 from picwise_surface.browser_lists import (  # noqa: E402
     BROWSER_LISTS_SCRIPT,
     FAVOURITES_STORAGE_KEY,
@@ -358,6 +359,9 @@ class SingleProductTests(_FeedMixin, unittest.TestCase):
 
 class HistoryAndFavouritesTests(unittest.TestCase):
     def setUp(self) -> None:
+        # These pin today's page of 2026-11-12, which since the owner's «ανέβασε» of 2026-11-24 is the home page with the store's switch off (the way back); the same guarantees on the store's pages: tests/test_picwise_home_store_live.py.
+        home_store.set_home_store_on_for_tests(False)
+        self.addCleanup(home_store.set_home_store_on_for_tests, None)
         self.page = _call("/")
 
     def test_they_replace_login_and_register(self) -> None:
@@ -419,6 +423,9 @@ class HistoryAndFavouritesTests(unittest.TestCase):
 
 class HomePageTests(unittest.TestCase):
     def setUp(self) -> None:
+        # These pin today's page of 2026-11-12, which since the owner's «ανέβασε» of 2026-11-24 is the home page with the store's switch off (the way back); the same guarantees on the store's pages: tests/test_picwise_home_store_live.py.
+        home_store.set_home_store_on_for_tests(False)
+        self.addCleanup(home_store.set_home_store_on_for_tests, None)
         self.page = _call("/")
 
     def test_the_home_page_keeps_its_heading_and_three_short_facts(self) -> None:

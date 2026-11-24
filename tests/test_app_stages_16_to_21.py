@@ -24,7 +24,7 @@ from picwise_feeds import (  # noqa: E402
 )
 from picwise_integrations import prepare_subby_dashboard_payload  # noqa: E402
 from picwise_redirects import build_redirect_tracking_payload, resolve_redirect  # noqa: E402
-from picwise_surface import render_landing_surface  # noqa: E402
+from picwise_surface import home_store, render_landing_surface  # noqa: E402
 
 
 def _pick_open_port() -> int:
@@ -75,6 +75,9 @@ class AppHttpEndpointTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        # These pin today's page of 2026-11-12, which since the owner's «ανέβασε» of 2026-11-24 is the home page with the store's switch off (the way back); the same guarantees on the store's pages: tests/test_picwise_home_store_live.py.
+        home_store.set_home_store_on_for_tests(False)
+        cls.addClassCleanup(home_store.set_home_store_on_for_tests, None)
         from picwise_search.index_resolver_adapter import get_cached_offline_search_index
         from picwise_search.live_search_resolver import resolve_live_search
 

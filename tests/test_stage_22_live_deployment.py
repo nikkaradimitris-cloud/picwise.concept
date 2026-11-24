@@ -23,6 +23,7 @@ if str(SRC) not in sys.path:
 from api.index import app as deployment_app  # noqa: E402
 from picwise_integrations.subby_dashboard import UrllibSubbyBridgeEventSender  # noqa: E402
 from wsgi import app as wsgi_app  # noqa: E402
+from picwise_surface import home_store  # noqa: E402
 
 
 def _call_wsgi(path: str, query_string: str = "") -> tuple[str, dict[str, str], str]:
@@ -48,6 +49,11 @@ def _call_wsgi(path: str, query_string: str = "") -> tuple[str, dict[str, str], 
 
 
 class DeploymentEntrypointTests(unittest.TestCase):
+    def setUp(self) -> None:
+        # These pin today's page of 2026-11-12, which since the owner's «ανέβασε» of 2026-11-24 is the home page with the store's switch off (the way back); the same guarantees on the store's pages: tests/test_picwise_home_store_live.py.
+        home_store.set_home_store_on_for_tests(False)
+        self.addCleanup(home_store.set_home_store_on_for_tests, None)
+
     @staticmethod
     def _extract_location(headers: dict[str, str]) -> str:
         for key, value in headers.items():

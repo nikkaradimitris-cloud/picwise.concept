@@ -39,7 +39,7 @@ for path in (HERE, ROOT, ROOT / "src"):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
-from picwise_surface import seo  # noqa: E402
+from picwise_surface import home_store, seo  # noqa: E402
 import test_picwise_google_protection as protection  # noqa: E402
 from test_picwise_google_protection import _NOINDEX, _SEARCH_PAGES, _call_wsgi, _NoFeedMixin  # noqa: E402
 from test_picwise_prepared_catalogue import _PreparedMixin, _feed_rows  # noqa: E402
@@ -240,6 +240,9 @@ class TitleAndHeadingTests(_PreparedMixin, unittest.TestCase):
         self.assertIn("&lt;/title&gt;&lt;script&gt;alert(1)&lt;/script&gt; — PicWise</title>", page)
 
     def test_the_home_page_keeps_its_own_title_and_heading(self) -> None:
+        # This pins today's page of 2026-11-12, which since the owner's «ανέβασε» of 2026-11-24 is the home page with the store's switch off (the way back); the same guarantees on the store's pages: tests/test_picwise_home_store_live.py.
+        home_store.set_home_store_on_for_tests(False)
+        self.addCleanup(home_store.set_home_store_on_for_tests, None)
         self._write_feed(_feed_rows())
         page = self._page("")
         self.assertIn("<title>PicWise — Find the product you want in UK shops</title>", page)
