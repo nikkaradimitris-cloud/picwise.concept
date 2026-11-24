@@ -8,6 +8,13 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **(24/11, 16:45 Athens): BUILT, TESTED, NOT DEPLOYED, ONE «ανέβασε» FOR ALL (his choice): forty times (`9906319`), the
+  brackets only for a colour, the 95 lowest prices of the categories (`3789353`), shorter deployments (`d473e5c`).** (PROGRESS.md,
+  24/11 16:05 and 16:45.) The deployment prepares the catalogue (about 30 minutes). Then read live: "monitor"'s bar ends at a real
+  price; "perfume" has no card under £10; a later deployment touching only `@answer_only` functions says "not prepared again".
+  **A function the search runs only when it answers gets `@answer_only`** (`picwise_providers.answer_only`); never mark one the
+  preparation runs (a wrong mark only slows deployments: the file is then frozen whole).
+
 - **(24/11, 15:45 Athens): DEPLOYED on the owner's «Ανέβασε»: the price read to the penny, the titles' HTML codes, the card's
   sizes and colours (`12b1fbf`, release `20261124T115915Z-12b1fbf`, the catalogue prepared again: 117,272 products).** (PROGRESS.md,
   24/11 15:45.) Read live: the bars and the filter right, GamingKit in its place, no "&quot;"; Fila's Tenconi one card "From £32.50
