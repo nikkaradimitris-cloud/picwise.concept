@@ -8,6 +8,14 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **(24/11, 13:50 Athens): THE PRICE READ TO THE PENNY IS BUILT AND TESTED ON THE WORK BRANCH (`b6806aa`), NOT DEPLOYED: IT WAITS
+  FOR THE OWNER'S «ανέβασε».** (PROGRESS.md, 24/11 13:50.) GamingKit's "269.448001" is £269.45, not 269,448,001: the price bar,
+  the filter, cheapest-first and the shops' caps; the memory puts right what it kept under the old reading (no fake fall).
+  **Its deployment prepares the catalogue again (about 30 minutes)**; then read live: "laptop", "tv", "dehumidifier" have a bar
+  that ends at a real price, and "dehumidifier" £100-£300 shows the Beurer LE250 (£269.45). **PCHUB.UK:** our links are sound
+  (read on the server); 2 of 23 of its pages are 404 (the checks' night should cut them now the bot is mended); no 503 met.
+  Put to him, not built: the titles with "&quot;" (PCHUB.UK 1,564, GamingKit 1,577).
+
 - **(24/11, 13:00 Athens): THE CHECKS' BOT MEND IS DEPLOYED (`40bd3e3`, release `20261124T102839Z-40bd3e3`), on the owner's
   «Ανέβασε»; the round started again from its kept answers. THEN A READ-ONLY LOOK AT THREE FAULTS HE SAW, NOTHING ELSE CHANGED.**
   (PROGRESS.md, 24/11 13:00.) **Found:** (1) the price bar is broken in 45 of 179 searches by GamingKit's six-decimal prices
