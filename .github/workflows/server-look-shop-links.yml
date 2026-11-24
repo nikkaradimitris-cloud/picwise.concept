@@ -8,7 +8,8 @@
 # public and so is this log: the server's names and addresses are masked; the script prints
 # hosts, counts and parameter names, never an address or a link.
 #
-# Run: 2026-11-24 13:10 Athens, PCHUB.UK beside Back to the Office, GamingKit and Tooled Up (to run again, change this line and push).
+# Run: 2026-11-24 13:10 Athens, PCHUB.UK beside Back to the Office, GamingKit and Tooled Up; again 13:35, the
+# addresses' depth and 24 of PCHUB.UK's pages of each shape (to run again, change this line and push).
 name: Server look at a few shops' links (read-only)
 on:
   push:

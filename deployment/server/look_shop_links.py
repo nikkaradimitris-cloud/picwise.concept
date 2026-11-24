@@ -36,7 +36,7 @@ sys.path.insert(0, os.path.join(os.getcwd(), "deployment", "server"))
 PREPARED = "/srv/picwise/shared/prepared/catalogue.json.gz"
 SHOPS = ("PCHUB.UK", "Back to the Office", "GamingKit", "Tooled Up")
 ASK = ("PCHUB.UK",)
-PAGES = 8
+PAGES = 24
 _ENTITY = re.compile(r"&(?:amp|quot|lt|gt|apos|#\d+|#x[0-9a-f]+);", re.IGNORECASE)
 
 
@@ -62,7 +62,10 @@ def shape(url: str) -> str:
     if not parts.netloc:
         return "no address"
     path = parts.path or "/"
-    end = "ends .html" if path.endswith(".html") else ("ends /" if path.endswith("/") else "other path")
+    depth = len([segment for segment in path.split("/") if segment])
+    end = "the home page" if depth == 0 else (
+        ("ends .html" if path.endswith(".html") else ("ends /" if path.endswith("/") else "other path"))
+        + f", {depth} part{'s' if depth > 1 else ''}")
     query = "with query (" + ",".join(name for name, _ in parse_qsl(parts.query, keep_blank_values=True)) + ")" \
         if parts.query else "no query"
     return f"{parts.scheme} {end} {query}"
@@ -114,8 +117,16 @@ def ask_pages(products: list[Any], shop: str, *, pages: int, fetch=None, sleep=t
     lines = []
     chosen = [p for p in products
               if (extract_merchant_name(p.raw if isinstance(p.raw, dict) else {}) or "") == shop]
-    step = max(1, len(chosen) // pages) if chosen else 1
-    for product in chosen[::step][:pages]:
+    # As many of each shape of address as the pages allow, spread over the shop's products.
+    by_shape: dict[str, list[Any]] = defaultdict(list)
+    for product in chosen:
+        by_shape[shape(str((product.raw if isinstance(product.raw, dict) else {}).get("merchant_deep_link") or ""))].append(product)
+    each = max(1, pages // max(1, len(by_shape)))
+    picked = []
+    for group in by_shape.values():
+        step = max(1, len(group) // each)
+        picked.extend(group[::step][:each])
+    for product in picked:
         raw = product.raw if isinstance(product.raw, dict) else {}
         own = str(raw.get("merchant_deep_link") or "").strip()
         if not own or "awin1.com" in urlsplit(own).netloc.lower():
