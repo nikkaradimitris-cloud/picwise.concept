@@ -8,6 +8,14 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **(24/11, 15:45 Athens): DEPLOYED on the owner's «Ανέβασε»: the price read to the penny, the titles' HTML codes, the card's
+  sizes and colours (`12b1fbf`, release `20261124T115915Z-12b1fbf`, the catalogue prepared again: 117,272 products).** (PROGRESS.md,
+  24/11 15:45.) Read live: the bars and the filter right, GamingKit in its place, no "&quot;"; Fila's Tenconi one card "From £32.50
+  (Vintage Indigo)". **Next:** on 25/11 and 26/11 read "hoodie" for Fila UK's sizes from its pages (the bot's new code) and the
+  Rolando's colours joined (the AI's families); the health run: the night of 25/11 recorded. **Put to the owner, not decided:**
+  a product whose price is far above the rest of its kind (GamingKit's iiyama monitor at £1,281,010.87, its feed's price) still
+  stretches that kind's bar.
+
 - **(24/11, 15:00 Athens): THREE MENDS BUILT AND TESTED ON THE WORK BRANCH, NOT DEPLOYED, ONE «ανέβασε» FOR ALL: the price
   read to the penny (`b6806aa`), the titles' HTML codes (`c365b24`), the card's sizes and colours (`f17e4e0`).** (PROGRESS.md, 24/11
   13:50 and 15:00.) The deployment prepares the catalogue again (about 30 minutes) and starts the checks' round again on the new
