@@ -78,7 +78,7 @@ class FingerprintTests(unittest.TestCase):
         root = _copy_of_the_code()
         self.addCleanup(shutil.rmtree, root, True)
         before = code_fingerprint(repo_root=root)
-        _edit(root, "data/category_switches.json", '"min": 150', '"min": 160')
+        _edit(root, "data/category_switches.json", '"min": 120', '"min": 130')
         self.assertNotEqual(code_fingerprint(repo_root=root), before)
 
     def test_the_marked_functions(self) -> None:

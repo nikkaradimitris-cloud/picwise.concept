@@ -595,7 +595,10 @@ class LowestPriceTests(unittest.TestCase):
         self.assertEqual(floors["Health & Beauty > Personal Care > Cosmetics > Perfume & Cologne"], 10.0)
         # A closed line carries its floor too, should it open («και ας είναι κλειστό»).
         self.assertEqual(floors["Health & Beauty > Personal Care > Cosmetics"], 5.0)
-        self.assertEqual(floors["Furniture > Sofas"], 150.0)
+        self.assertEqual(floors["Furniture > Sofas"], 100.0)
+        # Lowered on 24/11 after real products were seen under them: 22" monitors at £52-£58,
+        # sofas at £124-£130 (the owner: «ανέβασε όλα τα υπόλοιπα»).
+        self.assertEqual(floors["Electronics > Video > Computer Monitors"], 40.0)
         self.assertEqual(floors["Apparel & Accessories > Shoes"], 15.0)
         perfume = switches.floor(levels_of("Health & Beauty > Personal Care > Cosmetics > Perfume & Cologne > Women"))
         self.assertEqual(perfume.min_price, 10.0)
