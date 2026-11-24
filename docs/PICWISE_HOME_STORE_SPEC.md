@@ -20,10 +20,21 @@ Each rule names whose it is:
 - **Τι αποφάσισες (23/11).** Ανεβαίνουν όλα μαζί. Το πάνω μέρος με το χρυσοκίτρινο banner.
   Το πάτημα σε μια προσφορά ανοίγει τα προϊόντα της μέσα στο PicWise.
 - **Η σειρά.** (1) Προδιαγραφές: έγινε. (2) Εικόνες για όσα δεν είχες δει: έγιναν 24/11
-  και είπες «Ναι σε όλα». (3) Χτίσιμο από το Opus, πίσω από έναν διακόπτη: η αρχική έγινε,
-  **τα υπόλοιπα μέρη είναι το επόμενο βήμα** (ενότητα 10.1). (4) Τελικός έλεγχος (Fable).
-  (5) Το «ανέβασε» σου πάνω στα έτοιμα: θα σου πούμε «έτοιμο» και τι βρήκε ο έλεγχος, και
-  ανεβαίνουν με τη λέξη σου (ενότητα 3.1).
+  και είπες «Ναι σε όλα». (3) Χτίσιμο από το Opus, πίσω από έναν διακόπτη: έγινε 24/11, όλα
+  τα μέρη. (4) Τελικός έλεγχος (Fable): έγινε 24/11 (ενότητα 9.1). (5) **Το «ανέβασε» σου:
+  είναι το μόνο που μένει** (ενότητα 3.1).
+- **Τι βρήκε ο τελικός έλεγχος (24/11, πάνω στα δεδομένα του server, χωρίς αλλαγή στο
+  site).** Με τον διακόπτη κλειστό, οι 34 σελίδες και αναζητήσεις είναι ίδιες με τις
+  σημερινές. Με τον διακόπτη ανοιχτό: 35 σελίδες απαντούν, 223 links κανένα σπασμένο και
+  κανένα προς κατάστημα, κάθε Recommended ίδιο με της αναζήτησής του, οι 6 προσφορές
+  σωστές, στο κινητό τίποτα μικρότερο από 48 px ή πιο κοντά από 8 px στα καινούρια,
+  γρήγορο φόρτωμα. Διορθώθηκαν πριν το «ανέβασε»: δύο κουμπιά που ακουμπούσαν στις
+  προσφορές, δύο μικρά links μέσα σε κείμενο, και βγήκαν 4 είδη (robot mowers, winter
+  tyres, summer tyres, alloy wheels) επειδή έδειχναν τα ίδια προϊόντα με άλλο είδος ή
+  κανένα. Να ξέρεις: (α) κάθε βράδυ και σε κάθε επανεκκίνηση, για περίπου 1 λεπτό η αρχική
+  δείχνει χωρίς Recommended, προσφορές και αριθμούς· (β) όπου η αναζήτηση βγάζει άστοχο
+  Recommended (π.χ. στα «Footballs» μια μπάλα μπάσκετ), το ίδιο φαίνεται και στο τμήμα·
+  (γ) η λωρίδα «Add» μένει κλειστή μέχρι να δοκιμαστεί σε πραγματικό κινητό.
 - **Οι εικόνες της 24/11**, στον ίδιο καμβά με την αρχική, σε 5 σελίδες: «Τμήματα»,
   «Προσφορές», «Νέες σελίδες», «Αναζήτηση & κινητό», «Υπολογιστής». Δίπλα σε κάθε εικόνα,
   σε μπλε σημείωμα η μετάφραση και σε πορτοκαλί ό,τι θέλει τη λέξη σου.
@@ -36,7 +47,7 @@ Each rule names whose it is:
   2· στα προϊόντα μιας προσφοράς δεν μπαίνει Recommended (ο κανόνας σου της 15/11 για τα
   φίλτρα)· στο iPhone η λωρίδα δείχνει μόνο οδηγίες· οι εικόνες για όσα δεν έχεις δει
   γίνονται (από το Fable).
-- **Τι περιμένει ακόμα τη λέξη σου:** μόνο το τελικό «ανέβασε», όταν χτιστούν και ελεγχθούν.
+- **Τι περιμένει ακόμα τη λέξη σου:** μόνο το τελικό «ανέβασε»· χτίστηκαν και ελέγχθηκαν.
   Στις 24/11, 01:36 είπες «Ναι σε όλα» για τα σημεία των εικόνων (ενότητα 8, σημεία 4 και
   6 έως 15) και «Τελείωνε και ανέβασε τα»: εκείνη την ώρα τα μέρη δεν ήταν χτισμένα, γι' αυτό
   δεν ανέβηκε τίποτα.
@@ -149,7 +160,7 @@ the other model that reaches a task stops and tells the owner, in Greek, to chan
 | H2 | FABLE | The pictures not seen yet, put to the owner (section 7.6); the points of section 8; his answers written into sections 6 to 8 | done 24/11: the pictures shown (7.6), his answers («Ναι σε όλα», 01:36 Athens) written into sections 7 and 8 |
 | H3 | OPUS | The home page of section 5, behind the switch | done 24/11 (`578008f`, `3cf6282`), the switch false; its entries to Parts B to D drawn only as each is built |
 | H4 | OPUS | Parts B to F (section 7), each to the owner's answers of H2, and the texts of trust (8.16) | done 24/11 (`a6fb6e3` to `90ba5e1`, 10.2), the switch false |
-| H5 | FABLE | The look before the «ανέβασε» (section 9); the owner's own taps on his phone | after H3 and H4 |
+| H5 | FABLE | The look before the «ανέβασε» (section 9); the owner's own taps on his phone | the look done 24/11 (9.1, `9e8db02` to `950c76e`), the switch false; his taps wait for the strip (7.5) |
 | H6 | owner | «ανέβασε»: the switch true in one commit, deployed as every switch is | his word, on the built pages (3.1) |
 
 Each of H3 and H4 in small closed steps, each with its tests, each a commit
@@ -684,6 +695,75 @@ Recommended card against its search; a night's offers against the cards'; the pa
 computer; today's 15 pages and 12 searches the same but the home page. Then the owner's own
 taps, on his phone: the strip and "Add"; a shop's button from the installed app (7.5).
 
+### 9.1 The look of 2026-11-24 (Fable)
+
+`deployment/server/look_home_store.py` on the server, read-only, in a unit of its own (the
+workflow `server-look-home-store.yml`, on its own branch), and
+`deployment/server/measure_store_pages.py` in a browser on the workflow's runner, over the
+pages the look drew. Two runs, 01:35 and 01:44 UTC: the first found what is under "Mended";
+the second, on the mended code (`950c76e`), is the one written here. The catalogue was the
+one prepared 2026-11-23 17:03 UTC; the site ran release `20261123T164018Z-64ec701`.
+
+| Asked (section 9) | Found |
+|---|---|
+| The switch off: today's pages and searches the same | 34 of 34 the same bytes as the running site (13 of today's pages, 9 addresses answering 404 as today, the 8 new ones among them, and 12 searches) |
+| The pages, the switch on | 35 answer 200; the home page and the six info pages indexable as today, the store's 16 new pages and the 12 searches `noindex` |
+| Every text against this file | the home page's ticks, banners (4), offers' row (6), Recommended (6) as written; "Some of our 108 UK shops" and "Our shops" say the same number; no strip drawn (`"strip": false`) |
+| Each section's missing state | before the night's facts the band, the offers' row and every number are left out, on the home page, a department, "Our shops" and the offers |
+| Every link followed inside the site | 223 more addresses: 0 broken, 0 leading out of the site; 43 shop buttons on the search pages, none pressed |
+| Each Recommended against its search | 168 of 168 the same product and price as their own search's first card |
+| A night's offers against the cards' | 6 offers of 6 shops; each offer's page answers (4 pages of kinds, 2 that lead to their one kind); each products' page shows only that shop's cards, none with a role; every counter is what was counted |
+| The phone's measures of 5.12, by a browser (390 and 360 px) | in what is the store's: nothing tapped under 48 px, none nearer than 8 px, no word under 12 px, nothing wider than the screen, no picture of the site without its file; 15 pages |
+| The pages on a computer (1,280 px) | the same 15 pages drawn; nothing wider than the screen |
+| Google's three measures (5.15), a slow phone (4x slower processor, slow 4G) | first paint 0.64 to 0.71 s; largest paint 0.71 to 1.00 s; layout shift 0.000; the slowest tap answered in 120 ms (home, a department, a search) |
+| "Our checks", sentence by sentence (7.3) | each sentence is a rule in force on the server since 22 to 23/11 |
+
+Not measured, and why: **the largest paint is without the shops' photos**, since the
+browser was let reach no other host (120 requests refused); a card's photo comes from its
+shop's server and is asked for only as it nears the screen, so on the home page and a
+department the first screen is the site's own drawings. The owner's own taps on his phone
+are not part of this look.
+
+The night's facts, as one worker works them out (10.2): the home page's 4.3 s; the
+departments' 44.2 s for 207 searches (median 202 ms, the slowest 1.2 s); together **48.5 s
+a worker**, in a thread beside its requests, after each night's catalogue and after each
+restart; memory from 761 to 864 MB a worker (the server: 23,463 MB, about 18,000 MB free).
+Until a worker's facts are ready its pages are in the missing state above, and a department
+shows all its kinds with no numbers. Not changed: one working-out shared by the three
+workers would shorten this; a later step, if the owner asks.
+
+Mended before the «ανέβασε» (`950c76e`), none of them a word a visitor reads but the four
+kinds:
+
+- The offers' page: "Offer terms" and "See the products" touched (5.12 asks 8 px): 8 px.
+- Two links inside a sentence of today's texts ("Affiliate Disclosure" on About, "Cookie
+  Policy" on Privacy, the only way to the Cookies page since 5.9) were 24 px high on the
+  dressed pages: 48 px to tap by padding that moves no line; no word changed.
+- **Four kinds taken off the departments' list** (211 to 207): robot mowers (their search
+  is the lawn mowers', the same 144 products), winter tyres and summer tyres (the tyres',
+  the same 1,721), alloy wheels (no product). Car tyres is then one kind and, as Lighting
+  and Perfume, leads to its search. **Told to the owner; back on his word.**
+- Five kinds' words (`ram memory`, `pc power supply`, `pots and pans`, `drinking glasses`,
+  `food containers`), which were understood as another kind: 0 such words now.
+- The look's own: a Recommended was compared with its search with their spaces as written
+  (11 false "unlike" in the first run); a picture not loaded yet was counted as broken.
+
+Left as found, for the owner to know:
+
+- **7 kinds show nothing tonight and are not drawn**: smart speakers, VR headsets, car
+  audio, hi-vis vests, water filter jugs, washer dryers, punch bags. They come back by
+  themselves when a shop has them.
+- **23 kinds have no Recommended** (too few products to choose among, or rings): their tile
+  shows the count and "from £…" only.
+- **Where the search's Recommended is off, the department shows the same**: "Footballs" a
+  basketball, "Shoes" a safety wader, "Servers" a console server, "Dinner sets" a single
+  bowl, "Plant pots" a raised bed. Matters of the search, parked on his word; this part
+  changes no ranking.
+- On today's search page, not the store's: two controls nearer than 8 px on a phone, and
+  the heart of 36 px (7.4). A later step, on his word.
+- The strip stays off (`"strip": false`) until a shop's button is proven from the
+  installed app on a real phone (7.5).
+
 ## 10. For the builder
 
 - Start: `PROJECT_RULES.md`, this file, `docs/LANDING_PAGE_SPEC.md` ("The Home Page",
@@ -758,4 +838,5 @@ Where the build differs from the pictures, and why (for H5 and the owner):
 What the nightly facts now work out (`home_store_facts`), after the home page's: each
 department kind's count, cheapest price and Recommended, and how many products each offer
 covers in each kind, by about 210 searches a worker, each as far as "More" opens it. **H5
-measures their time and memory on the server before the «ανέβασε».**
+measured their time and memory on the server (9.1): 48.5 s and about 100 MB a worker.** The
+kinds are 207 since the look (9.1).

@@ -8,6 +8,20 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **(24/11, 04:00 Athens): THE HOME PAGE AS A STORE: H5, THE LOOK, DONE (FABLE). EVERY PART IS BUILT AND LOOKED AT ON THE SERVER'S
+  DATA; THE SWITCH FALSE; THE STRIP OFF BY ITS OWN LINE; NOTHING DEPLOYED. WHAT IS LEFT IS THE OWNER'S «ανέβασε».** (PROGRESS.md,
+  24/11 04:00; the specification's 9.1.) He has been told it is ready and what the look found.
+  - **On his «ανέβασε» (and only then; his words of 01:36 do not count, the specification's 3.1):** one commit turning
+    `"on": true` in `data/home_store_switch.json` (`"strip"` stays false), pushed to the site's branch as every switch is
+    deployed; then the live site read (WebFetch): the home page, `/departments`, a department, `/offers`, a search, an info
+    page. For about a minute after the restart each worker's home page has no band, offers or numbers (the facts take 48.5 s
+    a worker): look again after it, not before.
+  - **Not to be undone without his word:** the four kinds taken off the departments' list by the look (robot mowers, winter
+    tyres, summer tyres, alloy wheels; 207 kinds), told to him.
+  - **Still off, his word needed:** the phone strip (`"strip": false`) until a shop's button is proven from the installed app
+    on a real phone (7.5), then his own taps; nothing declared to Google, the new pages `noindex`.
+  - **To look again** (read-only, about 4 minutes): change the "Run:" line of `.github/workflows/server-look-home-store.yml`
+    and push that commit to `claude/look-home-store`; the report is the run's log.
 - **(24/11, 02:15 Athens): THE HOME PAGE AS A STORE: H4 DONE (OPUS). PARTS B TO F AND THE TEXTS OF TRUST BUILT BEHIND THE SWITCH
   (`a6fb6e3` TO `90ba5e1`); THE SWITCH FALSE; THE STRIP OFF BY ITS OWN LINE; NOTHING DEPLOYED. NEXT: H5 ON FABLE 5.2.** (PROGRESS.md,
   24/11 02:15; the specification's 10.2.) **For a session on Fable 5.2:** the look of the specification's section 9 on the server's

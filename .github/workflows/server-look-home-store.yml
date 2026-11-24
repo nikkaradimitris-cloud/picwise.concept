@@ -18,7 +18,7 @@
 # public and so is this log: the server's names and addresses are masked; the scripts
 # print shops, titles and prices as the site shows them, never an address or a link.
 #
-# Run: 2026-11-24 04:05 Athens, the second look, after the first one's mends (to run again, change this line and push).
+# Run: 2026-11-24 03:44 Athens, the second look, after the first one's mends (to run again, change this line and push).
 # (A branch pushed with no commit of its own starts nothing: the first push did not run.)
 name: Server look at the home page as a store (read-only)
 on:
