@@ -8,6 +8,11 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **(24/11, 17:55 Athens): DEPLOYED `1e2e4c9` (release `20261124T141827Z-1e2e4c9`): the brands' pages ("What kind of Samsung
+  product?", a misspelled brand read as it, a brand with its kind its own products) and monitors £40, sofas £100.** (PROGRESS.md,
+  24/11 17:55.) Read live, right. Open: the manufacturers' file by the AI (thousands of makers and what each makes; trial of
+  200 done 20/11, kept for later by the owner); a measure of the brands on today's catalogue (`brands-measure.yml`) when wanted.
+
 - **(24/11, 17:20 Athens): DEPLOYED `102e725` (release `20261124T134110Z-102e725`): forty times, the brackets, the 95 lowest
   prices, shorter deployments; 110,410 products.** (PROGRESS.md, 24/11 17:20.) The floors reach only products with an AI line
   (679,407 rows undecided). Put to the owner: monitors £60 and sofas £150 are above real products (22" at £52-£58, sofas at
