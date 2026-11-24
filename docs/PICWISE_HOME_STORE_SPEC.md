@@ -148,7 +148,7 @@ the other model that reaches a task stops and tells the owner, in Greek, to chan
 | H1 | FABLE | This specification; the picture and its drawings in the repository | done 23/11 |
 | H2 | FABLE | The pictures not seen yet, put to the owner (section 7.6); the points of section 8; his answers written into sections 6 to 8 | done 24/11: the pictures shown (7.6), his answers («Ναι σε όλα», 01:36 Athens) written into sections 7 and 8 |
 | H3 | OPUS | The home page of section 5, behind the switch | done 24/11 (`578008f`, `3cf6282`), the switch false; its entries to Parts B to D drawn only as each is built |
-| H4 | OPUS | Parts B to F (section 7), each to the owner's answers of H2, and the texts of trust (8.16) | **next**, in the order of 10.1 |
+| H4 | OPUS | Parts B to F (section 7), each to the owner's answers of H2, and the texts of trust (8.16) | done 24/11 (`a6fb6e3` to `90ba5e1`, 10.2), the switch false |
 | H5 | FABLE | The look before the «ανέβασε» (section 9); the owner's own taps on his phone | after H3 and H4 |
 | H6 | owner | «ανέβασε»: the switch true in one commit, deployed as every switch is | his word, on the built pages (3.1) |
 
@@ -726,3 +726,36 @@ builder: the deployment is H6, on the owner's word (3.1).
 
 Then H5 (Fable), section 9, with the list of the kinds' names in its report to the owner;
 then H6 (3.1).
+
+### 10.2 H4 as built (Opus, 2026-11-24)
+
+Six commits, each behind the switch, the switch false; every page byte for byte as today
+while it is. `PARTS_BUILT = {"departments", "offers", "pages"}`.
+
+1. `a6fb6e3` the texts of trust (8.16). 2. `8c5b244` Part B: `data/home_departments.json`
+(the four groups; 211 kinds whose Google line is open, in the department of that line,
+alloy wheels in Car tyres by hand; each kind's name and the words it searches written by
+hand), `/departments`, `/department/<name>`. 3. `58e8740` Part D, the four pages, word for
+word as pictured; "Shopping Ads: Google & Bing" off the shops' list and count. 4.
+`1945695` Part C: `/offers`, `/offers/<id>`, `/search?q=<kind>&offer=<id>`. 5. `4c65e0f`
+Part F: the search's page and the six info pages under the store's header and footer
+(an info page keeps its own head, indexable as today). 6. `90ba5e1` Part E: the strip,
+"Add", the sheet, the "×" kept in the browser and its line on the Cookies and Privacy
+pages; **off by its own line, `"strip": false`**, until the proof of 7.5.
+
+Where the build differs from the pictures, and why (for H5 and the owner):
+
+- **An offer's products have no price bar.** The bar chooses among every shop's prices, so
+  a price chosen there could leave the offer's shop with nothing; the page says it is one
+  shop's and links to the kind in every shop.
+- **An offer's products are counted among the first 400 of its kind's answer** (as far as
+  "More" can open a search, `MAX_SHOWN_PRODUCTS`): for a kind with more products than that
+  ("tyres"), a shop's products beyond them are not counted or shown there.
+- **A department's kinds are searched by the words of `data/home_departments.json`.** Each
+  kind's search must be read in H5 on the server's data: a word that finds another kind
+  ("server", "iron", "ring") is mended in that file before the «ανέβασε».
+
+What the nightly facts now work out (`home_store_facts`), after the home page's: each
+department kind's count, cheapest price and Recommended, and how many products each offer
+covers in each kind, by about 210 searches a worker, each as far as "More" opens it. **H5
+measures their time and memory on the server before the «ανέβασε».**
