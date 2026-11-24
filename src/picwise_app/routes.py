@@ -36,7 +36,7 @@ from picwise_integrations import (  # noqa: E402
 from picwise_search.live_search_resolver import parse_min_price, parse_shown_count  # noqa: E402
 from picwise_surface.seo import SITEMAP_PATH, declares_to_google, robots_txt, sitemap_xml  # noqa: E402
 from picwise_surface.home_store import PART_ADDRESSES, PARTS_BUILT, home_store_on  # noqa: E402
-from picwise_surface.store_pages import offer_page, render_offer_products, store_page  # noqa: E402
+from picwise_surface.store_pages import dress_info_page, offer_page, render_offer_products, store_page  # noqa: E402
 from picwise_surface import (  # noqa: E402
     render_about_page,
     render_affiliate_disclosure_page,
@@ -145,6 +145,8 @@ def answer(environ: dict[str, object], start_response: StartResponse, local_app:
 
     if path == "/terms":
         html = render_terms_page()
+        if home_store_on():
+            html = dress_info_page(html)
         body = html.encode("utf-8")
         return _response(
             "200 OK", "text/html; charset=utf-8", body, start_response, cache_control=INFO_PAGE_CACHE_CONTROL
@@ -152,6 +154,8 @@ def answer(environ: dict[str, object], start_response: StartResponse, local_app:
 
     if path == "/privacy":
         html = render_privacy_page()
+        if home_store_on():
+            html = dress_info_page(html)
         body = html.encode("utf-8")
         return _response(
             "200 OK", "text/html; charset=utf-8", body, start_response, cache_control=INFO_PAGE_CACHE_CONTROL
@@ -159,6 +163,8 @@ def answer(environ: dict[str, object], start_response: StartResponse, local_app:
 
     if path == "/cookies":
         html = render_cookies_page()
+        if home_store_on():
+            html = dress_info_page(html)
         body = html.encode("utf-8")
         return _response(
             "200 OK", "text/html; charset=utf-8", body, start_response, cache_control=INFO_PAGE_CACHE_CONTROL
@@ -166,6 +172,8 @@ def answer(environ: dict[str, object], start_response: StartResponse, local_app:
 
     if path == "/affiliate-disclosure":
         html = render_affiliate_disclosure_page()
+        if home_store_on():
+            html = dress_info_page(html)
         body = html.encode("utf-8")
         return _response(
             "200 OK", "text/html; charset=utf-8", body, start_response, cache_control=INFO_PAGE_CACHE_CONTROL
@@ -173,6 +181,8 @@ def answer(environ: dict[str, object], start_response: StartResponse, local_app:
 
     if path == "/contact":
         html = render_contact_page()
+        if home_store_on():
+            html = dress_info_page(html)
         body = html.encode("utf-8")
         return _response(
             "200 OK", "text/html; charset=utf-8", body, start_response, cache_control=INFO_PAGE_CACHE_CONTROL
@@ -180,6 +190,8 @@ def answer(environ: dict[str, object], start_response: StartResponse, local_app:
 
     if path == "/about":
         html = render_about_page()
+        if home_store_on():
+            html = dress_info_page(html)
         body = html.encode("utf-8")
         return _response(
             "200 OK", "text/html; charset=utf-8", body, start_response, cache_control=INFO_PAGE_CACHE_CONTROL

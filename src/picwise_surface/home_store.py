@@ -1416,11 +1416,13 @@ def render_store_page(
     current: str = "",
     parts: frozenset[str] | None = None,
     lists: HomeLists | None = None,
+    head: str = "",
 ) -> str:
     """A page of the store other than the home page (the specification, section 7): the
     store's header (its departments' row only where `nav_row`), the store's footer, the
     site's own search box, History, Favourites and "What is PicWise?". Never indexed:
-    nothing of the store is declared to Google (section 2)."""
+    nothing of the store is declared to Google (section 2); an info page that is today
+    keeps its own head (`head`: its title, description and address) as it is."""
     lists = lists if lists is not None else load_home_lists()
     parts = PARTS_BUILT if parts is None else frozenset(parts)
     return (
@@ -1428,10 +1430,8 @@ def render_store_page(
         f'<html lang="{SITE_LANGUAGE}"><head>'
         '<meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
-        f"{NOINDEX_META}"
-        f"<title>{escape(title)}</title>"
-        f"{icon_links_html()}"
-        f"{FONT_PRELOAD_HTML}"
+        + (head or f"{NOINDEX_META}<title>{escape(title)}</title>{icon_links_html()}")
+        + f"{FONT_PRELOAD_HTML}"
         f"<script>{HEAD_SCRIPT}</script>"
         f"<style>{_PAGE_STYLES}{BROWSER_LISTS_STYLES}{HOME_STORE_STYLES}{styles}</style>"
         '</head><body class="pw-hs-body">'

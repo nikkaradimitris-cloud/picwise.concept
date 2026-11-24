@@ -20,6 +20,10 @@ The owner decided them on 2026-11-24 («Ναι σε όλα»), to the pictures o
   (`?offer=<id>`): no Recommended, no "Lowest price", no place among the prices, the offer
   once above the cards, a link to the kind in every shop.
 
+- Part F, the other pages (7.4): the search's page and the info pages under the store's
+  header (without the departments' row) and over its footer, on its ground; on the
+  search's page two colours a little darker, so that they read (5.12).
+
 Every page is kept out of Google (`noindex`): nothing of the store is declared (section 2).
 What a page knows of the catalogue is worked out once a night (`home_store_facts`), never
 while it is drawn; what is not known yet is left out, never filled.
@@ -30,6 +34,7 @@ import re
 from dataclasses import replace
 from datetime import datetime, timezone
 from html import escape
+from html import unescape as html_unescape
 from itertools import groupby
 from typing import Any
 from urllib.parse import quote
@@ -566,7 +571,7 @@ def dress_offer_products(page: str, *, query: str, card: OfferCard) -> str:
     page = page.replace(frame, frame + offer_box(card), 1)
     more = f'href="/search?q={quote(query, safe="")}&amp;shown='
     page = page.replace(more, f'href="/search?q={quote(query, safe="")}&amp;offer={quote(card.offer_id, safe="")}&amp;shown=')
-    return page.replace("</style>", STORE_PAGES_STYLES + "</style>", 1)
+    return page
 
 
 def render_offer_products(query: str, offer_id: str, *, shown: int = 0) -> str | None:
@@ -590,7 +595,69 @@ def render_offer_products(query: str, offer_id: str, *, shown: int = 0) -> str |
     page = render_picwise_reference_surface(
         query=query, resolution=narrowed, source_page="search", catalogue=peek_search_catalogue_counts(), indexable=False
     )
-    return dress_offer_products(page, query=query, card=card) or None
+    page = dress_offer_products(page, query=query, card=card)
+    return dress_search_page(page, query) if page else None
+
+
+# ---- Part F: the other pages under the store's header and footer (7.4) ----
+SEARCH_PAGE_STYLES = (
+    ".pw-hs-search .pw-reference-frame{padding-top:14px;}"
+    # On the store's ground the page's notes take the store's grey (5.6:1; today's is
+    # 4.35:1), and "Listed as available" a green that reads on a card (5.4:1; 4.38:1).
+    ".pw-hs-search .pw-reference-disclaimer,.pw-hs-search .pw-demo-note,.pw-hs-search .pw-counter{color:var(--hs-muted);}"
+    ".pw-hs-search .pw-stock-listed,.pw-hs-search .pw-stock-verified{color:#187a44;}"
+)
+INFO_PAGE_STYLES = (
+    ".pw-hs-doc .pw-emphasis{padding:12px 14px;border:1px solid var(--hs-line);border-radius:12px;background:var(--hs-cream);}"
+    ".pw-hs-doc a{color:var(--hs-acc);font-weight:600;}"
+    ".pw-hs-doc p a{display:inline-block;min-height:24px;}"
+)
+
+
+def dress_search_page(page: str, query: str) -> str:
+    """A search's page under the store's header (no departments' row, so that the
+    Recommended and its button stay on the first screen) and over its footer; the page
+    as it was when it is not drawn as expected."""
+    top = re.search(r'<header class="pw-topbar">.*?</header>', page, flags=re.S)
+    box = re.search(r'<section class="pw-search-wrap".*?</section>', page, flags=re.S)
+    foot = re.search(r'<footer class="pw-footer">.*?</footer>', page, flags=re.S)
+    main = '<main class="pw-reference-viewport">'
+    if not (top and box and foot) or page.count(main) != 1 or page.count("<body>") != 1:
+        return page
+    header = hs._header_html(hs.load_home_lists(), hs.PARTS_BUILT, nav_row=False)
+    marker = 'name="q" value=""'
+    if header.count(marker) != 1:
+        return page
+    header = header.replace(marker, f'name="q" value="{escape(str(query or ""), quote=True)}"')
+    page = page.replace(box.group(0), "", 1)
+    page = page.replace(top.group(0), header, 1)
+    page = page.replace(foot.group(0), hs._footer_html(hs.PARTS_BUILT), 1)
+    page = page.replace(main, '<main class="pw-reference-viewport pw-hs pw-hs-search">', 1)
+    page = page.replace("<body>", '<body class="pw-hs-body">', 1)
+    return page.replace("</style>", hs.HOME_STORE_STYLES + STORE_PAGES_STYLES + SEARCH_PAGE_STYLES + "</style>", 1)
+
+
+def dress_info_page(page: str) -> str:
+    """An info page (About, Contact, Terms, Privacy, Cookies, Affiliate disclosure) under
+    the store's header and over its footer, its words and its head as they are; the page
+    as it was when it is not drawn as expected."""
+    head = re.search(r"<head>(.*?)<style>", page, flags=re.S)
+    card = re.search(r'<section class="pw-card pw-legal">(.*)</section>\s*<footer class="pw-footer">', page, flags=re.S)
+    if not (head and card):
+        return page
+    inner = card.group(1)
+    inner, titled = re.subn(r'<h1 class="pw-title">', '<h1 class="pw-hs-h1" id="pw-hs-h1">', inner, count=1)
+    if not titled:
+        return page
+    inner = inner.replace('<p class="pw-intro">', '<p class="pw-hs-doc-intro">', 1)
+    own_head = re.sub(r'<meta charset="utf-8">|<meta name="viewport"[^>]*>', "", head.group(1))
+    title = re.search(r"<title>(.*?)</title>", own_head, flags=re.S)
+    return hs.render_store_page(
+        title=html_unescape(title.group(1)) if title else "PicWise",
+        main_html=f'<article class="pw-hs-doc" aria-labelledby="pw-hs-h1">{inner}</article>',
+        styles=STORE_PAGES_STYLES + INFO_PAGE_STYLES,
+        head=own_head,
+    )
 
 
 _PAGES = {

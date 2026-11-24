@@ -390,6 +390,61 @@ class TheOffersTests(_On, unittest.TestCase):
         self.assertNotIn("kettle, at Geefix", _text(_call("/search", "q=kettle&offer=7")[2]))
 
 
+class TheOtherPagesTests(price_first._PageMixin, unittest.TestCase):
+    """Part F (7.4): the search's page and the info pages under the store's header."""
+
+    def setUp(self) -> None:
+        home_store.set_home_store_on_for_tests(True)
+        self.addCleanup(home_store.set_home_store_on_for_tests, None)
+
+    def test_a_search_under_the_store_s_header_its_cards_as_ever(self) -> None:
+        self._serve(price_first._PageMixin._kettles(self, [20, 30, 40, 50, 60, 70, 80, 90, 100]))
+        page = _call("/search", "q=kettle")[2]
+        markup = _markup(page)
+        self.assertIn('<main class="pw-reference-viewport pw-hs pw-hs-search">', markup)
+        self.assertIn('class="pw-hs-head"', markup)
+        self.assertNotIn('class="pw-hs-nav"', markup)
+        self.assertNotIn('class="pw-topbar"', markup)
+        self.assertEqual(markup.count('class="pw-search-input"'), 1)
+        self.assertIn('name="q" value="kettle"', markup)
+        self.assertIn('class="pw-hs-foot"', markup)
+        self.assertIn("No Cookie Policy", markup)
+        self.assertIn("pw-card-recommended", markup)
+        self.assertEqual(markup.count('<article class="pw-card'), 4)
+        self.assertIn('<meta name="robots" content="noindex">', page)
+        # The two colours that read (5.12).
+        self.assertIn(".pw-hs-search .pw-stock-listed,.pw-hs-search .pw-stock-verified{color:#187a44;}", page)
+
+    def test_off_the_search_is_today_s_byte_for_byte(self) -> None:
+        self._serve(price_first._PageMixin._kettles(self, [20, 30, 40, 50, 60, 70, 80, 90, 100]))
+        on = _call("/search", "q=kettle")[2]
+        home_store.set_home_store_on_for_tests(False)
+        off = _call("/search", "q=kettle")[2]
+        self.assertNotIn("pw-hs", off)
+        self.assertIn('<header class="pw-topbar">', off)
+        self.assertNotEqual(on, off)
+
+    def test_the_info_pages_keep_their_words_and_their_head(self) -> None:
+        for path in ("/about", "/contact", "/terms", "/privacy", "/cookies", "/affiliate-disclosure"):
+            on = _call(path)[2]
+            home_store.set_home_store_on_for_tests(False)
+            off = _call(path)[2]
+            home_store.set_home_store_on_for_tests(True)
+            self.assertIn('class="pw-hs-head"', on, path)
+            self.assertIn('class="pw-hs-foot"', on, path)
+            self.assertNotIn('class="pw-hs-nav"', on, path)
+            head_on, head_off = on.split("<style>")[0], off.split("<style>")[0]
+            self.assertIn(off.split("<title>")[1].split("</title>")[0], head_on, path)
+            for tag in re.findall(r'<link rel="canonical"[^>]*>|<meta name="description"[^>]*>', head_off):
+                self.assertIn(tag, head_on, path)
+            # Indexable as today: no "noindex" where today has none.
+            self.assertEqual('name="robots"' in head_on, 'name="robots"' in head_off, path)
+            article = _text(on).split("BACK TO TOP")[0]
+            card = re.search(r'<section class="pw-card pw-legal">(.*)</section>\s*<footer', off, flags=re.S).group(1)
+            words = " ".join(html.unescape(re.sub(r"<[^>]+>", " ", card)).split())
+            self.assertIn(words, article, path)
+
+
 class TheKindFactsTests(unittest.TestCase):
     def test_link_words(self) -> None:
         self.assertEqual(home_store_facts._link_words("Kettles"), "See kettles")

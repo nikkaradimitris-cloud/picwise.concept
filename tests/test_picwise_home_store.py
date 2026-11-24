@@ -185,8 +185,10 @@ class TheSwitchTests(_Switch, unittest.TestCase):
         # The owner's own heading (2026-11-24).
         self.assertIn('<h1 class="pw-hs-h1" id="pw-hs-h1">Arrive confused.<br>Leave decided.</h1>', page)
         self.assertNotIn('class="pw-hero-title"', _markup(page))
-        # A search is as before: only the page without one is the store.
-        self.assertNotIn("pw-hs-h1", _get("/search", "q=kettle"))
+        # A search is not the home page: its own page, under the store's header (7.4).
+        search = _markup(_get("/search", "q=kettle"))
+        self.assertNotIn('class="pw-hs-h1"', search)
+        self.assertNotIn("Arrive confused", search)
 
 
 class ThePageTests(_Switch, unittest.TestCase):

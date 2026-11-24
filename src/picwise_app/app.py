@@ -55,6 +55,7 @@ from picwise_surface import (
 )
 from picwise_surface.seo import robots_txt
 from picwise_surface.home_store import home_store_on, render_home_store_page
+from picwise_surface.store_pages import dress_search_page
 from picwise_surface.home_store_facts import current_home_facts
 from picwise_surface.trends import load_trends_panel
 from picwise_ai.store import assist_directory
@@ -290,6 +291,9 @@ class PicwiseLocalApp:
             html = _inject_product_gone(html, str(getattr(resolution, "display_query", "") or query))
         if is_empty_search_query(query):
             schedule_search_warmup_if_needed()
+        elif home_store_on():
+            # Under the store's header and footer (docs/PICWISE_HOME_STORE_SPEC.md, 7.4).
+            html = dress_search_page(html, query)
         return html
 
     def terms_html(self) -> str:
