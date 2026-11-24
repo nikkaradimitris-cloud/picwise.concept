@@ -36,6 +36,7 @@ from picwise_nlu.concept_understanding import (
 from picwise_nlu.product_concepts import broader_concepts, get_product_concepts_by_id, get_qualifiers
 from picwise_taxonomy.comparison_rules import comparison_rule
 
+from .answer_only import answer_only
 from .ai_shelves import checked_kinds, key_of
 from .shop_words import learned_kind
 from .contracts import FeedAvailabilityContext, OfferHealth, ProviderProduct
@@ -1953,6 +1954,7 @@ def _merchant_identity(product: ProviderProduct) -> str:
     return merchant.lower()
 
 
+@answer_only
 def _join_variants(
     groups: dict[str, list[ProviderProduct]], shop_of: Callable[[ProviderProduct], str] | None = None
 ) -> dict[str, list[ProviderProduct]]:
@@ -1964,6 +1966,7 @@ def _join_variants(
     return {root: [offer for member in joined for offer in groups[member]] for root, joined in members.items()}
 
 
+@answer_only
 def _variant_members(
     groups: dict[str, list[ProviderProduct]], shop_of: Callable[[ProviderProduct], str] | None = None
 ) -> dict[str, list[str]]:
@@ -2056,6 +2059,7 @@ def _price_text(amount: float, currency: str) -> str:
     return f"{sign}{amount:,.2f}" if sign else f"{amount:,.2f} {currency}".strip()
 
 
+@answer_only
 def _cheaper_elsewhere(
     members: list[str],
     groups: dict[str, list[ProviderProduct]],
@@ -2125,6 +2129,7 @@ def _cheaper_elsewhere(
     return sorted(kept, key=order), [sorted(card, key=order) for card in cards], marks
 
 
+@answer_only
 def _variant_titles(entry: _PricedProduct) -> tuple[str, ...]:
     """The titles of the shop's listings of a product shown, its own first: another
     shop's listings of it are the same variant, under that shop's words."""
@@ -2135,12 +2140,14 @@ def _variant_titles(entry: _PricedProduct) -> tuple[str, ...]:
     return tuple(titles)[:TITLES_READ]
 
 
+@answer_only
 def _own_offers(entry: _PricedProduct) -> list[ProviderProduct]:
     """The card's shop's listings of a product shown, its own first."""
     own_shop = _merchant_identity(entry.product)
     return [offer for offer in (entry.offers or (entry.product,)) if _merchant_identity(offer) == own_shop]
 
 
+@answer_only
 def _shop_options(entry: _PricedProduct) -> list[str]:
     """What the shop's own pages name in stock of a product shown, by listing
     (`checks_applied.OPTIONS_COLUMN`; owner, 2026-11-24)."""
@@ -2153,6 +2160,7 @@ def _shop_options(entry: _PricedProduct) -> list[str]:
 _PRICE_FROM_WORD_RE = re.compile(r"[^\W_]+(?:['’][^\W_]+)?")
 
 
+@answer_only
 def _price_from(entry: _PricedProduct) -> str | None:
     """None when the card's shop sells the product shown at one price; else the words that
     tell the card's listing (the cheapest) apart from its dearer ones, sizes aside ("Vintage
@@ -2184,6 +2192,7 @@ def _price_from(entry: _PricedProduct) -> str | None:
     return named if len(words) <= 4 and names_a_colour(named) else ""
 
 
+@answer_only
 def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduct]:
     """The answer's products, each once at its cheapest offer, cheapest first.
 
@@ -2302,6 +2311,7 @@ def candidates_signature(products: Iterable[tuple[str, float]]) -> str:
     return digest.hexdigest()[:32]
 
 
+@answer_only
 def _fitting_first(
     ordered: list[_PricedProduct], fitting: frozenset[str]
 ) -> tuple[list[_PricedProduct], _PricedProduct | None, str]:
@@ -2348,6 +2358,7 @@ def _middle_price(ordered: list[_PricedProduct]) -> float | None:
     return ordered[(counted - 1) // 2].price if counted else None
 
 
+@answer_only
 def _median_recommendation(ordered: list[_PricedProduct]) -> tuple[int | None, str]:
     """Which product of the answer is the Recommended, as (index, status).
 
@@ -2791,6 +2802,7 @@ def _doubtful_products_by_words(
     )
 
 
+@answer_only
 def _price_first_answer(
     members: list[tuple[ProviderProduct, dict[str, str]]],
     haystacks: list[dict[tuple[str, ...], str]],
@@ -2822,6 +2834,7 @@ FAR_ANSWER = 20
 FAR_LEFT_OUT_MOST = 3
 
 
+@answer_only
 def _without_far_dearer(ordered: list[_PricedProduct]) -> list[_PricedProduct]:
     """`ordered` (cheapest first) without its dearest products priced `FAR_DEARER` times the
     next dearest or more, `FAR_LEFT_OUT_MOST` at most."""
@@ -2841,6 +2854,7 @@ def _without_far_dearer(ordered: list[_PricedProduct]) -> list[_PricedProduct]:
 PRICE_BAR_STEPS = 24
 
 
+@answer_only
 def _price_bar(prices: list[float]) -> tuple[float, float, tuple[int, ...]]:
     """An answer's lowest and highest price, and how many of its products fall in each
     of `PRICE_BAR_STEPS` steps between them. The steps are of equal ratios, each price
@@ -2860,6 +2874,7 @@ def _price_bar(prices: list[float]) -> tuple[float, float, tuple[int, ...]]:
     return low, high, tuple(steps)
 
 
+@answer_only
 def _price_first_result(
     ordered: list[_PricedProduct],
     kept: tuple[_FilterUnit, ...],

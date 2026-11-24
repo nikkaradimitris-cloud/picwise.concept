@@ -46,6 +46,7 @@ _FIELDS = {
     "format": re.compile(r'"format":\s*"([^"]*)"'),
     "version": re.compile(r'"version":\s*(-?\d+)'),
     "code": re.compile(r'"code":\s*"([^"]*)"'),
+    "code_mode": re.compile(r'"code_mode":\s*"([^"]*)"'),
     "prepared_at": re.compile(r'"prepared_at":\s*"([^"]*)"'),
 }
 
@@ -80,7 +81,7 @@ def state_of(path: Path, *, now: datetime | None = None, within_hours: float | N
         return "unreadable", ""
     if head.get("format") != prepared_catalogue._FORMAT or head.get("version") != str(prepared_catalogue._VERSION):
         return "other_format", ""
-    if head.get("code") != prepared_catalogue.code_fingerprint():
+    if head.get("code") != prepared_catalogue.code_fingerprint(full=head.get("code_mode") == "full"):
         return "other_code", head.get("prepared_at", "")
     text = head.get("prepared_at", "")
     try:

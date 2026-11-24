@@ -417,6 +417,24 @@ def prepare_feed_catalogue(
     ]
     | None = None,
 ) -> PreparedCatalogue | None:
+    """`_prepare_feed_catalogue`, with the functions marked `@answer_only` it calls recorded
+    (`answer_only.preparing`): a file whose preparation called one is frozen whole."""
+    from .answer_only import preparing
+
+    with preparing():
+        return _prepare_feed_catalogue(feed_config, now=now, cap=cap)
+
+
+def _prepare_feed_catalogue(
+    feed_config: ProviderFeedConfig | None = None,
+    *,
+    now: datetime | None = None,
+    cap: Callable[
+        [tuple[ProviderProduct, ...], tuple[frozenset[str], ...], FeedAvailabilityContext],
+        Sequence[bool] | None,
+    ]
+    | None = None,
+) -> PreparedCatalogue | None:
     """The configured feed read and judged as a search reads it, ready to be written
     (`tools/prepare_catalogue.py`), or None when the feed cannot be read.
 

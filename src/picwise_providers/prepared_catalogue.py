@@ -30,6 +30,7 @@ age limit (`PICWISE_PREPARED_MAX_AGE_HOURS`, 30 by default).
 """
 from __future__ import annotations
 
+import ast
 import gzip
 import hashlib
 import json
@@ -41,6 +42,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from .answer_only import used_while_preparing
 from .contracts import FeedAvailabilityContext, ProviderFeedStatus, ProviderProduct
 from .kind_choices import KindChoice
 from .suggestions import SearchSuggestion
@@ -127,14 +129,46 @@ class PreparedCatalogue:
     choices: dict[str, tuple[KindChoice, ...]] = field(default_factory=dict)
 
 
-def code_fingerprint(*, repo_root: Path | None = None) -> str:
-    """One digest over every source file whose rules a prepared file freezes."""
+def _without_answer_only(source: bytes) -> bytes:
+    """A source file without the text of its functions marked `@answer_only` (each left as
+    its name), which the preparation never runs (`answer_only`; owner, 2026-11-24: shorter
+    deployments «εφόσον υπάρχει ασφάλεια ότι θα βγει σωστό»). A file that cannot be read as
+    Python is kept whole."""
+    try:
+        tree = ast.parse(source)
+    except (SyntaxError, ValueError):
+        return source
+    lines = source.decode("utf-8", "replace").splitlines(keepends=True)
+    spans = []
+    for node in tree.body:
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        marked = any(
+            (isinstance(decorator, ast.Name) and decorator.id == "answer_only")
+            or (isinstance(decorator, ast.Attribute) and decorator.attr == "answer_only")
+            for decorator in node.decorator_list
+        )
+        if marked and node.end_lineno is not None:
+            start = min(decorator.lineno for decorator in node.decorator_list)
+            spans.append((start, node.end_lineno, node.name))
+    for start, end, name in sorted(spans, reverse=True):
+        lines[start - 1:end] = [f"# answer only: {name}\n"]
+    return "".join(lines).encode("utf-8")
+
+
+def code_fingerprint(*, repo_root: Path | None = None, full: bool = False) -> str:
+    """One digest over every source file whose rules a prepared file freezes: without the
+    functions marked `@answer_only`, or, `full`, with them (the file of a preparation that
+    called one, `answer_only.used_while_preparing`)."""
     root = repo_root or _REPO_ROOT
     digest = hashlib.sha256(f"{_FORMAT}:{_VERSION}".encode())
     for package in _FROZEN_PACKAGES:
         for path in sorted((root / package).rglob("*.py")):
             digest.update(str(path.relative_to(root)).encode())
-            digest.update(hashlib.sha256(path.read_bytes()).digest())
+            source = path.read_bytes()
+            if not full and b"@answer_only" in source:
+                source = _without_answer_only(source)
+            digest.update(hashlib.sha256(source).digest())
     for name in _FROZEN_FILES:
         path = root / name
         if path.is_file():
@@ -254,10 +288,14 @@ def write_prepared_catalogue(prepared: PreparedCatalogue, path: Path) -> int:
                 [own_or_slot(fields[name]) for name in field_names],
             ]
         )
+    used = used_while_preparing()
     payload = {
         "format": _FORMAT,
         "version": _VERSION,
-        "code": code_fingerprint(),
+        # A preparation that called a function marked `@answer_only` is frozen whole: a wrong
+        # mark makes deployments slower, never the site wrong (`answer_only`).
+        "code": code_fingerprint(full=bool(used)),
+        "code_mode": "full" if used else "answer_only_left_out",
         "prepared_at": prepared.prepared_at.astimezone(timezone.utc).isoformat(),
         "feed_status": prepared.feed_status.to_dict(),
         "availability_context": prepared.availability_context.to_dict(),
@@ -312,7 +350,7 @@ def check_prepared_catalogue(path: Path, *, now: datetime | None = None) -> Prep
         return PreparedFileCheck("unreadable")
     if payload.get("format") != _FORMAT or payload.get("version") != _VERSION:
         return PreparedFileCheck("other_format")
-    if payload.get("code") != code_fingerprint():
+    if payload.get("code") != code_fingerprint(full=payload.get("code_mode") == "full"):
         return PreparedFileCheck("other_code")
     try:
         prepared_at = datetime.fromisoformat(str(payload["prepared_at"]))

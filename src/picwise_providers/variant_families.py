@@ -28,6 +28,7 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
+from .answer_only import answer_only
 from .contracts import ProviderProduct
 from .decision_labels import parse_price_amount
 from .normalization import extract_merchant_name
@@ -94,6 +95,7 @@ class _Families:
 _FAMILIES = _Families()
 
 
+@answer_only
 def families_of() -> dict[str, str]:
     """Each product's family as the AI decided it (`product_ref` to a family id); empty
     with no file (`PICWISE_FAMILIES_FILE`) or before the first answer."""
@@ -104,6 +106,7 @@ def _shop(product: ProviderProduct) -> str:
     return product_ref(product).split("\x1f", 1)[0]
 
 
+@answer_only
 def doubtful_sets(products: Iterable[ProviderProduct]) -> list[dict[str, Any]]:
     """The sets the AI is asked about: per shop, brand and the own words of the title's
     head (`head_key`: the name before " - ", " | " or ", "; the whole title without one),

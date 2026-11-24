@@ -18,6 +18,7 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 
+from .answer_only import answer_only
 from .product_variants import _COLOURS, _LETTER_SIZES
 
 COLOURS = "colours"
@@ -273,6 +274,7 @@ def variant_label(titles: Sequence[str], title: str) -> str:
     return ", ".join(named)
 
 
+@answer_only
 def variant_values(titles: Sequence[str]) -> tuple[tuple[str, tuple[str, ...]], ...]:
     """The variants one shop's titles of one product name, by kind (`KINDS`), each kind
     with two values at least, `KINDS_SHOWN` kinds at most; the first title is the card's,
@@ -326,6 +328,7 @@ _OPTION_KINDS = (
 )
 
 
+@answer_only
 def names_a_colour(text: str) -> bool:
     """Whether words name a colour: one of them is a colour a card names ("Vintage Indigo",
     "Grey Marl", "Black"), not a room or a use ("Bedroom"; owner, 2026-11-24, of "From £34.99
@@ -333,6 +336,7 @@ def names_a_colour(text: str) -> bool:
     return any(word in _SHOWN_COLOURS for word in re.findall(r"[a-z]+", str(text or "").lower()))
 
 
+@answer_only
 def option_kind(name: str) -> str:
     """The card's kind of a shop's option ("Size", "Shoe Size", "Colour", "Wattage")."""
     for pattern, kind in _OPTION_KINDS:
@@ -341,6 +345,7 @@ def option_kind(name: str) -> str:
     return OPTIONS
 
 
+@answer_only
 def shop_option_values(written: Sequence[str]) -> tuple[tuple[str, tuple[str, ...]], ...]:
     """The kinds and values the shop's own pages name in stock, from each listing's
     `shop_options` (JSON, the card's own first), each value once, in the shop's order, sizes
@@ -378,6 +383,7 @@ def shop_option_values(written: Sequence[str]) -> tuple[tuple[str, tuple[str, ..
     return tuple(kinds)
 
 
+@answer_only
 def merged_variants(
     from_titles: Sequence[tuple[str, tuple[str, ...]]], from_pages: Sequence[tuple[str, tuple[str, ...]]]
 ) -> tuple[tuple[str, tuple[str, ...]], ...]:
