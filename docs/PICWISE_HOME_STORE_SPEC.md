@@ -21,8 +21,8 @@ Each rule names whose it is:
   Το πάτημα σε μια προσφορά ανοίγει τα προϊόντα της μέσα στο PicWise.
 - **Η σειρά.** (1) Προδιαγραφές: έγινε. (2) Εικόνες για όσα δεν είχες δει: έγιναν 24/11
   και είπες «Ναι σε όλα». (3) Χτίσιμο από το Opus, πίσω από έναν διακόπτη: έγινε 24/11, όλα
-  τα μέρη. (4) Τελικός έλεγχος (Fable): έγινε 24/11 (ενότητα 9.1). (5) **Το «ανέβασε» σου:
-  είναι το μόνο που μένει** (ενότητα 3.1).
+  τα μέρη. (4) Τελικός έλεγχος (Fable): έγινε 24/11 (ενότητα 9.1). (5) Το «ανέβασε» σου:
+  **ανέβηκε 24/11, 11:20, με τη λέξη σου «Ανέβασε το όλο» (10:40)** (ενότητα 9.2).
 - **Τι βρήκε ο τελικός έλεγχος (24/11, πάνω στα δεδομένα του server, χωρίς αλλαγή στο
   site).** Με τον διακόπτη κλειστό, οι 34 σελίδες και αναζητήσεις είναι ίδιες με τις
   σημερινές. Με τον διακόπτη ανοιχτό: 35 σελίδες απαντούν, 223 links κανένα σπασμένο και
@@ -47,7 +47,8 @@ Each rule names whose it is:
   2· στα προϊόντα μιας προσφοράς δεν μπαίνει Recommended (ο κανόνας σου της 15/11 για τα
   φίλτρα)· στο iPhone η λωρίδα δείχνει μόνο οδηγίες· οι εικόνες για όσα δεν έχεις δει
   γίνονται (από το Fable).
-- **Τι περιμένει ακόμα τη λέξη σου:** μόνο το τελικό «ανέβασε»· χτίστηκαν και ελέγχθηκαν.
+- **Τι περιμένει ακόμα τη λέξη σου:** η λωρίδα «Add» (κλειστή μέχρι τη δοκιμή σε κινητό)·
+  τα 4 είδη που βγήκαν, αν τα θες πίσω· οτιδήποτε προς τη Google.
   Στις 24/11, 01:36 είπες «Ναι σε όλα» για τα σημεία των εικόνων (ενότητα 8, σημεία 4 και
   6 έως 15) και «Τελείωνε και ανέβασε τα»: εκείνη την ώρα τα μέρη δεν ήταν χτισμένα, γι' αυτό
   δεν ανέβηκε τίποτα.
@@ -161,7 +162,7 @@ the other model that reaches a task stops and tells the owner, in Greek, to chan
 | H3 | OPUS | The home page of section 5, behind the switch | done 24/11 (`578008f`, `3cf6282`), the switch false; its entries to Parts B to D drawn only as each is built |
 | H4 | OPUS | Parts B to F (section 7), each to the owner's answers of H2, and the texts of trust (8.16) | done 24/11 (`a6fb6e3` to `90ba5e1`, 10.2), the switch false |
 | H5 | FABLE | The look before the «ανέβασε» (section 9); the owner's own taps on his phone | the look done 24/11 (9.1, `9e8db02` to `950c76e`), the switch false; his taps wait for the strip (7.5) |
-| H6 | owner | «ανέβασε»: the switch true in one commit, deployed as every switch is | his word, on the built pages (3.1) |
+| H6 | owner | «ανέβασε»: the switch true in one commit, deployed as every switch is | **done 24/11**: his «Ανέβασε το όλο» (10:40 Athens), `768ff48`, live 11:20 Athens (9.2) |
 
 Each of H3 and H4 in small closed steps, each with its tests, each a commit
 (`PROJECT_RULES.md` 11). Nothing of them is deployed for a visitor to see while the switch is
@@ -763,6 +764,29 @@ Left as found, for the owner to know:
   the heart of 36 px (7.4). A later step, on his word.
 - The strip stays off (`"strip": false`) until a shop's button is proven from the
   installed app on a real phone (7.5).
+
+### 9.2 Live (2026-11-24)
+
+The owner, told that it was ready and what the look found: **«Ανέβασε το όλο έχουμε άλλα
+πράγματα να κάνουμε»** (10:40 Athens). `768ff48`: `data/home_store_switch.json` `"on": true`,
+`"strip"` false; deployed by run `45364135082`, release `20261124T091951Z-768ff48` (09:19
+UTC), the catalogue not prepared again (the change does not concern it; the one of 04:39 UTC
+in place). The tests that pin today's page of 2026-11-12 hold the switch off, since that page
+is the way back (none of their assertions changed); `tests/test_picwise_home_store_live.py`
+pins what they guarded on the store's pages.
+
+Read after it: the deployment's own check (the home page and the six info pages the same,
+live and on the server); the live home page by WebFetch (the heading, the three ticks, 4
+banners, 6 offers, 6 Recommended, "Some of our 108 UK shops", 13 departments, the footer and
+its "No Cookie Policy" line); a look on the server (run `45365330312`, read-only): 35 pages
+answering, 222 addresses with none broken and none leading out, 168 of 168 Recommended the
+same as their search's, the 6 offers consistent, the phone's measures as in 9.1, the night's
+facts 50.1 s a worker. **A web reader (WebFetch) said three live searches kept today's
+footer; the server's own read of the same pages (the look's part 0) found the store's frame
+on each, and a fourth WebFetch read did too: the reader's error, not the site's.**
+
+**The way back**: `"on": false` in one commit, deployed as every switch is; the home page
+and every page are then today's of 2026-11-12, byte for byte (9.1).
 
 ## 10. For the builder
 

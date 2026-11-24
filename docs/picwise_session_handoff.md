@@ -8,6 +8,13 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **(24/11, 11:45 Athens): THE HOME PAGE AS A STORE IS LIVE, on the owner's «Ανέβασε το όλο έχουμε άλλα πράγματα να κάνουμε»
+  (10:40). `768ff48`, release `20261124T091951Z-768ff48`; the switch true, the strip off by its own line.** (PROGRESS.md, 24/11
+  11:45; the specification's 9.2.) **The way back:** `"on": false` in `data/home_store_switch.json`, one commit, deployed as
+  every switch is (only on his word). The tests that pin today's page of 2026-11-12 hold the switch off;
+  `tests/test_picwise_home_store_live.py` pins the live pages. Still on his word: the strip (7.5), the four kinds taken off
+  the departments (9.1), anything to Google, `main`. He said «έχουμε άλλα πράγματα να κάνουμε»: the home page's work is done;
+  wait for his next subject.
 - **(24/11, 04:00 Athens): THE HOME PAGE AS A STORE: H5, THE LOOK, DONE (FABLE). EVERY PART IS BUILT AND LOOKED AT ON THE SERVER'S
   DATA; THE SWITCH FALSE; THE STRIP OFF BY ITS OWN LINE; NOTHING DEPLOYED. WHAT IS LEFT IS THE OWNER'S «ανέβασε».** (PROGRESS.md,
   24/11 04:00; the specification's 9.1.) He has been told it is ready and what the look found.
