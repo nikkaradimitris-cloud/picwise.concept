@@ -415,6 +415,34 @@ def part_four(ask: Callable[..., Any], home: Any, kinds: Any, before: dict[str, 
     return pages
 
 
+def part_zero() -> None:
+    """A search's page as the running site answers it, against what the store's dressing
+    needs of it (`store_pages.dress_search_page`): which of its conditions holds."""
+    import re
+    from picwise_surface import home_store, store_pages
+
+    say("== 0. A search's page as the running site answers it ==")
+    say(f"  the switch as this release's file says: {home_store.home_store_on()}")
+    header = home_store._header_html(home_store.load_home_lists(), home_store.PARTS_BUILT, nav_row=False)
+    say(f"  the store's header holds the box's marker {header.count('name=\"q\" value=\"\"')} time(s)")
+    for query in ("blender", "kettle"):
+        status, raw = running(f"/search?q={query}")
+        page = raw.decode("utf-8", "replace")
+        dressed = store_pages.dress_search_page(page, query)
+        say(f"  «{query}»: {status}, {len(page):,} characters; the store's frame: {'yes' if 'pw-hs-body' in page else 'no'}; "
+            f"this commit dresses it: {'yes' if dressed != page else 'no'}")
+        for name, found in (
+            ("<header class=\"pw-topbar\">…</header>", len(re.findall(r'<header class="pw-topbar">.*?</header>', page, flags=re.S))),
+            ("<section class=\"pw-search-wrap\"…</section>", len(re.findall(r'<section class="pw-search-wrap".*?</section>', page, flags=re.S))),
+            ("<footer class=\"pw-footer\">…</footer>", len(re.findall(r'<footer class="pw-footer">.*?</footer>', page, flags=re.S))),
+            ("<main class=\"pw-reference-viewport\">", page.count('<main class="pw-reference-viewport">')),
+            ("<body>", page.count("<body>")),
+            ("<body", page.count("<body")),
+            ("<main", page.count("<main")),
+        ):
+            say(f"    {name}: {found}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--no-pages", action="store_true", help="print the report only")
@@ -449,6 +477,8 @@ def main(argv: list[str] | None = None) -> int:
         say(f"the catalogue could not be read ({done})")
         return 1
 
+    if not args.local:
+        part_zero()
     home_store.set_home_store_on_for_tests(False)
     part_one(ask)
 
