@@ -33,6 +33,7 @@ from picwise_providers.decision_labels import (  # noqa: E402
     UNCOMPARABLE_PRICE_ROLE_LABEL,
     build_fact_based_choice_labels,
     format_price_display,
+    misread_until_mend,
     parse_price_amount,
 )
 from picwise_providers.state import clear_provider_feed_pipeline_cache  # noqa: E402
@@ -81,6 +82,23 @@ class PriceParsingTests(unittest.TestCase):
         self.assertEqual(parse_price_amount("1.299,50"), 1299.5)
         self.assertEqual(parse_price_amount("999,00"), 999.0)
         self.assertEqual(parse_price_amount("19,99 EUR"), 19.99)
+
+    def test_more_than_three_decimals_are_decimals_read_to_the_penny(self) -> None:
+        # Owner, 2026-11-24: GamingKit's "269.448001" (shown £269.45) had been read as
+        # 269,448,001, so the price filter and the order went wrong in 45 searches.
+        self.assertEqual(parse_price_amount("269.448001"), 269.45)
+        self.assertEqual(parse_price_amount("269.448001 GBP"), 269.45)
+        self.assertEqual(parse_price_amount("5365.920001"), 5365.92)
+        self.assertEqual(parse_price_amount("26.904001"), 26.9)
+        self.assertEqual(parse_price_amount("269,448001"), 269.45)
+        self.assertEqual(parse_price_amount("1,269.448001"), 1269.45)
+        # A group of three digits still groups thousands.
+        self.assertEqual(parse_price_amount("1.299"), 1299.0)
+        self.assertEqual(parse_price_amount("1,299"), 1299.0)
+        self.assertEqual(misread_until_mend("269.448001"), 269448001.0)
+        for value in ("269.45", "1,299.50", "1.299", "1,269.448001", ""):
+            with self.subTest(value=value):
+                self.assertIsNone(misread_until_mend(value))
 
     def test_unusable_prices_are_rejected_rather_than_guessed(self) -> None:
         for value in ("", "See details", "Price on request", "0.00", "-5", None):

@@ -47,7 +47,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from .contracts import ProviderProduct
-from .decision_labels import parse_price_amount
+from .decision_labels import misread_until_mend, parse_price_amount
 from .normalization import SALE_USED, extract_merchant_name, sale_price_reading
 from .product_identity import valid_gtin
 
@@ -140,6 +140,21 @@ def _pence(product: ProviderProduct) -> int | None:
     return None if amount is None else int(round(amount * 100))
 
 
+def _misread(products: Sequence[ProviderProduct]) -> list[tuple[int, str, int]]:
+    """(today's pence, key, the pence read before 2026-11-24) of tonight's products whose
+    price the reader misread until then (`decision_labels.misread_until_mend`: "269.448001"
+    as 269,448,001): the memory's prices kept under that reading are put right, the same
+    price, so the mend tells no change of price (a fall of £269 million would be a fake
+    saving, `PROJECT_RULES.md` §4)."""
+    found = []
+    for product in products:
+        before = misread_until_mend(product.price_text)
+        now = _pence(product)
+        if before is not None and now is not None:
+            found.append((now, product_key(product), int(round(before * 100))))
+    return found
+
+
 def _row(product: ProviderProduct, sale_reading: str) -> tuple[str, str, str, str, str, int | None, str, int]:
     raw = product.raw if isinstance(product.raw, Mapping) else {}
     gtin = valid_gtin(raw)
@@ -228,6 +243,11 @@ def remember_night(
             for statement in _SCHEMA:
                 db.execute(statement)
             _add_seen_nights(db)
+            # The prices kept under the reader's misreading until 2026-11-24, put right
+            # before tonight is compared with them (`_misread`).
+            misread = _misread(products)
+            db.executemany("UPDATE prices SET price_pence = ? WHERE key = ? AND price_pence = ?", misread)
+            db.executemany("UPDATE products SET price_pence = ? WHERE key = ? AND price_pence = ?", misread)
             before = db.execute("SELECT MAX(night) FROM nights WHERE night < ?", (night,)).fetchone()[0]
             db.execute("CREATE TEMP TABLE tonight (key TEXT PRIMARY KEY, shop TEXT, product_id TEXT, gtin TEXT, title TEXT, price_pence INTEGER, currency TEXT, on_sale INTEGER)")
             db.executemany("INSERT INTO tonight VALUES (?, ?, ?, ?, ?, ?, ?, ?)", tonight.values())

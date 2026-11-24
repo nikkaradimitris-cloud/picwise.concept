@@ -23,6 +23,7 @@ choice is recommended.
 from __future__ import annotations
 
 import re
+from decimal import ROUND_HALF_EVEN, Decimal
 from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
 
@@ -77,6 +78,13 @@ def parse_price_amount(price_text: str) -> float | None:
     the usual feed convention. Getting this wrong would invert a price rank and put a
     false "lowest price" label on the dearest product, so it is parsed rather than
     guessed at.
+
+    A single separator followed by more than three digits groups no thousands (a group
+    is three digits): it is the decimal point, and the amount is read to the penny, as
+    the card shows it (`reference._display_price`). Until 2026-11-24 such a price was read
+    as a whole number: GamingKit's "269.448001" (shown £269.45) stood at £269,448,001 in
+    the order, the price bar, the price filter and the shops' caps (owner, 2026-11-24:
+    «το φίλτρο τιμής δεν δουλεύει σωστά σε κάποιες κατηγορίες»; `misread_until_mend`).
     """
     text = str(price_text or "")
     match = _PRICE_NUMBER_RE.search(text)
@@ -95,7 +103,7 @@ def parse_price_amount(price_text: str) -> float | None:
     elif has_dot or has_comma:
         separator = "." if has_dot else ","
         parts = raw.split(separator)
-        if len(parts) == 2 and len(parts[1]) in {1, 2}:
+        if len(parts) == 2 and len(parts[1]) != 3:
             raw = f"{parts[0]}.{parts[1]}"
         else:
             raw = "".join(parts)
@@ -105,7 +113,35 @@ def parse_price_amount(price_text: str) -> float | None:
         return None
     if value <= 0:
         return None
+    if "." in raw and len(raw.rsplit(".", 1)[1]) > 2:
+        # To the penny, rounded as the card's price is drawn (`Decimal`'s own rounding).
+        value = float(Decimal(raw).quantize(Decimal("0.01"), rounding=ROUND_HALF_EVEN))
+        if value <= 0:
+            return None
     return value
+
+
+def misread_until_mend(price_text: str) -> float | None:
+    """The amount `parse_price_amount` gave a price before 2026-11-24, when it differs
+    from today's reading, else None: a single separator followed by more than three digits
+    was read as grouping thousands ("269.448001" as 269,448,001). The catalogue's memory
+    reads it once, to put right the prices it kept under that reading
+    (`catalogue_memory.remember_night`), so that the mend tells no change of price."""
+    text = str(price_text or "")
+    match = _PRICE_NUMBER_RE.search(text)
+    if match is None or (match.start() > 0 and text[match.start() - 1] == "-"):
+        return None
+    raw = match.group(0)
+    if ("." in raw) == ("," in raw):
+        return None
+    parts = raw.split("." if "." in raw else ",")
+    if len(parts) != 2 or len(parts[1]) <= 3:
+        return None
+    try:
+        before = float("".join(parts))
+    except ValueError:
+        return None
+    return before if before > 0 and before != parse_price_amount(text) else None
 
 
 def format_price_display(product: Mapping[str, Any]) -> str:

@@ -212,6 +212,25 @@ class PriceToTests(_FeedMixin, unittest.TestCase):
             self.assertIn(">Any price</output>", _bar(page), value)
 
 
+class SixDecimalPriceTests(_FeedMixin, unittest.TestCase):
+    """A shop that writes its prices with six decimals (owner, 2026-11-24: «το φίλτρο τιμής
+    δεν δουλεύει σωστά σε κάποιες κατηγορίες»; GamingKit's "269.448001", shown £269.45, stood
+    at £269,448,001: the bar ran to billions, the product left every range and came last)."""
+
+    def setUp(self) -> None:
+        rows = _kettles()
+        rows[6]["price"] = "45.448001"
+        self._serve(rows)
+
+    def test_the_bar_ends_at_the_dearest_real_price(self) -> None:
+        self.assertIn('data-low="8.00" data-high="120.00"', _bar(_call("/search", {"q": "kettle"})))
+
+    def test_the_product_stands_at_its_price_in_the_order_and_in_a_range(self) -> None:
+        self.assertEqual(_prices(_call("/search", {"q": "kettle", "min": "40", "max": "50"})), [45.45])
+        self.assertEqual(_prices(_call("/search", {"q": "kettle", "min": "30", "shown": "8"})),
+                         [34.0, 39.0, 45.45, 52.0, 60.0, 74.0, 89.0, 120.0])
+
+
 class ShortAnswerTests(_FeedMixin, unittest.TestCase):
     def test_an_answer_of_one_page_has_no_bar(self) -> None:
         self._serve(_kettles((8.0, 12.0, 40.0, 90.0)))

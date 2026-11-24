@@ -146,6 +146,35 @@ class MemoryTests(unittest.TestCase):
         self.assertNotIn(str(self.path.parent), json.dumps(summary))
 
 
+class MisreadPriceTests(unittest.TestCase):
+    """The prices the reader misread until 2026-11-24 ("45.448001" as 45,448,001) are put
+    right in the memory the first night after the mend: the same price, no change told, so
+    no card reads a fall of millions (a fake saving, `PROJECT_RULES.md` §4)."""
+
+    def setUp(self) -> None:
+        self.path = Path(tempfile.mkdtemp()) / "memory.sqlite"
+
+    def _rows(self, sql: str, *args) -> list[tuple]:
+        with sqlite3.connect(str(self.path)) as db:
+            return db.execute(sql, args).fetchall()
+
+    def test_the_misread_price_is_put_right_and_no_change_is_told(self) -> None:
+        products = [_product("g1", shop="Fixture Games", price="45.448001"), _product("a")]
+        remember_night(self.path, products, prepared_at=NIGHT_1)
+        # The memory as the reader before the mend wrote it.
+        with sqlite3.connect(str(self.path)) as db:
+            db.execute("UPDATE prices SET price_pence = 4544800100 WHERE price_pence = 4545")
+            db.execute("UPDATE products SET price_pence = 4544800100 WHERE price_pence = 4545")
+        summary = remember_night(self.path, products, prepared_at=NIGHT_2)
+        self.assertEqual(summary["price_changed_tonight"], 0)
+        self.assertEqual(
+            self._rows("SELECT product_id, night, prices.price_pence FROM prices JOIN products USING (key) ORDER BY 1, 2"),
+            [("a", "2026-11-12", 2000), ("g1", "2026-11-12", 4545)],
+        )
+        self.assertEqual(self._rows("SELECT price_pence, price_changed_on FROM products WHERE product_id = 'g1'"),
+                         [(4545, None)])
+
+
 class SeenNightsTests(unittest.TestCase):
     """Which prepared nights a product was seen on: bit 0 its last, bit 1 the one before."""
 
