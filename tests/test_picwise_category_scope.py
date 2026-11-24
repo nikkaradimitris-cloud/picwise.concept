@@ -536,3 +536,69 @@ class TheHealthRunTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LowestPriceTests(unittest.TestCase):
+    """The lowest price of a category (owner, 2026-11-24: «κανένα προϊόν μέσα στα αρώματα δεν
+    μπορεί να έχει λιγότερο από 10 λίρες ... όλες τις κατηγορίες και υποκατηγορίες ... ένα
+    ελάχιστο ποσό»; the 95 floors proposed, «Τα εγκρίνω όπως είναι», closed lines too)."""
+
+    ANSWERS = {
+        "laptop": "Electronics > Computers > Laptops",
+        "mouse": "Electronics > Electronics Accessories > Computer Components > Input Devices",
+        "plain": "Electronics > Video",
+    }
+
+    def setUp(self) -> None:
+        category_scope.reset_for_tests()
+        self.addCleanup(category_scope.reset_for_tests)
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.path = Path(folder.name) / "list.json"
+
+    def _switches(self, lines: list[dict]) -> category_scope.Switches | None:
+        self.path.write_text(json.dumps({"on": True, "lines": lines}), encoding="utf-8")
+        return category_scope.read_switches(self.path)
+
+    def _priced(self, key: str, price: str) -> SimpleNamespace:
+        product = _product(key)
+        product.price_text = price
+        return product
+
+    def test_under_its_lines_floor_leaves_a_line_without_one_takes_the_nearest_above(self) -> None:
+        switches = self._switches([
+            {"google": "Electronics", "name": "Τεχνολογία", "on": True, "min": 10},
+            {"google": "Electronics > Computers", "name": "Υπολογιστές", "on": True, "min": 60},
+            {"google": "Electronics > Electronics Accessories", "name": "Αξεσουάρ", "on": True},
+        ])
+        products = [self._priced("laptop", "49.99"), self._priced("laptop", "299.00"),
+                    self._priced("mouse", "7.99"), self._priced("mouse", "12.00"),
+                    self._priced("plain", "9.99"), self._priced("laptop", "")]
+        keep = category_scope.settle(products, switches=switches, table=self.ANSWERS)
+        self.assertEqual(keep, [False, True, False, True, False, True])
+        note = category_scope.last_note()
+        self.assertEqual(note["under_floor"], 3)
+        lines = {line["google"]: line for line in note["lines"]}
+        self.assertEqual((lines["Electronics > Computers"]["min"], lines["Electronics > Computers"]["under_floor"]),
+                         (60.0, 1))
+        self.assertEqual(lines["Electronics"]["under_floor"], 2)
+        self.assertNotIn("min", lines["Electronics > Electronics Accessories"])
+
+    def test_a_floor_that_is_no_number_leaves_the_list_unread(self) -> None:
+        self.assertIsNone(self._switches([{"google": "Electronics", "name": "x", "on": True, "min": "ten"}]))
+        self.assertIsNone(self._switches([{"google": "Electronics", "name": "x", "on": True, "min": -1}]))
+
+    def test_the_repositorys_floors_as_the_owner_approved_them(self) -> None:
+        switches = _repo_list_on()
+        floors = {line.google: line.min_price for line in switches.lines if line.min_price is not None}
+        self.assertEqual(len(floors), 95)
+        self.assertEqual(floors["Health & Beauty > Personal Care > Cosmetics > Perfume & Cologne"], 10.0)
+        # A closed line carries its floor too, should it open («και ας είναι κλειστό»).
+        self.assertEqual(floors["Health & Beauty > Personal Care > Cosmetics"], 5.0)
+        self.assertEqual(floors["Furniture > Sofas"], 150.0)
+        self.assertEqual(floors["Apparel & Accessories > Shoes"], 15.0)
+        perfume = switches.floor(levels_of("Health & Beauty > Personal Care > Cosmetics > Perfume & Cologne > Women"))
+        self.assertEqual(perfume.min_price, 10.0)
+        chair = switches.floor(levels_of("Furniture > Chairs > Arm Chairs"))
+        self.assertEqual((chair.google, chair.min_price), ("Furniture", 25.0))
+

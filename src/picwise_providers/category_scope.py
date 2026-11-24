@@ -25,6 +25,14 @@ given no line yet, or a slip (`ai_shelves.SLIP_LINES`), is not decided here: the
 hold a new one until it has its line and cut one with none (their rules 5.5). With no
 answers of the AI at all, nothing is decided.
 
+A line may carry `min`, the lowest price in pounds a product of it is shown at (the owner,
+2026-11-24: «κανένα προϊόν μέσα στα αρώματα δεν μπορεί να έχει λιγότερο από 10 λίρες γλυτώνω με
+όλη αυτή τη σαβούρα ... όλες τις κατηγορίες και υποκατηγορίες πρέπει να δεις και να ορίσεις ένα
+ελάχιστο ποσό»; the 95 floors proposed that day, «Τα εγκρίνω όπως είναι», closed lines too, «και
+ας είναι κλειστό»). A product of an open line priced under the floor of the nearest line at or
+above its own that has one is left out as a closed one is (`Switches.floor`), at the shop's own
+price (its sale price where the shop gives one), nothing worked out.
+
 The whole rule stands behind the list's own switch (its top `on`), false until the owner's
 «ανέβασε»: with it false nothing is closed and the night only counts what each line holds,
 for the night's note (`last_note`) and the dashboard to come. Applied in the preparation
@@ -46,6 +54,7 @@ from typing import Any
 
 from . import ai_shelves
 from .contracts import ProviderProduct
+from .decision_labels import parse_price_amount
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 SWITCHES_FILE = _REPO_ROOT / "data" / "category_switches.json"
@@ -72,6 +81,8 @@ class Line:
     name: str
     on: bool
     site: str = ""
+    # The lowest price in pounds a product of it is shown at; None when the line sets none.
+    min_price: float | None = None
 
 
 @dataclass(frozen=True)
@@ -99,6 +110,24 @@ class Switches:
             return False
         return self.closing(levels) is None
 
+    def floor(self, levels: Sequence[str]) -> Line | None:
+        """The nearest line at or above these levels that sets a lowest price; None when none
+        does."""
+        for depth in range(len(levels), 0, -1):
+            line = self.by_levels.get(tuple(levels[:depth]))
+            if line is not None and line.min_price is not None:
+                return line
+        return None
+
+    def under_floor(self, levels: Sequence[str], product: ProviderProduct) -> Line | None:
+        """The line whose lowest price this product, of these levels, is priced under; None
+        when it is not, or its price cannot be read."""
+        line = self.floor(levels)
+        if line is None:
+            return None
+        price = parse_price_amount(getattr(product, "price_text", ""))
+        return line if price is not None and price < float(line.min_price or 0) else None
+
     def line_open(self, line: Line) -> bool:
         """Whether a line of the list is open with every line above it."""
         return self.is_open(line.levels)
@@ -120,8 +149,12 @@ def _parse(payload: Any) -> Switches:
             raise ValueError(f"a category twice: {google}")
         if not isinstance(entry.get("on"), bool):
             raise ValueError(f"no true or false for {google}")
+        floor = entry.get("min")
+        if floor is not None and (isinstance(floor, bool) or not isinstance(floor, (int, float)) or floor < 0):
+            raise ValueError(f"a lowest price that is no number of pounds for {google}")
         line = Line(google=google, levels=levels, name=str(entry.get("name") or "").strip() or google,
-                    on=entry["on"], site=str(entry.get("site") or "").strip())
+                    on=entry["on"], site=str(entry.get("site") or "").strip(),
+                    min_price=float(floor) if floor is not None else None)
         lines.append(line)
         by_levels[levels] = line
     return Switches(on=payload.get("on") is True, lines=tuple(lines), by_levels=by_levels)
@@ -174,7 +207,7 @@ def closes(product: ProviderProduct, *, switches: Switches | None = None,
     if not table:
         return False
     levels = product_levels(product, table)
-    return levels is not None and not switches.is_open(levels)
+    return levels is not None and (not switches.is_open(levels) or switches.under_floor(levels, product) is not None)
 
 
 def passing(products: Iterable[ProviderProduct]) -> list[ProviderProduct]:
@@ -220,6 +253,9 @@ def settle(
     closed_by_shop: Counter = Counter()
     open_by_shop: Counter = Counter()
     closed_by_line: Counter = Counter()
+    below_count = 0
+    below_by_line: Counter = Counter()
+    below_by_shop: Counter = Counter()
     for product in products:
         levels = product_levels(product, table)
         if levels is None:
@@ -230,6 +266,13 @@ def settle(
             if levels[:depth] in switches.by_levels:
                 held[levels[:depth]] += 1
         if switches.is_open(levels):
+            floor = switches.under_floor(levels, product)
+            if floor is not None:
+                below_count += 1
+                below_by_line[floor.levels] += 1
+                below_by_shop[shop_of(product)] += 1
+                keep.append(False)
+                continue
             open_count += 1
             open_by_shop[shop_of(product)] += 1
             keep.append(True)
@@ -246,9 +289,16 @@ def settle(
         "closed": closed_count,
         "undecided": undecided,
         "not_listed": sum(count for levels, count in closed_by_line.items() if levels not in switches.by_levels),
+        # Under the lowest price of their line (`Switches.floor`; owner, 2026-11-24).
+        "under_floor": below_count,
+        "under_floor_by_shop": [
+            {"shop": shop, "under_floor": count} for shop, count in below_by_shop.most_common(SHOPS_LISTED)
+        ],
         "lines": [
             {"google": line.google, "name": line.name, "on": line.on, "open": switches.line_open(line),
-             "products": held.get(line.levels, 0)}
+             "products": held.get(line.levels, 0),
+             **({"min": line.min_price, "under_floor": below_by_line.get(line.levels, 0)}
+                if line.min_price is not None else {})}
             for line in switches.lines
         ],
         "closed_by_shop": [
@@ -259,7 +309,7 @@ def settle(
     if not switches.on:
         note["why"] = "the switch is off: what the list would close is counted, nothing is closed"
     _LAST_NOTE = note
-    if not switches.on or not closed_count:
+    if not switches.on or not (closed_count or below_count):
         return None
     return keep
 
