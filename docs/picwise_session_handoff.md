@@ -8,6 +8,14 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **(24/11, 15:00 Athens): THREE MENDS BUILT AND TESTED ON THE WORK BRANCH, NOT DEPLOYED, ONE «ανέβασε» FOR ALL: the price
+  read to the penny (`b6806aa`), the titles' HTML codes (`c365b24`), the card's sizes and colours (`f17e4e0`).** (PROGRESS.md, 24/11
+  13:50 and 15:00.) The deployment prepares the catalogue again (about 30 minutes) and starts the checks' round again on the new
+  bot. Then read live: "laptop"/"tv"/"dehumidifier" bars end at real prices; a PCHUB monitor reads 22"; "hoodie": Fila UK's titles
+  without " - L", and, as the bot reads Fila's pages (within 3 nights), "Sizes at the shop: XS, S, M". **The way back** needs the
+  ledger's two new fields dropped from each product (the old bot cannot read them). Not done, on his word or for memory: a look
+  at which of a shop's rows reach the catalogue; Awin's own variant columns.
+
 - **(24/11, 13:50 Athens): THE PRICE READ TO THE PENNY IS BUILT AND TESTED ON THE WORK BRANCH (`b6806aa`), NOT DEPLOYED: IT WAITS
   FOR THE OWNER'S «ανέβασε».** (PROGRESS.md, 24/11 13:50.) GamingKit's "269.448001" is £269.45, not 269,448,001: the price bar,
   the filter, cheapest-first and the shops' caps; the memory puts right what it kept under the old reading (no fake fall).
