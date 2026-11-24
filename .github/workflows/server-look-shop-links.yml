@@ -14,7 +14,7 @@ on:
   push:
     branches: [claude/look-shop-links-2026-11-24]
     paths:
-      - '.github/workflows/server-look-cards.yml'
+      - '.github/workflows/server-look-shop-links.yml'
       - 'deployment/server/look_shop_links.py'
 permissions:
   contents: read
