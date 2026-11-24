@@ -155,7 +155,7 @@ def answer(environ: dict[str, object], start_response: StartResponse, local_app:
     if path == "/privacy":
         html = render_privacy_page()
         if home_store_on():
-            html = dress_info_page(html)
+            html = dress_info_page(html, strip_line=True)
         body = html.encode("utf-8")
         return _response(
             "200 OK", "text/html; charset=utf-8", body, start_response, cache_control=INFO_PAGE_CACHE_CONTROL
@@ -164,7 +164,7 @@ def answer(environ: dict[str, object], start_response: StartResponse, local_app:
     if path == "/cookies":
         html = render_cookies_page()
         if home_store_on():
-            html = dress_info_page(html)
+            html = dress_info_page(html, strip_line=True)
         body = html.encode("utf-8")
         return _response(
             "200 OK", "text/html; charset=utf-8", body, start_response, cache_control=INFO_PAGE_CACHE_CONTROL

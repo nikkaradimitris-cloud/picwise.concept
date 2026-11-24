@@ -3,5 +3,7 @@
   "_πώς": "true: η νέα αρχική· false: η σημερινή. Αλλάζει μόνο με τη λέξη σου (το «ανέβασε»).",
   "on": false,
   "set": "2026-11-23",
-  "by": "built off (task H3); the owner's «ανέβασε» turns it on"
+  "by": "built off (task H3); the owner's «ανέβασε» turns it on",
+  "strip": false,
+  "_strip": "The phone strip «PicWise on your phone» (the specification, 7.5): shown only while this and \"on\" are both true. It stays false until a shop's button pressed inside the installed app is proven to open the shop where its cookie serves the purchase, on Android and on an iPhone; then it is turned only on the owner's word."
 }

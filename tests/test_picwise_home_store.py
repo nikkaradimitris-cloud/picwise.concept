@@ -268,8 +268,34 @@ class ThePageTests(_Switch, unittest.TestCase):
         for name in ('id="pw-history-button"', 'id="pw-favourites-button"', 'id="pw-info-button"', 'id="pw-scan"'):
             self.assertIn(name, self.page)
 
-    def test_the_phone_strip_is_drawn_hidden(self) -> None:
-        self.assertIn('<div class="pw-hs-strip" id="pw-hs-strip" hidden>', self.page)
+    def test_the_phone_strip_waits_for_its_own_line(self) -> None:
+        # Not drawn until the proof of 7.5 exists and the owner turns its line on.
+        self.assertFalse(home_store.strip_shown())
+        self.assertNotIn("pw-hs-strip", _markup(self.page))
+        home_store.set_strip_shown_for_tests(True)
+        self.addCleanup(home_store.set_strip_shown_for_tests, None)
+        page = _get("/")
+        # Drawn hidden: its script shows it on a phone only, never in the installed app,
+        # never once its "×" was pressed on this device.
+        self.assertIn('<div class="pw-hs-strip" id="pw-hs-strip" hidden>', page)
+        self.assertIn('<div class="pw-hs-sheet" id="pw-hs-sheet" role="dialog"', page)
+        text = re.sub(r" ([.,])", r"\1", " ".join(_visible_text(page).split()))
+        self.assertIn("Add PicWise to your home screen 1 Tap the Share button in your browser's bar. "
+                      "2 Choose Add to Home Screen. 3 Tap Add. Got it", text)
+        self.assertIn("(display-mode: standalone)", page)
+        self.assertIn('"picwise.strip.closed"', page)
+        self.assertIn("beforeinstallprompt", page)
+        # Its line on the Cookies and Privacy pages, and only while it is shown.
+        line = "PicWise remembers on this device that you closed"
+        for path in ("/cookies", "/privacy"):
+            self.assertIn(line, _get(path), path)
+        self.assertNotIn(line, _get("/terms"))
+        home_store.set_strip_shown_for_tests(None)
+        self.assertNotIn(line, _get("/cookies"))
+        # Never while the store is off.
+        self._switch(False)
+        home_store.set_strip_shown_for_tests(True)
+        self.assertFalse(home_store.strip_shown())
 
     def test_every_drawing_is_a_file_of_the_site_with_its_size(self) -> None:
         images = re.findall(r"<img\b[^>]*>", _markup(self.page))

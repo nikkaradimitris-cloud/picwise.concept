@@ -163,8 +163,9 @@ MIN_PICKS = 2
 
 # ---- the switch ----
 
-_SWITCH_CACHE: dict[str, Any] = {"key": None, "on": False}
+_SWITCH_CACHE: dict[str, Any] = {"key": None, "on": False, "strip": False}
 _FORCED: list[bool | None] = [None]
+_STRIP_FORCED: list[bool | None] = [None]
 
 
 def home_store_on() -> bool:
@@ -178,15 +179,41 @@ def home_store_on() -> bool:
         stat = path.stat()
     except OSError:
         return False
+    _read_switch(path, stat)
+    return bool(_SWITCH_CACHE["on"])
+
+
+def _read_switch(path: Path, stat: os.stat_result) -> None:
     key = (str(path), stat.st_mtime_ns, stat.st_size)
     if _SWITCH_CACHE["key"] != key:
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
             on = isinstance(payload, dict) and payload.get("on") is True
+            strip = isinstance(payload, dict) and payload.get("strip") is True
         except (OSError, ValueError):
-            on = False
-        _SWITCH_CACHE.update(key=key, on=on)
-    return bool(_SWITCH_CACHE["on"])
+            on = strip = False
+        _SWITCH_CACHE.update(key=key, on=on, strip=strip)
+
+
+def strip_shown() -> bool:
+    """Whether the phone strip is shown (the specification, 7.5): its own line of the
+    switch's file, `strip`, is `true`, and the store is on. It stays off until a shop's
+    button pressed in the installed app is proven to open the shop where its cookie
+    serves the purchase, on Android and on an iPhone; turned on only on the owner's word."""
+    if not home_store_on():
+        return False
+    if _STRIP_FORCED[0] is not None:
+        return bool(_STRIP_FORCED[0])
+    path = Path(str(os.environ.get(SWITCH_ENV) or "").strip() or SWITCH_PATH)
+    try:
+        _read_switch(path, path.stat())
+    except OSError:
+        return False
+    return bool(_SWITCH_CACHE["strip"])
+
+
+def set_strip_shown_for_tests(value: bool | None) -> None:
+    _STRIP_FORCED[0] = value
 
 
 def set_home_store_on_for_tests(value: bool | None) -> None:
@@ -562,8 +589,86 @@ def _head2(title: str, title_id: str, arrow: str = "", *, sub: str = "") -> str:
     )
 
 
+STRIP_STORAGE_KEY = "picwise.strip.closed"
+SHEET_TITLE = "Add PicWise to your home screen"
+SHEET_STEPS = (
+    ("1", "Tap the Share button {share} in your browser's bar."),
+    ("2", "Choose <b>Add to Home Screen</b>."),
+    ("3", "Tap <b>Add</b>."),
+)
+SHEET_OK = "Got it"
+# The line the Cookies and Privacy pages carry while the strip is shown (owner,
+# 2026-11-24, «Ναι σε όλα»).
+STRIP_PRIVACY_LINE = (
+    "PicWise remembers on this device that you closed the \u201cPicWise on your phone\u201d strip, so it is not "
+    "shown again."
+)
+_SHARE_ICON = (
+    '<svg class="pw-hs-sheet-ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Share">'
+    '<path d="M12 15V4M8 7.5 12 3.5l4 4"/><path d="M7 11H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1"/></svg>'
+)
+
+
+def _sheet_html() -> str:
+    """What "Add" opens where the browser offers a page no install of its own (Safari on
+    an iPhone): how to add PicWise, in the browser's own words (the specification, 7.5)."""
+    steps = "".join(
+        f'<li class="pw-hs-sheet-step"><span class="pw-hs-step-n{" pw-hs-step-n-gold" if number == "3" else ""}">{number}</span>'
+        f"<span>{text.format(share=_SHARE_ICON)}</span></li>"
+        for number, text in SHEET_STEPS
+    )
+    return (
+        '<div class="pw-hs-veil" id="pw-hs-veil" hidden></div>'
+        '<div class="pw-hs-sheet" id="pw-hs-sheet" role="dialog" aria-modal="true" aria-labelledby="pw-hs-sheet-title" hidden>'
+        '<div class="pw-hs-sheet-grip" aria-hidden="true"></div>'
+        '<div class="pw-hs-sheet-head"><span class="pw-logo" aria-hidden="true"></span>'
+        f'<h2 class="pw-hs-sheet-title" id="pw-hs-sheet-title">{escape(SHEET_TITLE)}</h2></div>'
+        f'<ol class="pw-hs-sheet-steps">{steps}</ol>'
+        f'<button class="pw-hs-sheet-ok" id="pw-hs-sheet-ok" type="button">{escape(SHEET_OK)}</button>'
+        "</div>"
+    )
+
+
+# Shown by its script only on a phone, never inside the installed app, never once its
+# "×" was pressed on this device (kept in the browser, as the visitor asked).
+STRIP_SCRIPT = r"""
+(function(){
+"use strict";
+var strip=document.getElementById("pw-hs-strip");
+if(!strip){return;}
+var KEY="__KEY__";
+var standalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||window.navigator.standalone===true;
+var phone=window.matchMedia&&window.matchMedia("(max-width: 699px) and (pointer: coarse)").matches;
+var closed=false;
+try{closed=window.localStorage.getItem(KEY)==="1";}catch(e){}
+if(standalone||!phone||closed){return;}
+var asked=null;
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();asked=e;});
+var sheet=document.getElementById("pw-hs-sheet"),veil=document.getElementById("pw-hs-veil");
+var shut=function(){if(sheet){sheet.hidden=true;}if(veil){veil.hidden=true;}};
+strip.hidden=false;
+strip.querySelector(".pw-hs-strip-close").addEventListener("click",function(){
+  strip.hidden=true;
+  try{window.localStorage.setItem(KEY,"1");}catch(e){}
+});
+strip.querySelector(".pw-hs-strip-add").addEventListener("click",function(){
+  if(asked){var a=asked;asked=null;a.prompt();return;}
+  if(sheet&&veil){sheet.hidden=false;veil.hidden=false;var ok=document.getElementById("pw-hs-sheet-ok");if(ok){ok.focus();}}
+});
+var ok=document.getElementById("pw-hs-sheet-ok");
+if(ok){ok.addEventListener("click",shut);}
+if(veil){veil.addEventListener("click",shut);}
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&sheet&&!sheet.hidden){shut();}});
+})();
+""".replace("__KEY__", STRIP_STORAGE_KEY)
+
+
 def _strip_html() -> str:
-    """The phone strip (the specification, 5.1): drawn hidden; what it does is Part E."""
+    """The phone strip (the specification, 5.1, 7.5): drawn only while `strip_shown`,
+    hidden until its script shows it on a phone."""
+    if not strip_shown():
+        return ""
     return (
         '<div class="pw-hs-strip" id="pw-hs-strip" hidden>'
         f'<button class="pw-hs-strip-close" type="button" aria-label="{STRIP_CLOSE}">&#215;</button>'
@@ -572,6 +677,8 @@ def _strip_html() -> str:
         f'<span class="pw-hs-strip-line">{escape(STRIP_LINE)}</span></span>'
         f'<button class="pw-hs-strip-add" type="button">{escape(STRIP_ADD)}</button>'
         "</div>"
+        f"{_sheet_html()}"
+        f"<script>{STRIP_SCRIPT}</script>"
     )
 
 
@@ -1094,6 +1201,17 @@ HOME_STORE_STYLES = (
     # the phone strip
     ".pw-hs-strip{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 0;background:#f1ede6;border-bottom:1px solid #e3dccf;}"
     ".pw-hs-strip[hidden]{display:none;}"
+    ".pw-hs-veil{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(15,36,66,.5);z-index:60;}"
+    ".pw-hs-sheet{position:fixed;left:0;right:0;bottom:0;z-index:61;background:#fff;border-radius:22px 22px 0 0;padding:10px 20px 24px;box-shadow:0 -10px 30px rgba(15,36,66,.25);}"
+    ".pw-hs-veil[hidden],.pw-hs-sheet[hidden]{display:none;}"
+    ".pw-hs-sheet-grip{width:44px;height:5px;border-radius:3px;background:#d3d0c8;margin:0 auto 14px;}"
+    ".pw-hs-sheet-head{display:flex;align-items:center;gap:12px;}"
+    ".pw-hs-sheet-title{margin:0;font-size:20px;line-height:1.2;font-weight:800;letter-spacing:-.3px;color:var(--hs-ink);}"
+    ".pw-hs-sheet-steps{list-style:none;margin:18px 0 0;padding:0;display:flex;flex-direction:column;gap:14px;}"
+    ".pw-hs-sheet-step{display:flex;align-items:center;gap:12px;font-size:16px;line-height:1.35;color:var(--hs-ink);}"
+    ".pw-hs-sheet-step b{font-weight:700;}"
+    ".pw-hs-sheet-ico{display:inline-flex;vertical-align:-5px;margin:0 2px;color:var(--hs-acc);}"
+    ".pw-hs-sheet-ok{margin-top:22px;display:flex;align-items:center;justify-content:center;width:100%;height:52px;border:0;border-radius:999px;background:var(--hs-ink);color:#fff;font:inherit;font-size:16px;font-weight:700;cursor:pointer;}"
     ".pw-hs-strip-close{flex:0 0 auto;width:48px;height:48px;border:0;background:transparent;color:var(--hs-muted);font:inherit;font-size:22px;padding:0;cursor:pointer;}"
     ".pw-hs-strip-text{flex:1;min-width:0;display:flex;flex-direction:column;}"
     ".pw-hs-strip-title{font-size:15px;font-weight:800;color:var(--hs-ink);}"

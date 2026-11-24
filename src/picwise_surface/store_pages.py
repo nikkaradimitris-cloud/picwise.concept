@@ -637,7 +637,10 @@ def dress_search_page(page: str, query: str) -> str:
     return page.replace("</style>", hs.HOME_STORE_STYLES + STORE_PAGES_STYLES + SEARCH_PAGE_STYLES + "</style>", 1)
 
 
-def dress_info_page(page: str) -> str:
+STRIP_SECTION = "The \u201cPicWise on your phone\u201d strip"
+
+
+def dress_info_page(page: str, *, strip_line: bool = False) -> str:
     """An info page (About, Contact, Terms, Privacy, Cookies, Affiliate disclosure) under
     the store's header and over its footer, its words and its head as they are; the page
     as it was when it is not drawn as expected."""
@@ -650,6 +653,10 @@ def dress_info_page(page: str) -> str:
     if not titled:
         return page
     inner = inner.replace('<p class="pw-intro">', '<p class="pw-hs-doc-intro">', 1)
+    if strip_line and hs.strip_shown():
+        # While the phone strip is shown, the Cookies and Privacy pages say its "×" is
+        # kept on the device (owner, 2026-11-24; the specification, 8.4).
+        inner += f"<h2>{escape(STRIP_SECTION)}</h2><p>{escape(hs.STRIP_PRIVACY_LINE)}</p>"
     own_head = re.sub(r'<meta charset="utf-8">|<meta name="viewport"[^>]*>', "", head.group(1))
     title = re.search(r"<title>(.*?)</title>", own_head, flags=re.S)
     return hs.render_store_page(
