@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timezone
 from typing import Any
-from picwise_nlu.concept_understanding import ConceptReading
+from picwise_nlu.concept_understanding import ConceptReading, set_brand_names
 
 from .awin_adapter import (
     awin_feed_config_from_env,
@@ -27,6 +27,7 @@ from .contracts import (
     ProviderProduct,
     SearchProviderFeedMetadata,
 )
+from .brand_list import BrandAnswer, BrandReader, CatalogueBrand, build_brand_list
 from .eligibility import evaluate_provider_product_eligibility
 from .feed_intake import measure_feed_intake
 from .graph_projection import project_provider_products_to_graph
@@ -65,6 +66,7 @@ from .search_selection import (
     product_kind_key,
     product_non_new_condition,
     remember_product_kinds,
+    select_provider_products_for_brand,
     select_provider_products_for_query,
     warm_kind_index,
     warm_word_lookup,
@@ -495,6 +497,8 @@ def _prepare_feed_catalogue(
                 fields=tuple(catalogue.fields[place] for place in places),
             )
     choices = _catalogue_kind_choices(catalogue, kinds)
+    # The catalogue's brands, from the products a search reads (owner, 2026-11-20).
+    brands = build_brand_list(catalogue.new_products, _new_kinds(catalogue, kinds))
     # The shops of the products the search keeps: a shop the cap left nothing of is not
     # one the search reads (the home page names them, owner, 2026-11-12).
     shop_count = len(_shops_of(catalogue.products))
@@ -510,7 +514,22 @@ def _prepare_feed_catalogue(
         suggestions=build_search_suggestions(catalogue.new_products, choices=choices),
         search_fields=catalogue.fields,
         choices=choices,
+        brands=brands,
     )
+
+
+def _new_kinds(
+    catalogue: SearchCatalogue, kinds: tuple[frozenset[str], ...] | None = None
+) -> list[frozenset[str]]:
+    """The kinds of the new products a search reads, in order. `kinds`, when given, are
+    those of `catalogue.products`, in order; else each is read."""
+    if kinds is None:
+        return [
+            _product_concepts(product, fields)
+            for product, fields in zip(catalogue.new_products, catalogue.new_fields)
+        ]
+    kinds_of = {id(product): product_kinds for product, product_kinds in zip(catalogue.products, kinds)}
+    return [kinds_of[id(product)] for product in catalogue.new_products]
 
 
 def _catalogue_kind_choices(
@@ -519,15 +538,7 @@ def _catalogue_kind_choices(
     """The choices of every general kind, for the new products a search reads
     (`kind_choices.build_kind_choices`). `kinds`, when given, are those of
     `catalogue.products`, in order."""
-    if kinds is None:
-        new_kinds = [
-            _product_concepts(product, fields)
-            for product, fields in zip(catalogue.new_products, catalogue.new_fields)
-        ]
-    else:
-        kinds_of = {id(product): product_kinds for product, product_kinds in zip(catalogue.products, kinds)}
-        new_kinds = [kinds_of[id(product)] for product in catalogue.new_products]
-    return build_kind_choices(catalogue.new_products, new_kinds, catalogue.new_fields)
+    return build_kind_choices(catalogue.new_products, _new_kinds(catalogue, kinds), catalogue.new_fields)
 
 
 def measure_configured_feed_intake(feed_config: ProviderFeedConfig | None = None) -> dict[str, Any] | None:
@@ -775,6 +786,7 @@ def _put_in_place(prepared: PreparedCatalogue, *, file_key: Any = None, check: A
             prepared=prepared,
             check=check,
             by_id={str(product.provider_product_id or "").strip(): product for product in prepared.products},
+            brands=(prepared, _prepared_brand_reader(prepared)),
         )
     with _PREPARED_LOCK:
         before = _PREPARED_STATE.get("catalogue")
@@ -932,6 +944,105 @@ def search_kind_choices(
     return _cached_for(pipeline, "kind_choices", lambda ready: _catalogue_kind_choices(_search_catalogue(ready)))
 
 
+def _prepared_brand_reader(prepared: PreparedCatalogue) -> BrandReader:
+    """The brands of a prepared feed as a search reads them: those it carries, or, in a
+    file written before it carried them, worked out from its new products."""
+    brands: tuple[CatalogueBrand, ...] = prepared.brands
+    if not brands and prepared.products:
+        new = [
+            (product, kinds)
+            for product, kinds, condition in zip(prepared.products, prepared.kinds, prepared.non_new)
+            if not condition
+        ]
+        brands = build_brand_list([product for product, _kinds in new], [kinds for _product, kinds in new])
+    return BrandReader(brands)
+
+
+# The brands' reader whose names the reading of a search was last given
+# (`concept_understanding.set_brand_names`).
+_READING_BRANDS: dict[str, Any] = {}
+
+
+def _given_to_the_reading(reader: BrandReader) -> BrandReader:
+    if _READING_BRANDS.get("reader") is not reader:
+        single, several = reader.reading_names()
+        set_brand_names(single, several)
+        _READING_BRANDS["reader"] = reader
+    return reader
+
+
+def search_brands(feed_config: ProviderFeedConfig | None = None) -> BrandReader:
+    """The catalogue's brands as a search reads them (`brand_list`): from the prepared
+    feed, or worked out once per feed load; none without a feed. Their names are given to
+    the reading of a search, which never corrects them (owner, 2026-11-20)."""
+    prepared = _active_prepared_catalogue() if feed_config is None else None
+    if prepared is not None:
+        kept = _PREPARED_STATE.get("brands")
+        if kept is None or kept[0] is not prepared:
+            kept = (prepared, _prepared_brand_reader(prepared))
+            _PREPARED_STATE["brands"] = kept
+        return _given_to_the_reading(kept[1])
+    config = feed_config or awin_feed_config_from_env()
+    pipeline = resolve_provider_feed_pipeline(config, include_graph_projection=False)
+    if pipeline.feed_status.status != "provider_feed_ready":
+        return _given_to_the_reading(_NO_BRANDS)
+    return _given_to_the_reading(
+        _cached_for(
+            pipeline,
+            "brands",
+            lambda ready: BrandReader(
+                build_brand_list(_search_catalogue(ready).new_products, _new_kinds(_search_catalogue(ready)))
+            ),
+        )
+    )
+
+
+_NO_BRANDS = BrandReader(())
+
+
+def resolve_search_provider_feed_brand_selection(
+    answer: BrandAnswer,
+    *,
+    feed_config: ProviderFeedConfig | None = None,
+    max_products: int = 4,
+    shown: int = 0,
+    min_price: float | None = None,
+    max_price: float | None = None,
+) -> ProviderProductSelectionResult:
+    """The products of a search naming a brand alone (`select_provider_products_for_brand`),
+    from the catalogue a search reads."""
+    prepared = _active_prepared_catalogue() if feed_config is None else None
+    if prepared is not None:
+        selection = select_provider_products_for_brand(
+            answer,
+            prepared.products,
+            max_products=max_products,
+            feed_ctx=prepared.availability_context,
+            shown=shown,
+            min_price=min_price,
+            max_price=max_price,
+            catalogue=_prepared_search_catalogue(prepared),
+        )
+        return replace(selection, feed_availability_context=prepared.availability_context)
+    config = feed_config or awin_feed_config_from_env()
+    pipeline = resolve_provider_feed_pipeline(config, include_graph_projection=False)
+    if pipeline.feed_status.status != "provider_feed_ready":
+        return ProviderProductSelectionResult(status="no_feed", reason_codes=("provider_feed_not_ready",))
+    selection = select_provider_products_for_brand(
+        answer,
+        _feed_eligible_products(pipeline),
+        max_products=max_products,
+        feed_ctx=pipeline.availability_context,
+        shown=shown,
+        min_price=min_price,
+        max_price=max_price,
+        catalogue=_search_catalogue(pipeline),
+    )
+    if pipeline.availability_context is None:
+        return selection
+    return replace(selection, feed_availability_context=pipeline.availability_context)
+
+
 def resolve_card_eligible_provider_feed_product_by_id(
     provider_product_id: str,
     *,
@@ -996,7 +1107,11 @@ def resolve_search_provider_feed_product_selection(
     min_price: float | None = None,
     max_price: float | None = None,
     fitting_for: Callable[[str], Iterable[str] | None] | None = None,
+    brand: BrandAnswer | None = None,
+    brand_words: tuple[str, ...] = (),
 ) -> ProviderProductSelectionResult:
+    """The products of one search (`select_provider_products_for_query`); `brand` and
+    `brand_words`, the brand it names with a kind (owner, 2026-11-20: «Μόνο της Canon»)."""
     prepared = _active_prepared_catalogue() if feed_config is None else None
     if prepared is not None:
         selection = select_provider_products_for_query(
@@ -1010,6 +1125,8 @@ def resolve_search_provider_feed_product_selection(
             max_price=max_price,
             catalogue=_prepared_search_catalogue(prepared),
             fitting_for=fitting_for,
+            brand=brand,
+            brand_words=brand_words,
         )
         return replace(selection, feed_availability_context=prepared.availability_context)
     config = feed_config or awin_feed_config_from_env()
@@ -1038,6 +1155,8 @@ def resolve_search_provider_feed_product_selection(
         max_price=max_price,
         catalogue=catalogue,
         fitting_for=fitting_for,
+        brand=brand,
+        brand_words=brand_words,
     )
     if availability_context is None:
         return selection
@@ -1089,6 +1208,9 @@ _PRICE_FIRST_NO_RECOMMENDATION = {
     "too_few_products": "no_recommendation_too_few_products",
     # A price chosen on the price bar (owner, 2026-11-12).
     "price_chosen": "no_recommendation_price_chosen",
+    # A brand's products of several kinds (owner, 2026-11-20: «Χωρίς Recommended μέχρι να
+    # διαλέξει είδος»).
+    "several_kinds": "no_recommendation_several_kinds",
 }
 
 

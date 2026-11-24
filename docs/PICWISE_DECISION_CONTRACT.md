@@ -1063,3 +1063,80 @@ needs undoing when the site opens. The memory has kept every night since 12/11.
   section 3).
 - Pinned by `tests/test_picwise_price_history.py` and
   `tests/test_picwise_price_notes_on_cards.py`.
+
+## The catalogue's brands, decided by the owner, 2026-11-20
+
+The owner's series of work, agreed on 2026-11-19 at night, step 3: a list of brands from
+the feeds, with the kinds each sells (taken up on 2026-11-20: «PicWise: συνέχισε το βήμα
+3, τη λίστα brands, όπως γράφει το handoff»). Measured first on a copy of the server's
+catalogue (`.github/workflows/brands-measure.yml`, run `44626133872`, 403,545 products
+from 137 shops): "samsung" and "dyson" alone showed no product ("PicWise is not sure which
+product you mean", no choice offered), and so did 90 of the 120 largest brands alone;
+"apple" and "nike" found nothing, nor did "samsnug"; "razer" was read as an electric
+shaver, "motorola" as engine oil, "draper" as nappies. Put to the owner on 2026-11-20 with
+a sketch of each answer, the owner chose:
+- a brand alone, «Ερώτηση + προϊόντα»: "What kind of Samsung product?" with its kinds as
+  links, its products below, cheapest first, and no Recommended until a kind is chosen;
+- a misspelled brand, «Διόρθωση όταν είναι σίγουρο»: read as the brand when only it is
+  that close, the page saying "Understood as: Samsung"; else "Did you mean ...?".
+
+1. **The list** is made each night with the prepared feed, from the products a search
+   reads (`picwise_providers.brand_list`): one brand however its products write it, case,
+   accents, spaces, punctuation, "&", "+" or "and", a leading "The" and an ending such as
+   "Ltd" or "UK" set aside ("Black and Decker" and "Black & Decker"); letters a shop's file
+   broke mended ("PokÃ©mon" is "Pokémon"); named as most of its products write it. The
+   feeds' placeholders ("Generic", "Unbranded") are no brand. A brand counts from 3
+   products, as the search counted brands before. Its kinds are counted from its
+   products, each under its narrowest kind; accessories and products of a doubtful kind
+   or of none are not. A kind is the brand's from 3 of its products.
+2. **A brand's name is never read as another word.** A word of a brand's name in a
+   search is never corrected into a kind's name: "razer" is no razor, "draper" no diaper,
+   "store" in "My Store" no stove. A brand named as a kind is that kind ("lego").
+3. **A brand alone**: a search that is a brand's whole name and nothing else, a word like
+   "uk" or "best" aside unless the name holds it ("Best Home Gadgets"), is answered with
+   the brand's products, those of the brands whose names begin with it too ("bosch":
+   Bosch, Bosch Professional), unless the search names a kind and nothing else ("rugs",
+   "lego") or one of its words says how a product is ("white", "small"):
+   - its products of one kind (one kind of 3 products or more): that kind's products of
+     the brand, cheapest first, with a Recommended, as a search for the brand and the kind
+     answers;
+   - of several kinds: above the products, "What kind of Samsung product?" with its kinds
+     as links, the largest first, eight at most, each the search for the brand and the
+     kind ("samsung tv", "samsung monitor"); below, its products of those kinds, cheapest
+     first, with no Recommended: among several kinds no product is mid-priced "for this
+     category", and the visitor chooses the kind first;
+   - none of its products of a kind read: its products as they are, cheapest first, no
+     Recommended.
+   A brand's accessories (a case, a strap) are not listed with it: a search for one names
+   it ("samsung case").
+4. **A misspelled brand.** A word of 4 letters or more that is no brand's name, no word
+   the search knows and no kind's name, one slip (a letter more, less or other, or two side
+   by side swapped) from one brand's name of 5 letters or more, and from no other brand's
+   name and no word the search knows, is read as that brand: "samsnug" as Samsung,
+   "samsnug tv" as Samsung's televisions, the page saying "Understood as: Samsung". So is a
+   word one slip from a word of a brand's name of several words whose other words are all
+   in the search, however close a known word is, the other words saying which: "mira saels"
+   is Mira Sales ("sails" is as close), "bosch profesional" Bosch Professional. One slip
+   from two brands' names or more, from a known word too, or from a kind the reading would
+   correct it into, it is not guessed: when nothing else answers the search, the page asks
+   "Did you mean ...?" with the searches it could be. The page names a brand without an
+   ending of a company's name ("Workwear Nation Ltd" is "Workwear Nation").
+5. **A brand with a kind, decided by the owner, 2026-11-20** («Μόνο της Canon», asked after
+   the measure found "canon ink cartridge" opening with other brands' compatibles naming
+   Canon, cheaper): a search for a kind that names a brand's whole name before the kind
+   lists only the products of that brand, however its products write it, and of the
+   brands whose names begin with it ("bosch drill": Bosch's and Bosch Professional's); a
+   product whose feed gives no brand counts when its title begins with the brand's name.
+   The products of other brands naming it ("Compatible ... for Canon") are listed when the
+   search asks for them: the brand named after "for" or "with" ("ink cartridge for
+   canon"), or a word such as "compatible" or "replacement" in it ("canon compatible
+   ink"). The brand's name is read as a word of other brands' own, and the search as
+   before, where the brand sells none of the kind, or its own are fewer than a third of
+   its own and the other brands' products carrying its name not as made for it (without
+   "compatible", "replacement", "fits", "suitable for" or "for" before the name): "rose
+   gold ring" (the brand Rose sells no ring), "oxford shoes". Measured on the server's
+   catalogue (run `44720261741`): "canon ink cartridge" and "hp ink cartridge" list the
+   brand's own only; "ink cartridge for canon" the compatibles too.
+6. The words the visitor reads were seen by the owner in a picture first (a fictional
+   brand, on a phone, 2026-11-20) and approved: «Ναι, εγκρίνω».
+7. Pinned by `tests/test_picwise_brands.py`.

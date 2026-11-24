@@ -53,6 +53,7 @@ from __future__ import annotations
 import os
 import re
 import unicodedata
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -1054,6 +1055,61 @@ def understand_product_query(query: str) -> ConceptReading:
     return _understand_product_query(query, greek_search_on())
 
 
+# The names of the catalogue's brands (`picwise_providers.brand_list`), which a query reads
+# as written and never corrects into a kind's name (the Decision Contract, "The
+# catalogue's brands", point 2; owner, 2026-11-20): measured on the server's catalogue,
+# "razer" was read as a razor, "draper" as a diaper, "store" of "My Store" as a stove.
+# The names of one word, and per first word the names of several, each as its words;
+# set by the search when the catalogue it reads changes (`set_brand_names`).
+_BRAND_NAMES: tuple[frozenset[str], dict[str, tuple[frozenset[str], ...]]] = (frozenset(), {})
+
+
+def set_brand_names(single: Iterable[str], several: Iterable[Iterable[str]]) -> None:
+    """The brands' names a query reads as written: those of one word, and those of
+    several, each as its words. The readings kept are let go when the names change."""
+    global _BRAND_NAMES
+    by_first: dict[str, set[frozenset[str]]] = {}
+    for name in several:
+        words = tuple(str(word) for word in name if str(word))
+        if len(words) > 1:
+            by_first.setdefault(words[0], set()).add(frozenset(words))
+    names = (
+        frozenset(str(word) for word in single if str(word)),
+        {first: tuple(sorted(sets, key=sorted)) for first, sets in by_first.items()},
+    )
+    if names == _BRAND_NAMES:
+        return
+    _BRAND_NAMES = names
+    _understand_product_query.cache_clear()
+
+
+def _brand_positions(tokens: tuple[str, ...]) -> frozenset[int]:
+    """The places of the words of a brand's name in a query: a name of one word wherever
+    it stands, a name of several when every word of it is in the query."""
+    single, several = _BRAND_NAMES
+    if not single and not several:
+        return frozenset()
+    present = set(tokens)
+    places = {index for index, token in enumerate(tokens) if token in single}
+    for token in present:
+        for words in several.get(token, ()):
+            if words <= present:
+                places.update(index for index, other in enumerate(tokens) if other in words)
+    return frozenset(places)
+
+
+def is_judgement_word(token: str) -> bool:
+    """Does the word judge or shop rather than name what is wanted ("best", "cheap",
+    "uk")? Such a word is read and set aside."""
+    return normalize_understanding_text(token) in _lexicon().english_judgements
+
+
+def known_english_words() -> frozenset[str]:
+    """Every word the search reads as spelt right: the kinds' names in both numbers, and
+    the words of Google's product taxonomy and of the taxonomy packs."""
+    return _lexicon().english_spellings | _known_english_words()
+
+
 @lru_cache(maxsize=4096)
 def _understand_product_query(query: str, greek: bool) -> ConceptReading:
     # `greek` keys the cache: the reading differs with the switch.
@@ -1064,8 +1120,10 @@ def _understand_product_query(query: str, greek: bool) -> ConceptReading:
     condition = _read_condition_request(tokens)
     spec_spans, spec_positions = _parse_specs(list(tokens))
     non_retail_positions = {i for i, token in enumerate(tokens) if token in _NON_RETAIL_WORDS}
+    brand_positions = _brand_positions(tokens)
     # Connectives and non-retail words are matched exactly only: they may be part of a
-    # product name ("φριτέζα χωρίς λάδι", "power bank") but are never guessed at.
+    # product name ("φριτέζα χωρίς λάδι", "power bank") but are never guessed at. So are
+    # the words of a brand's name (owner, 2026-11-20): "razer" is read as written.
     candidates = [
         {}
         if i in spec_positions or i in condition.positions
@@ -1073,6 +1131,7 @@ def _understand_product_query(query: str, greek: bool) -> ConceptReading:
             token,
             fuzzy=not (
                 i in non_retail_positions
+                or i in brand_positions
                 or token in CONNECTIVE_WORDS
                 or token in _COMMON_WORDS
                 or _is_exact_qualifier(token)

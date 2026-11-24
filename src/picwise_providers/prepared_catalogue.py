@@ -14,8 +14,9 @@ judged by the code that wrote it:
   (`LEFT_OUT_COLUMNS`), with what the feed says to call it not new and what kind it
   is;
 - the feed-wide availability context those judgements were made against;
-- the feed's status, the counts the scanning screen names, the search suggestions, and
-  the choices a search for a general kind offers ("What kind of cable?", `kind_choices`).
+- the feed's status, the counts the scanning screen names, the search suggestions, the
+  choices a search for a general kind offers ("What kind of cable?", `kind_choices`), and
+  the catalogue's brands with their kinds (`brand_list`, from 2026-11-20).
 
 It never holds the feed's link, which carries the account's API key.
 
@@ -43,6 +44,7 @@ from pathlib import Path
 from typing import Any
 
 from .answer_only import used_while_preparing
+from .brand_list import CatalogueBrand
 from .contracts import FeedAvailabilityContext, ProviderFeedStatus, ProviderProduct
 from .kind_choices import KindChoice
 from .suggestions import SearchSuggestion
@@ -127,6 +129,9 @@ class PreparedCatalogue:
     search_fields: tuple[dict[str, str], ...] = ()
     # Per general kind, the choices a search for it offers, the largest first.
     choices: dict[str, tuple[KindChoice, ...]] = field(default_factory=dict)
+    # The catalogue's brands, the largest first (`brand_list.build_brand_list`); empty in a
+    # file written before them (2026-11-20), and then worked out where the file is read.
+    brands: tuple[CatalogueBrand, ...] = ()
 
 
 def _without_answer_only(source: bytes) -> bytes:
@@ -306,6 +311,10 @@ def write_prepared_catalogue(prepared: PreparedCatalogue, path: Path) -> int:
             kind: [[choice.text, choice.products] for choice in choices]
             for kind, choices in sorted(prepared.choices.items())
         },
+        "brands": [
+            [brand.key, brand.name, brand.products, [[kind, count] for kind, count in brand.kinds]]
+            for brand in prepared.brands
+        ],
         "strings": list(table),
         "search_fields": list(field_names),
         "raw_columns": [list(keys) for keys in columns],
@@ -476,4 +485,14 @@ def _catalogue_from_payload(payload: dict[str, Any], prepared_at: datetime) -> P
             str(kind): tuple(KindChoice(text=str(text), products=int(count)) for text, count in rows)
             for kind, rows in (payload.get("choices") or {}).items()
         },
+        # Nor brands, one written before they were (2026-11-20).
+        brands=tuple(
+            CatalogueBrand(
+                key=str(key),
+                name=str(name),
+                products=int(products),
+                kinds=tuple((str(kind), int(count)) for kind, count in kinds),
+            )
+            for key, name, products, kinds in (payload.get("brands") or ())
+        ),
     )
