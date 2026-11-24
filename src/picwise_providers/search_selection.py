@@ -52,7 +52,14 @@ from .product_variants import (
     words_close,
 )
 from .variant_families import families_of
-from .variant_names import TITLES_READ, variant_label, variant_values
+from .variant_names import (
+    PRICE_FROM,
+    TITLES_READ,
+    merged_variants,
+    shop_option_values,
+    variant_label,
+    variant_values,
+)
 from .product_identity import same_product_key
 from .product_condition import (
     non_new_condition,
@@ -2127,6 +2134,52 @@ def _variant_titles(entry: _PricedProduct) -> tuple[str, ...]:
     return tuple(titles)[:TITLES_READ]
 
 
+def _own_offers(entry: _PricedProduct) -> list[ProviderProduct]:
+    """The card's shop's listings of a product shown, its own first."""
+    own_shop = _merchant_identity(entry.product)
+    return [offer for offer in (entry.offers or (entry.product,)) if _merchant_identity(offer) == own_shop]
+
+
+def _shop_options(entry: _PricedProduct) -> list[str]:
+    """What the shop's own pages name in stock of a product shown, by listing
+    (`checks_applied.OPTIONS_COLUMN`; owner, 2026-11-24)."""
+    return [
+        str((offer.raw if isinstance(offer.raw, dict) else {}).get("shop_options") or "")
+        for offer in _own_offers(entry)[:TITLES_READ]
+    ]
+
+
+_PRICE_FROM_WORD_RE = re.compile(r"[^\W_]+(?:['’][^\W_]+)?")
+
+
+def _price_from(entry: _PricedProduct) -> str | None:
+    """None when the card's shop sells the product shown at one price; else the words that
+    tell the card's listing (the cheapest) apart from its dearer ones, sizes aside ("Vintage
+    Indigo"), "" when none do. The card then reads "From £32.50 (Vintage Indigo)" (owner,
+    2026-11-24, of Fila's hoodie at £32.50 in one colour and £65 in the others: «Από £32,50
+    και το χρώμα»). Four words at most: more is no colour, only "From"."""
+    own = _own_offers(entry)
+    if len(own) < 2:
+        return None
+    priced = [(parse_price_amount(offer.price_text), offer) for offer in own]
+    amounts = [amount for amount, _offer in priced if amount is not None]
+    if not amounts or max(amounts) - min(amounts) < 0.01:
+        return None
+    cheapest = min(amounts)
+    dearer_words = {
+        word.lower()
+        for amount, offer in priced
+        if amount is not None and amount > cheapest + 0.005
+        for word in _PRICE_FROM_WORD_RE.findall(str(offer.title or ""))
+    }
+    words = []
+    for word in _PRICE_FROM_WORD_RE.findall(str(entry.product.title or "")):
+        if word.lower() in dearer_words or not title_words(word) or word in words:
+            continue
+        words.append(word)
+    return " ".join(words) if len(words) <= 4 else ""
+
+
 def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduct]:
     """The answer's products, each once at its cheapest offer, cheapest first.
 
@@ -2906,11 +2959,20 @@ def _price_first_result(
     )
     # The variants at the shop of each product shown (owner, 2026-11-19, rules 1 and 2),
     # read from its listings' titles; none when they do not read as variants.
+    # With them, what the shop's own pages name in stock (owner, 2026-11-24: «τα νούμερα και
+    # τα χρώματα να εμφανίζονται συγκεντρωτικά και στη δική μας κάρτα», «Μόνο τα
+    # διαθέσιμα»), and whether its listings differ in price ("From £32.50 (Vintage Indigo)").
     variant_lists = tuple(
         (str(entry.product.provider_product_id or "").strip(), kinds)
         for entry in first_page + opened
-        if entry.offers
-        for kinds in (variant_values(_variant_titles(entry)),)
+        for from_words in (_price_from(entry),)
+        for kinds in (
+            merged_variants(
+                variant_values(_variant_titles(entry)) if entry.offers else (),
+                shop_option_values(_shop_options(entry)),
+            )
+            + (((PRICE_FROM, (from_words,)),) if from_words is not None else ()),
+        )
         if kinds
     )
     variant_marks = tuple(

@@ -75,7 +75,7 @@ import shop_catalogue_test as look  # noqa: E402
 
 from picwise_checks import ledger as L  # noqa: E402
 from picwise_checks.rows import row_from_record, row_of, row_record  # noqa: E402,F401
-from picwise_checks.page_reader import NOTHING, Offer, PageRead  # noqa: E402
+from picwise_checks.page_reader import NOTHING, Offer, PageRead, options_in_stock  # noqa: E402
 from picwise_checks.page_reader import read_catalogue_page, read_page_bytes, read_product_json  # noqa: E402
 from picwise_checks.verdicts import (  # noqa: E402
     PageAnswer, Row, ShopNight, address_parts, page_verdict, shop_reads_pages, stock_reading, tie,
@@ -559,8 +559,9 @@ def judge(rows: Mapping[str, Row], result: ShopResult, *, shared_ids: Iterable[s
     for key, answer in result.answers.items():
         row = rows[key]
         verdict = page_verdict(row, answer, shop_reads_pages=reads_pages, shared_id=row.product_id in shared)
-        site_price, how, stock = None, "", ""
+        site_price, how, stock, options = None, "", "", ""
         if verdict.state == "passed" and answer.read.found:
+            options = options_in_stock(answer.read)
             tied, how = tie(row, answer.read,
                             feed_rows_one_price=len(by_page.get(address_parts(row.address), ())) <= 1)
             site_price = tied.price if tied is not None else None
@@ -570,7 +571,7 @@ def judge(rows: Mapping[str, Row], result: ShopResult, *, shared_ids: Iterable[s
                     {offer.availability for offer in answer.read.offers if offer.availability}
                 for word in said:
                     stock_words[f"{stock}: {word}"] += 1
-        readings[key] = L.Reading(page=verdict, site_price=site_price, tie=how, stock=stock)
+        readings[key] = L.Reading(page=verdict, site_price=site_price, tie=how, stock=stock, options=options)
     return readings
 
 

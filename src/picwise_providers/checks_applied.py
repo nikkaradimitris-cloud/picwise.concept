@@ -65,6 +65,11 @@ from .normalization import extract_merchant_name
 
 CHECKS_COLUMN = "checks_cut"
 PRICE_SOURCE_COLUMN = "price_source"
+# A product's options in stock on its shop's own page, as the bot read them in the last 3
+# days (JSON, `picwise_checks.page_reader.options_in_stock`): the card names them (owner,
+# 2026-11-24: «τα νούμερα και τα χρώματα να εμφανίζονται συγκεντρωτικά και στη δική μας
+# κάρτα», «Μόνο τα διαθέσιμα»).
+OPTIONS_COLUMN = "shop_options"
 SHOP_SITE = "shop site"
 DECISIONS_ENV = "PICWISE_CHECKS_DECISIONS"
 DECISIONS_FORMAT = "picwise-checks-decisions"
@@ -209,6 +214,7 @@ def apply_checks(
     wait: Mapping[str, str] = decisions.get("wait") or {}
     stock: Mapping[str, list] = decisions.get("stock") or {}
     prices: Mapping[str, list] = decisions.get("prices") or {}
+    options: Mapping[str, list] = decisions.get("options") or {}
     counts: Counter = Counter()
     cut_by_shop: Counter = Counter()
     reasons: Counter = Counter()
@@ -251,6 +257,9 @@ def apply_checks(
                 if key in stock:
                     raw["shop_stock"] = str(stock[key][0])
                     counts["stock_" + str(stock[key][0]).replace(" ", "_")] += 1
+                if key in options and options[key] and str(options[key][0]).strip():
+                    raw[OPTIONS_COLUMN] = str(options[key][0])
+                    counts["options_from_page"] += 1
                 if key in prices:
                     for column in _SALE_COLUMNS:
                         raw.pop(column, None)
@@ -258,7 +267,7 @@ def apply_checks(
                     result[index] = replace(product, price_text=str(prices[key][0]), raw=raw)
                     counts["price_from_site"] += 1
                     continue
-                if key not in stock:
+                if key not in stock and OPTIONS_COLUMN not in raw:
                     continue
         result[index] = replace(product, raw=raw)
         if CHECKS_COLUMN in raw:
@@ -288,6 +297,7 @@ def apply_checks(
         "cut_by_shop": [{"shop": name, "cut": count} for name, count in cut_by_shop.most_common(_SHOPS_LISTED)],
         "price_from_site": counts["price_from_site"],
         "stock_from_page": {name[6:]: count for name, count in counts.items() if name.startswith("stock_")},
+        "options_from_page": counts["options_from_page"],
         "not_shown_until_checked": len(unchecked),
         "not_shown_until_checked_by_reason": dict(sorted(unchecked_reasons.items())),
         # 19.3.1 with its switch off: the bot's waits of a pass over 3 nights old, left aside.

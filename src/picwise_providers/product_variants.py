@@ -113,10 +113,12 @@ _NOT_THE_PAGE_RE = re.compile(
 
 def page_key(raw: Mapping[str, Any], *, shop: str = "") -> str:
     """The shop and its product page (host and path, lower case, no query) a row links to;
-    "" when it links to none, or to a shop's front page."""
+    "" when it links to none, or to a shop's front page. A row of Awin's own format names
+    the page in `merchant_deep_link` (owner, 2026-11-24: a shop's sizes on one page are one
+    card on ours, «συγκεντρωτικά»)."""
     if not isinstance(raw, dict) and not isinstance(raw, Mapping):
         return ""
-    link = raw.get("link")
+    link = raw.get("link") or raw.get("merchant_deep_link")
     if not link:
         return ""
     # Read by hand, not by `urlsplit`: this runs on every product of an answer.
@@ -276,6 +278,25 @@ def head_key(*, shop: str, brand: str, title: str) -> str:
         if key:
             return key
     return family_key(shop=shop, brand=brand, title=title)
+
+
+# A shop naming a product's colour before its name, in words no list of colours holds
+# ("Vintage Indigo Tenconi Zip Up Hoodie", "Fila Navy Tenconi Zip Up Hoodie", "Grey Marl
+# Tenconi Zip Up Hoodie": Fila UK, 2026-11-24): the last own words of the head, its model,
+# are shared. A product alone under its head key is asked about with the others of its
+# model (`variant_families.doubtful_sets`), so that the AI decides whether they are one.
+TAIL_WORDS = 4
+
+
+def tail_key(*, shop: str, brand: str, title: str) -> str:
+    """The family key of the last `TAIL_WORDS` own words of a title's head, when the head has
+    more own words than those; "" otherwise (its head key is the same then)."""
+    head = _HEAD_END_RE.split(title, maxsplit=1)[0]
+    own, _variant = title_parts(head)
+    words = own.split()
+    if not shop or len(words) <= TAIL_WORDS:
+        return ""
+    return f"{shop}\x1f{brand.strip().lower()}\x1f{' '.join(words[-TAIL_WORDS:])}"
 
 
 def sizes_apart_key(*, shop: str, brand: str, title: str) -> str:

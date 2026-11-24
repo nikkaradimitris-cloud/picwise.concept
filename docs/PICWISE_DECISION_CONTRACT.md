@@ -940,6 +940,46 @@ The owner: «ένα μαγαζί πουλάει ένα ζευγάρι παπού
    `tests/test_picwise_product_variants.py`, `tests/test_picwise_variant_families.py` and
    `tests/test_picwise_variant_names.py`.
 
+## The card's sizes and colours, decided by the owner, 2026-11-24
+
+The owner: «υπάρχουν καταστήματα όπως το fila που ενώ έχουν καταχώρηση μεγεθών σε μία
+καταχώρηση ... στη δική μας κάρτα δεν φαίνεται συγκεντρωτικά ... τα νούμερα και τα χρώματα
+να εμφανίζονται συγκεντρωτικά και στη δική μας κάρτα ... σε όποια άλλη κατηγορία υπάρχει
+διαχωρισμός ... watt διαστάσεις χρώματα ... για να μην έχουμε θόρυβο στην αναζήτηση». Seen
+live that day: Fila UK's hoodies were 11 cards with no size named, each title ending in one
+size ("Tenconi Zip Up Hoodie - L"), one model in three colours three cards (Navy £65, Grey
+Marl £65, Vintage Indigo £32.50). Asked, he chose each of the four proposals: the title
+without the size, «Από £32,50 και το χρώμα», «Μόνο τα διαθέσιμα», «Φτιάξε κατευθείαν» (no
+look on the server first).
+
+1. **The sizes in stock, from the shop's own page.** A shop that sells a product's sizes
+   on one page lists it as one row; its page (Shopify's JSON) names its options and which
+   are in stock. The checks' bot keeps them each night a product passes
+   (`page_reader.options_in_stock`, `ledger.Product.options`), its decisions carry them for
+   3 days, and the preparation writes them on the row (`checks_applied.OPTIONS_COLUMN`,
+   `shop_options`). The card names them ("Sizes at the shop: XS, S, M"; one size left is
+   named too), before the sizes its titles name (`variant_names.merged_variants`); its
+   colours and other options from both.
+2. **The title without the size.** When the card names the sizes, a size at its title's
+   end goes ("Tenconi Zip Up Hoodie - L" reads "Tenconi Zip Up Hoodie";
+   `reference._title_without_size`).
+3. **One card from its cheapest, its colour named.** When a shop's listings of the product
+   on one card differ in price, the card reads "From £32.50 (Vintage Indigo)": the shop's
+   own price of its cheapest listing, nothing worked out, and the words that tell that
+   listing apart from the dearer ones, sizes aside (`search_selection._price_from`).
+4. **What joins them, without waiting for the AI.** A row of Awin's own format (the second
+   link, from 19/11) names its page in `merchant_deep_link`, not `link`: read too
+   (`product_variants.page_key`), so its sizes on one page are one card again.
+5. **Colours named in words no list holds** ("Vintage Indigo", "Grey Marl", "Gardenia"):
+   a product alone under its head key is put in one set with the others of its model, the
+   last four own words of the title's head (`product_variants.tail_key`), and the AI is
+   asked, as for any set, whether they are one product (`variant_families.doubtful_sets`).
+6. **Not done:** Awin's own columns of a product's variants (`parent_product_id`, `colour`,
+   `Fashion:size`, `size_stock_status`) stay out of the prepared file
+   (`prepared_catalogue.LEFT_OUT_COLUMNS`): keeping them costs the preparation memory not
+   measured (it runs at 13.7 to 15 GB of the server's 20). Which of a shop's rows reach the
+   catalogue was not looked at, on his word.
+
 ## The price bar, decided by the owner, 2026-11-12
 
 **From and to, decided by the owner, 2026-11-15:** «Ο χρήστης μπορεί να διαλέξει στο

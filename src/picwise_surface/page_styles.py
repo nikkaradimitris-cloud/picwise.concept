@@ -107,6 +107,9 @@ _PAGE_STYLES = (
     ".pw-card-title{margin:0;font-size:15px;line-height:1.35;font-weight:650;color:var(--ink);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:4.05em;}"
     ".pw-card-shop{margin:6px 0 0;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}"
     ".pw-price{margin:8px 0 2px;font-size:24px;line-height:1.15;font-weight:800;letter-spacing:-.02em;color:var(--ink);}"
+    # "From £32.50 (Vintage Indigo)": a shop's listings of one product at different prices.
+    ".pw-price-from{font-size:14px;font-weight:600;letter-spacing:0;color:var(--muted,#5b6b82);}"
+    ".pw-price-variant{font-size:14px;font-weight:500;letter-spacing:0;color:var(--muted,#5b6b82);}"
     ".pw-card-stock{margin:0;font-size:13px;font-weight:650;line-height:1.35;}"
     ".pw-stock-listed,.pw-stock-verified{color:var(--green);}"
     ".pw-stock-unconfirmed{color:var(--muted);}"

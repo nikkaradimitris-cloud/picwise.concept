@@ -27,6 +27,9 @@ POWER = "power"
 OPTIONS = "options"
 # The order the card names them in, and how many it names.
 KINDS = (COLOURS, OPTIONS, SIZES, CAPACITIES, POWER)
+# Not a kind of variant: with a card's variants, that its shop's listings differ in price,
+# and the words of its cheapest ("From £32.50 (Vintage Indigo)"; owner, 2026-11-24).
+PRICE_FROM = "price_from"
 KINDS_SHOWN = 2
 # The titles read for one card at most: a page of a shop can hold hundreds of rows.
 TITLES_READ = 200
@@ -305,4 +308,87 @@ def variant_values(titles: Sequence[str]) -> tuple[tuple[str, tuple[str, ...]], 
         elif kind == POWER:
             ordered.sort(key=lambda value: _scaled_order(value, _POWER_UNITS, place[value]))
         kinds.append((kind, tuple(ordered)))
+    return tuple(kinds[:KINDS_SHOWN])
+
+
+# ---- the options the shop's own page names (owner, 2026-11-24) --------------------------
+# Owner, 2026-11-24: «καταστήματα όπως το fila ... έχουν ένα προϊόν το οποίο συμπεριλαμβάνει
+# πολλά νούμερα στη δική μας κάρτα δεν φαίνεται συγκεντρωτικά»; asked which, «Μόνο τα
+# διαθέσιμα». A shop that sells a product's sizes on one page lists it as one row: its sizes
+# are read on the page by the checks' bot, those in stock (`checks_applied.OPTIONS_COLUMN`).
+
+# An option's name, as shops write it, to the card's kind; any other name is an option.
+_OPTION_KINDS = (
+    (re.compile(r"(?i)\b(?:colou?rs?|shades?|finish(?:es)?|prints?|patterns?)\b"), COLOURS),
+    (re.compile(r"(?i)\b(?:sizes?|waist|leg|length|fit|width|dimensions?)\b"), SIZES),
+    (re.compile(r"(?i)\b(?:capacity|storage|memory|volume|litres?)\b"), CAPACITIES),
+    (re.compile(r"(?i)\b(?:power|watts?|wattage|voltage)\b"), POWER),
+)
+
+
+def option_kind(name: str) -> str:
+    """The card's kind of a shop's option ("Size", "Shoe Size", "Colour", "Wattage")."""
+    for pattern, kind in _OPTION_KINDS:
+        if pattern.search(str(name or "")):
+            return kind
+    return OPTIONS
+
+
+def shop_option_values(written: Sequence[str]) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    """The kinds and values the shop's own pages name in stock, from each listing's
+    `shop_options` (JSON, the card's own first), each value once, in the shop's order, sizes
+    as `variant_values` orders them; one value is kept too (the only size left is a fact)."""
+    import json
+
+    found: dict[str, dict[str, str]] = {}
+    for text in written:
+        try:
+            options = json.loads(text) if text else []
+        except ValueError:
+            continue
+        for item in options if isinstance(options, list) else ():
+            if not (isinstance(item, list) and len(item) == 2 and isinstance(item[1], list)):
+                continue
+            kind = option_kind(str(item[0]))
+            values = found.setdefault(kind, {})
+            for value in item[1]:
+                shown = " ".join(str(value).split())
+                if shown:
+                    values.setdefault(_key(shown), shown)
+    kinds: list[tuple[str, tuple[str, ...]]] = []
+    for kind in KINDS:
+        values = list((found.get(kind) or {}).values())
+        if not values:
+            continue
+        place = {value: index for index, value in enumerate(values)}
+        if kind == SIZES:
+            values.sort(key=lambda value: _size_order(value, place[value]))
+        elif kind == CAPACITIES:
+            values.sort(key=lambda value: _scaled_order(value, _CAPACITY_UNITS, place[value]))
+        elif kind == POWER:
+            values.sort(key=lambda value: _scaled_order(value, _POWER_UNITS, place[value]))
+        kinds.append((kind, tuple(values)))
+    return tuple(kinds)
+
+
+def merged_variants(
+    from_titles: Sequence[tuple[str, tuple[str, ...]]], from_pages: Sequence[tuple[str, tuple[str, ...]]]
+) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    """A card's variants: its sizes, capacities and power as the shop's own pages name them
+    in stock, where they name them, else as its titles do; its colours and other options
+    from both, the titles' first (a product joined from a shop's colour pages has one colour
+    on each page). In the order of `KINDS`, `KINDS_SHOWN` kinds at most."""
+    pages = dict(from_pages)
+    titles = dict(from_titles)
+    kinds = []
+    for kind in KINDS:
+        if kind in (COLOURS, OPTIONS):
+            seen: dict[str, str] = {}
+            for value in list(titles.get(kind) or ()) + list(pages.get(kind) or ()):
+                seen.setdefault(_key(value), value)
+            values = list(seen.values())
+        else:
+            values = list(pages.get(kind) or titles.get(kind) or ())
+        if values:
+            kinds.append((kind, tuple(values)))
     return tuple(kinds[:KINDS_SHOWN])

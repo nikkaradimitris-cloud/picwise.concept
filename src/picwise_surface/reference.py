@@ -173,12 +173,51 @@ def _variant_lines(kinds: object) -> list[str]:
     for kind, values in tuple(kinds or ()):  # type: ignore[arg-type]
         heading = _VARIANT_HEADINGS.get(str(kind))
         values = [str(value) for value in values if str(value).strip()]
-        if not heading or len(values) < 2:
+        # One size in stock is a fact the shop's page gave (owner, 2026-11-24: «Μόνο τα
+        # διαθέσιμα»); one value of another kind is the product's own.
+        if not heading or len(values) < (1 if kind == "sizes" else 2):
             continue
         named = ", ".join(values[:_VARIANTS_NAMED])
         more = len(values) - _VARIANTS_NAMED
         lines.append(f"{heading} at the shop: {named}" + (f" +{more} more" if more > 0 else ""))
     return lines
+_PRICE_FROM_KIND = "price_from"
+# A size at a title's end, after " - ", " | ", " / " or ", " ("Tenconi Zip Up Hoodie - L",
+# "Bomber Jacket – Small", "Trainers - Size 10").
+_TITLE_SIZE_END_RE = re.compile(r"\s*(?:[-–—|/,]\s*)(?:size\s+)?([^\s,/|–—-]+(?:\s?[^\s,/|–—-]+)?)\s*$", re.IGNORECASE)
+_GENERIC_SIZE_RE = re.compile(
+    r"^(?:x{0,4}[sml]|x{1,4}l|\d?xl|\d{1,2}(?:\.5)?|uk\s?\d{1,2}(?:\.5)?|eu\s?\d{2}|small|medium|large|x-?large"
+    r"|one\s?size|\d{1,2}-\d{1,2}\s?(?:y|yrs?|years?|m|months?))$",
+    re.IGNORECASE,
+)
+
+
+def _title_without_size(title: str, kinds: object) -> str:
+    """The card's title with the size at its end taken off, when the card names the sizes
+    (owner, 2026-11-24, of "Tenconi Zip Up Hoodie - L": «Χωρίς μέγεθος»); else as it is."""
+    sizes = next((values for kind, values in tuple(kinds or ()) if kind == "sizes"), ())  # type: ignore[arg-type]
+    if not sizes:
+        return title
+    found = _TITLE_SIZE_END_RE.search(title)
+    if not found:
+        return title
+    end = " ".join(found.group(1).split()).lower()
+    named = {" ".join(str(size).split()).lower() for size in sizes}
+    if end not in named and not _GENERIC_SIZE_RE.match(end):
+        return title
+    kept = title[: found.start()].rstrip(" -–—|/,")
+    return kept if len(kept.split()) >= 2 else title
+
+
+def _price_from_words(kinds: object) -> str | None:
+    """None when the card's shop sells the product at one price; else the words of its
+    cheapest listing, "" for none (`search_selection._price_from`)."""
+    for kind, values in tuple(kinds or ()):  # type: ignore[arg-type]
+        if kind == _PRICE_FROM_KIND:
+            return str((tuple(values) or ("",))[0])
+    return None
+
+
 # How an answer is sorted is said by its heading alone ("Results for: kettle, offers
 # first, then cheapest first"): the line under it no longer opens with a sentence of the
 # order (owner, 2026-11-12: "from the shops connected to PicWise" «εννοείται και είναι
@@ -750,9 +789,10 @@ def _build_price_first_cards(
         # 2026-11-13: "View at Geepas Partner Program" reads "View at Geepas").
         shop = shop_display_name(str(product.get("merchant_name") or ""))
         stock_line, stock_state = _stock_line(label)
+        kinds = variants.get(product_id)
         cards.append(
             {
-                "name": str(product.get("title") or "").strip(),
+                "name": _title_without_size(str(product.get("title") or "").strip(), kinds),
                 "role_label": role_label,
                 "choice_id": product_id,
                 "anchor_id": f"pw-choice-{index + 1}",
@@ -762,6 +802,9 @@ def _build_price_first_cards(
                 # The shop's own price, its sale price where it gives one; PicWise works
                 # out no price after an offer (owner, 2026-11-19).
                 "price": _display_price(product),
+                # Its shop's listings differ in price: "From £32.50 (Vintage Indigo)" (owner,
+                # 2026-11-24: «Από £32,50 και το χρώμα»).
+                "price_from": _price_from_words(kinds),
                 "shop": shop,
                 # The merchant from the feed row, never invented (`_provider_store_label`).
                 "shop_line": _provider_store_label(provider_key, shop),
@@ -770,7 +813,7 @@ def _build_price_first_cards(
                 "stock_state": stock_state,
                 "extra_line": shops_label if is_recommended or (offer and shops_label) else "",
                 # Its variants at the shop, where the visitor chooses them.
-                "variant_lines": _variant_lines(variants.get(product_id)),
+                "variant_lines": _variant_lines(kinds),
                 # A variant another shop sells cheaper, a card of its own higher up (owner's
                 # rule 3, 2026-11-19): "Green is £18.00 at Shop A".
                 "cheaper_lines": [
@@ -1067,7 +1110,12 @@ def _render_choice_card(
     lines = []
     if str(card.get("shop_line") or ""):
         lines.append(f'<p class="pw-card-shop">{escape(str(card["shop_line"]))}</p>')
-    lines.append(f'<p class="pw-price">{escape(str(card["price"]))}</p>')
+    price_from = card.get("price_from")
+    if price_from is None:
+        lines.append(f'<p class="pw-price">{escape(str(card["price"]))}</p>')
+    else:
+        variant = f' <span class="pw-price-variant">({escape(str(price_from))})</span>' if str(price_from) else ""
+        lines.append(f'<p class="pw-price"><span class="pw-price-from">From</span> {escape(str(card["price"]))}{variant}</p>')
     price_note = price_note_html(
         card.get("price_note"),  # type: ignore[arg-type]
         shop=str(card.get("shop") or ""),

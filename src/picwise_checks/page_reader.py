@@ -54,6 +54,8 @@ class Offer:
     gtin: str = ""
     mpn: str = ""
     variant: str = ""
+    # Its option values, in the order of the page's `option_names` ("M", "Navy").
+    options: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -67,6 +69,9 @@ class PageRead:
     skus: frozenset[str] = field(default_factory=frozenset)
     mpns: frozenset[str] = field(default_factory=frozenset)
     canonical: str = ""
+    # The names of the product's options, as the shop names them ("Size", "Colour"): a
+    # Shopify product's own (`read_shopify_product`).
+    option_names: tuple[str, ...] = ()
 
     @property
     def found(self) -> bool:
@@ -363,6 +368,11 @@ def read_shopify_product(data: Mapping[str, Any], *, pence: bool) -> PageRead:
     offers; a variant's `available` says whether it can be bought now."""
     if not isinstance(data, Mapping):
         return NOTHING
+    names = tuple(
+        _code(option.get("name") if isinstance(option, Mapping) else option)
+        for option in (data.get("options") or ())
+        if isinstance(option, (Mapping, str))
+    )[:3]
     offers = []
     for variant in data.get("variants") or ():
         if not isinstance(variant, Mapping):
@@ -371,6 +381,9 @@ def read_shopify_product(data: Mapping[str, Any], *, pence: bool) -> PageRead:
         if pence and price is not None:
             price = round(price / 100, 2)
         available = variant.get("available")
+        values = variant.get("options")
+        if not isinstance(values, (list, tuple)):
+            values = [variant.get(f"option{place}") for place in range(1, len(names) + 1)]
         offers.append(
             Offer(
                 price=price,
@@ -378,6 +391,7 @@ def read_shopify_product(data: Mapping[str, Any], *, pence: bool) -> PageRead:
                 sku=_code(variant.get("sku")),
                 gtin=gtin14(variant.get("barcode")),
                 variant=_code(variant.get("id")),
+                options=tuple(_code(value) for value in values[: len(names)]),
             )
         )
     if not offers:
@@ -388,7 +402,37 @@ def read_shopify_product(data: Mapping[str, Any], *, pence: bool) -> PageRead:
         offers=tuple(offers),
         gtins=frozenset(offer.gtin for offer in offers) - {""},
         skus=frozenset(offer.sku for offer in offers) - {""},
+        option_names=names,
     )
+
+
+# A shop's options read for the card, by name, the values in stock (owner, 2026-11-24: «τα
+# νούμερα και τα χρώματα να εμφανίζονται συγκεντρωτικά και στη δική μας κάρτα», «Μόνο τα
+# διαθέσιμα»). Shopify's single option of a product with no variants is "Title".
+OPTIONS_KEPT = 3
+OPTION_VALUES_KEPT = 30
+
+
+def options_in_stock(read: PageRead) -> str:
+    """The product's options and their values in stock, as the shop names them, written as
+    JSON (`[["Size", ["XS", "S"]], ["Colour", ["Navy"]]]`), the shop's order kept; "" when
+    the page names none. A value is kept when an offer in stock has it."""
+    if not read.option_names:
+        return ""
+    found: list[tuple[str, list[str]]] = []
+    for place, name in enumerate(read.option_names[:OPTIONS_KEPT]):
+        if not name or name.lower() == "title":
+            continue
+        values: dict[str, str] = {}
+        for offer in read.offers:
+            if offer.availability != "instock" or place >= len(offer.options):
+                continue
+            value = offer.options[place]
+            if value and value.lower() != "default title":
+                values.setdefault(value.lower(), value)
+        if values:
+            found.append((name, list(values.values())[:OPTION_VALUES_KEPT]))
+    return json.dumps(found, ensure_ascii=False, separators=(",", ":")) if found else ""
 
 
 def words(text: str) -> set[str]:

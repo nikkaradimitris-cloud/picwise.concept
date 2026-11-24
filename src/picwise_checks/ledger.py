@@ -115,6 +115,10 @@ class Product:
     stock: str = ""
     stock_on: str = ""
     sig: str = ""
+    # The product's options in stock on its shop's own page (`page_reader.options_in_stock`)
+    # and the night read: the card names them (owner, 2026-11-24: «Μόνο τα διαθέσιμα»).
+    options: str = ""
+    options_on: str = ""
 
 
 @dataclass(slots=True)
@@ -163,6 +167,8 @@ class Reading:
     site_price: float | None = None
     tie: str = ""
     stock: str = ""
+    # Its options in stock, as JSON (`page_reader.options_in_stock`); "" when none were read.
+    options: str = ""
 
 
 def row_signature(row: Row) -> str:
@@ -395,6 +401,9 @@ def record_night(
             proof_tonight[row.shop][1] += same_price(reading.site_price, row.price)
             shop = ledger.shop(row.shop)
             shop.ratios = (shop.ratios + [[reading.site_price, row.price]])[-RATIOS_KEPT:]
+        if reading.page.state == PASSED:
+            # Read tonight: the options in stock now, none when the page names none.
+            product.options, product.options_on = reading.options, tonight
         if reading.stock:
             product.stock, product.stock_on = reading.stock, tonight
             if row.feed_stock:
@@ -616,6 +625,7 @@ def decisions(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown: Co
     wait: dict[str, str] = {}
     prices: dict[str, list[str]] = {}
     stock: dict[str, list[str]] = {}
+    options: dict[str, list[str]] = {}
     enter: list[str] = []
     for key in shown | candidates:
         row = rows.get(key)
@@ -646,6 +656,9 @@ def decisions(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown: Co
         if shop.reader == "page" and stock_proven(shop) and product.stock and read is not None \
                 and (night - read).days <= STOCK_DAYS:
             stock[key] = [product.stock, product.stock_on]
+        read_options = _day(product.options_on)
+        if product.options and read_options is not None and (night - read_options).days <= STOCK_DAYS:
+            options[key] = [product.options, product.options_on]
     shops_out = {name: shop.out for name, shop in sorted(ledger.shops.items()) if shop.out}
     return {
         "format": DECISIONS_FORMAT,
@@ -657,6 +670,7 @@ def decisions(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown: Co
         "enter": sorted(enter),
         "prices": dict(sorted(prices.items())),
         "stock": dict(sorted(stock.items())),
+        "options": dict(sorted(options.items())),
         "returning": sorted(came_back),
         **({"passed": sorted(passed)} if passed_over > 0 else {}),
     }

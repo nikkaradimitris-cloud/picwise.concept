@@ -31,7 +31,7 @@ from typing import Any
 from .contracts import ProviderProduct
 from .decision_labels import parse_price_amount
 from .normalization import extract_merchant_name
-from .product_variants import DOUBTFUL, head_key, page_key, sizes_apart_key, variant_difference
+from .product_variants import DOUBTFUL, head_key, page_key, sizes_apart_key, tail_key, variant_difference
 
 FAMILIES_FILE_ENV = "PICWISE_FAMILIES_FILE"
 FAMILIES_NAME = "families.json"
@@ -130,6 +130,25 @@ def doubtful_sets(products: Iterable[ProviderProduct]) -> list[dict[str, Any]]:
             held[2].append(ref)
             if price < held[0]:
                 units[unit] = (price, product, held[2])
+    # A product alone under its head key joins the others of its model (`tail_key`): one
+    # shop's colours named before the name, in words no list of colours holds (owner,
+    # 2026-11-24, Fila UK). Each product stays in one set, so that no two answers split it.
+    moves: list[tuple[str, str]] = []
+    for key, units in by_key.items():
+        if len(units) != 1:
+            continue
+        product = next(iter(units.values()))[1]
+        tail = tail_key(shop=_shop(product), brand=str(product.brand or ""), title=str(product.title or ""))
+        if tail and tail != key:
+            moves.append((key, tail))
+    for key, tail in moves:
+        (unit_key, held), = by_key.pop(key).items()
+        units = by_key[tail]
+        other = units.get(unit_key)
+        if other is None:
+            units[unit_key] = held
+        else:
+            units[unit_key] = (min(other[0], held[0]), other[1] if other[0] <= held[0] else held[1], other[2] + held[2])
     sets: list[dict[str, Any]] = []
     for key, units in by_key.items():
         if len(units) < 2:
