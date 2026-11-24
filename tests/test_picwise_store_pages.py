@@ -84,6 +84,11 @@ class TheDepartmentsFileTests(unittest.TestCase):
         # Lighting and Perfume are one kind each: no page, their search instead (7.1).
         self.assertEqual(len(departments.kinds["lighting"]), 1)
         self.assertEqual(len(departments.kinds["perfume"]), 1)
+        # Car tyres too, since the look of 2026-11-24: winter and summer tyres' search is the tyres'.
+        self.assertEqual([kind.query for kind in departments.kinds["car-tyres"]], ["tyres"])
+        # No kind whose search the look found to be another kind's own.
+        kinds = {kind.kind for items in departments.kinds.values() for kind in items}
+        self.assertFalse(kinds & {"robot_mower", "winter_tyres", "summer_tyres"})
 
 
 class TheSwitchTests(unittest.TestCase):
@@ -111,6 +116,8 @@ class TheDepartmentsPageTests(_On, unittest.TestCase):
         self.assertIn("/department/kitchen", links)
         self.assertIn("/search?q=lamp", links)
         self.assertIn("/search?q=perfume", links)
+        self.assertIn("/search?q=tyres", links)
+        self.assertNotIn("/department/car-tyres", links)
         self.assertNotIn("/department/lighting", links)
         # Its header has the departments' row; the footer the owner's line, no "Cookies".
         self.assertIn('class="pw-hs-nav"', page)
@@ -159,7 +166,8 @@ class ADepartmentsPageTests(_On, unittest.TestCase):
             self.assertTrue(href.startswith(("/", "#")), href)
 
     def test_a_department_of_one_kind_or_none_has_no_page(self) -> None:
-        for path in ("/department/lighting", "/department/perfume", "/department/nothing", "/department/kitchen/x"):
+        for path in ("/department/lighting", "/department/perfume", "/department/car-tyres", "/department/nothing",
+                     "/department/kitchen/x"):
             self.assertTrue(_call(path)[0].startswith("404"), path)
 
     def test_never_presented_as_price_comparison(self) -> None:

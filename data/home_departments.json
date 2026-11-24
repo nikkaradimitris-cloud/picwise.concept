@@ -1,5 +1,5 @@
 {
- "_about": "The departments of the home page as a store (docs/PICWISE_HOME_STORE_SPEC.md, 7.1; the owner, 2026-11-24, «Ναι σε όλα»): their four groups and, for each, its kinds: every kind of data/kind_lines/google_lines_by_kind.json whose Google line is open in data/category_switches.json on 2026-11-24, in the department of that line (alloy wheels in Car tyres by hand). 'name' is what a visitor reads, written by hand; 'query' the words its tile and row search; 'drawing' its picture (assets/home/art), or none. A kind with no product tonight is not shown. Written by hand on 2026-11-24 from those two files; changed only by hand.",
+ "_about": "The departments of the home page as a store (docs/PICWISE_HOME_STORE_SPEC.md, 7.1; the owner, 2026-11-24, «Ναι σε όλα»): their four groups and, for each, its kinds: every kind of data/kind_lines/google_lines_by_kind.json whose Google line is open in data/category_switches.json on 2026-11-24, in the department of that line (alloy wheels in Car tyres by hand). 'name' is what a visitor reads, written by hand; 'query' the words its tile and row search; 'drawing' its picture (assets/home/art), or none. A kind with no product tonight is not shown. Written by hand on 2026-11-24 from those two files; changed only by hand. Taken off by the look on the server's data (2026-11-24): robot mowers (their search is the lawn mowers'), winter and summer tyres (the tyres'), and alloy wheels (no product; with them gone Car tyres is one kind and leads to its search).",
  "_πώς": "Για να αλλάξεις πώς λέγεται ένα είδος, άλλαξε το \"name\" του· για να μη φαίνεται, σβήσε τη γραμμή του.",
  "groups": [
   {
@@ -1065,12 +1065,6 @@
     "drawing": "lawn_mower"
    },
    {
-    "kind": "robot_mower",
-    "name": "Robot mowers",
-    "query": "robot mower",
-    "drawing": ""
-   },
-   {
     "kind": "brush_cutter",
     "name": "Brush cutters",
     "query": "brush cutter",
@@ -1313,24 +1307,6 @@
     "name": "Tyres",
     "query": "tyres",
     "drawing": "tyre"
-   },
-   {
-    "kind": "winter_tyres",
-    "name": "Winter tyres",
-    "query": "winter tyres",
-    "drawing": ""
-   },
-   {
-    "kind": "summer_tyres",
-    "name": "Summer tyres",
-    "query": "summer tyres",
-    "drawing": ""
-   },
-   {
-    "kind": "alloy_wheels",
-    "name": "Alloy wheels",
-    "query": "alloy wheels",
-    "drawing": ""
    }
   ]
  }

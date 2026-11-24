@@ -57,8 +57,9 @@ COLLECT = r"""
   }
   const wide = [...document.querySelectorAll('body *')].filter(vis).filter(el => !scroller(el)).filter(el => {
     const r = el.getBoundingClientRect(); return r.right > innerWidth + 0.5 || r.left < -0.5; }).length;
-  const broken = [...document.images].filter(i => i.getAttribute('src') && i.getAttribute('src').startsWith('/') && (!i.complete || !i.naturalWidth)).length;
-  return { targets, texts, wide, broken, height: document.documentElement.scrollHeight };
+  const own = [...document.images].map(i => i.getAttribute('src') || '').filter(src => src.startsWith('/'));
+  const waiting = [...document.images].filter(i => (i.getAttribute('src') || '').startsWith('/') && (!i.complete || !i.naturalWidth)).length;
+  return { targets, texts, wide, own: [...new Set(own)], waiting, height: document.documentElement.scrollHeight };
 }
 """
 
@@ -95,7 +96,8 @@ def measures(found: dict) -> str:
     tiny = sorted({f"{t['size']:.0f}px {t['t'][:18]}" for t in found["texts"] if t["size"] < 11.99})
     line = (f"{found['height']:>6,} px tall; tapped {len(targets):>3}: under 48 px {len(small)} (the store's own {len(own_small)}), "
             f"nearer than 8 px {near} (the store's own {len(own_near)}); words under 12 px {len(tiny)}; wider than the screen "
-            f"{found['wide']}; site pictures not loaded {found['broken']}")
+            f"{found['wide']}; the site's own pictures {len(found['own'])}, with no file {found['missing']} "
+            f"(not loaded yet, off the screen: {found['waiting']})")
     for label, items in (("own under 48", [f"{t['label']} {t['w']:.0f}x{t['h']:.0f}" for t in own_small]), ("own near", own_near),
                          ("under 12 px", tiny)):
         if items:
@@ -144,7 +146,10 @@ def main(argv: list[str]) -> int:
                 page.wait_for_load_state("load")
                 page.evaluate("async()=>{for(let y=0;y<document.documentElement.scrollHeight;y+=500){scrollTo(0,y);await new Promise(r=>setTimeout(r,30));}scrollTo(0,0);}")
                 page.wait_for_timeout(250)
-                print(f"    {label:13} {measures(page.evaluate(COLLECT))}" + (f"\n        SCRIPT ERRORS: {errors[:3]}" if errors else ""))
+                found = page.evaluate(COLLECT)
+                # A picture of the site that is no file is broken; one not loaded yet is only off the screen.
+                found["missing"] = sum(1 for src in found["own"] if not (pages / src.split("?", 1)[0].lstrip("/")).is_file())
+                print(f"    {label:13} {measures(found)}" + (f"\n        SCRIPT ERRORS: {errors[:3]}" if errors else ""))
                 context.close()
         # Google's three, the home page on a phone four times slower, on a slow 4G line.
         for name in [n for n in ("home", "department_kitchen", "search_kettle") if n in names]:

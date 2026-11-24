@@ -100,6 +100,8 @@ STORE_PAGES_STYLES = (
     ".pw-hs-of-terms{margin:0;font-size:13px;color:var(--hs-muted);}"
     ".pw-hs-of-terms summary{display:flex;align-items:center;min-height:48px;cursor:pointer;color:var(--hs-acc);font-weight:600;}"
     ".pw-hs-of-terms p{margin:0 0 8px;line-height:1.5;}"
+    # 8 px between what is tapped (5.12; the look of 2026-11-24 measured them touching).
+    ".pw-hs-of-terms+.pw-hs-link{margin-top:8px;}"
     ".pw-hs-offerbox{margin:12px 16px 0;padding:14px 16px 6px;border-radius:18px;background:var(--hs-pale);}"
     ".pw-hs-offerbox .pw-hs-eyebrow{color:#5c4300;}"
     ".pw-hs-offerbox .pw-hs-of-title{margin-top:6px;font-size:17px;}"
@@ -610,7 +612,9 @@ SEARCH_PAGE_STYLES = (
 INFO_PAGE_STYLES = (
     ".pw-hs-doc .pw-emphasis{padding:12px 14px;border:1px solid var(--hs-line);border-radius:12px;background:var(--hs-cream);}"
     ".pw-hs-doc a{color:var(--hs-acc);font-weight:600;}"
-    ".pw-hs-doc p a{display:inline-block;min-height:24px;}"
+    # A link inside a sentence of today's texts (their words are not changed): 48 px to tap
+    # (5.12), by padding that moves no line (the look of 2026-11-24 measured them 24 px).
+    ".pw-hs-doc p a{padding:15px 0;}"
 )
 
 

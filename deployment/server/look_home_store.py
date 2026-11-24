@@ -313,7 +313,7 @@ def part_four(ask: Callable[..., Any], home: Any, kinds: Any, before: dict[str, 
         page = re.sub(r"<(script|style)\b.*?</\1>", "", body.decode("utf-8", "replace"), flags=re.S)
         band_drawn = "drawn" if 'class="pw-hs-pick"' in page else "left out"
         row_drawn = "drawn" if 'class="pw-hs-offer"' in page else "left out"
-        numbers = "shown" if "products from" in page else "left out"
+        numbers = "shown" if re.search(r"products? from £", page) else "left out"
         say(f"  before the facts: {path}: band {band_drawn}, offers row {row_drawn}, numbers {numbers}")
 
     # Every link inside the site, once; never a shop's button.
@@ -362,7 +362,9 @@ def part_four(ask: Callable[..., Any], home: Any, kinds: Any, before: dict[str, 
                 checked += 1
                 cards = cards_of(body.decode("utf-8", "replace"))
                 first = cards[0] if cards else {}
-                if not (first.get("recommended") and first.get("title") == pick.title and first.get("price") == pick.price):
+                # A page shows a title's runs of spaces as one, and its entities as written.
+                same_title = " ".join(html.unescape(pick.title).split()) == " ".join(html.unescape(first.get("title", "")).split())
+                if not (first.get("recommended") and same_title and first.get("price") == pick.price):
                     unlike += 1
                     say(f"    a Recommended UNLIKE its search «{query}»: page «{pick.price} {pick.title[:40]}», search «{first.get('price', '')} {first.get('title', '')[:40]}»")
     say(f"  {len(queue)} more addresses followed: {broken} broken; {outside} leading out of the site; "
