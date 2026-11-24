@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import html
 import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Mapping
@@ -77,6 +78,21 @@ def _first_non_empty(payload: Mapping[str, Any], keys: tuple[str, ...]) -> str:
 
 def _normalize_text(value: Any) -> str:
     return " ".join(str(value or "").split()).strip()
+
+
+def readable_title(value: Any) -> str:
+    """A title as a buyer reads it: the HTML codes a feed left in it read once ("22&quot;"
+    is 22", "&amp;" is &), twice for a text encoded twice, then its spaces made single.
+    Some shops' feeds carry their titles encoded (owner, 2026-11-24, «Ναι φτιάξε και τη μικρή
+    διόρθωση»: PCHUB.UK 1,564 and GamingKit 1,577 titles of the catalogue read "22&quot;" on
+    the card, since the page escapes the title again)."""
+    text = str(value or "")
+    for _ in range(2):
+        read = html.unescape(text)
+        if read == text:
+            break
+        text = read
+    return _normalize_text(text)
 
 
 def _split_currency(price_text: str) -> tuple[str, str]:
@@ -264,13 +280,15 @@ def normalize_feed_row_to_provider_product(
         return None
 
     payload = dict(row)
-    title = _first_non_empty(payload, _TITLE_KEYS)
+    title_as_written = _first_non_empty(payload, _TITLE_KEYS)
     product_url = _first_non_empty(payload, _URL_KEYS)
+    # An id worked out from the title takes it as the feed wrote it, so that no id moves.
     provider_product_id = derive_stable_provider_product_id(
         product_url=product_url,
-        title=title,
+        title=title_as_written,
         raw=payload,
     )
+    title = readable_title(title_as_written)
     price_text, currency = _price_and_currency(payload)
 
     return ProviderProduct(
