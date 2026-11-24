@@ -196,6 +196,11 @@ class CardTests(unittest.TestCase):
              "options": json.dumps([["Size", ["M"]]]), "page": "https://sport.invalid/products/rolando"},
             {"pid": "h6", "title": "Fixturon Rolando Zip Hoodie - White", "price": "75.00", "ean": _ean13("710000000006"),
              "options": json.dumps([["Size", ["S", "L"]]]), "page": "https://sport.invalid/products/rolando"},
+            # One page, two listings told apart by a use, not a colour.
+            {"pid": "h7", "title": "Fixturon Lounge Hoodie Relaxed", "price": "20.00", "ean": _ean13("710000000007"),
+             "page": "https://sport.invalid/products/lounge"},
+            {"pid": "h8", "title": "Fixturon Lounge Hoodie Classic", "price": "28.00", "ean": _ean13("710000000008"),
+             "page": "https://sport.invalid/products/lounge"},
         ]
         _serve(self, self.rows)
         self.page = _call("/search", {"q": "hoodie", "shown": "8"})
@@ -213,6 +218,12 @@ class CardTests(unittest.TestCase):
         self.assertIn("From £45.00 (Black)", text)
         self.assertIn("Sizes at the shop: S, M, L", text)
         self.assertIn("Colours at the shop: Black, White", text)
+
+    def test_words_that_name_no_colour_are_not_put_in_brackets(self) -> None:
+        # Owner, 2026-11-24, of "From £34.99 (Bedroom)": «Ναι» to the brackets only for a colour.
+        text = _text(_card_of(self.page, "Lounge"))
+        self.assertIn("From £20.00", text)
+        self.assertNotIn("(Relaxed)", text)
 
     def test_a_card_at_one_price_reads_as_before(self) -> None:
         self.assertNotIn("From", _text(_card_of(self.page, "Sestri")))

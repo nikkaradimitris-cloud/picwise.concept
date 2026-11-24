@@ -326,6 +326,13 @@ _OPTION_KINDS = (
 )
 
 
+def names_a_colour(text: str) -> bool:
+    """Whether words name a colour: one of them is a colour a card names ("Vintage Indigo",
+    "Grey Marl", "Black"), not a room or a use ("Bedroom"; owner, 2026-11-24, of "From £34.99
+    (Bedroom)": the words in brackets only when they are a colour)."""
+    return any(word in _SHOWN_COLOURS for word in re.findall(r"[a-z]+", str(text or "").lower()))
+
+
 def option_kind(name: str) -> str:
     """The card's kind of a shop's option ("Size", "Shoe Size", "Colour", "Wattage")."""
     for pattern, kind in _OPTION_KINDS:

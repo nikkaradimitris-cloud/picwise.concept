@@ -56,6 +56,7 @@ from .variant_names import (
     PRICE_FROM,
     TITLES_READ,
     merged_variants,
+    names_a_colour,
     shop_option_values,
     variant_label,
     variant_values,
@@ -2157,7 +2158,9 @@ def _price_from(entry: _PricedProduct) -> str | None:
     tell the card's listing (the cheapest) apart from its dearer ones, sizes aside ("Vintage
     Indigo"), "" when none do. The card then reads "From £32.50 (Vintage Indigo)" (owner,
     2026-11-24, of Fila's hoodie at £32.50 in one colour and £65 in the others: «Από £32,50
-    και το χρώμα»). Four words at most: more is no colour, only "From"."""
+    και το χρώμα»). Four words at most, and only when they name a colour
+    (`variant_names.names_a_colour`; the owner, the same day, of "From £34.99 (Bedroom)":
+    «Ναι»): else only "From"."""
     own = _own_offers(entry)
     if len(own) < 2:
         return None
@@ -2177,7 +2180,8 @@ def _price_from(entry: _PricedProduct) -> str | None:
         if word.lower() in dearer_words or not title_words(word) or word in words:
             continue
         words.append(word)
-    return " ".join(words) if len(words) <= 4 else ""
+    named = " ".join(words)
+    return named if len(words) <= 4 and names_a_colour(named) else ""
 
 
 def _price_first_products(products: list[ProviderProduct]) -> list[_PricedProduct]:
@@ -2801,7 +2805,35 @@ def _price_first_answer(
         for (product, _fields), haystack in zip(members, haystacks)
         if all(_carries(unit, haystack) for unit in kept)
     ]
-    return kept, dropped, _price_first_products(carrying)
+    return kept, dropped, _without_far_dearer(_price_first_products(carrying))
+
+
+# A product priced far above the rest of its answer is left out of it (owner, 2026-11-24, of
+# GamingKit's iiyama 24" monitor at £1,281,010.87, its feed's price, which ran the bar of
+# "monitor" to a million: «Ναι» to hiding a product whose price is far above every other of
+# its kind). Far: at least `FAR_DEARER` times the next dearest, in an answer of `FAR_ANSWER`
+# products or more. Measured on the live site that day, the 200 searches of the home page and
+# its departments (179 with a bar): at twenty times in answers of twenty or more it takes out
+# only that monitor and an ASUS motherboard at the same price; at ten times it would also take
+# out real products (a handmade £880 knife among 8 knife sets, a £3,504 dinner service).
+FAR_DEARER = 20.0
+FAR_ANSWER = 20
+FAR_LEFT_OUT_MOST = 3
+
+
+def _without_far_dearer(ordered: list[_PricedProduct]) -> list[_PricedProduct]:
+    """`ordered` (cheapest first) without its dearest products priced `FAR_DEARER` times the
+    next dearest or more, `FAR_LEFT_OUT_MOST` at most."""
+    kept = list(ordered)
+    for _ in range(FAR_LEFT_OUT_MOST):
+        if len(kept) < FAR_ANSWER:
+            break
+        dearest = max(range(len(kept)), key=lambda index: kept[index].price)
+        others = [entry.price for index, entry in enumerate(kept) if index != dearest]
+        if not others or kept[dearest].price < FAR_DEARER * max(others) or max(others) <= 0:
+            break
+        del kept[dearest]
+    return kept
 
 
 # The price bar's steps (owner, 2026-11-12): how many products of an answer fall in each.

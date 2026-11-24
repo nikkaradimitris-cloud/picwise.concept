@@ -231,6 +231,31 @@ class SixDecimalPriceTests(_FeedMixin, unittest.TestCase):
                          [34.0, 39.0, 45.45, 52.0, 60.0, 74.0, 89.0, 120.0])
 
 
+class FarDearerTests(_FeedMixin, unittest.TestCase):
+    """A product priced far above the rest of its answer is left out (owner, 2026-11-24: «Ναι»,
+    of GamingKit's 24" monitor at £1,281,010.87, which ran the bar of "monitor" to a million):
+    twenty times the next dearest, in an answer of twenty products or more."""
+
+    _TWENTY = tuple(float(8 + 4 * index) for index in range(20))
+
+    def test_a_price_twenty_times_the_next_dearest_is_left_out(self) -> None:
+        rows = _kettles(self._TWENTY + (1281010.87,))
+        self._serve(rows)
+        page = _call("/search", {"q": "kettle", "shown": "24"})
+        self.assertIn('data-low="8.00" data-high="84.00"', _bar(page))
+        self.assertNotIn(1281010.87, _prices(page))
+        self.assertIn('<p class="pw-results-count">20 of 20</p>', page)
+
+    def test_a_dear_product_within_twenty_times_stays(self) -> None:
+        self._serve(_kettles(self._TWENTY + (1500.0,)))
+        self.assertIn('data-high="1500.00"', _bar(_call("/search", {"q": "kettle"})))
+
+    def test_a_short_answer_keeps_its_dearest(self) -> None:
+        # Measured 24/11: a handmade £880 knife among 8 knife sets is a real product.
+        self._serve(_kettles((8.0, 9.0, 11.0, 12.0, 14.0, 15.0, 17.0, 880.0)))
+        self.assertIn(880.0, _prices(_call("/search", {"q": "kettle", "shown": "8"})))
+
+
 class ShortAnswerTests(_FeedMixin, unittest.TestCase):
     def test_an_answer_of_one_page_has_no_bar(self) -> None:
         self._serve(_kettles((8.0, 12.0, 40.0, 90.0)))
