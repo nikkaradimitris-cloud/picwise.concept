@@ -127,3 +127,35 @@ The two corrections, and why (told to him with the numbers):
   instead of 4.3), and a clone that stops leaves the others running.
 
 The check's own rule, decided the same hour: `docs/PICWISE_CHECKS_RULES.md`, section 21.
+
+## Built 25/11: the feed judged in packages (`feed_packages`), behind `data/feed_packages.json` (false); NOT DEPLOYED
+
+Steps 1 and 2 of the plan, the cross-row points 1, 2, 3 (the barcode's category), 4 (the
+checks' sets and notes), 5 (the intake) and the feed's order, as `src/picwise_providers/feed_packages.py`
+says: both links read row by row and written, compressed, to 128 buckets of whole shops on
+disk; the rows given a package at a time twice (the barcodes' and the AI's categories, then
+the judging), only the eligible kept, in the feed's order. Each cross-row step split so that
+every row is given the same (`shop_catalogue.CataloguesRun`, `checks_applied.ChecksRun`,
+`offer_health.AvailabilityContextBuilder`, `feed_intake.IntakeMeasure`); the whole feed's
+path runs the same code. What it cannot read so (a link that cannot be read, a second link not
+UTF-8 or broken mid-way) is read whole, as before (`Fallback`, `state.last_packages`).
+
+**The trial on both real links, run 45614883098** (GitHub's runner, compared with the live
+site's code): "the catalogue: 215,642 products with the live code, 215,642 with the new; the
+same in every field", every key of the note the same. **Peak memory 9.97 GB (live: 14.49 GB;
+step 0 alone: 12.01 GB)**, 1,130 s against 913 s; 2,675,320 rows, 6 packages, 702 MB on disk.
+By step: both links read and written 0.74 GB; the categories 0.79 GB; every row judged, the
+eligible kept, 8.03 GB: **the 1,579,372 eligible products held until the cap are now the
+memory** (about 4.5 KB each).
+
+**Left for ten million rows** (plan step 3, the cross-row points 6 and 7): the caps (how many of
+a shop's products pass, the cap of a category, the gates, the bot's candidates, the AI's next
+questions) worked out on a small summary of each eligible product, the products written to
+disk a package at a time with their search fields and kinds, and read back only for the ones
+kept. At 10 million rows the eligible would be about 6 million, about 26 GB held as today:
+past the server however the rows before them are read. Then the proof on a feed of 10 million
+rows.
+
+To turn it on (his «ανέβασε»): `"on": true` in `data/feed_packages.json`; the server's
+`picwise-prepare.service` names the folder (`/srv/picwise/shared/packages`, made by
+`deploy.sh`), emptied after each night.

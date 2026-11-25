@@ -33,6 +33,7 @@ status or the same failure as before.
 """
 from __future__ import annotations
 
+import json
 import os
 import pickle
 import shutil
@@ -59,7 +60,11 @@ BUCKETS = 128
 # Rows written to a bucket at once.
 _FLUSH = 256
 _SHARED_VALUE_CHARS = awin_adapter._SHARED_VALUE_CHARS
+# A folder named here judges the feed in packages whatever the switch says (a trial).
 PACKAGES_ENV = "PICWISE_FEED_PACKAGES"
+# The server's folder for them (picwise-prepare.service), used when the switch is on.
+PACKAGES_DIR_ENV = "PICWISE_FEED_PACKAGES_DIR"
+SWITCH_FILE = Path(__file__).resolve().parents[2] / "data" / "feed_packages.json"
 
 
 class Fallback(Exception):
@@ -79,11 +84,25 @@ class Packaged:
     disk_bytes: int = 0
 
 
+def packages_on(path: Path = SWITCH_FILE) -> bool:
+    """The switch (`data/feed_packages.json`): true when the night's feed is judged in packages."""
+    try:
+        return json.loads(path.read_text(encoding="utf-8")).get("on") is True
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
 def packages_folder() -> Path | None:
-    """The folder the night's packages are written in (`PACKAGES_ENV`), None when unset: the
-    feed is then judged whole, as before."""
+    """The folder the night's packages are written in: `PACKAGES_ENV`'s when set (a trial);
+    else, with the switch on, `PACKAGES_DIR_ENV`'s (the server's); None otherwise, and the feed
+    is then judged whole, as before."""
     configured = str(os.environ.get(PACKAGES_ENV) or "").strip()
-    return Path(configured) if configured else None
+    if configured:
+        return Path(configured)
+    if not packages_on():
+        return None
+    folder = str(os.environ.get(PACKAGES_DIR_ENV) or "").strip()
+    return Path(folder) if folder else None
 
 
 def _bucket_of(product: ProviderProduct) -> int:

@@ -305,5 +305,48 @@ class FeedInPackagesTests(unittest.TestCase):
         self.assertEqual(list(self.packages.iterdir()), [])
 
 
+class TheSwitchTests(unittest.TestCase):
+    """`data/feed_packages.json` (owner's «ανέβασε»): off, the feed is judged whole unless a
+    trial names a folder; on, in the server's folder (`PICWISE_FEED_PACKAGES_DIR`)."""
+
+    def setUp(self) -> None:
+        saved = {name: os.environ.get(name) for name in (feed_packages.PACKAGES_ENV, feed_packages.PACKAGES_DIR_ENV)}
+
+        def restore() -> None:
+            for name, value in saved.items():
+                if value is None:
+                    os.environ.pop(name, None)
+                else:
+                    os.environ[name] = value
+
+        self.addCleanup(restore)
+        for name in saved:
+            os.environ.pop(name, None)
+
+    def test_off_in_the_repository_until_the_owners_word(self) -> None:
+        self.assertFalse(feed_packages.packages_on())
+        os.environ[feed_packages.PACKAGES_DIR_ENV] = "/srv/picwise/shared/packages"
+        self.assertIsNone(feed_packages.packages_folder())
+
+    def test_a_trials_folder_or_the_servers_with_the_switch_on(self) -> None:
+        os.environ[feed_packages.PACKAGES_ENV] = "/tmp/a-trial"
+        self.assertEqual(feed_packages.packages_folder(), Path("/tmp/a-trial"))
+        os.environ.pop(feed_packages.PACKAGES_ENV)
+        os.environ[feed_packages.PACKAGES_DIR_ENV] = "/srv/picwise/shared/packages"
+        with patch.object(feed_packages, "packages_on", return_value=True):
+            self.assertEqual(feed_packages.packages_folder(), Path("/srv/picwise/shared/packages"))
+            os.environ.pop(feed_packages.PACKAGES_DIR_ENV)
+            self.assertIsNone(feed_packages.packages_folder())
+        with tempfile.TemporaryDirectory() as folder:
+            switch = Path(folder) / "switch.json"
+            for text, on in (('{"on": true}', True), ('{"on": "true"}', False), ("not json", False)):
+                switch.write_text(text, encoding="utf-8")
+                self.assertEqual(feed_packages.packages_on(switch), on, text)
+
+    def test_the_servers_preparation_names_the_folder_and_deployment_makes_it(self) -> None:
+        unit = (ROOT / "deployment" / "server" / "picwise-prepare.service").read_text(encoding="utf-8")
+        self.assertIn("Environment=PICWISE_FEED_PACKAGES_DIR=/srv/picwise/shared/packages", unit)
+        self.assertIn('"$SHARED/packages"', (ROOT / "deployment" / "server" / "deploy.sh").read_text(encoding="utf-8"))
+
 if __name__ == "__main__":
     unittest.main()

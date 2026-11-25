@@ -42,6 +42,9 @@ Environment=PICWISE_SHELF_JOBS=/srv/picwise/assist/shelves/jobs
 # written for that service.
 Environment=PICWISE_KIND_ITSELF_FILE=/srv/picwise/assist/itself/answers.jsonl.gz
 Environment=PICWISE_ITSELF_JOBS=/srv/picwise/assist/itself/jobs
+# The feed judged in packages of rows on disk, here, when data/feed_packages.json is on (owner,
+# 2026-11-25: «Το αρχείο κατεβαίνει ολόκληρο και αποθηκεύεται στο σκληρό δίσκο»); emptied after each night.
+Environment=PICWISE_FEED_PACKAGES_DIR=/srv/picwise/shared/packages
 Environment=PYTHONDONTWRITEBYTECODE=1
 # GNU time adds one line with the run's peak memory and length, for sizing the server.
 ExecStart=/usr/bin/time -f "prepare_catalogue: peak memory %%M KB, %%e s" /usr/bin/python3 \

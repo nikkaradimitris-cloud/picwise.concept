@@ -1,0 +1,4 @@
+{
+  "on": false,
+  "why": "The feed judged in packages of rows on disk (docs/PICWISE_PACKAGES_PLAN.md; owner, 2026-11-25: «Το αρχείο κατεβαίνει ολόκληρο και αποθηκεύεται στο σκληρό δίσκο»): true judges the night's feed one package at a time in the folder PICWISE_FEED_PACKAGES_DIR names (the server's picwise-prepare.service); false judges it whole, as before. The same catalogue either way (the trial of 25/11, run 45614883098). Turned true only on the owner's «ανέβασε»."
+}
