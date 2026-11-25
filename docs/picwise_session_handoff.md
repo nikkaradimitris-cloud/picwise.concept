@@ -8,6 +8,15 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **(25/11, 11:25 Athens): THE SERVER DOES NOT ANSWER AT ALL: NO PAGE OF THE SITE (5 OF 5, 20 s EACH, FROM GITHUB'S RUNNER) AND
+  NO SSH LOGIN ("the server showed a login no host key"), TWO RUNS OF `server-health.yml` ON THE SITE'S BRANCH (45584022690,
+  attempts 1 and 2, 09:17 and 09:21 UTC).** The last run that reached it: 24/11 19:27 UTC (45470451190), within every limit, the site
+  on `1e2e4c9`. Nothing can be done from a session: the owner restarts it from the provider's panel. **Then:** the health run on the
+  site's branch (its step on the checks' bot says whether the round of the night of 25/11 recorded), `/prepared.json`. The owner
+  asked (25/11) to start the bot's round by hand once the server is up, to see that it finishes: that needs a read-only workflow's
+  kind of step that runs `systemctl start --no-block picwise-checks.service` (it asks nothing between 03:05 and 05:30 UTC, and nothing
+  on a night recorded already), not built.
+
 - **(24/11, 17:55 Athens): DEPLOYED `1e2e4c9` (release `20261124T141827Z-1e2e4c9`): the brands' pages ("What kind of Samsung
   product?", a misspelled brand read as it, a brand with its kind its own products) and monitors £40, sofas £100.** (PROGRESS.md,
   24/11 17:55.) Read live, right. Open: the manufacturers' file by the AI (thousands of makers and what each makes; trial of
