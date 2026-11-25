@@ -15,6 +15,9 @@ on:
       category_max:
         description: "The most a category keeps (PICWISE_CAP_CATEGORY_MAX; 0 for none)"
         default: "12000"
+      first_alone:
+        description: "Prepare the first link alone too (yes or no)"
+        default: "no"
 permissions:
   contents: read
 jobs:
@@ -36,6 +39,7 @@ jobs:
           ls -l "$RUNNER_TEMP"/*.bin | awk '{printf "%s: %.1f MB\n", $NF, $5/1048576}' | sed "s|$RUNNER_TEMP/||"
           free -g | awk '/^Mem:/ {print "the runner: " $2 " GB of memory"}'
       - name: Prepare, first link alone (today's catalogue)
+        if: inputs.first_alone == 'yes'
         env:
           PICWISE_CAP_SHARE: ${{ inputs.share }}
           PICWISE_CAP_CATEGORY_MAX: ${{ inputs.category_max }}
@@ -51,8 +55,10 @@ jobs:
           PICWISE_MEMORY_TRACE: "1"
         run: |
           mkdir -p "$RUNNER_TEMP/both"
-          /usr/bin/time -f "peak memory %M KB, %e s" python3 tools/prepare_catalogue.py --keep-going \
-            --feed-file "$RUNNER_TEMP/google.bin" --out "$RUNNER_TEMP/both/catalogue.json.gz" --static-dir "$RUNNER_TEMP/both" 2>&1 | grep -E "^prepare_catalogue|peak memory|Command" | tail -n 12
+          # Each large step's memory (tools/measure_prepare_memory.py, 2026-11-25: before the
+          # preparation is cut into packages of shops, where the memory goes).
+          /usr/bin/time -f "peak memory %M KB, %e s" python3 tools/measure_prepare_memory.py --keep-going \
+            --feed-file "$RUNNER_TEMP/google.bin" --out "$RUNNER_TEMP/both/catalogue.json.gz" --static-dir "$RUNNER_TEMP/both" 2>&1 | grep -E "^memory step|^prepare_catalogue|peak memory|Command" | tail -n 60
       - name: What each kept, by category and shop
         if: always()
         run: python3 .github/scripts/print_trial.py "$RUNNER_TEMP/one" "$RUNNER_TEMP/both"
