@@ -27,11 +27,13 @@ prepares the catalogue again, so the whole catalogue is back within one preparat
   (`returning_row_keys`), and names the next ones for the bot (`candidates` written by
   `tools/prepare_catalogue.py`);
 - with the rule of how many of a shop's products pass (the checks' rules 19; its switch,
-  `shop_cap.shop_cap_on`): a pass counts for three nights, so the bot names the shown
-  products not passed in 3 nights to wait (`THREE_NIGHTS`); with that switch off the
-  preparation leaves those aside, so that turning it off brings them back within one
-  preparation; and the shown products that passed, of a shop over the most it passes
-  (`passed`), come before the ones never asked when the shop keeps its products (19.4 f);
+  `shop_cap.shop_cap_on`): a pass counts for the day it was made (rules 21, owner, 25/11),
+  three nights while its shop's asking was not whole (the bot or the server stuck, the shop
+  stopped answering), so the bot names the shown products not passed tonight (`A_DAY`) or
+  in 3 nights (`THREE_NIGHTS`) to wait; with that switch off the preparation leaves those
+  aside, so that turning it off brings them back within one preparation; and the shown
+  products that passed, of a shop over the most it passes (`passed`), come before the ones
+  never asked when the shop keeps its products (19.4 f);
 - the category (rules 5.5; owner, 21/11: «Το AI ρωτιέται μία φορά για την κατηγορία κάθε
   προϊόντος. Όποιο προϊόν δεν μπαίνει σε κατηγορία βγαίνει»): a product the AI gave no line
   of Google's taxonomy ("no line fits", refused for good, or a slip:
@@ -42,8 +44,12 @@ prepares the catalogue again, so the whole catalogue is back within one preparat
   the note says so.
 
 With the switch off, no decisions file (`PICWISE_CHECKS_DECISIONS` unset or nothing
-there), or one more than 2 nights old, nothing is applied and nothing gated: the
-catalogue is as it was before the checks. What was applied is counted for the night's
+there), or one of the three nights' rule more than 2 nights old, nothing is applied and
+nothing gated: the catalogue is as it was before the checks. Decisions of the day's rule
+(rules 21: they name each pass's night) are applied however old: on a morning with no newer
+night, a pass counts three nights after it and no more (`expire`), so that with the bot
+stuck the products leave the site on the fourth day, as the owner said, rather than the
+checks stopping. What was applied is counted for the night's
 public note (`last_checks_note`): counts and shop names only, never an id or an address.
 With it, switch on or off, goes the bot's own note of its night (`bot`, the file `note.json`
 beside the decisions; rules 11): what it asked, decided and cut, the brakes, the shops that
@@ -91,6 +97,16 @@ NO_CATEGORY = "no category"
 # 19.3.1: the reason the bot gives a shown product not passed in 3 nights (`picwise_checks.ledger`,
 # `NOT_PASSED_IN_THREE`), applied only with the switch of how many of a shop's products pass on.
 THREE_NIGHTS = "not passed in 3 nights"
+# 21 (owner, 2026-11-25): a pass counts for the day; the reason the bot gives a shown product
+# not passed tonight once its shop was asked whole (`picwise_checks.ledger`, `NOT_PASSED_TODAY`),
+# applied, as the three nights are, only with that switch on.
+A_DAY = "not passed in the last 24 hours"
+SHOP_RULE_WAITS = (THREE_NIGHTS, A_DAY)
+# 21: on a morning with no newer night than the decisions' (the bot stuck), a pass counts up to
+# three nights after it (the night it was made and the two after), then the product waits
+# until it passes again, however old the file (owner: «μετά την τρίτη ή την τέταρτη να
+# σβηστούν»). `picwise_checks.ledger.PASS_NIGHTS_SCANNED`.
+PASS_GRACE_NIGHTS = 3
 CATEGORY_BRAKE_SHARE = 0.10
 # The products the AI is asked about the next morning (`deployment/server/shelves_service.py`).
 SHELF_JOBS_ENV = "PICWISE_SHELF_JOBS"
@@ -155,9 +171,39 @@ def load_decisions(path: str | os.PathLike[str] | None = None, *, today: date | 
     except ValueError:
         return None, "the decisions name no night"
     today = today or datetime.now(timezone.utc).date()
+    if isinstance(document.get("passed_on"), dict):
+        # 21: the day's rule names each pass's night; on a later morning its passes count
+        # three nights and no more, however old the file (never "nothing applied").
+        if today > night:
+            return expire(document, today), f"read, of {night}: a pass over {PASS_GRACE_NIGHTS - 1} nights old waits"
+        return document, "read"
     if (today - night).days > MAX_AGE_NIGHTS:
         return None, f"the decisions are of {night}: too old"
     return document, "read"
+
+
+def expire(document: Mapping[str, Any], today: date) -> dict[str, Any]:
+    """21: the decisions of an earlier night read on `today` (the bot recorded no newer one):
+    a product whose pass is `PASS_GRACE_NIGHTS` nights old or more waits until it passes
+    again (`THREE_NIGHTS`), and enters nowhere; the rest stands as the night decided."""
+    stale: set[str] = set()
+    for day, keys in (document.get("passed_on") or {}).items():
+        try:
+            old = (today - date.fromisoformat(str(day))).days >= PASS_GRACE_NIGHTS
+        except ValueError:
+            old = True
+        if old:
+            stale.update(str(key) for key in keys or ())
+    if not stale:
+        return dict(document)
+    wait = dict(document.get("wait") or {})
+    for key in stale:
+        wait.setdefault(key, THREE_NIGHTS)
+    expired = {**document, "wait": dict(sorted(wait.items())),
+               "enter": [key for key in document.get("enter") or () if key not in stale]}
+    if "passed" in document:
+        expired["passed"] = [key for key in document.get("passed") or () if key not in stale]
+    return expired
 
 
 def read_bot_note(path: str | os.PathLike[str] | None = None) -> dict[str, Any] | None:
@@ -242,7 +288,7 @@ def apply_checks(
             else:
                 if key in wait:
                     why = str(wait[key] or "not checked")
-                    if why == THREE_NIGHTS and not scanned:
+                    if why in SHOP_RULE_WAITS and not scanned:
                         counts["three_nights_left_aside"] += 1
                     else:
                         unchecked.add(key)
@@ -300,7 +346,8 @@ def apply_checks(
         "options_from_page": counts["options_from_page"],
         "not_shown_until_checked": len(unchecked),
         "not_shown_until_checked_by_reason": dict(sorted(unchecked_reasons.items())),
-        # 19.3.1 with its switch off: the bot's waits of a pass over 3 nights old, left aside.
+        # 19.3.1 and 21 with its switch off: the bot's waits of the shop rule (a pass not of
+        # tonight, or over 3 nights old), left aside.
         **({"three_nights_left_aside": counts["three_nights_left_aside"]} if counts["three_nights_left_aside"] else {}),
         "category": {"answers": categories, "no_category": len(no_category), "held_by_its_brake": category_brake,
                      "not_asked_yet": len(waiting), "with_a_line": with_a_line},

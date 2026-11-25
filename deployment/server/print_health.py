@@ -275,10 +275,22 @@ def look_at_checks(check: Health, runner: Run) -> None:
     rule = note.get("shop_rule") if isinstance(note.get("shop_rule"), dict) else {}
     if rule.get("on"):
         # The rule of how many of a shop's products pass, as the bot asked under it (section 19).
-        check.say(f"checks, how many of a shop's products pass: on; a pass counts for {rule.get('pass_nights')} nights; "
+        nights = int(rule.get("pass_nights") or 0)
+        # 21: a pass counts for the day it was made, three nights while a shop is not asked whole.
+        counts_for = (f"{nights} nights" if nights != 1 else
+                      "the day it was made, 3 nights while its shop is not asked whole")
+        check.say(f"checks, how many of a shop's products pass: on; a pass counts for {counts_for}; "
                   f"at most {int(rule.get('most_asked_of_a_shop') or 0):,} asked of a shop; "
                   f"{rule.get('shops_at_once')} shops at once, pages read on "
                   + (f"{rule['processes']} processes" if rule.get("processes") else "the bot's own process"))
+        if nights == 1 and "round_hours" in rule:
+            whole = bool(rule.get("whole_round"))
+            check.say(f"checks, the round asked {float(rule.get('round_hours') or 0):.1f} hours"
+                      + (" (all day)" if whole else " (NOT all day: shops not asked all their products keep them)")
+                      + f"; shops asked whole {int(rule.get('asked_whole') or 0):,}"
+                      + (f"; not whole: {', '.join(str(name) for name in rule.get('not_whole') or [])}"
+                         if rule.get("not_whole") else ""))
+            check.limit(not whole, "the checks' round did not ask all day (rules 21): its products stay as they were")
     failed = note.get("failed") if isinstance(note.get("failed"), dict) else {}
     check.say(f"checks: decided {note.get('decided', 0):,}, passed {note.get('passed', 0):,}, "
               f"failed {sum(failed.values()):,}" + (f" ({_counts(failed)})" if failed else "")

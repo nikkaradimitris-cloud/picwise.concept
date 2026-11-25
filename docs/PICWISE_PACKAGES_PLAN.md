@@ -1,4 +1,4 @@
-# PicWise — the feed in packages (plan, not built)
+# PicWise — the feed in packages (plan; being built from 25/11)
 
 Written 2026-11-25 on the owner's word, for the session that charts and builds it. Nothing
 here is decided beyond what the owner said; the numbers are those measured on 25/11.
@@ -41,6 +41,11 @@ About 3.2 KB a row as a dict, 0.9 KB more as a product. The rows never eligible
 (1,095,175) stayed to the end, held by the pipeline's cache for the intake measured last.
 
 ## Step 0, built 25/11, NOT deployed
+
+**The trial read (run 45597029695, both links, GitHub's runner):** "the catalogue: 220,503
+products with the live code, 220,503 with the new; the same in every field", every key of the
+note the same; peak memory 14.53 GB with the live code, 12.01 GB with step 0 (816 s against
+786 s). Fit to deploy; it waits for the owner's «ανέβασε».
 
 `e9e6256` on the work branch: the intake is measured as soon as every row is judged
 (`state.prepare_feed_catalogue(measure_intake=True)`, `state.last_prepared_intake`), then
@@ -88,3 +93,37 @@ Expected: the night about 2 hours for 10 million rows (31 minutes for 2.7 millio
 
 Each step is built so that the catalogue comes out the same as today's on the same feed
 (the trial's comparison), then deployed on the owner's «ανέβασε».
+
+## The flow agreed with the owner (25/11, the conversation of the packages)
+
+His words of 13:11 Athens: «Το αρχείο κατεβαίνει ολόκληρο και αποθηκεύεται στο σκληρό δίσκο ... οι
+πρώτες 500.000 κωδικοί σκανάρονται από 4 κλωνοποιημένα συστήματα για να τελειώνει πιο γρήγορα ...
+επόμενη κίνηση από τα σκαναρίσματα αυτά που βγήκαν άχρηστα σβήνονται επόμενη κίνηση προώθηση άλλα
+500.000 ... μην αγνοείς τους 4 κλώνους». Put to him with two corrections, and written in the
+Project's doc `claude/PicWise-protasi-paketa.md` on his «Ναι συμφωνώ» (to the rule of the check,
+with the flow):
+
+1. The whole file downloaded to disk.
+2. Cut into packages of about 500,000 rows, whole shops.
+3. One package at a time through the rules (the categories, the floors, the 20,000 of a shop...)
+   on the server, minutes, no network; what can never be shown let go at once, what stays written
+   to disk, not held in memory. This is what bounds the memory.
+4. The rules over all shops last (15% and 12,000 a category, a product a cheaper shop keeps), on
+   a small summary of each product, gathered by a first pass over the whole file for the seven
+   points above.
+5. **The 4 clones scan all day, every shop at once, each clone its own shops by a code** (e.g.
+   200 of 800), and only what passed the rules; one clone stopping leaves the other three.
+
+The two corrections, and why (told to him with the numbers):
+
+- **The rules first, the scanning after.** Of 2.7 million rows about 147,000 reach the site, 1
+  in 18: scanning every row is mostly lost.
+- **The clones scan every shop at once, not package by package.** A shop gives a page every 3 to
+  10 seconds, whatever the other shops wait for (the rules 4.3, 4.7; 20,000 a day the most): a
+  package holding a large shop takes about a day, so 20 packages one after another would take
+  up to 20 days against a pass that counts for the day (the checks' rules 21). Every shop at
+  once, the round closes within the day; the clones are what keeps the server from being the
+  brake with 800 shops (the look of 22/11: 140 shops on one process, GamingKit 10 s a page
+  instead of 4.3), and a clone that stops leaves the others running.
+
+The check's own rule, decided the same hour: `docs/PICWISE_CHECKS_RULES.md`, section 21.

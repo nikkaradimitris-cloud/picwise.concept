@@ -196,6 +196,30 @@ class HealthTests(_AServer, unittest.TestCase):
         self.assertIn("over the limit: how many of a shop's products pass was not worked out last night: every shop's "
                       "products went on to the category cap (KeyError at shop_cap.py:1)", self.over(self.printed()))
 
+    def test_a_pass_counts_for_the_day_and_a_round_not_all_day_passes_a_limit(self) -> None:
+        # The checks' rules 21 (owner, 25/11): a pass counts for the day it was made, three nights
+        # while a shop is not asked whole; a round that did not ask all day is said and passes a limit.
+        rule = {"on": True, "pass_nights": 1, "most_asked_of_a_shop": 20000, "processes": 4, "shops_at_once": 135,
+                "round_hours": 9.5, "whole_round": False, "asked_whole": 0, "not_whole": ["Kettles"]}
+        self.write(self.folder / "checks-note.json", {"night": "2026-11-25", "shops_asked": 135, "decided": 10,
+                                                      "passed": 10, "failed": {}, "shop_rule": rule})
+        lines = self.printed()
+        self.assertIn("checks, how many of a shop's products pass: on; a pass counts for the day it was made, 3 nights "
+                      "while its shop is not asked whole; at most 20,000 asked of a shop; 135 shops at once, pages "
+                      "read on 4 processes", lines)
+        self.assertIn("checks, the round asked 9.5 hours (NOT all day: shops not asked all their products keep them); "
+                      "shops asked whole 0; not whole: Kettles", lines)
+        self.assertIn("over the limit: the checks' round did not ask all day (rules 21): its products stay as they were",
+                      self.over(lines))
+        self.write(self.folder / "checks-note.json", {"night": "2026-11-25", "shops_asked": 135, "decided": 10,
+                                                      "passed": 10, "failed": {},
+                                                      "shop_rule": {**rule, "round_hours": 21.4, "whole_round": True,
+                                                                    "asked_whole": 135, "not_whole": []}})
+        lines = self.printed()
+        self.assertIn("checks, the round asked 21.4 hours (all day); shops asked whole 135", lines)
+        self.assertNotIn("over the limit: the checks' round did not ask all day (rules 21): its products stay as they were",
+                         self.over(lines))
+
     def test_a_night_the_caps_gate_did_not_stand_passes_a_limit(self) -> None:
         self.write(self.folder / "checks-note.json", {"night": "2026-11-22", "shops_asked": 151, "decided": 10,
                                                       "passed": 10, "failed": {}})

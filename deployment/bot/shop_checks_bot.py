@@ -32,10 +32,13 @@ from its API, never by a click (5.6.3, 5.6.4).
 
 How many of a shop's products pass (the rules' section 19, behind its switch,
 `data/shop_cap_switch.json`; owner, 2026-11-22: «μόνο όσα έχουν σκανναριστεί περνάνε», 20,000
-the most): a pass counts for three nights (19.3.1); each day a shop's shown products are
-asked again first, in the order of 19.4 (`picwise_providers.shop_cap.shop_order`, worked out
-from the prepared catalogue), and new ones only in the time left (19.3.2); of a shop, at most
-its first 20,000 (19.3.3). Every shop is asked at once, one thread each, and the pages are
+the most): a pass counts for the day it was made, three nights while a shop's asking is not
+whole (21, owner, 25/11: «24 ώρες είναι το σκανάρισμα και ότι προλάβει να σκανάρει»; until
+then three nights always, 19.3.1): a shop is asked whole when nothing stopped it and the bot
+asked it all it had, or all day in a round that asked all day (`RoundTime`, kept across a
+round started again); each day a shop's shown products are asked again first, in the order
+of 19.4 (`picwise_providers.shop_cap.shop_order`, worked out from the prepared catalogue),
+and new ones only in the time left (19.3.2); of a shop, at most its first 20,000 (19.3.3). Every shop is asked at once, one thread each, and the pages are
 read on processes of their own (`--processes`; 19.5, owner: «Ναι, μαζί»): with every shop
 asked on one process a request took twice as long (the look of 22/11). When the processes
 cannot be started, the pages are read on the bot's own, as before, and it says so.
@@ -105,6 +108,16 @@ UNTIL = "03:05"
 QUIET_UNTIL = "05:30"
 MAX_HOURS = 22
 TONIGHT = "tonight-{night}.jsonl"
+# 21 (owner, 2026-11-25: «24 ώρες είναι το σκανάρισμα και ότι προλάβει να σκανάρει»): the time
+# the night's round has asked, kept across a round started again, so that a round stuck for
+# hours (the server or the bot down) is told from a whole day. A round that asked at least
+# `WHOLE_ROUND_HOURS` is whole (from 05:30 to 03:05 a round asks about 21.5 hours; a deployment
+# that starts it again costs minutes). A shop whose asking began over `LATE_HOURS` after the
+# round's (waiting for a thread) was not asked all day.
+TONIGHT_TIME = "tonight-{night}.time.json"
+WHOLE_ROUND_HOURS = 20.0
+LATE_HOURS = 1.0
+TIME_KEPT_EVERY = 300.0
 NOTE_NAME = "note.json"
 OWNER_WORDS = ROOT / "data" / "checks_owner_words.json"
 # What only a challenge page writes (a refusal that answers 403, 429 or 503, or a small 200).
@@ -541,8 +554,56 @@ class Tonight:
     def forget(self) -> None:
         if self.path is None:
             return
-        for old in self.path.parent.glob(TONIGHT.format(night="*")):
-            old.unlink(missing_ok=True)
+        for pattern in (TONIGHT, TONIGHT_TIME):
+            for old in self.path.parent.glob(pattern.format(night="*")):
+                old.unlink(missing_ok=True)
+
+
+class RoundTime:
+    """21: how long the night's round has asked, the seconds of a round stopped and started
+    again added up (kept every few minutes beside the night's answers), never the hours it
+    was down. `path` None: kept in memory only (a look)."""
+
+    def __init__(self, path: Path | None, clock: Callable[[], float]) -> None:
+        self.path = path
+        self.clock = clock
+        self.lock = threading.Lock()
+        self.before = 0.0
+        if path is not None and path.exists():
+            try:
+                self.before = max(0.0, float(json.loads(path.read_text(encoding="utf-8")).get("seconds") or 0.0))
+            except (OSError, ValueError, TypeError, AttributeError):
+                self.before = 0.0
+        self.since = clock()
+        self.kept = self.since
+
+    def seconds(self) -> float:
+        return self.before + max(0.0, self.clock() - self.since)
+
+    def keep(self, *, now: bool = False) -> None:
+        """Written when `TIME_KEPT_EVERY` seconds have gone since it last was, or `now`."""
+        if self.path is None:
+            return
+        with self.lock:
+            moment = self.clock()
+            if not now and moment - self.kept < TIME_KEPT_EVERY:
+                return
+            self.kept = moment
+            temporary = self.path.with_name(self.path.name + ".part")
+            temporary.write_text(json.dumps({"seconds": round(self.seconds(), 1)}), encoding="utf-8")
+            os.replace(temporary, self.path)
+
+
+def asked_whole(result: "ShopResult", asked_of_it: int, *, whole_round: bool, late: float) -> bool:
+    """21: a shop's asking was whole tonight: nothing stopped it (no 429 or 503 that said to
+    come back, no error, no robots.txt that did not answer: a shop asked nothing was not
+    asked), and the bot asked it every product of its order, or asked it all the round long
+    in a round that asked all day."""
+    if result.stopped or not result.answers:
+        return False
+    if asked_of_it and len(result.answers) >= asked_of_it:
+        return True
+    return whole_round and late <= LATE_HOURS * 3600.0
 
 
 def judge(rows: Mapping[str, Row], result: ShopResult, *, shared_ids: Iterable[str] = (),
@@ -741,18 +802,23 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
         sample: int = 0, tonight: Tonight | None = None, shops: frozenset[str] = frozenset(),
         old_feed_rule: bool = False, awin_closed_out: bool = False, scanned: bool = False,
         shown_order: Mapping[str, list[str]] | None = None, dearer: Collection[str] = (),
-        readers: Readers | None = None,
+        readers: Readers | None = None, round_time: RoundTime | None = None,
         ) -> tuple[L.Night, dict]:
     """Ask every shop its products in the rules' order; record the night; the decisions.
     `sample`: a look, at most this many products a shop; `tonight`: the night's answers
     kept as they come, those kept already not asked again; `scanned`: the rule of how many
     of a shop's products pass (section 19), with `shown_order` the order of 19.4 of each
     shop's shown products and `dearer` those of them a cheaper shop shows, asked after the
-    cap's candidates (20.7.4); `readers`: what reads the answers (19.5)."""
+    cap's candidates (20.7.4); `readers`: what reads the answers (19.5); `round_time`: how
+    long the night's round has asked, a round started again included (21)."""
     from picwise_providers.shop_cap import SHOP_LIMIT
 
     tonight = tonight or Tonight(None)
-    pass_nights = L.PASS_NIGHTS_SCANNED if scanned else L.PASS_VALID_NIGHTS
+    round_time = round_time or RoundTime(None, clock)
+    began = clock()
+    # 21: with the rule on, a pass counts for the day (three nights while a shop's asking was
+    # not whole); without it, thirty nights as before.
+    pass_nights = L.PASS_NIGHTS_DAY if scanned else L.PASS_VALID_NIGHTS
     order = L.asking_order(ledger, night, rows, shown=shown, candidates=candidates, parts=parts, scanned=scanned,
                            shown_order=shown_order, dearer=dearer, limit=SHOP_LIMIT if scanned else 0)
     if shops:
@@ -764,6 +830,7 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
         + (f"; {len(kept):,} answered already tonight (the round goes on)" if kept else ""))
     results: dict[str, ShopResult] = {}
     seconds: dict[str, float] = {}
+    late: dict[str, float] = {}
     lock = threading.Lock()
 
     def one(shop: str) -> None:
@@ -774,6 +841,7 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
         def keep(key: str, answer: PageAnswer) -> None:
             got[key] = answer
             tonight.keep(key, answer)
+            round_time.keep()
 
         try:
             result = ask_shop([rows[key] for key in order[shop]], fetch=fetch, sleep=sleep, clock=clock,
@@ -787,10 +855,16 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
         with lock:
             results[shop] = result
             seconds[shop] = clock() - started
+            late[shop] = started - began
 
     threads = workers if workers > 0 else min(SHOPS_AT_ONCE, len(order))
     with ThreadPoolExecutor(max_workers=max(1, threads)) as pool:
         list(pool.map(one, sorted(order, key=lambda shop: (-len(order[shop]), shop))))
+    round_time.keep(now=True)
+    asked_hours = round_time.seconds() / 3600.0
+    whole_round = asked_hours >= WHOLE_ROUND_HOURS
+    complete = {shop for shop, result in results.items()
+                if asked_whole(result, len(order.get(shop) or ()), whole_round=whole_round, late=late.get(shop, 0.0))}
     readings: dict[str, L.Reading] = {}
     shop_nights: dict[str, ShopNight] = {}
     words: dict[str, Counter] = defaultdict(Counter)
@@ -801,7 +875,7 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
                               by_page=by_page, stock_words=words[shop]))
     night_result = L.record_night(ledger, night, rows, readings, shop_nights, shown=shown, parts=parts, awin=awin,
                                   feeds=feeds, owner_cut_shops=owner_cut_shops, owner_awin_word=owner_awin_word,
-                                  awin_closed_out=awin_closed_out)
+                                  awin_closed_out=awin_closed_out, complete=complete if scanned else ())
     made = L.decisions(ledger, night, rows, shown=shown, candidates=candidates, came_back=night_result.came_back,
                        old_feed_rule=old_feed_rule, pass_nights=pass_nights, passed_over=SHOP_LIMIT if scanned else 0)
     if not old_feed_rule and not night_result.note.get("ours"):
@@ -818,7 +892,12 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
     night_result.note["shop_rule"] = {"on": scanned, "pass_nights": pass_nights,
                                       "most_asked_of_a_shop": SHOP_LIMIT if scanned else None,
                                       "processes": readers.processes if readers is not None else 0,
-                                      "shops_at_once": max(1, threads)}
+                                      "shops_at_once": max(1, threads),
+                                      # 21: how long the round asked, whether that was all day, and
+                                      # the shops asked whole (their products not passed tonight wait).
+                                      "round_hours": round(asked_hours, 1), "whole_round": whole_round,
+                                      "asked_whole": len(complete) if scanned else 0,
+                                      "not_whole": sorted(set(results) - complete)[:SHOPS_LISTED] if scanned else []}
     night_result.note["asked_by_shop"] = {shop: [result.night.requests, len(result.answers), result.stopped]
                                           for shop, result in sorted(results.items())}
     # How long each shop's asking took, and the crawl-delay it asks for: the bot's pace (rules 4.7).
@@ -830,6 +909,19 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
     return night_result, made
 
 
+def pass_counts_for(rule: Mapping[str, Any]) -> str:
+    """How long a pass counts, as the night's note says (19.3.1; 21), with the round's hours."""
+    nights = int(rule.get("pass_nights") or 0)
+    if nights != L.PASS_NIGHTS_DAY:
+        return f"{nights} nights"
+    text = f"the day it was made, {L.PASS_NIGHTS_SCANNED} nights while its shop is not asked whole"
+    if "round_hours" in rule:
+        text += (f" (the round asked {float(rule.get('round_hours') or 0):.1f} hours, "
+                 + ("all day" if rule.get("whole_round") else "NOT all day: shops not asked all their products keep them")
+                 + f"; {int(rule.get('asked_whole') or 0):,} shops asked whole)")
+    return text
+
+
 def print_night(note: Mapping[str, Any], made: Mapping[str, Any], ledger: L.Ledger, say: Callable[[str], None]) -> None:
     """Counts and shop names only (rules 11)."""
     if note.get("ours"):
@@ -838,7 +930,7 @@ def print_night(note: Mapping[str, Any], made: Mapping[str, Any], ledger: L.Ledg
     rule = note.get("shop_rule") or {}
     if rule:
         say(f"how many of a shop's products pass (section 19): {'ON' if rule.get('on') else 'off'}; a pass counts for "
-            f"{rule.get('pass_nights')} nights"
+            + pass_counts_for(rule)
             + (f"; at most {rule['most_asked_of_a_shop']:,} asked of a shop" if rule.get("most_asked_of_a_shop") else "")
             + f"; {rule.get('shops_at_once')} shops at once, pages read on "
             + (f"{rule['processes']} processes" if rule.get("processes") else "the bot's own process"))
@@ -953,6 +1045,9 @@ def _night(args: argparse.Namespace, *, readers: Readers, scanned: bool, night: 
         say(f"the night of {night} is recorded already: nothing asked")
         return 0
     tonight = Tonight(None if args.dry else args.checks / TONIGHT.format(night=night))
+    round_time = RoundTime(None if args.dry else args.checks / TONIGHT_TIME.format(night=night), clock)
+    if round_time.before:
+        say(f"the round of the night of {night} goes on: it has asked {round_time.before / 3600.0:.1f} hours already")
     say(f"the night of {night}: {len(shown):,} products shown, {len(candidates):,} candidates, "
         f"{len(extra) - len(candidates):,} cut ones the feed still lists; ids shared {len(shared_ids)}")
     awin, feeds = read_awin(environ, cache_dir=args.cache, say=say)
@@ -964,7 +1059,7 @@ def _night(args: argparse.Namespace, *, readers: Readers, scanned: bool, night: 
                        owner_awin_word=awin_word, say=say, sample=args.sample, tonight=tonight,
                        shops=frozenset(args.shop) if args.dry else frozenset(),
                        old_feed_rule=yes["old_feed_rule"], awin_closed_out=yes["awin_closed_out"],
-                       scanned=scanned, shown_order=orders, dearer=dearer, readers=readers)
+                       scanned=scanned, shown_order=orders, dearer=dearer, readers=readers, round_time=round_time)
     if args.dry:
         say("a look (--dry): nothing written")
     else:

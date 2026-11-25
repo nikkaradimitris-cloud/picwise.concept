@@ -1820,3 +1820,82 @@ passes: 199,770 products, 31,368 candidates, GamingKit's 1,478. A day sooner gai
 nothing: deployed on the afternoon of 23/11 the bot would not reach GamingKit's candidates
 before the night's end either way (they stand after its 14,342 shown products that show),
 and the first of them would be shown on 25/11 by both.
+
+## 21. A pass counts for the day; three nights only on a complication (owner, 25/11): decided; built 25/11; NOT DEPLOYED
+
+### 21.1 His words
+
+Asked (25/11) whether the check should take three days, in the conversation of the feed in
+packages: **«Ο έλεγχος δεν πρέπει να διαρκεί τρεις μέρες ο έλεγχος πρέπει να διαρκεί μέγιστο 24
+ώρες...»**; then, of 19.3.1: **«Το όριο των τριών ημερών ήταν εάν δεν περάσει ο έλεγχος ή
+σταματήσει και υπάρχει κάποια επιπλοκή να μη σβηστούν τα προϊόντα ... 24 ώρες είναι το
+σκανάρισμα και ότι προλάβει να σκανάρει.... Εάν το σύστημα κολλήσει και δεν κάνεις κανάρισμα την
+επόμενη μέρα τα προϊόντα μένουν όπως έχουν πρέπει μετά την τρίτη ή την τέταρτη να σβηστούν»**.
+Asked to state the rule clearly so that he could answer, he was given, in Greek:
+
+1. Κάθε 24ωρο το σκανάρισμα ρωτά όλα τα καταστήματα ταυτόχρονα, το καθένα με τον ρυθμό που δέχεται.
+2. Πρώτα ξαναελέγχει όσα είναι ήδη στο site και μετά, με όσο χρόνο μένει, νέα προϊόντα.
+3. Στο site μπαίνει μόνο ό,τι πέρασε τον έλεγχο τις τελευταίες 24 ώρες, έως 20.000 προϊόντα ανά κατάστημα.
+4. Ό,τι αποτύχει στον έλεγχο βγαίνει την ίδια νύχτα και γυρνά μόλις ξαναπεράσει.
+5. Αν κολλήσει ο server ή το bot, ή αν το κατάστημα σταματήσει να απαντά, τα προϊόντα μένουν
+   όπως είναι έως 3 μέρες. Μετά βγαίνουν από το site μέχρι να ξαναπεράσουν.
+
+**«Ναι συμφωνώ και αυτό έπρεπε να γίνει από την αρχή».** Three days, not four: the three of
+19.3.1, proposed to him so («Προτείνω 3, όπως τώρα, όχι 4»), not contradicted.
+
+### 21.2 What it changes, read on the code and the server (and a correction told to him)
+
+- **Points 1, 2 and 4 stand already** (19.3.2, 19.5, 5): every shop asked at once, a shop's shown
+  products asked again first, a failure cut that night.
+- He was first told, wrongly, that a slow shop piled up three days of scanning (5,000 a day to
+  15,000) and that GamingKit and PCHUB.UK would fall to about 18,000 and 12,000. **Corrected the
+  same hour, in Greek:** with the shown asked again first, a shop settles at what the bot scans
+  of it in a day (`tests/test_picwise_checks_walk.py`, a slow shop); the health run of 25/11
+  10:01 UTC: PCHUB.UK 12,501, GamingKit 13,543.
+- **What changes on a normal day:** a product the bot did not reach again that day leaves the
+  site at once, not after up to three nights (a shop's day that read fewer pages than the day
+  before no longer keeps the difference shown).
+- **What changes when something breaks** (told to him): until now, decisions over two nights old
+  were not applied at all (`checks_applied.MAX_AGE_NIGHTS`): with the bot down three nights the
+  checks stopped and unchecked products could enter. Now a pass counts three nights and no more
+  however old the file: with the bot down past three days the products leave the site, and if it
+  stays down **the site empties until the bot answers again**. He was told so, with his choice
+  open; the health run's limits say the first missed night.
+
+### 21.3 How it is built (25/11, not deployed)
+
+- `picwise_checks.ledger`: `PASS_NIGHTS_DAY` (1) and `NOT_PASSED_TODAY` ("not passed in the last
+  24 hours"); `Shop.complete_on`, the last night a shop was asked whole (`record_night(...,
+  complete=)`; a round that is ours, 7.1, marks none; a shop that cannot be checked that night is
+  never whole). `not_shown_until_checked` with the day's rule: shown when passed tonight; else it
+  waits once its shop was asked whole on a night after its pass, and in any case three nights
+  after it (`NOT_PASSED_IN_THREE`). A ledger written before (no `complete_on`) keeps the three
+  nights until its shop's first whole night. `decisions` name each pass's night (`passed_on`) for
+  the shown and those entering.
+- `deployment/bot/shop_checks_bot.py`: with the shop rule on, `pass_nights` is the day's.
+  **Asked whole** (`asked_whole`): nothing stopped the shop (no 429 or 503 that said to come
+  back, no error, its robots.txt answered: a shop asked nothing was not asked), and the bot asked
+  it every product of its order, or asked it all day in a round that asked all day and began on
+  it within an hour of the round's start. **A round that asked all day** (`RoundTime`): at least
+  20 hours asked (from 05:30 to 03:05 a round asks about 21.5), the hours of a round stopped and
+  started again added up (`tonight-<night>.time.json`, kept every 5 minutes beside the night's
+  answers), never the hours it was down. The note's `shop_rule` says the round's hours, whether
+  all day, the shops asked whole and the first 60 not.
+- `picwise_providers.checks_applied`: `A_DAY`, left aside with the switch of 19 off as the three
+  nights are; decisions that name the passes' nights are read however old, and on a morning
+  with no newer night `expire` makes a pass of three nights or more wait (and enter nowhere).
+  Decisions without them keep the old rule (over two nights old, not applied).
+- `deployment/server/print_health.py`: the rule's line; the round's hours; a round that did not
+  ask all day passes a limit.
+- Tests: `tests/test_picwise_checks_day_rule.py` (16), the walk's `Rules21...` (2), the health
+  run's line (1); the checks' modules as before.
+
+### 21.4 For the «ανέβασε»
+
+The deployment changes the bot's code, so `deploy.sh` starts its round again on the new release;
+the round of that day goes on from its kept answers, and its hours kept from then on (the hours
+before the deployment are not counted: that first round may read as not all day, which keeps
+every product as it was, the safe side). Nothing is prepared again by it. From the first whole
+night after it, a product not reached that day waits. Read the morning after: the health run's
+"the round asked ... hours (all day)" and the shops asked whole; PCHUB.UK's and GamingKit's
+counts against 25/11's.

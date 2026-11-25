@@ -33,6 +33,10 @@ switch on), walked the same way, with the most a shop passes made small:
 - the products of a capped shop that wait at the gate move no other kind's share in its
   categories (the look of 23/11, the checks' rules 20.7).
 
+And a pass counting for the day (the checks' rules 21, owner, 25/11), walked the same way: a
+slow shop shows what the bot scanned of it that day, one not reached on a whole day leaves at
+once and comes back when it passes; a stuck night keeps the site as it was up to three nights.
+
 Every row is local test data: fictional shops and brands, `.invalid` hosts.
 """
 from __future__ import annotations
@@ -103,10 +107,13 @@ def _number(key_or_product) -> int:
 class Server:
     """The two sides of a night, with the files they hand each other kept in memory."""
 
-    def __init__(self, feed, *, shown=None, asked_a_night, scanned: bool = False, limit: int = 0) -> None:
+    def __init__(self, feed, *, shown=None, asked_a_night, scanned: bool = False, limit: int = 0,
+                 day_rule: bool = False) -> None:
         # `scanned`: the rule of how many of a shop's products pass (19), with `limit` the most
-        # a shop passes (20,000 on the server).
+        # a shop passes (20,000 on the server); `day_rule`: with it, a pass counts for the day
+        # (21), as the bot works it out since 25/11.
         self.scanned = scanned
+        self.day_rule = day_rule
         self.limit = limit or shop_cap.SHOP_LIMIT
         self.feed = tuple(feed)
         # How many products the bot gets through a night: one number, or one a shop.
@@ -134,17 +141,18 @@ class Server:
     def close(self) -> None:
         self.folder.cleanup()
 
-    def night(self, answers=None, *, reach=None) -> dict:
+    def night(self, answers=None, *, reach=None, whole: bool = True) -> dict:
         """One night; `answers`: a product's number to its page's verdict (the rest pass);
-        `reach`: how many products the bot gets through tonight, when not as usual."""
+        `reach`: how many products the bot gets through tonight, when not as usual; `whole`:
+        the round asked all day (21), false for a night the server or the bot was stuck."""
         answers = answers or {}
         if self.scanned:
             with mock.patch.object(shop_cap, "shop_cap_on", return_value=True), \
                     mock.patch.object(shop_cap, "SHOP_LIMIT", self.limit):
-                return self._night(answers, reach)
-        return self._night(answers, reach)
+                return self._night(answers, reach, whole)
+        return self._night(answers, reach, whole)
 
-    def _night(self, answers, reach) -> dict:
+    def _night(self, answers, reach, whole: bool = True) -> dict:
         night = START + timedelta(days=self.night_number)
         self.night_number += 1
         # The bot's side (`shop_checks_bot.main` and `run`).
@@ -170,10 +178,14 @@ class Server:
                                        pages_read=len(keys)) for shop, keys in asked.items()}
         for shop in {row.shop for row in rows.values()}:
             shop_nights.setdefault(shop, ShopNight(requests=1, answers=1))
-        recorded = L.record_night(self.ledger, night, rows, readings, shop_nights, shown=shown, parts=parts)
+        # 21: in a round that asked all day, every shop asked something was asked whole
+        # (`shop_checks_bot.asked_whole`); a stuck night, none.
+        complete = {shop for shop, keys in asked.items() if keys} if whole else set()
+        recorded = L.record_night(self.ledger, night, rows, readings, shop_nights, shown=shown, parts=parts,
+                                  complete=complete if self.day_rule else ())
+        pass_nights = (L.PASS_NIGHTS_DAY if self.day_rule else L.PASS_NIGHTS_SCANNED) if self.scanned else L.PASS_VALID_NIGHTS
         made = L.decisions(self.ledger, night, rows, shown=shown, candidates=candidates, came_back=recorded.came_back,
-                           pass_nights=L.PASS_NIGHTS_SCANNED if self.scanned else L.PASS_VALID_NIGHTS,
-                           passed_over=self.limit if self.scanned else 0)
+                           pass_nights=pass_nights, passed_over=self.limit if self.scanned else 0)
         # The preparation's side: the decisions applied to the whole feed
         # (`state._resolve_provider_feed_pipeline_uncached`), what a card can show, then the
         # cap behind its gate as the tool works it out (`prepare_catalogue._Cap`), its pool
@@ -516,6 +528,47 @@ class Rules19WhatTheBotScansPassesTests(unittest.TestCase):
         self.assertEqual(sorted(night["wait"]), [])
         self.assertEqual(night["shown"], [1, 2, 3, 4])
 
+
+
+class Rules21APassCountsForTheDayTests(unittest.TestCase):
+    """The checks' rules 21 (owner, 2026-11-25: «24 ώρες είναι το σκανάρισμα και ότι προλάβει να
+    σκανάρει», a stuck night keeping the products as they were up to three days), walked night
+    after night with the rule of how many of a shop's products pass on."""
+
+    def setUp(self) -> None:
+        applied.reset_for_tests()
+        self.addCleanup(applied.reset_for_tests)
+
+    def test_a_slow_shop_shows_what_it_scanned_today_and_one_not_reached_leaves_at_once(self) -> None:
+        server = Server([_product(number) for number in range(1, 9)], asked_a_night=3, scanned=True, day_rule=True)
+        self.addCleanup(server.close)
+        for _day in range(4):
+            night = server.night()
+        # As with three nights: it settles at what the bot scans of it in a day.
+        self.assertEqual((night["asked"], night["shown"]), ([1, 2, 3], [1, 2, 3]))
+        # A whole day on which the bot reached only two of them: the third leaves that night,
+        # not three nights later, and is named a candidate.
+        short = server.night(reach=2)
+        self.assertEqual((short["asked"], short["shown"], short["wait"]), ([1, 2], [1, 2], {3: L.NOT_PASSED_TODAY}))
+        self.assertIn(3, short["candidates"])
+        # Reached again the next day: asked after the shown, passes, enters.
+        back = server.night()
+        self.assertEqual((back["asked"], back["enter"], back["shown"]), ([1, 2, 3], [3], [1, 2, 3]))
+
+    def test_a_stuck_night_keeps_the_site_as_it_was_up_to_three_nights_then_it_waits(self) -> None:
+        server = Server([_product(number) for number in range(1, 5)], asked_a_night=10, scanned=True, day_rule=True)
+        self.addCleanup(server.close)
+        for _day in range(4):
+            self.assertEqual(server.night()["shown"], [1, 2, 3, 4])
+        # The bot stuck: two nights it reaches nothing; everything stays as it was.
+        for _day in range(2):
+            night = server.night(reach=0, whole=False)
+            self.assertEqual((night["shown"], night["wait"]), ([1, 2, 3, 4], {}))
+        third = server.night(reach=0, whole=False)
+        self.assertEqual(third["wait"], {number: L.NOT_PASSED_IN_THREE for number in range(1, 5)})
+        self.assertEqual((third["shown"], third["candidates"]), ([], [1, 2, 3, 4]))
+        back = server.night()
+        self.assertEqual((back["asked"], back["enter"], back["shown"]), ([1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]))
 
 if __name__ == "__main__":
     unittest.main()
