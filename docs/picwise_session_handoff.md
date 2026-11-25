@@ -8,6 +8,8 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **(25/11, 11:50 Athens, the daily session): STILL NO ANSWER: `server-health.yml` 45588294167 (09:44 UTC), no page, no SSH; the owner told again.**
+
 - **(25/11, 11:25 Athens): THE SERVER DOES NOT ANSWER AT ALL: NO PAGE OF THE SITE (5 OF 5, 20 s EACH, FROM GITHUB'S RUNNER) AND
   NO SSH LOGIN ("the server showed a login no host key"), TWO RUNS OF `server-health.yml` ON THE SITE'S BRANCH (45584022690,
   attempts 1 and 2, 09:17 and 09:21 UTC).** The last run that reached it: 24/11 19:27 UTC (45470451190), within every limit, the site
