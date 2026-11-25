@@ -4,6 +4,7 @@ import logging
 import os
 import tempfile
 import threading
+import traceback
 from collections.abc import Callable, Iterable, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
@@ -13,6 +14,7 @@ from picwise_nlu.concept_understanding import ConceptReading, set_brand_names
 
 from .awin_adapter import (
     awin_feed_config_from_env,
+    clear_awin_feed_parse_cache,
     feed_file_cache_key,
     load_awin_provider_feed,
 )
@@ -371,6 +373,27 @@ def _cached_for(pipeline: ProviderFeedPipelineResult, name: str, build):
     return value
 
 
+def _without_rows_never_shown(pipeline: ProviderFeedPipelineResult) -> ProviderFeedPipelineResult:
+    """The pipeline with only its eligible rows' judgements, the rows a search catalogue is
+    made of (`_search_catalogue`), in their order; the feed's parsed products and every other
+    row's judgement let go, and the caches that held them (the parsed feed's, the pipeline's,
+    the catalogue's) emptied, so that a preparation's later steps reuse their memory (owner,
+    2026-11-25: «Να χειρίζονται σε πακέτα τα προϊόντα»). For the preparation only: a server
+    answering searches keeps its pipeline whole and cached."""
+    for key, value in list(_PIPELINE_CACHE.items()):
+        if value is pipeline:
+            del _PIPELINE_CACHE[key]
+    for name, (cached_pipeline, _value) in list(_CATALOGUE_CACHE.items()):
+        if cached_pipeline is pipeline:
+            del _CATALOGUE_CACHE[name]
+    clear_awin_feed_parse_cache()
+    parse_result = pipeline.parse_result
+    return replace(
+        pipeline,
+        parse_result=replace(parse_result, products=()) if parse_result is not None else None,
+        eligibility_results=tuple(row for row in pipeline.eligibility_results if row.status == "eligible"),
+    )
+
 def _catalogue_counts(pipeline: ProviderFeedPipelineResult) -> tuple[int, int]:
     """The products a search looks through, the feed's eligible ones, and their shops.
 
@@ -418,13 +441,14 @@ def prepare_feed_catalogue(
         Sequence[bool] | None,
     ]
     | None = None,
+    measure_intake: bool = False,
 ) -> PreparedCatalogue | None:
     """`_prepare_feed_catalogue`, with the functions marked `@answer_only` it calls recorded
     (`answer_only.preparing`): a file whose preparation called one is frozen whole."""
     from .answer_only import preparing
 
     with preparing():
-        return _prepare_feed_catalogue(feed_config, now=now, cap=cap)
+        return _prepare_feed_catalogue(feed_config, now=now, cap=cap, measure_intake=measure_intake)
 
 
 def _prepare_feed_catalogue(
@@ -436,6 +460,7 @@ def _prepare_feed_catalogue(
         Sequence[bool] | None,
     ]
     | None = None,
+    measure_intake: bool = False,
 ) -> PreparedCatalogue | None:
     """The configured feed read and judged as a search reads it, ready to be written
     (`tools/prepare_catalogue.py`), or None when the feed cannot be read.
@@ -443,13 +468,36 @@ def _prepare_feed_catalogue(
     `cap`, when given, says which of the products a card can show the search keeps, in
     their order (owner, 2026-11-08: the cap of 15% a category holds for the search too,
     `catalogue_cap`): the prepared catalogue, its suggestions and its choices then hold
-    only those. None from it keeps every product."""
+    only those. None from it keeps every product.
+
+    `measure_intake`: measure what each shop's feed brings in (`last_prepared_intake`) once
+    every row is judged. Then the rows that can never be shown are let go before the search
+    catalogue, the kinds and the cap are worked out (owner, 2026-11-25: «Να χειρίζονται σε
+    πακέτα τα προϊόντα»; the measure of that day, `tools/measure_prepare_memory.py`: of the
+    two links' 2,685,295 rows, 1,095,175 were never shown and stayed in memory to the end, the
+    peak 13.85 GB). The catalogue is the same: the same rows, judged the same, in the same
+    order; only the memory they held is free for the steps after."""
+    global _LAST_INTAKE
+    _LAST_INTAKE = None
     config = feed_config or awin_feed_config_from_env()
     pipeline = resolve_provider_feed_pipeline(config, include_graph_projection=False)
     if pipeline.feed_status.status != "provider_feed_ready" or pipeline.availability_context is None:
         return None
-    catalogue = _search_catalogue(pipeline, leave_out_gone_photos=False)
     eligible_count = _catalogue_counts(pipeline)[0]
+    if measure_intake:
+        try:
+            _LAST_INTAKE = (_pipeline_intake(pipeline), None)
+        except Exception as error:  # noted by the tool; the catalogue is prepared as before
+            # Its lines are kept for the note (`_where`), not the rows its frames held.
+            traceback.clear_frames(error.__traceback__)
+            _LAST_INTAKE = (None, error)
+        pipeline = _without_rows_never_shown(pipeline)
+    catalogue = _search_catalogue(pipeline, leave_out_gone_photos=False)
+    if measure_intake:
+        # The eligible rows' judgements are in the catalogue now; the pipeline and its cache
+        # go, and with them the judgements of the rows the catalogue left out.
+        _CATALOGUE_CACHE.pop("search_catalogue_every_photo", None)
+        pipeline = replace(pipeline, eligibility_results=())
     # The categories the site shows (`category_scope`, behind its switch; the owner, 22/11 and
     # 23/11; `docs/PICWISE_CATEGORY_SWITCHES.md`): a product whose category the list closes
     # leaves here, before anything counts products, so that the answers to the question "is it
@@ -544,11 +592,30 @@ def _catalogue_kind_choices(
 def measure_configured_feed_intake(feed_config: ProviderFeedConfig | None = None) -> dict[str, Any] | None:
     """Per shop, what the configured feed brings in and why the rest is held back
     (`feed_intake`), for the build's public note; None when the feed cannot be read.
-    Reads the feed as `prepare_feed_catalogue` did, from the same cache."""
+    Reads the feed as `prepare_feed_catalogue` did, from the same cache. A preparation
+    asked to measure it (`measure_intake`) has measured it already and let the feed's
+    rows go: `last_prepared_intake` gives that measure without reading the feed again."""
     config = feed_config or awin_feed_config_from_env()
     pipeline = resolve_provider_feed_pipeline(config, include_graph_projection=False)
     if pipeline.feed_status.status != "provider_feed_ready":
         return None
+    return _pipeline_intake(pipeline)
+
+
+# The intake the last preparation measured (`measure_intake`), before it let go of the rows
+# that can never be shown: (the measure, None) or (None, the error it raised); None when it
+# measured none. Read by `tools/prepare_catalogue.py` through `last_prepared_intake`.
+_LAST_INTAKE: tuple[dict[str, Any] | None, BaseException | None] | None = None
+
+
+def last_prepared_intake() -> tuple[dict[str, Any] | None, BaseException | None] | None:
+    """What the last preparation measured of the feed's intake: (the measure, None), or
+    (None, the error measuring it raised); None when it was not asked to measure it."""
+    return _LAST_INTAKE
+
+
+def _pipeline_intake(pipeline: ProviderFeedPipelineResult) -> dict[str, Any]:
+    """The feed's intake (`measure_configured_feed_intake`) of a pipeline already read."""
     not_new = {
         id(row.product)
         for row in pipeline.eligibility_results

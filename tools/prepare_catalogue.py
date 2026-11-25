@@ -94,7 +94,10 @@ def main(argv: list[str] | None = None) -> int:
         # memory ceiling (20/11, 10:30 UTC).
         feed_config = awin_feed_config_from_env()
         capping = _Cap(args.out)
-        prepared = prepare_feed_catalogue(feed_config, cap=capping)
+        # The intake is measured as soon as every row is judged, and the rows that can never
+        # be shown let go before the search catalogue, the kinds and the cap (owner,
+        # 2026-11-25: «Να χειρίζονται σε πακέτα τα προϊόντα»; `state.prepare_feed_catalogue`).
+        prepared = prepare_feed_catalogue(feed_config, cap=capping, measure_intake=args.static_dir is not None)
         _trace("the catalogue prepared")
         size = write_prepared_catalogue(prepared, args.out) if prepared is not None else 0
     except Exception as error:
@@ -606,10 +609,16 @@ def _trace(stage: str) -> None:
 
 def _intake(feed_config: object = None) -> dict[str, object] | None:
     """What each shop's feed brings in and why the rest is held, read from the copy of the
-    feed the catalogue was read from (`feed_config`); a failure is only noted."""
+    feed the catalogue was read from (`feed_config`); a failure is only noted. The
+    preparation measured it already, before it let the rows never shown go
+    (`state.last_prepared_intake`): that measure, without reading the feed a second time."""
     try:
-        from picwise_providers.state import measure_configured_feed_intake
+        from picwise_providers.state import last_prepared_intake, measure_configured_feed_intake
 
+        measured = last_prepared_intake()
+        if measured is not None:
+            intake, error = measured
+            return intake if error is None else {"error": _where(error)}
         return measure_configured_feed_intake(feed_config)
     except Exception as error:
         return {"error": _where(error)}
