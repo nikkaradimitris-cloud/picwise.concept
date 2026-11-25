@@ -111,6 +111,16 @@ def main(argv: list[str] | None = None) -> int:
         _write_static_note(args.static_dir, {"prepared": False, "reason": "feed_not_readable"})
         return 0 if args.keep_going else 1
     pool = capping.write_pool(prepared)
+    # How the feed was judged: in packages of rows on disk (`feed_packages`; owner, 2026-11-25),
+    # or whole when not asked to or where it could not be.
+    from picwise_providers.state import last_packages
+
+    packages = last_packages()
+    if packages is not None:
+        print("prepare_catalogue: the feed judged in packages: "
+              + (f"{packages['rows']:,} rows, {packages['packages']} packages, the largest {packages['largest_package']:,} rows, "
+                 f"{packages.get('disk_mb', 0):,.0f} MB on disk"
+                 if packages.get("used") else f"no, the whole feed read ({packages.get('why')})"))
     # The rule of how many of a shop's products pass is the checks' (their rules, section 19):
     # its numbers go in the note with theirs.
     checks = {**_checks(capping), "shop_cap": _shop_cap(capping)}
@@ -210,6 +220,7 @@ def main(argv: list[str] | None = None) -> int:
                 "checks": checks,
                 "itself": itself,
                 "categories": categories,
+                **({"packages": packages} if packages is not None else {}),
                 **({"memory": memory} if memory is not None else {}),
                 **({"price_notes": notes} if notes is not None else {}),
             },

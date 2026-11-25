@@ -78,7 +78,7 @@ def _wrap(module: object, name: str, step: str) -> None:
 
 
 def install() -> None:
-    from picwise_providers import awin_adapter, category_scope, kind_itself, prepared_catalogue, state
+    from picwise_providers import awin_adapter, category_scope, feed_packages, kind_itself, prepared_catalogue, state
 
     _wrap(awin_adapter, "_read_feed_rows", "a link's rows read")
     _wrap(awin_adapter, "_load_awin_provider_feed_uncached", "a link's rows made products")
@@ -88,6 +88,10 @@ def install() -> None:
     _wrap(state, "apply_checks", "the checks applied")
     _wrap(state, "build_feed_availability_context", "the availability context")
     _wrap(state, "_resolve_provider_feed_pipeline_uncached", "the pipeline (every row judged)")
+    # The feed judged in packages (`feed_packages`, with `PICWISE_FEED_PACKAGES` set).
+    _wrap(feed_packages._Run, "first_pass", "packages: both links read row by row, written to disk")
+    _wrap(feed_packages, "categories_pass", "packages: the barcodes' and the AI's categories, a package at a time")
+    _wrap(feed_packages, "judging_pass", "packages: every row judged, the eligible kept, a package at a time")
     _wrap(state, "_search_catalogue", "the search catalogue of every eligible product")
     _wrap(category_scope, "settle_or_keep", "the categories' list read")
     _wrap(state, "build_search_catalogue", "a search catalogue rebuilt")

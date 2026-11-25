@@ -9,6 +9,7 @@ from collections.abc import Callable, Iterable, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timezone
+from pathlib import Path
 from typing import Any
 from picwise_nlu.concept_understanding import ConceptReading, set_brand_names
 
@@ -120,11 +121,27 @@ def _aggregate_feed_status(
     parse_result: ProviderParseResult,
     eligibility_results: tuple[ProviderEligibilityResult, ...],
 ) -> ProviderFeedStatus:
-    eligible_count = sum(1 for row in eligibility_results if row.status == "eligible")
-    review_count = sum(1 for row in eligibility_results if row.status == "needs_review")
-    blocked_count = sum(1 for row in eligibility_results if row.status == "blocked")
-    product_count = len(eligibility_results)
+    return feed_status_from_counts(
+        provider_key=provider_key,
+        parse_result=parse_result,
+        product_count=len(eligibility_results),
+        eligible_count=sum(1 for row in eligibility_results if row.status == "eligible"),
+        review_count=sum(1 for row in eligibility_results if row.status == "needs_review"),
+        blocked_count=sum(1 for row in eligibility_results if row.status == "blocked"),
+    )
 
+
+def feed_status_from_counts(
+    *,
+    provider_key: str,
+    parse_result: ProviderParseResult,
+    product_count: int,
+    eligible_count: int,
+    review_count: int,
+    blocked_count: int,
+) -> ProviderFeedStatus:
+    """`_aggregate_feed_status` from its counts (the feed judged in packages counts them
+    package by package, `feed_packages`)."""
     if parse_result.status == "provider_feed_not_configured":
         return ProviderFeedStatus(
             status="provider_feed_not_configured",
@@ -442,13 +459,14 @@ def prepare_feed_catalogue(
     ]
     | None = None,
     measure_intake: bool = False,
+    packages: str | os.PathLike[str] | None = None,
 ) -> PreparedCatalogue | None:
     """`_prepare_feed_catalogue`, with the functions marked `@answer_only` it calls recorded
     (`answer_only.preparing`): a file whose preparation called one is frozen whole."""
     from .answer_only import preparing
 
     with preparing():
-        return _prepare_feed_catalogue(feed_config, now=now, cap=cap, measure_intake=measure_intake)
+        return _prepare_feed_catalogue(feed_config, now=now, cap=cap, measure_intake=measure_intake, packages=packages)
 
 
 def _prepare_feed_catalogue(
@@ -461,6 +479,7 @@ def _prepare_feed_catalogue(
     ]
     | None = None,
     measure_intake: bool = False,
+    packages: str | os.PathLike[str] | None = None,
 ) -> PreparedCatalogue | None:
     """The configured feed read and judged as a search reads it, ready to be written
     (`tools/prepare_catalogue.py`), or None when the feed cannot be read.
@@ -476,24 +495,46 @@ def _prepare_feed_catalogue(
     πακέτα τα προϊόντα»; the measure of that day, `tools/measure_prepare_memory.py`: of the
     two links' 2,685,295 rows, 1,095,175 were never shown and stayed in memory to the end, the
     peak 13.85 GB). The catalogue is the same: the same rows, judged the same, in the same
-    order; only the memory they held is free for the steps after."""
-    global _LAST_INTAKE
+    order; only the memory they held is free for the steps after.
+
+    `packages`: a folder on disk (by default `feed_packages.PACKAGES_ENV`'s): the feed is then
+    judged one package of rows at a time (`feed_packages`; owner, 2026-11-25: «Το αρχείο
+    κατεβαίνει ολόκληρο και αποθηκεύεται στο σκληρό δίσκο»), never held whole, and gives the
+    same pipeline the whole feed gives once its rows never shown are let go; where it cannot
+    (`feed_packages.Fallback`), the whole feed is read as before. `last_packages` says which."""
+    global _LAST_INTAKE, _LAST_PACKAGES
     _LAST_INTAKE = None
+    _LAST_PACKAGES = None
     config = feed_config or awin_feed_config_from_env()
-    pipeline = resolve_provider_feed_pipeline(config, include_graph_projection=False)
-    if pipeline.feed_status.status != "provider_feed_ready" or pipeline.availability_context is None:
-        return None
-    eligible_count = _catalogue_counts(pipeline)[0]
-    if measure_intake:
-        try:
-            _LAST_INTAKE = (_pipeline_intake(pipeline), None)
-        except Exception as error:  # noted by the tool; the catalogue is prepared as before
-            # Its lines are kept for the note (`_where`), not the rows its frames held.
-            traceback.clear_frames(error.__traceback__)
-            _LAST_INTAKE = (None, error)
-        pipeline = _without_rows_never_shown(pipeline)
+    from .feed_packages import packages_folder
+
+    folder = packages if packages is not None else packages_folder()
+    packaged = _judged_in_packages(config, folder, measure_intake=measure_intake) if folder is not None else None
+    if packaged is not None:
+        pipeline = packaged.pipeline
+        if pipeline.feed_status.status != "provider_feed_ready" or pipeline.availability_context is None:
+            return None
+        eligible_count = len(pipeline.eligibility_results)
+        if measure_intake:
+            if packaged.intake_error is not None:
+                traceback.clear_frames(packaged.intake_error.__traceback__)
+            _LAST_INTAKE = (packaged.intake, packaged.intake_error)
+        del packaged
+    else:
+        pipeline = resolve_provider_feed_pipeline(config, include_graph_projection=False)
+        if pipeline.feed_status.status != "provider_feed_ready" or pipeline.availability_context is None:
+            return None
+        eligible_count = _catalogue_counts(pipeline)[0]
+        if measure_intake:
+            try:
+                _LAST_INTAKE = (_pipeline_intake(pipeline), None)
+            except Exception as error:  # noted by the tool; the catalogue is prepared as before
+                # Its lines are kept for the note (`_where`), not the rows its frames held.
+                traceback.clear_frames(error.__traceback__)
+                _LAST_INTAKE = (None, error)
+            pipeline = _without_rows_never_shown(pipeline)
     catalogue = _search_catalogue(pipeline, leave_out_gone_photos=False)
-    if measure_intake:
+    if measure_intake or folder is not None:
         # The eligible rows' judgements are in the catalogue now; the pipeline and its cache
         # go, and with them the judgements of the rows the catalogue left out.
         _CATALOGUE_CACHE.pop("search_catalogue_every_photo", None)
@@ -564,6 +605,43 @@ def _prepare_feed_catalogue(
         choices=choices,
         brands=brands,
     )
+
+
+# How the last preparation judged the feed (`packages`): None when it was not asked to judge
+# it in packages; else whether it did, and its packages, or why the whole feed was read.
+_LAST_PACKAGES: dict[str, Any] | None = None
+
+
+def last_packages() -> dict[str, Any] | None:
+    """How the last preparation judged the feed in packages (`_prepare_feed_catalogue`)."""
+    return _LAST_PACKAGES
+
+
+def _judged_in_packages(config: ProviderFeedConfig, folder: str | os.PathLike[str], *, measure_intake: bool):
+    """The feed judged in packages (`feed_packages.judge_in_packages`), or None when it
+    cannot be, then said in `last_packages`."""
+    global _LAST_PACKAGES
+    from .awin_adapter import second_feed_config_from_env
+    from .feed_packages import Fallback, judge_in_packages
+
+    try:
+        packaged = judge_in_packages(
+            config,
+            folder=Path(folder),
+            second=second_feed_config_from_env(),
+            judge=_enrich_provider_eligibility_result,
+            status_of=feed_status_from_counts,
+            pipeline_of=ProviderFeedPipelineResult,
+            measure_intake=measure_intake,
+            read_kinds=lambda product: _product_concepts(product, _product_search_fields(product)),
+            not_new=product_non_new_condition,
+        )
+    except Fallback as why:
+        _LAST_PACKAGES = {"used": False, "why": str(why)}
+        return None
+    _LAST_PACKAGES = {"used": True, "rows": packaged.rows, "packages": packaged.packages,
+                      "largest_package": packaged.largest_package, "disk_mb": round(packaged.disk_bytes / 1e6, 1)}
+    return packaged
 
 
 def _new_kinds(

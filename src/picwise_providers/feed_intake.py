@@ -357,23 +357,53 @@ def measure_feed_intake(
     counts under both. `read_kinds` reads a product's kinds as the search does; without
     it, no kind is counted.
     """
-    shops: dict[str, dict[str, Any]] = {}
-    totals = {"rows": 0, "shown": 0, "not_new": 0, "held": 0}
-    held_reasons: Counter = Counter()
-    without_totals = {"rows": 0, "only_this": 0, "with_product_type": 0, "shown_by_type": 0, "shown_by_title": 0}
-    kinds_totals = {"type": Counter(), "title": Counter()}
-    also_held_totals: Counter = Counter()
-    hint_totals = _empty_hint_counts()
     # Another row's category for the same barcode: the first category written for it.
     categories_by_barcode: dict[str, str] = {}
     for row in rows:
-        category = str(row.product.category_text or "").strip()
-        barcode = _barcode(row.product.raw) if category and isinstance(row.product.raw, Mapping) else ""
-        if barcode:
-            categories_by_barcode.setdefault(barcode, category)
+        found = barcode_category(row)
+        if found is not None:
+            categories_by_barcode.setdefault(*found)
+    measure = IntakeMeasure(categories_by_barcode, read_kinds=read_kinds)
     for row in rows:
+        measure.add(row, not_new=id(row.product) in not_new_products)
+    return measure.note()
+
+
+def barcode_category(row: ProviderEligibilityResult) -> tuple[str, str] | None:
+    """A judged row's barcode and its category, when it has both (`measure_feed_intake`'s
+    first category written for a barcode is the first row's in the feed's order)."""
+    return barcode_category_of(row.product)
+
+
+def barcode_category_of(product: ProviderProduct) -> tuple[str, str] | None:
+    """`barcode_category` of a row's product (judging a row keeps its product as it was)."""
+    category = str(product.category_text or "").strip()
+    barcode = _barcode(product.raw) if category and isinstance(product.raw, Mapping) else ""
+    return (barcode, category) if barcode else None
+
+
+class IntakeMeasure:
+    """`measure_feed_intake` row by row, for a feed read in packages (`feed_packages`; owner,
+    2026-11-25): `categories_by_barcode` worked out over every row first (`barcode_category`);
+    each shop's rows given in the feed's order, the shops in any order."""
+
+    def __init__(self, categories_by_barcode: Mapping[str, str],
+                 *, read_kinds: Callable[[ProviderProduct], Collection[str]] | None = None) -> None:
+        self.categories_by_barcode = categories_by_barcode
+        self.read_kinds = read_kinds
+        self.shops: dict[str, dict[str, Any]] = {}
+        self.totals = {"rows": 0, "shown": 0, "not_new": 0, "held": 0}
+        self.held_reasons: Counter = Counter()
+        self.without_totals = {"rows": 0, "only_this": 0, "with_product_type": 0, "shown_by_type": 0, "shown_by_title": 0}
+        self.kinds_totals = {"type": Counter(), "title": Counter()}
+        self.also_held_totals: Counter = Counter()
+        self.hint_totals = _empty_hint_counts()
+
+    def add(self, row: ProviderEligibilityResult, *, not_new: bool = False) -> None:
+        read_kinds = self.read_kinds
+        totals, without_totals = self.totals, self.without_totals
         raw = row.product.raw if isinstance(row.product.raw, Mapping) else {}
-        shop = shops.setdefault(
+        shop = self.shops.setdefault(
             _shop_name(raw),
             {
                 "rows": 0, "shown": 0, "not_new": 0, "held": 0, "reasons": Counter(),
@@ -404,7 +434,7 @@ def measure_feed_intake(
                 if not way:
                     behind = _held_behind_category(row)
                     shop["also_held_for"].update(behind)
-                    also_held_totals.update(behind)
+                    self.also_held_totals.update(behind)
                     said = _out_of_stock_by(row)
                     if said:
                         shop["out_of_stock_by"][said] += 1
@@ -418,7 +448,7 @@ def measure_feed_intake(
                         kinds = read_kinds(row.product)
                         kind = _kind_bucket(kinds)
                         shop["kinds"][way][kind] += 1
-                        kinds_totals[way][kind] += 1
+                        self.kinds_totals[way][kind] += 1
                         if way == "title" and kind == "kind" and len(shop["titles"]) < _WITHOUT_CATEGORY_TITLES:
                             named = ", ".join(sorted(k for k in kinds if not k.startswith("__")))
                             shop["titles"].append(
@@ -426,52 +456,56 @@ def measure_feed_intake(
                                 f" -> {named}"
                             )
                     if way == "title":
-                        _count_hints(shop["hints"], hint_totals, raw, row.product, kinds, categories_by_barcode)
+                        _count_hints(shop["hints"], self.hint_totals, raw, row.product, kinds,
+                                     self.categories_by_barcode)
         reasons = _hold_reasons(row)
         if reasons:
             for bucket in (shop, totals):
                 bucket["held"] += 1
             shop["reasons"].update(reasons)
-            held_reasons.update(reasons)
-        elif id(row.product) in not_new_products:
+            self.held_reasons.update(reasons)
+        elif not_new:
             shop["not_new"] += 1
             totals["not_new"] += 1
         else:
             shop["shown"] += 1
             totals["shown"] += 1
-    read = read_kinds is not None
-    return {
-        **totals,
-        "held_reasons": dict(held_reasons.most_common()),
-        "without_category": {
-            **without_totals,
-            "kinds_by_type": _buckets(kinds_totals["type"] if read else None),
-            "kinds_by_title": _buckets(kinds_totals["title"] if read else None),
-            "also_held_for": dict(also_held_totals.most_common()),
-            **hint_totals,
-        },
-        "shops": [
-            {
-                "shop": name,
-                "rows": shop["rows"],
-                "shown": shop["shown"],
-                "not_new": shop["not_new"],
-                "held": shop["held"],
-                "held_reasons": dict(shop["reasons"].most_common()),
-                "product_type": _product_type_note(
-                    shop["product_types"], shop["product_type_without_category"]
-                ),
-                "without_category": {
-                    **shop["without_category"],
-                    "kinds_by_type": _buckets(shop["kinds"]["type"] if read else None),
-                    "kinds_by_title": _buckets(shop["kinds"]["title"] if read else None),
-                    "also_held_for": dict(shop["also_held_for"].most_common()),
-                    "out_of_stock_by": dict(shop["out_of_stock_by"].most_common(_OUT_OF_STOCK_BY_LISTED)),
-                    "types": _top_values(shop["types_shown"], _WITHOUT_CATEGORY_TYPES, _PRODUCT_TYPE_EXAMPLE_LENGTH),
-                    "titles": shop["titles"],
-                    "hints": _hint_note(shop["hints"]),
-                },
-            }
-            for name, shop in sorted(shops.items(), key=lambda item: (-item[1]["rows"], item[0]))
-        ],
-    }
+
+    def note(self) -> dict[str, Any]:
+        read = self.read_kinds is not None
+        kinds_totals = self.kinds_totals
+        return {
+            **self.totals,
+            "held_reasons": dict(self.held_reasons.most_common()),
+            "without_category": {
+                **self.without_totals,
+                "kinds_by_type": _buckets(kinds_totals["type"] if read else None),
+                "kinds_by_title": _buckets(kinds_totals["title"] if read else None),
+                "also_held_for": dict(self.also_held_totals.most_common()),
+                **self.hint_totals,
+            },
+            "shops": [
+                {
+                    "shop": name,
+                    "rows": shop["rows"],
+                    "shown": shop["shown"],
+                    "not_new": shop["not_new"],
+                    "held": shop["held"],
+                    "held_reasons": dict(shop["reasons"].most_common()),
+                    "product_type": _product_type_note(
+                        shop["product_types"], shop["product_type_without_category"]
+                    ),
+                    "without_category": {
+                        **shop["without_category"],
+                        "kinds_by_type": _buckets(shop["kinds"]["type"] if read else None),
+                        "kinds_by_title": _buckets(shop["kinds"]["title"] if read else None),
+                        "also_held_for": dict(shop["also_held_for"].most_common()),
+                        "out_of_stock_by": dict(shop["out_of_stock_by"].most_common(_OUT_OF_STOCK_BY_LISTED)),
+                        "types": _top_values(shop["types_shown"], _WITHOUT_CATEGORY_TYPES, _PRODUCT_TYPE_EXAMPLE_LENGTH),
+                        "titles": shop["titles"],
+                        "hints": _hint_note(shop["hints"]),
+                    },
+                }
+                for name, shop in sorted(self.shops.items(), key=lambda item: (-item[1]["rows"], item[0]))
+            ],
+        }

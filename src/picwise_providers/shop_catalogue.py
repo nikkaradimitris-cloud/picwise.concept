@@ -217,22 +217,49 @@ def apply_shop_catalogues(
 ) -> tuple[ProviderProduct, ...]:
     """The rows with what their shops' catalogues and their barcodes say (module
     docstring); the note of it is kept for `last_shop_catalogue_note`."""
-    global _LAST_NOTE
-    if catalogues is None and file_status is None:
-        catalogues, file_status = load_shop_catalogues()
-    today = today or datetime.now(timezone.utc).date()
-    shops = (catalogues or {}).get("shops") or {}
-    notes = {name: _shop_note(entry) for name, entry in shops.items() if isinstance(entry, Mapping)}
-    types_no_kind: Counter = Counter()
-    words: dict[tuple[str, str], list] = {}
-    result = list(products)
-    for index, product in enumerate(result):
+    run = CataloguesRun(catalogues=catalogues, file_status=file_status, today=today)
+    result = [run.row(product) for product in products]
+    for product in result:
+        run.count_barcode(product)
+    result = [run.barcode(product) for product in result]
+    run.settle()
+    return tuple(result)
+
+
+class CataloguesRun:
+    """`apply_shop_catalogues` in its three steps, so that a feed read in packages
+    (`feed_packages`; owner, 2026-11-25: «Να χειρίζονται σε πακέτα τα προϊόντα») gives each
+    row the same: `row` (what its shop's catalogue says), given every row in the feed's
+    order; `count_barcode`, every row once after `row`; `barcode` (the category of the rows
+    with its barcode), once every row was counted, in any order; `settle`, the note."""
+
+    def __init__(self, *, catalogues: Mapping[str, Any] | None = None, file_status: str | None = None,
+                 today: date | None = None) -> None:
+        if catalogues is None and file_status is None:
+            catalogues, file_status = load_shop_catalogues()
+        self.catalogues = catalogues
+        self.file_status = file_status
+        self.today = today or datetime.now(timezone.utc).date()
+        self.shops = (catalogues or {}).get("shops") or {}
+        self.notes = {name: _shop_note(entry) for name, entry in self.shops.items() if isinstance(entry, Mapping)}
+        self.types_no_kind: Counter = Counter()
+        self.words: dict[tuple[str, str], list] = {}
+        # The barcodes' counts (`_apply_barcodes`): every row's, then the categories of those
+        # with one, as `row` left them.
+        self.rows_by_barcode: Counter = Counter()
+        self.categories: dict[str, Counter] = {}
+        self.barcode_note = {"without_category": 0, "with_barcode": 0, "too_common": 0, "found": 0, "joined": 0,
+                             "no_kind": 0}
+        self.joined_by_shop: Counter = Counter()
+
+    def row(self, product: ProviderProduct) -> ProviderProduct:
+        """What the row's shop's catalogue says of it (module docstring)."""
         raw = product.raw if isinstance(product.raw, Mapping) else {}
         name = shop_name(raw)
-        entry = shops.get(name)
+        entry = self.shops.get(name)
         if not isinstance(entry, Mapping):
-            continue
-        note = notes[name]
+            return product
+        note = self.notes[name]
         note["rows"] += 1
         without_category = not " ".join(str(product.category_text or "").split())
         if without_category:
@@ -242,123 +269,137 @@ def apply_shop_catalogues(
         if not isinstance(known, list) or len(known) < 4:
             if without_category:
                 note["not_found"] += 1
-            continue
+            return product
         note["matched"] += 1
         product_type = " ".join(str(known[0] or "").split())
         seen = _seen(known[2])
-        if seen is not None and (today - seen).days <= STOCK_DAYS:
+        if seen is not None and (self.today - seen).days <= STOCK_DAYS:
             if not known[1] or (variant and variant in {str(value) for value in known[3] or ()}):
                 note["sold_out"] += 1
                 availability = " ".join(str(product.availability_text or "").lower().split())
                 if availability in _FEED_IN_STOCK:
                     note["sold_out_feed_in_stock"] += 1
                 product = replace(product, raw={**dict(raw), SHOP_STOCK_COLUMN: SOLD_OUT})
-                result[index] = product
             else:
                 note["in_stock"] += 1
                 availability = " ".join(str(product.availability_text or "").lower().split())
                 if availability in _FEED_OUT_OF_STOCK:
                     note["in_stock_feed_out_of_stock"] += 1
                 product = replace(product, raw={**dict(raw), SHOP_STOCK_COLUMN: IN_STOCK})
-                result[index] = product
         else:
             note["stock_too_old"] += 1
         if not without_category:
-            continue
+            return product
         if not product_type:
             note["no_type"] += 1
-            continue
+            return product
         candidate = _with_category(product, product_type, product_type)
         if _has_kind(candidate):
             note["by_type"] += 1
-            result[index] = candidate
-        else:
-            note["type_no_kind"] += 1
-            types_no_kind[product_type] += 1
-            entry = words.setdefault((name, product_type), [0, [], Counter()])
-            entry[0] += 1
-            if len(entry[1]) < _WORD_TITLES:
-                entry[1].append(" ".join(str(product.title or "").split())[:_WORD_TITLE_LENGTH])
-            entry[2][_title_read(product)] += 1
-    barcode_note, barcode_shops = _apply_barcodes(result)
-    _LAST_NOTE = {
-        "file": file_status or ("read" if catalogues is not None else "none"),
-        "written_at": str((catalogues or {}).get("written_at") or ""),
-        "shops_known": len(notes),
-        **{
-            key: sum(note[key] for note in notes.values())
-            for key in ("rows", "matched", "sold_out", "sold_out_feed_in_stock", "in_stock",
-                        "in_stock_feed_out_of_stock", "stock_too_old",
-                        "without_category", "by_type", "type_no_kind", "no_type", "not_found")
-        },
-        "types_no_kind": [
-            {"value": _short(value), "rows": rows}
-            for value, rows in heapq.nsmallest(_TYPES_LISTED, types_no_kind.items(), key=lambda item: (-item[1], item[0]))
-        ],
-        "words_to_learn": [
-            {"shop": shop, "type": _short(product_type), "rows": count, "titles": titles,
-             "title_reads": [
-                 {"kind": kind, "rows": rows}
-                 for kind, rows in heapq.nsmallest(_WORD_READS, reads.items(), key=lambda item: (-item[1], item[0]))
-             ]}
-            for (shop, product_type), (count, titles, reads) in heapq.nsmallest(
-                _WORDS_LISTED,
-                ((key, value) for key, value in words.items() if value[0] >= _WORDS_MIN_ROWS),
-                key=lambda item: (-item[1][0], item[0]),
-            )
-        ],
-        "barcode": barcode_note,
-        "barcode_shops": barcode_shops,
-        "shops": [
-            {"shop": name, **note}
-            for name, note in sorted(notes.items(), key=lambda item: (-item[1]["without_category"], item[0]))
-        ],
-    }
-    return tuple(result)
+            return candidate
+        note["type_no_kind"] += 1
+        self.types_no_kind[product_type] += 1
+        entry = self.words.setdefault((name, product_type), [0, [], Counter()])
+        entry[0] += 1
+        if len(entry[1]) < _WORD_TITLES:
+            entry[1].append(" ".join(str(product.title or "").split())[:_WORD_TITLE_LENGTH])
+        entry[2][_title_read(product)] += 1
+        return product
+
+    def count_barcode(self, product: ProviderProduct) -> None:
+        """A row's barcode, counted, and its category with it when it has one."""
+        raw = product.raw if isinstance(product.raw, Mapping) else {}
+        barcode = _barcode(raw)
+        if not barcode:
+            return
+        self.rows_by_barcode[barcode] += 1
+        category = " ".join(str(product.category_text or "").split())
+        if category:
+            product_type = " ".join(str(raw.get("product_type") or "").split())
+            self.categories.setdefault(barcode, Counter())[(category, product_type)] += 1
+
+    def barcode(self, product: ProviderProduct, *, count: bool = True) -> ProviderProduct:
+        """A row without a category takes the category most rows with its barcode write, and
+        joins only when its reading gives a kind (module docstring). `count`: false for a row
+        given a second time (the feed in packages reads each package twice), which changes no
+        count of the note."""
+        if " ".join(str(product.category_text or "").split()):
+            return product
+        note = self.barcode_note if count else Counter()
+        note["without_category"] += 1
+        barcode = _barcode(product.raw if isinstance(product.raw, Mapping) else {})
+        if not barcode:
+            return product
+        note["with_barcode"] += 1
+        if self.rows_by_barcode[barcode] > MAX_BARCODE_ROWS:
+            note["too_common"] += 1
+            return product
+        found = self.categories.get(barcode)
+        if not found:
+            return product
+        note["found"] += 1
+        (category, product_type), _count = min(found.items(), key=lambda item: (-item[1], item[0]))
+        candidate = _with_category(product, category, product_type)
+        if _has_kind(candidate):
+            note["joined"] += 1
+            if count:
+                self.joined_by_shop[shop_name(product.raw if isinstance(product.raw, Mapping) else {})] += 1
+            return candidate
+        note["no_kind"] += 1
+        return product
+
+    def settle(self) -> dict[str, Any]:
+        """The note (`last_shop_catalogue_note`), kept and returned."""
+        global _LAST_NOTE
+        notes = self.notes
+        barcode_shops = [{"shop": name, "joined": count}
+                         for name, count in sorted(self.joined_by_shop.items(), key=lambda item: (-item[1], item[0]))]
+        _LAST_NOTE = {
+            "file": self.file_status or ("read" if self.catalogues is not None else "none"),
+            "written_at": str((self.catalogues or {}).get("written_at") or ""),
+            "shops_known": len(notes),
+            **{
+                key: sum(note[key] for note in notes.values())
+                for key in ("rows", "matched", "sold_out", "sold_out_feed_in_stock", "in_stock",
+                            "in_stock_feed_out_of_stock", "stock_too_old",
+                            "without_category", "by_type", "type_no_kind", "no_type", "not_found")
+            },
+            "types_no_kind": [
+                {"value": _short(value), "rows": rows}
+                for value, rows in heapq.nsmallest(_TYPES_LISTED, self.types_no_kind.items(),
+                                                   key=lambda item: (-item[1], item[0]))
+            ],
+            "words_to_learn": [
+                {"shop": shop, "type": _short(product_type), "rows": count, "titles": titles,
+                 "title_reads": [
+                     {"kind": kind, "rows": rows}
+                     for kind, rows in heapq.nsmallest(_WORD_READS, reads.items(), key=lambda item: (-item[1], item[0]))
+                 ]}
+                for (shop, product_type), (count, titles, reads) in heapq.nsmallest(
+                    _WORDS_LISTED,
+                    ((key, value) for key, value in self.words.items() if value[0] >= _WORDS_MIN_ROWS),
+                    key=lambda item: (-item[1][0], item[0]),
+                )
+            ],
+            "barcode": dict(self.barcode_note),
+            "barcode_shops": barcode_shops,
+            "shops": [
+                {"shop": name, **note}
+                for name, note in sorted(notes.items(), key=lambda item: (-item[1]["without_category"], item[0]))
+            ],
+        }
+        return _LAST_NOTE
 
 
 def _apply_barcodes(result: list[ProviderProduct]) -> tuple[dict[str, int], list[dict[str, Any]]]:
     """A row without a category takes the category most rows with its barcode write,
     and joins only when its reading gives a kind; in place. Returns the counts, in all
     and per shop (the shops it gave a row to, the most first)."""
-    rows_by_barcode: Counter = Counter()
-    categories: dict[str, Counter] = {}
-    barcodes: list[str] = []
+    run = CataloguesRun(catalogues={}, file_status="none")
     for product in result:
-        raw = product.raw if isinstance(product.raw, Mapping) else {}
-        barcode = _barcode(raw)
-        barcodes.append(barcode)
-        if not barcode:
-            continue
-        rows_by_barcode[barcode] += 1
-        category = " ".join(str(product.category_text or "").split())
-        if category:
-            product_type = " ".join(str(raw.get("product_type") or "").split())
-            categories.setdefault(barcode, Counter())[(category, product_type)] += 1
-    note = {"without_category": 0, "with_barcode": 0, "too_common": 0, "found": 0, "joined": 0, "no_kind": 0}
-    joined_by_shop: Counter = Counter()
+        run.count_barcode(product)
     for index, product in enumerate(result):
-        if " ".join(str(product.category_text or "").split()):
-            continue
-        note["without_category"] += 1
-        barcode = barcodes[index]
-        if not barcode:
-            continue
-        note["with_barcode"] += 1
-        if rows_by_barcode[barcode] > MAX_BARCODE_ROWS:
-            note["too_common"] += 1
-            continue
-        found = categories.get(barcode)
-        if not found:
-            continue
-        note["found"] += 1
-        (category, product_type), _count = min(found.items(), key=lambda item: (-item[1], item[0]))
-        candidate = _with_category(product, category, product_type)
-        if _has_kind(candidate):
-            note["joined"] += 1
-            joined_by_shop[shop_name(product.raw if isinstance(product.raw, Mapping) else {})] += 1
-            result[index] = candidate
-        else:
-            note["no_kind"] += 1
-    shops = [{"shop": name, "joined": count} for name, count in sorted(joined_by_shop.items(), key=lambda item: (-item[1], item[0]))]
-    return note, shops
+        result[index] = run.barcode(product)
+    shops = [{"shop": name, "joined": count}
+             for name, count in sorted(run.joined_by_shop.items(), key=lambda item: (-item[1], item[0]))]
+    return dict(run.barcode_note), shops

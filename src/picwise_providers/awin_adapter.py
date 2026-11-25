@@ -10,7 +10,7 @@ import sys
 import tempfile
 import time
 import zlib
-from typing import IO, Any, Mapping
+from typing import IO, Any, Callable, Iterator, Mapping
 from urllib.error import URLError
 from urllib.request import urlopen
 
@@ -236,55 +236,113 @@ def _read_feed_rows(path: str, keep=None) -> tuple[list[dict[str, Any]], tuple[s
     return [], ("feed_decode_failed",)
 
 
-def _parse_csv_stream(text: IO[str], keep=None) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
+class _MissingHeader(Exception):
+    """A CSV feed with no header row."""
+
+
+def _iter_csv_records(text: IO[str], keep=None) -> Iterator[dict[str, Any]]:
     # Read as `csv.DictReader` reads it -- blank lines skipped, a repeated column name
     # taking its last value -- with only the filled fields kept, and each row made in one
     # step. A row with a filled field beyond the header's columns is left out whole: its
     # fields no longer stand under their names, so its price could be another column's
     # text or number (2026-11-19: 201 of InStock UK's rows, their sale prices reading
     # "Union Jack" and pieces of JSON; `feed-compare.yml` counts them). Empty fields past
-    # the header, a trailing comma, change nothing and are dropped as before.
-    try:
-        reader = csv.reader(text)
-        header = next(reader, None)
-        if header is None:
-            return [], ("csv_missing_header",)
-        repeated_names = len(set(header)) != len(header)
-        rows: list[dict[str, Any]] = []
-        width = len(header)
-        # The columns no rule reads (`prepared_catalogue.LEFT_OUT_COLUMNS`, which a test keeps
-        # true) are never kept, and a short value is shared by every row that gives it
-        # (`sys.intern`): a shop's name, a currency, a category, a brand once in memory,
-        # not once a row (2026-11-19: the two Awin links passed the server's memory).
-        from .prepared_catalogue import LEFT_OUT_COLUMNS
+    # the header, a trailing comma, change nothing and are dropped as before. One row at a
+    # time (`read_feed_rows_into`, the feed in packages); raises `_MissingHeader` or
+    # `csv.Error`.
+    reader = csv.reader(text)
+    header = next(reader, None)
+    if header is None:
+        raise _MissingHeader()
+    repeated_names = len(set(header)) != len(header)
+    width = len(header)
+    # The columns no rule reads (`prepared_catalogue.LEFT_OUT_COLUMNS`, which a test keeps
+    # true) are never kept, and a short value is shared by every row that gives it
+    # (`sys.intern`): a shop's name, a currency, a category, a brand once in memory,
+    # not once a row (2026-11-19: the two Awin links passed the server's memory).
+    from .prepared_catalogue import LEFT_OUT_COLUMNS
 
-        read = [name not in LEFT_OUT_COLUMNS for name in header]
-        header = [sys.intern(name) for name in header]
-        for row in reader:
-            if not row:
-                continue
-            if len(row) > width and any(field.strip() for field in row[width:]):
-                continue
-            if repeated_names:
-                record = {
-                    key: (sys.intern(value) if len(value) <= _SHARED_VALUE_CHARS else value)
-                    for key, value in dict(
-                        (name, field) for name, field, wanted in zip(header, row, read) if wanted
-                    ).items()
-                    if value
-                }
-            else:
-                record = {
-                    key: (sys.intern(value) if len(value) <= _SHARED_VALUE_CHARS else value)
-                    for key, value, wanted in zip(header, row, read)
-                    if wanted and value
-                }
-            # A row that can never show is left here, before it costs memory (`keep`).
-            if keep is None or keep(record):
-                rows.append(record)
-        return rows, tuple()
+    read = [name not in LEFT_OUT_COLUMNS for name in header]
+    header = [sys.intern(name) for name in header]
+    for row in reader:
+        if not row:
+            continue
+        if len(row) > width and any(field.strip() for field in row[width:]):
+            continue
+        if repeated_names:
+            record = {
+                key: (sys.intern(value) if len(value) <= _SHARED_VALUE_CHARS else value)
+                for key, value in dict(
+                    (name, field) for name, field, wanted in zip(header, row, read) if wanted
+                ).items()
+                if value
+            }
+        else:
+            record = {
+                key: (sys.intern(value) if len(value) <= _SHARED_VALUE_CHARS else value)
+                for key, value, wanted in zip(header, row, read)
+                if wanted and value
+            }
+        # A row that can never show is left here, before it costs memory (`keep`).
+        if keep is None or keep(record):
+            yield record
+
+
+def _parse_csv_stream(text: IO[str], keep=None) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
+    try:
+        return list(_iter_csv_records(text, keep)), tuple()
+    except _MissingHeader:
+        return [], ("csv_missing_header",)
     except csv.Error as exc:
         return [], (f"csv_parse_failed:{exc.__class__.__name__}",)
+
+
+def read_feed_rows_into(path: str, take: Callable[[dict[str, Any]], None], *, keep=None,
+                        restart: Callable[[], None] = lambda: None) -> tuple[str, ...]:
+    """Every row of the feed at `path`, read as `_read_feed_rows` reads them, given to `take`
+    one at a time and never held together (the feed in packages, `feed_packages`; owner,
+    2026-11-25). UTF-8 first; a byte that is not UTF-8 calls `restart` (what was taken is to
+    be forgotten) and the whole feed is given again as Latin-1, as `_read_feed_rows` reads
+    it whole again. Returns the parse errors, `_read_feed_rows`' own; none when read."""
+    try:
+        gzipped = _is_gzip_file(path)
+    except OSError as exc:
+        return (f"feed_file_read_failed:{exc.__class__.__name__}",)
+    for attempt, encoding in enumerate(("utf-8-sig", "latin-1")):
+        if attempt:
+            restart()
+        try:
+            with _open_feed_text(path, gzipped=gzipped, encoding=encoding) as text:
+                head = text.read(_PEEK_CHARS)
+                while head and not head.strip():
+                    more = text.read(_PEEK_CHARS)
+                    if not more:
+                        break
+                    head += more
+            if not head.strip():
+                return ("feed_empty",)
+            with _open_feed_text(path, gzipped=gzipped, encoding=encoding) as text:
+                if head.lstrip()[0] in "{[":
+                    # As `_read_feed_rows`: a JSON feed's rows are not passed through `keep`.
+                    rows, errors = _parse_json_rows(text.read())
+                    if errors:
+                        return errors
+                    for row in rows:
+                        take(row)
+                    return tuple()
+                for record in _iter_csv_records(text, keep):
+                    take(record)
+                return tuple()
+        except _MissingHeader:
+            return ("csv_missing_header",)
+        except csv.Error as exc:
+            return (f"csv_parse_failed:{exc.__class__.__name__}",)
+        except UnicodeDecodeError:
+            continue
+        except (OSError, EOFError, zlib.error) as exc:
+            reason = "gzip_decompress_failed" if gzipped else "feed_file_read_failed"
+            return (f"{reason}:{exc.__class__.__name__}",)
+    return ("feed_decode_failed",)
 
 
 def _parse_json_rows(text: str) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
@@ -401,6 +459,12 @@ def second_row_keep(first: ProviderParseResult):
     link does not have. The rest never become products, and cost nothing."""
     shops = {shop_key(product) for product in first.products} if first.status == "provider_feed_loaded" else set()
     shops.discard("")
+    return second_row_keep_of(shops)
+
+
+def second_row_keep_of(shops: set[str]):
+    """`second_row_keep` given the first link's shops (`shop_key`, "" left out), for a feed
+    read row by row (`feed_packages`)."""
 
     def keep(row: Mapping[str, Any]) -> bool:
         currency = str(row.get("currency") or "").strip().upper()

@@ -21,6 +21,9 @@ on:
       compare:
         description: "Prepare with the live site's code too and compare the catalogues (yes or no)"
         default: "no"
+      packages:
+        description: "Judge the feed in packages of rows on disk (feed_packages; yes or no)"
+        default: "no"
 permissions:
   contents: read
 jobs:
@@ -56,12 +59,16 @@ jobs:
           PICWISE_CAP_CATEGORY_MAX: ${{ inputs.category_max }}
           AWIN_FEED_FILE_AWIN: ${{ runner.temp }}/awin.bin
           PICWISE_MEMORY_TRACE: "1"
+          # The feed judged in packages (owner, 2026-11-25): its folder, or none.
+          PICWISE_FEED_PACKAGES: ${{ inputs.packages == 'yes' && format('{0}/packages', runner.temp) || '' }}
         run: |
           mkdir -p "$RUNNER_TEMP/both"
+          df -h "$RUNNER_TEMP" | awk 'NR==2 {print "the runner'"'"'s disk: " $4 " free"}'
           # Each large step's memory (tools/measure_prepare_memory.py, 2026-11-25: before the
           # preparation is cut into packages of shops, where the memory goes).
           /usr/bin/time -f "peak memory %M KB, %e s" python3 tools/measure_prepare_memory.py --keep-going \
             --feed-file "$RUNNER_TEMP/google.bin" --out "$RUNNER_TEMP/both/catalogue.json.gz" --static-dir "$RUNNER_TEMP/both" 2>&1 | grep -E "^memory step|^prepare_catalogue|peak memory|Command" | tail -n 60
+          python3 -c "import json,sys; print('the packages:', json.load(open(sys.argv[1])).get('packages'))" "$RUNNER_TEMP/both/prepared.json" || true
       - name: The live site's code on the same feed, to compare
         if: inputs.compare == 'yes'
         uses: actions/checkout@v5
@@ -102,4 +109,4 @@ jobs:
         run: python3 .github/scripts/print_trial.py "$RUNNER_TEMP/one" "$RUNNER_TEMP/both"
       - name: Remove the feeds
         if: always()
-        run: rm -rf "$RUNNER_TEMP"/*.bin "$RUNNER_TEMP/one" "$RUNNER_TEMP/both" "$RUNNER_TEMP/live"
+        run: rm -rf "$RUNNER_TEMP"/*.bin "$RUNNER_TEMP/one" "$RUNNER_TEMP/both" "$RUNNER_TEMP/live" "$RUNNER_TEMP/packages"

@@ -184,25 +184,41 @@ def _collect_product_availability_values(product: ProviderProduct) -> tuple[str,
 def build_feed_availability_context(
     products: tuple[ProviderProduct, ...],
 ) -> FeedAvailabilityContext:
-    normalized_values: list[str] = []
-    values_by_field: dict[str, set[str]] = {}
+    builder = AvailabilityContextBuilder()
     for product in products:
+        builder.add(product)
+    return builder.context()
+
+
+class AvailabilityContextBuilder:
+    """`build_feed_availability_context` row by row, for a feed read in packages
+    (`feed_packages`): the rows given in the feed's order give the same context as the
+    whole feed at once, holding only its distinct values (owner, 2026-11-25: «Να
+    χειρίζονται σε πακέτα τα προϊόντα»)."""
+
+    def __init__(self) -> None:
+        self.distinct: dict[str, None] = {}
+        self.with_signal = 0
+        self.values_by_field: dict[str, set[str]] = {}
+
+    def add(self, product: ProviderProduct) -> None:
         token, _field = _collect_product_availability_values(product)
         if token:
-            normalized_values.append(token)
+            self.with_signal += 1
+            self.distinct.setdefault(token, None)
         for key, field_token in _raw_field_tokens(product, _CONTEXT_FIELDS):
-            values_by_field.setdefault(key, set()).add(field_token)
+            self.values_by_field.setdefault(key, set()).add(field_token)
 
-    distinct = tuple(dict.fromkeys(normalized_values))
-    has_variation = len(distinct) > 1
-    return FeedAvailabilityContext(
-        has_meaningful_variation=has_variation,
-        distinct_normalized_values=distinct,
-        product_count_with_signal=len(normalized_values),
-        informative_fields=tuple(
-            sorted(key for key, values in values_by_field.items() if len(values) > 1)
-        ),
-    )
+    def context(self) -> FeedAvailabilityContext:
+        distinct = tuple(self.distinct)
+        return FeedAvailabilityContext(
+            has_meaningful_variation=len(distinct) > 1,
+            distinct_normalized_values=distinct,
+            product_count_with_signal=self.with_signal,
+            informative_fields=tuple(
+                sorted(key for key, values in self.values_by_field.items() if len(values) > 1)
+            ),
+        )
 
 
 def _flag_is_informative(field_name: str, feed_ctx: FeedAvailabilityContext) -> bool:

@@ -231,130 +231,189 @@ def apply_checks(
 ) -> tuple[ProviderProduct, ...]:
     """The rows with the checks' decisions applied (module docstring). `scanned`: the
     switch of how many of a shop's products pass (`shop_cap.shop_cap_on`, read when None)."""
-    global _ACTIVE, _LAST_NOTE, _LAST_CUT
-    switch = checks_switch_on() if switch is None else switch
-    if scanned is None:
-        from .shop_cap import shop_cap_on
-
-        scanned = shop_cap_on()
-    status = "given"
-    if decisions is None and switch:
-        decisions, status = load_decisions(today=today)
-    bot = read_bot_note()
-    if not switch or decisions is None:
-        _ACTIVE, _LAST_CUT = None, []
-        _LAST_NOTE = {"applied": False, "why": "the switch is off" if not switch else status}
-        if bot is not None:
-            _LAST_NOTE["bot"] = bot
+    run = ChecksRun(decisions=decisions, switch=switch, today=today, scanned=scanned)
+    if not run.active:
         return tuple(products)
-    from . import ai_shelves
-
-    categories = bool(ai_shelves.answers())
-    no_category: list[int] = []
-    with_a_line = 0
-    waiting: set[str] = set()
-    unchecked: set[str] = set()
-    unchecked_reasons: Counter = Counter()
-    shops_out: Mapping[str, str] = decisions.get("shops_out") or {}
-    cut: Mapping[str, str] = decisions.get("cut") or {}
-    wait: Mapping[str, str] = decisions.get("wait") or {}
-    stock: Mapping[str, list] = decisions.get("stock") or {}
-    prices: Mapping[str, list] = decisions.get("prices") or {}
-    options: Mapping[str, list] = decisions.get("options") or {}
-    counts: Counter = Counter()
-    cut_by_shop: Counter = Counter()
-    reasons: Counter = Counter()
     result = list(products)
-    marked: list[ProviderProduct] = []
-    named_of_shop: Counter = Counter()
     for index, product in enumerate(result):
+        result[index] = run.row(index, product, category_now=True)
+    for index in run.settle():
+        result[index] = run.cut_for_category(result[index])
+    return tuple(result)
+
+
+class ChecksRun:
+    """`apply_checks` in its steps, so that a feed read in packages (`feed_packages`; owner,
+    2026-11-25: «Να χειρίζονται σε πακέτα τα προϊόντα») gives each row the same: `row`, each
+    row in the feed's order (its shop out or its cut, its wait, the shop's own stock, options
+    and price); `category`, the AI's category of each row `row` left uncut, read once the
+    barcodes gave their categories (with `category_now`, `row` reads it at once, as the whole
+    feed does); `settle`, once every row was read: the category's brake over every row, the
+    rows its cut takes (in the feed's order), the gate's sets and the note; `cut_for_category`
+    marks one of them. A row cut or of a shop out is given back to `marked` when a later step
+    changes it (`remark`), so that the bot's candidates are the rows as judged."""
+
+    def __init__(self, *, decisions: Mapping[str, Any] | None = None, switch: bool | None = None,
+                 today: date | None = None, scanned: bool | None = None) -> None:
+        global _ACTIVE, _LAST_NOTE, _LAST_CUT
+        switch = checks_switch_on() if switch is None else switch
+        if scanned is None:
+            from .shop_cap import shop_cap_on
+
+            scanned = shop_cap_on()
+        self.scanned = scanned
+        status = "given"
+        if decisions is None and switch:
+            decisions, status = load_decisions(today=today)
+        self.bot = read_bot_note()
+        self.active = bool(switch) and decisions is not None
+        if not self.active:
+            _ACTIVE, _LAST_CUT = None, []
+            _LAST_NOTE = {"applied": False, "why": "the switch is off" if not switch else status}
+            if self.bot is not None:
+                _LAST_NOTE["bot"] = self.bot
+            return
+        from . import ai_shelves
+
+        self.ai_shelves = ai_shelves
+        self.decisions = decisions
+        self.categories = bool(ai_shelves.answers())
+        self.no_category: list[tuple[int, str, str]] = []
+        self.with_a_line = 0
+        self.waiting: set[str] = set()
+        self.unchecked: set[str] = set()
+        self.unchecked_reasons: Counter = Counter()
+        self.shops_out: Mapping[str, str] = decisions.get("shops_out") or {}
+        self.cut: Mapping[str, str] = decisions.get("cut") or {}
+        self.wait: Mapping[str, str] = decisions.get("wait") or {}
+        self.stock: Mapping[str, list] = decisions.get("stock") or {}
+        self.prices: Mapping[str, list] = decisions.get("prices") or {}
+        self.options: Mapping[str, list] = decisions.get("options") or {}
+        self.counts: Counter = Counter()
+        self.cut_by_shop: Counter = Counter()
+        self.reasons: Counter = Counter()
+        self.marked: dict[int, ProviderProduct] = {}
+        self.named_of_shop: Counter = Counter()
+
+    def row(self, index: int, product: ProviderProduct, *, category_now: bool = False) -> ProviderProduct:
+        """The row's own decisions; `index`, its place in the feed. With `category_now`, the
+        AI's category of a row left uncut is read here; else `category` reads it later."""
         raw = dict(product.raw) if isinstance(product.raw, Mapping) else {}
         shop = _shop(product)
-        if shop in shops_out:
-            raw[CHECKS_COLUMN] = f"shop out: {shops_out[shop]}"
+        counts = self.counts
+        if shop in self.shops_out:
+            raw[CHECKS_COLUMN] = f"shop out: {self.shops_out[shop]}"
             counts["shop_out"] += 1
-            named_of_shop[shop] += 1
-            if named_of_shop[shop] <= ROWS_OF_A_SHOP_OUT:
-                result[index] = replace(product, raw=raw)
-                marked.append(result[index])
-                continue
+            self.named_of_shop[shop] += 1
+            if self.named_of_shop[shop] <= ROWS_OF_A_SHOP_OUT:
+                marked = self.marked[index] = replace(product, raw=raw)
+                return marked
         else:
             key = _key(product)
-            if key in cut:
-                raw[CHECKS_COLUMN] = str(cut[key] or "failed")
+            if key in self.cut:
+                raw[CHECKS_COLUMN] = str(self.cut[key] or "failed")
                 counts["cut"] += 1
-                cut_by_shop[shop] += 1
-                reasons[str(cut[key] or "failed")] += 1
+                self.cut_by_shop[shop] += 1
+                self.reasons[str(self.cut[key] or "failed")] += 1
             else:
-                if key in wait:
-                    why = str(wait[key] or "not checked")
-                    if why in SHOP_RULE_WAITS and not scanned:
+                if key in self.wait:
+                    why = str(self.wait[key] or "not checked")
+                    if why in SHOP_RULE_WAITS and not self.scanned:
                         counts["three_nights_left_aside"] += 1
                     else:
-                        unchecked.add(key)
-                        unchecked_reasons[why] += 1
-                state = ai_shelves.category_state(product.title, product.brand, product.raw) if categories else ""
-                if state == "none":
-                    no_category.append(index)
-                elif state == "unasked":
-                    waiting.add(key)
-                elif state == "line":
-                    with_a_line += 1
-                if key in stock:
-                    raw["shop_stock"] = str(stock[key][0])
-                    counts["stock_" + str(stock[key][0]).replace(" ", "_")] += 1
-                if key in options and options[key] and str(options[key][0]).strip():
-                    raw[OPTIONS_COLUMN] = str(options[key][0])
+                        self.unchecked.add(key)
+                        self.unchecked_reasons[why] += 1
+                if category_now:
+                    self.category(index, product)
+                if key in self.stock:
+                    raw["shop_stock"] = str(self.stock[key][0])
+                    counts["stock_" + str(self.stock[key][0]).replace(" ", "_")] += 1
+                if key in self.options and self.options[key] and str(self.options[key][0]).strip():
+                    raw[OPTIONS_COLUMN] = str(self.options[key][0])
                     counts["options_from_page"] += 1
-                if key in prices:
+                if key in self.prices:
                     for column in _SALE_COLUMNS:
                         raw.pop(column, None)
                     raw[PRICE_SOURCE_COLUMN] = SHOP_SITE
-                    result[index] = replace(product, price_text=str(prices[key][0]), raw=raw)
                     counts["price_from_site"] += 1
-                    continue
-                if key not in stock and OPTIONS_COLUMN not in raw:
-                    continue
-        result[index] = replace(product, raw=raw)
+                    return replace(product, price_text=str(self.prices[key][0]), raw=raw)
+                if key not in self.stock and OPTIONS_COLUMN not in raw:
+                    return product
+        product = replace(product, raw=raw)
         if CHECKS_COLUMN in raw:
-            marked.append(result[index])
-    category_brake = len(no_category) > CATEGORY_BRAKE_SHARE * max(1, len(no_category) + with_a_line)
-    not_entering = {_key(result[index]) for index in no_category} | waiting
-    if not category_brake:
-        for index in no_category:
-            product = result[index]
-            raw = dict(product.raw) if isinstance(product.raw, Mapping) else {}
-            raw[CHECKS_COLUMN] = NO_CATEGORY
-            result[index] = replace(product, raw=raw)
-            counts["cut"] += 1
-            reasons[NO_CATEGORY] += 1
-            cut_by_shop[_shop(product)] += 1
-    _ACTIVE = {"enter": frozenset(decisions.get("enter") or ()), "returning": frozenset(decisions.get("returning") or ()),
-               "not_entering": frozenset(not_entering), "waiting": frozenset(waiting),
-               "unchecked": frozenset(unchecked), "passed": frozenset(decisions.get("passed") or ())}
-    _LAST_CUT = marked
-    _LAST_NOTE = {
-        "applied": True,
-        "night": str(decisions.get("night") or ""),
-        "shops_out": dict(sorted(shops_out.items())),
-        "products_of_shops_out": counts["shop_out"],
-        "cut": counts["cut"],
-        "cut_by_reason": dict(sorted(reasons.items())),
-        "cut_by_shop": [{"shop": name, "cut": count} for name, count in cut_by_shop.most_common(_SHOPS_LISTED)],
-        "price_from_site": counts["price_from_site"],
-        "stock_from_page": {name[6:]: count for name, count in counts.items() if name.startswith("stock_")},
-        "options_from_page": counts["options_from_page"],
-        "not_shown_until_checked": len(unchecked),
-        "not_shown_until_checked_by_reason": dict(sorted(unchecked_reasons.items())),
-        # 19.3.1 and 21 with its switch off: the bot's waits of the shop rule (a pass not of
-        # tonight, or over 3 nights old), left aside.
-        **({"three_nights_left_aside": counts["three_nights_left_aside"]} if counts["three_nights_left_aside"] else {}),
-        "category": {"answers": categories, "no_category": len(no_category), "held_by_its_brake": category_brake,
-                     "not_asked_yet": len(waiting), "with_a_line": with_a_line},
-    }
-    if bot is not None:
-        _LAST_NOTE["bot"] = bot
-    return tuple(result)
+            self.marked[index] = product
+        return product
+
+    def needs_category(self, product: ProviderProduct) -> bool:
+        """Whether `row` left the row for `category` (not cut, not of a shop out)."""
+        raw = product.raw if isinstance(product.raw, Mapping) else {}
+        return CHECKS_COLUMN not in raw
+
+    def category(self, index: int, product: ProviderProduct) -> None:
+        """The AI's category of a row left uncut (the checks' rules 5.5)."""
+        state = self.ai_shelves.category_state(product.title, product.brand, product.raw) if self.categories else ""
+        if state == "none":
+            self.no_category.append((index, _key(product), _shop(product)))
+        elif state == "unasked":
+            self.waiting.add(_key(product))
+        elif state == "line":
+            self.with_a_line += 1
+
+    def remark(self, index: int, product: ProviderProduct) -> None:
+        """A marked row as a later step left it (the barcodes' category)."""
+        if index in self.marked:
+            self.marked[index] = product
+
+    def settle(self) -> list[int]:
+        """Once every row was read: the category's brake over every row; the places of the
+        rows its cut takes, in the feed's order; the gate's sets and the note."""
+        global _ACTIVE, _LAST_NOTE, _LAST_CUT
+        decisions = self.decisions
+        self.no_category.sort()
+        no_category = self.no_category
+        category_brake = len(no_category) > CATEGORY_BRAKE_SHARE * max(1, len(no_category) + self.with_a_line)
+        not_entering = {key for _index, key, _shop_name in no_category} | self.waiting
+        taken: list[int] = []
+        if not category_brake:
+            for index, _key_of_it, shop in no_category:
+                self.counts["cut"] += 1
+                self.reasons[NO_CATEGORY] += 1
+                self.cut_by_shop[shop] += 1
+                taken.append(index)
+        counts = self.counts
+        _ACTIVE = {"enter": frozenset(decisions.get("enter") or ()), "returning": frozenset(decisions.get("returning") or ()),
+                   "not_entering": frozenset(not_entering), "waiting": frozenset(self.waiting),
+                   "unchecked": frozenset(self.unchecked), "passed": frozenset(decisions.get("passed") or ())}
+        _LAST_CUT = [self.marked[index] for index in sorted(self.marked)]
+        _LAST_NOTE = {
+            "applied": True,
+            "night": str(decisions.get("night") or ""),
+            "shops_out": dict(sorted(self.shops_out.items())),
+            "products_of_shops_out": counts["shop_out"],
+            "cut": counts["cut"],
+            "cut_by_reason": dict(sorted(self.reasons.items())),
+            "cut_by_shop": [{"shop": name, "cut": count} for name, count in self.cut_by_shop.most_common(_SHOPS_LISTED)],
+            "price_from_site": counts["price_from_site"],
+            "stock_from_page": {name[6:]: count for name, count in counts.items() if name.startswith("stock_")},
+            "options_from_page": counts["options_from_page"],
+            "not_shown_until_checked": len(self.unchecked),
+            "not_shown_until_checked_by_reason": dict(sorted(self.unchecked_reasons.items())),
+            # 19.3.1 and 21 with its switch off: the bot's waits of the shop rule (a pass not of
+            # tonight, or over 3 nights old), left aside.
+            **({"three_nights_left_aside": counts["three_nights_left_aside"]} if counts["three_nights_left_aside"] else {}),
+            "category": {"answers": self.categories, "no_category": len(no_category), "held_by_its_brake": category_brake,
+                         "not_asked_yet": len(self.waiting), "with_a_line": self.with_a_line},
+        }
+        if self.bot is not None:
+            _LAST_NOTE["bot"] = self.bot
+        return taken
+
+    @staticmethod
+    def cut_for_category(product: ProviderProduct) -> ProviderProduct:
+        """A row the category's cut takes (the checks' rules 5.5)."""
+        raw = dict(product.raw) if isinstance(product.raw, Mapping) else {}
+        raw[CHECKS_COLUMN] = NO_CATEGORY
+        return replace(product, raw=raw)
 
 
 def gate_on() -> bool:
