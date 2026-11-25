@@ -8,6 +8,8 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **(25/11, 12:00 Athens, the daily session): THE SERVER ANSWERS AGAIN (09:47 UTC); the night of 25/11 recorded; the round of the night of 26/11 stopped by the outage at 08:52 UTC. `.github/workflows/server-checks-start.yml` starts it again when pushed to the work branch: built on the session's branch only, waits for the owner's word. Without it the night of 26/11 is not recorded (the timer's next start 26/11 05:30).**
+
 - **(25/11, 11:50 Athens, the daily session): STILL NO ANSWER: `server-health.yml` 45588294167 (09:44 UTC), no page, no SSH; the owner told again.**
 
 - **(25/11, 11:25 Athens): THE SERVER DOES NOT ANSWER AT ALL: NO PAGE OF THE SITE (5 OF 5, 20 s EACH, FROM GITHUB'S RUNNER) AND
