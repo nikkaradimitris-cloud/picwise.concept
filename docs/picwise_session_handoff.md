@@ -8,6 +8,8 @@ a decision came about.
 
 ## Next conversation: start here
 
+- **(25/11, 12:00 Athens, the daily session): THE SERVER ANSWERS AGAIN (09:47 UTC); the night of 25/11 recorded; the round of the night of 26/11 stopped by the outage at 08:52 UTC. `.github/workflows/server-checks-start.yml` starts it again when pushed to the work branch: built on the session's branch `claude/dreamy-heisenberg-3men6v` only (NOT on the work branch: pushing it there starts the round), waits for the owner's word. **The owner asked (12:10 Athens) whether the four bots were built («ένα group ... 4 να κάνουν ταυτόχρονες εργασίες για να τελειώνει πιο γρήγορα»): told yes, as built and deployed on 23/11: one checks' bot asking every shop at once, its pages read on 4 processes of their own (`shop_checks_bot.py --processes 4`, the rules 19.5; the server has 8 cores); the health run of 25/11 prints it. He asked to go on in a new conversation.** Without it the night of 26/11 is not recorded (the timer's next start 26/11 05:30).**
+
 - **(25/11, 11:50 Athens, the daily session): STILL NO ANSWER: `server-health.yml` 45588294167 (09:44 UTC), no page, no SSH; the owner told again.**
 
 - **(25/11, 11:25 Athens): THE SERVER DOES NOT ANSWER AT ALL: NO PAGE OF THE SITE (5 OF 5, 20 s EACH, FROM GITHUB'S RUNNER) AND
