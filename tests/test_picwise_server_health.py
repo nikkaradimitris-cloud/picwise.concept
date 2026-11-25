@@ -196,6 +196,35 @@ class HealthTests(_AServer, unittest.TestCase):
         self.assertIn("over the limit: how many of a shop's products pass was not worked out last night: every shop's "
                       "products went on to the category cap (KeyError at shop_cap.py:1)", self.over(self.printed()))
 
+    def test_with_the_clones_on_each_clones_day_and_the_recording_are_read(self) -> None:
+        # The checks' rules 22 (owner, 25/11: «μην αγνοείς τους 4 κλώνους»): the night is the
+        # recording's; a clone whose day did not end well passes a limit.
+        switch = self.folder / "checks_clones.json"
+        self.write(switch, {"on": True})
+        self.write(self.folder / "checks-note.json", {"night": "2026-11-25", "shops_asked": 135, "decided": 10,
+                                                      "passed": 10, "failed": {}})
+        base = _runner()
+
+        def run(command):
+            if command[:2] == ["systemctl", "show"] and "Result" in command:
+                return {"picwise-checks-record.service": "success", "picwise-checks@3.service": "exit-code"}.get(
+                    command[2], "success") + "\n"
+            return base(command)
+
+        out = io.StringIO()
+        with mock.patch.object(print_health, "CLONES_SWITCH", switch), redirect_stdout(out):
+            self.assertEqual(print_health.main(now=NOW, runner=run), 0)
+        lines = out.getvalue().splitlines()
+        self.assertIn("checks, clone 1 of 4: its last day: success", lines)
+        self.assertIn("checks, clone 3 of 4: its last day: exit-code", lines)
+        self.assertIn("over the limit: the checks' clone 3 ended: exit-code", self.over(lines))
+        self.assertTrue(any(line.startswith("checks, the night of 2026-11-25") and line.endswith("the last round: success")
+                            for line in lines), lines)
+        # Off (or no switch at all): the bot alone, as before; no clone named.
+        self.write(switch, {"on": False})
+        with mock.patch.object(print_health, "CLONES_SWITCH", switch):
+            self.assertFalse(any("clone" in line for line in self.printed()))
+
     def test_a_pass_counts_for_the_day_and_a_round_not_all_day_passes_a_limit(self) -> None:
         # The checks' rules 21 (owner, 25/11): a pass counts for the day it was made, three nights
         # while a shop is not asked whole; a round that did not ask all day is said and passes a limit.

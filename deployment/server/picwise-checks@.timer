@@ -1,0 +1,13 @@
+# The checks' clone %i of 4 (the checks' rules 22), all day: every day at 05:30 UTC, as the bot
+# alone (picwise-checks.timer), until 03:05 UTC the next day; not caught up after a stop (a
+# deployment starts it again, and it goes on from the answers it kept). Installed by
+# deployment/server/deploy.sh; enabled only with data/checks_clones.json "on".
+[Unit]
+Description=PicWise: the checks' clone %i of 4, all day
+
+[Timer]
+OnCalendar=*-*-* 05:30:00 UTC
+Persistent=false
+
+[Install]
+WantedBy=timers.target

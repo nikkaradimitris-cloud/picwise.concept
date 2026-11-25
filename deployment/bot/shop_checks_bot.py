@@ -43,6 +43,10 @@ read on processes of their own (`--processes`; 19.5, owner: «Ναι, μαζί»
 asked on one process a request took twice as long (the look of 22/11). When the processes
 cannot be started, the pages are read on the bot's own, as before, and it says so.
 
+In clones (22, owner, 25/11: «μην αγνοείς τους 4 κλώνους»; behind `data/checks_clones.json`):
+`--clone K/4` asks only the shops a code of their name gives clone K (`clone_of`) and keeps its
+day; `--record 4`, after the round, records the night once from the four days (`record_round`).
+
 Written, beside the catalogue on the server (never in the repo or a public place): the
 ledger, the decisions the preparation reads, and the night's note. Printed: counts and
 shop names only; never an address, an id, a key or a server name.
@@ -50,6 +54,7 @@ shop names only; never an address, an id, a key or a server name.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import gc
 import gzip
 import http.client
@@ -60,6 +65,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+import zlib
 from collections import Counter, defaultdict
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
@@ -115,6 +121,10 @@ TONIGHT = "tonight-{night}.jsonl"
 # that starts it again costs minutes). A shop whose asking began over `LATE_HOURS` after the
 # round's (waiting for a thread) was not asked all day.
 TONIGHT_TIME = "tonight-{night}.time.json"
+# 22 (owner, 2026-11-25: «μην αγνοείς τους 4 κλώνους»): a clone's day, kept at its end for the
+# night's recording, and how long the recording waits for a clone still finishing its day.
+CLONE_DAY = "clone-{name}.json"
+RECORD_WAIT_MINUTES = 20.0
 WHOLE_ROUND_HOURS = 20.0
 LATE_HOURS = 1.0
 TIME_KEPT_EVERY = 300.0
@@ -794,39 +804,106 @@ def _deadline(start: datetime, until: str) -> datetime:
     return end if end > start else end + timedelta(days=1)
 
 
-def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shared_ids: set[str],
-        candidates: list[str], ledger: L.Ledger, night: date, fetch: Fetch, sleep: Callable[[float], None],
-        clock: Callable[[], float], deadline: float, workers: int, pause: float,
-        awin: Mapping[str, tuple[str | None, str]] | None, feeds: Mapping[str, date | None],
-        owner_cut_shops: list[str], owner_awin_word: bool, say: Callable[[str], None],
-        sample: int = 0, tonight: Tonight | None = None, shops: frozenset[str] = frozenset(),
-        old_feed_rule: bool = False, awin_closed_out: bool = False, scanned: bool = False,
-        shown_order: Mapping[str, list[str]] | None = None, dearer: Collection[str] = (),
-        readers: Readers | None = None, round_time: RoundTime | None = None,
-        ) -> tuple[L.Night, dict]:
-    """Ask every shop its products in the rules' order; record the night; the decisions.
-    `sample`: a look, at most this many products a shop; `tonight`: the night's answers
-    kept as they come, those kept already not asked again; `scanned`: the rule of how many
-    of a shop's products pass (section 19), with `shown_order` the order of 19.4 of each
-    shop's shown products and `dearer` those of them a cheaper shop shows, asked after the
-    cap's candidates (20.7.4); `readers`: what reads the answers (19.5); `round_time`: how
-    long the night's round has asked, a round started again included (21)."""
+def clone_of(shop: str, clones: int) -> int:
+    """22 (owner, 2026-11-25: «μην αγνοείς τους 4 κλώνους»): the clone, 1 to `clones`, that asks
+    a shop, by a code of its name: always the same clone, and a shop asked by one clone only, so
+    that no shop is asked faster than it allows."""
+    return zlib.crc32(" ".join(str(shop or "").split()).casefold().encode("utf-8", "surrogatepass")) % clones + 1
+
+
+@dataclass
+class Round:
+    """One asker's day (the bot's, or a clone's): what each of its shops gave, how many of
+    its products each one's order held, how long each one's asking took and how late it
+    began, the threads and processes it asked on, and the hours it asked (`RoundTime`)."""
+
+    results: dict[str, ShopResult]
+    ordered: dict[str, int]
+    seconds: dict[str, float]
+    late: dict[str, float]
+    threads: int
+    processes: int
+    hours: float
+
+    @property
+    def whole(self) -> bool:
+        return self.hours >= WHOLE_ROUND_HOURS
+
+    def complete(self) -> set[str]:
+        """21: its shops asked whole."""
+        return {shop for shop, result in self.results.items()
+                if asked_whole(result, self.ordered.get(shop, 0), whole_round=self.whole, late=self.late.get(shop, 0.0))}
+
+    def to_record(self) -> dict[str, Any]:
+        """What a clone keeps of its day for the night's recording (22); its answers are kept in
+        its own night's file as they come."""
+        return {"hours": round(self.hours, 3), "threads": self.threads, "processes": self.processes,
+                "shops": {shop: {"night": dataclasses.asdict(result.night), "stopped": result.stopped,
+                                 "ordered": self.ordered.get(shop, 0), "seconds": round(self.seconds.get(shop, 0.0), 1),
+                                 "late": round(self.late.get(shop, 0.0), 1)}
+                          for shop, result in self.results.items()}}
+
+    @classmethod
+    def from_record(cls, record: Mapping[str, Any], answers: Mapping[str, PageAnswer],
+                    rows: Mapping[str, Row]) -> "Round":
+        """A clone's day as it kept it, its shops' answers from its night's file."""
+        of_shop: dict[str, dict[str, PageAnswer]] = defaultdict(dict)
+        for key, answer in answers.items():
+            if key in rows:
+                of_shop[rows[key].shop][key] = answer
+        shops = record.get("shops") or {}
+        return cls(
+            results={shop: ShopResult(ShopNight(**entry["night"]), dict(of_shop.get(shop) or {}), str(entry.get("stopped") or ""))
+                     for shop, entry in shops.items()},
+            ordered={shop: int(entry.get("ordered") or 0) for shop, entry in shops.items()},
+            seconds={shop: float(entry.get("seconds") or 0.0) for shop, entry in shops.items()},
+            late={shop: float(entry.get("late") or 0.0) for shop, entry in shops.items()},
+            threads=int(record.get("threads") or 0), processes=int(record.get("processes") or 0),
+            hours=float(record.get("hours") or 0.0))
+
+    @classmethod
+    def unfinished(cls, answers: Mapping[str, PageAnswer], rows: Mapping[str, Row]) -> "Round":
+        """A clone that kept no day (it stopped, or was stopped): its shops' answers so far count,
+        as a shop's asking ended by an error does (`_ended`), and none of its shops was asked
+        whole (21: their products stay as they were)."""
+        of_shop: dict[str, dict[str, PageAnswer]] = defaultdict(dict)
+        for key, answer in answers.items():
+            if key in rows:
+                of_shop[rows[key].shop][key] = answer
+        return cls(results={shop: _ended(got, "the clone did not finish") for shop, got in of_shop.items()},
+                   ordered={}, seconds={}, late={}, threads=0, processes=0, hours=0.0)
+
+
+def ask_round(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], candidates: list[str],
+              ledger: L.Ledger, night: date, fetch: Fetch, sleep: Callable[[float], None], clock: Callable[[], float],
+              deadline: float, workers: int, pause: float, say: Callable[[str], None], sample: int = 0,
+              tonight: Tonight | None = None, shops: frozenset[str] = frozenset(), scanned: bool = False,
+              shown_order: Mapping[str, list[str]] | None = None, dearer: Collection[str] = (),
+              readers: Readers | None = None, round_time: RoundTime | None = None,
+              clone: tuple[int, int] | None = None) -> Round:
+    """Ask every shop (of `clone`, (its number, how many), when given) its products in the rules'
+    order, until the deadline. `sample`: a look, at most this many products a shop; `tonight`:
+    the night's answers kept as they come, those kept already not asked again; `scanned`: the
+    rule of how many of a shop's products pass (section 19), with `shown_order` the order of
+    19.4 of each shop's shown products and `dearer` those of them a cheaper shop shows, asked
+    after the cap's candidates (20.7.4); `readers`: what reads the answers (19.5);
+    `round_time`: how long the night's round has asked, a round started again included (21)."""
     from picwise_providers.shop_cap import SHOP_LIMIT
 
     tonight = tonight or Tonight(None)
     round_time = round_time or RoundTime(None, clock)
     began = clock()
-    # 21: with the rule on, a pass counts for the day (three nights while a shop's asking was
-    # not whole); without it, thirty nights as before.
-    pass_nights = L.PASS_NIGHTS_DAY if scanned else L.PASS_VALID_NIGHTS
     order = L.asking_order(ledger, night, rows, shown=shown, candidates=candidates, parts=parts, scanned=scanned,
                            shown_order=shown_order, dearer=dearer, limit=SHOP_LIMIT if scanned else 0)
+    if clone is not None:
+        order = {shop: keys for shop, keys in order.items() if clone_of(shop, clone[1]) == clone[0]}
     if shops:
         order = {shop: keys for shop, keys in order.items() if shop in shops}
     if sample > 0:
         order = {shop: keys[:sample] for shop, keys in order.items()}
     kept = tonight.load()
     say(f"to ask: {sum(len(keys) for keys in order.values()):,} products of {len(order)} shops"
+        + (f" (clone {clone[0]} of {clone[1]})" if clone is not None else "")
         + (f"; {len(kept):,} answered already tonight (the round goes on)" if kept else ""))
     results: dict[str, ShopResult] = {}
     seconds: dict[str, float] = {}
@@ -861,10 +938,32 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
     with ThreadPoolExecutor(max_workers=max(1, threads)) as pool:
         list(pool.map(one, sorted(order, key=lambda shop: (-len(order[shop]), shop))))
     round_time.keep(now=True)
-    asked_hours = round_time.seconds() / 3600.0
-    whole_round = asked_hours >= WHOLE_ROUND_HOURS
-    complete = {shop for shop, result in results.items()
-                if asked_whole(result, len(order.get(shop) or ()), whole_round=whole_round, late=late.get(shop, 0.0))}
+    return Round(results=results, ordered={shop: len(keys) for shop, keys in order.items()}, seconds=seconds,
+                 late=late, threads=max(1, threads), processes=readers.processes if readers is not None else 0,
+                 hours=round_time.seconds() / 3600.0)
+
+
+def record_round(rows: dict[str, Row], rounds: list[Round], *, shown: set[str], parts: Mapping[str, str],
+                 shared_ids: set[str], candidates: list[str], ledger: L.Ledger, night: date,
+                 awin: Mapping[str, tuple[str | None, str]] | None, feeds: Mapping[str, date | None],
+                 owner_cut_shops: list[str], owner_awin_word: bool, old_feed_rule: bool = False,
+                 awin_closed_out: bool = False, scanned: bool = False) -> tuple[L.Night, dict]:
+    """The night recorded from the askers' days (the bot's, or every clone's, 22): every
+    answer judged, the night recorded, the decisions; the note."""
+    from picwise_providers.shop_cap import SHOP_LIMIT
+
+    # 21: with the rule on, a pass counts for the day (three nights while a shop's asking was
+    # not whole); without it, thirty nights as before.
+    pass_nights = L.PASS_NIGHTS_DAY if scanned else L.PASS_VALID_NIGHTS
+    results: dict[str, ShopResult] = {}
+    seconds: dict[str, float] = {}
+    complete: set[str] = set()
+    for asked in rounds:
+        results.update(asked.results)
+        seconds.update(asked.seconds)
+        complete |= asked.complete()
+    asked_hours = min((asked.hours for asked in rounds), default=0.0)
+    whole_round = bool(rounds) and all(asked.whole for asked in rounds)
     readings: dict[str, L.Reading] = {}
     shop_nights: dict[str, ShopNight] = {}
     words: dict[str, Counter] = defaultdict(Counter)
@@ -891,13 +990,16 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
     # pass counts for, the most asked of a shop, the processes the pages were read on (19.5).
     night_result.note["shop_rule"] = {"on": scanned, "pass_nights": pass_nights,
                                       "most_asked_of_a_shop": SHOP_LIMIT if scanned else None,
-                                      "processes": readers.processes if readers is not None else 0,
-                                      "shops_at_once": max(1, threads),
+                                      "processes": sum(asked.processes for asked in rounds),
+                                      "shops_at_once": sum(asked.threads for asked in rounds) or 1,
                                       # 21: how long the round asked, whether that was all day, and
                                       # the shops asked whole (their products not passed tonight wait).
                                       "round_hours": round(asked_hours, 1), "whole_round": whole_round,
                                       "asked_whole": len(complete) if scanned else 0,
-                                      "not_whole": sorted(set(results) - complete)[:SHOPS_LISTED] if scanned else []}
+                                      "not_whole": sorted(set(results) - complete)[:SHOPS_LISTED] if scanned else [],
+                                      # 22: the clones the day was asked by (1: the bot alone), and each one's hours.
+                                      "clones": len(rounds),
+                                      "clone_hours": [round(asked.hours, 1) for asked in rounds]}
     night_result.note["asked_by_shop"] = {shop: [result.night.requests, len(result.answers), result.stopped]
                                           for shop, result in sorted(results.items())}
     # How long each shop's asking took, and the crawl-delay it asks for: the bot's pace (rules 4.7).
@@ -907,6 +1009,28 @@ def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shar
     night_result.note["stock_words_by_shop"] = {shop: dict(sorted(counts.items()))
                                                 for shop, counts in sorted(words.items()) if counts}
     return night_result, made
+
+
+def run(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str], shared_ids: set[str],
+        candidates: list[str], ledger: L.Ledger, night: date, fetch: Fetch, sleep: Callable[[float], None],
+        clock: Callable[[], float], deadline: float, workers: int, pause: float,
+        awin: Mapping[str, tuple[str | None, str]] | None, feeds: Mapping[str, date | None],
+        owner_cut_shops: list[str], owner_awin_word: bool, say: Callable[[str], None],
+        sample: int = 0, tonight: Tonight | None = None, shops: frozenset[str] = frozenset(),
+        old_feed_rule: bool = False, awin_closed_out: bool = False, scanned: bool = False,
+        shown_order: Mapping[str, list[str]] | None = None, dearer: Collection[str] = (),
+        readers: Readers | None = None, round_time: RoundTime | None = None,
+        ) -> tuple[L.Night, dict]:
+    """Ask every shop its products in the rules' order (`ask_round`); record the night; the
+    decisions (`record_round`): the bot alone, as before the clones (22)."""
+    asked = ask_round(rows, shown=shown, parts=parts, candidates=candidates, ledger=ledger, night=night, fetch=fetch,
+                      sleep=sleep, clock=clock, deadline=deadline, workers=workers, pause=pause, say=say, sample=sample,
+                      tonight=tonight, shops=shops, scanned=scanned, shown_order=shown_order, dearer=dearer,
+                      readers=readers, round_time=round_time)
+    return record_round(rows, [asked], shown=shown, parts=parts, shared_ids=shared_ids, candidates=candidates,
+                        ledger=ledger, night=night, awin=awin, feeds=feeds, owner_cut_shops=owner_cut_shops,
+                        owner_awin_word=owner_awin_word, old_feed_rule=old_feed_rule, awin_closed_out=awin_closed_out,
+                        scanned=scanned)
 
 
 def pass_counts_for(rule: Mapping[str, Any]) -> str:
@@ -998,6 +1122,13 @@ def main(argv: list[str] | None = None, *, fetch: Fetch = fetch, sleep: Callable
     parser.add_argument("--sample", type=int, default=0, help="a look: at most this many products a shop")
     parser.add_argument("--minutes", type=float, default=0.0, help="a look: ask for this many minutes only")
     parser.add_argument("--shop", action="append", default=[], help="a look: these shops only")
+    parser.add_argument("--clone", default="",
+                        help="22: K/N, ask only clone K's shops of N (by a code of each shop's name) and keep its "
+                             "day for the night's recording; record nothing")
+    parser.add_argument("--record", type=int, default=0,
+                        help="22: record the night from N clones' days (run after --until); ask nothing")
+    parser.add_argument("--wait-minutes", type=float, default=RECORD_WAIT_MINUTES,
+                        help="22: with --record, how long to wait for a clone still finishing its day")
     args = parser.parse_args(argv)
     try:
         sys.stdout.reconfigure(line_buffering=True)
@@ -1005,6 +1136,14 @@ def main(argv: list[str] | None = None, *, fetch: Fetch = fetch, sleep: Callable
         pass
     say = print
     start = now or datetime.now(timezone.utc)
+    if args.record:
+        # The night is the morning of the last `--until` passed: the clones' night.
+        night = _deadline(start, args.until).date() - timedelta(days=1)
+        return _record_night(args, night=night, sleep=sleep, clock=clock, environ=environ, say=say)
+    clone = _clone_of_argument(args.clone)
+    if args.clone and clone is None:
+        say(f"the checks: --clone {args.clone!r} is not K/N; nothing asked")
+        return 2
     if quiet(start, args.until, QUIET_UNTIL):
         say(f"the checks: between {args.until} and {QUIET_UNTIL} UTC the preparation and the photos run; nothing asked")
         return 0
@@ -1021,10 +1160,127 @@ def main(argv: list[str] | None = None, *, fetch: Fetch = fetch, sleep: Callable
     # Started before the catalogue is read, so that nothing of it is in their way (19.5).
     readers = Readers.start(args.processes, say)
     try:
+        if clone is not None:
+            return _clone_day(args, clone, readers=readers, scanned=scanned, night=night, deadline=deadline,
+                              fetch=fetch, sleep=sleep, clock=clock, say=say)
         return _night(args, readers=readers, scanned=scanned, night=night, deadline=deadline,
                       fetch=fetch, sleep=sleep, clock=clock, environ=environ, say=say)
     finally:
         readers.close()
+
+
+def _clone_of_argument(text: str) -> tuple[int, int] | None:
+    """"K/N" as (K, N), 1 <= K <= N; None when not so."""
+    try:
+        number, of = (int(part) for part in str(text or "").split("/"))
+    except ValueError:
+        return None
+    return (number, of) if 1 <= number <= of else None
+
+
+def clone_name(night: date | str, clone: tuple[int, int]) -> str:
+    """The name a clone's files carry for the night (its answers, its hours, its day)."""
+    return f"{night}-clone{clone[0]}of{clone[1]}"
+
+
+def _write_whole(path: Path, text: str) -> None:
+    temporary = path.with_name(path.name + ".part")
+    temporary.write_text(text, encoding="utf-8")
+    os.replace(temporary, path)
+
+
+def _clone_day(args: argparse.Namespace, clone: tuple[int, int], *, readers: Readers, scanned: bool, night: date,
+               deadline: float, fetch: Fetch, sleep: Callable[[float], None], clock: Callable[[], float],
+               say: Callable[[str], None]) -> int:
+    """22: one clone's day: only its shops asked, its answers kept as they come, its day kept
+    at its end (`CLONE_DAY`) for the night's recording (`--record`), which records the night
+    once from every clone's day. Awin is read by the recording, not by a clone."""
+    try:
+        rows, parts, _shared_ids, orders, dearer = rows_from_catalogue(args.catalogue, order=scanned)
+    except ValueError as error:
+        say(f"the checks: {error}; nothing asked")
+        return 1
+    shown = set(rows)
+    extra, candidates = rows_from_candidates(args.checks / L.CANDIDATES_NAME)
+    for key, row in extra.items():
+        rows.setdefault(key, row)
+    # Only its shops' rows kept: a clone holds a part of the catalogue.
+    mine = {key: row for key, row in rows.items() if clone_of(row.shop, clone[1]) == clone[0]}
+    del rows
+    ledger = L.load(args.checks / L.LEDGER_NAME)
+    if any(entry.get("night") == night.isoformat() for entry in ledger.nights):
+        say(f"the night of {night} is recorded already: nothing asked")
+        return 0
+    name = clone_name(night, clone)
+    tonight = Tonight(args.checks / TONIGHT.format(night=name))
+    round_time = RoundTime(args.checks / TONIGHT_TIME.format(night=name), clock)
+    if round_time.before:
+        say(f"clone {clone[0]} of {clone[1]}: its day of the night of {night} goes on: it has asked "
+            f"{round_time.before / 3600.0:.1f} hours already")
+    asked = ask_round(mine, shown=shown & set(mine), parts=parts, candidates=[key for key in candidates if key in mine],
+                      ledger=ledger, night=night, fetch=fetch, sleep=sleep, clock=clock, deadline=deadline,
+                      workers=args.workers, pause=args.pause, say=say, tonight=tonight, scanned=scanned,
+                      shown_order={shop: keys for shop, keys in orders.items() if clone_of(shop, clone[1]) == clone[0]},
+                      dearer=dearer, readers=readers, round_time=round_time, clone=clone)
+    _write_whole(args.checks / CLONE_DAY.format(name=name), json.dumps(asked.to_record(), sort_keys=True))
+    say(f"clone {clone[0]} of {clone[1]}: {len(asked.results)} shops asked, "
+        f"{sum(len(result.answers) for result in asked.results.values()):,} answers, {asked.hours:.1f} hours; "
+        "kept for the night's recording")
+    return 0
+
+
+def _record_night(args: argparse.Namespace, *, night: date, sleep: Callable[[float], None],
+                  clock: Callable[[], float], environ: Mapping[str, str], say: Callable[[str], None]) -> int:
+    """22: the night recorded once from every clone's day: each clone's shops' answers and
+    what each shop gave, a clone that kept no day counted as stopped (its shops' answers so far
+    count, none of its shops asked whole); then the ledger, the decisions and the note, as the
+    bot alone records them."""
+    clones = args.record
+    names = [clone_name(night, (number, clones)) for number in range(1, clones + 1)]
+    waited_until = clock() + max(0.0, args.wait_minutes) * 60.0
+    while not all((args.checks / CLONE_DAY.format(name=name)).exists() for name in names) and clock() < waited_until:
+        sleep(30.0)
+    try:
+        rows, parts, shared_ids, _orders, _dearer = rows_from_catalogue(args.catalogue)
+    except ValueError as error:
+        say(f"the checks: {error}; nothing recorded")
+        return 1
+    shown = set(rows)
+    extra, candidates = rows_from_candidates(args.checks / L.CANDIDATES_NAME)
+    for key, row in extra.items():
+        rows.setdefault(key, row)
+    ledger = L.load(args.checks / L.LEDGER_NAME)
+    if any(entry.get("night") == night.isoformat() for entry in ledger.nights):
+        say(f"the night of {night} is recorded already: nothing recorded")
+        return 0
+    rounds: list[Round] = []
+    for number, name in enumerate(names, start=1):
+        answers = Tonight(args.checks / TONIGHT.format(night=name)).load()
+        day = args.checks / CLONE_DAY.format(name=name)
+        try:
+            rounds.append(Round.from_record(json.loads(day.read_text(encoding="utf-8")), answers, rows))
+        except (OSError, ValueError, KeyError, TypeError):
+            say(f"clone {number} of {clones} kept no day: its {len(answers):,} answers count, none of its shops "
+                "asked whole")
+            rounds.append(Round.unfinished(answers, rows))
+    from picwise_providers.shop_cap import shop_cap_on
+
+    scanned = shop_cap_on() if args.shop_rule == "file" else args.shop_rule == "on"
+    awin, feeds = read_awin(environ, cache_dir=args.cache, say=say)
+    cut_shops, awin_word = owner_words()
+    yes = owner_yes()
+    result, made = record_round(rows, rounds, shown=shown, parts=parts, shared_ids=shared_ids, candidates=candidates,
+                                ledger=ledger, night=night, awin=awin, feeds=feeds, owner_cut_shops=cut_shops,
+                                owner_awin_word=awin_word, old_feed_rule=yes["old_feed_rule"],
+                                awin_closed_out=yes["awin_closed_out"], scanned=scanned)
+    L.save(ledger, args.checks / L.LEDGER_NAME)
+    L.write_decisions(made, args.checks / L.DECISIONS_NAME)
+    (args.checks / NOTE_NAME).write_text(json.dumps(result.note, indent=1, sort_keys=True), encoding="utf-8")
+    Tonight(args.checks / TONIGHT.format(night=names[0])).forget()
+    for old in args.checks.glob(CLONE_DAY.format(name="*")):
+        old.unlink(missing_ok=True)
+    print_night(result.note, made, ledger, say)
+    return 0
 
 
 def _night(args: argparse.Namespace, *, readers: Readers, scanned: bool, night: date, deadline: float,

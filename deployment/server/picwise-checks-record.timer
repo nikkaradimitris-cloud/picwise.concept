@@ -1,0 +1,13 @@
+# The night of the checks' four clones, recorded at 03:07 UTC, after their day ends (03:05) and
+# well before the preparation reads its decisions (04:17); a clone still finishing is waited for
+# 20 minutes at most. Installed by deployment/server/deploy.sh; enabled only with
+# data/checks_clones.json "on".
+[Unit]
+Description=PicWise: the night of the checks' clones, recorded
+
+[Timer]
+OnCalendar=*-*-* 03:07:00 UTC
+Persistent=false
+
+[Install]
+WantedBy=timers.target

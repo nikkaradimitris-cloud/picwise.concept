@@ -1,0 +1,41 @@
+# The night of the checks' four clones, recorded once (the checks' rules 22): after the clones'
+# day ends (03:05 UTC), what each of the four kept is read, every answer judged, and the ledger,
+# the decisions the preparation reads (picwise-prepare.service, 04:17) and the night's note
+# written, as the bot alone writes them. A clone that kept no day counts as stopped: its answers
+# so far count, and none of its shops was asked whole (the checks' rules 21). Run by
+# picwise-checks-record.timer; installed by deployment/server/deploy.sh, enabled only with
+# data/checks_clones.json "on".
+[Unit]
+Description=PicWise: the night of the checks' clones, recorded
+
+[Service]
+Type=oneshot
+User=picwise
+Group=picwise
+WorkingDirectory=/srv/picwise/current
+# Awin's API token and feed links, for its programmes and feed list (never a click).
+EnvironmentFile=-/etc/picwise/picwise.env
+Environment=PYTHONPATH=/srv/picwise/current/src
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/bin/python3 deployment/bot/shop_checks_bot.py --record 4
+TimeoutStartSec=50min
+Nice=10
+MemoryHigh=4G
+MemoryMax=5G
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/picwise/shared
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=

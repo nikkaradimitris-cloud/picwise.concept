@@ -1899,3 +1899,52 @@ every product as it was, the safe side). Nothing is prepared again by it. From t
 night after it, a product not reached that day waits. Read the morning after: the health run's
 "the round asked ... hours (all day)" and the shops asked whole; PCHUB.UK's and GamingKit's
 counts against 25/11's.
+
+## 22. The four clones (owner, 25/11): built 25/11 behind `data/checks_clones.json` (false); NOT DEPLOYED
+
+### 22.1 His words
+
+In the conversation of the feed in packages: «οι πρώτες 500.000 κωδικοί σκανάρονται από 4
+κλωνοποιημένα συστήματα για να τελειώνει πιο γρήγορα δηλαδή αν έχουν ανατεθεί 50 καταστήματα στον
+κάθε κλώνο ερωτώνται 200 καταστήματα αυτό μειώνει το χρόνο σκαναρίσματος ... μην αγνοείς τους 4
+κλώνους»; earlier the same day: «800 καταστήματα 4 bot από 4 εργασίες στον καθένα τα καταστήματα
+ανατίθονται με κωδικό». Put to him and agreed (the Project's doc `claude/PicWise-protasi-paketa.md`):
+the four clones ask every shop at once, all day, each its own shops by a code, and only what
+passed the rules; one clone stopping leaves the other three.
+
+### 22.2 How it is built
+
+- **A shop's clone** (`shop_checks_bot.clone_of`): a code of the shop's name (CRC-32 of its name,
+  spaces and case aside) modulo 4, plus one. Always the same clone; a shop asked by one clone only,
+  so never faster than it allows (4.3).
+- **A clone's day** (`--clone K/4`, `picwise-checks@K.service` and `.timer`, 05:30 UTC): reads
+  the catalogue, keeps only its shops' rows, asks them in the rules' order (10, 19.3.2) until
+  03:05 UTC, its answers kept as they come (`tonight-<night>-cloneKof4.jsonl`) and its hours
+  (`...time.json`, 21); at its end it keeps its day (`clone-<night>-cloneKof4.json`: per shop what
+  asking it gave, whether something stopped it, how many its order held, its seconds) and
+  records nothing. It reads pages on one process of its own (`--processes 1`; four in all, as
+  the bot alone today), at most 3 GB.
+- **The night's recording** (`--record 4`, `picwise-checks-record.service` and `.timer`, 03:07
+  UTC): waits up to 20 minutes for a clone still finishing, reads Awin, judges every answer of
+  the four days and records the night once (the ledger, the decisions the preparation of 04:17
+  reads, the note), as the bot alone does (`record_round`, the code the bot alone now runs too).
+  **A clone that kept no day** counts as stopped: its shops' answers so far count, none of its
+  shops was asked whole, so their products stay as they were (21).
+- The note's `shop_rule` says the clones and each one's hours; the health run reads the
+  recording's result and each clone's, a clone that did not end well passing a limit.
+- **Behind `data/checks_clones.json`** (`"on": false`): off, `deploy.sh` keeps the bot alone
+  (`picwise-checks.timer`), the clones' timers and the recording's disabled; on, the four
+  clones' timers and the recording's enabled and the bot alone's disabled, never both. The
+  units are installed either way.
+- Tests: `tests/test_picwise_checks_clones.py` (two clones and the recording decide what the bot
+  alone decides from the same answers, each shop asked by its own clone only; a clone that kept
+  no day), the deployment's unit count, the health run's lines.
+
+### 22.3 For the «ανέβασε»
+
+Deploying the code changes nothing while the switch is false (the bot alone runs as before, on
+`record_round`). Turning it true is a commit of its own, deployed on his word, best right after
+a night was recorded (before 05:30 UTC), so that the first clones' day starts fresh: a day the
+bot alone began is not carried into the clones' files (its answers are asked again by the
+clones). To read the morning after: the health run's four clones "success", the recording's
+night, the shops asked whole.

@@ -1,0 +1,43 @@
+# One of the checks' four clones (the checks' rules 22; owner, 2026-11-25: «οι πρώτες 500.000
+# κωδικοί σκανάρονται από 4 κλωνοποιημένα συστήματα για να τελειώνει πιο γρήγορα ... μην αγνοείς
+# τους 4 κλώνους»): asks all day only the shops a code of their name gives it (clone %i of 4,
+# `shop_checks_bot.clone_of`), and keeps its day in /srv/picwise/shared/checks for the night's
+# recording (picwise-checks-record.service), which records the night once from the four days.
+# Started by picwise-checks@%i.timer; installed by deployment/server/deploy.sh, enabled only with
+# data/checks_clones.json "on" (the owner's «ανέβασε»), in place of picwise-checks.timer.
+[Unit]
+Description=PicWise: the checks' clone %i of 4, asking its shops all day
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=picwise
+Group=picwise
+WorkingDirectory=/srv/picwise/current
+# Awin's API token and feed links, for its programmes and feed list (never a click).
+EnvironmentFile=-/etc/picwise/picwise.env
+Environment=PYTHONPATH=/srv/picwise/current/src
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/bin/python3 deployment/bot/shop_checks_bot.py --clone %i/4 --processes 1
+TimeoutStartSec=23h
+Nice=10
+MemoryHigh=2G
+MemoryMax=3G
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/picwise/shared
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=

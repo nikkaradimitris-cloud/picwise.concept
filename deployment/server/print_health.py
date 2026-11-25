@@ -137,6 +137,20 @@ class Health:
 CHECKS_DUE = (3, 30)
 
 
+# The checks' clones (their rules 22; owner, 2026-11-25: «μην αγνοείς τους 4 κλώνους»): how many,
+# and the switch in the release the site runs.
+CHECKS_CLONES = 4
+CLONES_SWITCH = Path("/srv/picwise/current/data/checks_clones.json")
+
+
+def checks_clones_on(path: Path | None = None) -> bool:
+    """Whether the release the site runs asks the shops in clones (data/checks_clones.json)."""
+    try:
+        return json.loads((path or CLONES_SWITCH).read_text(encoding="utf-8")).get("on") is True
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
 def last_result(unit: str, runner: Run) -> str:
     """How a service that runs and ends ended its last run: "success", "exit-code", ..."""
     shown = runner(["systemctl", "show", unit, "-p", "Result", "--value"]).strip()
@@ -250,7 +264,13 @@ def look_at_checks(check: Health, runner: Run) -> None:
     prepared = read_json(PREPARED_NOTE) or {}
     applied = prepared.get("checks") if isinstance(prepared.get("checks"), dict) else {}
     note = read_json(CHECKS_NOTE)
-    result = last_result("picwise-checks.service", runner)
+    # With the checks' clones on (their rules 22): the night is the recording's, each clone's day its own.
+    clones = checks_clones_on()
+    result = last_result("picwise-checks-record.service" if clones else "picwise-checks.service", runner)
+    for number in range(1, (CHECKS_CLONES if clones else 0) + 1):
+        ended = last_result(f"picwise-checks@{number}.service", runner)
+        check.say(f"checks, clone {number} of {CHECKS_CLONES}: its last day: {ended}")
+        check.limit(ended not in ("success", "unknown", ""), f"the checks' clone {number} ended: {ended}")
     if note is None:
         check.say("checks: no night recorded yet" + (f"; the last round: {result}" if result != "unknown" else ""))
         check.limit(result not in ("success", "unknown", ""), f"the checks' last round ended: {result}")

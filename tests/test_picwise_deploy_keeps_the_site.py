@@ -221,13 +221,14 @@ class DeployStepTests(unittest.TestCase):
     def test_the_step_puts_back_every_unit_the_services_step_installs(self) -> None:
         text = DEPLOY.read_text(encoding="utf-8")
         services = text[text.index('echo "== services"'):text.index("systemctl daemon-reload")]
-        installed = set(re.findall(r"picwise-[a-z-]+\.(?:service|timer)", services))
-        put_back = set(re.findall(r"picwise-[a-z-]+\.(?:service|timer)", self.step.split("UNITS=", 1)[1].split('"')[1]))
+        installed = set(re.findall(r"picwise-[a-z@-]+\.(?:service|timer)", services))
+        put_back = set(re.findall(r"picwise-[a-z@-]+\.(?:service|timer)", self.step.split("UNITS=", 1)[1].split('"')[1]))
         # 13, the checks' service and timer (2026-11-21, docs/PICWISE_CHECKS_RULES.md), the
         # AI's category of the products not asked yet (22/11, the checks' rules 5.5), and the
         # AI's answer to "is it the kind itself" and the quality meter (22/11,
-        # docs/PICWISE_KIND_ITSELF_RULES.md 8.2 and 9).
-        self.assertEqual(len(installed), 21)
+        # docs/PICWISE_KIND_ITSELF_RULES.md 8.2 and 9); the checks' clones and their night's
+        # recording (25/11, the checks' rules 22).
+        self.assertEqual(len(installed), 25)
         self.assertEqual(put_back, installed)
 
     def test_the_step_comes_after_the_preparation_and_before_the_site_restarts(self) -> None:

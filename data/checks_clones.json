@@ -1,0 +1,4 @@
+{
+  "on": false,
+  "why": "The checks' four clones (docs/PICWISE_CHECKS_RULES.md, section 22; owner, 2026-11-25: «μην αγνοείς τους 4 κλώνους»): true asks the shops in four clones and records the night once from their four days; false asks them with the bot alone, as before. Turned true only on the owner's «ανέβασε»."
+}

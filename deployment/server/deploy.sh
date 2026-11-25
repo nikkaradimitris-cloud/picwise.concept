@@ -144,6 +144,14 @@ done
 for unit in picwise-checks.service picwise-checks.timer; do
   install -m 644 "$RELEASE/deployment/server/$unit" /etc/systemd/system/
 done
+# The checks' four clones and their night's recording (the checks' rules 22; owner, 2026-11-25:
+# «μην αγνοείς τους 4 κλώνους»): installed always, enabled only with data/checks_clones.json
+# "on" (his «ανέβασε»), in place of the bot alone.
+for unit in picwise-checks@.service picwise-checks@.timer picwise-checks-record.service picwise-checks-record.timer; do
+  install -m 644 "$RELEASE/deployment/server/$unit" /etc/systemd/system/
+done
+CLONES=$(python3 -c 'import json, sys; print(4 if json.load(open(sys.argv[1])).get("on") is True else 0)' \
+  "$RELEASE/data/checks_clones.json" 2> /dev/null || echo 0)
 # The AI layer's services, started below only with its key.
 install -m 644 "$RELEASE/deployment/server/picwise-assist.service" /etc/systemd/system/
 for unit in picwise-families.service picwise-family-jobs.service picwise-family-jobs.timer \
@@ -176,6 +184,7 @@ if [ "$PREPARE" = yes ]; then
   # The checks' round (all day) stops while the catalogue is prepared, for the server's
   # memory; its answers are kept, and it goes on after the site restarts (below).
   systemctl stop picwise-checks.service 2> /dev/null || true
+  systemctl stop 'picwise-checks@*.service' 2> /dev/null || true
   systemctl start picwise-prepare.service || echo "preparing failed; the site keeps the last prepared file (30 h)"
   # The summary line, the peak memory and length, and systemd's own line, of this run.
   journalctl -u picwise-prepare.service -n 20 -o cat --no-pager --since "-65min" \
@@ -190,6 +199,7 @@ else
       && diff -rq "$APP/$PREVIOUS/src/picwise_checks" "$RELEASE/src/picwise_checks" > /dev/null 2>&1; }; then
     echo "the checks' bot changed: its round is started again on this release, from the answers it kept"
     systemctl stop picwise-checks.service 2> /dev/null || true
+    systemctl stop 'picwise-checks@*.service' 2> /dev/null || true
   fi
 fi
 
@@ -210,7 +220,8 @@ case "$STATE" in
     UNITS="picwise-web.service picwise-prepare.service picwise-prepare.timer picwise-shops.service
       picwise-shops.timer picwise-photos.service picwise-photos.timer picwise-offers.service picwise-offers.timer
       picwise-assist.service picwise-families.service picwise-family-jobs.service picwise-family-jobs.timer
-      picwise-checks.service picwise-checks.timer picwise-shelves.service picwise-shelves.timer
+      picwise-checks.service picwise-checks.timer picwise-checks@.service picwise-checks@.timer
+      picwise-checks-record.service picwise-checks-record.timer picwise-shelves.service picwise-shelves.timer
       picwise-itself.service picwise-itself.timer picwise-meter.service picwise-meter.timer"
     if [ -n "$PREVIOUS" ] && [ -d "$APP/$PREVIOUS" ] && [ "$(readlink -f "$APP/$PREVIOUS")" != "$RELEASE" ]; then
       ln -sfn "$PREVIOUS" "$APP/current.new"
@@ -233,7 +244,19 @@ systemctl enable --now picwise-prepare.timer
 systemctl enable --now picwise-shops.timer
 # The checks of every product on its shop's own site, all day (the checks' rules; owner,
 # 2026-11-21 and 2026-11-22). What they decided is applied only behind data/checks_switch.json.
-systemctl enable --now picwise-checks.timer
+# With the clones on (22): the four clones' timers and the night's recording, never with the
+# bot alone beside them; off, the bot alone, as before.
+if [ "$CLONES" -gt 0 ]; then
+  systemctl disable --now picwise-checks.timer 2> /dev/null || true
+  systemctl stop picwise-checks.service 2> /dev/null || true
+  for clone in $(seq 1 "$CLONES"); do systemctl enable --now "picwise-checks@$clone.timer"; done
+  systemctl enable --now picwise-checks-record.timer
+else
+  for clone in 1 2 3 4; do systemctl disable --now "picwise-checks@$clone.timer" 2> /dev/null || true; done
+  systemctl stop 'picwise-checks@*.service' 2> /dev/null || true
+  systemctl disable --now picwise-checks-record.timer 2> /dev/null || true
+  systemctl enable --now picwise-checks.timer
+fi
 
 echo "== the offers of PicWise's shops (Awin), fetched once now and every night"
 # Owner, 2026-11-01: «Οκ να φέρνει τις προσφορές των δικών μας καταστημάτων». Served to no
@@ -271,7 +294,14 @@ curl -fsS -m 5 "$HEALTH_URL"
 echo
 # The checks' round goes on (it asks nothing between 03:05 and 05:30 UTC, nor on a night
 # recorded already); started in the background, a round already running is left as it is.
-systemctl start --no-block picwise-checks.service 2> /dev/null || echo "the checks' round did not start; the timer starts the next"
+if [ "$CLONES" -gt 0 ]; then
+  for clone in $(seq 1 "$CLONES"); do
+    systemctl start --no-block "picwise-checks@$clone.service" 2> /dev/null \
+      || echo "the checks' clone $clone did not start; its timer starts the next"
+  done
+else
+  systemctl start --no-block picwise-checks.service 2> /dev/null || echo "the checks' round did not start; the timer starts the next"
+fi
 
 echo "== the AI layer's service"
 # Only with its key; at most one euro a day (owner, 2026-11-06), kept as $1.00. A service
