@@ -40,7 +40,7 @@ no checks, no shop rule). Peak 13.85 GB (the server's of the same night: 14.1 GB
 About 3.2 KB a row as a dict, 0.9 KB more as a product. The rows never eligible
 (1,095,175) stayed to the end, held by the pipeline's cache for the intake measured last.
 
-## Step 0, built 25/11, NOT deployed
+## Step 0, built 25/11, DEPLOYED 25/11 on the owner's «Ανέβασε» (release `20261125T141027Z-0df89e3`: the preparation's peak on the server 12,485,584 KB, from about 14,670,000)
 
 **The trial read (run 45597029695, both links, GitHub's runner):** "the catalogue: 220,503
 products with the live code, 220,503 with the new; the same in every field", every key of the
@@ -128,7 +128,7 @@ The two corrections, and why (told to him with the numbers):
 
 The check's own rule, decided the same hour: `docs/PICWISE_CHECKS_RULES.md`, section 21.
 
-## Built 25/11: the feed judged in packages (`feed_packages`), behind `data/feed_packages.json` (false); NOT DEPLOYED
+## Built 25/11: the feed judged in packages (`feed_packages`), behind `data/feed_packages.json` (false); deployed 25/11 with the switch false, NOT TURNED ON
 
 Steps 1 and 2 of the plan, the cross-row points 1, 2, 3 (the barcode's category), 4 (the
 checks' sets and notes), 5 (the intake) and the feed's order, as `src/picwise_providers/feed_packages.py`

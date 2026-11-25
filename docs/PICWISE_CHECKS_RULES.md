@@ -1821,7 +1821,7 @@ nothing: deployed on the afternoon of 23/11 the bot would not reach GamingKit's 
 before the night's end either way (they stand after its 14,342 shown products that show),
 and the first of them would be shown on 25/11 by both.
 
-## 21. A pass counts for the day; three nights only on a complication (owner, 25/11): decided; built 25/11; NOT DEPLOYED
+## 21. A pass counts for the day; three nights only on a complication (owner, 25/11): decided; built 25/11; DEPLOYED 25/11 on the owner's «Ανέβασε» (release `20261125T141027Z-0df89e3`), in force from the night recorded 26/11 at 03:05 UTC
 
 ### 21.1 His words
 
@@ -1862,7 +1862,7 @@ Asked to state the rule clearly so that he could answer, he was given, in Greek:
   stays down **the site empties until the bot answers again**. He was told so, with his choice
   open; the health run's limits say the first missed night.
 
-### 21.3 How it is built (25/11, not deployed)
+### 21.3 How it is built (25/11, deployed 25/11)
 
 - `picwise_checks.ledger`: `PASS_NIGHTS_DAY` (1) and `NOT_PASSED_TODAY` ("not passed in the last
   24 hours"); `Shop.complete_on`, the last night a shop was asked whole (`record_night(...,
@@ -1900,7 +1900,7 @@ night after it, a product not reached that day waits. Read the morning after: th
 "the round asked ... hours (all day)" and the shops asked whole; PCHUB.UK's and GamingKit's
 counts against 25/11's.
 
-## 22. The four clones (owner, 25/11): built 25/11 behind `data/checks_clones.json` (false); NOT DEPLOYED
+## 22. The four clones (owner, 25/11): built 25/11 behind `data/checks_clones.json` (false); deployed 25/11 with the switch false, NOT TURNED ON
 
 ### 22.1 His words
 
