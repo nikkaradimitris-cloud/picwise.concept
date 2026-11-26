@@ -1,0 +1,114 @@
+# A look at the products the checks held as "never checked" on the night of 26/11 (PROGRESS.md,
+# 26/11 08:20: the site fell from 148,362 products to 111,503, 40,562 of them held so): which
+# shops and products they are, whether the ledger knows them under another key, whether they
+# were shown on 24/11. Asked of the owner and answered «ναι» (26/11, 11:38 Athens): a look that
+# changes nothing. The work is .github/scripts/look_never_checked.py, the standard library only,
+# run on the server as the site's user in a unit that can write nowhere; then the checks' bot's
+# and the preparation's own lines since 22/11, from their journals.
+#
+# On a push of its own branch that changes the script or this file. The repository is public
+# and so is this log: the server's names are masked; the script and the lines kept print counts,
+# dates and shop names only, never a key, an id, an address or a title.
+#
+# Run: 2026-11-26 12:30 Athens (the first look; to run again, change this line and push).
+name: Server look at the products never checked (read-only)
+on:
+  push:
+    branches: [claude/look-never-checked-2026-11-26]
+    paths:
+      - '.github/workflows/server-look-never-checked.yml'
+      - '.github/scripts/look_never_checked.py'
+permissions:
+  contents: read
+# Shared with server-setup.yml and server-deploy.yml: never while the server is set up or
+# a release deployed.
+concurrency:
+  group: server-setup
+  cancel-in-progress: false
+jobs:
+  look:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Connect with the key, check the server's identity, mask its names
+        id: connect
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          # A key pasted on Windows may carry carriage returns, which ssh refuses.
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # As server-deploy.yml: the server must show a login the host key pinned in
+          # .github/server-host-key.pin, and every connection below accepts that key only.
+          seen="$RUNNER_TEMP/seen"
+          : > "$seen"
+          ssh -F /dev/null -o BatchMode=yes -o ConnectTimeout=15 -o HostKeyAlgorithms=ssh-ed25519 \
+            -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$seen" -o GlobalKnownHostsFile=/dev/null \
+            -o PubkeyAuthentication=no -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no \
+            -o HostbasedAuthentication=no -o GSSAPIAuthentication=no -o LogLevel=QUIET \
+            "ubuntu@$SERVER_HOST" true 2>/dev/null || true
+          host_key=$(awk 'NF >= 3 {print $2, $3; exit}' "$seen")
+          rm -f "$seen"
+          [ -n "$host_key" ] || { echo "the server showed a login no host key"; exit 1; }
+          pin=$(HOST_KEY="$host_key" python3 .github/scripts/host_key_pin.py)
+          expected=$( (grep -v '^#' .github/server-host-key.pin || true) | tr -d '[:space:]')
+          if [ "$pin" != "$expected" ]; then
+            echo "the server does NOT match the pin (reinstalled, or not our server); its pin: $pin"
+            exit 1
+          fi
+          echo "the server matches the pin"
+          echo "picwise-server $host_key" > ~/.ssh/known_hosts_picwise
+          cat > ~/.ssh/config <<EOF
+          Host picwise
+            HostName $SERVER_HOST
+            HostKeyAlias picwise-server
+            UserKnownHostsFile ~/.ssh/known_hosts_picwise
+            StrictHostKeyChecking yes
+            User ubuntu
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            BatchMode yes
+            ConnectTimeout 15
+            ServerAliveInterval 15
+            ServerAliveCountMax 8
+            LogLevel ERROR
+          EOF
+          chmod 600 ~/.ssh/config
+          # The host name resolves to the address, so it is masked like the address.
+          names=$(ssh -n picwise 'hostname; hostname -f; hostname -I')
+          for name in $names; do echo "::add-mask::$name"; done
+          echo "connected"
+      - name: Look at the products never checked, once
+        if: steps.connect.outcome == 'success'
+        run: |
+          # The site's user, nothing writable (ProtectSystem=strict), its own memory limit beside
+          # the site and the bot's round; the script reads its files and prints counts only.
+          ssh picwise "sudo systemd-run --quiet --wait --pipe --collect \
+            -p User=picwise -p Group=picwise -p WorkingDirectory=/srv/picwise/shared \
+            -p Environment=PYTHONDONTWRITEBYTECODE=1 \
+            -p Nice=10 -p MemoryHigh=4G -p MemoryMax=5G -p RuntimeMaxSec=20min \
+            -p NoNewPrivileges=yes -p ProtectSystem=strict -p ProtectHome=yes -p PrivateTmp=yes \
+            /usr/bin/python3 -I -" < .github/scripts/look_never_checked.py
+      - name: The checks' bot's own lines since 22/11 (its rounds, its nights, its decisions)
+        if: always() && steps.connect.outcome == 'success'
+        run: |
+          # Only the lines of counts the bot prints for the public log, its unit's starts and ends.
+          ssh -n picwise 'sudo journalctl -u picwise-checks.service -o short-iso --no-pager --since "2026-11-22 10:00:00"' \
+            | sed -E 's/^([^ ]+) [^ ]+ [^ ]+ /\1 /' \
+            | grep -E 'the night of 20[0-9-]+: [0-9,]+ products shown|goes on: it has asked|decided [0-9,]+: passed|cut tonight [0-9,]+|the decisions: |recorded already|Started picwise-checks|Starting picwise-checks|Stopping picwise-checks|picwise-checks.service: (Main process exited|Failed|Deactivated|Consumed)' \
+            || true
+      - name: The preparation's own lines since 23/11 (the cap, the checks applied, the shops' rule)
+        if: always() && steps.connect.outcome == 'success'
+        run: |
+          ssh -n picwise 'sudo journalctl -u picwise-prepare.service -o short-iso --no-pager --since "2026-11-23 00:00:00"' \
+            | sed -E 's/^([^ ]+) [^ ]+ [^ ]+ /\1 /' \
+            | grep -E "prepare_catalogue: ([0-9]+ rows,|the cap:|the checks of|how many of a shop|THE CHECKS|the catalogue's memory:|the categories' list:|peak memory)" \
+            || true
+      - name: Remove the key from the runner
+        if: always()
+        run: rm -f ~/.ssh/deploy_key ~/.ssh/config
