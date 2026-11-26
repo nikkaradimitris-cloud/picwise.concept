@@ -1957,7 +1957,7 @@ bot alone began is not carried into the clones' files (its answers are asked aga
 clones). To read the morning after: the health run's four clones "success", the recording's
 night, the shops asked whole.
 
-## 23. Eight bots, 10,000 a shop on the site, 20,000 asked a day (owner, 26/11): step 1 built 26/11 (Claude Opus 5.5), every part behind its switch; NOTHING DEPLOYED
+## 23. Eight bots, 10,000 a shop on the site, 20,000 asked a day (owner, 26/11): step 1 built 26/11 (Claude Opus 5.5); STEP 2 DEPLOYED 26/11 on his «Ανέβασε» (18:57; the catalogue 99,537 products); the eight bots and the second asking still off
 
 ### 23.1 His words, and the brief he gave the builder
 
