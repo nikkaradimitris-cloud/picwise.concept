@@ -221,6 +221,10 @@ A product with no line from the AI yet is the checks' to hold (5.5). No lowest p
 step (owner, 23/11). With the switch on, a search for what no open category holds says, under
 "No products found", what PicWise covers.
 
+**Changed on 2026-11-26, on the owner's «Ανέβασε» (the checks' rules 23): of a shop, 10,000 the
+most** («Προϊόντα ανά κατάστημα στο site: έως 10.000, αντί για 20.000»), the bot asking a shop up to
+20,000 a day («έως 20.000 τη μέρα»). What follows, of 23/11, holds with 10,000 in place of 20,000.
+
 **Added on 2026-11-23, on the owner's «Ανέβασε το»: of a shop, the products the bot scans,
 20,000 the most** (the checks' rules, sections 19 and 20; his words of 22/11: «μόνο όσα έχουν
 σκανναριστεί περνάνε», «Το πλαφόνι είναι 20.000 προϊόντα»). A shop with more products a
