@@ -240,7 +240,8 @@ class TheShopsRuleInThePreparationTests(unittest.TestCase):
             self.assertFalse(tool._shop_cap(capping)["applied"])
         with tempfile.TemporaryDirectory() as folder, \
                 mock.patch.object(shop_cap, "shop_cap_on", return_value=True), \
-                mock.patch.object(shop_cap, "SHOP_LIMIT", 3):
+                mock.patch.object(shop_cap, "SHOP_LIMIT", 3), \
+                mock.patch.object(shop_cap, "shop_limits", return_value=(3, 3)):
             capping = tool._Cap(Path(folder) / "catalogue.json.gz")
             keep = capping(products, [frozenset({"kettle"})] * 5, context)
             self.assertEqual(sum(keep), 3)

@@ -185,7 +185,9 @@ def candidates_standing(after: Mapping[str, list[str]], among: Mapping[str, list
 def main(argv: list[str] | None = None) -> int:
     import shop_checks_bot as bot
     from picwise_checks import ledger as L
-    from picwise_providers.shop_cap import SHOP_LIMIT, shop_cap_on
+    from picwise_providers.shop_cap import shop_cap_on, shop_limits
+
+    most, asked_most = shop_limits()
 
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--catalogue", type=Path, default=Path(bot.PREPARED))
@@ -232,11 +234,11 @@ def main(argv: list[str] | None = None) -> int:
             f"the ledger: {len(ledger.products):,} products, {len(ledger.shops)} shops, nights recorded "
             + (", ".join(str(entry.get("night")) for entry in ledger.nights[-5:]) or "none"))
 
-        say("== 3. what the bot would ask tonight: the rule off, the rule on (at most 20,000 of a shop past the failed due)")
+        say(f"== 3. what the bot would ask tonight: the rule off, the rule on (at most {asked_most:,} of a shop past the failed due)")
         at = time.perf_counter()
         off = L.asking_order(ledger, night, rows, shown=shown, candidates=candidates, parts=parts)
         on = L.asking_order(ledger, night, rows, shown=shown, candidates=candidates, parts=parts, scanned=True,
-                            shown_order=orders, dearer=dearer, limit=SHOP_LIMIT)
+                            shown_order=orders, dearer=dearer, limit=asked_most)
         say(f"in all: {sum(len(keys) for keys in off.values()):,} products of {len(off)} shops, the rule off; "
             f"{sum(len(keys) for keys in on.values()):,} of {len(on)} shops, the rule on; worked out in {time.perf_counter() - at:.0f} s")
         say("  shop: shown | to ask, the rule off | to ask, the rule on | of them shown | of them the same first 100")
@@ -249,14 +251,14 @@ def main(argv: list[str] | None = None) -> int:
         # asked among the shown, as before it: where a shop's candidates stand in what it is
         # asked, since a shop is asked only as far as its day reaches.
         among = L.asking_order(ledger, night, rows, shown=shown, candidates=candidates, parts=parts, scanned=True,
-                               shown_order=orders, limit=SHOP_LIMIT)
+                               shown_order=orders, limit=asked_most)
         for line in candidates_standing(on, among, shops={key: row.shop for key, row in rows.items()}, shown=by_shop,
                                         candidates=candidates, dearer=dearer):
             say(line)
 
         say("== 4. what the decisions would not show until checked, from the ledger as it is")
         yes = bot.owner_yes()
-        for nights, over in ((L.PASS_VALID_NIGHTS, 0), (L.PASS_NIGHTS_SCANNED, SHOP_LIMIT)):
+        for nights, over in ((L.PASS_VALID_NIGHTS, 0), (L.PASS_NIGHTS_SCANNED, most)):
             made = L.decisions(ledger, night, rows, shown=shown, candidates=candidates, old_feed_rule=yes["old_feed_rule"],
                                pass_nights=nights, passed_over=over)
             waits = Counter(made["wait"].values())

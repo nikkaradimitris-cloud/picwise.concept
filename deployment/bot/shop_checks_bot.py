@@ -888,13 +888,16 @@ def ask_round(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str]
     19.4 of each shop's shown products and `dearer` those of them a cheaper shop shows, asked
     after the cap's candidates (20.7.4); `readers`: what reads the answers (19.5);
     `round_time`: how long the night's round has asked, a round started again included (21)."""
-    from picwise_providers.shop_cap import SHOP_LIMIT
+    from picwise_providers.shop_cap import shop_limits
 
     tonight = tonight or Tonight(None)
     round_time = round_time or RoundTime(None, clock)
     began = clock()
+    # 23 (owner, 2026-11-26): of a shop the bot asks at most `asked` a day, which may be more than
+    # the most it passes to the site; the rest of a shop's day goes to new products.
+    asked_most = shop_limits()[1]
     order = L.asking_order(ledger, night, rows, shown=shown, candidates=candidates, parts=parts, scanned=scanned,
-                           shown_order=shown_order, dearer=dearer, limit=SHOP_LIMIT if scanned else 0)
+                           shown_order=shown_order, dearer=dearer, limit=asked_most if scanned else 0)
     if clone is not None:
         order = {shop: keys for shop, keys in order.items() if clone_of(shop, clone[1]) == clone[0]}
     if shops:
@@ -950,8 +953,9 @@ def record_round(rows: dict[str, Row], rounds: list[Round], *, shown: set[str], 
                  awin_closed_out: bool = False, scanned: bool = False) -> tuple[L.Night, dict]:
     """The night recorded from the askers' days (the bot's, or every clone's, 22): every
     answer judged, the night recorded, the decisions; the note."""
-    from picwise_providers.shop_cap import SHOP_LIMIT
+    from picwise_providers.shop_cap import shop_limits
 
+    most, asked_most = shop_limits()
     # 21: with the rule on, a pass counts for the day (three nights while a shop's asking was
     # not whole); without it, thirty nights as before.
     pass_nights = L.PASS_NIGHTS_DAY if scanned else L.PASS_VALID_NIGHTS
@@ -976,7 +980,7 @@ def record_round(rows: dict[str, Row], rounds: list[Round], *, shown: set[str], 
                                   feeds=feeds, owner_cut_shops=owner_cut_shops, owner_awin_word=owner_awin_word,
                                   awin_closed_out=awin_closed_out, complete=complete if scanned else ())
     made = L.decisions(ledger, night, rows, shown=shown, candidates=candidates, came_back=night_result.came_back,
-                       old_feed_rule=old_feed_rule, pass_nights=pass_nights, passed_over=SHOP_LIMIT if scanned else 0)
+                       old_feed_rule=old_feed_rule, pass_nights=pass_nights, passed_over=most if scanned else 0)
     if not old_feed_rule and not night_result.note.get("ours"):
         # What the Proposed rule of a feed over 7 days old (5.6.4) would not show tonight, while
         # it waits for the owner's yes: counted for him, changing nothing.
@@ -989,7 +993,9 @@ def record_round(rows: dict[str, Row], rounds: list[Round], *, shown: set[str], 
     # How many of a shop's products pass (section 19): whether the rule was on, the nights a
     # pass counts for, the most asked of a shop, the processes the pages were read on (19.5).
     night_result.note["shop_rule"] = {"on": scanned, "pass_nights": pass_nights,
-                                      "most_asked_of_a_shop": SHOP_LIMIT if scanned else None,
+                                      "most_asked_of_a_shop": asked_most if scanned else None,
+                                      # 23: the most a shop passes to the site, when fewer than it is asked.
+                                      "most_shown_of_a_shop": most if scanned else None,
                                       "processes": sum(asked.processes for asked in rounds),
                                       "shops_at_once": sum(asked.threads for asked in rounds) or 1,
                                       # 21: how long the round asked, whether that was all day, and

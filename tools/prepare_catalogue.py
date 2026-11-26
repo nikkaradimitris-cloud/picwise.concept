@@ -369,7 +369,7 @@ class _Cap:
             self.shops = shop_cap.cap_shops(
                 products, kinds, feed_ctx=feed_ctx, kept_before=kept_before, may_enter=gate,
                 passed=checks_applied.passed if checks_applied.gate_on() else None,
-                limit=shop_cap.SHOP_LIMIT, thin=shop_cap.THIN,
+                limit=shop_cap.shop_limits()[0], thin=shop_cap.THIN,
             )
         except Exception as error:
             self.shops, self.shops_error = None, _where(error)

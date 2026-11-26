@@ -77,7 +77,8 @@ from .contracts import FeedAvailabilityContext, ProviderProduct
 from .decision_labels import parse_price_amount
 from .product_identity import same_product_key
 
-# Owner, 2026-11-22 (17:08, 17:21): the most a shop passes to the site.
+# Owner, 2026-11-22 (17:08, 17:21): the most a shop passes to the site. The number in force is
+# read from the switch (`shop_limits`): this one stands while the switch names none.
 SHOP_LIMIT = 20_000
 # Proposed (19.4 a, 19.8.1): a kind the catalogue holds fewer products of is thin.
 THIN = 100
@@ -98,6 +99,26 @@ def shop_cap_on(path: Path = SWITCH_FILE) -> bool:
         return json.loads(path.read_text(encoding="utf-8")).get("cap") is True
     except (OSError, ValueError, AttributeError):
         return False
+
+
+def _positive(value: Any) -> int:
+    return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else 0
+
+
+def shop_limits(path: Path | None = None) -> tuple[int, int]:
+    """The two numbers of the rule, as its switch names them: the most a shop passes to the site
+    (`most`) and the most the bot asks of a shop in a day (`asked`). Owner, 2026-11-26: «Προϊόντα
+    ανά κατάστημα στο site: έως 10.000, αντί για 20.000» and «Έλεγχοι ανά κατάστημα: όσους αντέχει
+    το κατάστημα, έως 20.000 τη μέρα» (the checks' rules 23). A switch that names neither keeps
+    the rule of 22/11: `SHOP_LIMIT` both. The bot never asks of a shop fewer than it may show."""
+    try:
+        words = json.loads((path or SWITCH_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        words = {}
+    words = words if isinstance(words, dict) else {}
+    most = _positive(words.get("most")) or SHOP_LIMIT
+    asked = _positive(words.get("asked")) or most
+    return most, max(most, asked)
 
 
 def candidates_for(open_places: int) -> int:

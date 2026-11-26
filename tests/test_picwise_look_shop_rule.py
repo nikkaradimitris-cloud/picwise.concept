@@ -224,19 +224,20 @@ class ThePreparationOfTheLook(unittest.TestCase):
         feed = _feed(base / "feed.csv")
         cls.saved = {name: os.environ.get(name) for name in ("AWIN_FEED_FILE", "PICWISE_MEMORY_TRACE", "PICWISE_CHECKS_DECISIONS")}
         os.environ.pop("PICWISE_CHECKS_DECISIONS", None)
-        cls.real = (shop_cap.shop_cap_on, shop_cap.SHOP_LIMIT)
+        cls.real = (shop_cap.shop_cap_on, shop_cap.SHOP_LIMIT, shop_cap.shop_limits)
         cls.printed = {}
         cls.status = {}
         for name, switch in (("off", False), ("on", True)):
             shop_cap.shop_cap_on = lambda _switch=switch: _switch
             shop_cap.SHOP_LIMIT = 5
+            shop_cap.shop_limits = lambda path=None: (5, 5)
             clear_awin_feed_parse_cache()
             clear_provider_feed_pipeline_cache()
             out = io.StringIO()
             with redirect_stdout(out):
                 cls.status[name] = look_shop_rule.prepare(base / name, ["--feed-file", str(feed)])
             cls.printed[name] = out.getvalue()
-        shop_cap.shop_cap_on, shop_cap.SHOP_LIMIT = cls.real
+        shop_cap.shop_cap_on, shop_cap.SHOP_LIMIT, shop_cap.shop_limits = cls.real
         cls.caps = {name: json.loads((base / name / look_shop_rule.CAPS_NAME).read_text(encoding="utf-8")) for name in ("off", "on")}
         cls.base = base
 
@@ -246,7 +247,7 @@ class ThePreparationOfTheLook(unittest.TestCase):
         from picwise_providers.awin_adapter import clear_awin_feed_parse_cache
         from picwise_providers.state import clear_provider_feed_pipeline_cache
 
-        shop_cap.shop_cap_on, shop_cap.SHOP_LIMIT = cls.real
+        shop_cap.shop_cap_on, shop_cap.SHOP_LIMIT, shop_cap.shop_limits = cls.real
         for name, value in cls.saved.items():
             if value is None:
                 os.environ.pop(name, None)

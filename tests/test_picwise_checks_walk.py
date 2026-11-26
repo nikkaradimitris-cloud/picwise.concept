@@ -108,13 +108,15 @@ class Server:
     """The two sides of a night, with the files they hand each other kept in memory."""
 
     def __init__(self, feed, *, shown=None, asked_a_night, scanned: bool = False, limit: int = 0,
-                 day_rule: bool = False) -> None:
+                 day_rule: bool = False, asked: int = 0) -> None:
         # `scanned`: the rule of how many of a shop's products pass (19), with `limit` the most
         # a shop passes (20,000 on the server); `day_rule`: with it, a pass counts for the day
         # (21), as the bot works it out since 25/11.
         self.scanned = scanned
         self.day_rule = day_rule
         self.limit = limit or shop_cap.SHOP_LIMIT
+        # 23: the most the bot asks of a shop in a day, when more than the most it passes.
+        self.asked = asked
         self.feed = tuple(feed)
         # How many products the bot gets through a night: one number, or one a shop.
         self.asked_a_night = asked_a_night if isinstance(asked_a_night, dict) else {"": asked_a_night}
@@ -148,7 +150,8 @@ class Server:
         answers = answers or {}
         if self.scanned:
             with mock.patch.object(shop_cap, "shop_cap_on", return_value=True), \
-                    mock.patch.object(shop_cap, "SHOP_LIMIT", self.limit):
+                    mock.patch.object(shop_cap, "SHOP_LIMIT", self.limit), \
+                    mock.patch.object(shop_cap, "shop_limits", return_value=(self.limit, self.asked or self.limit)):
                 return self._night(answers, reach, whole)
         return self._night(answers, reach, whole)
 
@@ -169,7 +172,8 @@ class Server:
             shown_order = {shop: [keys_of[place] for place in places] for shop, places in
                            shop_cap.shop_order(self.shown, [self.kinds_of(product) for product in self.shown]).items()}
         order = L.asking_order(self.ledger, night, rows, shown=shown, candidates=candidates, parts=parts,
-                               scanned=self.scanned, shown_order=shown_order, limit=self.limit if self.scanned else 0)
+                               scanned=self.scanned, shown_order=shown_order,
+                               limit=(self.asked or self.limit) if self.scanned else 0)
         asked = {shop: keys[: (reach if reach is not None else self.asked_a_night.get(shop, self.asked_a_night.get("", 0)))]
                  for shop, keys in order.items()}
         self.ordered = order
@@ -372,6 +376,38 @@ class Rules19WhatTheBotScansPassesTests(unittest.TestCase):
             # 19.3.3: never more of the shop asked than the most it passes.
             self.assertLessEqual(night["ordered"]["Kettles"], 6)
             self.assertEqual(night["asked"], first["shown"])
+
+    def test_23_a_capped_shop_shows_the_most_and_is_asked_up_to_the_most_asked(self) -> None:
+        # The checks' rules 23 (owner, 2026-11-26: 10,000 a shop on the site, «έως 20.000» asked a
+        # day), made small: 6 shown, 10 asked. The first night the bot asks ten, not six; the shop
+        # keeps six that passed; each day after, its six again first.
+        # Other products around, in shops under the most, so that one cut is no tenth of the site (7.4).
+        others = [_product(100 + number, shop=f"Other{number % 6}", category=f"Toys > Kind {number}") for number in range(36)]
+        server = Server([_product(number) for number in range(1, 15)] + others, asked_a_night=50, scanned=True,
+                        limit=6, asked=10, day_rule=True)
+        self.addCleanup(server.close)
+
+        def kettles(night: dict, part: str = "shown") -> list[int]:
+            return [number for number in night[part] if number < 100]
+
+        first = server.night()
+        self.assertEqual((first["ordered"]["Kettles"], len(kettles(first, "asked"))), (10, 10))
+        self.assertEqual(len(kettles(first)), 6)
+        self.assertTrue(set(kettles(first)) <= set(kettles(first, "asked")))
+        for _day in range(4):
+            night = server.night()
+            self.assertEqual(kettles(night), kettles(first))
+            self.assertLessEqual(night["ordered"]["Kettles"], 10)
+            self.assertTrue(set(kettles(first)) <= set(kettles(night, "asked")))
+        # A cut leaves a place, which goes to a product that passed; never more than six shown,
+        # never more than ten asked.
+        gone = kettles(first)[0]
+        for _day in range(3):
+            night = server.night({gone: DOWN})
+            self.assertNotIn(gone, kettles(night))
+            self.assertLessEqual(len(kettles(night)), 6)
+            self.assertLessEqual(night["ordered"]["Kettles"], 10 + 1)  # the failed one due is asked past the ten
+        self.assertEqual(len(kettles(night)), 6)
 
     def test_a_capped_shops_place_left_by_a_cut_goes_to_a_candidate_that_passed(self) -> None:
         # Other products around, in shops under the most, so that one cut is no tenth of the site

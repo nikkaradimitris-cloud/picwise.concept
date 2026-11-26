@@ -386,6 +386,24 @@ class SwitchTests(unittest.TestCase):
 
         self.assertIn("data/shop_cap_switch.json", _FROZEN_FILES)
 
+    def test_the_most_shown_and_the_most_asked_are_the_switchs_numbers(self) -> None:
+        # The checks' rules 23 (owner, 2026-11-26): 10,000 a shop on the site, 20,000 asked a day,
+        # on his «ανέβασε»; a switch that names neither keeps the 20,000 of 22/11 both.
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "switch.json"
+            self.assertEqual(shop_cap.shop_limits(path), (shop_cap.SHOP_LIMIT, shop_cap.SHOP_LIMIT))
+            for words, limits in (({"cap": True}, (20_000, 20_000)),
+                                  ({"cap": True, "most": 10_000, "asked": 20_000}, (10_000, 20_000)),
+                                  ({"most": 10_000}, (10_000, 10_000)),
+                                  # Never fewer asked than may be shown.
+                                  ({"most": 10_000, "asked": 5_000}, (10_000, 10_000)),
+                                  ({"most": "10000", "asked": -1}, (20_000, 20_000)),
+                                  ({"most": True, "asked": 0}, (20_000, 20_000))):
+                path.write_text(json.dumps(words), encoding="utf-8")
+                self.assertEqual(shop_cap.shop_limits(path), limits, words)
+            path.write_text("[1, 2]", encoding="utf-8")
+            self.assertEqual(shop_cap.shop_limits(path), (20_000, 20_000))
+
 
 if __name__ == "__main__":
     unittest.main()
