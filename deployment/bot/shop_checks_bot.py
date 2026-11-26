@@ -972,6 +972,9 @@ def record_round(rows: dict[str, Row], rounds: list[Round], *, shown: set[str], 
     night_result = L.record_night(ledger, night, rows, readings, shop_nights, shown=shown, parts=parts, awin=awin,
                                   feeds=feeds, owner_cut_shops=owner_cut_shops, owner_awin_word=owner_awin_word,
                                   awin_closed_out=awin_closed_out, complete=complete if scanned else ())
+    if not night_result.note.get("ours"):
+        # 23: what the bot has not been given for over seven nights is let go, a line of each kept.
+        night_result.note["ledger"] = L.forget_unseen(ledger, night, rows.keys())
     made = L.decisions(ledger, night, rows, shown=shown, candidates=candidates, came_back=night_result.came_back,
                        old_feed_rule=old_feed_rule, pass_nights=pass_nights, passed_over=most if scanned else 0)
     if not old_feed_rule and not night_result.note.get("ours"):
@@ -1072,6 +1075,13 @@ def print_night(note: Mapping[str, Any], made: Mapping[str, Any], ledger: L.Ledg
         + ("; CUTTING STOPPED until the owner's word" if note.get("stopped") else ""))
     if note.get("braked_shops"):
         say("shops braked: " + ", ".join(note["braked_shops"]))
+    kept = note.get("ledger") or {}
+    if kept:
+        say(f"the ledger: {int(kept.get('products') or 0):,} products; let go tonight, not given to the bot for over "
+            f"{L.FORGET_AFTER_NIGHTS} nights, {int(kept.get('let_go') or 0):,}"
+            + (" (" + ", ".join(f"{state} {count:,}" for state, count in (kept.get("let_go_by_state") or {}).items()) + ")"
+               if kept.get("let_go") else "")
+            + f"; lines of those let go kept {int(kept.get('gone_kept') or 0):,}")
     for name, (why, days) in (note.get("cannot_be_checked") or {}).items():
         say(f"cannot be checked: {name}: {why} (day {days})")
     if note.get("awin"):
@@ -1209,12 +1219,14 @@ def _write_whole(path: Path, text: str) -> None:
 
 
 def _read(args: argparse.Namespace, *, order: bool, clones: int, chosen: Collection[int],
-          say: Callable[[str], None]) -> B.BotRows | None:
+          say: Callable[[str], None], ledger: bool = False) -> B.BotRows | None:
     """What the bot asks, read in a process of its own (`bot_rows.read_apart`; on the bot's own
-    process with `--processes 0`); None, said, when the catalogue cannot be read."""
+    process with `--processes 0`); with `ledger`, its shops' part of the ledger too; None, said,
+    when the catalogue cannot be read."""
     try:
         found = B.read_apart(args.catalogue, args.checks / L.CANDIDATES_NAME, order=order, clones=clones,
-                             chosen=chosen, say=say, apart=args.processes > 0)
+                             chosen=chosen, say=say, apart=args.processes > 0,
+                             ledger=args.checks / L.LEDGER_NAME if ledger else None)
     except ValueError as error:
         say(f"the checks: {error}; nothing asked")
         return None
@@ -1233,10 +1245,11 @@ def _clone_day(args: argparse.Namespace, clone: tuple[int, int], *, readers: Rea
     `STAGGER_SECONDS` after the bot before it (module docstring)."""
     if clone[0] > 1:
         sleep(min(STAGGER_SECONDS * (clone[0] - 1), max(0.0, deadline - clock())))
-    found = _read(args, order=scanned, clones=clone[1], chosen=(clone[0],), say=say)
+    found = _read(args, order=scanned, clones=clone[1], chosen=(clone[0],), say=say, ledger=True)
     if found is None:
         return 1
-    ledger = L.load(args.checks / L.LEDGER_NAME)
+    # Only its shops' part of the ledger, read with the catalogue in the process of its own (23).
+    ledger = found.ledger if found.ledger is not None else L.load(args.checks / L.LEDGER_NAME, shops=found.shops)
     if any(entry.get("night") == night.isoformat() for entry in ledger.nights):
         say(f"the night of {night} is recorded already: nothing asked")
         return 0

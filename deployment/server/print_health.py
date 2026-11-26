@@ -353,6 +353,12 @@ def look_at_checks(check: Health, runner: Run) -> None:
               f"failed {sum(failed.values()):,}" + (f" ({_counts(failed)})" if failed else "")
               + f"; cut tonight {note.get('cut_tonight', 0):,}, back {note.get('back_tonight', 0):,}"
               + (f"; held: {_counts(note.get('held'))}" if note.get("held") else ""))
+    kept = note.get("ledger") if isinstance(note.get("ledger"), dict) else {}
+    if kept:
+        # 23: what the ledger let go, not given to the bot for over seven nights.
+        check.say(f"checks, the ledger: {int(kept.get('products') or 0):,} products; let go tonight "
+                  f"{int(kept.get('let_go') or 0):,}" + (f" ({_counts(kept.get('let_go_by_state'))})" if kept.get("let_go") else "")
+                  + f"; lines of those let go kept {int(kept.get('gone_kept') or 0):,}")
     braked = [str(name) for name in note.get("braked_shops") or []]
     if braked:
         check.say("checks, a shop's brake held its cuts: " + ", ".join(braked))

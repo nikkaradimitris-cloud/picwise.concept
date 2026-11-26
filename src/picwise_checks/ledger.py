@@ -91,6 +91,13 @@ RETRY_PAGES = 5
 # 10.4 and 10.5.
 CHEAPEST_FIRST = 24
 OLD_PASS_FIRST = 14
+# 23 (owner, 2026-11-26: «Αρχείο ελέγχων: να σβήνονται τα προϊόντα που λείπουν από το feed πάνω από 7
+# μέρες»; «όποιο προϊόν δεν πληροί τις προϋποθέσεις σβήνεται αμέσως και δεν μένει να πιάνει μνήμη»):
+# a product the bot has not been given for over 7 nights (not shown, no candidate, no cut product
+# the feed still lists) is let go from the ledger; one short line of it is kept (the night, its last
+# state and reason) for `GONE_KEPT_NIGHTS`, so that what was let go can be counted and told.
+FORGET_AFTER_NIGHTS = 7
+GONE_KEPT_NIGHTS = 30
 
 
 def _day(value: str) -> date | None:
@@ -165,6 +172,11 @@ class Ledger:
     products: dict[str, Product] = field(default_factory=dict)
     shops: dict[str, Shop] = field(default_factory=dict)
     nights: list[dict[str, Any]] = field(default_factory=list)
+    # 23: the last night each product was given to the bot, and the short lines of those let go
+    # (`forget_unseen`). Kept beside the products in the file, where a ledger written before
+    # them has none and an older bot reads none.
+    seen: dict[str, str] = field(default_factory=dict)
+    gone: dict[str, list] = field(default_factory=dict)
 
     def shop(self, name: str) -> Shop:
         entry = self.shops.get(name)
@@ -195,20 +207,28 @@ def row_signature(row: Row) -> str:
 # ---- reading and writing -----------------------------------------------------------
 
 
-def load(path: Path) -> Ledger:
+def load(path: Path, *, shops: Collection[str] | None = None) -> Ledger:
     """The ledger at `path`; an empty one when there is none yet. A file that cannot be
-    read raises: the night stops rather than start from nothing."""
+    read raises: the night stops rather than start from nothing. `shops`: only these shops'
+    products and entries (a bot of its own, which asks only its shops and records nothing, 23);
+    without the last nights seen and the lines of those let go, which only the recording keeps."""
     if not path.exists():
         return Ledger()
     with gzip.open(path, "rt", encoding="utf-8") as handle:
         payload = json.load(handle)
     if payload.get("format") != FORMAT or payload.get("version") != VERSION:
         raise ValueError("not a ledger of this version")
+    wanted = frozenset(shops) if shops is not None else None
+    products = payload.pop("products", {})
+    kept = {key: Product(*values) for key, values in products.items() if wanted is None or values[0] in wanted}
+    del products
     return Ledger(
-        products={key: Product(*values) for key, values in payload.get("products", {}).items()},
+        products=kept,
         shops={name: Shop(**{k: v for k, v in values.items() if k in _SHOP_FIELDS})
-               for name, values in payload.get("shops", {}).items()},
+               for name, values in payload.get("shops", {}).items() if wanted is None or name in wanted},
         nights=list(payload.get("nights", [])),
+        seen=dict(payload.get("seen") or {}) if wanted is None else {},
+        gone=dict(payload.get("gone") or {}) if wanted is None else {},
     )
 
 
@@ -236,9 +256,48 @@ def save(ledger: Ledger, path: Path) -> None:
             "products": {key: list(astuple(product)) for key, product in ledger.products.items()},
             "shops": {name: {k: getattr(shop, k) for k in _SHOP_FIELDS} for name, shop in ledger.shops.items()},
             "nights": ledger.nights[-NIGHTS_KEPT:],
+            "seen": ledger.seen,
+            "gone": ledger.gone,
         },
         path,
     )
+
+
+# ---- what is let go (23) ----------------------------------------------------------
+
+
+def forget_unseen(ledger: Ledger, night: date, given: Collection[str]) -> dict[str, Any]:
+    """23: tonight's products given to the bot (`given`: the shown, the candidates, the cut ones the
+    feed still lists) are seen tonight; a product of the ledger not given for over
+    `FORGET_AFTER_NIGHTS` nights is let go, its short line kept in `gone` (the night, its last state
+    and reason) for `GONE_KEPT_NIGHTS`; one given again leaves `gone`. A product the ledger holds
+    with no night seen (a ledger written before 26/11) is counted seen tonight: the first nights
+    let nothing go. What it did, counted."""
+    tonight = _iso(night)
+    given = frozenset(given)
+    for key in given:
+        if key in ledger.products:
+            ledger.seen[key] = tonight
+        ledger.gone.pop(key, None)
+    limit = _iso(night - timedelta(days=FORGET_AFTER_NIGHTS))
+    let_go: Counter = Counter()
+    for key in [key for key in ledger.products if key not in given]:
+        last = ledger.seen.get(key)
+        if not last:
+            ledger.seen[key] = tonight
+            continue
+        if last < limit:
+            product = ledger.products.pop(key)
+            ledger.seen.pop(key, None)
+            ledger.gone[key] = [tonight, product.state or "never decided", product.reason]
+            let_go[product.state or "never decided"] += 1
+    for key in [key for key in ledger.seen if key not in ledger.products]:
+        ledger.seen.pop(key, None)
+    kept_from = _iso(night - timedelta(days=GONE_KEPT_NIGHTS))
+    for key in [key for key, line in ledger.gone.items() if not line or str(line[0]) < kept_from]:
+        ledger.gone.pop(key, None)
+    return {"let_go": sum(let_go.values()), "let_go_by_state": dict(sorted(let_go.items())),
+            "products": len(ledger.products), "gone_kept": len(ledger.gone)}
 
 
 # ---- coming back (8) --------------------------------------------------------------

@@ -272,5 +272,77 @@ class EightBotsTests(unittest.TestCase):
         self.assertEqual(sum(entry["by_name"] for entry in table), 1)  # Zeta Kettles names no number
 
 
+class LedgerLetGoTests(unittest.TestCase):
+    """The checks' rules 23 (owner, 2026-11-26: «να σβήνονται τα προϊόντα που λείπουν από το feed πάνω
+    από 7 μέρες, και κάθε bot να φορτώνει μόνο τα δικά του καταστήματα»)."""
+
+    def test_a_product_not_given_for_over_seven_nights_is_let_go_and_a_line_of_it_kept(self) -> None:
+        from datetime import date
+
+        ledger = L.Ledger(products={"a": L.Product(shop="Alpha", state="passed"),
+                                    "b": L.Product(shop="Alpha", state="failed", reason="gone"),
+                                    "c": L.Product(shop="Beta", state="passed")})
+        first = date(2026, 12, 1)
+        # The first night the ledger holds no night seen: nothing is let go.
+        self.assertEqual(L.forget_unseen(ledger, first, {"a", "c"})["let_go"], 0)
+        self.assertEqual(set(ledger.seen), {"a", "b", "c"})
+        for day in range(1, 8):
+            done = L.forget_unseen(ledger, first + timedelta(days=day), {"a"})
+            self.assertEqual(done["let_go"], 0, day)
+        # Over seven nights not given: let go, the short line kept.
+        done = L.forget_unseen(ledger, first + timedelta(days=8), {"a"})
+        self.assertEqual((done["let_go"], done["let_go_by_state"]), (2, {"failed": 1, "passed": 1}))
+        self.assertEqual(set(ledger.products), {"a"})
+        self.assertEqual(ledger.gone["b"], ["2026-12-09", "failed", "gone"])
+        self.assertEqual(set(ledger.seen), {"a"})
+        # Given again: out of the lines of those let go (it is asked as a new product).
+        L.forget_unseen(ledger, first + timedelta(days=9), {"a", "b"})
+        self.assertNotIn("b", ledger.gone)
+        self.assertIn("c", ledger.gone)
+        # The lines go after thirty nights.
+        L.forget_unseen(ledger, first + timedelta(days=40), {"a"})
+        self.assertEqual(ledger.gone, {})
+
+    def test_the_ledger_keeps_them_and_a_bot_loads_only_its_shops(self) -> None:
+        from datetime import date
+
+        folder = Path(tempfile.mkdtemp())
+        ledger = L.Ledger(products={"a": L.Product(shop="Alpha", state="passed"),
+                                    "c": L.Product(shop="Beta", state="passed")},
+                          shops={"Alpha": L.Shop(reader="page"), "Beta": L.Shop(reader="shopify")},
+                          nights=[{"night": "2026-12-01"}])
+        L.forget_unseen(ledger, date(2026, 12, 1), {"a"})
+        ledger.gone["z"] = ["2026-12-01", "failed", "gone"]
+        L.save(ledger, folder / L.LEDGER_NAME)
+        back = L.load(folder / L.LEDGER_NAME)
+        self.assertEqual((back.seen, back.gone, set(back.products)), (ledger.seen, ledger.gone, {"a", "c"}))
+        mine = L.load(folder / L.LEDGER_NAME, shops={"Beta"})
+        self.assertEqual((set(mine.products), set(mine.shops), mine.seen, mine.gone), ({"c"}, {"Beta"}, {}, {}))
+        self.assertEqual(mine.nights, [{"night": "2026-12-01"}])
+        # A ledger written before 26/11 (no nights seen, no lines) reads with none.
+        with gzip.open(folder / "old.json.gz", "wt", encoding="utf-8") as handle:
+            json.dump({"format": L.FORMAT, "version": L.VERSION, "products": {"a": ["Alpha", "passed"]},
+                       "shops": {}, "nights": []}, handle)
+        old = L.load(folder / "old.json.gz")
+        self.assertEqual((old.seen, old.gone, old.products["a"].state), ({}, {}, "passed"))
+
+    def test_a_bot_of_its_own_reads_its_shops_part_of_the_ledger_with_the_catalogue(self) -> None:
+        tests = EightBotsTests("test_the_table_per_bot")
+        tests.setUp()
+        rows = {row.key: row for row in tests.rows}
+        ledger = L.Ledger(products={key: L.Product(shop=row.shop, state="passed") for key, row in rows.items()},
+                          shops={row.shop: L.Shop() for row in rows.values()})
+        checks = tests.folder / "checks"
+        checks.mkdir()
+        L.save(ledger, checks / L.LEDGER_NAME)
+        found = B.read_bot_rows(tests.catalogue, checks / L.CANDIDATES_NAME, clones=8, chosen=(3,),
+                                ledger=checks / L.LEDGER_NAME)
+        mine = {shop for shop, number in B.assignment(rows.values(), 8).items() if number == 3}
+        self.assertEqual({product.shop for product in found.ledger.products.values()}, mine)
+        self.assertEqual(set(found.ledger.shops), mine)
+        everything = B.read_bot_rows(tests.catalogue, checks / L.CANDIDATES_NAME, ledger=checks / L.LEDGER_NAME)
+        self.assertEqual(len(everything.ledger.products), len(rows))
+
+
 if __name__ == "__main__":
     unittest.main()

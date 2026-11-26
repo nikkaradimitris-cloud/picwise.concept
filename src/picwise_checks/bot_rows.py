@@ -135,6 +135,8 @@ class BotRows:
     # memory in MB.
     read: str = "here"
     read_peak_mb: float = 0.0
+    # The ledger's part of the shops chosen (a bot of its own reads only its shops'), when asked for.
+    ledger: Any = None
 
     @property
     def shops(self) -> frozenset[str]:
@@ -195,9 +197,10 @@ def candidate_rows(path: Path) -> tuple[dict[str, Row], list[str]]:
 
 
 def read_bot_rows(catalogue: Path, candidates: Path, *, order: bool = False, clones: int = 0,
-                  chosen: Collection[int] = ()) -> BotRows:
+                  chosen: Collection[int] = (), ledger: Path | None = None) -> BotRows:
     """What the bots numbered `chosen` (of `clones`) ask; every shop when `chosen` is empty or
-    `clones` 0. Raises ValueError when the catalogue cannot be read."""
+    `clones` 0; with `ledger`, that file's part of their shops (`ledger.load`). Raises ValueError
+    when the catalogue cannot be read."""
     rows, parts, shared_ids, orders, dearer = catalogue_rows(catalogue, order=order)
     shown = set(rows)
     extra, named = candidate_rows(candidates)
@@ -217,8 +220,13 @@ def read_bot_rows(catalogue: Path, candidates: Path, *, order: bool = False, clo
         orders = {shop: keys for shop, keys in orders.items() if shop in shops}
         dearer &= set(rows)
         named = [key for key in named if key in rows]
-    return BotRows(rows=rows, shown=shown, parts=parts, shared_ids=shared_ids, orders=orders, dearer=dearer,
-                   candidates=named, bot_of=bot_of, counts=counts)
+    found = BotRows(rows=rows, shown=shown, parts=parts, shared_ids=shared_ids, orders=orders, dearer=dearer,
+                    candidates=named, bot_of=bot_of, counts=counts)
+    if ledger is not None:
+        from .ledger import load
+
+        found.ledger = load(ledger, shops=found.shops if clones and wanted else None)
+    return found
 
 
 def _peak_mb(who: int) -> float:
@@ -240,7 +248,7 @@ def ready() -> bool:
 
 
 def read_apart(catalogue: Path, candidates: Path, *, order: bool, clones: int, chosen: Collection[int],
-               say: Callable[[str], None], apart: bool = True) -> BotRows:
+               say: Callable[[str], None], apart: bool = True, ledger: Path | None = None) -> BotRows:
     """`read_bot_rows` in a process of its own, started fresh (not copied from the bot), which ends
     once it has handed back the rows: the memory the catalogue took goes back to the server
     (module docstring). Read on the bot's own process when `apart` is false or that process cannot
@@ -262,7 +270,7 @@ def read_apart(catalogue: Path, candidates: Path, *, order: bool, clones: int, c
         if pool is not None:
             try:
                 found = pool.submit(read_bot_rows, catalogue, candidates, order=order, clones=clones,
-                                    chosen=tuple(chosen)).result()
+                                    chosen=tuple(chosen), ledger=ledger).result()
             except BrokenProcessPool:
                 # Stopped while it read (its memory's limit, most likely): never read again here,
                 # which would only stop the bot itself the same way.
@@ -274,7 +282,7 @@ def read_apart(catalogue: Path, candidates: Path, *, order: bool, clones: int, c
             # of pages end only with the bot's day).
             found.read_peak_mb = _peak_mb(resource.RUSAGE_CHILDREN)
             return found
-    found = read_bot_rows(catalogue, candidates, order=order, clones=clones, chosen=chosen)
+    found = read_bot_rows(catalogue, candidates, order=order, clones=clones, chosen=chosen, ledger=ledger)
     found.read = "here"
     return found
 
