@@ -1,14 +1,21 @@
-# One of the checks' four clones (the checks' rules 22; owner, 2026-11-25: «οι πρώτες 500.000
-# κωδικοί σκανάρονται από 4 κλωνοποιημένα συστήματα για να τελειώνει πιο γρήγορα ... μην αγνοείς
-# τους 4 κλώνους»): asks all day only the shops a code of their name gives it (clone %i of 4,
-# `shop_checks_bot.clone_of`), and keeps its day in /srv/picwise/shared/checks for the night's
-# recording (picwise-checks-record.service), which records the night once from the four days.
-# Started by picwise-checks@%i.timer; installed by deployment/server/deploy.sh, enabled only with
-# data/checks_clones.json "on" (the owner's «ανέβασε»), in place of picwise-checks.timer.
+# One of the checks' eight bots (the checks' rules 22 and 23; owner, 2026-11-25: «μην αγνοείς τους 4
+# κλώνους»; 2026-11-26: «8 bot αντί για 4, 2 σε κάθε πυρήνα. Κάθε bot είναι ξεχωριστό πρόγραμμα»):
+# asks all day only the shops a code of their number at Awin gives it (bot %i of the number
+# data/checks_clones.json names, `picwise_checks.bot_rows.clone_of`), and keeps its day in
+# /srv/picwise/shared/checks for the night's recording. Started by picwise-checks@%i.timer;
+# installed by deployment/server/deploy.sh, enabled only while data/checks_clones.json names it
+# among its `bots` (the owner's «ανέβασε»). In picwisebots.slice: the bots together never hold more
+# memory than it allows, nor more than four cores. Stopped at its own memory's limit (1.8 GB, the
+# owner's number), it is started again and goes on from the answers it kept; the night's note and
+# the health run say how many times it started.
 [Unit]
-Description=PicWise: the checks' clone %i of 4, asking its shops all day
+Description=PicWise: the checks' bot %i, asking its shops all day
 After=network-online.target
 Wants=network-online.target
+# A bot that keeps stopping is not started again past five times in four hours (its timer
+# starts the next day's).
+StartLimitIntervalSec=4h
+StartLimitBurst=5
 
 [Service]
 Type=oneshot
@@ -19,11 +26,17 @@ WorkingDirectory=/srv/picwise/current
 EnvironmentFile=-/etc/picwise/picwise.env
 Environment=PYTHONPATH=/srv/picwise/current/src
 Environment=PYTHONDONTWRITEBYTECODE=1
-ExecStart=/usr/bin/python3 deployment/bot/shop_checks_bot.py --clone %i/4 --processes 1
+ExecStart=/usr/bin/python3 deployment/bot/shop_checks_bot.py --clone %i --processes 1
+Restart=on-failure
+RestartSec=60
 TimeoutStartSec=23h
+Slice=picwisebots.slice
 Nice=10
-MemoryHigh=2G
-MemoryMax=3G
+# Owner, 2026-11-26: «Όριο μνήμης: 1,8 GB για κάθε bot». Slowed from 1.5 GB, stopped at 1.8 GB.
+MemoryHigh=1536M
+MemoryMax=1843M
+# Before the site, ever, when the server runs short (the site's -500).
+OOMScoreAdjust=500
 UMask=0027
 NoNewPrivileges=yes
 PrivateTmp=yes

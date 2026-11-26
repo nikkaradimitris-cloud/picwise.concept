@@ -196,34 +196,95 @@ class HealthTests(_AServer, unittest.TestCase):
         self.assertIn("over the limit: how many of a shop's products pass was not worked out last night: every shop's "
                       "products went on to the category cap (KeyError at shop_cap.py:1)", self.over(self.printed()))
 
-    def test_with_the_clones_on_each_clones_day_and_the_recording_are_read(self) -> None:
-        # The checks' rules 22 (owner, 25/11: «μην αγνοείς τους 4 κλώνους»): the night is the
-        # recording's; a clone whose day did not end well passes a limit.
+    def test_with_bots_on_each_ones_day_restarts_and_memory_are_read(self) -> None:
+        # The checks' rules 22 and 23 (owner, 26/11: «8 bot αντί για 4», «Όριο μνήμης: 1,8 GB για κάθε
+        # bot»): each bot switched on, its last day, systemd's restarts of it, its memory now and its
+        # peak; the bots together against their slice; a bot that ended badly, was started again or
+        # came near its limit passes a limit. With every one on the night is the recording's.
         switch = self.folder / "checks_clones.json"
-        self.write(switch, {"on": True})
+        self.write(switch, {"clones": 8, "bots": list(range(1, 9))})
+        rule = {"on": True, "pass_nights": 1, "most_asked_of_a_shop": 20000, "most_shown_of_a_shop": 10000,
+                "processes": 8, "shops_at_once": 116, "round_hours": 21.5, "whole_round": True, "asked_whole": 108,
+                "not_whole": [], "bots": [{"bot": 3, "shops": 14, "hours": 21.5, "starts": 2, "peak_mb": 1720,
+                                           "read_peak_mb": 640}]}
         self.write(self.folder / "checks-note.json", {"night": "2026-11-25", "shops_asked": 135, "decided": 10,
-                                                      "passed": 10, "failed": {}})
+                                                      "passed": 10, "failed": {}, "shop_rule": rule})
         base = _runner()
+        gb = 1024 ** 3
+        shown = {"picwise-checks@3.service": f"Result=oom-kill\nNRestarts=1\nMemoryCurrent={int(0.4 * gb)}\n"
+                                             f"MemoryPeak={int(1.75 * gb)}\nActiveState=active\n",
+                 "picwisebots.slice": f"MemoryCurrent={int(3.1 * gb)}\nMemoryPeak={int(6.2 * gb)}\n"}
 
         def run(command):
+            if command[:2] == ["systemctl", "show"] and "-p" in command and "," in command[-1]:
+                return shown.get(command[2], f"Result=success\nNRestarts=0\nMemoryCurrent={int(0.3 * gb)}\n"
+                                             f"MemoryPeak={int(0.9 * gb)}\nActiveState=active\n")
             if command[:2] == ["systemctl", "show"] and "Result" in command:
-                return {"picwise-checks-record.service": "success", "picwise-checks@3.service": "exit-code"}.get(
-                    command[2], "success") + "\n"
+                return {"picwise-checks-record.service": "success"}.get(command[2], "success") + "\n"
             return base(command)
 
         out = io.StringIO()
         with mock.patch.object(print_health, "CLONES_SWITCH", switch), redirect_stdout(out):
             self.assertEqual(print_health.main(now=NOW, runner=run), 0)
         lines = out.getvalue().splitlines()
-        self.assertIn("checks, clone 1 of 4: its last day: success", lines)
-        self.assertIn("checks, clone 3 of 4: its last day: exit-code", lines)
-        self.assertIn("over the limit: the checks' clone 3 ended: exit-code", self.over(lines))
+        self.assertIn("checks, the bots: 8 of 8 on (1, 2, 3, 4, 5, 6, 7, 8); the night recorded from their days", lines)
+        self.assertIn("checks, bot 1: active, its last day: success; started again by systemd 0 times; memory 0.30 GB, "
+                      "its peak 0.90 GB of 1.8", lines)
+        self.assertIn("checks, bot 3: active, its last day: oom-kill; started again by systemd 1 times; memory 0.40 GB, "
+                      "its peak 1.75 GB of 1.8", lines)
+        self.assertIn("checks, the bots together: memory 3.10 GB, their peak 6.20 GB of 11", lines)
+        self.assertIn("checks, the night's day of bot 3: 14 shops, 21.5 hours, started 2 times, peak 1,720 MB "
+                      "(its reading 640 MB)", lines)
+        over = self.over(lines)
+        self.assertIn("over the limit: the checks' bot 3 ended: oom-kill", over)
+        self.assertIn("over the limit: the checks' bot 3 was started again 1 times (its memory's limit?)", over)
+        self.assertIn("over the limit: the checks' bot 3 came near its memory's limit (1.75 GB of 1.8)", over)
+        self.assertFalse(any("bot 1" in line for line in over))
         self.assertTrue(any(line.startswith("checks, the night of 2026-11-25") and line.endswith("the last round: success")
                             for line in lines), lines)
-        # Off (or no switch at all): the bot alone, as before; no clone named.
-        self.write(switch, {"on": False})
+        self.assertTrue(any("at most 20,000 asked of a shop; at most 10,000 shown of a shop" in line for line in lines))
+        stable = next(line for line in lines if line.startswith("checks, the stable day of 2026-11-25"))
+        self.assertIn("NO;", stable)
+        self.assertIn("no bot started again or near its memory's limit (not: bot 3): NO", stable)
+        # None on (or no switch at all): the bot alone, as before; no bot named.
+        self.write(switch, {"clones": 8, "bots": []})
         with mock.patch.object(print_health, "CLONES_SWITCH", switch):
-            self.assertFalse(any("clone" in line for line in self.printed()))
+            self.assertFalse(any(line.startswith("checks, bot") or line.startswith("checks, the bots") for line in self.printed()))
+
+    def test_the_stable_day_is_said_under_the_rule_of_the_day(self) -> None:
+        # The checks' rules 23.6: the round all day, the night on time, the server up through the
+        # round, every shop asked whole but those that cannot be checked, no bot in trouble, the
+        # failures near a usual day's, no shop newly unable to be checked.
+        rule = {"on": True, "pass_nights": 1, "most_asked_of_a_shop": 20000, "round_hours": 21.5, "whole_round": True,
+                "asked_whole": 100, "not_whole": ["Slow Shop"]}
+        note = {"night": NOW.date().isoformat(), "shops_asked": 105, "decided": 1000, "passed": 990,
+                "failed": {"gone": 10}, "shop_rule": rule, "cannot_be_checked": {"Walled Shop": ["refused", 1]}}
+        self.write(self.folder / "checks-note.json", note)
+        uptime = self.folder / "uptime"
+        uptime.write_text(f"{3 * 86400:.2f} 100.00\n")
+        with mock.patch.object(print_health, "UPTIME", uptime):
+            lines = self.printed()
+        stable = next(line for line in lines if line.startswith(f"checks, the stable day of {NOW.date()}"))
+        self.assertIn("the round asked all day: yes", stable)
+        self.assertIn("the server up all the round: yes", stable)
+        self.assertIn("every shop asked whole but those that cannot be checked (not: Slow Shop): NO", stable)
+        self.assertIn("the failures 1.0% of 1,000 decided (usual 1.2%): yes", stable)
+        self.assertIn("no shop newly unable to be checked (new: Walled Shop): NO", stable)
+        self.assertTrue(stable.startswith(f"checks, the stable day of {NOW.date()} (rules 23.6): NO;"))
+        # Everything right, and the server up since before the round: YES.
+        note.update({"cannot_be_checked": {"Walled Shop": ["refused", 2]}, "shop_rule": {**rule, "not_whole": []}})
+        self.write(self.folder / "checks-note.json", note)
+        with mock.patch.object(print_health, "UPTIME", uptime):
+            stable = next(line for line in self.printed() if line.startswith("checks, the stable day"))
+        self.assertTrue(stable.startswith(f"checks, the stable day of {NOW.date()} (rules 23.6): YES;"), stable)
+        # Started again during the round: not a stable day.
+        uptime.write_text("3600.00 10.00\n")
+        with mock.patch.object(print_health, "UPTIME", uptime):
+            stable = next(line for line in self.printed() if line.startswith("checks, the stable day"))
+        self.assertIn("the server up all the round", stable)
+        # Off the rule of the day, nothing said.
+        self.write(self.folder / "checks-note.json", {**note, "shop_rule": {"on": True, "pass_nights": 3}})
+        self.assertFalse(any(line.startswith("checks, the stable day") for line in self.printed()))
 
     def test_a_pass_counts_for_the_day_and_a_round_not_all_day_passes_a_limit(self) -> None:
         # The checks' rules 21 (owner, 25/11): a pass counts for the day it was made, three nights

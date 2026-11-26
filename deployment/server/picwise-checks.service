@@ -3,11 +3,15 @@
 # decisions the preparation reads (picwise-prepare.service), the rows it asks next, the
 # night's note (deployment/bot/shop_checks_bot.py; the checks' rules,
 # docs/PICWISE_CHECKS_RULES.md; owner, 2026-11-21: «Ποιότητα πάνω από ποσότητα»).
-# Run by picwise-checks.timer; installed by deployment/server/deploy.sh.
+# Run by picwise-checks.timer; installed by deployment/server/deploy.sh. With some of the eight bots
+# switched on (data/checks_clones.json; the checks' rules 23) it asks only the other bots' shops and
+# records the night from its day and theirs; with all on its timer is off. In picwisebots.slice.
 [Unit]
 Description=PicWise: the checks of the products on their shops' own sites
 After=network-online.target
 Wants=network-online.target
+StartLimitIntervalSec=4h
+StartLimitBurst=5
 
 [Service]
 Type=oneshot
@@ -19,10 +23,15 @@ EnvironmentFile=-/etc/picwise/picwise.env
 Environment=PYTHONPATH=/srv/picwise/current/src
 Environment=PYTHONDONTWRITEBYTECODE=1
 ExecStart=/usr/bin/python3 deployment/bot/shop_checks_bot.py
+# Stopped at its memory's limit, started again: it goes on from the answers it kept.
+Restart=on-failure
+RestartSec=60
 TimeoutStartSec=23h
+Slice=picwisebots.slice
 Nice=10
 MemoryHigh=4G
 MemoryMax=5G
+OOMScoreAdjust=500
 UMask=0027
 NoNewPrivileges=yes
 PrivateTmp=yes

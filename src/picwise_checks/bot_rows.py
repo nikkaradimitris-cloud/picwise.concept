@@ -234,6 +234,11 @@ def peak_mb() -> float:
     return _peak_mb(resource.RUSAGE_SELF)
 
 
+def ready() -> bool:
+    """What a process of its own is first asked, to know it started."""
+    return True
+
+
 def read_apart(catalogue: Path, candidates: Path, *, order: bool, clones: int, chosen: Collection[int],
                say: Callable[[str], None], apart: bool = True) -> BotRows:
     """`read_bot_rows` in a process of its own, started fresh (not copied from the bot), which ends
@@ -243,20 +248,32 @@ def read_apart(catalogue: Path, candidates: Path, *, order: bool, clones: int, c
     if apart:
         import multiprocessing
         from concurrent.futures import ProcessPoolExecutor
+        from concurrent.futures.process import BrokenProcessPool
 
+        pool = None
         try:
-            with ProcessPoolExecutor(max_workers=1, mp_context=multiprocessing.get_context("spawn")) as pool:
+            pool = ProcessPoolExecutor(max_workers=1, mp_context=multiprocessing.get_context("spawn"))
+            pool.submit(ready).result(timeout=120)
+        except Exception as error:  # noqa: BLE001 - the sandbox may refuse it: read here, and say so
+            if pool is not None:
+                pool.shutdown(wait=False, cancel_futures=True)
+            pool = None
+            say(f"the catalogue is read on the bot's own process: a process of its own did not start ({type(error).__name__})")
+        if pool is not None:
+            try:
                 found = pool.submit(read_bot_rows, catalogue, candidates, order=order, clones=clones,
                                     chosen=tuple(chosen)).result()
+            except BrokenProcessPool:
+                # Stopped while it read (its memory's limit, most likely): never read again here,
+                # which would only stop the bot itself the same way.
+                raise ValueError("the process the catalogue was read in stopped before it ended (its memory?)") from None
+            finally:
+                pool.shutdown(wait=True)
             found.read = "apart"
             # The largest of this process's children that have ended: the reading's (the readers
             # of pages end only with the bot's day).
             found.read_peak_mb = _peak_mb(resource.RUSAGE_CHILDREN)
             return found
-        except ValueError:
-            raise
-        except Exception as error:  # noqa: BLE001 - read here instead, and say so
-            say(f"the catalogue is read on the bot's own process: a process of its own did not start ({type(error).__name__})")
     found = read_bot_rows(catalogue, candidates, order=order, clones=clones, chosen=chosen)
     found.read = "here"
     return found

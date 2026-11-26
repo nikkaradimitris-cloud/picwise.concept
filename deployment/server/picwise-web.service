@@ -48,6 +48,12 @@ RestartSec=2
 # A ceiling, so that the site can never take the memory sshd and the rest need.
 MemoryHigh=11G
 MemoryMax=12G
+# Its reserve (the checks' rules 23; owner, 2026-11-26: «Δεσμευμένη μνήμη για το site, ώστε να μην του
+# τη στερούν ποτέ τα bot»): its first 6 GB are never taken back from it (system.slice protects as much,
+# system.slice.d/picwise-site-reserve.conf); the checks' bots together never hold more than
+# picwisebots.slice allows; and when the server runs short, the kernel stops anything else first.
+MemoryMin=6G
+OOMScoreAdjust=-500
 UMask=0027
 NoNewPrivileges=yes
 PrivateTmp=yes

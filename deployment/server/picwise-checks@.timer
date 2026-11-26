@@ -1,9 +1,10 @@
-# The checks' clone %i of 4 (the checks' rules 22), all day: every day at 05:30 UTC, as the bot
-# alone (picwise-checks.timer), until 03:05 UTC the next day; not caught up after a stop (a
-# deployment starts it again, and it goes on from the answers it kept). Installed by
-# deployment/server/deploy.sh; enabled only with data/checks_clones.json "on".
+# The checks' bot %i (the checks' rules 22 and 23), all day: every day at 05:30 UTC, as the bot
+# alone (picwise-checks.timer), until 03:05 UTC the next day (bot K starts reading the catalogue
+# (K - 1) x 75 seconds after it starts); not caught up after a stop (a deployment starts it again,
+# and it goes on from the answers it kept). Installed by deployment/server/deploy.sh; enabled only
+# while data/checks_clones.json names it among its `bots`.
 [Unit]
-Description=PicWise: the checks' clone %i of 4, all day
+Description=PicWise: the checks' bot %i, all day
 
 [Timer]
 OnCalendar=*-*-* 05:30:00 UTC

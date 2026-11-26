@@ -144,14 +144,33 @@ done
 for unit in picwise-checks.service picwise-checks.timer; do
   install -m 644 "$RELEASE/deployment/server/$unit" /etc/systemd/system/
 done
-# The checks' four clones and their night's recording (the checks' rules 22; owner, 2026-11-25:
-# «μην αγνοείς τους 4 κλώνους»): installed always, enabled only with data/checks_clones.json
-# "on" (his «ανέβασε»), in place of the bot alone.
-for unit in picwise-checks@.service picwise-checks@.timer picwise-checks-record.service picwise-checks-record.timer; do
+# The checks' eight bots and their night's recording (the checks' rules 22 and 23; owner, 2026-11-25:
+# «μην αγνοείς τους 4 κλώνους»; 2026-11-26: «8 bot αντί για 4»): installed always, each bot enabled
+# only while data/checks_clones.json names it among its `bots` (his «ανέβασε»), the bot alone asking
+# the shops of the others; the recording only with every bot on. All of them in picwisebots.slice
+# (their memory and cores together), the site's reserve in system.slice (the rules 23.4).
+for unit in picwise-checks@.service picwise-checks@.timer picwise-checks-record.service picwise-checks-record.timer \
+  picwisebots.slice; do
   install -m 644 "$RELEASE/deployment/server/$unit" /etc/systemd/system/
 done
-CLONES=$(python3 -c 'import json, sys; print(4 if json.load(open(sys.argv[1])).get("on") is True else 0)' \
-  "$RELEASE/data/checks_clones.json" 2> /dev/null || echo 0)
+install -d -m 755 /etc/systemd/system/system.slice.d
+install -m 644 "$RELEASE/deployment/server/system.slice.d/picwise-site-reserve.conf" /etc/systemd/system/system.slice.d/
+# "N BOTS ALL": how many bots, those switched on (comma-separated, "-" for none), and "all" when
+# every one is on; "8 - no" when the file cannot be read (the bot alone asks every shop).
+read -r CLONES BOTS ALL < <(python3 -c '
+import json, sys
+try:
+    words = json.load(open(sys.argv[1]))
+except (OSError, ValueError):
+    words = {}
+clones = words.get("clones") if isinstance(words, dict) else None
+clones = clones if isinstance(clones, int) and not isinstance(clones, bool) and 1 <= clones <= 64 else 8
+bots = words.get("bots") if isinstance(words, dict) and isinstance(words.get("bots"), list) else []
+bots = sorted({n for n in bots if isinstance(n, int) and not isinstance(n, bool) and 1 <= n <= clones})
+print(clones, ",".join(map(str, bots)) or "-", "all" if len(bots) == clones else "no")
+' "$RELEASE/data/checks_clones.json" 2> /dev/null || echo "8 - no") || true
+BOTS_ON=$(echo "${BOTS:--}" | tr ',' ' ' | sed 's/^-$//')
+echo "the checks' bots: ${BOTS_ON:-none} on, of ${CLONES:-8}"
 # The AI layer's services, started below only with its key.
 install -m 644 "$RELEASE/deployment/server/picwise-assist.service" /etc/systemd/system/
 for unit in picwise-families.service picwise-family-jobs.service picwise-family-jobs.timer \
@@ -185,6 +204,7 @@ if [ "$PREPARE" = yes ]; then
   # memory; its answers are kept, and it goes on after the site restarts (below).
   systemctl stop picwise-checks.service 2> /dev/null || true
   systemctl stop 'picwise-checks@*.service' 2> /dev/null || true
+  systemctl stop picwise-checks-record.service 2> /dev/null || true
   systemctl start picwise-prepare.service || echo "preparing failed; the site keeps the last prepared file (30 h)"
   # The summary line, the peak memory and length, and systemd's own line, of this run.
   journalctl -u picwise-prepare.service -n 20 -o cat --no-pager --since "-65min" \
@@ -194,9 +214,13 @@ else
   # A round running goes on with the code it started with; when the bot's code changed it
   # is stopped here and started again below on this release's, going on from the answers
   # it kept (24/11: the mend of a round ended by an error would otherwise wait a day).
+  # So too when the bots switched on changed (23): the bot alone reads which shops are its own
+  # when it starts, and a shop is never asked by two bots at once.
   if [ -n "$PREVIOUS" ] && [ -d "$APP/$PREVIOUS" ] \
     && ! { diff -rq "$APP/$PREVIOUS/deployment/bot" "$RELEASE/deployment/bot" > /dev/null 2>&1 \
-      && diff -rq "$APP/$PREVIOUS/src/picwise_checks" "$RELEASE/src/picwise_checks" > /dev/null 2>&1; }; then
+      && diff -rq "$APP/$PREVIOUS/src/picwise_checks" "$RELEASE/src/picwise_checks" > /dev/null 2>&1 \
+      && { { [ ! -e "$APP/$PREVIOUS/data/checks_clones.json" ] && [ ! -e "$RELEASE/data/checks_clones.json" ]; } \
+        || cmp -s "$APP/$PREVIOUS/data/checks_clones.json" "$RELEASE/data/checks_clones.json"; }; }; then
     echo "the checks' bot changed: its round is started again on this release, from the answers it kept"
     systemctl stop picwise-checks.service 2> /dev/null || true
     systemctl stop 'picwise-checks@*.service' 2> /dev/null || true
@@ -222,7 +246,7 @@ case "$STATE" in
       picwise-assist.service picwise-families.service picwise-family-jobs.service picwise-family-jobs.timer
       picwise-checks.service picwise-checks.timer picwise-checks@.service picwise-checks@.timer
       picwise-checks-record.service picwise-checks-record.timer picwise-shelves.service picwise-shelves.timer
-      picwise-itself.service picwise-itself.timer picwise-meter.service picwise-meter.timer"
+      picwise-itself.service picwise-itself.timer picwise-meter.service picwise-meter.timer picwisebots.slice"
     if [ -n "$PREVIOUS" ] && [ -d "$APP/$PREVIOUS" ] && [ "$(readlink -f "$APP/$PREVIOUS")" != "$RELEASE" ]; then
       ln -sfn "$PREVIOUS" "$APP/current.new"
       mv -T "$APP/current.new" "$APP/current"
@@ -244,16 +268,23 @@ systemctl enable --now picwise-prepare.timer
 systemctl enable --now picwise-shops.timer
 # The checks of every product on its shop's own site, all day (the checks' rules; owner,
 # 2026-11-21 and 2026-11-22). What they decided is applied only behind data/checks_switch.json.
-# With the clones on (22): the four clones' timers and the night's recording, never with the
-# bot alone beside them; off, the bot alone, as before.
-if [ "$CLONES" -gt 0 ]; then
+# The bots switched on (23): each its own timer; the others' timers off and their days stopped.
+# Every one on: the night's recording, never the bot alone beside them; else the bot alone, which
+# asks the shops of the bots not on and records the night.
+for clone in $(seq 1 64); do
+  case " $BOTS_ON " in
+    *" $clone "*) systemctl enable --now "picwise-checks@$clone.timer" ;;
+    *) if [ "$clone" -le 8 ] || [ -e "/etc/systemd/system/timers.target.wants/picwise-checks@$clone.timer" ]; then
+         systemctl disable --now "picwise-checks@$clone.timer" 2> /dev/null || true
+         systemctl stop "picwise-checks@$clone.service" 2> /dev/null || true
+       fi ;;
+  esac
+done
+if [ "$ALL" = all ]; then
   systemctl disable --now picwise-checks.timer 2> /dev/null || true
   systemctl stop picwise-checks.service 2> /dev/null || true
-  for clone in $(seq 1 "$CLONES"); do systemctl enable --now "picwise-checks@$clone.timer"; done
   systemctl enable --now picwise-checks-record.timer
 else
-  for clone in 1 2 3 4; do systemctl disable --now "picwise-checks@$clone.timer" 2> /dev/null || true; done
-  systemctl stop 'picwise-checks@*.service' 2> /dev/null || true
   systemctl disable --now picwise-checks-record.timer 2> /dev/null || true
   systemctl enable --now picwise-checks.timer
 fi
@@ -293,13 +324,15 @@ fi
 curl -fsS -m 5 "$HEALTH_URL"
 echo
 # The checks' round goes on (it asks nothing between 03:05 and 05:30 UTC, nor on a night
-# recorded already); started in the background, a round already running is left as it is.
-if [ "$CLONES" -gt 0 ]; then
-  for clone in $(seq 1 "$CLONES"); do
-    systemctl start --no-block "picwise-checks@$clone.service" 2> /dev/null \
-      || echo "the checks' clone $clone did not start; its timer starts the next"
-  done
-else
+# recorded already); started in the background, a round already running is left as it is. Each
+# bot started past its five starts of four hours is let start again (23: systemd's count).
+for clone in $BOTS_ON; do
+  systemctl reset-failed "picwise-checks@$clone.service" 2> /dev/null || true
+  systemctl start --no-block "picwise-checks@$clone.service" 2> /dev/null \
+    || echo "the checks' bot $clone did not start; its timer starts the next"
+done
+if [ "$ALL" != all ]; then
+  systemctl reset-failed picwise-checks.service 2> /dev/null || true
   systemctl start --no-block picwise-checks.service 2> /dev/null || echo "the checks' round did not start; the timer starts the next"
 fi
 

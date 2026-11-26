@@ -5,7 +5,7 @@
 [Unit]
 Description=PicWise: prepare the catalogue from the feed
 # A round of the shops' catalogues, or of the checks, still running is waited for: both are read here.
-After=network-online.target picwise-shops.service picwise-checks.service
+After=network-online.target picwise-shops.service picwise-checks.service picwise-checks-record.service
 Wants=network-online.target
 
 [Service]

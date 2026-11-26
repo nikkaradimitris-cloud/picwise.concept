@@ -263,6 +263,8 @@ class PrepareOnlyWhenNeededTests(unittest.TestCase):
             (folder / "deployment" / "bot" / "shop_checks_bot.py").write_text("the bot\n")
             (folder / "src" / "picwise_checks").mkdir(parents=True)
             (folder / "src" / "picwise_checks" / "ledger.py").write_text("the ledger\n")
+            (folder / "data").mkdir(parents=True)
+            (folder / "data" / "checks_clones.json").write_text('{"clones": 8, "bots": []}\n')
         self.log = self.app / "calls.log"
 
     def _run(self, state: str, previous: str = "releases/old") -> str:
@@ -320,7 +322,8 @@ class PrepareOnlyWhenNeededTests(unittest.TestCase):
         self.assertNotIn("systemctl stop picwise-checks.service", self.log.read_text())
         self.assertNotIn("the checks' bot changed", said)
         self.log.unlink()
-        for name in ("deployment/bot/shop_checks_bot.py", "src/picwise_checks/ledger.py"):
+        # And when the bots switched on changed (the checks' rules 23): a shop never asked by two.
+        for name in ("deployment/bot/shop_checks_bot.py", "src/picwise_checks/ledger.py", "data/checks_clones.json"):
             with self.subTest(name):
                 changed = self.app / "releases" / "new" / name
                 kept = changed.read_text()
@@ -335,6 +338,92 @@ class PrepareOnlyWhenNeededTests(unittest.TestCase):
     def test_with_no_release_before_it_the_catalogue_is_prepared(self) -> None:
         self._run("fresh 2026-11-20T10:17:27+00:00", previous="")
         self.assertTrue(self._prepared())
+
+
+class BotsSwitchTests(unittest.TestCase):
+    """The checks' eight bots (the checks' rules 23): which units the deployment enables, stops
+    and starts for the bots switched on in data/checks_clones.json, run in bash with `systemctl`
+    stubbed and the real python3 reading the switch."""
+
+    def setUp(self) -> None:
+        text = DEPLOY.read_text(encoding="utf-8")
+        read = text[text.index("read -r CLONES BOTS ALL"):text.index("\n", text.index('echo "the checks\' bots:'))]
+        enable = text[text.index("for clone in $(seq 1 64); do"):]
+        enable = enable[:enable.index("\nfi\n") + 4]
+        start = text[text.index("for clone in $BOTS_ON; do"):]
+        start = start[:start.index("\nfi\n") + 4]
+        self.steps = "\n".join((read, enable, start))
+        self.release = Path(tempfile.mkdtemp())
+        (self.release / "data").mkdir()
+        self.log = self.release / "calls.log"
+
+    def _run(self, words) -> list[str]:
+        (self.release / "data" / "checks_clones.json").write_text(json.dumps(words) if words is not None else "{")
+        script = "\n".join([
+            "set -euo pipefail",
+            f"RELEASE='{self.release}'",
+            f"systemctl() {{ echo \"systemctl $*\" >> '{self.log}'; }}",
+            self.steps,
+        ])
+        done = subprocess.run(["bash", "-c", script], capture_output=True, text=True, check=False)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        calls = self.log.read_text().splitlines() if self.log.exists() else []
+        self.log.unlink(missing_ok=True)
+        return calls
+
+    def test_none_on_the_bot_alone_as_before(self) -> None:
+        for words in ({"clones": 8, "bots": []}, None, {"on": False}):
+            calls = self._run(words)
+            self.assertIn("systemctl enable --now picwise-checks.timer", calls)
+            self.assertIn("systemctl disable --now picwise-checks-record.timer", calls)
+            self.assertIn("systemctl start --no-block picwise-checks.service", calls)
+            for number in range(1, 9):
+                self.assertIn(f"systemctl disable --now picwise-checks@{number}.timer", calls)
+            self.assertFalse([call for call in calls if call.startswith("systemctl enable --now picwise-checks@")])
+            self.assertFalse([call for call in calls if "start --no-block picwise-checks@" in call])
+
+    def test_some_on_their_timers_and_the_bot_alone_beside_them(self) -> None:
+        calls = self._run({"clones": 8, "bots": [2, 1]})
+        self.assertEqual([call for call in calls if call.startswith("systemctl enable --now picwise-checks@")],
+                         ["systemctl enable --now picwise-checks@1.timer", "systemctl enable --now picwise-checks@2.timer"])
+        for number in range(3, 9):
+            self.assertIn(f"systemctl disable --now picwise-checks@{number}.timer", calls)
+            self.assertIn(f"systemctl stop picwise-checks@{number}.service", calls)
+        self.assertIn("systemctl enable --now picwise-checks.timer", calls)
+        self.assertIn("systemctl disable --now picwise-checks-record.timer", calls)
+        self.assertEqual([call for call in calls if "start --no-block" in call],
+                         ["systemctl start --no-block picwise-checks@1.service",
+                          "systemctl start --no-block picwise-checks@2.service",
+                          "systemctl start --no-block picwise-checks.service"])
+
+    def test_all_on_the_recording_and_never_the_bot_alone(self) -> None:
+        calls = self._run({"clones": 8, "bots": list(range(1, 9))})
+        self.assertEqual(len([call for call in calls if call.startswith("systemctl enable --now picwise-checks@")]), 8)
+        self.assertIn("systemctl disable --now picwise-checks.timer", calls)
+        self.assertIn("systemctl stop picwise-checks.service", calls)
+        self.assertIn("systemctl enable --now picwise-checks-record.timer", calls)
+        self.assertNotIn("systemctl enable --now picwise-checks.timer", calls)
+        self.assertNotIn("systemctl start --no-block picwise-checks.service", calls)
+        self.assertEqual(len([call for call in calls if "start --no-block picwise-checks@" in call]), 8)
+
+    def test_the_units_name_the_bots_slice_and_their_limits(self) -> None:
+        server = ROOT / "deployment" / "server"
+        clone = (server / "picwise-checks@.service").read_text(encoding="utf-8")
+        for line in ("ExecStart=/usr/bin/python3 deployment/bot/shop_checks_bot.py --clone %i --processes 1",
+                     "Slice=picwisebots.slice", "MemoryMax=1843M", "MemoryHigh=1536M", "OOMScoreAdjust=500",
+                     "Restart=on-failure", "StartLimitBurst=5"):
+            self.assertIn(line, clone)
+        for name in ("picwise-checks.service", "picwise-checks-record.service"):
+            self.assertIn("Slice=picwisebots.slice", (server / name).read_text(encoding="utf-8"))
+        self.assertIn("--record 8", (server / "picwise-checks-record.service").read_text(encoding="utf-8"))
+        bots = (server / "picwisebots.slice").read_text(encoding="utf-8")
+        for line in ("MemoryMax=11G", "MemoryHigh=10G", "CPUQuota=400%", "CPUWeight=50"):
+            self.assertIn(line, bots)
+        site = (server / "picwise-web.service").read_text(encoding="utf-8")
+        self.assertIn("MemoryMin=6G", site)
+        self.assertIn("OOMScoreAdjust=-500", site)
+        self.assertIn("MemoryMin=6G", (server / "system.slice.d" / "picwise-site-reserve.conf").read_text(encoding="utf-8"))
+        self.assertIn("picwise-checks-record.service", (server / "picwise-prepare.service").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

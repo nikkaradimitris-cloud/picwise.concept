@@ -137,18 +137,52 @@ class Health:
 CHECKS_DUE = (3, 30)
 
 
-# The checks' clones (their rules 22; owner, 2026-11-25: «μην αγνοείς τους 4 κλώνους»): how many,
-# and the switch in the release the site runs.
-CHECKS_CLONES = 4
+# The checks' bots (their rules 22 and 23; owner, 2026-11-25: «μην αγνοείς τους 4 κλώνους»;
+# 2026-11-26: «8 bot αντί για 4», «Όριο μνήμης: 1,8 GB για κάθε bot»): how many, the switch in the
+# release the site runs, each bot's limit of memory and the slice's for all of them together.
+CHECKS_CLONES = 8
 CLONES_SWITCH = Path("/srv/picwise/current/data/checks_clones.json")
+BOT_MEMORY_MAX_GB = 1843 / 1024
+BOTS_MEMORY_MAX_GB = 11.0
+# A bot, or the bots together, this near their limit pass a limit of the report (the stable day,
+# the checks' rules 23.6).
+NEAR_THE_LIMIT = 0.9
 
 
-def checks_clones_on(path: Path | None = None) -> bool:
-    """Whether the release the site runs asks the shops in clones (data/checks_clones.json)."""
+def checks_bots(path: Path | None = None) -> tuple[int, list[int]]:
+    """How many bots the shops are split into, and those switched on (data/checks_clones.json; the
+    checks' rules 23), as the bots read it; (8, []) when it cannot be read."""
     try:
-        return json.loads((path or CLONES_SWITCH).read_text(encoding="utf-8")).get("on") is True
-    except (OSError, ValueError, AttributeError):
-        return False
+        words = json.loads((path or CLONES_SWITCH).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return CHECKS_CLONES, []
+    if not isinstance(words, dict):
+        return CHECKS_CLONES, []
+    clones = words.get("clones")
+    clones = clones if isinstance(clones, int) and not isinstance(clones, bool) and 1 <= clones <= 64 else CHECKS_CLONES
+    bots = words.get("bots") if isinstance(words.get("bots"), list) else []
+    return clones, sorted({number for number in bots
+                           if isinstance(number, int) and not isinstance(number, bool) and 1 <= number <= clones})
+
+
+def unit_numbers(unit: str, runner: Run, names: tuple[str, ...]) -> dict[str, str]:
+    """`systemctl show` of a unit: the properties `names`, as systemd writes them."""
+    shown = runner(["systemctl", "show", unit, "-p", ",".join(names)])
+    found = {}
+    for line in shown.splitlines():
+        name, _, value = line.partition("=")
+        if name in names:
+            found[name] = value.strip()
+    return found
+
+
+def _gb(value: str) -> float | None:
+    """A byte count as systemd shows it ("[not set]", "infinity" or a number), in GB."""
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        return None
+    return number / 1024 ** 3 if 0 <= number < 2 ** 62 else None
 
 
 def last_result(unit: str, runner: Run) -> str:
@@ -264,13 +298,12 @@ def look_at_checks(check: Health, runner: Run) -> None:
     prepared = read_json(PREPARED_NOTE) or {}
     applied = prepared.get("checks") if isinstance(prepared.get("checks"), dict) else {}
     note = read_json(CHECKS_NOTE)
-    # With the checks' clones on (their rules 22): the night is the recording's, each clone's day its own.
-    clones = checks_clones_on()
-    result = last_result("picwise-checks-record.service" if clones else "picwise-checks.service", runner)
-    for number in range(1, (CHECKS_CLONES if clones else 0) + 1):
-        ended = last_result(f"picwise-checks@{number}.service", runner)
-        check.say(f"checks, clone {number} of {CHECKS_CLONES}: its last day: {ended}")
-        check.limit(ended not in ("success", "unknown", ""), f"the checks' clone {number} ended: {ended}")
+    # The bots switched on (their rules 23): each its own day; with every one on the night is the
+    # recording's, else the bot alone's.
+    clones, bots = checks_bots()
+    every = len(bots) == clones
+    result = last_result("picwise-checks-record.service" if every else "picwise-checks.service", runner)
+    problems = look_at_bots(check, runner, clones, bots, note) if bots else []
     if note is None:
         check.say("checks: no night recorded yet" + (f"; the last round: {result}" if result != "unknown" else ""))
         check.limit(result not in ("success", "unknown", ""), f"the checks' last round ended: {result}")
@@ -301,6 +334,10 @@ def look_at_checks(check: Health, runner: Run) -> None:
                       "the day it was made, 3 nights while its shop is not asked whole")
         check.say(f"checks, how many of a shop's products pass: on; a pass counts for {counts_for}; "
                   f"at most {int(rule.get('most_asked_of_a_shop') or 0):,} asked of a shop; "
+                  + (f"at most {int(rule['most_shown_of_a_shop']):,} shown of a shop; "
+                     if rule.get("most_shown_of_a_shop") and rule.get("most_shown_of_a_shop") != rule.get("most_asked_of_a_shop")
+                     else "")
+                  + 
                   f"{rule.get('shops_at_once')} shops at once, pages read on "
                   + (f"{rule['processes']} processes" if rule.get("processes") else "the bot's own process"))
         if nights == 1 and "round_hours" in rule:
@@ -329,6 +366,7 @@ def look_at_checks(check: Health, runner: Run) -> None:
         leaves = ("; leaves tomorrow" if day == CHECKS_OUT_ON_DAY - 1
                   else "; out" if day >= CHECKS_OUT_ON_DAY else f"; leaves on day {CHECKS_OUT_ON_DAY}")
         check.say(f"checks, cannot be checked: {name}: {why}, day {day}{leaves}")
+    stable_day(check, note, rule, late, problems)
     awin = note.get("awin") if isinstance(note.get("awin"), dict) else {}
     newly = [f"{entry[0]} ({entry[1]})" for entry in awin.get("newly_out") or [] if isinstance(entry, (list, tuple)) and len(entry) > 1]
     if newly:
@@ -395,6 +433,109 @@ def look_at_checks(check: Health, runner: Run) -> None:
                   f"fits), {int(shelves.get('refused') or 0):,} refused, {int(shelves.get('left') or 0):,} left; "
                   f"${float(shelves.get('cost_usd') or 0):.2f}" + (f"; stopped: {stopped}" if stopped else ""))
         check.limit("budget" in stopped, f"the AI's categories stopped at the night's brake of $10 ({stopped})")
+
+
+# The stable day (the checks' rules 23.6; the brief the owner gave on 26/11): the failures of a
+# usual day, as a share of the products decided (25/11: 1,490 of 121,416, 1.2%), and twice it the
+# most a stable day has; the server's own clock of how long it has been up.
+USUAL_FAILED_SHARE = 0.012
+UPTIME = Path("/proc/uptime")
+# The round's hours, UTC: from 05:30 the day before the night until 03:05 (the bots' `--until`).
+ROUND_STARTS = (5, 30)
+ROUND_ENDS = (3, 5)
+
+
+def stable_day(check: Health, note: dict, rule: dict, late: int | None, problems: list[str]) -> None:
+    """One line: whether the night just recorded was a stable day (the checks' rules 23.6): the
+    round asked all day; the night recorded on time; the server not started again during the
+    round; every shop asked whole but those that cannot be checked; no bot started again or near
+    its memory's limit; the failures near a usual day's; no shop newly unable to be checked. The
+    site's speed is the workflow's own line (its four searches from outside). Said, no limit of
+    its own: each of its parts that is one passes its own."""
+    if not rule.get("on") or int(rule.get("pass_nights") or 0) != 1:
+        return  # Only under the rule of the day (21), which the stable day is measured against.
+    night = str(note.get("night") or "")
+    try:
+        ends = datetime.fromisoformat(night).replace(hour=ROUND_ENDS[0], minute=ROUND_ENDS[1], tzinfo=timezone.utc)
+    except ValueError:
+        return
+    starts = (ends - timedelta(days=1)).replace(hour=ROUND_STARTS[0], minute=ROUND_STARTS[1])
+    try:
+        up = float(UPTIME.read_text(encoding="utf-8").split()[0])
+        booted = check.now - timedelta(seconds=up)
+    except (OSError, ValueError, IndexError):
+        booted = None
+    cannot = note.get("cannot_be_checked") if isinstance(note.get("cannot_be_checked"), dict) else {}
+    newly = sorted(name for name, entry in cannot.items()
+                   if isinstance(entry, (list, tuple)) and len(entry) > 1 and int(entry[1] or 0) == 1)
+    not_whole = [str(name) for name in rule.get("not_whole") or [] if str(name) not in cannot]
+    failed = sum((note.get("failed") or {}).values()) if isinstance(note.get("failed"), dict) else 0
+    decided = int(note.get("decided") or 0)
+    share = failed / decided if decided else 0.0
+    parts = [
+        ("the round asked all day", bool(rule.get("whole_round"))),
+        ("the night recorded on time", late == 0),
+        ("the server up all the round" + (f" (started {booted:%d/%m %H:%M} UTC)" if booted is not None and starts <= booted <= ends else ""),
+         booted is None or not (starts <= booted <= ends)),
+        (f"every shop asked whole but those that cannot be checked" + (f" (not: {', '.join(not_whole[:10])})" if not_whole else ""),
+         not not_whole),
+        ("no bot started again or near its memory's limit" + (f" (not: {', '.join(problems)})" if problems else ""),
+         not problems),
+        (f"the failures {share:.1%} of {decided:,} decided (usual {USUAL_FAILED_SHARE:.1%})",
+         share <= 2 * USUAL_FAILED_SHARE),
+        ("no shop newly unable to be checked" + (f" (new: {', '.join(newly)})" if newly else ""), not newly),
+    ]
+    check.say(f"checks, the stable day of {night} (rules 23.6): "
+              + ("YES" if all(ok for _what, ok in parts) else "NO") + "; "
+              + "; ".join(f"{what}: {'yes' if ok else 'NO'}" for what, ok in parts))
+
+
+def look_at_bots(check: Health, runner: Run, clones: int, bots: list[int], note: dict | None) -> list[str]:
+    """The checks' bots switched on (their rules 23): each one's last day, how many times systemd
+    started it again, its memory now and its peak against its limit; the bots' memory together
+    against their slice's; and, from the night's note, each one's day as it kept it. A bot that
+    ended badly, was started again, or came near its memory's limit passes a limit: a day of it is
+    no stable day (the rules 23.6)."""
+    problems: list[str] = []
+    check.say(f"checks, the bots: {len(bots)} of {clones} on ({', '.join(str(number) for number in bots)})"
+              + ("; the bot alone asks the others' shops and records the night" if len(bots) < clones else
+                 "; the night recorded from their days"))
+    for number in bots:
+        unit = f"picwise-checks@{number}.service"
+        shown = unit_numbers(unit, runner, ("Result", "NRestarts", "MemoryCurrent", "MemoryPeak", "ActiveState"))
+        ended = shown.get("Result") or last_result(unit, runner)
+        restarts = int(shown.get("NRestarts") or 0) if str(shown.get("NRestarts") or "0").isdigit() else 0
+        now, peak = _gb(shown.get("MemoryCurrent", "")), _gb(shown.get("MemoryPeak", ""))
+        check.say(f"checks, bot {number}: {shown.get('ActiveState') or 'unknown'}, its last day: {ended}; "
+                  f"started again by systemd {restarts} times"
+                  + (f"; memory {now:.2f} GB" if now is not None else "")
+                  + (f", its peak {peak:.2f} GB of {BOT_MEMORY_MAX_GB:.1f}" if peak is not None else ""))
+        for passed, what in ((ended not in ("success", "unknown", ""), f"the checks' bot {number} ended: {ended}"),
+                             (restarts > 0, f"the checks' bot {number} was started again {restarts} times (its memory's limit?)"),
+                             (peak is not None and peak >= NEAR_THE_LIMIT * BOT_MEMORY_MAX_GB,
+                              f"the checks' bot {number} came near its memory's limit ({peak or 0:.2f} GB of "
+                              f"{BOT_MEMORY_MAX_GB:.1f})")):
+            check.limit(passed, what)
+            if passed and f"bot {number}" not in problems:
+                problems.append(f"bot {number}")
+    together = unit_numbers("picwisebots.slice", runner, ("MemoryCurrent", "MemoryPeak"))
+    now, peak = _gb(together.get("MemoryCurrent", "")), _gb(together.get("MemoryPeak", ""))
+    if now is not None or peak is not None:
+        check.say(f"checks, the bots together: memory {now or 0:.2f} GB, their peak {peak or 0:.2f} GB of "
+                  f"{BOTS_MEMORY_MAX_GB:.0f}")
+    near = peak is not None and peak >= NEAR_THE_LIMIT * BOTS_MEMORY_MAX_GB
+    check.limit(near, f"the checks' bots together came near their memory's limit ({peak or 0:.2f} GB of "
+                      f"{BOTS_MEMORY_MAX_GB:.0f})")
+    if near:
+        problems.append("the bots together")
+    rule = (note or {}).get("shop_rule") if isinstance((note or {}).get("shop_rule"), dict) else {}
+    for entry in rule.get("bots") or []:
+        if isinstance(entry, dict):
+            name = "the bot alone" if not entry.get("bot") else f"bot {entry.get('bot')}"
+            check.say(f"checks, the night's day of {name}: {int(entry.get('shops') or 0)} shops, "
+                      f"{float(entry.get('hours') or 0):.1f} hours, started {int(entry.get('starts') or 0)} times, "
+                      f"peak {int(entry.get('peak_mb') or 0):,} MB (its reading {int(entry.get('read_peak_mb') or 0):,} MB)")
+    return problems
 
 
 def look_at_itself(check: Health) -> None:

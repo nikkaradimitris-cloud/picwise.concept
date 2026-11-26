@@ -1,0 +1,21 @@
+# The checks' bots together (the checks' rules 23; owner, 2026-11-26: «8 bot αντί για 4, 2 σε κάθε
+# πυρήνα», «Όριο μνήμης: 1,8 GB για κάθε bot» and «Δεσμευμένη μνήμη για το site, ώστε να μην του τη
+# στερούν ποτέ τα bot»): picwise-checks.service (the bot alone), picwise-checks@K.service (each bot
+# of its own) and picwise-checks-record.service run in it. Whatever each bot's own limit, together
+# they never hold more than this slice allows, so that the site's memory is never theirs; and they
+# share four of the server's eight cores (two bots to a core), so that the site always has the
+# other four, and less weight than the site when both want a core. Installed by
+# deployment/server/deploy.sh.
+[Unit]
+Description=PicWise: the checks' bots, together
+Before=slices.target
+
+[Slice]
+# The arithmetic (the checks' rules 23.4): of the server's 22.9 GB, the site 4.3 now (its reserve
+# 6, picwise-web.service), the system and the AI's small services about 2, the morning's photos and
+# families' jobs up to 4 more for a while; 11 for the bots together, 10 before they are slowed.
+MemoryHigh=10G
+MemoryMax=11G
+CPUQuota=400%
+CPUWeight=50
+IOWeight=50
