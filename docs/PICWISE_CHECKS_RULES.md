@@ -2099,7 +2099,10 @@ the asking for the day, as does a request of 10 s or more (`SECOND_SLOW_SECONDS`
 the shop's own night, nor counts against its checkability (5.6.2). A Shopify shop whose catalogue
 was read whole reads it again instead (at most 100 requests). Kept in the night's file (`"n": 2`, and
 a line for a shop whose asking stopped), so a round started again asks nothing twice. The note's
-`second` and `second_by_shop`.
+`second` and `second_by_shop`. A shop's thread waits for the asking's hour: an asker of more than
+200 shops (`SHOPS_AT_ONCE`) would keep its later shops waiting for a thread, so the second asking is
+for the eight bots (about 15 shops each today, 100 at most by his number), not for the bot alone
+with every shop.
 
 ### 23.8 What was measured, and the look before step 2
 
