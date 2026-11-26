@@ -2126,6 +2126,31 @@ with every shop.
   `tools/measure_bot_memory.py` on its own catalogue and ledger: each way's memory and the table of
   shops and products per bot with how many by their number at Awin.
 
+### 23.8b The look before step 2, run 26/11 17:37 Athens on the owner's «Ναι τρέχτην» (run 45850860004, read-only)
+
+- **The products** (the code the site runs against 10,000 shown and 20,000 asked, on the server's
+  copies, every candidate asked and passed): the first night 112,189 -> 99,601; the night after
+  138,860 -> 110,764; two nights after 141,770 -> 111,169 (-30,601, about -22%). The four large shops
+  to 10,000 each (GamingKit 18,471, InStock UK 18,448, Tooled Up 18,130; PCHUB.UK 14,741 -> 7,322 two
+  nights after, rising as its candidates pass); Back to the Office 10,709 -> 10,000; 28 smaller
+  shops gain (the categories' places the large ones leave: Santoro Milan +759, Bad Shirt Club +417,
+  Shopping Ads +325, Fila UK +282 ...). No shop left with none.
+- **The kinds** two nights after: 12 of 222 lose over half: monitor 3,610 -> 1,247, headphones
+  2,213 -> 877, safety_shoes 1,758 -> 768, smartphone 1,382 -> 474, spanner 928 -> 76, printer 567 ->
+  264, screwdriver 502 -> 237, pliers 327 -> 108, drill 294 -> 110, firewall 251 -> 115, shampoo 5 ->
+  1, bed_linen 5 -> 2. None empty (the night after, bed_linen, hair_brush and shampoo had none for a
+  night). Every kind searched keeps cards; "ram memory" 2,120 -> 1,009, "headphones" 1,400 -> 743,
+  "monitor" 1,710 -> 1,158.
+- **The 40 searches** two nights after: the same first 4 cards in 21, the same Recommended in 24
+  (the site's own code from one night to the next: 35 and 36); none with fewer than 4 cards.
+- **The eight bots on the server's own files** (118 shops; 105 by their Awin number, 13 by name:
+  shops whose rows are only in the rows for the bot, which the live preparation writes without the
+  number; after step 2's preparation they carry it, and move bot once): each holds 43 to 285 MB once
+  it has read (980 MB the eight), its reading peaks 808 to 847 MB; the bot alone as today 942 MB peak,
+  871 held; the recording 760. Per bot 11 to 19 shops; shown 2,334 to 33,467: bot 7 (Tooled Up and 10
+  others) over twice the mean. Not a fault: a shop is asked at its own pace whichever bot asks it, and
+  bot 7 holds 285 MB of its 1,800; with 10,000 a shop it falls. Nothing to mend now.
+
 ### 23.9 For the «ανέβασε»
 
 - **Step 2** (his «ανέβασε»): one commit, `"most": 10000, "asked": 20000` in
