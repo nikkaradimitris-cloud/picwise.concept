@@ -10,7 +10,8 @@
 # and so is this log: the server's names are masked; the script and the lines kept print counts,
 # dates and shop names only, never a key, an id, an address or a title.
 #
-# Run: 2026-11-26 12:30 Athens (the first look; to run again, change this line and push).
+# Run: 2026-11-26 11:51 Athens, run 45795802903 (the first look; to run again, change this line and
+# push the commit to its branch).
 name: Server look at the products never checked (read-only)
 on:
   push:
