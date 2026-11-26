@@ -42,6 +42,9 @@ from .verdicts import Row
 SWITCH_FILE = Path(__file__).resolve().parents[2] / "data" / "checks_clones.json"
 # Owner, 2026-11-26: eight bots.
 CLONES = 8
+# 23, the second asking (the brief: «Ξεκινά από τα προϊόντα που βγαίνουν στις πρώτες κάρτες κάθε
+# είδους»): a kind's first cards are its cheapest four and its middle price (the Recommended).
+FIRST_CARDS = 4
 
 
 def clone_of(shop: str, clones: int, advertiser: str = "") -> int:
@@ -137,6 +140,9 @@ class BotRows:
     read_peak_mb: float = 0.0
     # The ledger's part of the shops chosen (a bot of its own reads only its shops'), when asked for.
     ledger: Any = None
+    # 23: the shown products on the first cards of their kind, over the whole catalogue, each with its
+    # place among them (`first_cards`).
+    first_cards: dict[str, int] = field(default_factory=dict)
 
     @property
     def shops(self) -> frozenset[str]:
@@ -196,6 +202,22 @@ def candidate_rows(path: Path) -> tuple[dict[str, Row], list[str]]:
     return rows, [key for key in payload.get("candidates", []) if key in rows]
 
 
+def first_cards(rows: Mapping[str, Row], shown: Collection[str], parts: Mapping[str, str]) -> dict[str, int]:
+    """The shown products a search for their kind puts first, over every shop, each with its place:
+    of each kind (as the cap reads it), its middle price first (the Recommended, which a search
+    shows first), then its `FIRST_CARDS` cheapest, cheapest first."""
+    by_part: dict[str, list[str]] = {}
+    for key in shown:
+        if key in rows:
+            by_part.setdefault(parts.get(key, ""), []).append(key)
+    found: dict[str, int] = {}
+    for keys in by_part.values():
+        priced = sorted(keys, key=lambda key: (rows[key].price is None, rows[key].price or 0.0, key))
+        for place, key in enumerate([priced[len(priced) // 2]] + priced[:FIRST_CARDS]):
+            found.setdefault(key, place)
+    return found
+
+
 def read_bot_rows(catalogue: Path, candidates: Path, *, order: bool = False, clones: int = 0,
                   chosen: Collection[int] = (), ledger: Path | None = None) -> BotRows:
     """What the bots numbered `chosen` (of `clones`) ask; every shop when `chosen` is empty or
@@ -209,6 +231,7 @@ def read_bot_rows(catalogue: Path, candidates: Path, *, order: bool = False, clo
     counts = {"shown": len(shown), "candidates": len(named), "cut_listed": len(extra) - len(named),
               "shared_ids": len(shared_ids), "shops": len({row.shop for row in rows.values()})}
     bot_of = assignment(rows.values(), clones) if clones else {}
+    cards = first_cards(rows, shown, parts)
     wanted = frozenset(chosen)
     if clones and wanted and wanted != frozenset(range(1, clones + 1)):
         shops = {shop for shop, number in bot_of.items() if number in wanted}
@@ -220,8 +243,9 @@ def read_bot_rows(catalogue: Path, candidates: Path, *, order: bool = False, clo
         orders = {shop: keys for shop, keys in orders.items() if shop in shops}
         dearer &= set(rows)
         named = [key for key in named if key in rows]
+        cards = {key: place for key, place in cards.items() if key in rows}
     found = BotRows(rows=rows, shown=shown, parts=parts, shared_ids=shared_ids, orders=orders, dearer=dearer,
-                    candidates=named, bot_of=bot_of, counts=counts)
+                    candidates=named, bot_of=bot_of, counts=counts, first_cards=cards)
     if ledger is not None:
         from .ledger import load
 

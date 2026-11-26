@@ -1,0 +1,4 @@
+{
+  "on": false,
+  "why": "The second asking of the day (docs/PICWISE_CHECKS_RULES.md, section 23; owner, 2026-11-26: «Τα γρήγορα καταστήματα ξαναελέγχουν ένα μέρος των προϊόντων τους και δεύτερη φορά μέσα στην ίδια μέρα. Μετράει ο πιο πρόσφατος έλεγχος»; the brief he gave: «κόβεται μόνο με καθαρή απάντηση ... Σταματά για τη μέρα μόλις το κατάστημα αργήσει ή αρνηθεί αιτήματα ... Ξεκινά από τα προϊόντα που βγαίνουν στις πρώτες κάρτες κάθε είδους. Έχει δικό του διακόπτη και ανοίγει τελευταίος»). true: a shop that ended its day's asking asks a part of its shown products again from the round's eighth hour, within the most it is asked a day (data/shop_cap_switch.json), the latest clear answer counting; false: none of it. Turned true only on the owner's «ανέβασε», after three stable days of the eight bots (the rules 23.6)."
+}

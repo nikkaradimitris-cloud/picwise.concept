@@ -78,7 +78,7 @@ from concurrent.futures.process import BrokenProcessPool
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Callable, Collection, Iterable, Mapping
+from typing import Any, Callable, Collection, Iterable, Mapping, Sequence
 from urllib.parse import quote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -135,6 +135,15 @@ RECORD_WAIT_MINUTES = 20.0
 # 23: bot K starts reading the catalogue (K - 1) times this many seconds after it starts, so that
 # no two bots read it at once (each reading takes a minute or less, in a process of its own).
 STAGGER_SECONDS = 75.0
+# 23 (owner, 2026-11-26: «Τα γρήγορα καταστήματα ξαναελέγχουν ένα μέρος των προϊόντων τους και δεύτερη
+# φορά μέσα στην ίδια μέρα. Μετράει ο πιο πρόσφατος έλεγχος»; behind its own switch): a shop that ended
+# its day's asking asks a part of its shown products again, once the round has asked this many hours,
+# within the most it is asked a day; it stops for the day at a refusal, no answer, or a request that
+# took this many seconds.
+SECOND_SWITCH = ROOT / "data" / "checks_second_switch.json"
+SECOND_AFTER_HOURS = 8.0
+SECOND_SLOW_SECONDS = 10.0
+SECOND_STOPPED = "#second-stopped:"
 WHOLE_ROUND_HOURS = 20.0
 LATE_HOURS = 1.0
 TIME_KEPT_EVERY = 300.0
@@ -310,6 +319,30 @@ class ShopResult:
     night: ShopNight
     answers: dict[str, PageAnswer] = field(default_factory=dict)
     stopped: str = ""
+    # 23: the second asking of the day: how many asked again, how many of those answered clearly (and
+    # so count, the latest), and why it stopped, when it did.
+    second: dict = field(default_factory=dict)
+
+
+def second_on(path: Path | None = None) -> bool:
+    """The second asking's switch (`SECOND_SWITCH`): true only when it says so."""
+    try:
+        return json.loads((path or SECOND_SWITCH).read_text(encoding="utf-8")).get("on") is True
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
+def clear_answer(answer: PageAnswer) -> bool:
+    """23 (owner, 2026-11-26, the brief: «κόβεται μόνο με καθαρή απάντηση (η σελίδα δεν υπάρχει, δεν έχει
+    απόθεμα, είναι άλλο προϊόν). Αν απλώς δεν απαντήσει, μένει ο πρώτος έλεγχος»): an answer the second
+    asking may put in place of the first: the page is not there (404, 410), or the shop's page was
+    read (its catalogue, or its product read on it). Never a refusal, a challenge, another site, no
+    answer, a server's error, or a page on which no product was read."""
+    if answer.challenge or answer.elsewhere:
+        return False
+    if answer.in_catalogue:
+        return answer.read.found
+    return answer.status in (404, 410) or (answer.status == 200 and answer.read.found)
 
 
 def _base_of(rows: Iterable[Row]) -> tuple[str, str]:
@@ -343,12 +376,24 @@ def _counted(answer: PageAnswer) -> Counter:
 
 def ask_shop(rows: list[Row], *, fetch: Fetch, sleep: Callable[[float], None], clock: Callable[[], float],
              deadline: float, pause: float = PAUSE, done: Mapping[str, PageAnswer] | None = None,
-             keep: Callable[[str, PageAnswer], None] | None = None, readers: Readers | None = None) -> ShopResult:
+             keep: Callable[[str, PageAnswer], None] | None = None, readers: Readers | None = None,
+             second: Sequence[Row] = (), second_most: int = 0, second_at: float = 0.0,
+             second_done: Collection[str] = (), second_stopped: bool = False,
+             keep_second: Callable[[str, PageAnswer], None] | None = None,
+             stop_second: Callable[[str], None] | None = None) -> ShopResult:
     """One shop's night (module docstring): its robots.txt, its catalogue when it is a
     Shopify shop, then its products in the order given, until the deadline. `done`: the
     answers this night kept already (a round started again), not asked again; `keep`: told
     each new answer as it comes; `readers`: what reads the answers (the bot's own process
-    when None)."""
+    when None).
+
+    23, the second asking (`second`, behind its switch): once its products are asked, and not
+    before `second_at`, the shop asks again, in the order given, those of `second` its first
+    asking read, at most `second_most` (less those `second_done` tonight already); a Shopify shop
+    whose catalogue was read whole reads it again instead. An answer counts in place of the first
+    only when clear (`clear_answer`); the asking stops for the day at the first answer that is not,
+    or at a request that took `SECOND_SLOW_SECONDS` (`stop_second` told why); it never stops the
+    shop's own night. `keep_second`: told each clear answer of it."""
     readers = readers or Readers()
     done = dict(done or {})
     scheme, host = _base_of(rows)
@@ -366,8 +411,10 @@ def ask_shop(rows: list[Row], *, fetch: Fetch, sleep: Callable[[float], None], c
             return None
         if state["last"] is not None:
             sleep(max(0.0, wait - (clock() - state["last"])))
+        began = clock()
         answer = fetch(base + path, limit)
         state["last"] = clock()
+        state["took"] = state["last"] - began
         if answer.status == 429 or (answer.status == 503 and answer.retry_after):
             state["stopped"] = f"{answer.status}: asked to come back later"
         return answer
@@ -456,14 +503,15 @@ def ask_shop(rows: list[Row], *, fetch: Fetch, sleep: Callable[[float], None], c
         return PageAnswer(status=answer.status, error=answer.error, final_url=final, redirected=redirected,
                           elsewhere=answer.elsewhere, challenge=is_challenge(answer, read_found=read.found), read=read)
 
-    def take(row: Row, answer: PageAnswer, *, again_of: PageAnswer | None = None) -> None:
+    def take(row: Row, answer: PageAnswer, *, again_of: PageAnswer | None = None, second_time: bool = False) -> None:
         if again_of is not None:
             # The answer asked again replaces the first in the shop's counts too.
             counts.subtract({name: value for name, value in _counted(again_of).items()})
         answers[row.key] = answer
         _count(counts, answer)
-        if keep is not None:
-            keep(row.key, answer)
+        told = keep_second if second_time else keep
+        if told is not None:
+            told(row.key, answer)
 
     answers.update(done)
     again: list[Row] = []
@@ -491,10 +539,96 @@ def ask_shop(rows: list[Row], *, fetch: Fetch, sleep: Callable[[float], None], c
         answer = page_of(row)
         if answer is not None:
             take(row, answer, again_of=answers[row.key])
+    night_stopped = state["stopped"]
+    asked_again = {"asked": 0, "kept": 0, "stopped": ""}
+    if second and second_most > 0 and not night_stopped and not second_stopped:
+        asked_again = _ask_again(
+            second, answers=answers, done=frozenset(second_done), most=second_most - len(second_done), at=second_at,
+            deadline=deadline, sleep=sleep, clock=clock, state=state, page_of=page_of,
+            listing=(lambda page: readers.catalogue_page(ask(f"/products.json?limit={LISTING_SIZE}&page={page}",
+                                                             JSON_BYTES, rules, wait)))
+            if shopify and whole else None,
+            take=lambda row, answer: take(row, answer, again_of=answers[row.key], second_time=True),
+            stop=stop_second)
+    # The second asking never stops the shop's own night (its refusal is its own, said apart).
+    state["stopped"] = night_stopped
     night = ShopNight(requests=counts["requests"], answers=counts["answers"], refused=counts["refused"],
                       pages_200=counts["pages_200"], pages_read=counts["pages_read"], catalogue_read=shopify,
                       crawl_delay=delay)
-    return ShopResult(night, answers, state["stopped"])
+    return ShopResult(night, answers, state["stopped"], second=asked_again if second else {})
+
+
+def _ask_again(second: Sequence[Row], *, answers: Mapping[str, PageAnswer], done: frozenset[str], most: int,
+               at: float, deadline: float, sleep: Callable[[float], None], clock: Callable[[], float],
+               state: dict, page_of: Callable[[Row], PageAnswer | None],
+               listing: Callable[[int], tuple[int, list[tuple[str, PageRead]]] | None] | None,
+               take: Callable[[Row, PageAnswer], Any], stop: Callable[[str], None] | None) -> dict:
+    """The second asking of one shop (`ask_shop`, 23). What it did, counted."""
+    said = {"asked": 0, "kept": 0, "stopped": ""}
+    if clock() < at:
+        sleep(max(0.0, min(at, deadline) - clock()))
+
+    def halt(why: str) -> None:
+        said["stopped"] = why
+        if stop is not None:
+            stop(why)
+
+    if listing is not None:
+        # A Shopify shop whose catalogue was read whole: read again, a page at a time.
+        fresh: dict[str, PageRead] = {}
+        page = 1
+        while page <= LISTING_PAGES and clock() < deadline:
+            read = listing(page)
+            if read is None or state["stopped"]:
+                halt(state["stopped"] or "its catalogue did not answer")
+                state["stopped"] = ""
+                return said
+            if state.get("took", 0.0) >= SECOND_SLOW_SECONDS:
+                halt(f"slow: {state['took']:.0f} s")
+                return said
+            size, found = read
+            fresh.update(found)
+            if size < LISTING_SIZE:
+                break
+            page += 1
+        for row in second:
+            if said["asked"] >= most:
+                break
+            if row.key in done or not (row.handle and row.handle.lower() in fresh):
+                continue
+            answer = PageAnswer(status=200, in_catalogue=True, read=fresh[row.handle.lower()])
+            said["asked"] += 1
+            if clear_answer(answer):
+                take(row, answer)
+                said["kept"] += 1
+        return said
+    for row in second:
+        if said["asked"] >= most or clock() >= deadline:
+            break
+        first = answers.get(row.key)
+        # Only what the first asking read is asked again: a product it could not read waits for tomorrow.
+        if row.key in done or first is None or not clear_answer(first) or first.status in (404, 410):
+            continue
+        answer = page_of(row)
+        if answer is None:
+            if state["stopped"]:
+                halt(state["stopped"])
+                state["stopped"] = ""
+            break
+        said["asked"] += 1
+        if state["stopped"]:
+            halt(state["stopped"])
+            state["stopped"] = ""
+            break
+        if not clear_answer(answer):
+            halt(f"not a clear answer ({answer.status or answer.error or 'none'})")
+            break
+        take(row, answer)
+        said["kept"] += 1
+        if state.get("took", 0.0) >= SECOND_SLOW_SECONDS:
+            halt(f"slow: {state['took']:.0f} s")
+            break
+    return said
 
 
 def _ended(answers: Mapping[str, PageAnswer], why: str) -> ShopResult:
@@ -550,6 +684,9 @@ class Tonight:
     def __init__(self, path: Path | None) -> None:
         self.path = path
         self.lock = threading.Lock()
+        # 23: the products asked a second time tonight, and the shops whose second asking stopped.
+        self.second: set[str] = set()
+        self.second_stopped: set[str] = set()
 
     def load(self) -> dict[str, PageAnswer]:
         found: dict[str, PageAnswer] = {}
@@ -559,15 +696,33 @@ class Tonight:
             for line in handle:
                 try:
                     record = json.loads(line)
-                    found[str(record["key"])] = answer_from_record(record)
+                    key = str(record["key"])
+                    if key.startswith(SECOND_STOPPED):
+                        self.second_stopped.add(key[len(SECOND_STOPPED):])
+                        continue
+                    # The latest answer of a product counts: a second one's line comes after its first.
+                    found[key] = answer_from_record(record)
+                    if record.get("n") == 2:
+                        self.second.add(key)
                 except (ValueError, KeyError, TypeError):
                     continue  # a line cut short by a stop
         return found
 
-    def keep(self, key: str, answer: PageAnswer) -> None:
+    def keep(self, key: str, answer: PageAnswer, *, second: bool = False) -> None:
         if self.path is None:
             return
-        line = json.dumps({"key": key, **answer_record(answer)}, separators=(",", ":")) + "\n"
+        line = json.dumps({"key": key, **answer_record(answer), **({"n": 2} if second else {})},
+                          separators=(",", ":")) + "\n"
+        with self.lock, self.path.open("a", encoding="utf-8") as handle:
+            handle.write(line)
+
+    def stop_second(self, shop: str) -> None:
+        """23: a shop's second asking stopped for the day; kept, so that a round started again does
+        not ask it again."""
+        self.second_stopped.add(shop)
+        if self.path is None:
+            return
+        line = json.dumps({"key": f"{SECOND_STOPPED}{shop}"}, separators=(",", ":")) + "\n"
         with self.lock, self.path.open("a", encoding="utf-8") as handle:
             handle.write(line)
 
@@ -826,6 +981,7 @@ class Round:
                 "bot": self.bot, "starts": self.starts, "peak_mb": self.peak_mb, "read_peak_mb": self.read_peak_mb,
                 "done": self.done,
                 "shops": {shop: {"night": dataclasses.asdict(result.night), "stopped": result.stopped,
+                                 "second": result.second,
                                  "ordered": self.ordered.get(shop, 0), "seconds": round(self.seconds.get(shop, 0.0), 1),
                                  "late": round(self.late.get(shop, 0.0), 1)}
                           for shop, result in self.results.items()}}
@@ -840,7 +996,8 @@ class Round:
                 of_shop[rows[key].shop][key] = answer
         shops = record.get("shops") or {}
         return cls(
-            results={shop: ShopResult(ShopNight(**entry["night"]), dict(of_shop.get(shop) or {}), str(entry.get("stopped") or ""))
+            results={shop: ShopResult(ShopNight(**entry["night"]), dict(of_shop.get(shop) or {}), str(entry.get("stopped") or ""),
+                                      second=dict(entry.get("second") or {}))
                      for shop, entry in shops.items()},
             ordered={shop: int(entry.get("ordered") or 0) for shop, entry in shops.items()},
             seconds={shop: float(entry.get("seconds") or 0.0) for shop, entry in shops.items()},
@@ -869,14 +1026,19 @@ def ask_round(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str]
               tonight: Tonight | None = None, shops: frozenset[str] = frozenset(), scanned: bool = False,
               shown_order: Mapping[str, list[str]] | None = None, dearer: Collection[str] = (),
               readers: Readers | None = None, round_time: RoundTime | None = None,
-              clone: tuple[int, int] | None = None) -> Round:
+              clone: tuple[int, int] | None = None, second: bool = False,
+              first_cards: Mapping[str, int] | None = None) -> Round:
     """Ask every shop (of `shops`, when given; `clone`, (the bot's number, how many), names it)
     its products in the rules' order, until the deadline. `sample`: a look, at most this many products a shop; `tonight`:
     the night's answers kept as they come, those kept already not asked again; `scanned`: the
     rule of how many of a shop's products pass (section 19), with `shown_order` the order of
     19.4 of each shop's shown products and `dearer` those of them a cheaper shop shows, asked
     after the cap's candidates (20.7.4); `readers`: what reads the answers (19.5);
-    `round_time`: how long the night's round has asked, a round started again included (21)."""
+    `round_time`: how long the night's round has asked, a round started again included (21);
+    `second`: the second asking (23, its switch on, with the rule of section 19): a shop whose
+    asking ends asks again its shown products, those on the first cards of their kind
+    (`first_cards`) first, then in the order of 19.4, once the round has asked
+    `SECOND_AFTER_HOURS`, within the most it is asked a day (`ask_shop`)."""
     from picwise_providers.shop_cap import shop_limits
 
     tonight = tonight or Tonight(None)
@@ -892,6 +1054,17 @@ def ask_round(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str]
     if sample > 0:
         order = {shop: keys[:sample] for shop, keys in order.items()}
     kept = tonight.load()
+    second = second and scanned
+    cards = dict(first_cards or {})
+    places = {key: place for keys in (shown_order or {}).values() for place, key in enumerate(keys)}
+    second_at = clock() + max(0.0, SECOND_AFTER_HOURS * 3600.0 - round_time.seconds())
+
+    def asked_again(shop: str) -> list[Row]:
+        """23: a shop's shown products of its day's order, the first cards of their kind first."""
+        keys = [key for key in order[shop] if key in shown]
+        keys.sort(key=lambda key: (cards.get(key, len(cards) + 1), places.get(key, len(places)), rows[key].price or 0.0, key))
+        return [rows[key] for key in keys]
+
     say(f"to ask: {sum(len(keys) for keys in order.values()):,} products of {len(order)} shops"
         + (f" (clone {clone[0]} of {clone[1]})" if clone is not None else "")
         + (f"; {len(kept):,} answered already tonight (the round goes on)" if kept else ""))
@@ -910,9 +1083,19 @@ def ask_round(rows: dict[str, Row], *, shown: set[str], parts: Mapping[str, str]
             tonight.keep(key, answer)
             round_time.keep()
 
+        def keep_second(key: str, answer: PageAnswer) -> None:
+            got[key] = answer
+            tonight.keep(key, answer, second=True)
+            round_time.keep()
+
         try:
             result = ask_shop([rows[key] for key in order[shop]], fetch=fetch, sleep=sleep, clock=clock,
-                              deadline=deadline, pause=pause, done=done, keep=keep, readers=readers)
+                              deadline=deadline, pause=pause, done=done, keep=keep, readers=readers,
+                              second=asked_again(shop) if second else (),
+                              second_most=max(0, asked_most - len(order[shop])) if second else 0, second_at=second_at,
+                              second_done={key for key in order[shop] if key in tonight.second},
+                              second_stopped=shop in tonight.second_stopped, keep_second=keep_second,
+                              stop_second=lambda _why, _shop=shop: tonight.stop_second(_shop))
         except Exception as error:  # noqa: BLE001 - one shop never ends the whole round
             # What went wrong with one shop's asking ends that shop's night, never the round:
             # its answers so far count, as for a shop stopped by the deadline.
@@ -1010,6 +1193,17 @@ def record_round(rows: dict[str, Row], rounds: list[Round], *, shown: set[str], 
                                                for asked in sorted(rounds, key=lambda item: item.bot)]}
     night_result.note["asked_by_shop"] = {shop: [result.night.requests, len(result.answers), result.stopped]
                                           for shop, result in sorted(results.items())}
+    # 23: the second asking of the day, when its switch was on: per shop asked again, how many of
+    # those answered clearly (the latest counts), and why it stopped.
+    again = {shop: result.second for shop, result in results.items() if result.second}
+    if again:
+        night_result.note["second"] = {"shops": len(again), "asked": sum(int(entry.get("asked") or 0) for entry in again.values()),
+                                       "kept": sum(int(entry.get("kept") or 0) for entry in again.values()),
+                                       "stopped": sum(1 for entry in again.values() if entry.get("stopped"))}
+        night_result.note["second_by_shop"] = {shop: [int(entry.get("asked") or 0), int(entry.get("kept") or 0),
+                                                      str(entry.get("stopped") or "")]
+                                               for shop, entry in sorted(again.items())
+                                               if entry.get("asked") or entry.get("stopped")}
     # How long each shop's asking took, and the crawl-delay it asks for: the bot's pace (rules 4.7).
     night_result.note["seconds_by_shop"] = {shop: [round(seconds.get(shop, 0.0), 1), result.night.crawl_delay]
                                             for shop, result in sorted(results.items())}
@@ -1075,6 +1269,11 @@ def print_night(note: Mapping[str, Any], made: Mapping[str, Any], ledger: L.Ledg
         + ("; CUTTING STOPPED until the owner's word" if note.get("stopped") else ""))
     if note.get("braked_shops"):
         say("shops braked: " + ", ".join(note["braked_shops"]))
+    again = note.get("second") or {}
+    if again:
+        say(f"the second asking (23): {int(again.get('shops') or 0)} shops, {int(again.get('asked') or 0):,} products asked "
+            f"again, {int(again.get('kept') or 0):,} answered clearly (the latest counts), stopped in "
+            f"{int(again.get('stopped') or 0)} shops")
     kept = note.get("ledger") or {}
     if kept:
         say(f"the ledger: {int(kept.get('products') or 0):,} products; let go tonight, not given to the bot for over "
@@ -1263,7 +1462,7 @@ def _clone_day(args: argparse.Namespace, clone: tuple[int, int], *, readers: Rea
                       ledger=ledger, night=night, fetch=fetch, sleep=sleep, clock=clock, deadline=deadline,
                       workers=args.workers, pause=args.pause, say=say, tonight=tonight, scanned=scanned,
                       shops=found.shops, shown_order=found.orders, dearer=found.dearer, readers=readers,
-                      round_time=round_time, clone=clone)
+                      round_time=round_time, clone=clone, second=second_on(), first_cards=found.first_cards)
     asked.read_peak_mb = found.read_peak_mb
     _write_whole(args.checks / CLONE_DAY.format(name=name), json.dumps(asked.to_record(), sort_keys=True))
     say(f"clone {clone[0]} of {clone[1]}: {len(asked.results)} shops asked, "
@@ -1374,7 +1573,8 @@ def _night(args: argparse.Namespace, *, readers: Readers, scanned: bool, night: 
         asked = ask_round(rows, shown=shown, parts=found.parts, candidates=found.candidates, ledger=ledger,
                           night=night, fetch=fetch, sleep=sleep, clock=clock, deadline=deadline, workers=args.workers,
                           pause=args.pause, say=say, sample=args.sample, tonight=tonight, shops=mine, scanned=scanned,
-                          shown_order=found.orders, dearer=found.dearer, readers=readers, round_time=round_time)
+                          shown_order=found.orders, dearer=found.dearer, readers=readers, round_time=round_time,
+                          second=second_on() and not args.dry, first_cards=found.first_cards)
     asked.read_peak_mb = found.read_peak_mb
     rounds = [asked]
     if beside:

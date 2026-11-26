@@ -353,6 +353,14 @@ def look_at_checks(check: Health, runner: Run) -> None:
               f"failed {sum(failed.values()):,}" + (f" ({_counts(failed)})" if failed else "")
               + f"; cut tonight {note.get('cut_tonight', 0):,}, back {note.get('back_tonight', 0):,}"
               + (f"; held: {_counts(note.get('held'))}" if note.get("held") else ""))
+    again = note.get("second") if isinstance(note.get("second"), dict) else {}
+    if again:
+        # 23: the second asking of the day, behind its own switch.
+        stopped = [f"{shop} ({entry[2]})" for shop, entry in (note.get("second_by_shop") or {}).items()
+                   if isinstance(entry, (list, tuple)) and len(entry) > 2 and entry[2]]
+        check.say(f"checks, the second asking: {int(again.get('shops') or 0)} shops, {int(again.get('asked') or 0):,} "
+                  f"products asked again, {int(again.get('kept') or 0):,} answered clearly"
+                  + (f"; stopped: {', '.join(stopped[:20])}" if stopped else ""))
     kept = note.get("ledger") if isinstance(note.get("ledger"), dict) else {}
     if kept:
         # 23: what the ledger let go, not given to the bot for over seven nights.
