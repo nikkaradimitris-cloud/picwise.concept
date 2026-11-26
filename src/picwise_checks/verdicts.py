@@ -91,6 +91,10 @@ class Row:
     photo: str = ""
     # The feed's own word on stock: "in stock", "sold out" or "" (for the proof of 7.5).
     feed_stock: str = ""
+    # The shop's number at Awin (its advertiser id), "" when the row names none: which of the
+    # checks' bots asks the shop (the checks' rules 23; owner, 2026-11-26: «κάθε κατάστημα παίρνει
+    # σταθερό κωδικό ... και πηγαίνει πάντα στο ίδιο bot»).
+    advertiser: str = ""
 
 
 @dataclass(frozen=True)

@@ -44,18 +44,36 @@ def row_of(product: Any) -> Row:
         variant=variant,
         photo=" ".join(str(product.image_url or "").split()),
         feed_stock=_feed_stock(product.availability_text),
+        advertiser=advertiser_of(raw),
     )
+
+
+# The columns that give a shop's number at Awin: its advertiser id, in both of Awin's links
+# (`picwise_providers.awin_adapter.shop_key`).
+ADVERTISER_KEYS = ("advertiser_id", "merchant_id")
+
+
+def advertiser_of(raw: Mapping[str, Any]) -> str:
+    """The shop's number at Awin a feed row gives, "" when it gives none."""
+    for name in ADVERTISER_KEYS:
+        value = str(raw.get(name) or "").strip()
+        if value:
+            return value
+    return ""
 
 
 def row_record(row: Row) -> list[Any]:
     """A row as the preparation writes it for the bot (`candidates.json.gz`)."""
     return [row.key, row.shop, row.product_id, row.address, row.title, row.price, row.currency, row.gtin, row.mpn,
-            sorted(row.skus), row.handle, row.variant, row.photo, row.feed_stock]
+            sorted(row.skus), row.handle, row.variant, row.photo, row.feed_stock, row.advertiser]
 
 
 def row_from_record(values: list[Any]) -> Row:
+    """A row as `row_record` wrote it; one written before the shop's number at Awin was kept
+    (14 values, until 26/11) reads with none."""
     (key, shop, product_id, address, title, price, currency, gtin, mpn, skus, handle, variant, photo,
-     feed_stock) = values
+     feed_stock) = values[:14]
+    advertiser = str(values[14] or "") if len(values) > 14 else ""
     return Row(key=key, shop=shop, product_id=product_id, address=address, title=title, price=price,
                currency=currency, gtin=gtin, mpn=mpn, skus=frozenset(skus), handle=handle, variant=variant,
-               photo=photo, feed_stock=feed_stock)
+               photo=photo, feed_stock=feed_stock, advertiser=advertiser)
