@@ -204,7 +204,8 @@ if [ "$PREPARE" = yes ]; then
   # memory; its answers are kept, and it goes on after the site restarts (below).
   systemctl stop picwise-checks.service 2> /dev/null || true
   systemctl stop 'picwise-checks@*.service' 2> /dev/null || true
-  systemctl stop picwise-checks-record.service 2> /dev/null || true
+  # The night's recording (03:07 to 03:57 UTC at most) is not stopped: the preparation waits for
+  # it (its unit's After=), so that a night is never lost to a deployment.
   systemctl start picwise-prepare.service || echo "preparing failed; the site keeps the last prepared file (30 h)"
   # The summary line, the peak memory and length, and systemd's own line, of this run.
   journalctl -u picwise-prepare.service -n 20 -o cat --no-pager --since "-65min" \

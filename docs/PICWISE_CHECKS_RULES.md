@@ -95,6 +95,14 @@ Each rule names whose it is:
   ξανά στους 4 επεξεργαστές, με τον κανόνα. Μαζί ανέβηκε ο κώδικας της ερώτησης «είναι το
   ίδιο το είδος;» με κλειστό διακόπτη, και ο μετρητής ποιότητας κάνει την πρώτη του
   μέτρηση το πρωί της 24/11 (έως 2 $ τη μέρα).
+- **26/11: 8 bot, 10.000 προϊόντα ανά κατάστημα, έως 20.000 έλεγχοι τη μέρα (ενότητα 23).
+  Χτίστηκε το βήμα 1, όλα πίσω από διακόπτες κλειστούς· στο site δεν άλλαξε τίποτα.** Κάθε
+  κατάστημα πάει πάντα στο ίδιο bot, με τον αριθμό του στην Awin (με το όνομα, αν δεν έχει).
+  Διακόπτης για κάθε bot: όσα δεν είναι ανοιχτά τα ρωτά το bot που τρέχει σήμερα. Κάθε bot έως
+  1,8 GB, όλα μαζί έως 11 GB και 4 πυρήνες· το site κρατά 6 GB που δεν του τα παίρνει κανείς.
+  Το αρχείο ελέγχων σβήνει ό,τι δεν δόθηκε στο bot πάνω από 7 βράδια (κρατά μία γραμμή του).
+  Ο δεύτερος έλεγχος έχει δικό του διακόπτη και ανοίγει τελευταίος. Η αναφορά υγείας λέει κάθε
+  πρωί αν η μέρα ήταν «σταθερή».
 
 ## 1. What the checks are for, and what they rest on
 
@@ -1948,3 +1956,191 @@ a night was recorded (before 05:30 UTC), so that the first clones' day starts fr
 bot alone began is not carried into the clones' files (its answers are asked again by the
 clones). To read the morning after: the health run's four clones "success", the recording's
 night, the shops asked whole.
+
+## 23. Eight bots, 10,000 a shop on the site, 20,000 asked a day (owner, 26/11): step 1 built 26/11 (Claude Opus 5.5), every part behind its switch; NOTHING DEPLOYED
+
+### 23.1 His words, and the brief he gave the builder
+
+Decided by the owner on 2026-11-26 (in a conversation of his PicWise Project, put to him in
+Greek and approved as he wrote it):
+
+1. «Προϊόντα ανά κατάστημα στο site: έως 10.000, αντί για 20.000.»
+2. «Έλεγχοι ανά κατάστημα: όσους αντέχει το κατάστημα, έως 20.000 τη μέρα. Τα γρήγορα καταστήματα
+   ξαναελέγχουν ένα μέρος των προϊόντων τους και δεύτερη φορά μέσα στην ίδια μέρα. Μετράει ο πιο
+   πρόσφατος έλεγχος.»
+3. «8 bot αντί για 4, 2 σε κάθε πυρήνα. Κάθε bot είναι ξεχωριστό πρόγραμμα και αναλαμβάνει έως περίπου
+   100 καταστήματα.»
+4. «Ανάθεση καταστημάτων: κάθε κατάστημα παίρνει σταθερό κωδικό από το όνομά του και πηγαίνει πάντα στο
+   ίδιο bot.»
+5. «Όριο μνήμης: 1,8 GB για κάθε bot, δηλαδή το πολύ 14,4 GB όλα μαζί.»
+6. «Αρχή: όποιο προϊόν δεν πληροί τις προϋποθέσεις σβήνεται αμέσως και δεν μένει να πιάνει μνήμη.»
+7. and 8., open then, made part of the brief: a reserve of memory for the site that the bots never
+   take; the ledger lets go of products missing for over 7 days, and each bot loads its own shops.
+
+The order: step 1 the build and its tests, nothing on the site; step 2, on «ανέβασε», the 10,000,
+the 20,000 asked and the memory's limits, the 8 bots deployed switched off (about 98,000 products
+was said); step 3, on another «ανέβασε», the bots switched on early in the morning; then 3 stable
+days in a row; then the second asking.
+
+The brief (written for him by Claude Fable 5.2 the same day, his «Okay ξεκίνα» to it) added, each
+named in his Greek as Π1 to Π6: a limit for all the bots together, the arithmetic shown, a bot at
+its limit started again from where it stopped, the bots below the site's priority (Π1); a switch
+for each bot, so they open one by one (Π2); the code from the shop's number at Awin, not its name
+(Π3, which replaces "από το όνομά του" of point 4: a name changes, the number does not; where no
+number is given, the name, as from 25/11); the second asking cuts only on a clear answer, stops for
+the day when a shop slows or refuses, starts from each kind's first cards, its own switch, opened
+last (Π4); one short line kept of a product let go, the AI's answers never let go (Π5); the stable
+day (Π6, 23.6).
+
+### 23.2 What is built, and behind which switch (nothing changes until each is turned)
+
+| Part | Where | Switch, as committed | Turned by |
+|---|---|---|---|
+| 10,000 shown, 20,000 asked | `shop_cap.shop_limits` | `data/shop_cap_switch.json` names no `most` / `asked`: 20,000 both, as from 22/11 | step 2: `"most": 10000, "asked": 20000` |
+| 8 bots, a switch each | `picwise_checks.bot_rows`, the bot's `--clone`, `deploy.sh` | `data/checks_clones.json` `"bots": []`: the bot alone asks every shop | step 3: `"bots": [1, 2]`, then all eight |
+| Memory and cores | `picwisebots.slice`, the units, `system.slice.d/picwise-site-reserve.conf` | in force with the deployment of step 2 | the deployment |
+| The ledger lets go after 7 nights | `ledger.forget_unseen` | in force with the deployment of step 2 (the first 7 nights let nothing go) | the deployment |
+| The second asking | the bot's `_ask_again` | `data/checks_second_switch.json` `"on": false` | last, after 3 stable days |
+
+### 23.3 The bots
+
+- **Which bot asks a shop** (`bot_rows.clone_of`): a CRC-32 of "awin <advertiser id>" modulo the
+  number of bots, plus one; a shop whose rows give no advertiser id (`advertiser_id` or
+  `merchant_id`, which both Awin links give: `awin_adapter.shop_key`), the CRC-32 of its name, as
+  from 25/11. The row the checks know now carries the id (`Row.advertiser`, `row_record`'s 15th
+  value; a record of 14 reads with none). Every bot works the assignment out from the same files,
+  so a shop is asked by one bot only, never faster than it allows (4.3). Not known yet: how many of
+  the real shops' rows give the id (the look, 23.8).
+- **The switch** (`data/checks_clones.json`): `clones` 8, `bots` the ones on. None: the bot alone,
+  as before. Some: each of them asks its shops as a program of its own (`picwise-checks@K`), the bot
+  alone asks the others' shops, **waits for the day's end** (a bot of its own asks until 03:05, so
+  the night is never recorded while one still asks) and records the night from its day and theirs.
+  All: the bot alone is off and `picwise-checks-record` (03:07 UTC) records from the eight days.
+  `deploy.sh` enables the timers of the bots on and disables the others', and stops and starts the
+  round when the switch changed, so that no shop is asked by two at once. A shop moves bot only
+  when its id first appears (a new shop asked first by name); the day's answers kept are its old
+  bot's, and a day started fresh asks it again.
+- **What a bot reads, and how it lets go** (owner's point 6): the catalogue, the preparation's rows
+  for the bot and its shops' part of the ledger are read **in a process of its own**
+  (`bot_rows.read_apart`, spawned fresh), which hands back only its shops' rows and ends, so the
+  memory the catalogue took goes back to the server. A process that cannot start (the sandbox):
+  read on the bot's own, said so. One that stops while it reads (its memory): the bot ends with an
+  error, never reads it again on its own. Bot K starts its reading `(K-1) x 75 s` after it starts
+  (`STAGGER_SECONDS`), so that no two read at once.
+- **Started again**: a bot stopped (its memory's limit, a deployment) is started again by systemd
+  (`Restart=on-failure`, 60 s, five times in four hours at most) and goes on from the answers it
+  kept; its day counts how many times it started (`RoundTime.starts`), the night's note says each
+  asker's day (`shop_rule.bots`: shops, hours, starts, its peak and its reading's peak in MB).
+- **A whole day**: a bot whose shops all ended before 03:05 (all asked) asked a whole day
+  (`Round.done`): with eight bots, the ones with small shops end early.
+
+### 23.4 Memory and cores: the arithmetic
+
+The server: 8 vCores, 24 GB (22.9 GB seen by the system); no swap is known of. Measured (25/11 and
+26/11, the health runs): the site 4.3 GB (2.6 just restarted), the preparation's peak 11.9 GB at
+night (04:17 to 04:45 UTC); the bot alone 1.0 GB on 23/11 (2.2 GB with the 399,000 products of
+22/11); the night's memory, site and preparation together, 16.7 to 17.0 GB of the limit of 20.
+
+- **Each bot**: `MemoryHigh=1536M` (slowed), `MemoryMax=1843M` (stopped): 1.8 GB, the owner's number.
+- **All of them together** (Π1): `picwisebots.slice` `MemoryHigh=10G`, `MemoryMax=11G`, the bot
+  alone and the night's recording in it too. Not the 14.4 GB of 8 x 1.8: in the day the site may
+  hold up to its reserve of 6, the system and the AI's services about 2, and from 04:40 to about 06:10
+  the photos' check (its limit 4) and the families' jobs (05:10, its limit 8) may run; 22.9 - 6 - 2
+  - 4 leaves about 11. The bots measured (23.8) hold about 1.3 GB together once they have read,
+  their answers adding about 0.4 GB through the day.
+- **The site's reserve** (point 7): `MemoryMin=6G` on `picwise-web.service` (and on `system.slice`,
+  which a unit's protection needs), `OOMScoreAdjust=-500`; every bot `+500`. Without swap a
+  process's own memory is never taken back anyway; what holds the reserve is that the bots together
+  cannot pass 11 GB, and that when the server runs short the kernel stops a bot, never the site.
+- **At night**: the bots ask nothing from 03:05 to 05:30 UTC; the recording (03:07, its limit 5 GB)
+  ends before the preparation (04:17), which now waits for it (`After=`); a deployment that prepares
+  stops every bot first, as before, and its preparation waits for a recording still running. Night: site 4.3 + preparation 11.9 + system,
+  as today.
+- **Cores** («2 σε κάθε πυρήνα»): the slice has `CPUQuota=400%` (four of the eight cores for eight
+  bots: two to a core) and `CPUWeight=50` (the site 100), `Nice=10` as before. Pinning bots to cores
+  was not done: on a VPS the cores are virtual, and a pinned bot cannot use a core another leaves
+  idle. Measured: none yet on the server.
+
+### 23.5 The ledger: what is let go, and each bot its own part
+
+- `ledger.forget_unseen`, run where the night is recorded: a product the bot was not given for
+  over 7 nights (not shown, no candidate, no cut product the feed still lists) leaves the ledger;
+  one short line of it is kept 30 nights in `gone` (the night, its last state and reason) and
+  counted in the note. **Read against his words**: "missing from the feed" is read as "not given to
+  the bot", which is the feed's products the site can use; a product still in the feed that the
+  site has not shown, named or cut for 7 nights is let go too: its last pass counts for a day at
+  most (21), so it is asked again before it shows, as a new one. A failed product the feed still
+  lists is given every night, so it is asked again on its schedule (8.1) and the brakes count as
+  before (Π5). A ledger written before has no nights seen: the first 7 nights let nothing go. The
+  AI's categories are in their own files (`/srv/picwise/assist`), never touched.
+- `ledger.load(path, shops=...)`: a bot of its own reads only its shops' products and entries, in
+  its reading process (23.3). `seen` and `gone` are new keys of the file: an older bot reads
+  nothing of them, and writes the ledger without them (the way back loses only them).
+
+### 23.6 The stable day (Π6)
+
+The health run says it, one line, under the rule of the day (21): the round asked all day; the
+night recorded on time; the server not started again during the round (`/proc/uptime`); every shop
+asked whole but those that cannot be checked; no bot started again by systemd nor near its memory's
+limit (90%), nor the bots together near theirs; the failures at most twice a usual day's (1.2% on
+25/11); no shop newly unable to be checked. The site's speed is the workflow's own line (four
+searches from outside). The parts that are limits already pass their own; the line adds none.
+
+### 23.7 The second asking (behind `data/checks_second_switch.json`, false)
+
+A shop whose day's asking ended asks again, from the round's eighth hour (`SECOND_AFTER_HOURS`,
+about 13:30 UTC), its shown products of the day's order, within the most it is asked a day less
+what its first asking took: each kind's Recommended (its middle price) and its four cheapest first,
+over every shop (`bot_rows.first_cards`), then the order of 19.4. Only products its first asking
+read are asked again. A clear answer (`clear_answer`: the page read, its catalogue read, or the page
+not there) counts in place of the first, so the latest counts; anything else (no answer, a server's
+error, a refusal, a challenge, another site, a page with no product read) keeps the first and stops
+the asking for the day, as does a request of 10 s or more (`SECOND_SLOW_SECONDS`). It never stops
+the shop's own night, nor counts against its checkability (5.6.2). A Shopify shop whose catalogue
+was read whole reads it again instead (at most 100 requests). Kept in the night's file (`"n": 2`, and
+a line for a shop whose asking stopped), so a round started again asks nothing twice. The note's
+`second` and `second_by_shop`.
+
+### 23.8 What was measured, and the look before step 2
+
+- **Here, on a made catalogue of today's size** (`tools/measure_bot_memory.py`: 111,487 products of
+  105 shops, the four large ones as on 26/11, 70,331 candidates, 47,007 cut ones listed, a ledger of
+  261,600): the bot alone as it reads today peaks at 895 MB and holds 868 MB; each of the eight
+  bots' reading peaks at 797 to 813 MB, one at a time, and the bot then holds 108 to 274 MB (1,344 MB
+  the eight together, each with its part of the ledger); the night's recording peaks at 843 MB. A
+  bot's reading grows with the catalogue: about 7 KB a product shown, so the 1.8 GB holds up to
+  about twice today's catalogue; past that (more shops) the bots must stop reading the site's
+  catalogue and read their own rows, which the preparation would write for them (not built).
+- **The table per bot** on that catalogue: 12 to 14 shops each; shown 8,216 to 23,977 (the two with
+  InStock UK's and Tooled Up's sizes), the mean 13,936: none over twice it. On the real shops it is
+  the look's (their ids are not known here).
+- **The look before step 2** (read-only; on the owner's yes, since it reads the server's files):
+  `.github/workflows/server-look-shop-rule.yml`, pushed to `claude/shop-rule-look`: the catalogue
+  prepared on GitHub's runner from the server's copies by the code the site runs (20,000) and by this
+  commit with 10,000 shown and 20,000 asked set in the runner's copy only, two nights after each;
+  the products the site would have, the kinds that lose over half, the 40 searches' first cards
+  before and after; then, on the server in the bots' sandbox, no shop asked and nothing written,
+  `tools/measure_bot_memory.py` on its own catalogue and ledger: each way's memory and the table of
+  shops and products per bot with how many by their number at Awin.
+
+### 23.9 For the «ανέβασε»
+
+- **Step 2** (his «ανέβασε»): one commit, `"most": 10000, "asked": 20000` in
+  `data/shop_cap_switch.json` (frozen with the code: the deployment prepares the catalogue again,
+  about 30 minutes, the bot stopped meanwhile); the code of steps 1 deployed with it, every other
+  switch as committed. Read the morning after: the health run's "at most 20,000 asked of a shop; at
+  most 10,000 shown of a shop", the products, the four large shops at 10,000 or what they allow, the
+  ledger's line, the bot alone's memory in its slice.
+- **Step 3** (another «ανέβασε»), best between 03:10 and 04:10 UTC (05:10 to 06:10 Athens: after the
+  night is recorded, before the preparation): `"bots": [1, 2]` first; after a good day, all eight.
+  Read: the health run's lines of each bot (its day, systemd's restarts, its peak against 1.8 GB),
+  the bots together, the night's `shop_rule.bots`.
+- **Then**: three stable days in a row (23.6). Then, on his word, `data/checks_second_switch.json`
+  true.
+- **The standing texts** (`PROJECT_RULES.md` section 5's paragraph of the checks, beside "20,000 products
+  the most"; `docs/PICWISE_DECISION_CONTRACT.md`; `docs/PICWISE_DAILY_WORK.md`, the health run's new
+  lines) change with step 2's deployment, not before (as 19.9 for section 19).
+- **The way back**: each switch as it was; the code back by a deployment of the release before,
+  which prepares the catalogue again (the frozen package changed), so the rows for the bot are
+  written with 14 values again; an older bot ignores the ledger's `seen` and `gone`, the night's
+  file's `"n"` and its lines of a stopped second asking.

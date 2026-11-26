@@ -35,7 +35,16 @@
 # kept of a run (its summary, as the run's file, and this log, public like the repository):
 # counts, shops' names, kinds, categories, titles and prices; never a link, an id or a key.
 #
-# Run: 2026-11-23 13:50 Athens, the sixth: the mend of 20.9 (2a264ba) against the code the site runs, the rule on in both, two nights after each (to run again, change this line and push).
+#    From 26/11 (the checks' rules 23, step 1; owner: «Προϊόντα ανά κατάστημα στο site: έως 10.000»), the
+#    look before step 2: the code the site runs (20,000 a shop) against this commit's with the switch's
+#    numbers set in the runner's copy only (10,000 shown, 20,000 asked; the repository's switch names
+#    none until the «ανέβασε»): the products the site would have, the kinds that lose over half, the 40
+#    searches before and after, two nights after each.
+# 3. The eight bots on the server's own files, in the same sandbox, read-only (tools/measure_bot_memory.py):
+#    which shops and products each bot would ask, by its number at Awin or by name, and the memory each
+#    takes to read them (the bot alone as today, each of the eight, the night's recording). No shop asked.
+#
+# Run: 2026-11-26, the seventh: the look before step 2 of the rules 23 (10,000 a shop) and the eight bots' table and memory (to run again, change this line and push).
 name: How many of a shop's products pass, the look before its «ανέβασε» (read-only)
 on:
   push:
@@ -60,7 +69,10 @@ jobs:
           # "site", the catalogue prepared by the head of the site's branch; "this", by this
           # commit's code.
           - {name: "site", rule: "on", checks: "server", code: "site"}
-          - {name: "mend", rule: "on", checks: "server", code: "this"}
+          # The rules 23 (step 2): 10,000 a shop on the site, 20,000 asked a day, set in this run's copy only.
+          - {name: "ten", rule: "on", checks: "server", code: "this", most: "10000", asked: "20000"}
+          # The mend of 20.9 against the site's code (23/11): to run it again, put it back here.
+          # - {name: "mend", rule: "on", checks: "server", code: "this"}
           # The pairs of the looks before the rule's own «ανέβασε» (22/11 and 23/11): the
           # switch off and on, by this commit's code. To run them again, put them back here.
           # - {name: "off", rule: "off", checks: "server", code: "this"}
@@ -263,6 +275,8 @@ jobs:
         if: steps.checks.outputs.skip != 'yes'
         env:
           RULE: ${{ matrix.rule }}
+          MOST: ${{ matrix.most }}
+          ASKED: ${{ matrix.asked }}
         run: |
           python3 - <<'EOF'
           import json
@@ -272,8 +286,14 @@ jobs:
           path = Path(os.environ["CODE"]) / "data" / "shop_cap_switch.json"
           switch = json.loads(path.read_text(encoding="utf-8"))
           switch["cap"] = os.environ["RULE"] == "on"
+          # The rules 23: the most shown and the most asked of a shop, when this run names them.
+          for name, value in (("most", os.environ.get("MOST")), ("asked", os.environ.get("ASKED"))):
+              if value:
+                  switch[name] = int(value)
           path.write_text(json.dumps(switch, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-          print(f"data/shop_cap_switch.json: cap {str(switch['cap']).lower()}, in the runner's copy of the code that prepares only")
+          print(f"data/shop_cap_switch.json: cap {str(switch['cap']).lower()}"
+                + (f", most {switch['most']:,}" if "most" in switch else "") + (f", asked {switch['asked']:,}" if "asked" in switch else "")
+                + ", in the runner's copy of the code that prepares only")
           EOF
       - name: Prepare the catalogue (the preparation's own code)
         id: prepare
@@ -439,13 +459,15 @@ jobs:
         run: |
           cd "$RUNNER_TEMP/summaries" 2> /dev/null || { echo "no summary was kept"; exit 0; }
           found=no
-          for night in "" "-2" "-3"; do
-            if [ -f "summary-site$night.json" ] && [ -f "summary-mend$night.json" ]; then
-              found=yes
-              case "$night" in "") when="the first night";; "-2") when="the night after";; *) when="two nights after";; esac
-              python3 "$GITHUB_WORKSPACE/deployment/server/look_shop_rule.py" compare "summary-site$night.json" "summary-mend$night.json" \
-                --before "the code the site runs, $when" --after "this commit's code, $when"
-            fi
+          for change in ten mend; do
+            for night in "" "-2" "-3"; do
+              if [ -f "summary-site$night.json" ] && [ -f "summary-$change$night.json" ]; then
+                found=yes
+                case "$night" in "") when="the first night";; "-2") when="the night after";; *) when="two nights after";; esac
+                python3 "$GITHUB_WORKSPACE/deployment/server/look_shop_rule.py" compare "summary-site$night.json" "summary-$change$night.json" \
+                  --before "the code the site runs, $when" --after "this commit's code ($change), $when"
+              fi
+            done
           done
           [ "$found" = yes ] || echo "not run this time"
       - name: The switch off and on, the checks as the server has them
@@ -473,7 +495,7 @@ jobs:
         run: |
           cd "$RUNNER_TEMP/summaries" 2> /dev/null || { echo "no summary was kept"; exit 0; }
           found=no
-          for name in on gate-on site mend; do
+          for name in on gate-on site ten mend; do
             if [ -f "summary-$name.json" ] && [ -f "summary-$name-2.json" ]; then
               found=yes
               python3 "$GITHUB_WORKSPACE/deployment/server/look_shop_rule.py" compare "summary-$name.json" "summary-$name-2.json" \
@@ -486,7 +508,7 @@ jobs:
         run: |
           cd "$RUNNER_TEMP/summaries" 2> /dev/null || { echo "no summary was kept"; exit 0; }
           found=no
-          for name in on gate-on site mend; do
+          for name in on gate-on site ten mend; do
             if [ -f "summary-$name-2.json" ] && [ -f "summary-$name-3.json" ]; then
               found=yes
               python3 "$GITHUB_WORKSPACE/deployment/server/look_shop_rule.py" compare "summary-$name-2.json" "summary-$name-3.json" \
@@ -614,7 +636,7 @@ jobs:
           ssh -n picwise 'sudo journalctl -u picwise-checks.service --since "-20h" -o cat --no-pager | grep -v -E "https?://" | tail -n 25'
       - name: The bot of this commit in its look, inside its unit's limits (no shop asked, nothing written)
         run: |
-          tar czf "$RUNNER_TEMP/code.tgz" src deployment data
+          tar czf "$RUNNER_TEMP/code.tgz" src deployment data tools
           echo "this commit's code: $(( $(stat -c %s "$RUNNER_TEMP/code.tgz") / 1024 )) KB"
           # A unit of its own with the sandbox and the memory of picwise-checks.service, but
           # nothing writable under /srv: the code is unpacked in the unit's private /tmp, which
@@ -627,6 +649,21 @@ jobs:
             -p RestrictNamespaces=yes -p RestrictRealtime=yes -p RestrictSUIDSGID=yes -p LockPersonality=yes \
             -p SystemCallArchitectures=native -p CapabilityBoundingSet= \
             /bin/sh -c 'mkdir /tmp/look && cd /tmp/look && tar xzf - && exec /usr/bin/python3 deployment/server/look_bot_rule.py'" \
+            < "$RUNNER_TEMP/code.tgz"
+      - name: The eight bots on the server's own files, their shops and their memory (no shop asked, nothing written)
+        run: |
+          # The rules 23: each way read in a process of its own (tools/measure_bot_memory.py), one at a
+          # time, inside a unit with the sandbox of the checks' bots and the bot alone's limit; the
+          # catalogue and the ledger as the server has them, read only. Counts and shops' names only.
+          ssh picwise "sudo systemd-run --quiet --wait --pipe --collect \
+            -p User=picwise -p Group=picwise -p Environment=PYTHONDONTWRITEBYTECODE=1 \
+            -p Nice=10 -p MemoryHigh=4G -p MemoryMax=5G -p RuntimeMaxSec=25min -p UMask=0027 \
+            -p NoNewPrivileges=yes -p PrivateTmp=yes -p PrivateDevices=yes -p ProtectSystem=strict -p ProtectHome=yes \
+            -p ProtectKernelTunables=yes -p ProtectKernelModules=yes -p ProtectKernelLogs=yes -p ProtectControlGroups=yes \
+            -p RestrictNamespaces=yes -p RestrictRealtime=yes -p RestrictSUIDSGID=yes -p LockPersonality=yes \
+            -p SystemCallArchitectures=native -p CapabilityBoundingSet= \
+            /bin/sh -c 'mkdir /tmp/look && cd /tmp/look && tar xzf - && exec /usr/bin/python3 tools/measure_bot_memory.py measure \
+              --catalogue /srv/picwise/shared/prepared/catalogue.json.gz --checks /srv/picwise/shared/checks'" \
             < "$RUNNER_TEMP/code.tgz"
       - name: Remove the key from the runner
         if: always()

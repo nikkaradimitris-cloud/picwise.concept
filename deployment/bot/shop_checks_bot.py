@@ -756,6 +756,9 @@ class RoundTime:
                 self.before, self.starts = 0.0, 1
         self.since = clock()
         self.kept = self.since
+        if self.starts > 1:
+            # Kept at once: a bot stopped again within minutes still counts each start.
+            self.keep(now=True)
 
     def seconds(self) -> float:
         return self.before + max(0.0, self.clock() - self.since)
