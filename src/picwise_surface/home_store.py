@@ -1241,39 +1241,12 @@ if(row){
   };
   row.addEventListener("scroll",function(){window.requestAnimationFrame(mark);},{passive:true});
 }
-var cars=[];
-var rows=document.querySelectorAll(".pw-hs-banner-row,.pw-hs-band-row,.pw-hs-scroll");
-var carousel=function(el){
-  var wrap=document.createElement("div");wrap.className="pw-hs-car";
-  el.parentNode.insertBefore(wrap,el);wrap.appendChild(el);
-  var button=function(cls,label,dir){
-    var b=document.createElement("button");b.type="button";b.className="pw-hs-car-btn "+cls;b.hidden=true;
-    b.setAttribute("aria-label",label);b.innerHTML=__CHEVRON__;
-    b.addEventListener("click",function(){
-      var by=dir*Math.max(el.clientWidth*0.8,200);
-      if(el.scrollBy){try{el.scrollBy({left:by,behavior:"smooth"});return;}catch(e){}}
-      el.scrollLeft+=by;
-    });
-    wrap.appendChild(b);return b;
-  };
-  var prev=button("pw-hs-car-prev","Previous",-1),next=button("pw-hs-car-next","Next",1);
-  var see=function(){
-    var most=el.scrollWidth-el.clientWidth;
-    prev.hidden=el.scrollLeft<=2;next.hidden=el.scrollLeft>=most-2;
-  };
-  el.addEventListener("scroll",function(){window.requestAnimationFrame(see);},{passive:true});
-  cars.push(see);see();
-};
-for(var c=0;c<rows.length;c++){carousel(rows[c]);}
-var seeAll=function(){for(var k=0;k<cars.length;k++){cars[k]();}};
-window.addEventListener("resize",seeAll);window.addEventListener("load",seeAll);
 var band=document.getElementById("pw-hs-band");
 if(band){
   var gone=function(img){
     var card=img.closest?img.closest(".pw-hs-pick"):null;
     if(card&&card.parentNode){card.parentNode.removeChild(card);}
     if(band.querySelectorAll(".pw-hs-pick").length<__MIN_PICKS__){band.hidden=true;}
-    seeAll();
   };
   var imgs=band.querySelectorAll("img.pw-hs-pick-img");
   for(var i=0;i<imgs.length;i++){
@@ -1282,7 +1255,7 @@ if(band){
   }
 }
 })();
-""".replace("__MIN_PICKS__", str(MIN_PICKS)).replace("__CHEVRON__", json.dumps(_CHEVRON))
+""".replace("__MIN_PICKS__", str(MIN_PICKS))
 
 
 # ---- the page's styles: a phone first; inside the site's width on a computer ----
@@ -1477,25 +1450,12 @@ HOME_STORE_STYLES = (
     ".pw-hs-foot-notice{margin:14px 0 0;font-size:13px;line-height:1.55;color:#aebbd3;}"
     ".pw-hs-foot-cookies{margin:14px 0 0;font-size:14px;line-height:1.4;font-weight:700;color:#fff;}"
     ".pw-hs-foot-meta{margin:12px 0 0;font-size:12px;color:#93a3c0;}"
-    # A row that slides, and its two arrows (a computer's: hidden on a phone, where a
-    # finger slides it). An arrow is drawn only while its side has more to show.
-    ".pw-hs-car{position:relative;}"
-    ".pw-hs-car-btn{position:absolute;top:50%;z-index:3;display:none;align-items:center;justify-content:center;width:48px;height:48px;margin-top:-24px;padding:0;border:1px solid var(--hs-line);border-radius:999px;background:#fff;color:var(--hs-ink);box-shadow:0 6px 18px rgba(15,36,66,.22);cursor:pointer;}"
-    ".pw-hs-car-btn[hidden]{display:none!important;}"
-    ".pw-hs-car-prev{left:6px;}.pw-hs-car-prev svg{transform:rotate(180deg);}"
-    ".pw-hs-car-next{right:6px;}"
-    ".pw-hs-car-btn:hover{background:var(--hs-mist);}"
-    ".pw-hs-car-btn:focus-visible{outline:2px solid var(--hs-blue);outline-offset:2px;}"
     "@media (prefers-reduced-motion:reduce){.pw-hs-dot,.pw-hs-more svg{transition:none;}}"
-    # On a computer (the specification, 5.13): the same sections in the same order, across
-    # the whole screen up to 1,920 px (owner, 2026-11-27: «να εκμεταλλευτούμε όλη την οθόνη
-    # ... γενικά το site να παίζει σε όλη την οθόνη»; `page_styles` and `browser_lists` give
-    # the other pages the same width); no strip. Whatever slides on a phone slides here
-    # too, with an arrow at each end where its row does not fit (owner, the same day: «Όλα
-    # πρέπει να γλιστράνε εάν είναι καρουζέλ»; the arrows are the script's, `_CAROUSEL`).
+    # On a computer (the specification, 5.13): the same sections in the same order, inside
+    # the site's width; no strip.
     "@media (min-width:700px){"
     ".pw-hs-strip{display:none!important;}"
-    ".pw-hs-head-in{max-width:1920px;margin:0 auto;padding:12px 22px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:24px;}"
+    ".pw-hs-head-in{max-width:1190px;margin:0 auto;padding:12px 22px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:24px;}"
     ".pw-hs-head-row{display:contents;}"
     ".pw-hs-brand{grid-column:1;grid-row:1;}"
     ".pw-hs .pw-search-wrap{grid-column:2;grid-row:1;max-width:720px;width:100%;margin:0 auto;}"
@@ -1505,7 +1465,7 @@ HOME_STORE_STYLES = (
     ".pw-hs-nav a:first-child{margin-left:auto;}.pw-hs-nav a:last-child{margin-right:auto;}"
     # The page's column is a flex item (`.pw-reference-viewport`): its width set, so that a
     # row that scrolls never widens it.
-    ".pw-hs-main{width:100%;max-width:1920px;margin:0 auto;padding:0 22px;}"
+    ".pw-hs-main{width:100%;max-width:1190px;margin:0 auto;padding:0 22px;}"
     ".pw-hs-promise{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);column-gap:40px;align-items:end;padding:32px 0 12px;}"
     ".pw-hs-promise .pw-hs-eyebrow{grid-column:1;grid-row:1;}"
     ".pw-hs-h1{grid-column:1;grid-row:2;margin:6px 0 0;font-size:32px;}"
@@ -1516,7 +1476,7 @@ HOME_STORE_STYLES = (
     ".pw-hs-offers,.pw-hs-pop,.pw-hs-sec{margin-top:20px;border-radius:20px;}"
     ".pw-hs-offers{padding:20px 0;}"
     ".pw-hs-offers .pw-hs-head2,.pw-hs-sec-row .pw-hs-head2,.pw-hs-depts .pw-hs-head2{padding:0 20px;}"
-    ".pw-hs-offer-row{padding:12px 20px 4px;}"
+    ".pw-hs-offer-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));overflow:visible;padding:12px 20px 0;}"
     ".pw-hs-pop{padding:22px 20px;}"
     # Four a row, so that the fold of four (owner, 2026-11-12) is one whole row.
     ".pw-hs-pop-list{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px 16px;}"
@@ -1524,19 +1484,15 @@ HOME_STORE_STYLES = (
     ".pw-hs-more{width:auto;min-width:240px;margin:18px auto 0;padding:0 28px;}"
     ".pw-hs-band{margin-top:20px;border-radius:22px;padding:26px 0 18px;}"
     ".pw-hs-band-head,.pw-hs-band-link{padding:0 24px;margin-left:0;margin-right:0;}"
-    ".pw-hs-band-row{padding:16px 24px 4px;}"
-    ".pw-hs-pick{flex:0 0 190px;}"
+    ".pw-hs-band-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));overflow:visible;padding:16px 24px 4px;}"
+    ".pw-hs-pick{flex:none;}"
     ".pw-hs-depts{padding-top:26px;}"
-    ".pw-hs-depts .pw-hs-scroll{padding:12px 20px 4px;}"
-    ".pw-hs-dept{flex:1 0 112px;max-width:150px;}"
+    ".pw-hs-depts .pw-hs-scroll{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));overflow:visible;padding:12px 20px 0;}"
+    ".pw-hs-dept{flex:none;}"
     ".pw-hs-grid{grid-template-columns:repeat(4,minmax(0,1fr));}"
     ".pw-hs-sec .pw-hs-tile-pic,.pw-hs-scroll .pw-hs-tile-pic{height:150px;}"
-    ".pw-hs-sec-row .pw-hs-scroll{padding:10px 20px 4px;}"
-    # A row's own bar is hidden where the script draws the arrows; without a script the
-    # browser's bar stays, so that a mouse can still slide the row.
-    ".pw-js .pw-hs-scroll,.pw-js .pw-hs-band-row{scrollbar-width:none;}"
-    ".pw-js .pw-hs-scroll::-webkit-scrollbar,.pw-js .pw-hs-band-row::-webkit-scrollbar{display:none;}"
-    ".pw-hs-car-btn{display:flex;}"
+    ".pw-hs-sec-row .pw-hs-scroll{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible;padding:10px 20px 0;}"
+    ".pw-hs-sec-row .pw-hs-tile{flex:none;}"
     ".pw-hs-sec{padding:18px 20px 20px;}"
     ".pw-hs-sec-row{padding:18px 0 20px;}"
     ".pw-hs-vows{padding:28px 0 0;}"
@@ -1546,7 +1502,7 @@ HOME_STORE_STYLES = (
     ".pw-hs-card>.pw-hs-link{grid-column:2;}"
     ".pw-hs-shops{padding:26px 0 0;}"
     ".pw-hs-back{margin-top:28px;}"
-    ".pw-hs-foot-in{max-width:1920px;margin:0 auto;padding:32px 22px 40px;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);column-gap:40px;}"
+    ".pw-hs-foot-in{max-width:1190px;margin:0 auto;padding:32px 22px 40px;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);column-gap:40px;}"
     ".pw-hs-foot-cols{display:contents;}"
     ".pw-hs-foot-col:nth-child(1){grid-column:2;grid-row:1 / span 5;}"
     ".pw-hs-foot-col:nth-child(2){grid-column:3;grid-row:1 / span 5;}"
@@ -1557,26 +1513,15 @@ HOME_STORE_STYLES = (
     ".pw-hs-foot-cookies{grid-column:1;grid-row:4;}"
     ".pw-hs-foot-meta{grid-column:1;grid-row:5;}"
     "}"
-    # Where there is room: the banners as wide as they fit, sliding where they do not
-    # (seven of them from 2026-11-27: side by side they no longer fit a laptop's screen).
-    # The sections one under another, as on a phone, each across the whole width (owner,
-    # 2026-11-27, of the two side by side he was shown: «Να κρατηθεί η ίδια λογική με το
-    # κινητό να κρατηθεί η ίδια διάταξη απλά τα ανοίγματα είναι μεγαλύτερα ... εκεί που ένα
-    # καρουζέλ δείχνει έναν χ αριθμό προϊόντων στο pc θα δείχνει περισσότερα»): a grid's
-    # four tiles in one line, a row's tiles filling the line where they fit and sliding
-    # where they do not.
+    # Where there is room: the banners side by side, two sections side by side.
     "@media (min-width:1000px){"
     ".pw-hs-h1{font-size:38px;}"
-    ".pw-hs-banner-row{gap:16px;}"
-    ".pw-hs-banner{flex:1 0 320px;width:auto;max-width:440px;}"
+    ".pw-hs-banner-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;overflow:visible;}"
+    ".pw-hs-banner{width:auto;}"
     ".pw-js .pw-hs-dots{display:none!important;}"
-    ".pw-hs-sec .pw-hs-tile-pic{height:170px;}"
-    ".pw-hs-sec .pw-hs-art{width:124px;height:124px;}"
-    ".pw-hs-sec-row .pw-hs-scroll .pw-hs-tile{flex:1 0 170px;}"
-    "}"
-    "@media (min-width:1400px){"
-    ".pw-hs-sec .pw-hs-tile-pic{height:190px;}"
-    ".pw-hs-sec .pw-hs-art{width:136px;height:136px;}"
+    ".pw-hs-secs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:20px;}"
+    ".pw-hs-sec .pw-hs-tile-pic,.pw-hs-scroll .pw-hs-tile-pic{height:120px;}"
+    ".pw-hs-sec .pw-hs-art{width:96px;height:96px;}"
     "}"
 )
 

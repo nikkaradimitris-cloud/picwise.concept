@@ -377,7 +377,7 @@ BROWSER_LISTS_STYLES = (
     ".pw-head-btn:focus-visible,.pw-fav:focus-visible,.pw-panel-action:focus-visible,.pw-panel-close:focus-visible{outline:2px solid var(--blue-2);outline-offset:2px;}"
     ".pw-count{background:var(--blue);color:#fff;border-radius:999px;font-size:11px;line-height:16px;min-width:18px;padding:0 5px;text-align:center;}"
     ".pw-count[hidden]{display:none;}"
-    ".pw-panels{position:relative;width:100%;max-width:1920px;margin:0 auto;height:0;z-index:30;}"
+    ".pw-panels{position:relative;width:100%;max-width:1190px;margin:0 auto;height:0;z-index:30;}"
     ".pw-panel{position:absolute;right:22px;top:6px;width:min(380px,calc(100% - 24px));background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 16px 40px rgba(16,40,80,.16);padding:14px;text-align:left;}"
     ".pw-panel[hidden]{display:none;}"
     ".pw-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}"

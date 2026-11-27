@@ -54,10 +54,11 @@ Each rule names whose it is:
   δεν ανέβηκε τίποτα.
 - **Τι άλλαξε στις 27/11 (ενότητα 11), με τα λόγια σου:** περισσότερες κατηγορίες στην
   αρχική, αυτές που ψάχνει ο κόσμος και όχι όσες έχουμε σήμερα (7 banners αντί για 4, 14
-  καρουζέλ αντί για 6, τίποτα από τα παλιά δεν βγήκε)· είδος με λιγότερα από 2 προϊόντα
-  κρύβεται μόνο του από την αρχική, όχι από το site· στο PC όλο το site πιάνει όλη την οθόνη
-  (ως 1.920 px) και ό,τι γλιστράει στο κινητό γλιστράει και εκεί, με βελάκια. Γραφικά,
-  χρώματα και η διάταξη του κινητού δεν αλλάχτηκαν.
+  ενότητες αντί για 6, τίποτα από τα παλιά δεν βγήκε)· είδος με λιγότερα από 2 προϊόντα
+  κρύβεται μόνο του από την αρχική, όχι από το site. Το PC μένει όπως ήταν (είδες την
+  εκδοχή με όλη την οθόνη και τα βελάκια και είπες «Άστο όπως είναι σήμερα»). Γραφικά,
+  χρώματα και η διάταξη του κινητού δεν αλλάχτηκαν. Δεν έχει ανέβει: περιμένει το
+  «ανέβασε» σου.
 - **Τι δεν αλλάζει:** η αναζήτηση, οι κάρτες, η σειρά, το Recommended, οι τιμές. Τίποτα δεν
   δηλώνεται στη Google· οι νέες σελίδες μένουν κρυφές από αυτήν (`noindex`) μέχρι να πεις.
 
@@ -430,8 +431,6 @@ dashboard to come can write (owner, 2026-11-23, of the categories: «χωρίς 
   written, those below the first screen asked for only as they near it.
 
 ### 5.13 On a computer
-
-**Changed on 2026-11-27: section 11 says what holds now.**
 
 **Proposed**; no picture exists, the owner sees it in the preview before his «ανέβασε».
 The same sections in the same order inside the site's width (1,190 px): the header in one
@@ -941,42 +940,27 @@ are untouched: the home page alone.
 - While tonight's products are not counted (a start, the Vercel backup), every tile is
   drawn and every banner reads as its file, as before.
 
-### 11.4 On a computer
+### 11.4 On a computer: as on 24/11
 
-In the place of 5.13 where they differ:
+**Nothing of a computer's page changes** but the kinds it holds: the site's width (1,190 px),
+the banners side by side (seven: two lines), the sections two side by side, a row's tiles
+four a line, no row that slides, no arrow. 5.13 holds as it was.
 
-- **The whole screen up to 1,920 px, on every page** (1,190 px until then): the home page,
-  the search, the departments, the offers, the lists' panels. A screen wider than 1,920 px
-  keeps side margins (told to him: tiles and lines of text grow too large beyond it). The
-  pages of text keep their reading column (760 px).
-- **What slides on a phone slides here**: the banners, the offers, the Recommended, the
-  departments and each section that is a row are one row each, with a round arrow at each
-  end drawn only while that side has more to show (the page's script; without a script the
-  browser's own bar stays).
-- **The sections one under another, as on a phone**, each across the whole width: a grid's
-  four tiles in one line, a row's tiles filling the line where they fit and sliding where
-  they do not. First built two side by side, a grid beside a row; the owner, shown it the
-  same day (14:28, «Σε pc είναι χάλια»): «Να κρατηθεί η ίδια λογική με το κινητό να κρατηθεί
-  η ίδια διάταξη απλά τα ανοίγματα είναι μεγαλύτερα δηλαδή εκεί που θα κινητό βλέπεις ένα
-  μπάνερ στην ολόκληρη οθόνη του pc μπορεί να βλέπεις περισσότερες εκεί που ένα καρουζέλ
-  δείχνει έναν χ αριθμό προϊόντων στο pc θα δείχνει περισσότερα». The promise's heading
-  beside its steps, the promise's card in two columns and the footer in three are as they
-  were on 24/11 (put to him).
-- The search's cards: four a row as before; from 1,200 px the photo's box keeps the card's
-  width and a fixed height (260 px, 300 px from 1,600 px), the photo whole inside it, so
-  that the price and the button stay on the first screen.
-- All departments: its four groups two side by side. The offers' page: the shops side by
-  side. A department's kinds three a row from 1,400 px.
-
-The phone's rules (`@media (max-width:699px)` and the page's own) are unchanged; a phone is
-given no arrow.
+How it came about, all on 2026-11-27: he asked for the computer's page as the phone's, for
+the whole screen («να εκμεταλλευτούμε όλη την οθόνη ... γενικά το site να παίζει σε όλη την
+οθόνη») and for every carousel to slide («Όλα πρέπει να γλιστράνε εάν είναι καρουζέλ»); it
+was built so (every page up to 1,920 px, arrows on the rows, then the sections one under
+another) and shown to him in a live preview. His words on seeing it: «Σε pc είναι χάλια»,
+then «Άστο όπως είναι σήμερα δεν μου αρέσει ανάπτυξη γραφικών στο pc»; asked what stays, he
+chose "the computer as today, with the new kinds". The styles and the script of the page,
+`page_styles`, `browser_lists` and `store_pages` are those of the site's commit `2330108`,
+word for word (the built version is in the branch's history: `056d3b1`).
 
 ### 11.5 Checked
 
 The fast suite: 371 of 373 modules, the 2 known (`tests/test_picwise_home_more_kinds.py`
 new; four tests of `tests/test_picwise_home_store.py` moved to the new numbers). Read on
-pictures of the local site at 1,366, 1,920 and 390 px: the home page, a search, a
-department, all departments, the offers, a page of text; the arrows clicked. **Not read
+pictures of the local site at 1,366 and 390 px. **Not read
 before it: the Recommended cards of the six kinds added to the band on the real catalogue**
 (the session could not open the live searches); read on the live home page after it.
 

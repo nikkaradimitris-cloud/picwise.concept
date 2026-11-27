@@ -74,7 +74,7 @@ STORE_PAGES_STYLES = (
     ".pw-hs-row svg{flex:0 0 auto;color:var(--hs-muted);}"
     ".pw-hs-group{padding:20px 16px 0;scroll-margin-top:12px;}"
     ".pw-hs-group-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 12px;margin-top:12px;}"
-    ".pw-hs-group .pw-hs-dept{flex:none;max-width:none;}"
+    ".pw-hs-group .pw-hs-dept{flex:none;}"
     ".pw-hs-group .pw-hs-dept-pic{height:auto;aspect-ratio:1/1;}"
     ".pw-hs-group .pw-hs-art{width:82%;height:auto;}"
     # the four pages
@@ -121,16 +121,6 @@ STORE_PAGES_STYLES = (
     ".pw-hs-rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;}"
     ".pw-hs-group{padding:26px 0 0;}"
     ".pw-hs-group-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:18px 16px;}"
-    "}"
-    # The whole screen's width (owner, 2026-11-27: «γενικά το site να παίζει σε όλη την
-    # οθόνη»): the departments' groups two side by side, the shops' offers side by side,
-    # a department's kinds three a row where there is room.
-    "@media (min-width:1000px){"
-    ".pw-hs-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:40px;}"
-    ".pw-hs-shopblocks{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));column-gap:16px;align-items:start;}"
-    "}"
-    "@media (min-width:1400px){"
-    ".pw-hs-rows{grid-template-columns:repeat(3,minmax(0,1fr));}"
     "}"
 )
 
@@ -231,7 +221,7 @@ def render_departments_page(*, parts: frozenset[str] | None = None) -> str:
         '<section class="pw-hs-page-head" aria-labelledby="pw-hs-h1">'
         f'<h1 class="pw-hs-h1" id="pw-hs-h1">{escape(DEPARTMENTS_TITLE)}</h1>'
         f'<p class="pw-hs-page-line">{escape(DEPARTMENTS_LINE)}</p></section>'
-        f'<div class="pw-hs-groups">{groups}</div>'
+        f"{groups}"
     )
     return hs.render_store_page(
         title=f"{DEPARTMENTS_TITLE} — PicWise", main_html=main, styles=STORE_PAGES_STYLES, nav_row=True, parts=parts
@@ -453,7 +443,7 @@ def render_offers_page(*, facts: HomeFacts | None | Any = ..., parts: frozenset[
         f'<p class="pw-hs-eyebrow">{escape(OFFERS_EYEBROW)}</p>'
         f'<h1 class="pw-hs-h1" id="pw-hs-h1">{escape(OFFERS_PAGE_TITLE)}</h1>'
         f'<p class="pw-hs-page-line">{escape(hs.OFFERS_SUB)}</p></section>'
-        + (f'<div class="pw-hs-shopblocks">{blocks}</div>' if blocks else f'<p class="pw-hs-note">{escape(OFFERS_NONE)}</p>')
+        + (blocks or f'<p class="pw-hs-note">{escape(OFFERS_NONE)}</p>')
         + f'<p class="pw-hs-note">{escape(OFFERS_NOTE)}</p>'
     )
     return hs.render_store_page(title=f"{OFFERS_PAGE_TITLE} — PicWise", main_html=main, styles=STORE_PAGES_STYLES, parts=parts)

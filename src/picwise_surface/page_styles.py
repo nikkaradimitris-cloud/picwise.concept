@@ -17,11 +17,7 @@ _PAGE_STYLES = (
     "body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--ink);background:var(--bg);-webkit-text-size-adjust:100%;}"
     ".pw-reference-viewport{min-height:100vh;display:flex;flex-direction:column;}"
     ".pw-topbar{position:relative;background:#fff;border-bottom:1px solid var(--line);z-index:20;}"
-    # The site's width on a computer: the whole screen up to 1,920 px, on every page
-    # (owner, 2026-11-27: «να εκμεταλλευτούμε όλη την οθόνη όχι μόνο στην αρχική αλλά γενικά
-    # το site να παίζει σε όλη την οθόνη»; 1,190 px until then). The same number in
-    # `.pw-reference-frame` below, `browser_lists` (`.pw-panels`) and `home_store`.
-    ".pw-topbar-inner{max-width:1920px;margin:0 auto;padding:12px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;}"
+    ".pw-topbar-inner{max-width:1190px;margin:0 auto;padding:12px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;}"
     ".pw-brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--ink);min-width:0;}"
     ".pw-logo{width:34px;height:34px;border-radius:11px;background:linear-gradient(160deg,#30a0ff 0%,#1f6cff 70%);position:relative;flex:0 0 auto;}"
     ".pw-logo::before{content:'';position:absolute;left:7px;top:7px;width:13px;height:13px;border:3px solid #fff;border-right-color:transparent;border-radius:999px;}"
@@ -37,7 +33,7 @@ _PAGE_STYLES = (
     ".pw-info-wrap{position:relative;display:inline-flex;}"
     ".pw-tooltip{position:absolute;top:calc(100% + 10px);right:0;width:min(400px,calc(100vw - 24px));background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px rgba(16,40,80,.16);padding:12px 14px;font-size:14px;line-height:1.5;color:var(--ink);text-align:left;display:none;z-index:40;}"
     ".pw-info-wrap.is-open .pw-tooltip{display:block;}"
-    ".pw-reference-frame{width:100%;max-width:1920px;margin:0 auto;padding:22px 22px 10px;flex:1;}"
+    ".pw-reference-frame{width:100%;max-width:1190px;margin:0 auto;padding:22px 22px 10px;flex:1;}"
     ".pw-home{padding-top:56px;}"
     ".pw-hero-home{text-align:center;margin:0 auto 24px;max-width:760px;}"
     ".pw-hero-title{margin:0;font-size:38px;line-height:1.15;letter-spacing:-.025em;color:var(--ink);text-wrap:balance;}"
@@ -192,11 +188,6 @@ _PAGE_STYLES = (
     "@keyframes pw-breathe{from{opacity:.35;}to{opacity:1;}}"
     "@media (prefers-reduced-motion:reduce){.pw-scan{animation:none;}.pw-photo-guard .pw-card:not(.pw-photo-ok) .pw-product-image-wrap::before{animation:pw-breathe 1.2s ease-in-out infinite alternate;}.pw-loader-ring{animation:pw-breathe 1.2s ease-in-out infinite alternate;}}"
     "@media (max-width:1099px){.pw-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}"
-    # On the whole screen's width (owner, 2026-11-27) a card of four is wide: its photo's
-    # box keeps the card's width but not its height, so that the price and the button stay
-    # on the first screen (the photo is shown whole inside it, as before).
-    '@media (min-width:1200px){.pw-grid:not([data-layout="single"]) .pw-product-image-wrap{aspect-ratio:auto;height:260px;}}'
-    '@media (min-width:1600px){.pw-grid:not([data-layout="single"]) .pw-product-image-wrap{height:300px;}}'
     "@media (max-width:760px){"
     '.pw-grid[data-layout="single"] .pw-card{grid-template-columns:1fr;gap:14px;padding:14px;}'
     "}"

@@ -1,4 +1,4 @@
-"""The home page's kinds, the site's width and the rows that slide (2026-11-27).
+"""The home page's kinds (2026-11-27).
 
 The owner, 2026-11-27, of the home page that went live on 24/11:
 
@@ -11,16 +11,13 @@ The owner, 2026-11-27, of the home page that went live on 24/11:
   (`home_store.MIN_PRODUCTS`), and still in its search and its department;
 - «δεν θέλω να αλλάξουμε τα γραφικά ... Μην πειράξεις χρώματα διάταξη»: the phone's rules
   are as they were; the new drawings are the old ones' family;
-- «γενικά το site να παίζει σε όλη την οθόνη»: every page across the whole screen up to
-  1,920 px;
-- «Όλα πρέπει να γλιστράνε εάν είναι καρουζέλ και τα πρώτα μπάνερ»: on a computer what
-  slides on a phone slides too, with an arrow at each end where its row does not fit;
-- shown it, «Να κρατηθεί η ίδια λογική με το κινητό να κρατηθεί η ίδια διάταξη απλά τα
-  ανοίγματα είναι μεγαλύτερα»: the sections one under another on a computer too.
+- shown a computer's page across the whole screen with rows that slide, which he had asked
+  for the same day: «Σε pc είναι χάλια», then «Άστο όπως είναι σήμερα δεν μου αρέσει
+  ανάπτυξη γραφικών στο pc», and, asked what stays, "the computer as today, with the new
+  kinds": on a computer the page's styles and script are those of 24/11, word for word.
 """
 from __future__ import annotations
 
-import json
 import re
 import sys
 import unittest
@@ -33,10 +30,7 @@ for path in (HERE, ROOT, SRC):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
-from picwise_surface import home_store  # noqa: E402
-from picwise_surface.browser_lists import BROWSER_LISTS_STYLES  # noqa: E402
 from picwise_surface.home_store import (  # noqa: E402
-    HOME_STORE_SCRIPT,
     HOME_STORE_STYLES,
     Banner,
     BannerKind,
@@ -46,8 +40,6 @@ from picwise_surface.home_store import (  # noqa: E402
     load_home_lists,
     render_home_store_page,
 )
-from picwise_surface.page_styles import _PAGE_STYLES  # noqa: E402
-from picwise_surface.store_pages import STORE_PAGES_STYLES  # noqa: E402
 from picwise_surface.trends import load_trends_panel  # noqa: E402
 
 # The sections and tiles of the home page of 2026-11-24: none of them is taken away.
@@ -202,69 +194,25 @@ class ABannerTonightTests(unittest.TestCase):
         self.assertEqual(page.count('class="pw-hs-banner pw-hs-banner-'), 5)
 
 
-class TheWholeScreenTests(unittest.TestCase):
-    def test_one_width_for_every_page(self) -> None:
+class OnAComputerAsOn24NovemberTests(unittest.TestCase):
+    """Owner, 2026-11-27: «Άστο όπως είναι σήμερα δεν μου αρέσει ανάπτυξη γραφικών στο pc»."""
+
+    def test_the_site_s_width_and_no_row_that_slides(self) -> None:
+        from picwise_surface.browser_lists import BROWSER_LISTS_STYLES
+        from picwise_surface.home_store import HOME_STORE_SCRIPT
+        from picwise_surface.page_styles import _PAGE_STYLES
+
         for name, styles in (("search", _PAGE_STYLES), ("lists", BROWSER_LISTS_STYLES), ("store", HOME_STORE_STYLES)):
-            self.assertNotIn("1190px", styles, name)
-        self.assertIn(".pw-topbar-inner{max-width:1920px;", _PAGE_STYLES)
-        self.assertIn(".pw-reference-frame{width:100%;max-width:1920px;", _PAGE_STYLES)
-        self.assertIn(".pw-panels{position:relative;width:100%;max-width:1920px;", BROWSER_LISTS_STYLES)
-        self.assertEqual(HOME_STORE_STYLES.count("max-width:1920px"), 3)
-
-    def test_a_wide_card_keeps_its_price_and_button_on_the_first_screen(self) -> None:
-        self.assertIn(
-            '@media (min-width:1200px){.pw-grid:not([data-layout="single"]) .pw-product-image-wrap{aspect-ratio:auto;height:260px;}}',
-            _PAGE_STYLES,
-        )
-        # The photo's box is square as before on every narrower screen.
-        self.assertIn(".pw-product-image-wrap{position:relative;aspect-ratio:1/1;", _PAGE_STYLES)
-
-    def test_the_other_pages_use_the_width(self) -> None:
-        wide = STORE_PAGES_STYLES.split("@media (min-width:1000px){", 1)[1]
-        self.assertIn(".pw-hs-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));", wide)
-        self.assertIn(".pw-hs-shopblocks{display:grid;", wide)
-
-
-class TheRowsThatSlideTests(unittest.TestCase):
-    def test_on_a_computer_a_row_is_a_row_never_a_grid(self) -> None:
+            self.assertNotIn("1920px", styles, name)
+        self.assertIn(".pw-reference-frame{width:100%;max-width:1190px;", _PAGE_STYLES)
+        self.assertNotIn("pw-hs-car-btn", HOME_STORE_STYLES)
+        self.assertNotIn("pw-hs-car-btn", HOME_STORE_SCRIPT)
         computer = HOME_STORE_STYLES.split("@media (min-width:700px){", 1)[1]
-        for selector in (".pw-hs-offer-row{", ".pw-hs-band-row{", ".pw-hs-depts .pw-hs-scroll{", ".pw-hs-sec-row .pw-hs-scroll{", ".pw-hs-banner-row{"):
-            for rule in re.findall(re.escape(selector) + r"([^}]*)\}", computer):
-                self.assertNotIn("display:grid", rule, selector)
-                self.assertNotIn("overflow:visible", rule, selector)
-
-    def test_the_arrows_are_a_computer_s(self) -> None:
-        phone = HOME_STORE_STYLES.split("@media (min-width:700px){", 1)[0]
-        self.assertIn(".pw-hs-car-btn{position:absolute;top:50%;z-index:3;display:none;", phone)
-        self.assertIn("width:48px;height:48px;", phone.split(".pw-hs-car-btn{", 1)[1].split("}", 1)[0])
-        self.assertIn(".pw-hs-car-btn[hidden]{display:none!important;}", phone)
-        computer = HOME_STORE_STYLES.split("@media (min-width:700px){", 1)[1]
-        self.assertIn(".pw-hs-car-btn{display:flex;}", computer)
-        # A row's own bar is hidden only where the script draws the arrows.
-        self.assertIn(".pw-js .pw-hs-scroll,.pw-js .pw-hs-band-row{scrollbar-width:none;}", computer)
-
-    def test_the_script_gives_every_row_its_arrows(self) -> None:
-        self.assertIn('document.querySelectorAll(".pw-hs-banner-row,.pw-hs-band-row,.pw-hs-scroll")', HOME_STORE_SCRIPT)
-        self.assertIn('button("pw-hs-car-prev","Previous",-1)', HOME_STORE_SCRIPT)
-        self.assertIn('button("pw-hs-car-next","Next",1)', HOME_STORE_SCRIPT)
-        # An arrow only while its side has more to show.
-        self.assertIn("prev.hidden=el.scrollLeft<=2;next.hidden=el.scrollLeft>=most-2;", HOME_STORE_SCRIPT)
-        self.assertNotIn("__CHEVRON__", HOME_STORE_SCRIPT)
-        self.assertIn(json.dumps(home_store._CHEVRON), HOME_STORE_SCRIPT)
-
-    def test_on_a_computer_the_sections_stand_as_on_a_phone(self) -> None:
-        # Owner, 2026-11-27, shown two sections side by side: «Να κρατηθεί η ίδια λογική με
-        # το κινητό να κρατηθεί η ίδια διάταξη απλά τα ανοίγματα είναι μεγαλύτερα».
-        self.assertNotIn(".pw-hs-secs{", HOME_STORE_STYLES)
-        self.assertNotIn("grid-column:1 / -1", HOME_STORE_STYLES.split("@media (min-width:1000px){", 1)[1])
+        # The rows of a phone are grids on a computer, as on 24/11: nothing slides.
+        self.assertIn(".pw-hs-sec-row .pw-hs-scroll{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible;", computer)
         wide = HOME_STORE_STYLES.split("@media (min-width:1000px){", 1)[1]
-        # A row's tiles fill the line where they fit and slide where they do not.
-        self.assertIn(".pw-hs-sec-row .pw-hs-scroll .pw-hs-tile{flex:1 0 170px;}", wide)
-
-    def test_the_banners_slide_where_they_do_not_fit(self) -> None:
-        wide = HOME_STORE_STYLES.split("@media (min-width:1000px){", 1)[1]
-        self.assertIn(".pw-hs-banner{flex:1 0 320px;width:auto;max-width:440px;}", wide)
-        self.assertNotIn(".pw-hs-banner-row{display:grid", wide)
+        self.assertIn(".pw-hs-banner-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));", wide)
+        self.assertIn(".pw-hs-secs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));", wide)
 
 
 if __name__ == "__main__":

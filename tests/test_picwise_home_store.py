@@ -491,18 +491,14 @@ class ThePhonesRulesTests(unittest.TestCase):
             self.assertIn("gap:8px", rule(selector), selector)
 
     def test_on_a_computer_the_same_page_inside_the_site_s_width(self) -> None:
-        # The whole screen up to 1,920 px from 2026-11-27 (owner: «να εκμεταλλευτούμε όλη την
-        # οθόνη»; 1,190 px until then).
         computer = HOME_STORE_STYLES.split("@media (min-width:700px){", 1)[1]
         self.assertIn(".pw-hs-strip{display:none!important;}", computer)
-        self.assertIn(".pw-hs-main{width:100%;max-width:1920px;", computer)
-        self.assertIn(".pw-hs-head-in{max-width:1920px;", computer)
-        self.assertIn(".pw-hs-foot-in{max-width:1920px;", computer)
+        self.assertIn(".pw-hs-main{width:100%;max-width:1190px;", computer)
+        self.assertIn(".pw-hs-head-in{max-width:1190px;", computer)
+        self.assertIn(".pw-hs-foot-in{max-width:1190px;", computer)
         wide = HOME_STORE_STYLES.split("@media (min-width:1000px){", 1)[1]
         self.assertIn(".pw-js .pw-hs-dots{display:none!important;}", wide)
-        # The sections one under another, as on a phone (owner, 2026-11-27: «να κρατηθεί η ίδια
-        # διάταξη απλά τα ανοίγματα είναι μεγαλύτερα»; two side by side until then).
-        self.assertNotIn(".pw-hs-secs{", HOME_STORE_STYLES)
+        self.assertIn(".pw-hs-secs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));", wide)
         # The phone's rules come first and are the page's own: none of them in a block.
         self.assertLess(HOME_STORE_STYLES.index(".pw-hs-strip{"), HOME_STORE_STYLES.index("@media (min-width:700px)"))
 
