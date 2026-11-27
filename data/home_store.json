@@ -1,6 +1,6 @@
 {
-  "_about": "The lists of the home page as a store (docs/PICWISE_HOME_STORE_SPEC.md, section 5.11; picwise_surface.home_store): its banners, the kinds of the Recommended band, the six sections and their tiles, the thirteen departments, and the drawing of each word of the month's ten. A tile's 'query' is the words its search is made of (a kind's own name, in the number that names the kind itself: 'watch', 'boots', 'air purifier'); 'drawing' a file of assets/home/art/ (tools/draw_home_art.py). Every English word here is a visitor's reading: changed only on the owner's word. A banner or a department's destination left empty is not drawn: the owner decides it (the specification's 7.1). From 2026-11-27 (owner: «η σελίδα το homepage πρέπει να παρουσιάζει τις πιο διαδεδομένες κατηγορίες που μπορεί να ψάχνει ένας χρήστης», not what the catalogue holds now): seven banners and fourteen sections; a banner's 'kinds' are the kinds it may name, the most searched first ('word' as its title says it), 'lead' how many of the first of them the file's own title names; a kind with fewer than two products tonight is on no tile and in no banner's words (picwise_surface.home_store.MIN_PRODUCTS).",
-  "_πώς": "Οι λίστες της νέας αρχικής: τα banners, τα είδη της ζώνης Recommended, οι ενότητες με τα πλακίδιά τους, τα 13 τμήματα. Τα αγγλικά κείμενα αλλάζουν μόνο με τη λέξη σου. Από 27/11: 7 banners, 14 ενότητες· είδος με λιγότερα από 2 προϊόντα κρύβεται μόνο του από την αρχική.",
+  "_about": "The lists of the home page as a store (docs/PICWISE_HOME_STORE_SPEC.md, section 5.11; picwise_surface.home_store): its banners, the kinds of the Recommended band, the six sections and their tiles, the thirteen departments, and the drawing of each word of the month's ten. A tile's 'query' is the words its search is made of (a kind's own name, in the number that names the kind itself: 'watch', 'boots', 'air purifier'); 'drawing' a file of assets/home/art/ (tools/draw_home_art.py). Every English word here is a visitor's reading: changed only on the owner's word. A banner or a department's destination left empty is not drawn: the owner decides it (the specification's 7.1). From 2026-11-27 (owner: «η σελίδα το homepage πρέπει να παρουσιάζει τις πιο διαδεδομένες κατηγορίες που μπορεί να ψάχνει ένας χρήστης», not what the catalogue holds now; then, of a computer's page, «Το θέλω όπως ήταν πριν πριν την αλλαγή» and \"the new kinds on the phone only\"): what is marked 'phone': true is a phone's alone (under 700 px) and what is marked 'pc': true a computer's alone; without the marked items the lists are those of 2026-11-24, in their order. A phone: seven banners, fourteen sections. A banner's 'kinds' are the kinds it may name, the most searched first ('word' as its title says it), 'lead' how many of the first of them the file's own title names; a kind with fewer than two products tonight is on no tile and in no banner's words (picwise_surface.home_store.MIN_PRODUCTS).",
+  "_πώς": "Οι λίστες της νέας αρχικής: τα banners, τα είδη της ζώνης Recommended, οι έξι ενότητες με τα πλακίδιά τους, τα 13 τμήματα. Τα αγγλικά κείμενα αλλάζουν μόνο με τη λέξη σου. Από 27/11: ό,τι έχει \"phone\": true φαίνεται μόνο στο κινητό (7 banners, 14 ενότητες)· το PC δείχνει ό,τι και στις 24/11. Είδος με λιγότερα από 2 προϊόντα κρύβεται μόνο του από την αρχική.",
   "banners": [
     {
       "theme": "gold",
@@ -28,7 +28,8 @@
         {"word": "hoodies", "query": "hoodie", "drawing": "hoodie"},
         {"word": "jackets", "query": "jacket", "drawing": "jacket"},
         {"word": "shoes", "query": "shoes", "drawing": "shoe"}
-      ]
+      ],
+      "phone": true
     },
     {
       "theme": "blue",
@@ -46,7 +47,8 @@
         {"word": "monitors", "query": "monitor", "drawing": "monitor"},
         {"word": "tablets", "query": "tablet", "drawing": "tablet"},
         {"word": "printers", "query": "printer", "drawing": "printer"}
-      ]
+      ],
+      "phone": true
     },
     {
       "theme": "ink",
@@ -69,6 +71,25 @@
     },
     {
       "theme": "blue",
+      "eyebrow": "COMPUTERS & OFFICE",
+      "title": "Laptops, printers & routers",
+      "line": "From UK shops, in stock only.",
+      "button": "Browse computers",
+      "part": "departments",
+      "href": "/department/computers",
+      "drawings": [["laptop", "white"], ["printer", "mist"], ["router", "sand"]],
+      "pc": true,
+      "kinds": [
+        {"word": "laptops", "query": "laptop", "drawing": "laptop"},
+        {"word": "printers", "query": "printer", "drawing": "printer"},
+        {"word": "routers", "query": "router", "drawing": "router"},
+        {"word": "monitors", "query": "monitor", "drawing": "monitor"},
+        {"word": "keyboards", "query": "keyboard", "drawing": "keyboard"},
+        {"word": "headphones", "query": "headphones", "drawing": "headphones"}
+      ]
+    },
+    {
+      "theme": "blue",
       "eyebrow": "FURNITURE",
       "title": "Sofas, beds & mattresses",
       "line": "From UK shops, in stock only.",
@@ -83,7 +104,8 @@
         {"word": "desks", "query": "desk", "drawing": "desk"},
         {"word": "wardrobes", "query": "wardrobe", "drawing": "wardrobe"},
         {"word": "tables", "query": "table", "drawing": "table"}
-      ]
+      ],
+      "phone": true
     },
     {
       "theme": "ink",
@@ -118,7 +140,8 @@
         {"word": "necklaces", "query": "necklace", "drawing": "necklace"},
         {"word": "earrings", "query": "earrings", "drawing": "earrings"},
         {"word": "bracelets", "query": "bracelet", "drawing": "bracelet"}
-      ]
+      ],
+      "phone": true
     }
   ],
   "recommended": [
@@ -128,12 +151,12 @@
     {"query": "robot vacuum", "kind": "Robot vacuum", "link": "See robot vacuums", "drawing": "robot_vacuum"},
     {"query": "lawn mower", "kind": "Lawn mower", "link": "See lawn mowers", "drawing": "lawn_mower"},
     {"query": "dehumidifier", "kind": "Dehumidifier", "link": "See dehumidifiers", "drawing": "dehumidifier"},
-    {"query": "laptop", "kind": "Laptop", "link": "See laptops", "drawing": "laptop"},
-    {"query": "monitor", "kind": "Monitor", "link": "See monitors", "drawing": "monitor"},
-    {"query": "tv", "kind": "TV", "link": "See TVs", "drawing": "tv"},
-    {"query": "smartphone", "kind": "Smartphone", "link": "See smartphones", "drawing": "smartphone"},
-    {"query": "vacuum cleaner", "kind": "Vacuum cleaner", "link": "See vacuum cleaners", "drawing": "vacuum_cleaner"},
-    {"query": "office chair", "kind": "Office chair", "link": "See office chairs", "drawing": "office_chair"}
+    {"query": "laptop", "kind": "Laptop", "link": "See laptops", "drawing": "laptop", "phone": true},
+    {"query": "monitor", "kind": "Monitor", "link": "See monitors", "drawing": "monitor", "phone": true},
+    {"query": "tv", "kind": "TV", "link": "See TVs", "drawing": "tv", "phone": true},
+    {"query": "smartphone", "kind": "Smartphone", "link": "See smartphones", "drawing": "smartphone", "phone": true},
+    {"query": "vacuum cleaner", "kind": "Vacuum cleaner", "link": "See vacuum cleaners", "drawing": "vacuum_cleaner", "phone": true},
+    {"query": "office chair", "kind": "Office chair", "link": "See office chairs", "drawing": "office_chair", "phone": true}
   ],
   "sections": [
     {
@@ -152,15 +175,15 @@
         {"name": "Trainers", "query": "trainers", "drawing": "sneaker"},
         {"name": "Dresses", "query": "dress", "drawing": "dress"},
         {"name": "Watches", "query": "watch", "drawing": "watch"},
-        {"name": "Hoodies", "query": "hoodie", "drawing": "hoodie"},
-        {"name": "Jackets", "query": "jacket", "drawing": "jacket"},
-        {"name": "Jeans", "query": "jeans", "drawing": "jeans"},
-        {"name": "Shoes", "query": "shoes", "drawing": "shoe"},
-        {"name": "Handbags", "query": "handbag", "drawing": "handbag"}
+        {"name": "Hoodies", "query": "hoodie", "drawing": "hoodie", "phone": true},
+        {"name": "Jackets", "query": "jacket", "drawing": "jacket", "phone": true},
+        {"name": "Jeans", "query": "jeans", "drawing": "jeans", "phone": true},
+        {"name": "Shoes", "query": "shoes", "drawing": "shoe", "phone": true},
+        {"name": "Handbags", "query": "handbag", "drawing": "handbag", "phone": true}
       ]
     },
     {
-      "title": "Phones & TV", "arrow": "See all computers and tech", "department": "computers", "layout": "grid",
+      "title": "Phones & TV", "arrow": "See all computers and tech", "department": "computers", "layout": "grid", "phone": true,
       "tiles": [
         {"name": "Smartphones", "query": "smartphone", "drawing": "smartphone"},
         {"name": "TVs", "query": "tv", "drawing": "tv"},
@@ -169,15 +192,15 @@
       ]
     },
     {
-      "title": "Computers & office", "arrow": "See all computers", "department": "computers", "layout": "row",
+      "title": "Home appliances", "arrow": "See all home appliances", "department": "home-appliances", "layout": "row", "phone": true,
       "tiles": [
-        {"name": "Laptops", "query": "laptop", "drawing": "laptop"},
-        {"name": "Monitors", "query": "monitor", "drawing": "monitor"},
-        {"name": "Printers", "query": "printer", "drawing": "printer"},
-        {"name": "Routers", "query": "router", "drawing": "router"},
-        {"name": "Headphones", "query": "headphones", "drawing": "headphones"},
-        {"name": "Keyboards", "query": "keyboard", "drawing": "keyboard"},
-        {"name": "Desktop PCs", "query": "desktop pc", "drawing": "desktop_pc"}
+        {"name": "Washing machines", "query": "washing machine", "drawing": "washing_machine"},
+        {"name": "Fridges", "query": "fridge", "drawing": "fridge"},
+        {"name": "Dishwashers", "query": "dishwasher", "drawing": "dishwasher"},
+        {"name": "Tumble dryers", "query": "tumble dryer", "drawing": "tumble_dryer"},
+        {"name": "Cookers", "query": "cooker", "drawing": "cooker"},
+        {"name": "Vacuum cleaners", "query": "vacuum cleaner", "drawing": "vacuum_cleaner"},
+        {"name": "Fans", "query": "fan", "drawing": "fan"}
       ]
     },
     {
@@ -190,15 +213,34 @@
       ]
     },
     {
-      "title": "Home appliances", "arrow": "See all home appliances", "department": "home-appliances", "layout": "row",
+      "title": "Computers & office", "arrow": "See all computers", "department": "computers", "layout": "row",
       "tiles": [
-        {"name": "Washing machines", "query": "washing machine", "drawing": "washing_machine"},
-        {"name": "Fridges", "query": "fridge", "drawing": "fridge"},
-        {"name": "Dishwashers", "query": "dishwasher", "drawing": "dishwasher"},
-        {"name": "Tumble dryers", "query": "tumble dryer", "drawing": "tumble_dryer"},
-        {"name": "Cookers", "query": "cooker", "drawing": "cooker"},
-        {"name": "Vacuum cleaners", "query": "vacuum cleaner", "drawing": "vacuum_cleaner"},
-        {"name": "Fans", "query": "fan", "drawing": "fan"}
+        {"name": "Laptops", "query": "laptop", "drawing": "laptop"},
+        {"name": "Monitors", "query": "monitor", "drawing": "monitor", "phone": true},
+        {"name": "Printers", "query": "printer", "drawing": "printer"},
+        {"name": "Routers", "query": "router", "drawing": "router"},
+        {"name": "Headphones", "query": "headphones", "drawing": "headphones"},
+        {"name": "Keyboards", "query": "keyboard", "drawing": "keyboard", "phone": true},
+        {"name": "Desktop PCs", "query": "desktop pc", "drawing": "desktop_pc", "phone": true}
+      ]
+    },
+    {
+      "title": "Jewellery", "arrow": "See all jewellery and watches", "department": "jewellery-watches", "layout": "grid", "phone": true,
+      "tiles": [
+        {"name": "Rings", "query": "ring", "drawing": "ring"},
+        {"name": "Necklaces", "query": "necklace", "drawing": "necklace"},
+        {"name": "Earrings", "query": "earrings", "drawing": "earrings"},
+        {"name": "Bracelets", "query": "bracelet", "drawing": "bracelet"}
+      ]
+    },
+    {
+      "title": "Living room & bedroom", "arrow": "See all furniture", "department": "furniture", "layout": "row", "phone": true,
+      "tiles": [
+        {"name": "Sofas", "query": "sofa", "drawing": "sofa"},
+        {"name": "Mattresses", "query": "mattress", "drawing": "mattress"},
+        {"name": "Wardrobes", "query": "wardrobe", "drawing": "wardrobe"},
+        {"name": "Tables", "query": "table", "drawing": "table"},
+        {"name": "Chairs", "query": "chair", "drawing": "chair"}
       ]
     },
     {
@@ -211,38 +253,19 @@
       ]
     },
     {
-      "title": "Living room & bedroom", "arrow": "See all furniture", "department": "furniture", "layout": "row",
-      "tiles": [
-        {"name": "Sofas", "query": "sofa", "drawing": "sofa"},
-        {"name": "Mattresses", "query": "mattress", "drawing": "mattress"},
-        {"name": "Wardrobes", "query": "wardrobe", "drawing": "wardrobe"},
-        {"name": "Tables", "query": "table", "drawing": "table"},
-        {"name": "Chairs", "query": "chair", "drawing": "chair"}
-      ]
-    },
-    {
-      "title": "Jewellery", "arrow": "See all jewellery and watches", "department": "jewellery-watches", "layout": "grid",
-      "tiles": [
-        {"name": "Rings", "query": "ring", "drawing": "ring"},
-        {"name": "Necklaces", "query": "necklace", "drawing": "necklace"},
-        {"name": "Earrings", "query": "earrings", "drawing": "earrings"},
-        {"name": "Bracelets", "query": "bracelet", "drawing": "bracelet"}
-      ]
-    },
-    {
       "title": "Tools & garden", "arrow": "See all tools and garden", "department": "tools", "layout": "row",
       "tiles": [
         {"name": "Drills", "query": "drill", "drawing": "drill"},
         {"name": "Mitre saws", "query": "mitre saw", "drawing": "mitre_saw"},
         {"name": "Lawn mowers", "query": "lawn mower", "drawing": "lawn_mower"},
         {"name": "Pressure washers", "query": "pressure washer", "drawing": "pressure_washer"},
-        {"name": "Chainsaws", "query": "chainsaw", "drawing": "chainsaw"},
-        {"name": "Hedge trimmers", "query": "hedge trimmer", "drawing": "hedge_trimmer"},
-        {"name": "Angle grinders", "query": "angle grinder", "drawing": "angle_grinder"}
+        {"name": "Chainsaws", "query": "chainsaw", "drawing": "chainsaw", "phone": true},
+        {"name": "Hedge trimmers", "query": "hedge trimmer", "drawing": "hedge_trimmer", "phone": true},
+        {"name": "Angle grinders", "query": "angle grinder", "drawing": "angle_grinder", "phone": true}
       ]
     },
     {
-      "title": "Gaming", "arrow": "See all computers and tech", "department": "computers", "layout": "grid",
+      "title": "Gaming", "arrow": "See all computers and tech", "department": "computers", "layout": "grid", "phone": true,
       "tiles": [
         {"name": "Games consoles", "query": "games console", "drawing": "console"},
         {"name": "Game controllers", "query": "game controller", "drawing": "gamepad"},
@@ -251,7 +274,7 @@
       ]
     },
     {
-      "title": "Toys & games", "arrow": "See all toys and games", "department": "toys-games", "layout": "row",
+      "title": "Toys & games", "arrow": "See all toys and games", "department": "toys-games", "layout": "row", "phone": true,
       "tiles": [
         {"name": "Toys", "query": "toy", "drawing": "toy_blocks"},
         {"name": "LEGO", "query": "lego", "drawing": "bricks"},
@@ -260,7 +283,7 @@
       ]
     },
     {
-      "title": "Sports & outdoors", "arrow": "See all sports", "department": "sports", "layout": "grid",
+      "title": "Sports & outdoors", "arrow": "See all sports", "department": "sports", "layout": "grid", "phone": true,
       "tiles": [
         {"name": "Bikes", "query": "bike", "drawing": "bike"},
         {"name": "Treadmills", "query": "treadmill", "drawing": "treadmill"},
@@ -269,7 +292,7 @@
       ]
     },
     {
-      "title": "Cameras & audio", "arrow": "See all computers and tech", "department": "computers", "layout": "row",
+      "title": "Cameras & audio", "arrow": "See all computers and tech", "department": "computers", "layout": "row", "phone": true,
       "tiles": [
         {"name": "Cameras", "query": "camera", "drawing": "camera"},
         {"name": "Speakers", "query": "speaker", "drawing": "speaker"},

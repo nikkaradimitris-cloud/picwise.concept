@@ -12,9 +12,10 @@ The owner, 2026-11-27, of the home page that went live on 24/11:
 - «δεν θέλω να αλλάξουμε τα γραφικά ... Μην πειράξεις χρώματα διάταξη»: the phone's rules
   are as they were; the new drawings are the old ones' family;
 - shown a computer's page across the whole screen with rows that slide, which he had asked
-  for the same day: «Σε pc είναι χάλια», then «Άστο όπως είναι σήμερα δεν μου αρέσει
-  ανάπτυξη γραφικών στο pc», and, asked what stays, "the computer as today, with the new
-  kinds": on a computer the page's styles and script are those of 24/11, word for word.
+  for the same day: «Σε pc είναι χάλια»; shown it as on 24/11 with the new kinds: «Το θέλω
+  όπως ήταν πριν πριν την αλλαγή», and, asked, "the new kinds on the phone only": what the
+  day added is a phone's alone (`home_store.PHONE_ONLY`), and a computer's page is the page
+  of 24/11 (compared picture for picture at 700 to 1,920 px before it was shown to him).
 """
 from __future__ import annotations
 
@@ -81,7 +82,9 @@ def _known(*queries: str) -> HomeFacts:
 class TheListsTests(unittest.TestCase):
     def test_seven_banners_fourteen_sections_and_nothing_of_24_11_taken_away(self) -> None:
         lists = load_home_lists()
-        self.assertEqual(len(lists.banners), 7)
+        # A phone's seven banners; a computer's four, as on 24/11.
+        self.assertEqual(sum(not banner.pc for banner in lists.banners), 7)
+        self.assertEqual(sum(not banner.phone for banner in lists.banners), 4)
         self.assertEqual(len(lists.sections), 14)
         by_title = {section.title: section for section in lists.sections}
         for title, queries in OF_24_11.items():
@@ -183,36 +186,73 @@ class ABannerTonightTests(unittest.TestCase):
         self.assertIn(">Laptops, monitors &amp; tablets<", page)
         self.assertNotIn(">Laptops, phones &amp; TVs<", page)
         self.assertNotIn('href="/search?q=smartphone"', page)
-        # No offer to show: the offers' banner is not drawn; the six of kinds are.
-        self.assertEqual(page.count('class="pw-hs-banner pw-hs-banner-'), 6)
+        # No offer to show: the offers' banner is not drawn; a phone's six of kinds are.
+        self.assertEqual(len(re.findall(r'class="pw-hs-banner pw-hs-banner-\w+(?: pw-hs-phone)?"', page)), 6)
         without = frozenset(everything - {"watch", "ring", "necklace", "earrings"})
         page = render_home_store_page(
             catalogue=(100000, 101), indexable=False, trends=load_trends_panel(),
             facts=HomeFacts(prepared_at=None, tiles_with_products=without),
         )
         self.assertNotIn("WATCHES &amp; JEWELLERY", page)
-        self.assertEqual(page.count('class="pw-hs-banner pw-hs-banner-'), 5)
+        self.assertEqual(len(re.findall(r'class="pw-hs-banner pw-hs-banner-\w+(?: pw-hs-phone)?"', page)), 5)
 
 
-class OnAComputerAsOn24NovemberTests(unittest.TestCase):
-    """Owner, 2026-11-27: «Άστο όπως είναι σήμερα δεν μου αρέσει ανάπτυξη γραφικών στο pc»."""
+class APhonesAloneTests(unittest.TestCase):
+    """Owner, 2026-11-27: «Το θέλω όπως ήταν πριν πριν την αλλαγή»; the new kinds on the
+    phone only."""
 
-    def test_the_site_s_width_and_no_row_that_slides(self) -> None:
-        from picwise_surface.browser_lists import BROWSER_LISTS_STYLES
-        from picwise_surface.home_store import HOME_STORE_SCRIPT
-        from picwise_surface.page_styles import _PAGE_STYLES
+    def test_without_what_is_a_phone_s_the_lists_are_those_of_24_november(self) -> None:
+        lists = load_home_lists()
+        sections = [section for section in lists.sections if not section.phone]
+        self.assertEqual([section.title for section in sections], list(OF_24_11))
+        for section in sections:
+            self.assertEqual(tuple(tile.query for tile in section.tiles if not tile.phone), OF_24_11[section.title])
+        banners = [banner for banner in lists.banners if not banner.phone]
+        self.assertEqual(
+            [banner.title for banner in banners],
+            ["Offers from UK shops", "Air fryers, vacuums & more", "Laptops, printers & routers", "Drills, saws & garden machines"],
+        )
+        self.assertEqual(
+            [kind.query for kind in lists.recommended if not kind.phone],
+            ["drill", "air fryer", "printer", "robot vacuum", "lawn mower", "dehumidifier"],
+        )
+        # A banner is a phone's or a computer's, never both.
+        self.assertFalse(any(banner.phone and banner.pc for banner in lists.banners))
 
-        for name, styles in (("search", _PAGE_STYLES), ("lists", BROWSER_LISTS_STYLES), ("store", HOME_STORE_STYLES)):
-            self.assertNotIn("1920px", styles, name)
-        self.assertIn(".pw-reference-frame{width:100%;max-width:1190px;", _PAGE_STYLES)
+    def test_the_two_rules_stand_after_the_styles_of_24_november(self) -> None:
+        self.assertTrue(
+            HOME_STORE_STYLES.endswith(
+                "@media (max-width:699px){.pw-hs-pc{display:none!important;}}"
+                "@media (min-width:700px){.pw-hs-phone{display:none!important;}}"
+            )
+        )
+        self.assertEqual(HOME_STORE_STYLES.count("pw-hs-phone"), 1)
+        self.assertEqual(HOME_STORE_STYLES.count("pw-hs-pc"), 1)
+        # A computer's page as on 24/11: its width, nothing that slides.
+        self.assertIn(".pw-hs-main{width:100%;max-width:1190px;", HOME_STORE_STYLES)
         self.assertNotIn("pw-hs-car-btn", HOME_STORE_STYLES)
-        self.assertNotIn("pw-hs-car-btn", HOME_STORE_SCRIPT)
-        computer = HOME_STORE_STYLES.split("@media (min-width:700px){", 1)[1]
-        # The rows of a phone are grids on a computer, as on 24/11: nothing slides.
-        self.assertIn(".pw-hs-sec-row .pw-hs-scroll{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible;", computer)
-        wide = HOME_STORE_STYLES.split("@media (min-width:1000px){", 1)[1]
-        self.assertIn(".pw-hs-banner-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));", wide)
-        self.assertIn(".pw-hs-secs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));", wide)
+
+    def test_the_page_marks_what_is_a_phone_s(self) -> None:
+        page = render_home_store_page(catalogue=(100000, 101), indexable=False, trends=load_trends_panel())
+        body = page.split("</style>", 1)[1]
+        sections = re.findall(r'<section class="pw-hs-sec(?: pw-hs-sec-row)?( pw-hs-phone)?"', body)
+        self.assertEqual((len(sections), sections.count("")), (14, 6))
+        # A computer's tiles: the 24 of 24/11 (a tile of a phone's section is hidden with it).
+        computers = re.split(r'<section class="pw-hs-sec(?: pw-hs-sec-row)? pw-hs-phone"', body)
+        kept = "".join(part.split("</section>", 1)[1] if index else part for index, part in enumerate(computers))
+        self.assertEqual(kept.count('class="pw-hs-tile"'), 24)
+        self.assertIn('<a class="pw-hs-tile pw-hs-phone" href="/search?q=monitor">', body)
+        # Each banner's dot is seen where its banner is.
+        self.assertEqual(len(re.findall(r'class="pw-hs-dot(?: is-on)? pw-hs-phone"', body)), 4)
+        self.assertEqual(len(re.findall(r'class="pw-hs-dot(?: is-on)? pw-hs-pc"', body)), 1)
+
+    def test_a_section_left_with_one_tile_for_a_computer_is_a_phone_s(self) -> None:
+        lists = load_home_lists()
+        everything = {tile.query for section in lists.sections for tile in section.tiles}
+        facts = HomeFacts(prepared_at=None, tiles_with_products=frozenset(everything - {"watch", "boots", "dress"}))
+        page = render_home_store_page(catalogue=(100000, 101), indexable=False, trends=load_trends_panel(), facts=facts)
+        self.assertIn('<section class="pw-hs-sec pw-hs-sec-row pw-hs-phone" aria-labelledby="pw-hs-sec-2">', page)
+        self.assertIn(">Style</h2>", page)
 
 
 if __name__ == "__main__":

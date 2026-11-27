@@ -53,12 +53,11 @@ Each rule names whose it is:
   6 έως 15) και «Τελείωνε και ανέβασε τα»: εκείνη την ώρα τα μέρη δεν ήταν χτισμένα, γι' αυτό
   δεν ανέβηκε τίποτα.
 - **Τι άλλαξε στις 27/11 (ενότητα 11), με τα λόγια σου:** περισσότερες κατηγορίες στην
-  αρχική, αυτές που ψάχνει ο κόσμος και όχι όσες έχουμε σήμερα (7 banners αντί για 4, 14
-  ενότητες αντί για 6, τίποτα από τα παλιά δεν βγήκε)· είδος με λιγότερα από 2 προϊόντα
-  κρύβεται μόνο του από την αρχική, όχι από το site. Το PC μένει όπως ήταν (είδες την
-  εκδοχή με όλη την οθόνη και τα βελάκια και είπες «Άστο όπως είναι σήμερα»). Γραφικά,
-  χρώματα και η διάταξη του κινητού δεν αλλάχτηκαν. Δεν έχει ανέβει: περιμένει το
-  «ανέβασε» σου.
+  αρχική, αυτές που ψάχνει ο κόσμος και όχι όσες έχουμε σήμερα, **μόνο στο κινητό** (7
+  banners αντί για 4, 14 ενότητες αντί για 6, τίποτα από τα παλιά δεν βγήκε)· είδος με
+  λιγότερα από 2 προϊόντα κρύβεται μόνο του από την αρχική, όχι από το site. **Το PC μένει
+  ακριβώς όπως ήταν** (είδες τρεις εκδοχές του και είπες «Το θέλω όπως ήταν πριν την
+  αλλαγή»). Γραφικά και χρώματα δεν αλλάχτηκαν. Δεν έχει ανέβει: περιμένει το «ανέβασε» σου.
 - **Τι δεν αλλάζει:** η αναζήτηση, οι κάρτες, η σειρά, το Recommended, οι τιμές. Τίποτα δεν
   δηλώνεται στη Google· οι νέες σελίδες μένουν κρυφές από αυτήν (`noindex`) μέχρι να πεις.
 
@@ -906,16 +905,16 @@ owner keeps open; **not measured** (told to him: only the month's ten are measur
 measure of about 120 kinds in Keyword Planner was offered and not taken up). Nothing of
 24/11 was taken away.
 
-- **Seven banners** (four until then): Offers; Fashion & shoes, "Boots, dresses & trainers";
+- **Seven banners on a phone** (four until then; a computer keeps its four, 11.4): Offers; Fashion & shoes, "Boots, dresses & trainers";
   Computers & tech, "Laptops, phones & TVs" (in the place of "Laptops, printers & routers");
   Home & kitchen (as it was); Furniture, "Sofas, beds & mattresses"; Tools & machines (as it
   was); Watches & jewellery, "Watches, rings & necklaces". Ink and blue by turns after the
   gold.
-- **Fourteen sections** (six until then), a grid of four and a row that slides by turns:
-  Kitchen favourites; Style (+ hoodies, jackets, jeans, shoes, handbags); Phones & TV;
-  Computers & office (+ monitors, keyboards, desktop PCs); Comfort at home; Home appliances;
-  Home & furniture; Living room & bedroom; Jewellery; Tools & garden (+ chainsaws, hedge
-  trimmers, angle grinders); Gaming; Toys & games; Sports & outdoors; Cameras & audio.
+- **Fourteen sections on a phone** (six until then), a grid of four and a row that slides
+  by turns: Kitchen favourites; Style (+ hoodies, jackets, jeans, shoes, handbags); Phones &
+  TV; Home appliances; Comfort at home; Computers & office (+ monitors, keyboards, desktop
+  PCs); Jewellery; Living room & bedroom; Home & furniture; Tools & garden (+ chainsaws,
+  hedge trimmers, angle grinders); Gaming; Toys & games; Sports & outdoors; Cameras & audio.
 - **The Recommended band**: its six, then laptop, monitor, TV, smartphone, vacuum cleaner,
   office chair. A card is still its search's Recommended tonight or nothing (5.7).
 - Every word a tile or a banner searches is a kind of `data/home_departments.json`, in its
@@ -940,27 +939,41 @@ are untouched: the home page alone.
 - While tonight's products are not counted (a start, the Vercel backup), every tile is
   drawn and every banner reads as its file, as before.
 
-### 11.4 On a computer: as on 24/11
+### 11.4 On a computer: the page of 24/11; the new kinds on a phone alone
 
-**Nothing of a computer's page changes** but the kinds it holds: the site's width (1,190 px),
-the banners side by side (seven: two lines), the sections two side by side, a row's tiles
-four a line, no row that slides, no arrow. 5.13 holds as it was.
+**A computer's page is the page of 24/11, picture for picture**: its four banners (the
+third "Laptops, printers & routers"), its six sections of four tiles in their order, its
+six Recommended, its width (1,190 px), nothing that slides. Everything section 11.2 adds is
+a phone's alone (under 700 px).
+
+How: an item of `data/home_store.json` marked `"phone": true` is drawn with the class
+`pw-hs-phone`, the one marked `"pc": true` (the banner of 24/11 that a phone's "Laptops,
+phones & TVs" takes the place of) with `pw-hs-pc`; two rules, the only ones added to the
+styles of 24/11 and after them, hide the first from 700 px and the second under it. A
+section left with fewer than two tiles for a computer, and the band left with fewer than
+two cards for it, are a phone's alone. Each banner's dot is seen where its banner is (the
+script counts the dots that are seen). The rule of fewer than two products (11.3) holds on
+both. `page_styles`, `browser_lists` and `store_pages` are the site's (`2330108`), word for
+word.
 
 How it came about, all on 2026-11-27: he asked for the computer's page as the phone's, for
 the whole screen («να εκμεταλλευτούμε όλη την οθόνη ... γενικά το site να παίζει σε όλη την
-οθόνη») and for every carousel to slide («Όλα πρέπει να γλιστράνε εάν είναι καρουζέλ»); it
-was built so (every page up to 1,920 px, arrows on the rows, then the sections one under
-another) and shown to him in a live preview. His words on seeing it: «Σε pc είναι χάλια»,
-then «Άστο όπως είναι σήμερα δεν μου αρέσει ανάπτυξη γραφικών στο pc»; asked what stays, he
-chose "the computer as today, with the new kinds". The styles and the script of the page,
-`page_styles`, `browser_lists` and `store_pages` are those of the site's commit `2330108`,
-word for word (the built version is in the branch's history: `056d3b1`).
+οθόνη») and for every carousel to slide («Όλα πρέπει να γλιστράνε εάν είναι καρουζέλ»). It
+was built so and shown to him in a live preview, three times: (1) every page up to
+1,920 px, arrows on the rows, sections two side by side: «Σε pc είναι χάλια», «Να κρατηθεί
+η ίδια λογική με το κινητό ...»; (2) the sections one under another (`056d3b1`): «Άστο όπως
+είναι σήμερα δεν μου αρέσει ανάπτυξη γραφικών στο pc», and, asked, "the computer as today,
+with the new kinds"; (3) the styles of 24/11 with the new kinds (`d75bd62`: seven banners in
+two lines, rows of nine tiles in three): «Το θέλω όπως ήταν πριν πριν την αλλαγή», and,
+asked, "the new kinds on the phone only". **Told to him: a computer's visitor still finds
+no monitors on the home page, which was his first example.**
 
 ### 11.5 Checked
 
 The fast suite: 371 of 373 modules, the 2 known (`tests/test_picwise_home_more_kinds.py`
-new; four tests of `tests/test_picwise_home_store.py` moved to the new numbers). Read on
-pictures of the local site at 1,366 and 390 px. **Not read
+new; four tests of `tests/test_picwise_home_store.py` moved to the new numbers). A computer's page compared with the site's
+(`2330108`) picture for picture at 700, 800, 1,000, 1,366 and 1,920 px: the same. A phone's
+read at 390 px. **Not read
 before it: the Recommended cards of the six kinds added to the band on the real catalogue**
 (the session could not open the live searches); read on the live home page after it.
 

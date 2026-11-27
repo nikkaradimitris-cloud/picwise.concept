@@ -363,7 +363,10 @@ class TheSectionsTests(unittest.TestCase):
         # Banner 2 to the first group of all departments (owner, 2026-11-24, 7.1).
         self.assertIn('href="/departments#home-kitchen"', page)
         self.assertIn("Browse home", page)
-        self.assertEqual(page.count('class="pw-hs-banner pw-hs-banner-'), 7)
+        # Four for a computer, as on 24/11; seven for a phone (`test_picwise_home_more_kinds`).
+        banners = re.findall(r'class="pw-hs-banner pw-hs-banner-\w+( pw-hs-phone| pw-hs-pc)?"', page)
+        self.assertEqual(len(banners) - banners.count(" pw-hs-phone"), 4)
+        self.assertEqual(len(banners) - banners.count(" pw-hs-pc"), 7)
         # A department of one kind leads to that kind's search (7.1).
         self.assertIn("/search?q=lamp", links)
         self.assertNotIn("/department/lighting", links)
@@ -375,7 +378,8 @@ class TheSectionsTests(unittest.TestCase):
         page = self._page(parts=ALL_PARTS)
         self.assertNotIn("pw-hs-banner-gold", page)
         self.assertNotIn("pw-hs-offers", page)
-        self.assertIn('class="pw-hs-banner pw-hs-banner-blue"', page)
+        # A computer's blue banner ("Laptops, printers & routers", as on 24/11).
+        self.assertIn('class="pw-hs-banner pw-hs-banner-blue pw-hs-pc"', page)
 
     def test_the_offers_row_in_the_shops_own_words(self) -> None:
         facts = HomeFacts(prepared_at=None, offers=_offers(2))
@@ -394,14 +398,15 @@ class TheSectionsTests(unittest.TestCase):
         everything = {tile.query for section in load_home_lists().sections for tile in section.tiles}
         page = self._page()
         tiles = sum(len(section.tiles) for section in load_home_lists().sections)
-        self.assertEqual(page.count('class="pw-hs-tile"'), tiles)
+        drawn = lambda text: len(re.findall(r'class="pw-hs-tile( pw-hs-phone)?"', text))  # noqa: E731
+        self.assertEqual(drawn(page), tiles)
         facts = HomeFacts(prepared_at=None, tiles_with_products=frozenset(everything - {"kettle", "ring", "necklace", "earrings"}))
         page = self._page(facts=facts)
         self.assertNotIn('href="/search?q=kettle"', page)
         self.assertIn('href="/search?q=microwave"', page)
         # "Jewellery" keeps only "Bracelets": fewer than two tiles, the section is left out.
         self.assertNotIn(">Jewellery</h2>", page)
-        self.assertEqual(page.count('class="pw-hs-tile"'), tiles - 5)
+        self.assertEqual(drawn(page), tiles - 5)
 
     def test_the_month_s_ten_as_tiles(self) -> None:
         page = self._page()

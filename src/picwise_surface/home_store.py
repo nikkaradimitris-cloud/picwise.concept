@@ -164,6 +164,14 @@ MIN_PICKS = 2
 # products (owner, 2026-11-27: «αν μία κατηγορία έχει λιγότερο από δύο προϊόντα να κρύβεται
 # αυτόματα από τα banners όχι από το site»): the home page alone, never the site.
 MIN_PRODUCTS = 2
+# What a phone alone shows, and what a computer alone shows (owner, 2026-11-27, having seen
+# a computer's page with the new kinds: «Το θέλω όπως ήταν πριν πριν την αλλαγή», then, asked,
+# "the new kinds on the phone only"): an item of the lists marked `phone` is drawn with
+# `PHONE_ONLY` and one marked `pc` with `PC_ONLY`; the two rules at the end of the page's
+# styles hide the first from 700 px and the second under it. A computer's page is so the
+# page of 24/11: its four banners, its six sections of four tiles, its six Recommended.
+PHONE_ONLY = "pw-hs-phone"
+PC_ONLY = "pw-hs-pc"
 # A banner of kinds needs this many of them shown, and names three at most.
 MIN_BANNER_KINDS = 2
 BANNER_KINDS_NAMED = 3
@@ -236,6 +244,7 @@ class Tile:
     name: str
     query: str
     drawing: str
+    phone: bool = False
 
 
 @dataclass(frozen=True)
@@ -245,6 +254,7 @@ class Section:
     department: str
     layout: str
     tiles: tuple[Tile, ...]
+    phone: bool = False
 
 
 @dataclass(frozen=True)
@@ -272,6 +282,8 @@ class Banner:
     # own title names ("Air fryers, vacuums & more" names two).
     kinds: tuple[BannerKind, ...] = ()
     lead: int = BANNER_KINDS_NAMED
+    phone: bool = False
+    pc: bool = False
 
 
 @dataclass(frozen=True)
@@ -290,6 +302,7 @@ class Kind:
     kind: str
     link: str
     drawing: str
+    phone: bool = False
 
 
 @dataclass(frozen=True)
@@ -343,6 +356,8 @@ def _lists_from(payload: Any) -> HomeLists:
                 drawings=drawings,
                 kinds=banner_kinds,
                 lead=max(1, min(lead, BANNER_KINDS_NAMED)),
+                phone=item.get("phone") is True,
+                pc=item.get("pc") is True,
             )
         )
     kinds = tuple(
@@ -351,6 +366,7 @@ def _lists_from(payload: Any) -> HomeLists:
             kind=_text(item.get("kind")),
             link=_text(item.get("link")),
             drawing=_text(item.get("drawing")),
+            phone=item.get("phone") is True,
         )
         for item in payload.get("recommended") or ()
         if isinstance(item, dict) and _text(item.get("query"))
@@ -360,7 +376,12 @@ def _lists_from(payload: Any) -> HomeLists:
         if not isinstance(item, dict) or _text(item.get("layout")) not in _LAYOUTS:
             continue
         tiles = tuple(
-            Tile(name=_text(tile.get("name")), query=_text(tile.get("query")), drawing=_text(tile.get("drawing")))
+            Tile(
+                name=_text(tile.get("name")),
+                query=_text(tile.get("query")),
+                drawing=_text(tile.get("drawing")),
+                phone=tile.get("phone") is True,
+            )
             for tile in item.get("tiles") or ()
             if isinstance(tile, dict) and _text(tile.get("name")) and _text(tile.get("query"))
         )
@@ -371,6 +392,7 @@ def _lists_from(payload: Any) -> HomeLists:
                 department=_text(item.get("department")),
                 layout=_text(item.get("layout")),
                 tiles=tiles,
+                phone=item.get("phone") is True,
             )
         )
     departments = tuple(
@@ -853,6 +875,8 @@ def _banners_html(lists: HomeLists, parts: frozenset[str], *, offers_shown: bool
     each; the offers' banner only while there is an offer to show (5.5); a banner of
     kinds as `banner_as_shown` reads it tonight."""
     drawn = []
+    # Each banner's dot is seen where its banner is.
+    seen: list[str] = []
     for banner in lists.banners:
         href = _banner_href(banner, parts, offers_shown=offers_shown)
         if not href:
@@ -863,8 +887,10 @@ def _banners_html(lists: HomeLists, parts: frozenset[str], *, offers_shown: bool
         title, drawings = as_shown
         first = not drawn
         (big, big_ground), (a, a_ground), (b, b_ground) = drawings
+        only = f" {PHONE_ONLY}" if banner.phone else f" {PC_ONLY}" if banner.pc else ""
+        seen.append(only)
         drawn.append(
-            f'<a class="pw-hs-banner pw-hs-banner-{banner.theme}" href="{escape(href, quote=True)}">'
+            f'<a class="pw-hs-banner pw-hs-banner-{banner.theme}{only}" href="{escape(href, quote=True)}">'
             f'<span class="pw-hs-banner-glow" aria-hidden="true">{_background("streak", lazy=not first)}</span>'
             '<span class="pw-hs-banner-text">'
             f'<span class="pw-hs-banner-eyebrow">{escape(banner.eyebrow)}</span>'
@@ -881,7 +907,7 @@ def _banners_html(lists: HomeLists, parts: frozenset[str], *, offers_shown: bool
         return ""
     dots = (
         '<div class="pw-hs-dots pw-needs-js" aria-hidden="true">'
-        + "".join(f'<span class="pw-hs-dot{" is-on" if index == 0 else ""}"></span>' for index in range(len(drawn)))
+        + "".join(f'<span class="pw-hs-dot{" is-on" if index == 0 else ""}{only}"></span>' for index, only in enumerate(seen))
         + "</div>"
         if len(drawn) > 1
         else ""
@@ -1014,14 +1040,17 @@ def _updated_words(prepared_at: datetime | None) -> str:
     return BAND_UPDATED.format(day=f"{prepared_at.day} {prepared_at:%b}".upper())
 
 
-def _band_html(facts: HomeFacts | None, parts: frozenset[str]) -> str:
+def _band_html(facts: HomeFacts | None, parts: frozenset[str], *, phone_only: frozenset[str] = frozenset()) -> str:
     """The Recommended band (the specification, 5.7): each kind's Recommended as its
-    search shows it tonight, a link to that search; left out under two cards."""
+    search shows it tonight, a link to that search; left out under two cards. The kinds
+    of `phone_only` (their searches' words) are a phone's alone."""
     picks = tuple(facts.picks) if facts is not None else ()
     if len(picks) < MIN_PICKS:
         return ""
+    # With fewer than two cards for a computer, the band is a phone's alone.
+    band_only = f" {PHONE_ONLY}" if sum(pick.query not in phone_only for pick in picks) < MIN_PICKS else ""
     cards = "".join(
-        f'<a class="pw-hs-pick" href="{_search_href(pick.query)}">'
+        f'<a class="pw-hs-pick{f" {PHONE_ONLY}" if pick.query in phone_only else ""}" href="{_search_href(pick.query)}">'
         f'<span class="pw-hs-pick-pic"><img class="pw-hs-pick-img" src="{escape(pick.image, quote=True)}" '
         f'alt="" width="144" height="144" loading="lazy" decoding="async"></span>'
         f'<span class="pw-hs-pick-kind">{escape(pick.kind)}</span>'
@@ -1041,7 +1070,7 @@ def _band_html(facts: HomeFacts | None, parts: frozenset[str]) -> str:
         else ""
     )
     return (
-        '<section class="pw-hs-band" id="pw-hs-band" aria-labelledby="pw-hs-band-title">'
+        f'<section class="pw-hs-band{band_only}" id="pw-hs-band" aria-labelledby="pw-hs-band-title">'
         '<div class="pw-hs-band-head">'
         f'<p class="pw-hs-band-eyebrow">{_STAR}{escape(eyebrow)}</p>'
         f'<h2 class="pw-hs-band-title" id="pw-hs-band-title">{escape(BAND_TITLE)}</h2>'
@@ -1089,26 +1118,25 @@ def _section_html(section: Section, index: int, facts: HomeFacts | None, parts: 
         if "departments" in parts and section.department
         else ""
     )
-    if section.layout == "grid":
-        body = "".join(
-            f'<a class="pw-hs-tile" href="{_search_href(tile.query)}">'
-            f'<span class="pw-hs-tile-pic pw-hs-sand">{_background("soft")}{_drawing(tile.drawing, 144)}</span>'
-            f'<span class="pw-hs-tile-name">{escape(tile.name)}</span></a>'
-            for tile in tiles
-        )
-        return (
-            f'<section class="pw-hs-sec" aria-labelledby="{title_id}">'
-            f"{_head2(section.title, title_id, arrow)}"
-            f'<div class="pw-hs-grid">{body}</div></section>'
-        )
+    # A phone's alone: a section marked so, or one left with fewer than two tiles for a
+    # computer; and each tile marked so.
+    only = f" {PHONE_ONLY}" if section.phone or sum(not tile.phone for tile in tiles) < MIN_TILES else ""
+    grid = section.layout == "grid"
+    ground, background, size = ("pw-hs-sand", "soft", 144) if grid else ("pw-hs-mist", "ring", 104)
     body = "".join(
-        f'<a class="pw-hs-tile" href="{_search_href(tile.query)}">'
-        f'<span class="pw-hs-tile-pic pw-hs-mist">{_background("ring")}{_drawing(tile.drawing, 104)}</span>'
+        f'<a class="pw-hs-tile{f" {PHONE_ONLY}" if tile.phone else ""}" href="{_search_href(tile.query)}">'
+        f'<span class="pw-hs-tile-pic {ground}">{_background(background)}{_drawing(tile.drawing, size)}</span>'
         f'<span class="pw-hs-tile-name">{escape(tile.name)}</span></a>'
         for tile in tiles
     )
+    if grid:
+        return (
+            f'<section class="pw-hs-sec{only}" aria-labelledby="{title_id}">'
+            f"{_head2(section.title, title_id, arrow)}"
+            f'<div class="pw-hs-grid">{body}</div></section>'
+        )
     return (
-        f'<section class="pw-hs-sec pw-hs-sec-row" aria-labelledby="{title_id}">'
+        f'<section class="pw-hs-sec pw-hs-sec-row{only}" aria-labelledby="{title_id}">'
         f"{_head2(section.title, title_id, arrow)}"
         f'<div class="pw-hs-scroll">{body}</div></section>'
     )
@@ -1232,14 +1260,17 @@ HOME_STORE_SCRIPT = r"""
 "use strict";
 var row=document.getElementById("pw-hs-banner-row");
 if(row){
-  var dots=document.querySelectorAll(".pw-hs-dot");
+  var every=document.querySelectorAll(".pw-hs-dot");
+  var shown=function(list){var out=[];for(var j=0;j<list.length;j++){if(list[j].offsetWidth>0){out.push(list[j]);}}return out;};
   var mark=function(){
-    var first=row.firstElementChild;if(!first||!dots.length){return;}
+    var dots=shown(every),first=shown(row.children)[0];if(!first||!dots.length){return;}
+    for(var k=0;k<every.length;k++){every[k].classList.remove("is-on");}
     var step=first.getBoundingClientRect().width+12;
     var at=Math.max(0,Math.min(dots.length-1,Math.round(row.scrollLeft/Math.max(step,1))));
     for(var i=0;i<dots.length;i++){dots[i].classList.toggle("is-on",i===at);}
   };
   row.addEventListener("scroll",function(){window.requestAnimationFrame(mark);},{passive:true});
+  mark();
 }
 var band=document.getElementById("pw-hs-band");
 if(band){
@@ -1523,6 +1554,10 @@ HOME_STORE_STYLES = (
     ".pw-hs-sec .pw-hs-tile-pic,.pw-hs-scroll .pw-hs-tile-pic{height:120px;}"
     ".pw-hs-sec .pw-hs-art{width:96px;height:96px;}"
     "}"
+    # A phone's own and a computer's own (`PHONE_ONLY`, `PC_ONLY`; owner, 2026-11-27): the
+    # only rules added to the styles of 24/11, after them.
+    "@media (max-width:699px){.pw-hs-pc{display:none!important;}}"
+    "@media (min-width:700px){.pw-hs-phone{display:none!important;}}"
 )
 
 
@@ -1554,7 +1589,7 @@ def render_home_store_page(
         f"{_banners_html(lists, parts, offers_shown=bool(offers_html), facts=facts)}"
         f"{offers_html}"
         f"{popular_html}"
-        f"{_band_html(facts, parts)}"
+        f"{_band_html(facts, parts, phone_only=frozenset(kind.query for kind in lists.recommended if kind.phone))}"
         f"{_departments_html(lists, parts)}"
         + (f'<div class="pw-hs-secs">{sections_html}</div>' if sections_html else "")
         + f"{_vows_html(catalogue, parts)}"
