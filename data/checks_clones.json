@@ -1,5 +1,14 @@
 {
   "clones": 8,
-  "bots": [],
-  "why": "The checks' bots (docs/PICWISE_CHECKS_RULES.md, sections 22 and 23; owner, 2026-11-25: «μην αγνοείς τους 4 κλώνους»; 2026-11-26: «8 bot αντί για 4, 2 σε κάθε πυρήνα. Κάθε bot είναι ξεχωριστό πρόγραμμα»). `clones`: how many bots the shops are split into, each shop always to the same one by a code of its number at Awin (picwise_checks.bot_rows.clone_of). `bots`: the bots switched on, each asking its own shops as a program of its own (picwise-checks@K.service). None: the bot alone asks every shop, as before. Some: the bot alone asks the shops of the others and records the night from its day and theirs (they open one by one). All: the bot alone is off and picwise-checks-record.service records the night from the eight days. Changed only on the owner's «ανέβασε», best between 03:10 and 05:30 UTC, after a night was recorded and before the day's asking starts (the rules 22.3)."
+  "bots": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "why": "The checks' bots (docs/PICWISE_CHECKS_RULES.md, sections 22 and 23; owner, 2026-11-25: «μην αγνοείς τους 4 κλώνους»; 2026-11-26: «8 bot αντί για 4, 2 σε κάθε πυρήνα. Κάθε bot είναι ξεχωριστό πρόγραμμα»). `clones`: how many bots the shops are split into, each shop always to the same one by a code of its number at Awin (picwise_checks.bot_rows.clone_of). `bots`: the bots switched on, each asking its own shops as a program of its own (picwise-checks@K.service). None: the bot alone asks every shop, as before. Some: the bot alone asks the shops of the others and records the night from its day and theirs (they open one by one). All: the bot alone is off and picwise-checks-record.service records the night from the eight days. Changed only on the owner's «ανέβασε», best between 03:10 and 05:30 UTC, after a night was recorded and before the day's asking starts (the rules 22.3). 27/11 (owner, 11:02: «Πρέπει να τελειώνουμε το project και εγώ δεν μπορώ να περιμένω από μέρα σε μέρα»; 11:07, to the plan put to him: «2 συμφωνώ με αυτά»): all eight on at once, not two first, deployed 28/11 at 03:10 UTC; then two stable days (the rules 23.9 and 23.10)."
 }

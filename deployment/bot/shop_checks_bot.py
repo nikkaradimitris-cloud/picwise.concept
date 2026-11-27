@@ -94,7 +94,7 @@ from picwise_checks.rows import row_from_record, row_of, row_record  # noqa: E40
 from picwise_checks.page_reader import NOTHING, Offer, PageRead, options_in_stock  # noqa: E402
 from picwise_checks.page_reader import read_catalogue_page, read_page_bytes, read_product_json  # noqa: E402
 from picwise_checks.verdicts import (  # noqa: E402
-    PageAnswer, Row, ShopNight, address_parts, page_verdict, shop_reads_pages, stock_reading, tie,
+    NOTHING_ASKED, PageAnswer, Row, ShopNight, address_parts, page_verdict, shop_reads_pages, stock_reading, tie,
 )
 
 USER_AGENT = look.USER_AGENT
@@ -790,6 +790,25 @@ def asked_whole(result: "ShopResult", asked_of_it: int, *, whole_round: bool, la
     return whole_round and late <= LATE_HOURS * 3600.0
 
 
+# 23.10 (owner, 2026-11-27: «Όταν ένα κατάστημα δεν ελέγχεται μπαίνει στην άκρη δεν πρέπει να
+# σταματάει ο έλεγχος»): why a shop's asking was not whole. The shop's own doing (it said to come
+# back, or it answered nothing though the round had time for it, a day of its quarantine) does not
+# stop a stable day; ours (the round had not the time, an error) does.
+NOT_WHOLE_SAID_LATER = "the shop said to come back later"
+NOT_WHOLE_NO_TIME = "the round had not the time"
+NOT_WHOLE_ERROR = "an error"
+NOT_WHOLE_THE_SHOPS = frozenset({NOT_WHOLE_SAID_LATER, NOTHING_ASKED})
+
+
+def not_whole_why(result: "ShopResult", asked_of_it: int, *, whole_round: bool, late: float) -> str:
+    """23.10: why a shop's asking was not whole tonight (`asked_whole` false)."""
+    if result.stopped:
+        return NOT_WHOLE_ERROR if result.stopped.startswith("error") else NOT_WHOLE_SAID_LATER
+    if not result.answers and asked_of_it and whole_round and late <= LATE_HOURS * 3600.0:
+        return NOTHING_ASKED
+    return NOT_WHOLE_NO_TIME
+
+
 def judge(rows: Mapping[str, Row], result: ShopResult, *, shared_ids: Iterable[str] = (),
           by_page: Mapping[tuple[str, str], set] | None = None,
           stock_words: Counter | None = None) -> dict[str, L.Reading]:
@@ -977,6 +996,13 @@ class Round:
         return {shop for shop, result in self.results.items()
                 if asked_whole(result, self.ordered.get(shop, 0), whole_round=self.whole, late=self.late.get(shop, 0.0))}
 
+    def not_whole(self) -> dict[str, str]:
+        """23.10: why each of its shops not asked whole was not (`not_whole_why`)."""
+        whole = self.complete()
+        return {shop: not_whole_why(result, self.ordered.get(shop, 0), whole_round=self.whole,
+                                    late=self.late.get(shop, 0.0))
+                for shop, result in self.results.items() if shop not in whole}
+
     def to_record(self) -> dict[str, Any]:
         """What a clone keeps of its day for the night's recording (22); its answers are kept in
         its own night's file as they come."""
@@ -1138,10 +1164,14 @@ def record_round(rows: dict[str, Row], rounds: list[Round], *, shown: set[str], 
     results: dict[str, ShopResult] = {}
     seconds: dict[str, float] = {}
     complete: set[str] = set()
+    why_not_whole: dict[str, str] = {}
     for asked in rounds:
         results.update(asked.results)
         seconds.update(asked.seconds)
         complete |= asked.complete()
+        why_not_whole.update(asked.not_whole())
+    # 23.10: the shops the round had time for that answered nothing: a day of their quarantine.
+    nothing_asked = {shop for shop, why in why_not_whole.items() if why == NOTHING_ASKED and shop not in complete}
     # The hours of the shortest asker that did not end its shops (a bot that ended them early asked
     # its whole day), else of the longest.
     asked_hours = min((asked.hours for asked in rounds if not asked.done),
@@ -1157,7 +1187,8 @@ def record_round(rows: dict[str, Row], rounds: list[Round], *, shown: set[str], 
                               by_page=by_page, stock_words=words[shop]))
     night_result = L.record_night(ledger, night, rows, readings, shop_nights, shown=shown, parts=parts, awin=awin,
                                   feeds=feeds, owner_cut_shops=owner_cut_shops, owner_awin_word=owner_awin_word,
-                                  awin_closed_out=awin_closed_out, complete=complete if scanned else ())
+                                  awin_closed_out=awin_closed_out, complete=complete if scanned else (),
+                                  nothing_asked=nothing_asked if scanned else ())
     if not night_result.note.get("ours"):
         # 23: what the bot has not been given for over seven nights is let go, a line of each kept.
         night_result.note["ledger"] = L.forget_unseen(ledger, night, rows.keys())
@@ -1185,6 +1216,10 @@ def record_round(rows: dict[str, Row], rounds: list[Round], *, shown: set[str], 
                                       "round_hours": round(asked_hours, 1), "whole_round": whole_round,
                                       "asked_whole": len(complete) if scanned else 0,
                                       "not_whole": sorted(set(results) - complete)[:SHOPS_LISTED] if scanned else [],
+                                      # 23.10: why each was not, so that only ours stops a stable day.
+                                      "not_whole_why": ({shop: why_not_whole.get(shop, NOT_WHOLE_NO_TIME)
+                                                         for shop in sorted(set(results) - complete)}
+                                                        if scanned else {}),
                                       # 22: the clones the day was asked by (1: the bot alone), and each one's hours.
                                       "clones": len(rounds),
                                       "clone_hours": [round(asked.hours, 1) for asked in rounds],
@@ -1284,8 +1319,14 @@ def print_night(note: Mapping[str, Any], made: Mapping[str, Any], ledger: L.Ledg
             + (" (" + ", ".join(f"{state} {count:,}" for state, count in (kept.get("let_go_by_state") or {}).items()) + ")"
                if kept.get("let_go") else "")
             + f"; lines of those let go kept {int(kept.get('gone_kept') or 0):,}")
-    for name, (why, days) in (note.get("cannot_be_checked") or {}).items():
-        say(f"cannot be checked: {name}: {why} (day {days})")
+    for name, entry in (note.get("quarantine") or {}).items():
+        why, days, kind, out, again = (list(entry) + ["", 0, "", False, ""])[:5]
+        say(f"in quarantine ({kind}): {name}: {why} (day {days}" + ("; out" if out else "")
+            + (f"; asked again on {again}" if again else "") + ")")
+    if "quarantine" not in note:
+        for name, entry in (note.get("cannot_be_checked") or {}).items():
+            why, days = (list(entry) + ["", 0])[:2]
+            say(f"cannot be checked: {name}: {why} (day {days})")
     if note.get("awin"):
         awin = note["awin"]
         if awin.get("names_not_matched"):

@@ -355,6 +355,29 @@ def shop_checkable(night: ShopNight) -> tuple[bool, str]:
     return True, ""
 
 
+# 23.10, the quarantine (owner, 2026-11-27: «Τα καταστήματα που είναι προβληματικά μπαίνουν σε
+# καραντίνα η καραντίνα έχει δύο τύπους αυτά που δεν τα ελέγχονται γιατί έχουν κάποιο τεχνικό
+# θέμα και αυτά που δεν επιτρέπουν τα bot», then «συμφωνώ με αυτά»): a shop that cannot be
+# checked is in one of two kinds by why. A shop the round had time for, that answered nothing
+# and was not stopped by an answer that said to come back, cannot be checked either: technical.
+NOTHING_ASKED = "nothing could be asked"
+BOTS_NOT_ALLOWED = "bots not allowed"
+TECHNICAL = "technical"
+_BOTS_NOT_ALLOWED_WHYS = frozenset({
+    "robots.txt disallows its product pages",
+    "robots.txt refused",
+    "refuses the bot",
+    "crawl-delay over 60 s",
+})
+
+
+def quarantine_kind(why: str) -> str:
+    """23.10: the kind of quarantine a shop that cannot be checked is in, by why: the shops that
+    do not let the bot in (`BOTS_NOT_ALLOWED`), and those with a technical matter (`TECHNICAL`):
+    no address of their own, pages not read, nothing that could be asked."""
+    return BOTS_NOT_ALLOWED if str(why or "") in _BOTS_NOT_ALLOWED_WHYS else TECHNICAL
+
+
 def shop_reads_pages(pages_200: int, pages_read: int) -> bool:
     """Rules 5.1: the shop's reader reads a product on at least 9 in 10 of its pages
     that answered 200 that night, so a page with none is not a product page."""

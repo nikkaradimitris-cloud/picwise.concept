@@ -147,6 +147,21 @@ class HealthTests(_AServer, unittest.TestCase):
         self.assertIn("checks: decided 3,120, passed 3,001, failed 119 (gone 101, moved 18); cut tonight 119, back 4", lines)
         self.assertIn("checks, cannot be checked: Aosom UK: robots.txt refused, day 3; leaves tomorrow", lines)
         self.assertIn("checks, cannot be checked: Plusshop UK: refuses the bot, day 1; leaves on day 4", lines)
+        # 23.10: the quarantine's two kinds, when the night says them.
+        self.write(self.folder / "checks-note.json", {**note, "quarantine": {
+            "Plusshop UK": ["refuses the bot", 1, "bots not allowed", False, ""],
+            "Bazta UK": ["refuses the bot", 5, "bots not allowed", True, "2026-11-29"],
+            "Pro Espresso": ["nothing could be asked", 3, "technical", False, ""],
+            "Juicy Couture UK": ["no address of its own", 6, "technical", True, ""]}})
+        lines = self.printed()
+        quarantine = [line for line in lines if line.startswith("checks, quarantine")]
+        self.assertEqual(quarantine, [
+            "checks, quarantine (bots not allowed): Bazta UK: refuses the bot, day 5; out; asked again on 2026-11-29",
+            "checks, quarantine (bots not allowed): Plusshop UK: refuses the bot, day 1; leaves on day 4",
+            "checks, quarantine (technical): Juicy Couture UK: no address of its own, day 6; out",
+            "checks, quarantine (technical): Pro Espresso: nothing could be asked, day 3; leaves tomorrow"])
+        self.assertFalse(any(line.startswith("checks, cannot be checked") for line in lines))
+        self.write(self.folder / "checks-note.json", note)
         self.assertIn("checks, out by Awin's reading tonight: usmile (Awin: in no list)", lines)
         # A brake that held, the cutting stopped, an Awin reading that waits, an old night: limits.
         self.write(self.folder / "checks-note.json", {**note, "night": "2026-11-19", "braked_shops": ["Kettles"],
@@ -253,8 +268,8 @@ class HealthTests(_AServer, unittest.TestCase):
 
     def test_the_stable_day_is_said_under_the_rule_of_the_day(self) -> None:
         # The checks' rules 23.6: the round all day, the night on time, the server up through the
-        # round, every shop asked whole but those that cannot be checked, no bot in trouble, the
-        # failures near a usual day's, no shop newly unable to be checked.
+        # round, every shop asked whole but those in quarantine or that stopped it themselves (23.10),
+        # no bot in trouble, the failures near a usual day's; a shop newly in quarantine is said only.
         rule = {"on": True, "pass_nights": 1, "most_asked_of_a_shop": 20000, "round_hours": 21.5, "whole_round": True,
                 "asked_whole": 100, "not_whole": ["Slow Shop"]}
         note = {"night": NOW.date().isoformat(), "shops_asked": 105, "decided": 1000, "passed": 990,
@@ -267,10 +282,29 @@ class HealthTests(_AServer, unittest.TestCase):
         stable = next(line for line in lines if line.startswith(f"checks, the stable day of {NOW.date()}"))
         self.assertIn("the round asked all day: yes", stable)
         self.assertIn("the server up all the round: yes", stable)
-        self.assertIn("every shop asked whole but those that cannot be checked (not: Slow Shop): NO", stable)
+        self.assertIn("every shop asked whole but those in quarantine or that stopped it themselves (not: Slow Shop): NO",
+                      stable)
         self.assertIn("the failures 1.0% of 1,000 decided (usual 1.2%): yes", stable)
-        self.assertIn("no shop newly unable to be checked (new: Walled Shop): NO", stable)
+        self.assertIn("set aside, newly in quarantine: Walled Shop", stable)
+        self.assertNotIn("newly unable", stable)
         self.assertTrue(stable.startswith(f"checks, the stable day of {NOW.date()} (rules 23.6): NO;"))
+        # 23.10 (owner, 27/11): a shop whose own doing it was (it said to come back, it answered
+        # nothing) is set aside; only ours (no time, an error) stops the day.
+        for why, stops in (("the shop said to come back later", False), ("nothing could be asked", False),
+                           ("the round had not the time", True), ("an error", True)):
+            self.write(self.folder / "checks-note.json",
+                       {**note, "shop_rule": {**rule, "not_whole_why": {"Slow Shop": why}}})
+            with mock.patch.object(print_health, "UPTIME", uptime):
+                stable = next(line for line in self.printed() if line.startswith("checks, the stable day"))
+            self.assertEqual(stable.startswith(f"checks, the stable day of {NOW.date()} (rules 23.6): NO;"), stops, why)
+            if not stops:
+                self.assertIn("set aside, stopped by the shop itself: Slow Shop", stable)
+        # A shop in quarantine not asked tonight (a week's asking) is set aside too.
+        self.write(self.folder / "checks-note.json",
+                   {**note, "quarantine": {"Slow Shop": ["refuses the bot", 9, "bots not allowed", True, "2026-11-29"]}})
+        with mock.patch.object(print_health, "UPTIME", uptime):
+            stable = next(line for line in self.printed() if line.startswith("checks, the stable day"))
+        self.assertTrue(stable.startswith(f"checks, the stable day of {NOW.date()} (rules 23.6): YES;"), stable)
         # Everything right, and the server up since before the round: YES.
         note.update({"cannot_be_checked": {"Walled Shop": ["refused", 2]}, "shop_rule": {**rule, "not_whole": []}})
         self.write(self.folder / "checks-note.json", note)

@@ -91,9 +91,13 @@ class ClonesTests(unittest.TestCase):
 
     def _main(self, checks: Path, site: Site, *extra: str, now: datetime = MORNING) -> int:
         checks.mkdir(exist_ok=True)
+        # The bot alone asks every shop: no bot of its own on, whatever the repository's switch says
+        # (all eight on from 27/11).
+        switch = self.folder / "checks_clones.json"
+        switch.write_text('{"clones": 2, "bots": []}\n', encoding="utf-8")
         return bot.main(["--catalogue", str(self.catalogue), "--checks", str(checks), "--processes", "0",
                          "--shop-rule", "on", "--cache", str(self.folder / "cache"), *extra],
-                        fetch=site.fetch, sleep=site.sleep, clock=site.clock, now=now, environ={})
+                        fetch=site.fetch, sleep=site.sleep, clock=site.clock, now=now, environ={}, switch=switch)
 
     @staticmethod
     def _decisions(checks: Path) -> dict:

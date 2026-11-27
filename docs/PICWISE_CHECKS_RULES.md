@@ -103,6 +103,12 @@ Each rule names whose it is:
   Το αρχείο ελέγχων σβήνει ό,τι δεν δόθηκε στο bot πάνω από 7 βράδια (κρατά μία γραμμή του).
   Ο δεύτερος έλεγχος έχει δικό του διακόπτη και ανοίγει τελευταίος. Η αναφορά υγείας λέει κάθε
   πρωί αν η μέρα ήταν «σταθερή».
+- **27/11: καραντίνα (ενότητα 23.10, απόφασή σου).** Όποιο κατάστημα δεν ελέγχεται μπαίνει σε
+  καραντίνα, σε έναν από δύο τύπους: «δεν επιτρέπουν τα bot» ή «τεχνικό θέμα». Δεν σταματά τη
+  «σταθερή μέρα». Βγαίνει από το site την 4η μέρα και γυρίζει την πρώτη καλή νύχτα. Όσα δεν
+  επιτρέπουν bot ξαναρωτιούνται μία φορά την εβδομάδα, τα τεχνικά κάθε νύχτα. Κατάστημα που δεν
+  τελείωσε επειδή δεν πρόλαβαν τα bot συνεχίζει να μετρά (δικό μας θέμα). Τα 8 bot ανοίγουν όλα
+  μαζί και αρκούν 2 σταθερές μέρες (απόφασή σου, 27/11).
 
 ## 1. What the checks are for, and what they rest on
 
@@ -1957,7 +1963,7 @@ bot alone began is not carried into the clones' files (its answers are asked aga
 clones). To read the morning after: the health run's four clones "success", the recording's
 night, the shops asked whole.
 
-## 23. Eight bots, 10,000 a shop on the site, 20,000 asked a day (owner, 26/11): step 1 built 26/11 (Claude Opus 5.5), every part behind its switch; NOTHING DEPLOYED
+## 23. Eight bots, 10,000 a shop on the site, 20,000 asked a day (owner, 26/11): step 1 built 26/11 (Claude Opus 5.5); STEP 2 DEPLOYED 26/11 on his «Ανέβασε» (18:57; the catalogue 99,537 products); the eight bots and the second asking still off
 
 ### 23.1 His words, and the brief he gave the builder
 
@@ -2081,10 +2087,12 @@ night (04:17 to 04:45 UTC); the bot alone 1.0 GB on 23/11 (2.2 GB with the 399,0
 
 The health run says it, one line, under the rule of the day (21): the round asked all day; the
 night recorded on time; the server not started again during the round (`/proc/uptime`); every shop
-asked whole but those that cannot be checked; no bot started again by systemd nor near its memory's
-limit (90%), nor the bots together near theirs; the failures at most twice a usual day's (1.2% on
-25/11); no shop newly unable to be checked. The site's speed is the workflow's own line (four
-searches from outside). The parts that are limits already pass their own; the line adds none.
+asked whole but those in quarantine and those that stopped it themselves (23.10, from 27/11); no
+bot started again by systemd nor near its memory's limit (90%), nor the bots together near theirs;
+the failures at most twice a usual day's (1.2% on 25/11). Until 27/11 a shop newly unable to be
+checked made the day not stable too; since 23.10 it is said beside the line ("set aside, newly in
+quarantine") and stops nothing. The site's speed is the workflow's own line (four searches from
+outside). The parts that are limits already pass their own; the line adds none.
 
 ### 23.7 The second asking (behind `data/checks_second_switch.json`, false)
 
@@ -2153,6 +2161,12 @@ with every shop.
 
 ### 23.9 For the «ανέβασε»
 
+**Changed 27/11** (owner, 11:02: «Πρέπει να τελειώνουμε το project και εγώ δεν μπορώ να περιμένω από
+μέρα σε μέρα»; to the plan put to him, 11:07: «2 συμφωνώ με αυτά», his «ναι» standing for the
+«ανέβασε» of 28/11 03:10 UTC): step 3 opens **all eight bots at once** (`"bots": [1, 2, 3, 4, 5, 6, 7,
+8]`), not two first; with it the quarantine of 23.10; then **two** stable days in a row, not three
+(the nights of 29/11 and 30/11). The list below is as written on 26/11.
+
 - **Step 2** (his «ανέβασε»): one commit, `"most": 10000, "asked": 20000` in
   `data/shop_cap_switch.json` (frozen with the code: the deployment prepares the catalogue again,
   about 30 minutes, the bot stopped meanwhile); the code of steps 1 deployed with it, every other
@@ -2172,3 +2186,44 @@ with every shop.
   which prepares the catalogue again (the frozen package changed), so the rows for the bot are
   written with 14 values again; an older bot ignores the ledger's `seen` and `gone`, the night's
   file's `"n"` and its lines of a stopped second asking.
+
+### 23.10 The quarantine (owner, 27/11)
+
+**His words.** 11:00: «Όταν ένα κατάστημα δεν ελέγχεται μπαίνει στην άκρη δεν πρέπει να σταματάει ο
+έλεγχος δεν με ενδιαφέρει να μάθω για ποιο λόγο δεν ελέγχεται αυτή τη στιγμή...»; 11:05: «Τα
+καταστήματα που είναι προβληματικά μπαίνουν σε καραντίνα η καραντίνα έχει δύο τύπους αυτά που δεν
+τα ελέγχονται γιατί έχουν κάποιο τεχνικό θέμα και αυτά που δεν επιτρέπουν τα bot»; 11:07, to the
+rule put to him: «συμφωνώ με αυτά». Put to him at 11:00, and kept: a shop not asked whole because
+the bots had not the time is ours, not the shop's, and still stops a stable day.
+
+**Why.** The night of 27/11 was not a stable day for one shop only, Pro Espresso, not asked whole
+night after night (its robots.txt sends elsewhere, noted 12/11) and not among those that cannot be
+checked: no day would ever have been stable.
+
+**The rule.**
+
+- The shops that cannot be checked (5.6.2) are the quarantine, in two kinds by why
+  (`picwise_checks.verdicts.quarantine_kind`): **bots not allowed** (refuses the bot, robots.txt
+  refused or forbids its product pages, a crawl-delay over 60 s) and **technical** (no address of
+  its own, its pages not read, nothing that could be asked).
+- **Nothing that could be asked** (new, technical): a shop the round had time for (the round whole,
+  the shop begun within the hour) that answered nothing and was not stopped by an answer that said
+  to come back (`shop_checks_bot.not_whole_why`; `ledger.record_night(nothing_asked=)`).
+- Out of the site on its day 4, as before (5.6.2); back the first night it can be checked.
+- A shop out of the **bots not allowed** kind is asked again once a week (`ledger.BOTS_RETRY_EVERY`,
+  from `Shop.out_on`, the night it went out), nothing of it asked on the other nights
+  (`ledger.resting`), so that a shop that said no is not troubled; a **technical** one each night
+  by its few pages, as before. A shop out before 27/11 (no `out_on`) is asked its next night, which
+  keeps it.
+- The night's note names every shop in quarantine (`note["quarantine"]`: why, its day, its kind,
+  out, the night it is asked again), those resting tonight too; the health run prints the two
+  kinds apart ("checks, quarantine (bots not allowed): …", "checks, quarantine (technical): …").
+- **The stable day** (23.6): a shop in quarantine, and a shop not whole by its own doing (it said to
+  come back, it answered nothing), is set aside and named beside the line; a shop not whole because
+  the round had not the time, or by an error, still makes the day not stable
+  (`shop_rule.not_whole_why`; a night recorded before 27/11 says no why, and each shop not whole
+  counts as it did).
+- Not frozen with the catalogue (`src/picwise_checks`, `deployment/bot`, `deployment/server`): its
+  deployment prepares nothing again.
+- Not built: a shop that answers part of its products and then says to come back is not put in
+  quarantine (its passes still count); it is set aside from the stable day only.
