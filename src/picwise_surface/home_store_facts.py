@@ -41,6 +41,7 @@ from picwise_providers.state import loaded_prepared_at
 from picwise_search import resolve_live_search
 
 from .home_store import (
+    MIN_PRODUCTS,
     Departments,
     HomeFacts,
     HomeLists,
@@ -356,6 +357,21 @@ def shop_offers(
 _UNSET: Any = object()
 
 
+def products_shown(resolution: Any) -> int:
+    """How many products a search's answer holds tonight, as its page counts them; 0 when
+    it shows no card. The home page shows a kind from two (`MIN_PRODUCTS`)."""
+    try:
+        if resolution is None or not provider_feed_cards_will_render(resolution):
+            return 0
+        shown = len(tuple(resolution.provider_feed_selected_products)) + len(
+            tuple(getattr(resolution, "provider_feed_more_products", ()) or ())
+        )
+        return max(int(getattr(resolution, "provider_feed_total_count", 0) or 0), shown)
+    except Exception:
+        logger.exception("the home page could not count a search's products")
+        return 0
+
+
 def work_out_home_facts(
     *,
     lists: HomeLists | None = None,
@@ -385,15 +401,13 @@ def work_out_home_facts(
         if pick is not None:
             picks.append(pick)
     with_products = set()
-    for section in lists.sections:
-        for tile in section.tiles:
-            resolution = answer(tile.query)
-            try:
-                shown = resolution is not None and provider_feed_cards_will_render(resolution)
-            except Exception:
-                shown = False
-            if shown:
-                with_products.add(tile.query)
+    asked = [tile.query for section in lists.sections for tile in section.tiles]
+    asked += [kind.query for banner in lists.banners for kind in banner.kinds]
+    for query in asked:
+        if query in with_products:
+            continue
+        if products_shown(answer(query)) >= MIN_PRODUCTS:
+            with_products.add(query)
     catalogue = _catalogue_products() if products is None else tuple(products)
     shops, shop_count = top_shops(catalogue)
     shop_names = all_shop_names(catalogue)

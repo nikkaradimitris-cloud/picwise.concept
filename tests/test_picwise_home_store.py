@@ -322,10 +322,14 @@ class ThePageTests(_Switch, unittest.TestCase):
         names |= {item.drawing for item in lists.departments}
         names |= set(lists.popular_drawings.values())
         names |= {name for banner in lists.banners for name, _ground in banner.drawings}
+        names |= {kind.drawing for banner in lists.banners for kind in banner.kinds}
         for name in names:
             self.assertTrue((ROOT / "assets" / "home" / "art" / f"{name}.svg").is_file(), name)
-        self.assertEqual(len(lists.sections), 6)
-        self.assertTrue(all(len(section.tiles) == 4 for section in lists.sections))
+        # Fourteen sections from 2026-11-27 (six until then; `test_picwise_home_more_kinds`);
+        # a grid keeps four tiles, a row that slides holds four or more.
+        self.assertEqual(len(lists.sections), 14)
+        self.assertTrue(all(len(section.tiles) == 4 for section in lists.sections if section.layout == "grid"))
+        self.assertTrue(all(len(section.tiles) >= 4 for section in lists.sections if section.layout == "row"))
         self.assertEqual(len(lists.departments), 13)
         # A tile searches the kind itself: "watch", not "watches" (read on the site, 23/11).
         queries = {tile.query for section in lists.sections for tile in section.tiles}
@@ -359,7 +363,7 @@ class TheSectionsTests(unittest.TestCase):
         # Banner 2 to the first group of all departments (owner, 2026-11-24, 7.1).
         self.assertIn('href="/departments#home-kitchen"', page)
         self.assertIn("Browse home", page)
-        self.assertEqual(page.count('class="pw-hs-banner pw-hs-banner-'), 4)
+        self.assertEqual(page.count('class="pw-hs-banner pw-hs-banner-'), 7)
         # A department of one kind leads to that kind's search (7.1).
         self.assertIn("/search?q=lamp", links)
         self.assertNotIn("/department/lighting", links)
@@ -389,14 +393,15 @@ class TheSectionsTests(unittest.TestCase):
     def test_a_tile_whose_search_has_nothing_is_not_drawn(self) -> None:
         everything = {tile.query for section in load_home_lists().sections for tile in section.tiles}
         page = self._page()
-        self.assertEqual(page.count('class="pw-hs-tile"'), 24)
-        facts = HomeFacts(prepared_at=None, tiles_with_products=frozenset(everything - {"kettle", "watch", "boots", "dress"}))
+        tiles = sum(len(section.tiles) for section in load_home_lists().sections)
+        self.assertEqual(page.count('class="pw-hs-tile"'), tiles)
+        facts = HomeFacts(prepared_at=None, tiles_with_products=frozenset(everything - {"kettle", "ring", "necklace", "earrings"}))
         page = self._page(facts=facts)
         self.assertNotIn('href="/search?q=kettle"', page)
         self.assertIn('href="/search?q=microwave"', page)
-        # "Style" keeps only "Trainers": fewer than two tiles, the section is left out.
-        self.assertNotIn(">Style</h2>", page)
-        self.assertEqual(page.count('class="pw-hs-tile"'), 19)
+        # "Jewellery" keeps only "Bracelets": fewer than two tiles, the section is left out.
+        self.assertNotIn(">Jewellery</h2>", page)
+        self.assertEqual(page.count('class="pw-hs-tile"'), tiles - 5)
 
     def test_the_month_s_ten_as_tiles(self) -> None:
         page = self._page()
@@ -486,11 +491,13 @@ class ThePhonesRulesTests(unittest.TestCase):
             self.assertIn("gap:8px", rule(selector), selector)
 
     def test_on_a_computer_the_same_page_inside_the_site_s_width(self) -> None:
+        # The whole screen up to 1,920 px from 2026-11-27 (owner: «να εκμεταλλευτούμε όλη την
+        # οθόνη»; 1,190 px until then).
         computer = HOME_STORE_STYLES.split("@media (min-width:700px){", 1)[1]
         self.assertIn(".pw-hs-strip{display:none!important;}", computer)
-        self.assertIn(".pw-hs-main{width:100%;max-width:1190px;", computer)
-        self.assertIn(".pw-hs-head-in{max-width:1190px;", computer)
-        self.assertIn(".pw-hs-foot-in{max-width:1190px;", computer)
+        self.assertIn(".pw-hs-main{width:100%;max-width:1920px;", computer)
+        self.assertIn(".pw-hs-head-in{max-width:1920px;", computer)
+        self.assertIn(".pw-hs-foot-in{max-width:1920px;", computer)
         wide = HOME_STORE_STYLES.split("@media (min-width:1000px){", 1)[1]
         self.assertIn(".pw-js .pw-hs-dots{display:none!important;}", wide)
         self.assertIn(".pw-hs-secs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));", wide)
@@ -554,6 +561,18 @@ class TheFactsTests(price_first._PageMixin, unittest.TestCase):
         self._serve(self._kettles([20, 30, 40, 50, 60], codes=False))
         facts = home_store_facts.work_out_home_facts(lists=self.LISTS, products=(), prepared_at=None)
         self.assertEqual(facts.picks, ())
+        self.assertEqual(facts.tiles_with_products, frozenset({"kettle"}))
+
+    def test_a_kind_of_one_product_is_on_no_tile(self) -> None:
+        # Owner, 2026-11-27: «αν μία κατηγορία έχει λιγότερο από δύο προϊόντα να κρύβεται
+        # αυτόματα από τα banners όχι από το site».
+        self._serve(self._kettles([20]))
+        facts = home_store_facts.work_out_home_facts(lists=self.LISTS, products=(), prepared_at=None)
+        self.assertEqual(facts.tiles_with_products, frozenset())
+        # Not from the site: its search still shows it.
+        self.assertIn("Fixturon Electric Kettle 1 1.7L", self._page("kettle"))
+        self._serve(self._kettles([20, 30]))
+        facts = home_store_facts.work_out_home_facts(lists=self.LISTS, products=(), prepared_at=None)
         self.assertEqual(facts.tiles_with_products, frozenset({"kettle"}))
 
     def test_a_search_that_fails_leaves_its_card_and_tile_out(self) -> None:

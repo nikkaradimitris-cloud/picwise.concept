@@ -160,6 +160,13 @@ _LAYOUTS = frozenset({"grid", "row"})
 MIN_TILES = 2
 # The Recommended band needs at least two cards (the specification, 5.7).
 MIN_PICKS = 2
+# A kind is shown on the home page, on a tile or in a banner's words, from this many
+# products (owner, 2026-11-27: «αν μία κατηγορία έχει λιγότερο από δύο προϊόντα να κρύβεται
+# αυτόματα από τα banners όχι από το site»): the home page alone, never the site.
+MIN_PRODUCTS = 2
+# A banner of kinds needs this many of them shown, and names three at most.
+MIN_BANNER_KINDS = 2
+BANNER_KINDS_NAMED = 3
 
 # ---- the switch ----
 
@@ -241,6 +248,16 @@ class Section:
 
 
 @dataclass(frozen=True)
+class BannerKind:
+    """A kind a banner may name: the word its title says ("phones"), its search's words
+    and its drawing."""
+
+    word: str
+    query: str
+    drawing: str
+
+
+@dataclass(frozen=True)
 class Banner:
     theme: str
     eyebrow: str
@@ -250,6 +267,11 @@ class Banner:
     part: str
     href: str
     drawings: tuple[tuple[str, str], ...]
+    # The kinds it may name, the most searched first (owner, 2026-11-27); none for a
+    # banner of no kind (the offers'). `lead`: how many of the first of them the file's
+    # own title names ("Air fryers, vacuums & more" names two).
+    kinds: tuple[BannerKind, ...] = ()
+    lead: int = BANNER_KINDS_NAMED
 
 
 @dataclass(frozen=True)
@@ -300,6 +322,15 @@ def _lists_from(payload: Any) -> HomeLists:
         )
         if len(drawings) != 3:
             continue
+        banner_kinds = tuple(
+            BannerKind(word=_text(kind.get("word")), query=_text(kind.get("query")), drawing=_text(kind.get("drawing")))
+            for kind in item.get("kinds") or ()
+            if isinstance(kind, dict) and _text(kind.get("word")) and _text(kind.get("query"))
+        )
+        try:
+            lead = int(item.get("lead") or BANNER_KINDS_NAMED)
+        except (TypeError, ValueError):
+            lead = BANNER_KINDS_NAMED
         banners.append(
             Banner(
                 theme=_text(item.get("theme")),
@@ -310,6 +341,8 @@ def _lists_from(payload: Any) -> HomeLists:
                 part=_text(item.get("part")),
                 href=_text(item.get("href")),
                 drawings=drawings,
+                kinds=banner_kinds,
+                lead=max(1, min(lead, BANNER_KINDS_NAMED)),
             )
         )
     kinds = tuple(
@@ -491,8 +524,9 @@ class HomeFacts:
 
     prepared_at: datetime | None
     picks: tuple[Pick, ...] = ()
-    # The words of the tiles whose search has products tonight; None while not counted,
-    # and then every tile is drawn (the specification, 5.8).
+    # The words of the tiles and of the banners' kinds whose search has two products or
+    # more tonight (`MIN_PRODUCTS`); None while not counted, and then every tile is drawn
+    # and every banner reads as its file writes it (the specification, 5.4 and 5.8).
     tiles_with_products: frozenset[str] | None = None
     # The shops with the most products shown, by their names as a buyer knows them.
     shops: tuple[str, ...] = ()
@@ -782,22 +816,59 @@ def _banner_href(banner: Banner, parts: frozenset[str], *, offers_shown: bool) -
     return banner.href
 
 
-def _banners_html(lists: HomeLists, parts: frozenset[str], *, offers_shown: bool) -> str:
+def _words_in_a_title(words: tuple[str, ...]) -> str:
+    """"Laptops, phones & TVs", "Sofas & beds": the first letter a capital."""
+    joined = words[0] if len(words) == 1 else f"{', '.join(words[:-1])} & {words[-1]}"
+    return joined[:1].upper() + joined[1:]
+
+
+def banner_as_shown(banner: Banner, facts: HomeFacts | None) -> tuple[str, tuple[tuple[str, str], ...]] | None:
+    """A banner's title and its three drawings tonight, or None when it is not drawn.
+
+    A banner of no kind, and any banner while tonight's products are not counted, reads
+    as its file writes it. Once they are counted (owner, 2026-11-27), a kind with fewer
+    than two products is named by no banner: where the kinds the file's title names all
+    have them, the file's title and drawings stand; else the title names the first three
+    kinds that have them, in the file's order, and the drawings are theirs; a banner left
+    with fewer than two such kinds is not drawn."""
+    known = facts.tiles_with_products if facts is not None else None
+    if not banner.kinds or known is None:
+        return banner.title, banner.drawings
+    shown = tuple(kind for kind in banner.kinds if kind.query in known)
+    if len(shown) < MIN_BANNER_KINDS:
+        return None
+    if all(kind.query in known for kind in banner.kinds[: banner.lead]):
+        return banner.title, banner.drawings
+    named = shown[:BANNER_KINDS_NAMED]
+    title = _words_in_a_title(tuple(kind.word for kind in named))
+    # Three drawings always: the kinds named first, then the file's own.
+    names = [kind.drawing for kind in named if kind.drawing]
+    names += [name for name, _ground in banner.drawings if name not in names]
+    drawings = tuple((name, ground) for name, (_old, ground) in zip(names, banner.drawings))
+    return title, drawings
+
+
+def _banners_html(lists: HomeLists, parts: frozenset[str], *, offers_shown: bool, facts: HomeFacts | None = None) -> str:
     """The banners whose part is built (the specification, 5.4), in a row that stops on
-    each; the offers' banner only while there is an offer to show (5.5)."""
+    each; the offers' banner only while there is an offer to show (5.5); a banner of
+    kinds as `banner_as_shown` reads it tonight."""
     drawn = []
     for banner in lists.banners:
         href = _banner_href(banner, parts, offers_shown=offers_shown)
         if not href:
             continue
+        as_shown = banner_as_shown(banner, facts)
+        if as_shown is None:
+            continue
+        title, drawings = as_shown
         first = not drawn
-        (big, big_ground), (a, a_ground), (b, b_ground) = banner.drawings
+        (big, big_ground), (a, a_ground), (b, b_ground) = drawings
         drawn.append(
             f'<a class="pw-hs-banner pw-hs-banner-{banner.theme}" href="{escape(href, quote=True)}">'
             f'<span class="pw-hs-banner-glow" aria-hidden="true">{_background("streak", lazy=not first)}</span>'
             '<span class="pw-hs-banner-text">'
             f'<span class="pw-hs-banner-eyebrow">{escape(banner.eyebrow)}</span>'
-            f'<span class="pw-hs-banner-title">{escape(banner.title)}</span>'
+            f'<span class="pw-hs-banner-title">{escape(title)}</span>'
             f'<span class="pw-hs-banner-line">{escape(banner.line)}</span>'
             f'<span class="pw-hs-banner-button">{escape(banner.button)}</span></span>'
             f'<span class="pw-hs-banner-big pw-hs-{big_ground}" aria-hidden="true">'
@@ -999,8 +1070,9 @@ def _departments_html(lists: HomeLists, parts: frozenset[str]) -> str:
 
 
 def _tiles_shown(section: Section, facts: HomeFacts | None) -> tuple[Tile, ...]:
-    """The tiles whose search has products tonight; all of them while that is not
-    counted (the specification, 5.8): never a link to an empty answer once it is."""
+    """The tiles whose search has two products or more tonight (`MIN_PRODUCTS`; owner,
+    2026-11-27); all of them while that is not counted (the specification, 5.8): never
+    a link to an empty answer once it is."""
     known = facts.tiles_with_products if facts is not None else None
     if known is None:
         return section.tiles
@@ -1169,12 +1241,39 @@ if(row){
   };
   row.addEventListener("scroll",function(){window.requestAnimationFrame(mark);},{passive:true});
 }
+var cars=[];
+var rows=document.querySelectorAll(".pw-hs-banner-row,.pw-hs-band-row,.pw-hs-scroll");
+var carousel=function(el){
+  var wrap=document.createElement("div");wrap.className="pw-hs-car";
+  el.parentNode.insertBefore(wrap,el);wrap.appendChild(el);
+  var button=function(cls,label,dir){
+    var b=document.createElement("button");b.type="button";b.className="pw-hs-car-btn "+cls;b.hidden=true;
+    b.setAttribute("aria-label",label);b.innerHTML=__CHEVRON__;
+    b.addEventListener("click",function(){
+      var by=dir*Math.max(el.clientWidth*0.8,200);
+      if(el.scrollBy){try{el.scrollBy({left:by,behavior:"smooth"});return;}catch(e){}}
+      el.scrollLeft+=by;
+    });
+    wrap.appendChild(b);return b;
+  };
+  var prev=button("pw-hs-car-prev","Previous",-1),next=button("pw-hs-car-next","Next",1);
+  var see=function(){
+    var most=el.scrollWidth-el.clientWidth;
+    prev.hidden=el.scrollLeft<=2;next.hidden=el.scrollLeft>=most-2;
+  };
+  el.addEventListener("scroll",function(){window.requestAnimationFrame(see);},{passive:true});
+  cars.push(see);see();
+};
+for(var c=0;c<rows.length;c++){carousel(rows[c]);}
+var seeAll=function(){for(var k=0;k<cars.length;k++){cars[k]();}};
+window.addEventListener("resize",seeAll);window.addEventListener("load",seeAll);
 var band=document.getElementById("pw-hs-band");
 if(band){
   var gone=function(img){
     var card=img.closest?img.closest(".pw-hs-pick"):null;
     if(card&&card.parentNode){card.parentNode.removeChild(card);}
     if(band.querySelectorAll(".pw-hs-pick").length<__MIN_PICKS__){band.hidden=true;}
+    seeAll();
   };
   var imgs=band.querySelectorAll("img.pw-hs-pick-img");
   for(var i=0;i<imgs.length;i++){
@@ -1183,7 +1282,7 @@ if(band){
   }
 }
 })();
-""".replace("__MIN_PICKS__", str(MIN_PICKS))
+""".replace("__MIN_PICKS__", str(MIN_PICKS)).replace("__CHEVRON__", json.dumps(_CHEVRON))
 
 
 # ---- the page's styles: a phone first; inside the site's width on a computer ----
@@ -1378,12 +1477,25 @@ HOME_STORE_STYLES = (
     ".pw-hs-foot-notice{margin:14px 0 0;font-size:13px;line-height:1.55;color:#aebbd3;}"
     ".pw-hs-foot-cookies{margin:14px 0 0;font-size:14px;line-height:1.4;font-weight:700;color:#fff;}"
     ".pw-hs-foot-meta{margin:12px 0 0;font-size:12px;color:#93a3c0;}"
+    # A row that slides, and its two arrows (a computer's: hidden on a phone, where a
+    # finger slides it). An arrow is drawn only while its side has more to show.
+    ".pw-hs-car{position:relative;}"
+    ".pw-hs-car-btn{position:absolute;top:50%;z-index:3;display:none;align-items:center;justify-content:center;width:48px;height:48px;margin-top:-24px;padding:0;border:1px solid var(--hs-line);border-radius:999px;background:#fff;color:var(--hs-ink);box-shadow:0 6px 18px rgba(15,36,66,.22);cursor:pointer;}"
+    ".pw-hs-car-btn[hidden]{display:none!important;}"
+    ".pw-hs-car-prev{left:6px;}.pw-hs-car-prev svg{transform:rotate(180deg);}"
+    ".pw-hs-car-next{right:6px;}"
+    ".pw-hs-car-btn:hover{background:var(--hs-mist);}"
+    ".pw-hs-car-btn:focus-visible{outline:2px solid var(--hs-blue);outline-offset:2px;}"
     "@media (prefers-reduced-motion:reduce){.pw-hs-dot,.pw-hs-more svg{transition:none;}}"
-    # On a computer (the specification, 5.13): the same sections in the same order, inside
-    # the site's width; no strip.
+    # On a computer (the specification, 5.13): the same sections in the same order, across
+    # the whole screen up to 1,920 px (owner, 2026-11-27: «να εκμεταλλευτούμε όλη την οθόνη
+    # ... γενικά το site να παίζει σε όλη την οθόνη»; `page_styles` and `browser_lists` give
+    # the other pages the same width); no strip. Whatever slides on a phone slides here
+    # too, with an arrow at each end where its row does not fit (owner, the same day: «Όλα
+    # πρέπει να γλιστράνε εάν είναι καρουζέλ»; the arrows are the script's, `_CAROUSEL`).
     "@media (min-width:700px){"
     ".pw-hs-strip{display:none!important;}"
-    ".pw-hs-head-in{max-width:1190px;margin:0 auto;padding:12px 22px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:24px;}"
+    ".pw-hs-head-in{max-width:1920px;margin:0 auto;padding:12px 22px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:24px;}"
     ".pw-hs-head-row{display:contents;}"
     ".pw-hs-brand{grid-column:1;grid-row:1;}"
     ".pw-hs .pw-search-wrap{grid-column:2;grid-row:1;max-width:720px;width:100%;margin:0 auto;}"
@@ -1393,7 +1505,7 @@ HOME_STORE_STYLES = (
     ".pw-hs-nav a:first-child{margin-left:auto;}.pw-hs-nav a:last-child{margin-right:auto;}"
     # The page's column is a flex item (`.pw-reference-viewport`): its width set, so that a
     # row that scrolls never widens it.
-    ".pw-hs-main{width:100%;max-width:1190px;margin:0 auto;padding:0 22px;}"
+    ".pw-hs-main{width:100%;max-width:1920px;margin:0 auto;padding:0 22px;}"
     ".pw-hs-promise{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);column-gap:40px;align-items:end;padding:32px 0 12px;}"
     ".pw-hs-promise .pw-hs-eyebrow{grid-column:1;grid-row:1;}"
     ".pw-hs-h1{grid-column:1;grid-row:2;margin:6px 0 0;font-size:32px;}"
@@ -1404,7 +1516,7 @@ HOME_STORE_STYLES = (
     ".pw-hs-offers,.pw-hs-pop,.pw-hs-sec{margin-top:20px;border-radius:20px;}"
     ".pw-hs-offers{padding:20px 0;}"
     ".pw-hs-offers .pw-hs-head2,.pw-hs-sec-row .pw-hs-head2,.pw-hs-depts .pw-hs-head2{padding:0 20px;}"
-    ".pw-hs-offer-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));overflow:visible;padding:12px 20px 0;}"
+    ".pw-hs-offer-row{padding:12px 20px 4px;}"
     ".pw-hs-pop{padding:22px 20px;}"
     # Four a row, so that the fold of four (owner, 2026-11-12) is one whole row.
     ".pw-hs-pop-list{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px 16px;}"
@@ -1412,15 +1524,19 @@ HOME_STORE_STYLES = (
     ".pw-hs-more{width:auto;min-width:240px;margin:18px auto 0;padding:0 28px;}"
     ".pw-hs-band{margin-top:20px;border-radius:22px;padding:26px 0 18px;}"
     ".pw-hs-band-head,.pw-hs-band-link{padding:0 24px;margin-left:0;margin-right:0;}"
-    ".pw-hs-band-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));overflow:visible;padding:16px 24px 4px;}"
-    ".pw-hs-pick{flex:none;}"
+    ".pw-hs-band-row{padding:16px 24px 4px;}"
+    ".pw-hs-pick{flex:0 0 190px;}"
     ".pw-hs-depts{padding-top:26px;}"
-    ".pw-hs-depts .pw-hs-scroll{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));overflow:visible;padding:12px 20px 0;}"
-    ".pw-hs-dept{flex:none;}"
+    ".pw-hs-depts .pw-hs-scroll{padding:12px 20px 4px;}"
+    ".pw-hs-dept{flex:1 0 112px;max-width:150px;}"
     ".pw-hs-grid{grid-template-columns:repeat(4,minmax(0,1fr));}"
     ".pw-hs-sec .pw-hs-tile-pic,.pw-hs-scroll .pw-hs-tile-pic{height:150px;}"
-    ".pw-hs-sec-row .pw-hs-scroll{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible;padding:10px 20px 0;}"
-    ".pw-hs-sec-row .pw-hs-tile{flex:none;}"
+    ".pw-hs-sec-row .pw-hs-scroll{padding:10px 20px 4px;}"
+    # A row's own bar is hidden where the script draws the arrows; without a script the
+    # browser's bar stays, so that a mouse can still slide the row.
+    ".pw-js .pw-hs-scroll,.pw-js .pw-hs-band-row{scrollbar-width:none;}"
+    ".pw-js .pw-hs-scroll::-webkit-scrollbar,.pw-js .pw-hs-band-row::-webkit-scrollbar{display:none;}"
+    ".pw-hs-car-btn{display:flex;}"
     ".pw-hs-sec{padding:18px 20px 20px;}"
     ".pw-hs-sec-row{padding:18px 0 20px;}"
     ".pw-hs-vows{padding:28px 0 0;}"
@@ -1430,7 +1546,7 @@ HOME_STORE_STYLES = (
     ".pw-hs-card>.pw-hs-link{grid-column:2;}"
     ".pw-hs-shops{padding:26px 0 0;}"
     ".pw-hs-back{margin-top:28px;}"
-    ".pw-hs-foot-in{max-width:1190px;margin:0 auto;padding:32px 22px 40px;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);column-gap:40px;}"
+    ".pw-hs-foot-in{max-width:1920px;margin:0 auto;padding:32px 22px 40px;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);column-gap:40px;}"
     ".pw-hs-foot-cols{display:contents;}"
     ".pw-hs-foot-col:nth-child(1){grid-column:2;grid-row:1 / span 5;}"
     ".pw-hs-foot-col:nth-child(2){grid-column:3;grid-row:1 / span 5;}"
@@ -1441,15 +1557,25 @@ HOME_STORE_STYLES = (
     ".pw-hs-foot-cookies{grid-column:1;grid-row:4;}"
     ".pw-hs-foot-meta{grid-column:1;grid-row:5;}"
     "}"
-    # Where there is room: the banners side by side, two sections side by side.
+    # Where there is room: the banners as wide as they fit, sliding where they do not
+    # (seven of them from 2026-11-27: side by side they no longer fit a laptop's screen);
+    # two sections side by side, a last one alone across both.
     "@media (min-width:1000px){"
     ".pw-hs-h1{font-size:38px;}"
-    ".pw-hs-banner-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;overflow:visible;}"
-    ".pw-hs-banner{width:auto;}"
+    ".pw-hs-banner-row{gap:16px;}"
+    ".pw-hs-banner{flex:1 0 320px;width:auto;max-width:440px;}"
     ".pw-js .pw-hs-dots{display:none!important;}"
     ".pw-hs-secs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:20px;}"
-    ".pw-hs-sec .pw-hs-tile-pic,.pw-hs-scroll .pw-hs-tile-pic{height:120px;}"
+    ".pw-hs-secs>.pw-hs-sec:last-child:nth-child(odd){grid-column:1 / -1;}"
+    ".pw-hs-sec .pw-hs-tile-pic{height:120px;}"
     ".pw-hs-sec .pw-hs-art{width:96px;height:96px;}"
+    # A row's tiles fill their half where they fit (four do) and slide where they do not.
+    ".pw-hs-sec-row .pw-hs-scroll .pw-hs-tile{flex:1 0 140px;max-width:200px;}"
+    "}"
+    # Wider still: the tiles taller, a grid's and a row's alike.
+    "@media (min-width:1200px){"
+    ".pw-hs-sec .pw-hs-tile-pic{height:150px;}"
+    ".pw-hs-sec .pw-hs-art{width:112px;height:112px;}"
     "}"
 )
 
@@ -1479,7 +1605,7 @@ def render_home_store_page(
         catalogue = (catalogue[0], facts.shop_count)
     main_html = (
         f"{_promise_band_html(catalogue)}"
-        f"{_banners_html(lists, parts, offers_shown=bool(offers_html))}"
+        f"{_banners_html(lists, parts, offers_shown=bool(offers_html), facts=facts)}"
         f"{offers_html}"
         f"{popular_html}"
         f"{_band_html(facts, parts)}"

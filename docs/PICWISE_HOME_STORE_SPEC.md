@@ -52,6 +52,12 @@ Each rule names whose it is:
   Στις 24/11, 01:36 είπες «Ναι σε όλα» για τα σημεία των εικόνων (ενότητα 8, σημεία 4 και
   6 έως 15) και «Τελείωνε και ανέβασε τα»: εκείνη την ώρα τα μέρη δεν ήταν χτισμένα, γι' αυτό
   δεν ανέβηκε τίποτα.
+- **Τι άλλαξε στις 27/11 (ενότητα 11), με τα λόγια σου:** περισσότερες κατηγορίες στην
+  αρχική, αυτές που ψάχνει ο κόσμος και όχι όσες έχουμε σήμερα (7 banners αντί για 4, 14
+  καρουζέλ αντί για 6, τίποτα από τα παλιά δεν βγήκε)· είδος με λιγότερα από 2 προϊόντα
+  κρύβεται μόνο του από την αρχική, όχι από το site· στο PC όλο το site πιάνει όλη την οθόνη
+  (ως 1.920 px) και ό,τι γλιστράει στο κινητό γλιστράει και εκεί, με βελάκια. Γραφικά,
+  χρώματα και η διάταξη του κινητού δεν αλλάχτηκαν.
 - **Τι δεν αλλάζει:** η αναζήτηση, οι κάρτες, η σειρά, το Recommended, οι τιμές. Τίποτα δεν
   δηλώνεται στη Google· οι νέες σελίδες μένουν κρυφές από αυτήν (`noindex`) μέχρι να πεις.
 
@@ -239,6 +245,8 @@ For a phone first (the rules a phone is given, `@media (max-width:699px)`); a co
 
 ### 5.4 The banners
 
+**Changed on 2026-11-27: section 11 says what holds now.**
+
 A row that scrolls sideways and stops on each banner (CSS scroll snap, no script), each
 320 x 430 px, its text on the plain colour, three drawings below on tiles, a light streak
 behind the drawings only. The small dots under the row follow the scroll with a script and
@@ -323,6 +331,8 @@ A band on `#0f2442`:
 - "How we choose the Recommended ›" leads to its page (7.3).
 
 ### 5.8 Browse by department, and the six sections
+
+**Changed on 2026-11-27: section 11 says what holds now.**
 
 - "Browse by department": thirteen tiles on `#dfe8f7` in a row that scrolls sideways, an
   arrow to all of them (7.1): Computers & tech, Fashion & shoes, Kitchen, Tools & machines,
@@ -420,6 +430,8 @@ dashboard to come can write (owner, 2026-11-23, of the categories: «χωρίς 
   written, those below the first screen asked for only as they near it.
 
 ### 5.13 On a computer
+
+**Changed on 2026-11-27: section 11 says what holds now.**
 
 **Proposed**; no picture exists, the owner sees it in the preview before his «ανέβασε».
 The same sections in the same order inside the site's width (1,190 px): the header in one
@@ -864,3 +876,97 @@ department kind's count, cheapest price and Recommended, and how many products e
 covers in each kind, by about 210 searches a worker, each as far as "More" opens it. **H5
 measured their time and memory on the server (9.1): 48.5 s and about 100 MB a worker.** The
 kinds are 207 since the look (9.1).
+
+## 11. More kinds, the whole screen, the rows that slide (2026-11-27)
+
+Decided by the owner on 2026-11-27, in his PicWise Project, of the home page live since
+24/11; built and deployed the same day on his «Ανέβασε» (12:45 Athens).
+
+### 11.1 His words
+
+- «Θέλω να προστεθούν περισσότερες κατηγορίες για παράδειγμα οθόνες δεν υπάρχουν ούτε στα
+  καρουζέλ ούτε στα banners ... διάλεξε τις πιο κύρες ... ακόμα και από τα μεγάλα κεντρικά
+  μπάνερ».
+- Told what the catalogue holds most of: «Δεν πρέπει να υπολογίσεις στο σκεπτικό σου τι
+  έχουμε τώρα γιατί έχουμε πλάνο να προσθέσουμε καταστήματα η σελίδα το homepage πρέπει να
+  παρουσιάζει τις πιο διαδεδομένες κατηγορίες που μπορεί να ψάχνει ένας χρήστης».
+- «αν μία κατηγορία έχει λιγότερο από δύο προϊόντα να κρύβεται αυτόματα από τα banners όχι
+  από το site».
+- «δεν θέλω να αλλάξουμε τα γραφικά μου αρέσουν και στο κινητό μου αρέσει πολύ ... Μην
+  πειράξεις χρώματα διάταξη ή οτιδήποτε άλλο απλά πρόσθεσε κατηγορίες».
+- «στο pc ... να εκμεταλλευτούμε όλη την οθόνη όχι μόνο στην αρχική αλλά γενικά το site να
+  παίζει σε όλη την οθόνη», as Amazon does.
+- «Όλα πρέπει να γλιστράνε εάν είναι καρουζέλ και τα πρώτα μπάνερ πάνω πάνω τα μεγάλα και
+  αυτά πρέπει να γλιστράνε».
+
+### 11.2 The kinds (`data/home_store.json`)
+
+Which kinds: Claude's estimate of what UK buyers search most, inside the categories the
+owner keeps open; **not measured** (told to him: only the month's ten are measured; a
+measure of about 120 kinds in Keyword Planner was offered and not taken up). Nothing of
+24/11 was taken away.
+
+- **Seven banners** (four until then): Offers; Fashion & shoes, "Boots, dresses & trainers";
+  Computers & tech, "Laptops, phones & TVs" (in the place of "Laptops, printers & routers");
+  Home & kitchen (as it was); Furniture, "Sofas, beds & mattresses"; Tools & machines (as it
+  was); Watches & jewellery, "Watches, rings & necklaces". Ink and blue by turns after the
+  gold.
+- **Fourteen sections** (six until then), a grid of four and a row that slides by turns:
+  Kitchen favourites; Style (+ hoodies, jackets, jeans, shoes, handbags); Phones & TV;
+  Computers & office (+ monitors, keyboards, desktop PCs); Comfort at home; Home appliances;
+  Home & furniture; Living room & bedroom; Jewellery; Tools & garden (+ chainsaws, hedge
+  trimmers, angle grinders); Gaming; Toys & games; Sports & outdoors; Cameras & audio.
+- **The Recommended band**: its six, then laptop, monitor, TV, smartphone, vacuum cleaner,
+  office chair. A card is still its search's Recommended tonight or nothing (5.7).
+- Every word a tile or a banner searches is a kind of `data/home_departments.json`, in its
+  spelling (pinned).
+- **37 drawings added** (`tools/draw_home_art.py`), the family of 23/11: the same colours,
+  the same light; five of them were drawn on 23/11 and used by no tile until now.
+
+### 11.3 Fewer than two products
+
+A kind whose search holds fewer than two products tonight (`home_store.MIN_PRODUCTS`,
+counted as its page counts them: `home_store_facts.products_shown`) is on no tile of the
+home page and in no banner's words. Its search, its department's page and the search box
+are untouched: the home page alone.
+
+- A tile: left out; a section left with fewer than two tiles is left out (as 5.8).
+- A banner of kinds (`Banner.kinds`, the most searched first; `lead`, how many of the first
+  its own title names): while its lead kinds all have two products, the file's title and
+  drawings; else the title names the first three kinds that have them ("Laptops, monitors
+  & tablets") and the drawings are theirs; with fewer than two such kinds the banner is not
+  drawn (`home_store.banner_as_shown`).
+- While tonight's products are not counted (a start, the Vercel backup), every tile is
+  drawn and every banner reads as its file, as before.
+
+### 11.4 On a computer
+
+In the place of 5.13 where they differ:
+
+- **The whole screen up to 1,920 px, on every page** (1,190 px until then): the home page,
+  the search, the departments, the offers, the lists' panels. A screen wider than 1,920 px
+  keeps side margins (told to him: tiles and lines of text grow too large beyond it). The
+  pages of text keep their reading column (760 px).
+- **What slides on a phone slides here**: the banners, the offers, the Recommended, the
+  departments and each section that is a row are one row each, with a round arrow at each
+  end drawn only while that side has more to show (the page's script; without a script the
+  browser's own bar stays). A grid of four stays a grid. Sections two side by side from
+  1,000 px, a grid beside a row.
+- The search's cards: four a row as before; from 1,200 px the photo's box keeps the card's
+  width and a fixed height (260 px, 300 px from 1,600 px), the photo whole inside it, so
+  that the price and the button stay on the first screen.
+- All departments: its four groups two side by side. The offers' page: the shops side by
+  side. A department's kinds three a row from 1,400 px.
+
+The phone's rules (`@media (max-width:699px)` and the page's own) are unchanged; a phone is
+given no arrow.
+
+### 11.5 Checked before the «ανέβασε»
+
+The fast suite: 371 of 373 modules, the 2 known (`tests/test_picwise_home_more_kinds.py`
+new; four tests of `tests/test_picwise_home_store.py` moved to the new numbers). Read on
+pictures of the local site at 1,366, 1,920 and 390 px: the home page, a search, a
+department, all departments, the offers, a page of text; the arrows clicked. **Not read
+before it: the Recommended cards of the six kinds added to the band on the real catalogue**
+(the session could not open the live searches); read on the live home page after it.
+
