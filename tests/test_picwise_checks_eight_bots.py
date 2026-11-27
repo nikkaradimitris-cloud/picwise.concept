@@ -124,9 +124,11 @@ class AssignmentTests(unittest.TestCase):
             self.assertFalse(B.Clones(8, frozenset()).all_on)
             self.assertEqual(B.Clones(4, frozenset({1})).rest, {2, 3, 4})
 
-    def test_the_repos_switch_has_eight_bots_none_on_until_the_owners_word(self) -> None:
+    def test_the_repos_switch_has_all_eight_bots_on_by_the_owners_word(self) -> None:
+        # 27/11, «2 συμφωνώ με αυτά»: all eight at once (the rules 23.9).
         switch = B.clones_switch()
-        self.assertEqual((switch.clones, switch.bots), (8, frozenset()))
+        self.assertEqual((switch.clones, switch.bots), (8, frozenset(range(1, 9))))
+        self.assertTrue(switch.all_on)
 
 
 class EightBotsTests(unittest.TestCase):
