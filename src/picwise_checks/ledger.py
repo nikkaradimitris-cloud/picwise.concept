@@ -30,7 +30,7 @@ from typing import Any, Collection, Iterable, Mapping, Sequence
 
 from . import brakes
 from .verdicts import ANOTHER_PRODUCT, FAILED, GONE, PASSED, Row, ShopNight, Verdict, awin_out, feed_is_old
-from .verdicts import far_apart, same_price, shop_checkable
+from .verdicts import BOTS_NOT_ALLOWED, NOTHING_ASKED, far_apart, quarantine_kind, same_price, shop_checkable
 
 FORMAT = "picwise-checks-ledger"
 VERSION = 1
@@ -88,6 +88,10 @@ FRESH_AFTER_CHECKED = 7
 STOCK_DAYS = 3
 # 5.6.2: a shop out because it could not be checked is asked each night by up to 5 pages.
 RETRY_PAGES = 5
+# 23.10 (owner, 2026-11-27, «συμφωνώ με αυτά»): a shop out of the quarantine of the shops that
+# do not let the bot in is asked again once a week, not each night, so that a shop that said no
+# is not troubled; a shop out for a technical matter, each night as before.
+BOTS_RETRY_EVERY = 7
 # 10.4 and 10.5.
 CHEAPEST_FIRST = 24
 OLD_PASS_FIRST = 14
@@ -161,6 +165,36 @@ class Shop:
     # had, and nothing stopped it); "" until the first such night, which keeps the three
     # nights of 19.3.1 for every product of the shop.
     complete_on: str = ""
+    # 23.10: the night the shop went out because it could not be checked ("" while it is in, and
+    # for a shop out before it was kept: its next night asked keeps it).
+    out_on: str = ""
+
+
+def resting(shop: "Shop | None", night: date) -> bool:
+    """23.10: a shop out of the quarantine of the shops that do not let the bot in, on a night that
+    is not its week's: nothing of it is asked tonight."""
+    if shop is None or not shop.out.startswith("cannot be checked") or quarantine_kind(shop.why) != BOTS_NOT_ALLOWED:
+        return False
+    went = _day(shop.out_on)
+    return went is not None and (night - went).days % BOTS_RETRY_EVERY != 0
+
+
+def in_quarantine(ledger: "Ledger", night: date, cannot: Mapping[str, str]) -> dict[str, list]:
+    """23.10: the shops in quarantine after tonight, each [why, its day, its kind, out, the night it
+    is asked again]: those that could not be checked tonight and those out because they could not
+    be (the shops of a week's asking not asked tonight among them)."""
+    found: dict[str, list] = {}
+    for name, shop in sorted(ledger.shops.items()):
+        out = shop.out.startswith("cannot be checked")
+        if name not in cannot and not out:
+            continue
+        why = cannot.get(name) or shop.why
+        again = ""
+        if out and quarantine_kind(why) == BOTS_NOT_ALLOWED:
+            went = _day(shop.out_on) or night
+            again = _iso(night + timedelta(days=BOTS_RETRY_EVERY - (night - went).days % BOTS_RETRY_EVERY))
+        found[name] = [why, shop.days, quarantine_kind(why), out, again]
+    return found
 
 
 _PRODUCT_FIELDS = tuple(item.name for item in fields(Product))
@@ -313,20 +347,24 @@ def due_after(reason: str, fails: int, night: date) -> date:
 # ---- the night (5, 7, 8, 9) -------------------------------------------------------
 
 
-def _shop_night(ledger: Ledger, name: str, night: date, tonight: ShopNight) -> tuple[bool, str]:
+def _shop_night(ledger: Ledger, name: str, night: date, tonight: ShopNight,
+                nothing_asked: bool = False) -> tuple[bool, str]:
     """5.6.2: a shop's day while it cannot be checked; out on day 4 (`OUT_ON_DAY`; owner,
     2026-11-22: «Σε 3 μέρες»); back the first night a product is read on it; the count
     afresh only after 7 nights checked in a row, a shop that falls back sooner going on
-    from the day it had reached."""
+    from the day it had reached. `nothing_asked`: the round had time for the shop and it
+    answered nothing, nor said to come back (23.10): it could not be checked."""
     shop = ledger.shop(name)
     shop.first_night = shop.first_night or _iso(night)
     checkable, why = shop_checkable(tonight)
+    if checkable and nothing_asked:
+        checkable, why = False, NOTHING_ASKED
     if checkable:
         shop.streak += 1
         if shop.streak >= FRESH_AFTER_CHECKED:
             shop.days, shop.why = 0, ""
         if shop.out.startswith("cannot be checked"):
-            shop.out = ""
+            shop.out, shop.out_on = "", ""
         if tonight.catalogue_read:
             shop.reader = "shopify"
         elif tonight.pages_read:
@@ -337,6 +375,8 @@ def _shop_night(ledger: Ledger, name: str, night: date, tonight: ShopNight) -> t
         shop.why = why
         if shop.days >= OUT_ON_DAY and not shop.out:
             shop.out = f"cannot be checked: {why}"
+        if shop.out.startswith("cannot be checked") and not shop.out_on:
+            shop.out_on = _iso(night)
     return checkable, why
 
 
@@ -409,6 +449,7 @@ def record_night(
     owner_awin_word: bool = False,
     awin_closed_out: bool = False,
     complete: Collection[str] = (),
+    nothing_asked: Collection[str] = (),
 ) -> Night:
     """One night's readings into the ledger, by the rules' order.
 
@@ -422,7 +463,9 @@ def record_night(
     («κόψε»); `owner_awin_word`: his word on a reading of Awin that waits;
     `awin_closed_out`: his yes to the Proposed part of 5.6.3 (a shop suspended, in no list
     or offline at Awin is out), off until he gives it; `complete`: the shops whose asking
-    was whole tonight (21), each one that could be checked marked so (`Shop.complete_on`).
+    was whole tonight (21), each one that could be checked marked so (`Shop.complete_on`);
+    `nothing_asked`: the shops the round had time for that answered nothing, nor said to come
+    back (23.10): they could not be checked tonight, a day of their quarantine.
     A round that is ours (7.1) marks none: every product stays as it was."""
     tonight = _iso(night)
     parts = parts or {}
@@ -440,11 +483,15 @@ def record_night(
 
     # The shops (5.6.2), Awin (5.6.3), the feeds' ages (5.6.4).
     cannot = {}
+    nothing_asked = frozenset(nothing_asked)
     for name, item in shop_nights.items():
-        checkable, why = _shop_night(ledger, name, night, item)
+        checkable, why = _shop_night(ledger, name, night, item, nothing_asked=name in nothing_asked)
         if not checkable:
             cannot[name] = why
-    note["cannot_be_checked"] = {name: [why, ledger.shop(name).days] for name, why in sorted(cannot.items())}
+    note["cannot_be_checked"] = {name: [why, ledger.shop(name).days, quarantine_kind(why)]
+                                 for name, why in sorted(cannot.items())}
+    # 23.10: every shop in quarantine after tonight, those of a week's asking not asked tonight too.
+    note["quarantine"] = in_quarantine(ledger, night, cannot)
     # 21: the shops asked whole tonight; a shop that could not be checked was not.
     whole = sorted(name for name in complete if name in shop_nights and name not in cannot)
     for name in whole:
@@ -813,8 +860,12 @@ def asking_order(ledger: Ledger, night: date, rows: Mapping[str, Row], *, shown:
     today = _iso(night)
     tiers: dict[str, list[list[tuple[Any, str]]]] = defaultdict(lambda: [[], [], [], [], [], []])
     never: dict[tuple[str, str], list[str]] = defaultdict(list)
+    # 23.10: a shop out of the quarantine of the shops that do not let the bot in rests but on its week's night.
+    rests = {name for name, shop in ledger.shops.items() if resting(shop, night)}
     for key in sorted(rows):
         row = rows[key]
+        if row.shop in rests:
+            continue
         product = ledger.products.get(key)
         shop_tiers = tiers[row.shop]
         if product is not None and product.state in (FAILED, HELD):

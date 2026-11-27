@@ -59,6 +59,11 @@ METER_NOTE = Path("/srv/picwise/assist/meter/day.json")
 METER_WRONG_PRINTED = 15
 # The checks' rules, 5.6.2 (owner, 22/11: «Σε 3 μέρες»): a shop that cannot be checked leaves on its day 4.
 CHECKS_OUT_ON_DAY = 4
+# 23.10: the quarantine's two kinds (`picwise_checks.verdicts.quarantine_kind`), and the reasons a
+# shop's asking was not whole that are the shop's own (`shop_checks_bot.NOT_WHOLE_THE_SHOPS`).
+QUARANTINE_BOTS = "bots not allowed"
+QUARANTINE_TECHNICAL = "technical"
+NOT_WHOLE_THE_SHOPS = ("the shop said to come back later", "nothing could be asked")
 SITE_USER = "picwise"
 
 MAX_AGE_HOURS = 30.0
@@ -373,13 +378,29 @@ def look_at_checks(check: Health, runner: Run) -> None:
     check.limit(bool(braked), "a shop's brake held the checks' cuts: " + ", ".join(braked) + " (rules 7.2)")
     check.limit(bool(note.get("night_brake")), "the whole night's brake held: nothing new cut (rules 7.4)")
     check.limit(bool(note.get("stopped")), "the checks' cutting stopped until the owner's word (rules 7.4)")
-    cannot = note.get("cannot_be_checked") if isinstance(note.get("cannot_be_checked"), dict) else {}
-    for name, entry in sorted(cannot.items()):
-        why, day = (list(entry) + ["", 0])[:2] if isinstance(entry, (list, tuple)) else (str(entry), 0)
-        day = int(day or 0)
-        leaves = ("; leaves tomorrow" if day == CHECKS_OUT_ON_DAY - 1
-                  else "; out" if day >= CHECKS_OUT_ON_DAY else f"; leaves on day {CHECKS_OUT_ON_DAY}")
-        check.say(f"checks, cannot be checked: {name}: {why}, day {day}{leaves}")
+    quarantine = note.get("quarantine") if isinstance(note.get("quarantine"), dict) else None
+    if quarantine is not None:
+        # 23.10: the shops in quarantine, by its two kinds; a shop that does not let the bot in, out,
+        # is asked again once a week.
+        for kind in (QUARANTINE_BOTS, QUARANTINE_TECHNICAL):
+            for name, entry in sorted(quarantine.items()):
+                why, day, its_kind, out, again = (list(entry) + ["", 0, "", False, ""])[:5] \
+                    if isinstance(entry, (list, tuple)) else (str(entry), 0, "", False, "")
+                if (its_kind or QUARANTINE_TECHNICAL) != kind:
+                    continue
+                day = int(day or 0)
+                leaves = ("; out" if out else "; leaves tomorrow" if day == CHECKS_OUT_ON_DAY - 1
+                          else f"; leaves on day {CHECKS_OUT_ON_DAY}")
+                check.say(f"checks, quarantine ({kind}): {name}: {why}, day {day}{leaves}"
+                          + (f"; asked again on {again}" if again else ""))
+    else:
+        cannot = note.get("cannot_be_checked") if isinstance(note.get("cannot_be_checked"), dict) else {}
+        for name, entry in sorted(cannot.items()):
+            why, day = (list(entry) + ["", 0])[:2] if isinstance(entry, (list, tuple)) else (str(entry), 0)
+            day = int(day or 0)
+            leaves = ("; leaves tomorrow" if day == CHECKS_OUT_ON_DAY - 1
+                      else "; out" if day >= CHECKS_OUT_ON_DAY else f"; leaves on day {CHECKS_OUT_ON_DAY}")
+            check.say(f"checks, cannot be checked: {name}: {why}, day {day}{leaves}")
     stable_day(check, note, rule, late, problems)
     awin = note.get("awin") if isinstance(note.get("awin"), dict) else {}
     newly = [f"{entry[0]} ({entry[1]})" for entry in awin.get("newly_out") or [] if isinstance(entry, (list, tuple)) and len(entry) > 1]
@@ -462,10 +483,12 @@ ROUND_ENDS = (3, 5)
 def stable_day(check: Health, note: dict, rule: dict, late: int | None, problems: list[str]) -> None:
     """One line: whether the night just recorded was a stable day (the checks' rules 23.6): the
     round asked all day; the night recorded on time; the server not started again during the
-    round; every shop asked whole but those that cannot be checked; no bot started again or near
-    its memory's limit; the failures near a usual day's; no shop newly unable to be checked. The
-    site's speed is the workflow's own line (its four searches from outside). Said, no limit of
-    its own: each of its parts that is one passes its own."""
+    round; every shop asked whole but those in quarantine and those whose own doing it was (it said
+    to come back, it answered nothing: 23.10, owner, 2026-11-27: «Όταν ένα κατάστημα δεν ελέγχεται
+    μπαίνει στην άκρη δεν πρέπει να σταματάει ο έλεγχος»); no bot started again or near its
+    memory's limit; the failures near a usual day's. A shop newly in quarantine is said, and stops
+    nothing (until 27/11 it did). The site's speed is the workflow's own line (its four searches
+    from outside). Said, no limit of its own: each of its parts that is one passes its own."""
     if not rule.get("on") or int(rule.get("pass_nights") or 0) != 1:
         return  # Only under the rule of the day (21), which the stable day is measured against.
     night = str(note.get("night") or "")
@@ -482,7 +505,13 @@ def stable_day(check: Health, note: dict, rule: dict, late: int | None, problems
     cannot = note.get("cannot_be_checked") if isinstance(note.get("cannot_be_checked"), dict) else {}
     newly = sorted(name for name, entry in cannot.items()
                    if isinstance(entry, (list, tuple)) and len(entry) > 1 and int(entry[1] or 0) == 1)
-    not_whole = [str(name) for name in rule.get("not_whole") or [] if str(name) not in cannot]
+    set_aside = set(cannot) | set(note.get("quarantine") or {})
+    why = rule.get("not_whole_why") if isinstance(rule.get("not_whole_why"), dict) else {}
+    # A night recorded before 23.10 says no why: each shop not whole counts, as it did.
+    not_whole = [str(name) for name in rule.get("not_whole") or []
+                 if str(name) not in set_aside and why.get(str(name)) not in NOT_WHOLE_THE_SHOPS]
+    the_shops = sorted(str(name) for name in rule.get("not_whole") or []
+                       if str(name) not in set_aside and why.get(str(name)) in NOT_WHOLE_THE_SHOPS)
     failed = sum((note.get("failed") or {}).values()) if isinstance(note.get("failed"), dict) else 0
     decided = int(note.get("decided") or 0)
     share = failed / decided if decided else 0.0
@@ -491,17 +520,19 @@ def stable_day(check: Health, note: dict, rule: dict, late: int | None, problems
         ("the night recorded on time", late == 0),
         ("the server up all the round" + (f" (started {booted:%d/%m %H:%M} UTC)" if booted is not None and starts <= booted <= ends else ""),
          booted is None or not (starts <= booted <= ends)),
-        (f"every shop asked whole but those that cannot be checked" + (f" (not: {', '.join(not_whole[:10])})" if not_whole else ""),
+        (f"every shop asked whole but those in quarantine or that stopped it themselves"
+         + (f" (not: {', '.join(not_whole[:10])})" if not_whole else ""),
          not not_whole),
         ("no bot started again or near its memory's limit" + (f" (not: {', '.join(problems)})" if problems else ""),
          not problems),
         (f"the failures {share:.1%} of {decided:,} decided (usual {USUAL_FAILED_SHARE:.1%})",
          share <= 2 * USUAL_FAILED_SHARE),
-        ("no shop newly unable to be checked" + (f" (new: {', '.join(newly)})" if newly else ""), not newly),
     ]
     check.say(f"checks, the stable day of {night} (rules 23.6): "
               + ("YES" if all(ok for _what, ok in parts) else "NO") + "; "
-              + "; ".join(f"{what}: {'yes' if ok else 'NO'}" for what, ok in parts))
+              + "; ".join(f"{what}: {'yes' if ok else 'NO'}" for what, ok in parts)
+              + (f"; set aside, newly in quarantine: {', '.join(newly)}" if newly else "")
+              + (f"; set aside, stopped by the shop itself: {', '.join(the_shops[:10])}" if the_shops else ""))
 
 
 def look_at_bots(check: Health, runner: Run, clones: int, bots: list[int], note: dict | None) -> list[str]:
