@@ -500,7 +500,9 @@ class ThePhonesRulesTests(unittest.TestCase):
         self.assertIn(".pw-hs-foot-in{max-width:1920px;", computer)
         wide = HOME_STORE_STYLES.split("@media (min-width:1000px){", 1)[1]
         self.assertIn(".pw-js .pw-hs-dots{display:none!important;}", wide)
-        self.assertIn(".pw-hs-secs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));", wide)
+        # The sections one under another, as on a phone (owner, 2026-11-27: «να κρατηθεί η ίδια
+        # διάταξη απλά τα ανοίγματα είναι μεγαλύτερα»; two side by side until then).
+        self.assertNotIn(".pw-hs-secs{", HOME_STORE_STYLES)
         # The phone's rules come first and are the page's own: none of them in a block.
         self.assertLess(HOME_STORE_STYLES.index(".pw-hs-strip{"), HOME_STORE_STYLES.index("@media (min-width:700px)"))
 

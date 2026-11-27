@@ -14,7 +14,9 @@ The owner, 2026-11-27, of the home page that went live on 24/11:
 - «γενικά το site να παίζει σε όλη την οθόνη»: every page across the whole screen up to
   1,920 px;
 - «Όλα πρέπει να γλιστράνε εάν είναι καρουζέλ και τα πρώτα μπάνερ»: on a computer what
-  slides on a phone slides too, with an arrow at each end where its row does not fit.
+  slides on a phone slides too, with an arrow at each end where its row does not fit;
+- shown it, «Να κρατηθεί η ίδια λογική με το κινητό να κρατηθεί η ίδια διάταξη απλά τα
+  ανοίγματα είναι μεγαλύτερα»: the sections one under another on a computer too.
 """
 from __future__ import annotations
 
@@ -99,7 +101,7 @@ class TheListsTests(unittest.TestCase):
         self.assertIn("monitor", {tile.query for section in lists.sections for tile in section.tiles})
         self.assertIn("monitor", {kind.query for banner in lists.banners for kind in banner.kinds})
 
-    def test_the_layouts_take_turns_and_an_even_count_fills_two_columns(self) -> None:
+    def test_the_layouts_take_turns(self) -> None:
         layouts = [section.layout for section in load_home_lists().sections]
         self.assertEqual(layouts, ["grid", "row"] * 7)
 
@@ -249,6 +251,15 @@ class TheRowsThatSlideTests(unittest.TestCase):
         self.assertIn("prev.hidden=el.scrollLeft<=2;next.hidden=el.scrollLeft>=most-2;", HOME_STORE_SCRIPT)
         self.assertNotIn("__CHEVRON__", HOME_STORE_SCRIPT)
         self.assertIn(json.dumps(home_store._CHEVRON), HOME_STORE_SCRIPT)
+
+    def test_on_a_computer_the_sections_stand_as_on_a_phone(self) -> None:
+        # Owner, 2026-11-27, shown two sections side by side: «Να κρατηθεί η ίδια λογική με
+        # το κινητό να κρατηθεί η ίδια διάταξη απλά τα ανοίγματα είναι μεγαλύτερα».
+        self.assertNotIn(".pw-hs-secs{", HOME_STORE_STYLES)
+        self.assertNotIn("grid-column:1 / -1", HOME_STORE_STYLES.split("@media (min-width:1000px){", 1)[1])
+        wide = HOME_STORE_STYLES.split("@media (min-width:1000px){", 1)[1]
+        # A row's tiles fill the line where they fit and slide where they do not.
+        self.assertIn(".pw-hs-sec-row .pw-hs-scroll .pw-hs-tile{flex:1 0 170px;}", wide)
 
     def test_the_banners_slide_where_they_do_not_fit(self) -> None:
         wide = HOME_STORE_STYLES.split("@media (min-width:1000px){", 1)[1]

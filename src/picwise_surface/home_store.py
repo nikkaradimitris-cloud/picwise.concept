@@ -1558,24 +1558,25 @@ HOME_STORE_STYLES = (
     ".pw-hs-foot-meta{grid-column:1;grid-row:5;}"
     "}"
     # Where there is room: the banners as wide as they fit, sliding where they do not
-    # (seven of them from 2026-11-27: side by side they no longer fit a laptop's screen);
-    # two sections side by side, a last one alone across both.
+    # (seven of them from 2026-11-27: side by side they no longer fit a laptop's screen).
+    # The sections one under another, as on a phone, each across the whole width (owner,
+    # 2026-11-27, of the two side by side he was shown: «Να κρατηθεί η ίδια λογική με το
+    # κινητό να κρατηθεί η ίδια διάταξη απλά τα ανοίγματα είναι μεγαλύτερα ... εκεί που ένα
+    # καρουζέλ δείχνει έναν χ αριθμό προϊόντων στο pc θα δείχνει περισσότερα»): a grid's
+    # four tiles in one line, a row's tiles filling the line where they fit and sliding
+    # where they do not.
     "@media (min-width:1000px){"
     ".pw-hs-h1{font-size:38px;}"
     ".pw-hs-banner-row{gap:16px;}"
     ".pw-hs-banner{flex:1 0 320px;width:auto;max-width:440px;}"
     ".pw-js .pw-hs-dots{display:none!important;}"
-    ".pw-hs-secs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:20px;}"
-    ".pw-hs-secs>.pw-hs-sec:last-child:nth-child(odd){grid-column:1 / -1;}"
-    ".pw-hs-sec .pw-hs-tile-pic{height:120px;}"
-    ".pw-hs-sec .pw-hs-art{width:96px;height:96px;}"
-    # A row's tiles fill their half where they fit (four do) and slide where they do not.
-    ".pw-hs-sec-row .pw-hs-scroll .pw-hs-tile{flex:1 0 140px;max-width:200px;}"
+    ".pw-hs-sec .pw-hs-tile-pic{height:170px;}"
+    ".pw-hs-sec .pw-hs-art{width:124px;height:124px;}"
+    ".pw-hs-sec-row .pw-hs-scroll .pw-hs-tile{flex:1 0 170px;}"
     "}"
-    # Wider still: the tiles taller, a grid's and a row's alike.
-    "@media (min-width:1200px){"
-    ".pw-hs-sec .pw-hs-tile-pic{height:150px;}"
-    ".pw-hs-sec .pw-hs-art{width:112px;height:112px;}"
+    "@media (min-width:1400px){"
+    ".pw-hs-sec .pw-hs-tile-pic{height:190px;}"
+    ".pw-hs-sec .pw-hs-art{width:136px;height:136px;}"
     "}"
 )
 

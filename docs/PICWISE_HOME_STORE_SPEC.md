@@ -880,7 +880,8 @@ kinds are 207 since the look (9.1).
 ## 11. More kinds, the whole screen, the rows that slide (2026-11-27)
 
 Decided by the owner on 2026-11-27, in his PicWise Project, of the home page live since
-24/11; built and deployed the same day on his «Ανέβασε» (12:45 Athens).
+24/11; built the same day on its own branch (`claude/home-more-kinds`). **Not deployed**: at
+14:13 he said «Δεν ανεβάζουμε τίποτα τώρα» and asked to see it; it waits for his «ανέβασε».
 
 ### 11.1 His words
 
@@ -920,8 +921,9 @@ measure of about 120 kinds in Keyword Planner was offered and not taken up). Not
   office chair. A card is still its search's Recommended tonight or nothing (5.7).
 - Every word a tile or a banner searches is a kind of `data/home_departments.json`, in its
   spelling (pinned).
-- **37 drawings added** (`tools/draw_home_art.py`), the family of 23/11: the same colours,
-  the same light; five of them were drawn on 23/11 and used by no tile until now.
+- **41 drawings added to the site's files** (`tools/draw_home_art.py`), the family of 23/11:
+  the same colours, the same light; 34 drawn now, 7 drawn on 23/11 and used by no tile
+  until now.
 
 ### 11.3 Fewer than two products
 
@@ -950,8 +952,16 @@ In the place of 5.13 where they differ:
 - **What slides on a phone slides here**: the banners, the offers, the Recommended, the
   departments and each section that is a row are one row each, with a round arrow at each
   end drawn only while that side has more to show (the page's script; without a script the
-  browser's own bar stays). A grid of four stays a grid. Sections two side by side from
-  1,000 px, a grid beside a row.
+  browser's own bar stays).
+- **The sections one under another, as on a phone**, each across the whole width: a grid's
+  four tiles in one line, a row's tiles filling the line where they fit and sliding where
+  they do not. First built two side by side, a grid beside a row; the owner, shown it the
+  same day (14:28, «Σε pc είναι χάλια»): «Να κρατηθεί η ίδια λογική με το κινητό να κρατηθεί
+  η ίδια διάταξη απλά τα ανοίγματα είναι μεγαλύτερα δηλαδή εκεί που θα κινητό βλέπεις ένα
+  μπάνερ στην ολόκληρη οθόνη του pc μπορεί να βλέπεις περισσότερες εκεί που ένα καρουζέλ
+  δείχνει έναν χ αριθμό προϊόντων στο pc θα δείχνει περισσότερα». The promise's heading
+  beside its steps, the promise's card in two columns and the footer in three are as they
+  were on 24/11 (put to him).
 - The search's cards: four a row as before; from 1,200 px the photo's box keeps the card's
   width and a fixed height (260 px, 300 px from 1,600 px), the photo whole inside it, so
   that the price and the button stay on the first screen.
@@ -961,7 +971,7 @@ In the place of 5.13 where they differ:
 The phone's rules (`@media (max-width:699px)` and the page's own) are unchanged; a phone is
 given no arrow.
 
-### 11.5 Checked before the «ανέβασε»
+### 11.5 Checked
 
 The fast suite: 371 of 373 modules, the 2 known (`tests/test_picwise_home_more_kinds.py`
 new; four tests of `tests/test_picwise_home_store.py` moved to the new numbers). Read on
