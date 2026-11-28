@@ -140,7 +140,12 @@ jobs:
             for f in /srv/picwise/shared/checks/tonight-*.jsonl; do [ -e "$f" ] && echo "$(basename "$f") $(sudo wc -l < "$f")"; done; \
             echo "the bot, its last lines in two days:"; \
             sudo journalctl -u picwise-checks.service --since "-2 days" -o "short-iso" --no-pager \
-              | grep -v -E "https?://|[a-z0-9-]+\.(co\.uk|com|net|org|uk)\b" | tail -n 40' || true
+              | grep -v -E "https?://|[a-z0-9-]+\.(co\.uk|com|net|org|uk)\b" | tail -n 40; \
+            echo "the bots of the rules 23, their own lines since yesterday (each one'"'"'s start, its day, its end):"; \
+            sudo journalctl -u "picwise-checks@*.service" -u picwise-checks-record.service --since "-1 days" \
+              -o "short-iso" --no-pager \
+              | grep -E "clone [0-9]+ of|recorded already|to ask:|read the catalogue|Started|Finished|Failed|Deactivated|Traceback|Error|error" \
+              | grep -v -E "https?://|[a-z0-9-]+\.(co\.uk|com|net|org|uk)\b" | tail -n 60' || true
       - name: What the AI decided about the shops' listings
         if: always() && steps.connect.outcome == 'success'
         # One card per product (owner, 2026-11-19): the sets answered and a sample of what was
